@@ -12,6 +12,7 @@
          "exportFailedNoChar": "Export échoué, aucun personnage trouvé.",
          "imported": "Fichier personnage exporté avec succès.",
          "reset": "Fiche de personnage réinitialisée avec succès.",
+         "unloaded": "Fiche de personnage déchargée avec succès.",
          "componentImported": "Fichier de composant importé avec succès."
       },
       "card": {
@@ -82,9 +83,15 @@
 
          "resetCharacter": "Réinitialiser le Perso.",
          "resetConfirmTitle": "Êtes vous certain de vouloir réinitialiser votre Personnage?",
-         "resetConfirmDescription": "Cette action est destructive. Votre personnage active sera supprimé et remplacé par une fiche de personnage vierge. Tant que vous n'actualisez pas l'application, vous pouvez revenir en arrière avec la fonction Undo.",
+         "resetConfirmDescription": "Cette action est destructive. Votre personnage actif sera supprimé et remplacé par une fiche de personnage vierge. Tant que vous n'actualisez pas l'application, vous pouvez revenir en arrière avec la fonction Undo.",
          "resetConfirmCancelButton": "Annuler",
          "resetConfirmButton": "Réinitialiser le Perso.",
+
+         "unloadCharacter": "Décharger le Perso.",
+         "unloadConfirmTitle": "Êtes vous certain de vouloir décharger votre Personnage?",
+         "unloadConfirmDescription": "Cette action est extrêmement destructive. Votre Personnage actif sera complètement supprimé, et votre historique d'action sur la fiche de personnage avec. Vous ne pourrez pas revenir en arrière avec la fonction Undo.",
+         "unloadConfirmCancelButton": "Annuler",
+         "unloadConfirmButton": "Décharger le Perso.",
 
          "settings": "Paramètres",
          "info": "À Propos",

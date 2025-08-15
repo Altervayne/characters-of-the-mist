@@ -12,6 +12,7 @@
          "exportFailedNoChar": "Export failed, No character found.",
          "imported": "Character file imported successfully.",
          "reset": "Character sheet successfully reset.",
+         "unloaded": "Character has been unloaded successfully.",
          "componentImported": "Component file imported successfully."
       },
       "card": {
@@ -85,6 +86,12 @@
          "resetConfirmDescription": "This action is destructive. Your active character will be deleted and replaced with a blank character. If you don't reload the app, you can still recover your old character with the undo functionality.",
          "resetConfirmCancelButton": "Cancel",
          "resetConfirmButton": "Reset the Character",
+
+         "unloadCharacter": "Unload Character",
+         "unloadConfirmTitle": "Are you sure you want to unload your character?",
+         "unloadConfirmDescription": "This action is extremely destructive. Your active character will be deleted and the history erased. You will not be able to undo this, make sure you either saved your character to the drawer or exported it.",
+         "unloadConfirmCancelButton": "Cancel",
+         "unloadConfirmButton": "Unload the Character",
 
          "settings": "Settings",
          "info": "App Info",

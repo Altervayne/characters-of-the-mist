@@ -15,7 +15,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
 import { Character, Card, Tag, LegendsThemeDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker } from '@/lib/types/character';
-import { GeneralItemType } from '../types/drawer';
+import { GeneralItemType, GameSystem } from '../types/drawer';
 import { CreateCardOptions } from '../types/creation';
 
 
@@ -33,8 +33,10 @@ const hasBlandTagList = (details: CardDetails, listName: string): listName is Bl
 interface CharacterState {
    character: Character | null;
    actions: {
+      createCharacter: (game: GameSystem) => void;
       loadCharacter: (character: Character) => void;
       resetCharacter: () => void;
+      unloadCharacter: () => void;
       setGame: (game: Character['game']) => void;
       updateCharacterName: (name: string) => void;
       // --- Card Actions --- 
@@ -106,6 +108,14 @@ export const useCharacterStore = create<CharacterState>()(
             ...initialState,
             actions: {
                // --- Character Actions ---
+               createCharacter: (game) => {
+                  set(() => {
+                    const newCharacter = createNewCharacter("New Character", game);
+                    useCharacterStore.temporal.getState().clear(); 
+                    useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                    return { character: newCharacter };
+                  });
+               },
                loadCharacter: (character) => {
                   set(() => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
@@ -116,8 +126,15 @@ export const useCharacterStore = create<CharacterState>()(
                   set((state) => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newCharacter = createNewCharacter("New Character");
+                     const newCharacter = createNewCharacter("New Character", state.character.game);
                      return { character: newCharacter };
+                  });
+               },
+               unloadCharacter: () => {
+                  set(() => {
+                     useCharacterStore.temporal.getState().clear();
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return { character: null };
                   });
                },
                updateCharacterName: (name) => {

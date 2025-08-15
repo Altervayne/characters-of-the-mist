@@ -5,7 +5,7 @@ import { Card, Tracker, Character } from './character';
 
 export type DrawerItemContent = Card | Tracker | Character;
 
-export type GameSystem = 'LEGENDS' | 'CITY' | 'OTHERSCAPE' | 'NEUTRAL';
+export type GameSystem = 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL';
 
 export type GeneralItemType = 
    | 'FULL_DRAWER'

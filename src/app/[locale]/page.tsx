@@ -22,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Download, PlusCircle } from 'lucide-react';
 
 // -- Utils Imports --
-import { createNewCharacter } from '@/lib/utils/character';
 import { cn } from '@/lib/utils';
 import { findFolder } from '@/lib/utils/drawer';
 import { customCollisionDetection, mapItemToStorableInfo } from '@/lib/utils/dnd';
@@ -44,6 +43,7 @@ import { SidebarMenu } from '@/components/organisms/sidebar-menu';
 import { CharacterLoadDropZone } from '@/components/organisms/character-load-dropzone';
 import { SettingsDialog } from '@/components/organisms/settings-dialog';
 import { InfoDialog } from '@/components/organisms/info-dialog';
+import MainMenu from '@/components/organisms/main-menu';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -220,13 +220,6 @@ export default function CharacterSheetPage() {
    useEffect(() => {
       setIsClient(true);
    }, []);
-
-   useEffect(() => {
-      if (isClient && !character) {
-         const newCharacter: Character = createNewCharacter("New Character");
-         loadCharacter(newCharacter);
-      }
-   }, [isClient, character, loadCharacter, t]);
 
    useEffect(() => {
       const settingsStorageKey = 'characters-of-the-mist_app-settings';
@@ -645,7 +638,7 @@ export default function CharacterSheetPage() {
 
 
 
-   if (!isClient || !character) {
+   if (!isClient) {
       return (
          <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
             <p className="text-muted-foreground">{t('loading')}</p>
@@ -672,143 +665,150 @@ export default function CharacterSheetPage() {
 
             {/* Character Sheet Area */}
             <div {...getRootProps()} className="relative w-full h-full flex-1 flex flex-col">
-               <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
-                  <header className="p-4 bg-popover border-b border-border">
-                     <input
-                        data-tour="character-name-input"
-                        type="text"
-                        value={localName}
-                        onChange={(e) => setLocalName(e.target.value)}
-                        className="text-2xl text-popover-foreground font-bold bg-transparent focus:outline-none w-full"
-                        placeholder={t('characterNamePlaceholder')}
-                     />
-                  </header>
+               
+               { character ? (
+                  <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
+                     <header className="p-4 bg-popover border-b border-border">
+                        <input
+                           data-tour="character-name-input"
+                           type="text"
+                           value={localName}
+                           onChange={(e) => setLocalName(e.target.value)}
+                           className="text-2xl text-popover-foreground font-bold bg-transparent focus:outline-none w-full"
+                           placeholder={t('characterNamePlaceholder')}
+                        />
+                     </header>
 
-                  <div className="flex-1 p-4 md:p-8">
-                     <div ref={setMainDropRef} className={cn(
-                        "flex flex-col items-center gap-8 min-h-full",
-                        {"bg-muted/30 rounded-lg border-2 border-primary border-dashed": isOverMain}
-                     )}>
-                        <div
-                           data-tour="trackers-section"
-                           ref={setTrackersDropRef}
-                           className={cn(
-                              "flex gap-4",
-                              "w-full bg-muted/75 rounded-lg p-4 border-2 border-border transition-colors",
-                              { "border-primary shadow-lg": isOverTrackers }
-                           )}
-                        >
-                           <div className="flex-1 min-w-0 space-y-4">
-                              {/* Statuses Group */}
-                              <SortableContext items={character.trackers.statuses.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
-                                 <div className="flex flex-wrap gap-4">
-                                    {character.trackers.statuses.map(tracker => (
-                                       <SortableTrackerItem
-                                          key={tracker.id}
-                                          tracker={tracker}
-                                          isEditing={isEditing}
-                                          isBeingDragged={activeDragItem?.id === tracker.id}
-                                          onExport={() => handleExportComponent(tracker)}
-                                       />
-                                    ))}
-                                    {areTrackersEditable && (
-                                       <Button
-                                          data-tour="add-status-button"
-                                          variant="ghost"
-                                          onClick={() => addStatus()}
-                                          className={cn("cursor-pointer flex items-center justify-center w-[220px] h-[100px]",
-                                                         "rounded-lg border-2 border-dashed text-bg border-primary/25 text-muted-foreground bg-primary/5",
-                                                         "hover:text-foreground hover:border-foreground"
-                                          )}
-                                       >
-                                          <PlusCircle className="mr-2 h-4 w-4" />
-                                          {tTrackers('addStatus')}
-                                       </Button>
-                                    )}
-                                 </div>
-                              </SortableContext>
-
-                              {/* Story Tags Group */}
-                              <SortableContext items={character.trackers.storyTags.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
-                                 <div className="flex flex-wrap gap-4">
-                                    {character.trackers.storyTags.map(tracker => (
-                                       <SortableTrackerItem
-                                          key={tracker.id}
-                                          tracker={tracker}
-                                          isEditing={isEditing}
-                                          isBeingDragged={activeDragItem?.id === tracker.id}
-                                          onExport={() => handleExportComponent(tracker)}
-                                       />
-                                    ))}
-                                    {areTrackersEditable && (
-                                       <Button
-                                          data-tour="add-story-tag-button" 
-                                          variant="ghost" 
-                                          onClick={() => addStoryTag()} 
-                                          className={cn("cursor-pointer flex items-center justify-center w-[220px] h-[55px]",
-                                                         "rounded-lg border-2 border-dashed border-bg text-bg border-primary/25 text-muted-foreground bg-primary/5",
-                                                         "hover:text-foreground hover:border-foreground"
-                                          )}
-                                       >
-                                          <PlusCircle className="mr-2 h-4 w-4" />
-                                          {tTrackers('addStoryTag')}
-                                       </Button>
-                                    )}
-                                 </div>
-                              </SortableContext>
-                           </div>
-
-                           <div 
-                              className="flex-shrink-0 max-w-[45%]"
-                              style={{ 
-                                 width: character.trackers.storyThemes.length >= 2 
-                                    ? '520px'
-                                    : 'auto'
-                              }}
+                     <div className="flex-1 p-4 md:p-8">
+                        <div ref={setMainDropRef} className={cn(
+                           "flex flex-col items-center gap-8 min-h-full",
+                           {"bg-muted/30 rounded-lg border-2 border-primary border-dashed": isOverMain}
+                        )}>
+                           <div
+                              data-tour="trackers-section"
+                              ref={setTrackersDropRef}
+                              className={cn(
+                                 "flex gap-4",
+                                 "w-full bg-muted/75 rounded-lg p-4 border-2 border-border transition-colors",
+                                 { "border-primary shadow-lg": isOverTrackers }
+                              )}
                            >
-                              {/* Story Themes Group */}
-                              <SortableContext items={character.trackers.storyThemes.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
-                                 <div className="flex flex-wrap justify-end gap-4">
-                                    {character.trackers.storyThemes.map(tracker => (
-                                       <SortableTrackerItem
-                                          key={tracker.id}
-                                          tracker={tracker}
-                                          isEditing={isEditing}
-                                          isBeingDragged={activeDragItem?.id === tracker.id}
-                                          onExport={() => handleExportComponent(tracker)}
-                                       />
-                                    ))}
-                                 </div>
-                              </SortableContext>
-                           </div>
-                        </div>
+                              <div className="flex-1 min-w-0 space-y-4">
+                                 {/* Statuses Group */}
+                                 <SortableContext items={character.trackers.statuses.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
+                                    <div className="flex flex-wrap gap-4">
+                                       {character.trackers.statuses.map(tracker => (
+                                          <SortableTrackerItem
+                                             key={tracker.id}
+                                             tracker={tracker}
+                                             isEditing={isEditing}
+                                             isBeingDragged={activeDragItem?.id === tracker.id}
+                                             onExport={() => handleExportComponent(tracker)}
+                                          />
+                                       ))}
+                                       {areTrackersEditable && (
+                                          <Button
+                                             data-tour="add-status-button"
+                                             variant="ghost"
+                                             onClick={() => addStatus()}
+                                             className={cn("cursor-pointer flex items-center justify-center w-[220px] h-[100px]",
+                                                            "rounded-lg border-2 border-dashed text-bg border-primary/25 text-muted-foreground bg-primary/5",
+                                                            "hover:text-foreground hover:border-foreground"
+                                             )}
+                                          >
+                                             <PlusCircle className="mr-2 h-4 w-4" />
+                                             {tTrackers('addStatus')}
+                                          </Button>
+                                       )}
+                                    </div>
+                                 </SortableContext>
 
-                        <div
-                           data-tour="cards-section"
-                           ref={setCardsDropRef}
-                           className={cn(
-                              "flex flex-wrap gap-12 justify-center w-full p-4 rounded-lg border-2 border-transparent transition-colors",
-                              { "border-primary bg-muted/50 shadow-inner": isOverCards }
-                           )}
-                        >
-                           {/* Cards Group */}
-                           <SortableContext items={character.cards.map(card => card.id)} strategy={rectSortingStrategy}>
-                              {character.cards.map(card => (
-                                 <SortableCardItem
-                                    key={card.id}
-                                    card={card}
-                                    isEditing={isEditing}
-                                    isBeingDragged={activeDragItem?.id === card.id}
-                                    onEditCard={() => handleEditCard(card)}
-                                    onExport={() => handleExportComponent(card)}
-                                 />
-                              ))}
-                           </SortableContext>
-                           {isEditing && <AddCardButton onClick={handleAddCardClick} />}
+                                 {/* Story Tags Group */}
+                                 <SortableContext items={character.trackers.storyTags.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
+                                    <div className="flex flex-wrap gap-4">
+                                       {character.trackers.storyTags.map(tracker => (
+                                          <SortableTrackerItem
+                                             key={tracker.id}
+                                             tracker={tracker}
+                                             isEditing={isEditing}
+                                             isBeingDragged={activeDragItem?.id === tracker.id}
+                                             onExport={() => handleExportComponent(tracker)}
+                                          />
+                                       ))}
+                                       {areTrackersEditable && (
+                                          <Button
+                                             data-tour="add-story-tag-button" 
+                                             variant="ghost" 
+                                             onClick={() => addStoryTag()} 
+                                             className={cn("cursor-pointer flex items-center justify-center w-[220px] h-[55px]",
+                                                            "rounded-lg border-2 border-dashed border-bg text-bg border-primary/25 text-muted-foreground bg-primary/5",
+                                                            "hover:text-foreground hover:border-foreground"
+                                             )}
+                                          >
+                                             <PlusCircle className="mr-2 h-4 w-4" />
+                                             {tTrackers('addStoryTag')}
+                                          </Button>
+                                       )}
+                                    </div>
+                                 </SortableContext>
+                              </div>
+
+                              <div 
+                                 className="flex-shrink-0 max-w-[45%]"
+                                 style={{ 
+                                    width: character.trackers.storyThemes.length >= 2 
+                                       ? '520px'
+                                       : 'auto'
+                                 }}
+                              >
+                                 {/* Story Themes Group */}
+                                 <SortableContext items={character.trackers.storyThemes.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
+                                    <div className="flex flex-wrap justify-end gap-4">
+                                       {character.trackers.storyThemes.map(tracker => (
+                                          <SortableTrackerItem
+                                             key={tracker.id}
+                                             tracker={tracker}
+                                             isEditing={isEditing}
+                                             isBeingDragged={activeDragItem?.id === tracker.id}
+                                             onExport={() => handleExportComponent(tracker)}
+                                          />
+                                       ))}
+                                    </div>
+                                 </SortableContext>
+                              </div>
+                           </div>
+
+                           <div
+                              data-tour="cards-section"
+                              ref={setCardsDropRef}
+                              className={cn(
+                                 "flex flex-wrap gap-12 justify-center w-full p-4 rounded-lg border-2 border-transparent transition-colors",
+                                 { "border-primary bg-muted/50 shadow-inner": isOverCards }
+                              )}
+                           >
+                              {/* Cards Group */}
+                              <SortableContext items={character.cards.map(card => card.id)} strategy={rectSortingStrategy}>
+                                 {character.cards.map(card => (
+                                    <SortableCardItem
+                                       key={card.id}
+                                       card={card}
+                                       isEditing={isEditing}
+                                       isBeingDragged={activeDragItem?.id === card.id}
+                                       onEditCard={() => handleEditCard(card)}
+                                       onExport={() => handleExportComponent(card)}
+                                    />
+                                 ))}
+                              </SortableContext>
+                              {isEditing && <AddCardButton onClick={handleAddCardClick} />}
+                           </div>
                         </div>
                      </div>
-                  </div>
-               </main>
+                  </main>
+               )           : (
+                  <MainMenu />
+               )}
+
+
 
                {/* Character from Drawer Drop Zone */}
                <CharacterLoadDropZone activeDragItem={activeDragItem} />

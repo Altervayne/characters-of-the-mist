@@ -2,6 +2,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+// -- Types Imports --
+import { GameSystem } from '../types/drawer';
+
 
 
 export type ThemeName = 'theme-neutral' | 'theme-legends';
@@ -13,6 +16,7 @@ interface AppSettingsState {
    lastVisitedVersion: string;
    isTrackersAlwaysEditable: boolean;
    isSidebarCollapsed: boolean;
+   contextualGame: GameSystem;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -21,6 +25,7 @@ interface AppSettingsState {
       setTrackersAlwaysEditable: (isEditable: boolean) => void;
       setSidebarCollapsed: (isCollapsed: boolean) => void;
       toggleSidebarCollapsed: () => void;
+      setContextualGame: (game: GameSystem) => void;
    };
 }
 
@@ -35,6 +40,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          lastVisitedVersion: "0.0.0",
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
+         contextualGame: 'LEGENDS',
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -43,6 +49,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setTrackersAlwaysEditable: (isEditable) => set({ isTrackersAlwaysEditable: isEditable }),
             setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+            setContextualGame: (game) => set({ contextualGame: game }),
          },
       }),
       {
@@ -55,6 +62,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             lastVisitedVersion: state.lastVisitedVersion,
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
+            contextualGame: state.contextualGame,
          }),
       }
    )

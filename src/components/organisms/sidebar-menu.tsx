@@ -1,7 +1,7 @@
 'use client';
 
 // -- React Imports --
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // -- Next Imports --
 import { useTranslations } from 'next-intl';
@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, FileX } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -47,6 +47,8 @@ interface SidebarMenuProps {
    onOpenPatchNotes: () => void;
 }
 
+const UNLOAD_TIMER_SECONDS = 3;
+
 
 
 export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
@@ -54,7 +56,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEdit
    const tNotifications = useTranslations('Notifications')
 
    const character = useCharacterStore((state) => state.character);
-   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter } = useCharacterActions();
+   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, unloadCharacter } = useCharacterActions();
    const { addItem } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
@@ -139,10 +141,37 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEdit
 
 
    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-
    const handleResetCharacter = () => {
       resetCharacter();
       toast.success(tNotifications('character.reset'));
+   };
+
+   const [isUnloadDialogOpen, setIsUnloadDialogOpen] = useState(false);
+   const [unloadCountdown, setUnloadCountdown] = useState(UNLOAD_TIMER_SECONDS);
+
+   useEffect(() => {
+      if (!isUnloadDialogOpen) {
+         return;
+      }
+
+      setUnloadCountdown(UNLOAD_TIMER_SECONDS);
+
+      const timer = setInterval(() => {
+         setUnloadCountdown((prevCountdown) => {
+            if (prevCountdown <= 1) {
+               clearInterval(timer);
+               return 0;
+            }
+            return prevCountdown - 1;
+         });
+      }, 1000);
+
+      return () => clearInterval(timer);
+   }, [isUnloadDialogOpen]);
+
+   const handleUnloadCharacter = () => {
+      unloadCharacter();
+      toast.success(tNotifications('character.unloaded'));
    };
 
 
@@ -201,8 +230,18 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEdit
                <SidebarButton data-tour="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
                   {t('importComponent')}
                </SidebarButton>
+
+            </motion.section>
+
+            <motion.section layout transition={{ duration: 0.2 }} className={cn(
+               "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+               isCollapsed ? "px-2" : "px-4"
+            )}>
                <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
                   {t('resetCharacter')}
+               </SidebarButton>
+               <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
+                  {t('unloadCharacter')}
                </SidebarButton>
             </motion.section>
 
@@ -252,6 +291,26 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEdit
                <AlertDialogFooter>
                   <AlertDialogCancel className="cursor-pointer">{t('resetConfirmCancelButton')}</AlertDialogCancel>
                   <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={handleResetCharacter}>{t('resetConfirmButton')}</AlertDialogAction>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         <AlertDialog open={isUnloadDialogOpen} onOpenChange={setIsUnloadDialogOpen}>
+            <AlertDialogContent className="border-2 border-dashed border-destructive">
+               <AlertDialogHeader>
+                  <AlertDialogTitle>{t('unloadConfirmTitle')}</AlertDialogTitle>
+
+                  <AlertDialogDescription>{t('unloadConfirmDescription')}</AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel className="cursor-pointer">{t('unloadConfirmCancelButton')}</AlertDialogCancel>
+                  <AlertDialogAction 
+                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                     onClick={handleUnloadCharacter}
+                     disabled={unloadCountdown > 0}
+                  >
+                     {unloadCountdown > 0 ? `${unloadCountdown}...` : t('unloadConfirmButton')}
+                  </AlertDialogAction>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>
