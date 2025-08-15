@@ -34,11 +34,13 @@ import { Character, Card as CardData, Tracker } from '@/lib/types/character';
 
 
 
+type WindowTypes = 'MAIN_MENU' | 'PLAY_AREA';
 
 interface SidebarMenuProps {
    isEditing: boolean;
    isDrawerOpen: boolean;
    isCollapsed: boolean;
+   activeWindow: WindowTypes;
    onToggleEditing: () => void;
    onToggleDrawer: () => void;
    onToggleCollapse: () => void;
@@ -51,7 +53,7 @@ const UNLOAD_TIMER_SECONDS = 3;
 
 
 
-export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
+export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
    const t = useTranslations('CharacterSheetPage.SidebarMenu');
    const tNotifications = useTranslations('Notifications')
 
@@ -180,11 +182,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEdit
       <aside 
          data-tour="sidebar-menu"
          className={cn(
-            "hidden md:flex flex-col bg-card py-4 border-r-2 border-border space-y-4 transition-all duration-300 ease-in-out overflow-hidden",
+            "hidden md:flex flex-col bg-card pt-4 border-r-2 border-border space-y-4 transition-all duration-300 ease-in-out overflow-hidden",
             isCollapsed ? "w-16 items-center" : "w-64"
          )}
       >
-         <div className="w-full">
+         <div className="flex flex-col justify-between w-full h-full">
+            {/* Header */}
             <motion.section layout transition={{ duration: 0.2 }} className="w-full">
                <motion.div layout className={cn(
                   "flex w-full items-center",
@@ -197,68 +200,94 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, onToggleEdit
                   </div>
                </motion.div>
 
-               <div className="pt-2 pb-4 border-b-2 border-border">
-                  <CharacterUndoRedoControls isCollapsed={isCollapsed} />
-               </div>
+               { activeWindow === 'PLAY_AREA' &&
+                  <div className="pt-2 pb-4 border-b-2 border-border">
+                     <CharacterUndoRedoControls isCollapsed={isCollapsed} />
+                  </div>
+               }
             </motion.section>
 
-            <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
-               "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
-               isCollapsed ? "px-0" : "px-4"
-            )}>
-               <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} Icon={isEditing ? Dices : Edit}>
-                  {isEditing ? t('playMode') : t('editMode')}
-               </SidebarButton>
-               <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
-                  {isDrawerOpen ? t('closeDrawer') : t('openDrawer')}
-               </SidebarButton>
-            </motion.section>
+            {/* Context-specific scrollable buttons */}
+            <div className="flex flex-col flex-grow w-full min-h-0 overflow-y-auto overscroll-contain">
+               { activeWindow === 'PLAY_AREA' && 
+                  <>
+                     <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
+                        "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                        isCollapsed ? "px-0" : "px-4"
+                     )}>
+                        <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} Icon={isEditing ? Dices : Edit}>
+                           {isEditing ? t('playMode') : t('editMode')}
+                        </SidebarButton>
+                        <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
+                           {isDrawerOpen ? t('closeDrawer') : t('openDrawer')}
+                        </SidebarButton>
+                     </motion.section>
 
-            <motion.section layout transition={{ duration: 0.2 }} className={cn(
-               "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
-               isCollapsed ? "px-2" : "px-4"
-            )}>
-               <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterToDrawer} Icon={Save}>
-                  {t('saveToDrawer')}
-               </SidebarButton>
-               <SidebarButton data-tour="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
-                  {t('exportCharacter')}
-               </SidebarButton>
-               <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
-                  {t('importCharacter')}
-               </SidebarButton>
-               <SidebarButton data-tour="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
-                  {t('importComponent')}
-               </SidebarButton>
+                     <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                        "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                        isCollapsed ? "px-2" : "px-4"
+                     )}>
+                        <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterToDrawer} Icon={Save}>
+                           {t('saveToDrawer')}
+                        </SidebarButton>
+                        <SidebarButton data-tour="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
+                           {t('exportCharacter')}
+                        </SidebarButton>
+                        <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
+                           {t('importCharacter')}
+                        </SidebarButton>
+                        <SidebarButton data-tour="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
+                           {t('importComponent')}
+                        </SidebarButton>
+                     </motion.section>
 
-            </motion.section>
+                     <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                        "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                        isCollapsed ? "px-2" : "px-4"
+                     )}>
+                        <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
+                           {t('resetCharacter')}
+                        </SidebarButton>
+                        <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
+                           {t('unloadCharacter')}
+                        </SidebarButton>
+                     </motion.section>
+                  </>
+               }
 
-            <motion.section layout transition={{ duration: 0.2 }} className={cn(
-               "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
-               isCollapsed ? "px-2" : "px-4"
-            )}>
-               <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
-                  {t('resetCharacter')}
-               </SidebarButton>
-               <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
-                  {t('unloadCharacter')}
-               </SidebarButton>
-            </motion.section>
+               { activeWindow === 'MAIN_MENU' &&
+                  <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
+                     "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                     isCollapsed ? "px-0" : "px-4"
+                  )}>
+                     <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
+                        {t('importCharacter')}
+                     </SidebarButton>
+                     <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
+                        {isDrawerOpen ? t('closeDrawer') : t('openDrawer')}
+                     </SidebarButton>
+                  </motion.section>
+               }
+            </div>
 
-            <motion.section layout transition={{ duration: 0.2 }} className={cn(
-               "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
-               isCollapsed ? "px-2" : "px-4"
-            )}>
-               <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
-                  {t('settings')}
-               </SidebarButton>
-               <SidebarButton data-tour="app-info-button" isCollapsed={isCollapsed} onClick={onOpenInfo} Icon={Info}>
-                  {t('info')}
-               </SidebarButton>
-               <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
-                  {t('patchNotes')}
-               </SidebarButton>
-            </motion.section>
+            {/* Bottom-aligned sub-menu buttons */}
+            <div className="flex flex-col flex-shrink-0 w-full">
+               <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                  "flex flex-col items-center gap-2 py-4 bg-card border-t-2 border-border",
+                  isCollapsed ? "px-2" : "px-4"
+               )}>
+                  <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
+                     {t('settings')}
+                  </SidebarButton>
+                  <SidebarButton data-tour="app-info-button" isCollapsed={isCollapsed} onClick={onOpenInfo} Icon={Info}>
+                     {t('info')}
+                  </SidebarButton>
+                  <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
+                     {t('patchNotes')}
+                  </SidebarButton>
+               </motion.section>
+            </div>
+
 
             <form ref={characterFormRef} className="hidden">
                <input

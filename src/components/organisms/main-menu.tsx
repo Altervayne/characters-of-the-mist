@@ -37,7 +37,7 @@ const MainMenu: React.FC = () => {
 
 
    return (
-      <section className="flex h-full w-full flex-col items-center justify-center">
+      <main className="absolute flex h-full w-full flex-col items-center justify-center">
          <div className="flex flex-col items-center gap-8 rounded-lg border bg-card p-8 text-card-foreground shadow-sm">
             <div className="flex flex-col items-center gap-2">
                <Sparkles className="h-12 w-12 text-muted-foreground" />
@@ -78,7 +78,7 @@ const MainMenu: React.FC = () => {
                </Button>
             </div>
          </div>
-      </section>
+      </main>
    );
 };
 

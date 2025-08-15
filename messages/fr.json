@@ -469,6 +469,9 @@
       "resetCharacter_title": "Réinitialiser votre Personnage",
       "resetCharacter_content": "Ce bouton supprime complètement votre Personnage actif, transformant votre Fiche de Personnage en une page blanche pour recommencer à zéro.",
 
+      "unloadCharacter_title": "Décharger votre Personnage",
+      "unloadCharacter_content": "Ce bouton décharge complètement votre Personnage actif de l'application, ce qui le supprime, et remet à blanc tout votre historique d'actions. Après cela, vous serez renvoyé vers le menu principal sans aucune données de personnage chargées en fond.",
+
       "settings_title": "Paramètres",
       "settings_content": "Ce bouton ouvre le menu des Paramètres, où vous pouvez accéder à des fonctionnalités comme le choix de la palette de couleurs de l'application, le mode clair ou sombre, ou réinitialiser toutes vos données. C'est aussi là que vous trouverez l'outil de Migration, qui vous permet de migrer les anciennes données de Characters of the Mist vers cette nouvelle version.",
 

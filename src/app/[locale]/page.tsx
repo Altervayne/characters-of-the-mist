@@ -655,6 +655,7 @@ export default function CharacterSheetPage() {
                isEditing={isEditing}
                isDrawerOpen={isDrawerOpen}
                isCollapsed={isSidebarCollapsed}
+               activeWindow={ character ? 'PLAY_AREA' : 'MAIN_MENU' }
                onToggleEditing={() => setIsEditing(!isEditing)}
                onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
                onToggleCollapse={toggleSidebarCollapsed}

@@ -469,6 +469,9 @@
       "resetCharacter_title": "Resetting your Character",
       "resetCharacter_content": "This button completely deletes your active Character, turning your Character Sheet into a fresh blank slate to start over from.",
 
+      "unloadCharacter_title": "Unloading your Character",
+      "unloadCharacter_content": "This button completely unloads your active Character, deleting it and removing the entire action history for the Undo/Redo feature. This sends you back to the main menu with a clean app and no background character loaded in.",
+
       "settings_title": "Settings",
       "settings_content": "This button opens up the Settings menu, where you can access features like choosing your app's color palette, light or dark mode, or reset all your data. This is also where you will find the Migration tool, which lets you migrate Legacy Characters of the Mist data to this new version.",
 

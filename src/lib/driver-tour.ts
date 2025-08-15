@@ -100,12 +100,21 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
          },
       },
       {
+         element: '[data-tour="unload-character-button"]',
+         popover: {
+            title: t('unloadCharacter_title'),
+            description: t('unloadCharacter_content'),
+            side: 'right',
+            align: 'center',
+         },
+      },
+      {
          element: '[data-tour="settings-button"]',
          popover: {
             title: t('settings_title'),
             description: t('settings_content'),
             side: 'right',
-            align: 'center',
+            align: 'end',
          },
       },
       {
@@ -114,7 +123,7 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             title: t('appInfo_title'),
             description: t('appInfo_content'),
             side: 'right',
-            align: 'center',
+            align: 'end',
          },
       },
       {
@@ -123,7 +132,7 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             title: t('patchNotes_title'),
             description: t('patchNotes_content'),
             side: 'right',
-            align: 'center',
+            align: 'end',
          },
       },
       {
