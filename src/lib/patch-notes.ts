@@ -4,6 +4,15 @@ export interface PatchNote {
 }
 
 export const patchNotes: PatchNote[] = [
+      {
+      version: '1.0.3',
+      content: `
+### This one is a very small bugfix!
+
+### 🐛 Bugfixes
+* Card creation window wouldn't always allow for a custom themebook.
+`
+   },
    {
       version: '1.0.2',
       content: `
