@@ -4,7 +4,19 @@ export interface PatchNote {
 }
 
 export const patchNotes: PatchNote[] = [
-      {
+   {
+      version: '1.0.4',
+      content: `
+### I have been informed that there were new Demo themebooks!
+
+### 🐛 Bugfixes
+* Theme **type** translations wouldn't show up in card creation window and command palette.
+
+### 🔧 Changes
+* Default available themebooks have been changed to match the latest demo content.
+`
+   },
+   {
       version: '1.0.3',
       content: `
 ### This one is a very small bugfix!

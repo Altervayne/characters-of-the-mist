@@ -43,6 +43,7 @@ interface CreateCardDialogProps {
 
 export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardData, modal = true }: CreateCardDialogProps) {
    const t = useTranslations('CreateCardDialog');
+   const tTypes = useTranslations('ThemeTypes');
    const tTheme = useTranslations();
    
    const [cardType, setCardType] = useState<'CHARACTER_THEME' | 'GROUP_THEME' | ''>('');
@@ -136,7 +137,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                               <SelectValue placeholder={t('selectThemeTypePlaceholder')} />
                            </SelectTrigger>
                            <SelectContent>
-                              {legendsThemeTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                              {legendsThemeTypes.map(type => <SelectItem key={type} value={type}>{tTypes(type)}</SelectItem>)}
                            </SelectContent>
                         </Select>
                      </div>

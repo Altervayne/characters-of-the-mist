@@ -612,25 +612,28 @@
    "LegendsData": {
       "themebook": {
          "circumstance": "Circumstance",
-         "past": "Past",
          "devotion": "Devotion",
-         "mystery": "Mystery",
+         "past": "Past",
          "people": "People",
-         "possessions": "Possessions",
          "personality": "Personality",
-         "tradeAndSkill": "Trade & Skill",
+         "skillOrTrade": "Skill or Trade",
          "trait": "Trait",
-         "hedgeMagic": "Hedge Magic",
-         "prodigiousSkill": "Prodigious Skill",
+
          "duty": "Duty",
+         "influence": "Influence",
+         "knowledge": "Knowledge",
+         "prodigiousAbility": "Prodigious Ability",
          "relic": "Relic",
          "uncannyBeing": "Uncanny Being",
-         "thaumaturgy": "Thaumaturgy",
-         "rulership": "Rulership",
+
          "destiny": "Destiny",
+         "dominion": "Dominion",
          "mastery": "Mastery",
-         "monstrocity": "Monstrocity",
-         "grandThaumaturgy": "Grand Thaumaturgy"
+         "monstrosity": "Monstrosity",
+
+         "companion": "Companion",
+         "magic": "Magic",
+         "possessions": "Possessions"
       }
    },
    "ThemeTypes": {

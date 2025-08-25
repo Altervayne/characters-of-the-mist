@@ -152,6 +152,7 @@ const CreateCard_TypePage = ({ onSelect }: CreateCard_TypePageProps) => {
 interface CreateCard_ThemeTypePageProps { onSelect: (type: LegendsThemeTypes) => void; }
 const CreateCard_ThemeTypePage = ({ onSelect }: CreateCard_ThemeTypePageProps) => {
       const t = useTranslations('CommandPalette');
+      const tTypes = useTranslations('ThemeTypes');
       const themeTypeIcons: { [key in LegendsThemeTypes]: React.ElementType } = { Origin: Leaf, Adventure: Swords, Greatness: Crown };
       return (
          <Command.Group heading={t('groups.chooseThemeType')}>
@@ -160,7 +161,7 @@ const CreateCard_ThemeTypePage = ({ onSelect }: CreateCard_ThemeTypePageProps) =
                 return (
                     <Command.Item key={type} value={type} onSelect={() => onSelect(type as LegendsThemeTypes)} className={commonItemClass}>
                         <IconComponent className="mr-2 h-4 w-4" />
-                        {type}
+                        {tTypes(type)}
                     </Command.Item>
                 );
             })}

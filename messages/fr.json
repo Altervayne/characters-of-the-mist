@@ -605,26 +605,29 @@
 
    "LegendsData": {
       "themebook": {
-         "circumstance": "Circonstance",
+         "circumstance": "Circonstances",
+         "devotion": "Dévouement",
          "past": "Passé",
-         "devotion": "Dévotion",
-         "mystery": "Mystère",
          "people": "Relations",
-         "possessions": "Possessions",
          "personality": "Personnalité",
-         "tradeAndSkill": "Métier & Compétence",
+         "skillOrTrade": "Compétence ou Métier",
          "trait": "Trait",
-         "hedgeMagic": "Magie Populaire",
-         "prodigiousSkill": "Compétence Prodigieuse",
+
          "duty": "Devoir",
+         "influence": "Influence",
+         "knowledge": "Savoir",
+         "prodigiousAbility": "Compétence Prodigieuse",
          "relic": "Relique",
-         "uncannyBeing": "Être Étrange",
-         "thaumaturgy": "Thaumaturgie",
-         "rulership": "Gouvernance",
+         "uncannyBeing": "Créature Étrange",
+
          "destiny": "Destin",
+         "dominion": "Domination",
          "mastery": "Maîtrise",
-         "monstrocity": "Monstruosité",
-         "grandThaumaturgy": "Grande Thaumaturgie"
+         "monstrosity": "Monstruosité",
+
+         "companion": "Compagnon",
+         "magic": "Magie",
+         "possessions": "Possessions"
       }
    },
    "ThemeTypes": {
