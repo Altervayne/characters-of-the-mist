@@ -129,12 +129,63 @@ const MainMenu: React.FC = () => {
    ];
 
    return (
-      <main className="absolute flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+      <main className="absolute flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+         {/* Wave/Mist Background Layers */}
+         <div className="absolute inset-0 pointer-events-none">
+            {/* Wave Layer 1 - Bottom */}
+            <motion.div
+               className="absolute bottom-0 left-0 right-0 h-96 opacity-10"
+               initial={{ x: 0 }}
+               animate={{ x: [-20, 20, -20] }}
+               transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+            >
+               <svg className="absolute bottom-0 w-[110%] h-full -left-[5%]" preserveAspectRatio="none" viewBox="0 0 1200 120">
+                  <path
+                     d="M0,50 C300,80 400,20 600,50 C800,80 900,20 1200,50 L1200,120 L0,120 Z"
+                     fill="currentColor"
+                     className="text-muted"
+                  />
+               </svg>
+            </motion.div>
+
+            {/* Wave Layer 2 - Middle */}
+            <motion.div
+               className="absolute bottom-0 left-0 right-0 h-80 opacity-8"
+               initial={{ x: 0 }}
+               animate={{ x: [20, -20, 20] }}
+               transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            >
+               <svg className="absolute bottom-0 w-[110%] h-full -left-[5%]" preserveAspectRatio="none" viewBox="0 0 1200 120">
+                  <path
+                     d="M0,60 C250,90 450,30 650,60 C850,90 1000,30 1200,60 L1200,120 L0,120 Z"
+                     fill="currentColor"
+                     className="text-muted/70"
+                  />
+               </svg>
+            </motion.div>
+
+            {/* Wave Layer 3 - Top */}
+            <motion.div
+               className="absolute bottom-0 left-0 right-0 h-64 opacity-6"
+               initial={{ x: 0 }}
+               animate={{ x: [-15, 15, -15] }}
+               transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+            >
+               <svg className="absolute bottom-0 w-[110%] h-full -left-[5%]" preserveAspectRatio="none" viewBox="0 0 1200 120">
+                  <path
+                     d="M0,70 C200,100 500,40 700,70 C900,100 1050,40 1200,70 L1200,120 L0,120 Z"
+                     fill="currentColor"
+                     className="text-muted/50"
+                  />
+               </svg>
+            </motion.div>
+         </div>
+
          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex flex-col items-center gap-10 p-8 max-w-6xl w-full"
+            className="flex flex-col items-center gap-10 p-8 max-w-6xl w-full relative z-10"
          >
             {/* Header */}
             <div className="flex flex-col items-center gap-3 text-center">
