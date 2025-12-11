@@ -20,6 +20,7 @@ import { WelcomeDialog } from '@/components/organisms/welcome-dialog';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
+import { usePathname, useRouter } from 'next/navigation';
 
 
 
@@ -54,6 +55,7 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const { setLegacyDataDialogOpen, setWelcomeDialogOpen, setPatchNotesOpen, setInitialPatchNotesVersion, setSettingsOpen, setDrawerOpen } = useAppGeneralStateActions();
    const { setSidebarCollapsed } = useAppSettingsActions();
    const { startTour } = useAppTourDriver();
+
 
 
    // --- Client check ---

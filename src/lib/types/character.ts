@@ -101,12 +101,32 @@ export interface LegendsHeroDetails {
 }
 
 
+// --- CITY OF MIST ---
+
+export interface CrewMember {
+   id: string;
+   name: string;
+   help: string;
+   hurt: string;
+}
+
+export interface CityRiftDetails {
+   game: 'CITY_OF_MIST';
+   characterName: string;
+   mythos: string;
+   logos: string;
+   crewMembers: CrewMember[];
+   buildup: number;
+   nemeses: BlandTag[];
+}
+
 
 // All possible card structures
 export type CardDetails = 
    | LegendsThemeDetails 
    | LegendsFellowshipDetails 
-   | LegendsHeroDetails;
+   | LegendsHeroDetails
+   | CityRiftDetails;
 
 // *##############################*
 // |###   GENERIC INTERFACES   ###|
@@ -129,6 +149,7 @@ export interface Character {
    name: string;
    game: GameSystem;
    version?: string;
+   drawerItemId?: string;
    cards: Card[];
    trackers: {
       statuses: StatusTracker[];

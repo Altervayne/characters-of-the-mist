@@ -18,11 +18,12 @@ import { harmonizeData } from '../harmonization';
 
 
 export interface PendingDrawerItem {
-    game: GameSystem;
-    type: GeneralItemType;
-    content: DrawerItemContent;
-    parentFolderId?: string;
-    defaultName: string;
+   game: GameSystem;
+   type: GeneralItemType;
+   content: DrawerItemContent;
+   parentFolderId?: string;
+   defaultName: string;
+   presetId?: string;
 }
 
 
@@ -47,6 +48,7 @@ export interface DrawerState {
       deleteItem: (itemId: string) => void;
       moveItem: (itemId: string, destinationFolderId?: string) => void;
       reorderItems: (parentFolderId: string | null, oldIndex: number, newIndex: number) => void;
+      updateItem: (itemId: string, newContent: DrawerItemContent, newName?: string) => void;
       // --- Drop Actions ---
       initiateItemDrop: (itemInfo: PendingDrawerItem) => void;
       clearPendingItemDrop: () => void;
@@ -197,8 +199,15 @@ export const useDrawerStore = create<DrawerState>()(
                addItem: (name, game, type, content, parentFolderId) => {
                   set(state => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
+
+                     const presetId = ('drawerItemId' in content && content.drawerItemId) 
+                        ? content.drawerItemId as string
+                        : null;
+
                      const newItemContent = deepReId(content);
-                     const newItem: DrawerItem = { id: cuid(), name, game, type, content: newItemContent };
+                     const itemId = presetId || cuid();
+                     
+                     const newItem: DrawerItem = { id: itemId, name, game, type, content: newItemContent };
 
                      if (!parentFolderId) {
                         return { drawer: { ...state.drawer, rootItems: [...state.drawer.rootItems, newItem] } };
@@ -290,6 +299,35 @@ export const useDrawerStore = create<DrawerState>()(
                         return { drawer: { ...state.drawer, rootItems: reorderList(state.drawer.rootItems, oldIndex, newIndex) } };
                      }
                      return { drawer: { ...state.drawer, folders: reorderItemsRecursively(state.drawer.folders, parentFolderId, oldIndex, newIndex) } };
+                  });
+               },
+               updateItem: (itemId, newContent, newName) => {
+                  set(state => {
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
+                     
+                     const updateRecursive = (items: DrawerItem[]): DrawerItem[] => {
+                        return items.map(item => 
+                           item.id === itemId 
+                              ? { ...item, content: newContent, name: newName ?? item.name }
+                              : item
+                        );
+                     };
+                     
+                     const updateInFolders = (folders: Folder[]): Folder[] => {
+                        return folders.map(folder => ({
+                           ...folder,
+                           items: updateRecursive(folder.items),
+                           folders: updateInFolders(folder.folders)
+                        }));
+                     };
+                     
+                     return {
+                        drawer: {
+                           ...state.drawer,
+                           rootItems: updateRecursive(state.drawer.rootItems),
+                           folders: updateInFolders(state.drawer.folders)
+                        }
+                     };
                   });
                },
                // --- Drop Actions ---

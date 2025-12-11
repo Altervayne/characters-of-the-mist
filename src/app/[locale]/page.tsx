@@ -32,6 +32,7 @@ import { harmonizeData } from '@/lib/harmonization';
 import { CommandPalette } from '@/components/organisms/command-palette';
 import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
 import { HeroCard } from '@/components/organisms/hero-card';
+import { RiftCard } from '@/components/organisms/rift-card';
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
 import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
 import { StoryThemeTrackerCard } from '@/components/organisms/story-theme-tracker';
@@ -75,13 +76,20 @@ const CardRenderer = React.forwardRef<HTMLDivElement, CardRendererProps>(
       const t = useTranslations('CardRenderer');
       const commonProps = { ref, isEditing, isSnapshot, dragAttributes, dragListeners, onEditCard, onExport };
 
-      if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') {
+      if ((card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') && card.details.game === 'LEGENDS') {
          return <LegendsThemeCard card={card} {...commonProps} />;
       }
       if (card.cardType === 'CHARACTER_CARD') {
-         return <HeroCard card={card} {...commonProps} />;
+         if (card.details.game === 'LEGENDS') {
+            return <HeroCard card={card} {...commonProps} />;
+         } else if (card.details.game === 'CITY_OF_MIST') {
+            return <RiftCard card={card} {...commonProps} />;
+         }
       }
-      return <div ref={ref} className="h-[300px] w-[250px] bg-card text-card-foreground border-2 rounded-lg flex items-center justify-center">{t('listCardPlaceholder', { title: card.title })}</div>;
+      
+      return <div ref={ref} className="h-[300px] w-[250px] bg-card overflow-hidden text-card-foreground border-2 rounded-lg flex items-center justify-center">
+               <p className='w-full text-wrap text-center'>{`NO RENDER AVAILABLE FOR THIS TYPE: ${card.details.game} ${card.cardType}`}</p>
+            </div>;
 });
 CardRenderer.displayName = 'CardRenderer';
 
@@ -368,7 +376,7 @@ export default function CharacterSheetPage() {
       setIsOverDrawer(false);
       setOverDragId(null);
 
-      if (!character || !over || active.id === over.id) {
+      if (!over || active.id === over.id) {
          return;
       }
 
@@ -385,7 +393,7 @@ export default function CharacterSheetPage() {
          if (overIdStr === 'main-character-drop-zone') {
             const draggedItem = active.data.current?.item as DrawerItem;
             if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
-               loadCharacter(draggedItem.content as Character);
+               loadCharacter(draggedItem.content as Character, draggedItem.id);
             }
             return;
          }
@@ -439,6 +447,9 @@ export default function CharacterSheetPage() {
          }
 
          // --- SCENARIO 1.3: Dropping ONTO the character sheet ---
+         // (Requires a character to be loaded)
+         if (!character) return;
+
          const isOverSheet = overIdStr === 'character-sheet-main-drop-zone' ||
                               overIdStr === 'tracker-drop-zone' ||
                               overIdStr === 'card-drop-zone' ||

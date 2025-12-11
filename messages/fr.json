@@ -76,7 +76,8 @@
          "openDrawer": "Ouvrir le Tiroir",
          "closeDrawer": "Fermer le Tiroir",
 
-         "saveToDrawer": "Sauvegarder le Perso.",
+         "saveToDrawer": "Enregistrer le Perso.",
+         "saveToDrawerAs": "Enregistrer sous... ",
          "exportCharacter": "Exporter le Perso.",
          "importCharacter": "Importer le Perso.",
          "importComponent": "Importer un Composant",
@@ -158,7 +159,7 @@
 
          "LEGENDS": "Legends in the Mist",
          "OTHERSCAPE": "Otherscape",
-         "CITY": "City of Mist",
+         "CITY_OF_MIST": "City of Mist",
 
          "LEGENDS_FULL_CHARACTER_SHEET": "Fiche de Perso.",
          "LEGENDS_CHARACTER_CARD": "Carte de Héros",
@@ -310,6 +311,27 @@
 
       "dismissButton": "Effacer",
       "downloadButton": "Télécharger"
+   },
+   "MainMenu": {
+      "title": "Characters of the Mist",
+      "subtitle": "Bienvenue dans Characters of the Mist, veuillez choisir un système de jeu, ou charger un personnage directement.",
+      "createButton": "Créer un Nouveau Personnage",
+      "openDrawerButton": "Ouvrir le Tiroir",
+      "hint": "Sélectionnez un système de jeu ci-dessus pour commencer",
+      "games": {
+         "legends": {
+            "title": "Legends in the Mist",
+            "subtitle": "Fantasy Rustique"
+         },
+         "cityOfMist": {
+            "title": "City of Mist",
+            "subtitle": "Enquêtes Mythiques"
+         },
+         "otherscape": {
+            "title": "Metro: Otherscape",
+            "subtitle": "Aventures Cyberpunk"
+         }
+      }
    },
    "WelcomeDialog": {
       "title": "Bienvenue dans Characters of the Mist !",
@@ -560,6 +582,26 @@
       "improve": "AMÉLIORE",
       "milestone": "JALON",
       "promise": "PROMESSE"
+   },
+   "RiftCard": {
+      "title": "Carte de Réceptacle",
+      "mythos": "Mythos",
+      "logos": "Logos",
+      "characterNamePlaceholder": "Nom du Personnage...",
+      "noName": "SANS NOM",
+      "Crew": {
+         "title": "Bande",
+         "name": "Nom",
+         "help": "Aide",
+         "hurt": "Blessé",
+         "noName": "SANS NOM",
+         "addCrewMember": "Ajouter un Membre"
+      },
+      "buildup": "ACCUMULATION",
+      "Nemesis": {
+         "title": "Némésis",
+         "addNemesis": "Ajouter un Némésis"
+      }
    },
    "HeroCard": {
       "title": "Carte de Héros",

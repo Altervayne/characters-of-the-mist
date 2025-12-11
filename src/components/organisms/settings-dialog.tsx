@@ -126,7 +126,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { resolvedTheme, setTheme: setMode } = useTheme(); 
    
    const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable } = useAppSettingsStore();
-   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable } = useAppSettingsActions();
+   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setLocale } = useAppSettingsActions();
 
    const colorThemeOptions = ['theme-neutral', 'theme-legends'];
    /* const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city']; */
@@ -150,9 +150,10 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    }
 
    const handleLocaleChange = (newLocale: string) => {
-      const segments = pathname.split('/')
-      segments[1] = newLocale
-      router.replace(segments.join('/'))
+      setLocale(newLocale);
+      const segments = pathname.split('/');
+      segments[1] = newLocale;
+      router.replace(segments.join('/'));
    };
 
    

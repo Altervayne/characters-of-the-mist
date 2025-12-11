@@ -14,14 +14,14 @@ import { STORE_VERSION } from '../config';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Character, Card, Tag, LegendsThemeDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker } from '@/lib/types/character';
+import { Character, Card, Tag, LegendsThemeDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
 import { GeneralItemType, GameSystem } from '../types/drawer';
 import { CreateCardOptions } from '../types/creation';
 
 
 
 type TagListName = 'powerTags' | 'weaknessTags' | 'items';
-type BlandTagListName = 'quintessences' | 'improvements' | 'backpack';
+type BlandTagListName = 'quintessences' | 'improvements' | 'backpack' | 'nemeses';
 type IndexableCardDetails = CardDetails & { [key in BlandTagListName]?: BlandTag[] };
 
 const hasBlandTagList = (details: CardDetails, listName: string): listName is BlandTagListName => {
@@ -34,7 +34,7 @@ interface CharacterState {
    character: Character | null;
    actions: {
       createCharacter: (game: GameSystem) => void;
-      loadCharacter: (character: Character) => void;
+      loadCharacter: (character: Character, drawerItemId?: string) => void;
       resetCharacter: () => void;
       unloadCharacter: () => void;
       setGame: (game: Character['game']) => void;
@@ -75,10 +75,14 @@ interface CharacterState {
       addTagToStoryTheme: (trackerId: string, listName: 'powerTags' | 'weaknessTags') => void;
       updateTagInStoryTheme: (trackerId: string, listName: 'mainTag' | 'powerTags' | 'weaknessTags', tagId: string, updatedTag: Partial<Tag>) => void;
       removeTagFromStoryTheme: (trackerId: string, listName: 'powerTags' | 'weaknessTags', tagId: string) => void;
-      // --- Fellowship Relationship Actions --- 
+      // --- Legends in the Mist ### Fellowship Relationship Actions --- 
       addRelationship: (cardId: string) => void;
       updateRelationship: (cardId: string, relationshipId: string, updates: Partial<FellowshipRelationship>) => void;
       removeRelationship: (cardId: string, relationshipId: string) => void;
+      // --- City of Mist ### Crew Actions --- 
+      addCrewMember: (cardId: string) => void;
+      updateCrewMember: (cardId: string, crewId: string, updates: Partial<CrewMember>) => void;
+      removeCrewMember: (cardId: string, crewId: string) => void;
    };
 }
 
@@ -116,10 +120,13 @@ export const useCharacterStore = create<CharacterState>()(
                     return { character: newCharacter };
                   });
                },
-               loadCharacter: (character) => {
+               loadCharacter: (character: Character, drawerItemId?: string) => {
                   set(() => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     return { character }
+                     return { character: {
+                        ...character,
+                        drawerItemId: drawerItemId
+                     } }
                   })
                },
                resetCharacter: () => {
@@ -152,6 +159,15 @@ export const useCharacterStore = create<CharacterState>()(
                               details: {
                                     ...details,
                                     characterName: name,
+                              }
+                           };
+                        } else if (card.details.game === 'CITY_OF_MIST') {
+                           const details = card.details as CityRiftDetails;
+                           return {
+                              ...card,
+                              details: {
+                                 ...details,
+                                 characterName: name,
                               }
                            };
                         }
@@ -258,7 +274,9 @@ export const useCharacterStore = create<CharacterState>()(
 
                         if (newCardCopy.details.game === 'LEGENDS') {
                            newCharacterName = (newCardCopy.details as LegendsHeroDetails).characterName;
-                        }
+                        } else if (newCardCopy.details.game === 'CITY_OF_MIST') {
+                           newCharacterName = (newCardCopy.details as CityRiftDetails).characterName;
+                        };
 
                      } else {
                         const newCards = [...state.character.cards];
@@ -294,7 +312,7 @@ export const useCharacterStore = create<CharacterState>()(
                   useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                   return updateCardInState(state, cardId, card => ({
                         ...card,
-                        details: { ...card.details, ...newDetails }
+                        details: { ...card.details, ...newDetails } as CardDetails
                      }))
                   });
                },
@@ -797,7 +815,7 @@ export const useCharacterStore = create<CharacterState>()(
                      }
                   });
                },
-               // --- Fellowship Relationship Actions ---
+               // --- Legends in the Mist ### Fellowship Relationship Actions --- 
                addRelationship: (cardId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
@@ -843,6 +861,57 @@ export const useCharacterStore = create<CharacterState>()(
                         details: {
                            ...details,
                            fellowshipRelationships: details.fellowshipRelationships.filter(rel => rel.id !== relationshipId),
+                        },
+                     };
+                  }));
+               },
+               // --- City of Mist ### Crew Actions ---
+               addCrewMember: (cardId) => {
+                  set(state => updateCardInState(state, cardId, card => {
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     if (card.cardType !== 'CHARACTER_CARD' || card.details.game !== 'CITY_OF_MIST') return card;
+                     const details = card.details as CityRiftDetails;
+                     const newCrewMember: CrewMember = {
+                        id: cuid(),
+                        name: '',
+                        help: '',
+                        hurt: '',
+                     };
+                     return {
+                        ...card,
+                        details: {
+                           ...details,
+                           crewMembers: [...details.crewMembers, newCrewMember],
+                        },
+                     };
+                  }));
+               },
+               updateCrewMember: (cardId, crewId, updates) => {
+                  set(state => updateCardInState(state, cardId, card => {
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     if (card.cardType !== 'CHARACTER_CARD' || card.details.game !== 'CITY_OF_MIST') return card;
+                     const details = card.details as CityRiftDetails;
+                     return {
+                        ...card,
+                        details: {
+                           ...details,
+                           crewMembers: details.crewMembers.map(member => 
+                              member.id === crewId ? { ...member, ...updates } : member
+                           ),
+                        },
+                     };
+                  }));
+               },
+               removeCrewMember: (cardId, crewId) => {
+                  set(state => updateCardInState(state, cardId, card => {
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     if (card.cardType !== 'CHARACTER_CARD' || card.details.game !== 'CITY_OF_MIST') return card;
+                     const details = card.details as CityRiftDetails;
+                     return {
+                        ...card,
+                        details: {
+                           ...details,
+                           crewMembers: details.crewMembers.filter(member => member.id !== crewId),
                         },
                      };
                   }));

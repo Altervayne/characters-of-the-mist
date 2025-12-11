@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, FileX } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, FileX, SaveAll } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ import { useDrawerActions } from '@/lib/stores/drawerStore';
 
 // -- Type Imports --
 import { Character, Card as CardData, Tracker } from '@/lib/types/character';
+import cuid from 'cuid';
 
 
 
@@ -59,7 +60,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
    const character = useCharacterStore((state) => state.character);
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, unloadCharacter } = useCharacterActions();
-   const { addItem } = useDrawerActions();
+   const { updateItem, initiateItemDrop } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
    const characterFormRef = useRef<HTMLFormElement>(null);
@@ -71,15 +72,44 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const handleSaveCharacterToDrawer = () => {
       if (!character) return;
 
-      addItem(
-         character.name,
-         character.game,
-         'FULL_CHARACTER_SHEET',
-         character,
-         undefined
-      );
+      if (character.drawerItemId) {
+         updateItem(character.drawerItemId, character);
+         toast.success(tNotifications('character.savedToDrawer'));
+      } else {
+         handleSaveCharacterAsToDrawer();
+      }
+   };
 
-      toast.success(tNotifications('character.savedToDrawer'));
+   const handleSaveCharacterAsToDrawer = () => {
+      if (!character) return;
+
+      const newItemId = cuid();
+      console.log('[SaveAs...] 1. Generated newItemId:', newItemId);
+      
+      const characterWithDrawerId = { ...character, drawerItemId: newItemId };
+      console.log('[SaveAs...] 2. characterWithDrawerId has drawerItemId?', !!characterWithDrawerId.drawerItemId);
+
+      loadCharacter(character, newItemId);
+      
+      // Give the store a tick to update
+      setTimeout(() => {
+         const storeChar = useCharacterStore.getState().character;
+         console.log('[SaveAs...] 3. After loadCharacter, store has drawerItemId?', storeChar?.drawerItemId);
+      }, 0);
+
+      if (!isDrawerOpen) {
+         onToggleDrawer();
+      }
+      
+      initiateItemDrop({
+         game: character.game,
+         type: 'FULL_CHARACTER_SHEET',
+         content: characterWithDrawerId,
+         defaultName: character.name,
+         presetId: newItemId
+      });
+      
+      console.log('[SaveAs...] 4. Pending item presetId:', newItemId);
    };
 
    const handleExportCharacter = () => {
@@ -191,7 +221,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
             <motion.section layout transition={{ duration: 0.2 }} className="w-full">
                <motion.div layout className={cn(
                   "flex w-full items-center",
-                  isCollapsed ? "px-2 justify-center" : "px-4 justify-between"
+                  isCollapsed ? "px-2 justify-center" : "px-4 justify-between",
+                  activeWindow === 'MAIN_MENU' && "pb-4 border-b-2 border-border"
                )}>
                   {!isCollapsed && <h2 className="text-lg font-bold">{t('sidebarTitle')}</h2>}
 
@@ -229,6 +260,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      )}>
                         <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterToDrawer} Icon={Save}>
                            {t('saveToDrawer')}
+                        </SidebarButton>
+                        <SidebarButton data-tour="save-character-as-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterAsToDrawer} Icon={SaveAll}>
+                           {t('saveToDrawerAs')}
                         </SidebarButton>
                         <SidebarButton data-tour="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
                            {t('exportCharacter')}

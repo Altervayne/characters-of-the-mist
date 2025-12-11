@@ -5,6 +5,26 @@ export interface PatchNote {
 
 export const patchNotes: PatchNote[] = [
    {
+      version: '1.1.0',
+      content: `
+### A Big One !
+
+### **⚠️ Important!**
+* App's version of NextJS updated to get the latest security fixes which properly patches a serious security problem found in React Server Components.
+
+### ✨ **The Long Awaited...**
+* **City of Mist support !!!**: City of Mist support has been added to Characters of the Mist, along with all the themes available within the free demo!
+* The app now features a **Main Menu**, which allows you to pick a game system to create a new character in. You can still drop character files from your file explorer or from the drawer to load them!
+
+### 🐛 Bugfixes
+* Fixed some stutterings and inconsistencies with card hitboxes.
+
+### 🔧 Changes
+* Characters now have persistence in the Drawer. There are now two buttons to save, "Save Character" and "Save Character As...". The "Save As" feature prompts you for a new file name within the drawer, while the "Save" overwrites the original drawer file.
+* As requested, the Drawer now has a button in its header to close it.
+`
+   },
+   {
       version: '1.0.4',
       content: `
 ### I have been informed that there were new Demo themebooks!

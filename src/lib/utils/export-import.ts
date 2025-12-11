@@ -24,7 +24,7 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
          textGame = "LitM"
          break;
 
-      case "CITY":
+      case "CITY_OF_MIST":
          textGame = "CoM"
          break;
 

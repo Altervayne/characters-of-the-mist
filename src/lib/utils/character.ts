@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Types Imports --
-import { Character, LegendsHeroDetails } from '@/lib/types/character';
+import { Character, CityRiftDetails, LegendsHeroDetails } from '@/lib/types/character';
 import { GameSystem } from '../types/drawer';
 
 
@@ -22,10 +22,28 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
 
    switch (game) {
       case 'CITY_OF_MIST':
+         const riftCardId = cuid();
          return {
             ...baseCharacter,
             game: 'CITY_OF_MIST',
-            cards: [],
+            cards: [
+               {
+                  id: riftCardId,
+                  cardType: 'CHARACTER_CARD',
+                  title: 'Character Card',
+                  order: 0,
+                  isFlipped: false,
+                  details: {
+                     game: 'CITY_OF_MIST',
+                     characterName: name,
+                     mythos: '',
+                     logos: '',
+                     crewMembers: [],
+                     buildup: 0,
+                     nemeses: [],
+                  } as CityRiftDetails,
+               },
+            ],
          };
 
       case 'OTHERSCAPE':

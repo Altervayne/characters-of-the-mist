@@ -22,7 +22,7 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 
 // -- Icon Imports --
-import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, ArrowUpToLine, Move, GripVertical, Download, Upload, LayoutGrid, Rows, FileText, FileUser, IdCard, RectangleEllipsis, CreditCard, FileHeart, WalletCards } from 'lucide-react';
+import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, ArrowUpToLine, Move, GripVertical, Download, Upload, LayoutGrid, Rows, FileText, FileUser, IdCard, RectangleEllipsis, CreditCard, FileHeart, WalletCards, PanelRightClose } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -39,10 +39,12 @@ import { DrawerUndoRedoControls } from '../molecules/drawer-undo-redo-controls';
 // -- Store and Hook Imports --
 import { useDrawerStore, useDrawerActions, PendingDrawerItem } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
 import { Folder as FolderType, DrawerItem, DrawerItemContent, Drawer as DrawerType, GeneralItemType } from '@/lib/types/drawer';
-import { LegendsHeroDetails, LegendsThemeDetails, Card as CardData } from '@/lib/types/character';
+import { LegendsHeroDetails, LegendsThemeDetails, Card as CardData, Character } from '@/lib/types/character';
 
 
 
@@ -556,6 +558,9 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
             addItem, addImportedItem, renameItem, deleteItem, moveItem,
             clearPendingItemDrop } = useDrawerActions();
 
+   const { loadCharacter: updateActiveCharacter } = useCharacterActions();
+   const character = useCharacterStore((state) => state.character);
+
    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
    const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 
@@ -581,6 +586,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
 
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
    const { toggleCompactDrawer } = useAppSettingsActions();
+   const { setDrawerOpen } = useAppGeneralStateActions();
 
 
 
@@ -783,19 +789,22 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                               <DrawerUndoRedoControls/>
                            </div>
                            <div className="flex-1 flex items-center justify-end gap-1">
-                              <Button data-tour="drawer-rich-view-toggle" variant="ghost" size="icon" onClick={toggleCompactDrawer} className="h-9 w-9" aria-label={t('toggleView')}>
-                                 {isCompactDrawer ? <LayoutGrid className="h-5 w-5" /> : <Rows className="h-5 w-5" />}
-                              </Button>
-                              {currentFolderId && (
-                                 <div onClick={() => setCurrentFolderId(null)} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-muted cursor-pointer" role="button" aria-label="Back to root">
-                                    <ArrowUpToLine className="h-6 w-6" />
-                                 </div>
-                              )}
+                              <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('toggleView')} data-tour="drawer-rich-view-toggle">
+                                 {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
+                              </div>
+                              <div onClick={() => setDrawerOpen(false)} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label="Close drawer">
+                                 <PanelRightClose className="h-6 w-6" />
+                              </div>
                            </div>
                         </div>
-                        
+
                         {breadcrumbPath.length > 0 && (
-                           <Breadcrumb path={breadcrumbPath} onNavigate={setCurrentFolderId} />
+                           <div className="flex items-center gap-2 mt-2">
+                              <div onClick={() => setCurrentFolderId(null)} className="rounded p-1 hover:bg-muted cursor-pointer flex-shrink-0" role="button" aria-label="Back to root">
+                                 <ArrowUpToLine className="h-4 w-4" />
+                              </div>
+                              <Breadcrumb path={breadcrumbPath} onNavigate={setCurrentFolderId} />
+                           </div>
                         )}
                      </header>
 
