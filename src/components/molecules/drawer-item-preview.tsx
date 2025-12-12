@@ -12,6 +12,7 @@ import { Folder, GripVertical } from 'lucide-react';
 // -- Component Imports --
 import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
 import { HeroCard } from '@/components/organisms/hero-card';
+import { RiftCard } from '@/components/organisms/rift-card';
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
 import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
 import { CharacterSheetPreview } from '@/components/molecules/character-sheet-preview';
@@ -54,6 +55,31 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
                return <LegendsThemeCard card={content} isDrawerPreview />;
             case 'CHARACTER_CARD':
                return <HeroCard card={content} isDrawerPreview />;
+            }
+         }
+
+         if ('trackerType' in content) {
+            if (content.trackerType === 'STATUS') {
+               return <StatusTrackerCard tracker={content} isDrawerPreview />;
+            }
+            if (content.trackerType === 'STORY_TAG') {
+               return <StoryTagTrackerCard tracker={content} isDrawerPreview />;
+            }
+            if (content.trackerType === 'STORY_THEME') {
+               return <StoryThemeTrackerCard tracker={content} isDrawerPreview />;
+            }
+         }
+
+         if (type === 'FULL_CHARACTER_SHEET') {
+            return <CharacterSheetPreview item={item} />;
+         }
+      }
+
+      if (game === 'CITY_OF_MIST') {
+         if ('cardType' in content) {
+            switch (type) {
+            case 'CHARACTER_CARD':
+               return <RiftCard card={content} isDrawerPreview />;
             }
          }
 

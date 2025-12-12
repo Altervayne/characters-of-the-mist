@@ -52,6 +52,9 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
 
+   // Determine card theme based on game system
+   const cardTheme = tracker.game === 'CITY_OF_MIST' ? 'card-type-tracker-city' : 'card-type-tracker-legends';
+
    const handleTierClick = (tierIndex: number) => {
       if (isDrawerPreview) return;
 
@@ -96,7 +99,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
                dragAttributes={dragAttributes}
                dragListeners={dragListeners}
                onExport={onExport}
-               cardTheme='card-type-tracker'
+               cardTheme={cardTheme}
                side="top"
             />
          )}
@@ -105,7 +108,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
             isHovered ? "z-1" : "z-0",
             "relative z-0 flex flex-col h-[100px] w-[220px] border-2 rounded-lg overflow-hidden",
             {"pointer-events-none shadow-none border-2 border-border": isDrawerPreview},
-            "card-type-tracker",
+            cardTheme,
             "border-card-border bg-card-paper-bg text-card-paper-fg",
          )}>
             {/* Header Section */}

@@ -56,6 +56,9 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
 
+   // Determine card theme based on game system
+   const cardTheme = tracker.game === 'CITY_OF_MIST' ? 'card-type-tracker-city' : 'card-type-story-theme';
+
 
 
    // ################################################
@@ -91,7 +94,7 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
                onDelete={() => actions.removeStoryTheme(tracker.id)}
                onDowngradeStoryTheme={() => actions.downgradeStoryThemeToTag(tracker.id)}
                onExport={onExport}
-               cardTheme='card-type-tracker'
+               cardTheme={cardTheme}
                side="top"
             />
          }
@@ -99,7 +102,7 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
          <div className={cn(
             isHovered ? "z-1" : "z-0",
             "relative z-0 flex flex-col h-[220px] w-[250px] border-2 rounded-lg overflow-hidden",
-            "card-type-story-theme",
+            cardTheme,
             "border-card-border bg-card-paper-bg text-card-paper-fg",
             {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>

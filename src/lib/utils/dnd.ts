@@ -7,9 +7,8 @@ import { SortingStrategy } from "@dnd-kit/sortable";
 // --- Utility functions ---
 
 export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, GameSystem] | null {
-   const game: GameSystem = 'LEGENDS';
-
    if ('cardType' in item) {
+      const game: GameSystem = item.details.game;
       switch (item.cardType) {
          case 'CHARACTER_CARD': return ['CHARACTER_CARD', game];
          case 'CHARACTER_THEME': return ['CHARACTER_THEME', game];
@@ -18,6 +17,7 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
       }
    }
    if ('trackerType' in item) {
+      const game: GameSystem = item.game;
       switch (item.trackerType) {
          case 'STATUS': return ['STATUS_TRACKER', game];
          case 'STORY_TAG': return ['STORY_TAG_TRACKER', game];

@@ -169,6 +169,12 @@
          "LEGENDS_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "LEGENDS_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
 
+         "CITY_OF_MIST_FULL_CHARACTER_SHEET": "Fiche de Perso.",
+         "CITY_OF_MIST_CHARACTER_CARD": "Carte de Réceptacle",
+         "CITY_OF_MIST_STATUS_TRACKER": "Suivi de Statut",
+         "CITY_OF_MIST_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
+         "CITY_OF_MIST_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
+
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"
       }

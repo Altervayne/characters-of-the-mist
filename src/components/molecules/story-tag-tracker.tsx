@@ -52,6 +52,9 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
 
+   // Determine card theme based on game system
+   const cardTheme = tracker.game === 'CITY_OF_MIST' ? 'card-type-tracker-city' : 'card-type-tracker-legends';
+
 
 
    // ##########################################
@@ -91,7 +94,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
                onStoryTagNegative={() => updateStoryTag(tracker.id, { isWeakness: !tracker.isWeakness })}
                isStoryTagNegative={tracker.isWeakness}
                onUpgradeStoryTag={() => upgradeStoryTagToTheme(tracker.id)}
-               cardTheme='card-type-tracker'
+               cardTheme={cardTheme}
                side="top"
             />
          )}
@@ -100,7 +103,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
             isHovered ? "z-1" : "z-0",
             "relative flex items-center justify-between h-[55px] w-[220px] p-2 rounded-lg border-2",
             {"pointer-events-none shadow-none border-2 border-border": isDrawerPreview},
-            "card-type-tracker border-card-border",
+            cardTheme, "border-card-border",
             tracker.isWeakness 
                ? "bg-card-destructive-bg text-card-destructive-fg" 
                : "bg-card-paper-bg text-card-paper-fg"

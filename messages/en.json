@@ -169,6 +169,12 @@
          "LEGENDS_STORY_TAG_TRACKER": "Story Tag Tracker",
          "LEGENDS_STORY_THEME_TRACKER": "Story Theme Tracker",
 
+         "CITY_OF_MIST_FULL_CHARACTER_SHEET": "Character Sheet",
+         "CITY_OF_MIST_CHARACTER_CARD": "Rift Card",
+         "CITY_OF_MIST_STATUS_TRACKER": "Status Tracker",
+         "CITY_OF_MIST_STORY_TAG_TRACKER": "Story Tag Tracker",
+         "CITY_OF_MIST_STORY_THEME_TRACKER": "Story Theme Tracker",
+
          "cards": "Card(s)",
          "trackers": "Tracker(s)"
       }
