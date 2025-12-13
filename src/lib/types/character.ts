@@ -101,6 +101,23 @@ export interface LegendsHeroDetails {
 }
 
 
+// --- METRO: OTHERSCAPE ---
+
+export type OtherscapeThemeType = 'Mythos' | 'Self' | 'Noise';
+
+export interface OtherscapeCharacterDetails {
+   game: 'OTHERSCAPE';
+   characterName: string;
+   essence: {
+      mythos: number; // Count of Mythos themes
+      self: number;   // Count of Self themes
+      noise: number;  // Count of Noise themes
+   };
+   crewRelationships: CrewMember[]; // Reusing CrewMember for crew relationships
+   specials: BlandTag[]; // Special attributes/abilities
+}
+
+
 // --- CITY OF MIST ---
 
 export type CityThemeType = 'Mythos' | 'Logos';

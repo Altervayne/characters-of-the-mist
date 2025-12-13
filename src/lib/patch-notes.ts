@@ -14,6 +14,8 @@ export const patchNotes: PatchNote[] = [
 
 ### ✨ **The Long Awaited...**
 * **City of Mist support !!!**: City of Mist support has been added to Characters of the Mist, along with all the themes available within the free demo!
+* **Metro:Otherscape support !!!**: Metro:Otherscape support has been added to Characters of the Mist, along with all the themes available within the free demo!
+* *Note for users of the legacy version*: The migration tool available in Settings can be used to migrate your legacy character sheets to the new app effortlessly.
 * The app now features a **Main Menu**, which allows you to pick a game system to create a new character in. You can still drop character files from your file explorer or from the drawer to load them!
 
 ### 🐛 Bugfixes
@@ -22,6 +24,7 @@ export const patchNotes: PatchNote[] = [
 ### 🔧 Changes
 * Characters now have persistence in the Drawer. There are now two buttons to save, "Save Character" and "Save Character As...". The "Save As" feature prompts you for a new file name within the drawer, while the "Save" overwrites the original drawer file.
 * As requested, the Drawer now has a button in its header to close it.
+* Adjusted Legends in the Mist Light mode color palette for a more "Wood and Stone" feel.
 `
    },
    {

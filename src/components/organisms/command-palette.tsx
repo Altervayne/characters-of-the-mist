@@ -104,7 +104,7 @@ const SetThemePalettePage = () => {
    const { setTheme } = useAppSettingsActions();
    const { setCommandPaletteOpen } = useAppGeneralStateActions();
 
-   const availableThemes: ThemeName[] = ['theme-neutral', 'theme-legends', 'theme-city-of-mist'];
+   const availableThemes: ThemeName[] = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
    const handleSelect = (theme: ThemeName) => {
       setTheme(theme);

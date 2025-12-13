@@ -136,11 +136,11 @@ function FolderEntry({ folder, isOver, onNavigate, onRename, onDelete, onMove }:
                onClick={() => onNavigate(folder.id)}
             >
                <GripVertical
-                  className="h-5 w-5 flex-shrink-0 text-accent-foreground cursor-grab"
+                  className="h-5 w-5 flex-shrink-0 text-muted-foreground cursor-grab"
                   {...attributes} 
                   {...listeners}
                />
-               <Folder className="h-6 w-6 flex-shrink-0 text-accent-foreground"/>
+               <Folder className="h-6 w-6 flex-shrink-0 text-muted-foreground"/>
                <span className="truncate hover:text-wrap font-medium text-sm">{folder.name}</span>
             </div>
 
@@ -265,21 +265,21 @@ function ItemEntry({ item, onRename, onDelete, onMove }: { item: DrawerItem, onR
 const getItemTypeIcon = (type: GeneralItemType) => {
    switch (type) {
       case 'CHARACTER_CARD':
-         return <FileUser className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <FileUser className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       case 'FULL_CHARACTER_SHEET':
-         return <IdCard className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <IdCard className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       case 'CHARACTER_THEME':
-         return <FileText className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       case 'GROUP_THEME':
-         return <FileHeart className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <FileHeart className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       case 'STATUS_TRACKER':
-         return <CreditCard className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <CreditCard className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       case 'STORY_TAG_TRACKER':
-         return <RectangleEllipsis className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <RectangleEllipsis className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       case 'STORY_THEME_TRACKER':
-         return <WalletCards className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <WalletCards className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
       default:
-         return <FileText className="h-5 w-5 flex-shrink-0 text-accent-foreground" />;
+         return <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />;
    }
 };
 
@@ -330,7 +330,7 @@ export function CompactItemEntry({ item, onRename, onDelete, onMove, isPreview =
             )}
          >
             <div className="flex h-8 items-center gap-2 truncate">
-               <GripVertical className="h-5 w-5 flex-shrink-0 text-accent-foreground cursor-grab" {...attributes} {...listeners} />
+               <GripVertical className="h-5 w-5 flex-shrink-0 text-muted-foreground cursor-grab" {...attributes} {...listeners} />
                {getItemTypeIcon(item.type)}
                <span className="truncate hover:text-wrap font-medium text-sm">{item.name}</span>
             </div>
@@ -413,7 +413,7 @@ function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveActio
                      onClick={() => setCurrentNavFolderId(folder.id)}
                      className="flex px-2 h-10 items-center gap-2 truncate rounded hover:bg-muted"
                   >
-                     <Folder className="h-6 w-6 flex-shrink-0 text-accent-foreground"/>
+                     <Folder className="h-6 w-6 flex-shrink-0 text-muted-foreground"/>
                      <span className="truncate font-medium text-sm">{folder.name}</span>
                   </div>
                );
@@ -817,7 +817,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                  ref={backButtonRef}
                                  onClick={() => setCurrentFolderId(parentFolderId)}
                                  className={cn(
-                                    'flex h-10 items-center gap-2 p-2 bg-background rounded hover:bg-muted cursor-pointer mb-2 transition-colors',
+                                    'flex h-10 items-center gap-2 p-2 bg-card rounded hover:bg-muted cursor-pointer mb-2 transition-colors',
                                     { 'bg-muted': isOverBackButton && activeDragId }
                                  )}
                                  role="button"
@@ -868,7 +868,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                  )}
                               </SortableContext>
                            )}
-                           <motion.div layout transition={{ duration: 0.1 }} className="bg-background mt-1 border-2 border-dashed border-border rounded">
+                           <motion.div layout transition={{ duration: 0.1 }} className="bg-card mt-1 border-2 border-dashed border-border rounded">
                               <Button variant="ghost" className="w-full justify-start cursor-pointer" onClick={handleAddFolder}>
                                  <Plus className="mr-2 h-4 w-4" />
                                  {t('addFolder')}

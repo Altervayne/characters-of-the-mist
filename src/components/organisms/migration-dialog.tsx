@@ -116,19 +116,19 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                const characterFolderName = `${character.name} - ${today}`;
                const characterFolderId = await getOrCreateFolder(characterFolderName, migrationRootFolderId);
 
-               addItem(character.name, 'LEGENDS', 'FULL_CHARACTER_SHEET', character, characterFolderId);
+               addItem(character.name, character.game, 'FULL_CHARACTER_SHEET', character, characterFolderId);
 
                if (deconstructedCards.length > 0) {
                   const cardsFolderId = await getOrCreateFolder("Cards", characterFolderId);
                   deconstructedCards.forEach(card => {
-                     addItem(card.title, 'LEGENDS', card.cardType, card, cardsFolderId);
+                     addItem(card.title, character.game, card.cardType, card, cardsFolderId);
                   });
                }
 
                if (deconstructedTrackers.length > 0) {
                   const trackersFolderId = await getOrCreateFolder("Trackers", characterFolderId);
                   deconstructedTrackers.forEach(tracker => {
-                     addItem(tracker.name, 'LEGENDS', 'STATUS_TRACKER', tracker, trackersFolderId);
+                     addItem(tracker.name, character.game, 'STATUS_TRACKER', tracker, trackersFolderId);
                   });
                }
 
