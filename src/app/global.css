@@ -98,25 +98,25 @@
 /* ###   LEGENDS IN THE MIST THEMES   ### */
 /* ###################################### */
 .theme-legends {
-   --background:              hsl(43 60% 85%);
-   --foreground:              hsl(43 31% 25%);
-   --card:                    hsl(43 74% 90%);
-   --card-foreground:         hsl(43 31% 25%);
-   --popover:                 hsl(44 65% 87.5%);
-   --popover-foreground:      hsl(43 31% 25%);
-   --primary:                 hsl(43 31% 25%);
-   --primary-foreground:      hsl(35 14% 91%);
-   --secondary:               hsl(43 30% 83%);
-   --secondary-foreground:    hsl(43 31% 25%);
-   --muted:                   hsl(43 30% 83%);
-   --muted-foreground:        hsl(24 22% 49%);
-   --accent:                  hsl(44 42% 77%);
-   --accent-foreground:       hsl(43 31% 25%);
+   --background:              hsl(210 8% 76%);
+   --foreground:              hsl(210 12% 15%);
+   --card:                    hsl(210 10% 86%);
+   --card-foreground:         hsl(210 12% 15%);
+   --popover:                 hsl(210 9% 80%);
+   --popover-foreground:      hsl(210 12% 15%);
+   --primary:                 hsl(25 40% 28%);
+   --primary-foreground:      hsl(210 10% 96%);
+   --secondary:               hsl(210 7% 66%);
+   --secondary-foreground:    hsl(210 12% 15%);
+   --muted:                   hsl(210 7% 66%);
+   --muted-foreground:        hsl(210 10% 40%);
+   --accent:                  hsl(28 30% 72%);
+   --accent-foreground:       hsl(210 15% 12%);
    --destructive:             hsl(355 72% 51%);
    --destructive-foreground:  hsl(0 0% 98%);
-   --border:                  hsl(43 31% 25%);
-   --input:                   hsl(43 31% 25%);
-   --ring:                    hsl(43 31% 25%);
+   --border:                  hsl(25 20% 48%);
+   --input:                   hsl(25 20% 48%);
+   --ring:                    hsl(25 35% 35%);
    --radius:                  0.5rem;
 }
 
@@ -141,6 +141,55 @@
    --input:                   hsl(43 31% 25%);
    --ring:                    hsl(43 30% 83%);
 }
+
+/* ################################ */
+/* ###   CITY OF MIST THEMES   #### */
+/* ################################ */
+.theme-city-of-mist {
+   --background:              hsl(240 12% 75%);
+   --foreground:              hsl(240 18% 10%);
+   --card:                    hsl(240 15% 88%);
+   --card-foreground:         hsl(240 18% 10%);
+   --popover:                 hsl(240 15% 82%);
+   --popover-foreground:      hsl(240 18% 10%);
+   --primary:                 hsl(280 40% 42%);
+   --primary-foreground:      hsl(240 15% 96%);
+   --secondary:               hsl(240 10% 68%);
+   --secondary-foreground:    hsl(240 18% 10%);
+   --muted:                   hsl(240 10% 68%);
+   --muted-foreground:        hsl(240 12% 35%);
+   --accent:                  hsl(25 45% 72%);
+   --accent-foreground:       hsl(240 18% 10%);
+   --destructive:             hsl(0 84.2% 60.2%);
+   --destructive-foreground:  hsl(240 15% 96%);
+   --border:                  hsl(240 12% 55%);
+   --input:                   hsl(240 12% 55%);
+   --ring:                    hsl(280 40% 42%);
+   --radius:                  0.5rem;
+}
+
+.dark.theme-city-of-mist {
+   --background:              hsl(240 8% 12%);
+   --foreground:              hsl(240 5% 88%);
+   --card:                    hsl(240 10% 16%);
+   --card-foreground:         hsl(240 5% 88%);
+   --popover:                 hsl(240 10% 14%);
+   --popover-foreground:      hsl(240 5% 88%);
+   --primary:                 hsl(280 50% 35%);
+   --primary-foreground:      hsl(240 5% 95%);
+   --secondary:               hsl(240 6% 22%);
+   --secondary-foreground:    hsl(240 5% 88%);
+   --muted:                   hsl(240 6% 22%);
+   --muted-foreground:        hsl(240 5% 60%);
+   --accent:                  hsl(25 45% 48%);
+   --accent-foreground:       hsl(240 5% 95%);
+   --destructive:             hsl(0 63% 50%);
+   --destructive-foreground:  hsl(240 5% 96%);
+   --border:                  hsl(240 6% 28%);
+   --input:                   hsl(240 6% 28%);
+   --ring:                    hsl(280 50% 35%);
+}
+
 
 /* ############################# */
 /* ###   OTHERSCAPE THEMES   ### */
@@ -329,13 +378,43 @@
 }
 .card-type-logos-com {
    --card-header-bg:    hsl(19 77% 57%);
-   --card-header-fg:    hsl(290 27% 96%);
-   --card-paper-bg:     hsl(290 27% 96%);
-   --card-paper-fg:     hsl(325 26% 18%);
+   --card-header-fg:    hsl(30 25% 96%);
+   --card-paper-bg:     hsl(30 25% 96%);
+   --card-paper-fg:     hsl(20 26% 18%);
    --card-accent:       hsl(19 68% 34%);
-   --card-border:       hsl(325 26% 18%);
-   --card-popover-bg:   hsl(293, 4%, 57%);
-   --card-popover-fg:   hsl(326, 23%, 12%);
+   --card-border:       hsl(20 26% 18%);
+   --card-popover-bg:   hsl(25 4% 57%);
+   --card-popover-fg:   hsl(20 23% 12%);
+}
+.card-type-crew-com {
+   --card-header-bg:    hsl(210 12% 40%);
+   --card-header-fg:    hsl(210 20% 96%);
+   --card-paper-bg:     hsl(210 20% 96%);
+   --card-paper-fg:     hsl(210 26% 18%);
+   --card-accent:       hsl(210 15% 30%);
+   --card-border:       hsl(210 26% 18%);
+   --card-popover-bg:   hsl(210 8% 57%);
+   --card-popover-fg:   hsl(210 23% 12%);
+}
+.card-type-rift-com {
+   --card-header-bg:    hsl(270 10% 35%);
+   --card-header-fg:    hsl(270 8% 96%);
+   --card-paper-bg:     hsl(270 8% 96%);
+   --card-paper-fg:     hsl(270 12% 18%);
+   --card-accent:       hsl(270 12% 28%);
+   --card-border:       hsl(270 12% 18%);
+   --card-popover-bg:   hsl(270 6% 57%);
+   --card-popover-fg:   hsl(270 10% 12%);
+}
+.card-type-character-com {
+   --card-header-bg:    hsl(280 50% 35%);
+   --card-header-fg:    hsl(280 20% 96%);
+   --card-paper-bg:     hsl(280 20% 96%);
+   --card-paper-fg:     hsl(280 30% 18%);
+   --card-accent:       hsl(280 45% 30%);
+   --card-border:       hsl(280 30% 18%);
+   --card-popover-bg:   hsl(280 15% 72%);
+   --card-popover-fg:   hsl(280 25% 15%);
 }
 
 /* --- Otherscape Card Themes --- */

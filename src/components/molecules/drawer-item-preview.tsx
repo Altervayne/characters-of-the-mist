@@ -11,6 +11,7 @@ import { Folder, GripVertical } from 'lucide-react';
 
 // -- Component Imports --
 import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
+import { CityThemeCard } from '@/components/organisms/city-theme-card';
 import { HeroCard } from '@/components/organisms/hero-card';
 import { RiftCard } from '@/components/organisms/rift-card';
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
@@ -78,6 +79,8 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
       if (game === 'CITY_OF_MIST') {
          if ('cardType' in content) {
             switch (type) {
+            case 'CHARACTER_THEME':
+               return <CityThemeCard card={content} isDrawerPreview />;
             case 'CHARACTER_CARD':
                return <RiftCard card={content} isDrawerPreview />;
             }

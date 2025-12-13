@@ -127,7 +127,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
             "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
-            "card-type-mythos-com",
+            "card-type-rift-com",
             {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
@@ -186,74 +186,72 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                </div>
 
                {/* Crew Section */}
-               <div className="flex flex-col flex-grow">
+               <div className="flex flex-col flex-grow overflow-hidden min-h-0">
                   <CardSectionHeader title={t('Crew.title')} />
-                  <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={crewScrollRef}>
-                     <div className={cn("grid gap-1 bg-card-accent/15 px-2 border-b-1", isEditing ? "grid-cols-12" : "grid-cols-10")}>
-                        <p className="col-span-6 text-sm text-center py-1">{t('Crew.name')}</p>
-                        <p className="col-span-2 text-sm text-center py-1">{t('Crew.help')}</p>
-                        <p className="col-span-2 text-sm text-center py-1">{t('Crew.hurt')}</p>
-                        {isEditing && <p className="col-span-2 text-sm text-center py-1"></p>}
-                     </div>
-                     <div className="p-2">
-                        {details.crewMembers.map((member) => (
-                           <div key={member.id} className={cn("mb-2 grid gap-1 items-center", isEditing ? "grid-cols-12" : "grid-cols-10")}>
-                              <div className="col-span-6">
-                                 {isEditing ? (
-                                    <Input
-                                       value={member.name}
-                                       onChange={(e) => handleCrewMemberChange(member.id, 'name', e.target.value)}
-                                       placeholder={t('Crew.name')}
-                                       className="h-7 text-xs"
-                                    />
-                                 ) : (
-                                    <div className="text-xs py-1 text-center truncate">{member.name || t('Crew.noName')}</div>
-                                 )}
-                              </div>
-                              <div className="col-span-2">
-                                 {isEditing ? (
-                                    <Input
-                                       value={member.help}
-                                       onChange={(e) => handleCrewMemberChange(member.id, 'help', e.target.value)}
-                                       placeholder="+X"
-                                       className="p-0 h-7 text-xs text-center"
-                                    />
-                                 ) : (
-                                    <div className="text-xs py-1 text-center">{member.help || ""}</div>
-                                 )}
-                              </div>
-                              <div className="col-span-2">
-                                 {isEditing ? (
-                                    <Input
-                                       value={member.hurt}
-                                       onChange={(e) => handleCrewMemberChange(member.id, 'hurt', e.target.value)}
-                                       placeholder="-X"
-                                       className="p-0 h-7 text-xs text-center"
-                                    />
-                                 ) : (
-                                    <div className="text-xs py-1 text-center">{member.hurt || ""}</div>
-                                 )}
-                              </div>
-                              {isEditing && (
-                                 <div className="col-span-2 flex justify-end">
-                                    <Button
-                                       size="sm"
-                                       variant="ghost"
-                                       onClick={() => handleRemoveCrewMember(member.id)}
-                                       className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                    >
-                                       <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                 </div>
+                  <div className={cn("grid gap-1 bg-card-accent/15 px-2 border-b-1 flex-shrink-0", isEditing ? "grid-cols-12" : "grid-cols-10")}>
+                     <p className="col-span-6 text-sm text-center py-1">{t('Crew.name')}</p>
+                     <p className="col-span-2 text-sm text-center py-1">{t('Crew.help')}</p>
+                     <p className="col-span-2 text-sm text-center py-1">{t('Crew.hurt')}</p>
+                     {isEditing && <p className="col-span-2 text-sm text-center py-1"></p>}
+                  </div>
+                  <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain p-2" ref={crewScrollRef}>
+                     {details.crewMembers.map((member) => (
+                        <div key={member.id} className={cn("mb-2 grid gap-1 items-center", isEditing ? "grid-cols-12" : "grid-cols-10")}>
+                           <div className="col-span-6">
+                              {isEditing ? (
+                                 <Input
+                                    value={member.name}
+                                    onChange={(e) => handleCrewMemberChange(member.id, 'name', e.target.value)}
+                                    placeholder={t('Crew.name')}
+                                    className="h-7 text-xs"
+                                 />
+                              ) : (
+                                 <div className="text-xs py-1 text-center truncate">{member.name || t('Crew.noName')}</div>
                               )}
                            </div>
-                        ))}
-                        {isEditing && (
-                           <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={handleAddCrewMember}>
-                              <PlusCircle className="h-4 w-4 mr-2" /> {t('Crew.addCrewMember')}
-                           </Button>
-                        )}
-                     </div>
+                           <div className="col-span-2">
+                              {isEditing ? (
+                                 <Input
+                                    value={member.help}
+                                    onChange={(e) => handleCrewMemberChange(member.id, 'help', e.target.value)}
+                                    placeholder="+X"
+                                    className="p-0 h-7 text-xs text-center"
+                                 />
+                              ) : (
+                                 <div className="text-xs py-1 text-center">{member.help || ""}</div>
+                              )}
+                           </div>
+                           <div className="col-span-2">
+                              {isEditing ? (
+                                 <Input
+                                    value={member.hurt}
+                                    onChange={(e) => handleCrewMemberChange(member.id, 'hurt', e.target.value)}
+                                    placeholder="-X"
+                                    className="p-0 h-7 text-xs text-center"
+                                 />
+                              ) : (
+                                 <div className="text-xs py-1 text-center">{member.hurt || ""}</div>
+                              )}
+                           </div>
+                           {isEditing && (
+                              <div className="col-span-2 flex justify-end">
+                                 <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveCrewMember(member.id)}
+                                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                 >
+                                    <Trash2 className="h-3 w-3" />
+                                 </Button>
+                              </div>
+                           )}
+                        </div>
+                     ))}
+                     {isEditing && (
+                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={handleAddCrewMember}>
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('Crew.addCrewMember')}
+                        </Button>
+                     )}
                   </div>
                </div>
 
@@ -275,7 +273,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
             "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
-            "card-type-mythos-com",
+            "card-type-rift-com",
             {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeaderMolecule title={t('title')} />

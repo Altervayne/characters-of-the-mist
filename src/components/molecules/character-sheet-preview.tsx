@@ -22,7 +22,7 @@ interface CharacterSheetPreviewProps {
    item: DrawerItem;
 }
 
-type CharacterCardThemes = 'card-type-hero'
+type CharacterCardThemes = 'card-type-hero' | 'card-type-character-com'
 
 
 
@@ -36,6 +36,10 @@ export const CharacterSheetPreview = ({ item }: CharacterSheetPreviewProps) => {
    switch(character.game) {
       case 'LEGENDS':
          cardThemeClass = "card-type-hero"
+         break;
+
+      case 'CITY_OF_MIST':
+         cardThemeClass = "card-type-character-com"
          break;
 
       default:

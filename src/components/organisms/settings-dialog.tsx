@@ -128,8 +128,8 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable } = useAppSettingsStore();
    const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setLocale } = useAppSettingsActions();
 
-   const colorThemeOptions = ['theme-neutral', 'theme-legends'];
-   /* const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city']; */
+   const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-city-of-mist'];
+   /* const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist']; */
 
    const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
    const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);

@@ -103,11 +103,37 @@ export interface LegendsHeroDetails {
 
 // --- CITY OF MIST ---
 
+export type CityThemeType = 'Mythos' | 'Logos';
+
+export interface CityThemeDetails {
+   game: 'CITY_OF_MIST';
+   themebook: string;
+   themeType: CityThemeType;
+   attention: number;
+   fadeOrCrack: number; // Fade for Mythos, Crack for Logos
+   mainTag: Tag;
+   powerTags: Tag[];
+   weaknessTags: Tag[];
+   mystery: string | null;
+   improvements: BlandTag[];
+}
+
 export interface CrewMember {
    id: string;
    name: string;
    help: string;
    hurt: string;
+}
+
+export interface CityCrewDetails {
+   game: 'CITY_OF_MIST';
+   attention: number;
+   crack: number; // Crew uses crack like Logos
+   mainTag: Tag;
+   powerTags: Tag[];
+   weaknessTags: Tag[];
+   identity: string | null; // Crew has identity like Logos
+   improvements: BlandTag[];
 }
 
 export interface CityRiftDetails {
@@ -122,10 +148,12 @@ export interface CityRiftDetails {
 
 
 // All possible card structures
-export type CardDetails = 
-   | LegendsThemeDetails 
-   | LegendsFellowshipDetails 
+export type CardDetails =
+   | LegendsThemeDetails
+   | LegendsFellowshipDetails
    | LegendsHeroDetails
+   | CityThemeDetails
+   | CityCrewDetails
    | CityRiftDetails;
 
 // *##############################*

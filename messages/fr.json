@@ -171,6 +171,8 @@
 
          "CITY_OF_MIST_FULL_CHARACTER_SHEET": "Fiche de Perso.",
          "CITY_OF_MIST_CHARACTER_CARD": "Carte de Réceptacle",
+         "CITY_OF_MIST_CHARACTER_THEME": "Thème de Réceptacle",
+         "CITY_OF_MIST_GROUP_THEME": "Thème de Bande",
          "CITY_OF_MIST_STATUS_TRACKER": "Suivi de Statut",
          "CITY_OF_MIST_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
@@ -193,7 +195,9 @@
       "selectPlaceholder": "Type de Carte...",
       "cardTypeLabel": "Type de Carte",
       "themeCard": "Thème de Héros",
+      "riftThemeCard": "Thème de Réceptacle",
       "fellowshipCard": "Thème de Compagnie",
+      "crewCard": "Thème de Bande",
 
       "selectThemeTypePlaceholder": "Sélectionnez un type...",
       "themeTypeLabel": "Type de Thème",
@@ -407,7 +411,8 @@
 
       "themes": {
          "theme-neutral": "Neutre",
-         "theme-legends": "Legends in the Mist"
+         "theme-legends": "Legends in the Mist",
+         "theme-city-of-mist": "City of Mist"
       },
 
       "empty": "Aucune commande trouvée.",
@@ -563,15 +568,31 @@
    },
    "ThemeCard": {
       "fellowshipTitle": "Thème de Compagnie",
+      "crewThemeTitle": "Thème de Bande",
 
       "placeholderName": "Trait principal...",
+      "mainTagPlaceholder": "Trait principal...",
       "noName": "SANS NOM",
       "power": "ATOUT",
       "weakness": "CONTRAINTE",
-      
+
       "questTitle": "Quête",
       "noQuest": "TEXTE DE QUÊTE VIDE",
       "questPlaceholder": "Entrez votre texte de Quête...",
+
+      "mysteryTitle": "Mystère",
+      "noMystery": "TEXTE DE MYSTÈRE VIDE",
+      "mysteryPlaceholder": "Entrez votre texte de Mystère...",
+
+      "identityTitle": "Identité",
+      "noIdentity": "TEXTE D'IDENTITÉ VIDE",
+      "identityPlaceholder": "Entrez votre texte d'Identité...",
+
+      "mythos": "Mythos",
+      "logos": "Logos",
+      "attention": "Attention",
+      "fade": "Dissipation",
+      "crack": "Fissure",
 
       "addPowerTag": "Créer Trait d'Atout",
       "addWeaknessTag": "Créer Trait de Contrainte",
@@ -587,7 +608,10 @@
       "abandon": "ABANDON",
       "improve": "AMÉLIORE",
       "milestone": "JALON",
-      "promise": "PROMESSE"
+      "promise": "PROMESSE",
+      "Attention": "ATTENTION",
+      "Fade": "DISSIPATION",
+      "Crack": "FISSURE"
    },
    "RiftCard": {
       "title": "Carte de Réceptacle",
@@ -676,6 +700,26 @@
          "companion": "Compagnon",
          "magic": "Magie",
          "possessions": "Possessions"
+      }
+   },
+   "CityData": {
+      "themebook": {
+         "adaptation": "Adaptation",
+         "bastion": "Bastion",
+         "divination": "Divination",
+         "expression": "Expression",
+         "mobility": "Mobilité",
+         "relic": "Relique",
+         "subversion": "Subversion",
+         "training": "Entraînement",
+
+         "definingEvent": "Événement Déterminant",
+         "definingRelationship": "Relation Déterminante",
+         "mission": "Mission",
+         "personality": "Personnalité",
+         "possessions": "Possessions",
+         "routine": "Routine",
+         "struggle": "Conflit"
       }
    },
    "ThemeTypes": {

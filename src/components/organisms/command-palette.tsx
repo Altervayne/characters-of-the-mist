@@ -17,6 +17,7 @@ import { CheckSquare, CornerDownLeft, Crown, FileText, Leaf, ListTodo, Palette, 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { legendsThemebooks, legendsThemeTypes } from '@/lib/data/legends-data';
+import { cityThemebooks } from '@/lib/data/city-data';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
@@ -25,7 +26,7 @@ import { ThemeName, useAppSettingsActions } from '@/lib/stores/appSettingsStore'
 import { CommandAction } from '@/hooks/useCommandPaletteActions';
 
 // -- Type Imports --
-import { CreateCardOptions, LegendsThemeTypes } from '@/lib/types/creation';
+import { CreateCardOptions, LegendsThemeTypes, ThemeTypeUnion } from '@/lib/types/creation';
 
 
 
@@ -102,8 +103,8 @@ const SetThemePalettePage = () => {
    const t = useTranslations('CommandPalette');
    const { setTheme } = useAppSettingsActions();
    const { setCommandPaletteOpen } = useAppGeneralStateActions();
-   
-   const availableThemes: ThemeName[] = ['theme-neutral', 'theme-legends'];
+
+   const availableThemes: ThemeName[] = ['theme-neutral', 'theme-legends', 'theme-city-of-mist'];
 
    const handleSelect = (theme: ThemeName) => {
       setTheme(theme);
@@ -171,14 +172,22 @@ const CreateCard_ThemeTypePage = ({ onSelect }: CreateCard_ThemeTypePageProps) =
 
 // --- Step 3: Choose Themebook ---
 interface CreateCard_ThemebookPageProps {
-    themeType: LegendsThemeTypes;
+    themeType: ThemeTypeUnion;
     inputValue: string;
     onSelect: (themebook: string) => void;
 }
 const CreateCard_ThemebookPage = ({ themeType, inputValue, onSelect }: CreateCard_ThemebookPageProps) => {
    const t = useTranslations('CommandPalette');
    const tData = useTranslations();
-   const availableThemebooks = legendsThemebooks[themeType] || [];
+
+   // Determine which themebook list to use based on theme type
+   let availableThemebooks: { value: string; key: string; }[] = [];
+   if (themeType === 'Origin' || themeType === 'Adventure' || themeType === 'Greatness') {
+      availableThemebooks = legendsThemebooks[themeType] || [];
+   } else if (themeType === 'Mythos' || themeType === 'Logos') {
+      availableThemebooks = cityThemebooks[themeType] || [];
+   }
+
    const text = t('actions.createWith', { name: inputValue || '...' });
 
    return (

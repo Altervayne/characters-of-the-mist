@@ -171,6 +171,8 @@
 
          "CITY_OF_MIST_FULL_CHARACTER_SHEET": "Character Sheet",
          "CITY_OF_MIST_CHARACTER_CARD": "Rift Card",
+         "CITY_OF_MIST_CHARACTER_THEME": "Rift Theme",
+         "CITY_OF_MIST_GROUP_THEME": "Crew Theme",
          "CITY_OF_MIST_STATUS_TRACKER": "Status Tracker",
          "CITY_OF_MIST_STORY_TAG_TRACKER": "Story Tag Tracker",
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Story Theme Tracker",
@@ -193,7 +195,9 @@
       "selectPlaceholder": "Card type...",
       "cardTypeLabel": "Card type",
       "themeCard": "Hero Theme",
+      "riftThemeCard": "Rift Theme",
       "fellowshipCard": "Fellowship Theme",
+      "crewCard": "Crew Theme",
 
       "selectThemeTypePlaceholder": "Select theme type...",
       "themeTypeLabel": "Theme Type",
@@ -407,7 +411,8 @@
 
       "themes": {
          "theme-neutral": "Neutral",
-         "theme-legends": "Legends in the Mist"
+         "theme-legends": "Legends in the Mist",
+         "theme-city-of-mist": "City of Mist"
       },
 
       "empty": "No commands were found.",
@@ -569,15 +574,31 @@
    },
    "ThemeCard": {
       "fellowshipTitle": "Fellowship Theme",
+      "crewThemeTitle": "Crew Theme",
 
       "placeholderName": "Write your main tag...",
+      "mainTagPlaceholder": "Write your main tag...",
       "noName": "NO NAME",
       "power": "POWER",
       "weakness": "WEAKNESS",
-      
+
       "questTitle": "Quest",
       "noQuest": "EMPTY QUEST TEXT",
       "questPlaceholder": "Write your quest text here...",
+
+      "mysteryTitle": "Mystery",
+      "noMystery": "EMPTY MYSTERY TEXT",
+      "mysteryPlaceholder": "Write your mystery text here...",
+
+      "identityTitle": "Identity",
+      "noIdentity": "EMPTY IDENTITY TEXT",
+      "identityPlaceholder": "Write your identity text here...",
+
+      "mythos": "Mythos",
+      "logos": "Logos",
+      "attention": "Attention",
+      "fade": "Fade",
+      "crack": "Crack",
 
       "addPowerTag": "Add Power Tag",
       "addWeaknessTag": "Add Weakness Tag",
@@ -593,7 +614,10 @@
       "abandon": "ABANDON",
       "improve": "IMPROVE",
       "milestone": "MILESTONE",
-      "promise": "PROMISE"
+      "promise": "PROMISE",
+      "Attention": "ATTENTION",
+      "Fade": "FADE",
+      "Crack": "CRACK"
    },
    "RiftCard": {
       "title": "Rift Card",
@@ -682,6 +706,26 @@
          "companion": "Companion",
          "magic": "Magic",
          "possessions": "Possessions"
+      }
+   },
+   "CityData": {
+      "themebook": {
+         "adaptation": "Adaptation",
+         "bastion": "Bastion",
+         "divination": "Divination",
+         "expression": "Expression",
+         "mobility": "Mobility",
+         "relic": "Relic",
+         "subversion": "Subversion",
+         "training": "Training",
+
+         "definingEvent": "Defining Event",
+         "definingRelationship": "Defining Relationship",
+         "mission": "Mission",
+         "personality": "Personality",
+         "possessions": "Possessions",
+         "routine": "Routine",
+         "struggle": "Struggle"
       }
    },
    "ThemeTypes": {

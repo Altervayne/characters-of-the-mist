@@ -14,7 +14,7 @@ import { STORE_VERSION } from '../config';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Character, Card, Tag, LegendsThemeDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
+import { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
 import { GeneralItemType, GameSystem } from '../types/drawer';
 import { CreateCardOptions } from '../types/creation';
 
@@ -239,6 +239,42 @@ export const useCharacterStore = create<CharacterState>()(
                                  } as LegendsThemeDetails,
                               };
                               break;
+                        }
+                     } else if (state.character.game === 'CITY_OF_MIST') {
+                        if (options.cardType === 'CHARACTER_THEME') {
+                           newCard = {
+                              ...baseCard,
+                              cardType: 'CHARACTER_THEME',
+                              title: `${state.character.name}'s Theme Card - ${options.themebook + '/' || ''}${options.themeType}` || '',
+                              details: {
+                                 game: 'CITY_OF_MIST',
+                                 themebook: options.themebook || '',
+                                 themeType: options.themeType || 'Mythos',
+                                 attention: 0,
+                                 fadeOrCrack: 0,
+                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
+                                 powerTags: createTags(options.powerTagsCount),
+                                 weaknessTags: createTags(options.weaknessTagsCount),
+                                 mystery: null,
+                                 improvements: [],
+                              } as CityThemeDetails,
+                           };
+                        } else if (options.cardType === 'GROUP_THEME') {
+                           newCard = {
+                              ...baseCard,
+                              cardType: 'GROUP_THEME',
+                              title: `Crew Theme`,
+                              details: {
+                                 game: 'CITY_OF_MIST',
+                                 attention: 0,
+                                 crack: 0,
+                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
+                                 powerTags: createTags(options.powerTagsCount),
+                                 weaknessTags: createTags(options.weaknessTagsCount),
+                                 identity: null,
+                                 improvements: [],
+                              } as CityCrewDetails,
+                           };
                         }
                      }
 

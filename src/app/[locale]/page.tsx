@@ -31,6 +31,7 @@ import { harmonizeData } from '@/lib/harmonization';
 // -- Component Imports --
 import { CommandPalette } from '@/components/organisms/command-palette';
 import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
+import { CityThemeCard } from '@/components/organisms/city-theme-card';
 import { HeroCard } from '@/components/organisms/hero-card';
 import { RiftCard } from '@/components/organisms/rift-card';
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
@@ -76,8 +77,12 @@ const CardRenderer = React.forwardRef<HTMLDivElement, CardRendererProps>(
       const t = useTranslations('CardRenderer');
       const commonProps = { ref, isEditing, isSnapshot, dragAttributes, dragListeners, onEditCard, onExport };
 
-      if ((card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') && card.details.game === 'LEGENDS') {
-         return <LegendsThemeCard card={card} {...commonProps} />;
+      if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') {
+         if (card.details.game === 'LEGENDS') {
+            return <LegendsThemeCard card={card} {...commonProps} />;
+         } else if (card.details.game === 'CITY_OF_MIST') {
+            return <CityThemeCard card={card} {...commonProps} />;
+         }
       }
       if (card.cardType === 'CHARACTER_CARD') {
          if (card.details.game === 'LEGENDS') {
@@ -86,7 +91,7 @@ const CardRenderer = React.forwardRef<HTMLDivElement, CardRendererProps>(
             return <RiftCard card={card} {...commonProps} />;
          }
       }
-      
+
       return <div ref={ref} className="h-[300px] w-[250px] bg-card overflow-hidden text-card-foreground border-2 rounded-lg flex items-center justify-center">
                <p className='w-full text-wrap text-center'>{`NO RENDER AVAILABLE FOR THIS TYPE: ${card.details.game} ${card.cardType}`}</p>
             </div>;
@@ -525,12 +530,12 @@ export default function CharacterSheetPage() {
          }
 
          // --- SCENARIO 2.2: Reordering ON the sheet ---
-         if (overType?.startsWith('sheet-')) {
+         if (overType?.startsWith('sheet-') && character) {
             const isCardDrag = activeType === 'sheet-card';
             const isStatusDrag = (active.data.current?.item as Tracker)?.trackerType === 'STATUS';
             const isStoryTagDrag = (active.data.current?.item as Tracker)?.trackerType === 'STORY_TAG';
             const isStoryThemeDrag = (active.data.current?.item as Tracker)?.trackerType === 'STORY_THEME';
-            
+
             if (isCardDrag && overType === 'sheet-card') {
                const oldIndex = character.cards.findIndex(item => item.id === active.id);
                const newIndex = character.cards.findIndex(item => item.id === over.id);
@@ -869,6 +874,7 @@ export default function CharacterSheetPage() {
             mode={dialogMode}
             cardData={cardToEdit ?? undefined}
             modal={!isTourOpen}
+            game={character?.game ?? 'LEGENDS'}
          />
          <SettingsDialog 
             isOpen={isSettingsOpen}

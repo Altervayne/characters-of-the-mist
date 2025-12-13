@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 
 // -- Icon Imports --
 import { Leaf, Swords, Crown } from 'lucide-react';
+import Image from 'next/image';
 
 // -- Basic UI Imports --
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -30,18 +31,36 @@ const ThemeTypeIcon = ({ type }: { type: string }) => {
    const translationKey = type as string
 
    let IconComponent;
-   switch (type) {
-      case 'Origin':
-         IconComponent = <Leaf className="h-5 w-5" strokeWidth={2.5}/>;
-         break;
-      case 'Adventure':
-         IconComponent = <Swords className="h-5 w-5" strokeWidth={2.5}/>;
-         break;
-      case 'Greatness':
-         IconComponent = <Crown className="h-5 w-5" strokeWidth={2.5}/>;
-         break;
-      default:
-         return <p>{type}</p>;
+
+   // City of Mist theme icons (SVG files with CSS filter for color)
+   if (type === 'Mythos') {
+      IconComponent = (
+         <div className="h-5 w-5 [&_svg]:fill-current" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
+            <Image src="/icons/Themes/com_mythos.svg" alt="Mythos" width={20} height={20} className="h-5 w-5" />
+         </div>
+      );
+   } else if (type === 'Logos') {
+      IconComponent = (
+         <div className="h-5 w-5" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
+            <Image src="/icons/Themes/com_logos.svg" alt="Logos" width={20} height={20} className="h-5 w-5" />
+         </div>
+      );
+   }
+   // Legends in the Mist theme icons (Lucide)
+   else {
+      switch (type) {
+         case 'Origin':
+            IconComponent = <Leaf className="h-5 w-5" strokeWidth={2.5}/>;
+            break;
+         case 'Adventure':
+            IconComponent = <Swords className="h-5 w-5" strokeWidth={2.5}/>;
+            break;
+         case 'Greatness':
+            IconComponent = <Crown className="h-5 w-5" strokeWidth={2.5}/>;
+            break;
+         default:
+            return <p>{type}</p>;
+      }
    }
 
    return (

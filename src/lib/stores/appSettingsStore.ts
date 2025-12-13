@@ -7,7 +7,7 @@ import { GameSystem } from '../types/drawer';
 
 
 
-export type ThemeName = 'theme-neutral' | 'theme-legends';
+export type ThemeName = 'theme-neutral' | 'theme-legends' | 'theme-city-of-mist';
 
 interface AppSettingsState {
    theme: ThemeName;
