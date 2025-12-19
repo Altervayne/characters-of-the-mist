@@ -1,0 +1,482 @@
+'use client';
+
+// -- React Imports --
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+
+// -- Next Imports --
+import { useTranslations } from 'next-intl';
+
+// -- Other Library Imports --
+import { motion } from 'framer-motion';
+import { DraggableAttributes } from '@dnd-kit/core';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+
+// -- Basic UI Imports --
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+
+// -- Icon Imports --
+import { Flame, Circle, PlusCircle, Disc2 } from 'lucide-react';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
+// -- Component Imports --
+import { CardHeaderMolecule } from '../molecules/card-header';
+import { CardSectionHeader } from '@/components/molecules/card-section-header';
+import { TagItem } from '@/components/molecules/tag-item';
+import { PipTracker } from '@/components/molecules/pip-tracker';
+import { BlandTagItem } from '@/components/molecules/bland-tag-item';
+import { ToolbarHandle } from '@/components/molecules/toolbar-handle';
+
+// -- Store and Hook Imports --
+import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useManualScroll } from '@/hooks/useManualScroll';
+
+// -- Type Imports --
+import { Card as CardData, CardViewMode, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, Tag, BlandTag } from '@/lib/types/character';
+
+interface OtherscapeThemeCardProps {
+   card: CardData;
+   isEditing?: boolean;
+   isSnapshot?: boolean;
+   isDrawerPreview?: boolean;
+   dragAttributes?: DraggableAttributes;
+   dragListeners?: SyntheticListenerMap;
+   onEditCard?: () => void;
+   onExport?: () => void;
+}
+
+
+
+export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeThemeCardProps>(
+   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+      const t = useTranslations('OtherscapeThemeCard');
+      const actions = useCharacterActions();
+      const details = card.details as OtherscapeThemeDetails | OtherscapeCrewDetails | OtherscapeLoadoutDetails;
+
+      const [isHovered, setIsHovered] = useState(false);
+
+      const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
+      const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
+
+      const tagsScrollRef = useRef<HTMLDivElement>(null);
+      const mysteryScrollRef = useRef<HTMLDivElement>(null);
+      const improvementsScrollRef = useRef<HTMLDivElement>(null);
+
+      useManualScroll(tagsScrollRef);
+      useManualScroll(mysteryScrollRef);
+      useManualScroll(improvementsScrollRef);
+
+
+
+      const cardTypeClass = (() => {
+         if (card.cardType === 'CHARACTER_THEME') {
+            return `card-type-${(details as OtherscapeThemeDetails).themeType.toLowerCase().replace(/\s+/g, '-')}-otherscape`;
+         }
+         if (card.cardType === 'GROUP_THEME') {
+            return 'card-type-crew-otherscape';
+         }
+         // Loadout card type
+         return 'card-type-loadout-otherscape';
+      })();
+
+
+
+      const handleDetailChange = (field: string, value: number | string | Tag | Tag[] | BlandTag[] | null) => {
+         actions.updateCardDetails(card.id, { ...details, [field]: value });
+      };
+
+
+
+      const handleCycleViewMode = () => {
+         let nextMode: CardViewMode | null = null;
+         if (card.viewMode === 'SIDE_BY_SIDE') {
+            nextMode = 'FLIP';
+         } else if (card.viewMode === 'FLIP') {
+            nextMode = null;
+         } else {
+            nextMode = 'SIDE_BY_SIDE';
+         }
+         actions.updateCardViewMode(card.id, nextMode);
+      };
+
+
+
+      // ###########################
+      // ###   INPUT DEBOUNCER   ###
+      // ###########################
+
+      // --- Main Tag ---
+      const [localMainTagName, setLocalMainTagName] = useState(details.mainTag.name);
+
+      useEffect(() => {
+         const handler = setTimeout(() => {
+            if (details.mainTag.name !== localMainTagName) {
+               actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: localMainTagName }});
+            }
+         }, 500);
+         return () => clearTimeout(handler);
+      }, [localMainTagName, details, card.id, actions]);
+
+      useEffect(() => {
+         setLocalMainTagName(details.mainTag.name);
+      }, [details.mainTag.name]);
+
+
+      // --- Mystery/Identity/Description Text ---
+      const mysteryIdentityOrDescription =
+         card.cardType === 'CHARACTER_THEME'
+            ? (details as OtherscapeThemeDetails).mystery
+            : card.cardType === 'GROUP_THEME'
+               ? (details as OtherscapeCrewDetails).identity
+               : (details as OtherscapeLoadoutDetails).description;
+
+      const [localMystery, setLocalMystery] = useState(mysteryIdentityOrDescription);
+
+      useEffect(() => {
+         const handler = setTimeout(() => {
+            if (card.cardType === 'CHARACTER_THEME' && (details as OtherscapeThemeDetails).mystery !== localMystery) {
+               actions.updateCardDetails(card.id, { ...details, mystery: localMystery });
+            } else if (card.cardType === 'GROUP_THEME' && (details as OtherscapeCrewDetails).identity !== localMystery) {
+               actions.updateCardDetails(card.id, { ...details, identity: localMystery });
+            } else if ((details as OtherscapeLoadoutDetails).description !== localMystery) {
+               actions.updateCardDetails(card.id, { ...details, description: localMystery });
+            }
+         }, 500);
+         return () => clearTimeout(handler);
+      }, [localMystery, details, card.id, card.cardType, actions]);
+
+      useEffect(() => {
+         setLocalMystery(mysteryIdentityOrDescription);
+      }, [mysteryIdentityOrDescription]);
+
+
+
+      const CardFront = (
+         <Card className={cn(
+            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "bg-card-paper-bg text-card-paper-fg border-card-border",
+            "relative z-0",
+            cardTypeClass,
+            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+         )}>
+            <CardHeader className="p-0">
+               {card.cardType === 'CHARACTER_THEME' ? (
+                  <CardHeaderMolecule
+                     title={(details as OtherscapeThemeDetails).themebook}
+                     type={(details as OtherscapeThemeDetails).themeType}
+                     game="OTHERSCAPE"
+                     className={cn("bg-card-header-bg text-card-header-fg")}
+                  />
+               ) : card.cardType === 'GROUP_THEME' ? (
+                  <CardHeaderMolecule title={t('crewThemeTitle')} />
+               ) : (
+                  <CardHeaderMolecule title={t('loadoutTitle')} />
+               )}
+               <div className="px-2 text-xs font-semibold text-center">
+                  {card.cardType === 'LOADOUT_THEME' ? (
+                     <><span>{t('gearTitle')}</span> • <span style={{ color: 'var(--card-destructive-bg)' }}>{t('flaw')}</span></>
+                  ) : (
+                     <><span>{t('power')}</span> • <span style={{ color: 'var(--card-destructive-bg)' }}>{t('weakness')}</span></>
+                  )}
+               </div>
+            </CardHeader>
+
+            <CardContent className="flex-grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
+               {card.cardType === 'LOADOUT_THEME' ? (
+                  // Loadout card: Loaded/Unloaded Gear + Flaws + Wildcard Slots
+                  <>
+                     {/* Wildcard Slots as single line */}
+                     <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold bg-black/10 border-y border-card-accent/30">
+                        <span>{t('wildcardSlots')}</span>
+                        <div className="flex items-center gap-2">
+                           {isEditing && (
+                              <Button
+                                 variant="ghost"
+                                 size="icon"
+                                 className="h-5 w-5 cursor-pointer"
+                                 onClick={() => handleDetailChange('wildcardSlots', Math.max(0, ((details as OtherscapeLoadoutDetails).wildcardSlots || 0) - 1))}
+                              >
+                                 <Circle className="h-3 w-3" />
+                              </Button>
+                           )}
+                           <span className="text-sm font-bold min-w-[1.5rem] text-center">{(details as OtherscapeLoadoutDetails).wildcardSlots || 0}</span>
+                           {isEditing && (
+                              <Button
+                                 variant="ghost"
+                                 size="icon"
+                                 className="h-5 w-5 cursor-pointer"
+                                 onClick={() => handleDetailChange('wildcardSlots', ((details as OtherscapeLoadoutDetails).wildcardSlots || 0) + 1)}
+                              >
+                                 <PlusCircle className="h-3 w-3" />
+                              </Button>
+                           )}
+                        </div>
+                     </div>
+
+                     {/* Tags section with more space */}
+                     <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+                        {/* Loaded Gear Section - gear that is NOT burned */}
+                        <CardSectionHeader title={t('loadedGear')} />
+                        {details.powerTags.filter(tag => !tag.isScratched).length > 0 ? (
+                           details.powerTags.filter(tag => !tag.isScratched).map((tag, index) =>
+                              <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} isLoadoutGear={true} />
+                           )
+                        ) : (
+                           <p className="text-sm text-center text-muted-foreground py-2">{t('noGear')}</p>
+                        )}
+
+                        {/* Unloaded Gear Section - gear that IS burned */}
+                        <CardSectionHeader title={t('unloadedGear')} className="mt-2" />
+                        {details.powerTags.filter(tag => tag.isScratched).length > 0 ? (
+                           details.powerTags.filter(tag => tag.isScratched).map((tag, index) =>
+                              <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} isLoadoutGear={true} />
+                           )
+                        ) : (
+                           <p className="text-sm text-center text-muted-foreground py-2">{t('noGear')}</p>
+                        )}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('addGearTag')}</Button>}
+
+                        {/* Flaws Section */}
+                        <CardSectionHeader title={t('flawsTitle')} className="mt-2" />
+                        {details.weaknessTags.map((tag, index) =>
+                           <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />
+                        )}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('addFlawTag')}</Button>}
+                     </div>
+                  </>
+               ) : (
+                  // Regular theme card: Main Tag + Power/Weakness Tags
+                  <>
+                     <div className="w-full text-center px-1 py-2.5 flex-shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
+                        <div className="w-6">
+                           {!isEditing && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={() => handleDetailChange('mainTag', { ...details.mainTag, isActive: !details.mainTag.isActive })}>
+                                 {details.mainTag.isActive ? <Disc2 className="h-5 w-5 text-card-paper" /> : <Circle className="h-4 w-4" />}
+                              </Button>
+                           )}
+                        </div>
+                        {isEditing ? (
+                           <Input
+                              className="text-xl font-bold text-center flex-grow border-0 shadow-none"
+                              placeholder={t('placeholderName')}
+                              value={localMainTagName}
+                              onChange={(e) => setLocalMainTagName(e.target.value)}
+                           />
+                        ) : (
+                           <h2 className={cn("text-xl font-bold", details.mainTag.isScratched ? 'line-through opacity-50' : details.mainTag.isActive && 'underline')}>
+                              {details.mainTag.name || `[${t('noName')}]`}
+                           </h2>
+                        )}
+                        <div className="w-6">
+                           {!isEditing && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={() => handleDetailChange('mainTag', { ...details.mainTag, isScratched: !details.mainTag.isScratched })}>
+                                 <Flame className={cn('h-4 w-4', details.mainTag.isScratched && 'text-destructive fill-destructive')} />
+                              </Button>
+                           )}
+                        </div>
+                     </div>
+                     <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+                        {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
+
+                        {details.weaknessTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />)}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
+                     </div>
+                  </>
+               )}
+            </CardContent>
+
+            {!isDrawerPreview && card.cardType !== 'LOADOUT_THEME' &&
+               <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
+                  <CardSectionHeader title={`${
+                     card.cardType === 'GROUP_THEME'
+                        ? t('identityTitle')
+                        : card.cardType === 'CHARACTER_THEME'
+                           ? ((details as OtherscapeThemeDetails).themeType === 'Mythos'
+                              ? t('ritualTitle')
+                              : (details as OtherscapeThemeDetails).themeType === 'Self'
+                                 ? t('identityTitle')
+                                 : t('itchTitle'))
+                           : t('descriptionTitle')
+                  }`}></CardSectionHeader>
+                  <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
+                     {isEditing ? (
+                        <Textarea
+                           className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"
+                           placeholder={
+                              card.cardType === 'GROUP_THEME'
+                                 ? t('identityPlaceholder')
+                                 : card.cardType === 'CHARACTER_THEME'
+                                    ? ((details as OtherscapeThemeDetails).themeType === 'Mythos'
+                                       ? t('ritualPlaceholder')
+                                       : (details as OtherscapeThemeDetails).themeType === 'Self'
+                                          ? t('identityPlaceholder')
+                                          : t('itchPlaceholder'))
+                                    : t('descriptionPlaceholder')
+                           }
+                           value={localMystery || ''}
+                           onChange={(e) => setLocalMystery(e.target.value)}
+                        />
+                     ) : (
+                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{
+                           mysteryIdentityOrDescription || `[${
+                              card.cardType === 'GROUP_THEME'
+                                 ? t('noIdentity')
+                                 : card.cardType === 'CHARACTER_THEME'
+                                    ? ((details as OtherscapeThemeDetails).themeType === 'Mythos'
+                                       ? t('noRitual')
+                                       : (details as OtherscapeThemeDetails).themeType === 'Self'
+                                          ? t('noIdentity')
+                                          : t('noItch'))
+                                    : t('noDescription')
+                           }]`
+                        }</p>
+                     )}
+                  </div>
+
+                  <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
+                     <PipTracker label="Upgrade" value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
+                     <PipTracker label="Decay" value={card.cardType === 'CHARACTER_THEME' ? (details as OtherscapeThemeDetails).fadeOrCrack : (details as OtherscapeCrewDetails).crack} onUpdate={(val) => handleDetailChange(card.cardType === 'CHARACTER_THEME' ? 'fadeOrCrack' : 'crack', val)} />
+                  </div>
+               </CardFooter>
+            }
+            {!isDrawerPreview && card.cardType === 'LOADOUT_THEME' &&
+               <CardFooter className="p-0 flex flex-col">
+                  <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
+                     <PipTracker label="Upgrade" value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
+                  </div>
+               </CardFooter>
+            }
+         </Card>
+      );
+
+      const CardBack = (
+         <Card className={cn(
+            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "bg-card-paper-bg text-card-paper-fg border-card-border",
+            "relative z-0",
+            cardTypeClass,
+            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+         )}>
+            {card.cardType === 'CHARACTER_THEME' ? (
+               <CardHeaderMolecule title={(details as OtherscapeThemeDetails).themebook} type={(details as OtherscapeThemeDetails).themeType} game="OTHERSCAPE" />
+            ) : card.cardType === 'GROUP_THEME' ? (
+               <CardHeaderMolecule title={t('crewThemeTitle')} />
+            ) : (
+               <CardHeaderMolecule title={t('loadoutTitle')} />
+            )}
+
+            <CardSectionHeader title={t('improvements')} />
+
+            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
+                  {details.improvements.map((imp, index) => (
+                     <BlandTagItem
+                        key={imp.id}
+                        cardId={card.id}
+                        tag={imp}
+                        listName="improvements"
+                        isEditing={isEditing}
+                        index={index}
+                     />
+                  ))}
+                  {isEditing && (
+                     <div className="p-2 w-full">
+                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addImprovement')}
+                        </Button>
+                     </div>
+                  )}
+               </div>
+            </CardContent>
+         </Card>
+      );
+
+
+      if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
+         return (
+            <motion.div
+               ref={ref}
+               onHoverStart={() => setIsHovered(true)}
+               onHoverEnd={() => setIsHovered(false)}
+               className="relative"
+            >
+               <ToolbarHandle
+                  isEditing={isEditing}
+                  isHovered={isHovered}
+                  onDelete={() => actions.deleteCard(card.id)}
+                  dragAttributes={dragAttributes}
+                  dragListeners={dragListeners}
+                  cardTheme={cardTypeClass}
+                  onEditCard={onEditCard}
+                  onExport={onExport}
+                  onCycleViewMode={handleCycleViewMode}
+                  cardViewMode={card.viewMode}
+               />
+               <div className="flex gap-1 items-start">
+                  {CardFront}
+                  {CardBack}
+               </div>
+            </motion.div>
+         );
+      }
+
+
+
+      return (
+         <motion.div
+            ref={ref}
+            onHoverStart={() => setIsHovered(true)}
+            onHoverEnd={() => setIsHovered(false)}
+            className="relative"
+         >
+            <motion.div
+               className="w-full h-full"
+               style={{ transformStyle: 'preserve-3d' }}
+               initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
+               animate={{ rotateY: card.isFlipped ? 180 : 0 }}
+               transition={{ duration: 0.5, ease: 'easeInOut' }}
+            >
+
+               {!isDrawerPreview &&
+                  <ToolbarHandle
+                     isEditing={isEditing}
+                     isHovered={isHovered}
+                     onDelete={() => actions.deleteCard(card.id)}
+                     onFlip={() => actions.flipCard(card.id)}
+                     dragAttributes={dragAttributes}
+                     dragListeners={dragListeners}
+                     cardTheme={cardTypeClass}
+                     onEditCard={onEditCard}
+                     onExport={onExport}
+                     onCycleViewMode={handleCycleViewMode}
+                     cardViewMode={card.viewMode}
+                  />
+               }
+
+               {/* ============================================
+                             CARD FRONT
+                  ============================================ */}
+               <div style={{ backfaceVisibility: 'hidden' }}>
+                  {CardFront}
+               </div>
+
+               {/* ============================================
+                             CARD BACK
+                  ============================================ */}
+               <div className="absolute top-0 left-0 w-full h-full" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                  {CardBack}
+               </div>
+
+            </motion.div>
+         </motion.div>
+      );
+   }
+);
+
+OtherscapeThemeCard.displayName = 'OtherscapeThemeCard';
