@@ -1,0 +1,674 @@
+{
+   "Notifications": {
+      "general": {
+         "importFailed": "Datei-Import fehlgeschlagen. Daten können inkorrekt oder beschädigt sein.",
+         "exportSuccess": "Datei exportiert.",
+         "invalidExportType": "Dieses Objekt kann nicht exportiert werden.",
+         "appReset": "Anwendung erfolgreich zurückgesetzt. Läd erneut..."
+      },
+      "character": {
+         "savedToDrawer": "Der aktuelle Charakter wurde im Drawer gespeichert.",
+         "exported": "Der aktuelle Charakter wurde in Downloads exportiert.",
+         "exportFailedNoChar": "Der Export is fehlgeschlagen. Es wurde kein Charakter gefunden.",
+         "imported": "Charakterdatei erfolgreich importiert.",
+         "reset": "Charakter erfolgreich zurückgesetzt.",
+         "componentImported": "Komponentendatei erfolgreich importiert."
+      },
+      "card": {
+         "created": "Karte erfolgreich erstellt.",
+         "updated": "Karte erfolgreich aktualisiert."
+      },
+      "tracker": {
+         "created": "Tracker erfolgreich erstellt."
+      },
+      "drawer": {
+         "itemCreated": "Objekt im Drawer erstellt.",
+         "itemRenamed": "Objekt umbenannt.",
+         "itemDeleted": "Objekt gelöscht.",
+         "itemMoved": "Objekt veschoben.",
+         "folderCreated": "Ordner im Drawer erstellt.",
+         "folderRenamed": "Ordner umbenannt.",
+         "folderDeleted": "Ordner gelöscht.",
+         "folderMoved": "Ordner verschoben.",
+         "importSuccess": "Datei erfolgreich in den Drawer importiert.",
+         "exported": "Drawer erfolgreich exportiert.",
+         "deleted": "Drawer erfolgreich gelöscht."
+      },
+      "migration": {
+         "legacyDataDownloaded": "Legacy Daten Download geschickt.",
+         "success": "Migration erfolgreich.",
+         "failed": "Es hat einen Fehler während der Legacy Charakter Migration gegeben.",
+         "unsupported": "Dein Legacy Charakter benutzt ein Spielsystem das noch nicht unterstüzt wird. Bitte bewahre die Datei sicher auf, bis das System unterstützt wird und versuch es dann erneut.",
+         "folderError": "Konnte den Hauptordner MIGRATION nicht erstellen."
+      }
+   },
+   "Errors": {
+      "localStorageDisabled_title": "Kritischer Speicherfehler",
+      "localStorageDisabled_description": "Ihr Browser kann den lokalen Speicher für die App nicht nutzen. Characters of the Mist benötigt diesen Speicher für die Datenverwaltung und verwendet keinen Server. Daher kann die App in Ihrem Fall nicht ausgeführt werden."
+   },
+   "Tooltips": {
+      "ViewMode": {
+         "SideBySide": "Nebeneianderansicht wird erzwungen",
+         "Flipping": "Umdrehansicht wird erzwungen",
+         "Global": "Ansicht folgt den globalen Einstellungen"
+      }
+   },
+
+
+
+   "CharacterSheetPage": {
+      "loading": "Charakter läd...",
+
+      "newCharacterName": "Neuer Charakter",
+      "characterNamePlaceholder": "Charakter Name...",
+
+      "addCard": "Karte hinzufügen",
+      "dropToLoadCharacter": "Ziehe den Character hier hin um ihn vollständig zu laden. Aber vorsicht, dass wird den bisher aktiven Charakter ersetzen.",
+      "dropToImport": "Ziehe die Datei hier hin um die Komponente in das Charakterblatt zu importieren. Wenn du einen Charakter hier hin ziehst, wird es den aktiven Charakter ersetzen.",
+
+      "SidebarMenu": {
+         "sidebarTitle": "Menü",
+
+         "editMode": "Editiermodus",
+         "playMode": "Spielmodus",
+
+         "openDrawer": "Drawer öffnen",
+         "closeDrawer": "Drawer schließen",
+
+         "saveToDrawer": "Save Charakter speichern",
+         "exportCharacter": "Charakter exportieren",
+         "importCharacter": "Charakter importieren",
+         "importComponent": "Komponente importieren",
+
+         "resetCharacter": "Charakter zurücksetzen",
+         "resetConfirmTitle": "Sind Sie sicher, dass Sie den Charakter zurücksetzen wollen?",
+         "resetConfirmDescription": "Diese Aktion ist zerstörend. Ihr aktiver Charakter wird gelöscht und mit einem leeren Charakter ersetzt. Wenn sie die App nicht neu laden, können Sie den den alten Charakter mit der Rückgängig Funktion immernoch wiederherstellen.",
+         "resetConfirmCancelButton": "Abbrechen",
+         "resetConfirmButton": "Charakter wurde zurückgesetzt.",
+
+         "settings": "Einstellngen",
+         "info": "App Information",
+         "patchNotes": "Patch Hinweise"
+      }
+   },
+   "Actions": {
+      "undo": "Rückgängig",
+      "redo": "Widerherstellen"
+   },
+   "Drawer": {
+      "title": "Drawer",
+      "toggleView": "Wechsele den Ansichtsmodus zwischen ausführlicher Vorschau und Listenansicht der Elemente des Drawer",
+
+      "emptyFolder": "Dieser Ordner ist leer; Zeit ihn zu füllen!",
+      "addFolder": "Ordner hinzufügen",
+
+      "dropToImport": "Ziehe die Datei hierhin um sie in den Drawer zu importieren.",
+
+      "Actions": {
+         "addFolderTitle": "Neuen Ordner erstellen",
+         "createFolder": "Ordner erstellen",
+
+         "nameItemTitle": "Wie möchten Sie den Eintrag nennen?",
+
+         "rename": "Umbenennen",
+         "renameFolderTitle": "Sie benennen den Ordner um.",
+         "renameItemTitle": "Sie bennennen den Eintrag um.",
+         "saveChanges": "Speichern",
+
+         "delete": "Löschen",
+         "deleteFolderTitle": "Sind sie sicher, dass Sie den Ordner löschen wollen?",
+         "deleteItemTitle": "Sind sie sicher, dass Sie den Eintrag löschen wollen?",
+         "deleteFolderMessage": "Der Ordner und seine Inhalte werden für immer gelöscht.",
+         "deleteItemMessage": "Der Eintrag wird für immer gelöscht.",
+         "confirmDelete": "Löschen",
+
+         "move": "Verschieben",
+         "moveVerb": "Es wird verschoben...",
+         "moveHere": "Hierher verschieben",
+         "moveFolderTitle": "Einen ordner über den Drawer verschieben",
+         "moveItemTitle": "Einen Eintrag über den Drawer verschieben",
+         "moveToRoot": "Gehe zum Ursprungsverzeichnis des Drawer",
+         "moveUp": "Zurück",
+
+         "export": "Exportieren",
+         "exportFull": "Den gesamten Drawer exportieren",
+         "import": "Datei in den aktuelleln Ordner importieren",
+         "cancel": "Abbrechen",
+
+         "defaultNames": {
+            "characterCard": "Charakter Karte",
+            "fullSheet": "Vollständiger Charakterbogen",
+            "characterTheme": "Themenkarte",
+            "groupTheme": "Gruppen Themenkarte",
+            "statusTracker": "Status Tracker",
+            "storyTagTracker": "Handlungsmerkmal Tracker",
+            "defaultItem": "Neuer Eintrag"
+         }
+      },
+
+      "Types": {
+         "unavailablePreview": "Für diesen Eintrag ist die Vorschau nicht verfügbar.",
+
+         "LEGENDS": "Legends in the Mist",
+         "OTHERSCAPE": "Otherscape",
+         "CITY": "City of Mist",
+
+         "LEGENDS_FULL_CHARACTER_SHEET": "Charakterbogen",
+         "LEGENDS_CHARACTER_CARD": "Heldenkarte",
+         "LEGENDS_CHARACTER_THEME": "Heldenthema",
+         "LEGENDS_GROUP_THEME": "Gefolgschaftsthema",
+         "LEGENDS_STATUS_TRACKER": "Status Tracker",
+         "LEGENDS_STORY_TAG_TRACKER": "Handlungsmerkmal Tracker",
+         "LEGENDS_STORY_THEME_TRACKER": "Handlungsthema Tracker",
+
+         "cards": "Karten(n)",
+         "trackers": "Tracker"
+      }
+   },
+
+
+
+   "CreateCardDialog": {
+      "title": "Themenkarte erstellen",
+      "editTitle": "Themenkarte bearbeiten",
+      "description": "Wähle eine der folgenden Optionen um eine Themenkatrte zu erstellen. Wenn du möchtest, kannst du eine eine individuelles Themenbuch erstellen.",
+      "editDescription": "Wähle einer der folgenden Optionen um ein Themenbuch zu bearbeiten oder die Themenart der Themenkarte zu verändern Use the following options to modify the themebook or theme type of your Theme Card. Wenn du möchtest, kannst du eine eine individuelles Themenbuch erstellen.",
+      "createButton": "Karte bestätigen",
+      "updateButton": "Anpassungen bestätigen",
+
+      "selectPlaceholder": "Kartenart...",
+      "cardTypeLabel": "Kartenart",
+      "themeCard": "Heldenthema",
+      "fellowshipCard": "Gefolgschaftsthema",
+
+      "selectThemeTypePlaceholder": "Wähle eine Themenart...",
+      "themeTypeLabel": "Themenart",
+
+      "selectThemebookPlaceholder": "Wähle oder schreibe ein Themenbuch...",
+      "searchThemebookPlaceholder": "Suche oder erstelle ein Themenbuch...",
+      "noThemebookFound": "Themenbuch wurde in den Standards nicht gefunden. Sie können es jedoch als individuelles Themenbuch verwenden!",
+      "themebookLabel": "Themenbuch",
+      
+      "startingTagsLabel": "Merkmale beginnen",
+      "powerTagCountLabel": "Stärkemerkmal",
+      "weaknessTagCountLabel": "Schwächemerkmal"
+   },
+   "SettingsDialog": {
+      "title": "App Einstellungen",
+      "description": "Hier finden Sie allgemeine einstellbare Einstellungen für die App, wie das Farbschema oder den Hell- und Dunkelmodus.",
+
+      "language": "Sprache",
+
+      "accentColor": "Themen Palette",
+      "appearance": "Themen Modi",
+
+      "light": "Heller Modus",
+      "dark": "Dunkler Nodus",
+
+      "cardView": {
+         "title": "Karte umdrehen",
+         "sideBySide": "Nebeneinander",
+         "flipping": "Umdrehen aktiviert"
+      },
+
+      "trackerEdit": {
+         "title": "Tracker in den Baerbeitungsmodus setzen",
+         "unlocked": "nicht gesetzt",
+         "locked": "gesetzt"
+      },
+
+      "tutorial": "App Anleitung",
+      "tutorialButton": "Anleitung starten",
+
+      "migration": {
+         "label": "Daten migrieren",
+         "button": "Legacy Character Dateien migrieren"
+      },
+
+      "dangerZone": {
+         "title": "Gefahrenzone",
+         "description": "Diese Optionen sind äußerst zerstörerisch; ihre Verwendung erfolgt auf eigenes Risiko. Es wird um Bestätigung gebeten.",
+
+
+         "deleteDrawerButton": "Drawer löschen",
+         "deleteDrawerDialog": {
+            "title": "Den gesamten Drawer löschen",
+            "description": "Sie stehen kurz davor, Ihre Schublade vollständig zu löschen, einschließlich aller darin gespeicherten Elemente und Ordner. Sind Sie sich absolut sicher, dass Sie das tun möchten?",
+
+            "confirm": "Ja, lösche meinen Drawer"
+         },
+
+         "resetButton": "App vollständig zurücksetzen",
+         "resetDialog": {
+            "title": "App vollständig zurücksetzen",
+            "description": "Sie sind dabei, die App vollständig zurückzusetzen, wodurch alle Ihre Daten gelöscht werden. Sind Sie sich absolut sicher, dass Sie das tun möchten?",
+            "confirmationPrompt": "Um fortzufahren, bitte schreiben Sie Folgendes in das untenstehende Feld:",
+
+            "cancel": "Nein, ich möchte meine Daten behalten",
+            "confirm": "Ja, lösche alles"
+         }
+      }
+   },
+   "InfoDialog": {
+      "title": "Über Characters of the Mist",
+      "description": "Informationen, Credits und Lizenzierung für diese Anwendung.",
+      "close": "Schließen",
+      "tabs": {
+         "about": "Über",
+         "license": "Lizenz",
+         "credits": "Würdigungen"
+      },
+      "content": {
+         "about": "#### Was ist Characters of the Mist?
+
+Characters of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.
+
+---
+
+#### Was kann dieses Tool tun?
+
+Dieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:
+
+* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.
+
+* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.
+
+* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.
+
+* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.
+
+* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.
+
+* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.
+
+---
+
+#### Kann dieses Tool als VTT verwendet werden?
+
+Aktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.
+
+---
+
+#### Kann ich ein Problem mit der App melden?
+
+Sie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
+         "license": "#### Unter welcher Lizenz steht dieser Code?\n\nDiese App steht unter der [Creative Commons 4.0 BY-NC-SA Lizenz](http://creativecommons.org/licenses/by-nc-sa/4.0/).\n\nDas bedeutet, dass Sie das Material kopieren, weiterverbreiten, remixen, transformieren und darauf aufbauen dürfen. Sie müssen jedoch angemessene Anerkennung geben, einen Link zur Lizenz bereitstellen, angeben, ob Änderungen vorgenommen wurden, den Code nicht für kommerzielle Zwecke verwenden und Ihre Beiträge unter derselben Lizenz verteilen.",
+         "credits": "#### Credits & Attributions
+
+Vielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legends in the Mist.",
+         "localization": "#### Localization\n\nVielen Dank an alle, die dazu beigetragen haben, dass Characters of the Mist in anderen Sprachen als Englisch verfügbar ist!",
+         "support": "Gefällt Ihnen diese Anwendung? Bitte ziehen Sie in Betracht, mich zu unterstützen!"
+      },
+      "license_credit": "Characters of the Mist wurde von Altervayne (Discord: @altervayne) erstellt und wird von ihm gepflegt. Es steht unter der Creative Commons 4.0 BY-NC-SA Lizenz.",
+      "kofi_alt": "Unterstütze mich auf Ko-fi"
+   },
+   "PatchNotesDialog": {
+      "title": "Characters of the Mist - Patch Hinweise",
+      "description": "Sie werden die Patch-Notizen für die neuesten Versionen in diesem Fenster sehen.",
+
+      "versionLabel": "Version",
+      "selectVersion": "Wähle eine Version...",
+
+      "pageCounterLabel": "Seite",
+
+      "close": "Schließen"
+   },
+   "MigrationDialog": {
+      "title": "Legacy Charakter Daten migrieren",
+      "description": "Hier können Sie alte Charakterdateien aus der Alpha-Version von Characters of the Mist in die neue, optimierte Version migrieren. Der Migrator platziert die aktualisierten Dateien im Wurzelverzeichnis Ihres Drawer",
+      "thankYou": "Wenn Sie hier sind, haben Sie höchstwahrscheinlich die Alpha-Version von Characters of the Mist verwendet. Ich möchte mich persönlich bei Ihnen bedanken, dass Sie meine App genutzt haben, trotz ihrer vielen Mängel. Viel Liebe,",
+
+      "dropzone": {
+         "inactive": "Warte auf Datei...",
+         "active": "Datei gefunden!",
+         "fileTypes": "Legacy .json Dateien"
+      },
+
+      "cancel": "Schließe den Migrator",
+      "migrateButton": "Migration beginnen"
+   },
+   "LegacyDataDialog": {
+      "title": "Legacy Daten gefunden!",
+      "info": "Legacy-Daten aus der alten Alpha-Version von Characters of the Mist wurden in Ihrem Browser-Speicher gefunden.",
+      "description": "Die App wird diese Daten als Bereinigungsmaßnahme löschen. Vorher kannst du deine alten Daten herunterladen, um sie bei den Migrationstools zu verwenden, wenn du möchtest.",
+      "warning": "Wenn Sie auf Verwerfen drücken, werden die Daten gelöscht und für immer verloren sein. Diese Aktion kann nicht rückgängig gemacht werden. Durch Drücken von Herunterladen wird ein Download der Legacy-Daten im Browser ausgelöst.",
+
+      "confirmationLabel": "Wenn Sie Ihre Daten verwerfen wolllen dann geben sie den folgenden Bestätigungstext in das Feld unten ein:",
+
+      "dismissButton": "Verwerfen",
+      "downloadButton": "Legacy Daten herrunterladen"
+   },
+   "WelcomeDialog": {
+      "title": "Wilkonnen zu Characters of the Mist!",
+      "description": "Dies ist ein inoffizieller, von Fans erstellter Charaktermanager für TTRPGs von Son of Oak Game Studios. Alle Ihre Daten werden in Ihrem Browser gespeichert, um vollständige Privatsphäre zu gewährleisten.",
+      "featuresTitle": "Hauptmerkmale:",
+      "feature1": "Ein dynamisches Charakterblatt mit vollständiger Drag & Drop-Funktionalität.",
+      "feature2": "Ein leistungsstarker Befehlspalette (Strg+K) für schnelle Befehle nur mit der Tastatur.",
+      "feature3": "Ein vollständiges Dateisystem in der Drawer zur Organisation deiner Charaktere und Komponenten.",
+      "feature4": "Ein robustes Rückgängig/Wiederherstellen-System, um Fehler zu beheben.",
+      "callToAction": "Es gibt ein einfaches Anfänger-Tutorial, das Sie mit der Schaltfläche unten starten können. Alternativ können Sie die Patch-Notizen lesen. Wenn Sie direkt zur App möchten, können Sie einfach dieses Fenster schließen.",
+      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt \„Über\“ des App-Info-Fensters. Vielen Dank, dass Sie Characters of the Mist verwenden, viel Spaß!",
+      "startTutorialButton": "Tutorial beginnen",
+      "patchNotesButton": "Patch Hinweise ansehen"
+   },
+
+
+
+   "CommandPalette": {
+      "placeholder_1": "Dein Wunsch ist mein Befehl...",
+      "placeholder_2": "Bereite deine Anrufung vor...",
+      "placeholder_3": "Beschwöre den Willen der Götter...",
+      "placeholder_4": "Ins System einloggen...",
+      "placeholder_5": "Das Chaos herforbringen...",
+      "placeholder_6": "Dein Befehl ist mein Wunsch...",
+      "placeholder_7": " ↑ ↑ ↓ ↓ ← → ← → B A ...",
+      "placeholder_8": "Manchmal träume ich von Käse...",
+      "placeholder_9": "Du musst das nicht hören, da du ein extrem gut trainierter Profi bist...",
+      "placeholder_10": "Rein und raus, 20 Minuten Abenteuer...",
+      "placeholder_11": "Lass mich raten, jemand hat deine Süßigkeiten gestohlen...",
+      "placeholder_12": "Ah, endlich bist du wach...",
+      "placeholder_13": "Pizzazeit...",
+      "placeholder_14": "Für die, die nach uns kommen...",
+      "placeholder_15": "Ich war mal verrückt, Sie haben mich in einen Raum gebracht, einen Gummiraum...",
+      "placeholder_16": "Aufwachen; Das ist ein Traum...",
+      "placeholder_17": "Du schon wieder? Hast du eine Maus? Naja...",
+      "placeholder_18": "Etwas ist falsch, ich knn es spühren...",
+      "placeholder_19": "Die Phantomdiebe werden dein Herz stehlen...",
+      "placeholder_20": "Ich hoffe du hast Tom Nook ausbezahlt...",
+      "placeholder_21": "Die Sonne ist ein tötlicher Laser...",
+      "placeholder_22": "Nicht irgendjemand, dort ist ein Laken...",
+      "placeholder_23": "Mein Herr, das ist ein Wendy's...",
+      "placeholder_24": "Möge Zeus mich niederstreken, wenn ich lügen sol...",
+      "placeholder_25": "Das ist das schlimmste Kupfer das ich je gesehen habe...",
+
+      "placeholders": {
+         "renameCharacter": "Neuner Charaktername...",
+
+
+         "newCardName": "Neuer Merkmalname für die neue Karte...",
+         "themeType": "Wähle den Thementyp...",
+         "themebook": "Wähle ein Themenbuch oder tippe ein indeviduelles...",
+         "mainTagName": "Schreibe den Namen deines Hauptmerkmals...",
+         "powerTags": "Anzahl an Stärkemerkmalen...",
+         "weaknessTags": "Anzahl an Schwächemerkmalen...",
+
+
+         "trackerType": "Wähle eine Tracker Art...",
+         "trackerName": "Gib eine Tracker Namen ein..."
+      },
+
+      "actions": {
+         "renameTo": "Ubenennen: \"{name}\"",
+         "createWith": "Erstellen als: \"{name}\"",
+         "setPowerTags": "Stärkemerkmale setzen auf: {count}",
+         "setWeaknessTags": "Schwächemerkemale setzen auf: {count}"
+      },
+
+      "themes": {
+         "theme-neutral": "Neutral",
+         "theme-legends": "Legends in the Mist"
+      },
+
+      "empty": "Es wurden keine Kommandos gefudnen.",
+      "label": "Kommando Palette",
+
+      "groups": {
+         "general": "Allgemein",
+         "settings": "Einstellgen",
+         "export": "Export",
+         "character": "Charakterbogen",
+         "creation": "Erstellung",
+
+
+         "themePalette": "Wähle eine neue Themen Palette",
+
+         "chooseThemeType": "Wähle die Themenart",
+         "chooseThemebook": "Wähle ein Themenbuch"
+      },
+
+      "commands": {
+         "toggleEdit": "Schalter: Bearbeitungsmodus",
+         "toggleDrawer": "Schalter: Drawer",
+         "openSettings": "Öffne: Einstellungen",
+
+         "setThemeModeLight": "Setze: Themen Modus: Hell",
+         "setThemeModeDark": "Setze: Themen Modus: Dunkel",
+         "setThemePalette": "Setze: Themen Palette: [...]",
+         "viewFlipping": "Setze: Kartenansicht: Umdrehen",
+         "viewSideBySide": "Setze: Kartenansicht: Nebeneinander",
+
+         "exportCharacter": "Export: Vollständigen Charakterbogen",
+         "exportDrawer": "Export: Vollständigen Drawer",
+
+         "renameCharacter": "Umbenenen: Charakter",
+         "resetCharacter": "Zurücksetzen: Charakter",
+
+         "createCard": "Erstellen: Themenkarte",
+         "createTracker": "Erstellen: Tracker",
+         
+         "cardTypeCharacter": "Art: Charakterthema",
+         "cardTypeFellowship": "Art: Gefolgschaftsthema",
+
+         "trackerTypeStatus": "Art: Status Tracker",
+         "trackerTypeStoryTag": "Art: Handlungsmerkmal Tracker"
+      }
+   },
+   "Tutorial": {
+      "welcome_title": "Wilkommen zu Characters of the Mist!",
+      "welcome_content": "Diese kurze Tour führt Sie durch die Hauptfunktionen. Sie können jederzeit aussteigen, indem Sie auf das 'X' oben rechts in diesem kleinen Fenster oder außerhalb klicken. Wenn Sie versehentlich aussteigen, können Sie das Tutorial erneut im Einstellungsmenü starten.",
+      
+      "sidebar_title": "Hauptseitenleiste",
+      "sidebar_content": "Dies ist die Hauptseitenleiste. Sie enthält globale Aktionen wie das Umschalten des Bearbeitungsmodus, das Öffnen der Dateiansicht und den Zugriff auf die Einstellungen.",
+
+      "playArea_title": "Charakterbogen",
+      "playArea_content": "Characters of the Mist kann sich auf deinen \„Spielbereich\“ oder \„Charakterbogen\“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
+      
+      "characterName_title": "Charaktername",
+      "characterName_content": "Du kannst den Namen deines Charakters hier jederzeit ändern. Deine Änderungen werden automatisch gespeichert.",
+      
+      "trackers_title": "Trackers",
+      "trackers_content": "Dieser Bereich enthält Ihre Status- und Handlungsmerkaml-Tracker sowie Ihre Handlungsthemen-Tracker. Sie können neue hinzufügen, wenn Sie sich im 'Bearbeitungsmodus' befinden. Jeder Tracker verfügt über einen Verschiebegriff, der erscheint, wenn Sie mit der Maus darüber fahren. Damit können Sie sie verschieben oder exportieren.",
+
+      "cards_title": "Karten",
+      "cards_content": "Dieser Bereich enthält die Karten deines Charakters, sei es eine Themenkarte oder eine Charakterkarte. Jede Karte verfügt, ähnlich wie die Tracker, über einen Verschiebegriff, der beim Hovering erscheint. Du findest einen Ziehgriff, um sie herumzubewegen, sowie einige Tasten zum Drehen, Löschen (im Bearbeitungsmodus) oder Exportieren der Karte.",
+
+      "menuCollapse_title": "Reduzieren",
+      "menuCollapse_content": "Dieser Button ermöglicht es Ihnen, die Seitenleiste in eine viel dünnere Version zu reduzieren, die nur Symbole auf den Schaltflächen anzeigt.",
+
+      "menuUndoRedo_title": "Rückgängig/Wiederherstellen",
+      "menuUndoRedo_content": "Diese Schaltflächen ermöglichen es Ihnen, Aktionen auf Ihrem Charakterblatt rückgängig zu machen und wiederherzustellen. Wenn Ihre letzte Aktion im Charakterblatt war, können Sie auch CTRL+Z und CTRL+Y verwenden.",
+
+      "menuEditDrawer_title": "Bearbeitungsmodus und Drawer",
+      "menuEditDrawer_content": "Diese beiden Schaltflächen ermöglichen es Ihnen, den Bearbeitungsmodus zu aktivieren oder Ihren Drawer zu öffnen. Wir werden später darauf zurückkommen.",
+
+      "saveCharacter_title": "Einen Charakter speichern",
+      "saveCharacter_content": "Dieser Button ermöglicht es dir, deinen aktuellen Charakter als Datei in deinem Drawer zu speichern, mehr dazu später.",
+
+      "exportCharacter_title": "Einen Charakter exportieren",
+      "exportCharacter_content": "Dieser Button ermöglicht es Ihnen, Ihren aktuellen Charakter zu exportieren, wodurch Ihr Browser zum Herunterladen einer Datei aufgefordert wird.",
+
+      "importCharacter_title": "Einen Charakter importieren",
+      "importCharacter_content": "Dieser Button fordert Sie auf, eine Datei auszuwählen. Wenn Sie eine Charakterdatei von Characters of the Mist auswählen, wird diese Datei in die App als Ihr neuer aktiver Charakter geladen.",
+
+      "importComponent_title": "Eine Komponente importieren",
+      "importComponent_content": "Dieser Button fordert Sie ebenfalls auf, eine Datei auszuwählen. Wenn Sie eine Karten- oder Tracker-Datei aus Characters of the Mist auswählen, wird sie geladen und zu Ihrem aktuellen Charakter hinzugefügt.",
+
+      "resetCharacter_title": "Charakter zurücksetzen",
+      "resetCharacter_content": "Dieser Button löscht deinen aktiven Charakter vollständig und verwandelt dein Charakterblatt in eine frische leere Vorlage, um von vorne zu beginnen.",
+
+      "settings_title": "Einstellungen",
+      "settings_content": "Dieser Button öffnet das Einstellungsmenü, wo Sie Funktionen wie die Auswahl der Farbpalette Ihrer App, den Wechsel zwischen Hell- und Dunkelmodus oder das Zurücksetzen aller Ihrer Daten nutzen können. Hier finden Sie auch das Migrationswerkzeug, mit dem Sie die Daten der Legacy Characters of the Mist in diese neue Version migrieren können.",
+
+      "appInfo_title": "App Informaton",
+      "appInfo_content": "Dieser Button öffnet ein Informationsmenü, das einen allgemeinen „Über“-Bereich für diese App, Lizenzinformationen und Danksagungen enthält.",
+
+      "patchNotes_title": "Patch Notizen",
+      "patchNotes_content": "Dieser Button öffnet ein Menü, in dem Sie die Patch-Notizen-Historie der App einsehen können.",
+      
+      "editMode_title": "Bearbeitungsmodus",
+      "editMode_content": "Dieser Button versetzt Sie in den 'Bearbeitungsmodus'. Dadurch können Sie Karten und Tracker hinzufügen, entfernen und bearbeiten.",
+
+      "playMode_title": "Spielmodus",
+      "playMode_content": "Wenn der Bearbeitungsmodus aktiviert ist, ermöglicht der Button nun, zurück in den 'Spielmodus' zu wechseln, eine optimierte Anzeige deiner Karten und Tracker. Im Spielmodus sind nur grundlegende Funktionen verfügbar, um eine Überladung zu vermeiden.",
+
+      "addStatus_title": "Status hinzufügen",
+      "addStatus_content": "Im Bearbeitungsmodus sehen Sie jetzt eine Schaltfläche, um einen neuen Status-Tracker hinzuzufügen.",
+
+      "addStoryTag_title": "Handlungsmerkmal hinzufügen",
+      "addStoryTag_content": "Ebenso können Sie jetzt einen Button sehen, um einen neuen Handlungsmerkmal-Tracker hinzuzufügen. Sie können ein Handlungsmerkmal mit einem Button in der Werkzeugleiste, der erscheint, wenn Sie über den Tracker fahren, in ein Handlungsthema weiterentwickeln.",
+    
+      "addCard_title": "Neue Karten hinzufügen",
+      "addCard_content": "Dieser Button ist jetzt in Ihrer Kartenliste erschienen, wodurch Sie eine Karte erstellen können.",
+
+      "openAddCard_title": "Öffne den Kartenersteller",
+      "openAddCard_content": "Wir werden jetzt sehen, wie die Erstellung einer Karte funktioniert.",
+      
+      "creationDialog_title": "Kartenerstellung",
+      "creationDialog_content": "Dieser Dialog ermöglicht es Ihnen, die Eigenschaften der neuen Karte festzulegen.",
+
+      "menuDrawer_title": "Öffnen und Schließen des Drawer",
+      "menuDrawer_content": "Dieser Button öffnet die Drawer, in der alle deine Charaktere, Themen und Einträge gespeichert sind. Lass uns die Drawer ansehen.",
+
+      "drawer_title": "Der Drawer",
+      "drawer_content": "Dies ist dein Drawer, ein leistungsstarkes Speichersystem, das du verwenden kannst, um einzelne Elemente wie Karten und Tracker sowie vollständige Charakterblätter zu speichern, zu sichern und zu organisieren. Du kannst eine externe Datei hierher ziehen, um sie zu importieren.",
+   
+      "drawerUndoRedo_title": "Rückgängig/Wiederherstellen",
+      "drawerUndoRedo_content": "Ähnlich wie im Seitenmenü verfügt die Drawer über ein Paar Rückgängig/Wiederholen-Buttons. Diese Buttons ermöglichen es Ihnen, Aktionen innerhalb der Drawer rückgängig zu machen oder wiederherzustellen. Genau wie beim Charakterblatt können Sie, wenn Ihre letzte Aktion in der Drawer war, auch die Tasten CTRL+Z und CTRL+Y verwenden.",
+
+      "drawerRichView_title": "Ausführliche Ansicht",
+      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Characters of the Mist als \„Ausführliche Ansicht\“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
+
+      "drawerFolders_title": "Ordner",
+      "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche \„Ordner hinzufügen\“, mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von \„...\“ auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
+
+      "drawerItems_title": "Einträge",
+      "drawerItems_content": "Hier ist der Ort, an dem Ihre Items gespeichert sind. Items sind Charakterblätter, Karten oder Tracker. Sie können Einträge hinzufügen, indem Sie Ihren Charakter speichern oder sie von Ihrem Charakterblatt in die Schublade ziehen und ablegen. Jeder Eintrag verfügt außerdem über ein Kontextmenü mit verschiedenen Optionen und kann verschoben werden.",
+
+      "drawerImport_title": "Datei importieren",
+      "drawerImport_content": "Sie können eine externe Datei in Ihren Drawer importieren. Die Datei muss eine gültige Characters of the Mist-Datei sein, das heißt, ein Drawer, ein Charakterblatt, eine Karte, ein Ordner oder ein Tracker.",
+
+      "drawerExport_title": "Deinen Drawer exportieren",
+      "drawerExport_content": "Dieser Button ermöglicht es Ihnen, Ihren gesamten Drawer als Datei zu exportieren.",
+
+      "commandPalette_title": "Kommando Palette",
+      "commandPalette_content": "Characters of the Mist bietet eine leistungsstarke Kommando-Palette, mit der Sie die Funktionen der App nur mit Ihrer Tastatur nutzen können! Um sie zu verwenden, drücken Sie einfach CTRL+K. Beachten Sie, dass dieses Feature auf Power-User ausgerichtet ist.",
+
+      "closingWords_title": "Das Ende",
+      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt \„App-Info\“. Vielen Dank, dass Sie Characters of the Mist verwenden!"
+   },
+
+
+
+   "CardRenderer": {
+      "themeCardPlaceholder": "Themenkarte: {title}",
+      "listCardPlaceholder": "Kartenliste: {title}"
+   },
+   "ThemeCard": {
+      "fellowshipTitle": "Gefolgschaftsthema",
+
+      "placeholderName": "SChreibe dein Hauptmerkmal...",
+      "noName": "KEIN NAME",
+      "power": "STRÄKE",
+      "weakness": "SCHWÄCHE",
+      
+      "questTitle": "Aufgabe",
+      "noQuest": "LEERER AUFGABENTEXT",
+      "questPlaceholder": "Schreibe deinen Aufgabentext hier...",
+
+      "addPowerTag": "Stärkemerkmal hinzufügen",
+      "addWeaknessTag": "Schwächemerkmal hinzufügen",
+
+      "improvements": "Spezialverbesserung",
+      "addImprovement": "Verbesserung hinzufügen"
+   },
+   "TagItem": {
+      "placeholder": "Schreib das Merkmal...",
+      "noName": "NO MERKMAL"
+   },
+   "PipTracker": {
+      "abandon": "VERNACHLÄSSIGUNG",
+      "improve": "VERBESSERUNG",
+      "milestone": "MEILENSTEIN",
+      "promise": "VERSPRECHEN"
+   },
+   "HeroCard": {
+      "title": "HEldenkarte",
+      "noName": "KEIN HELDENNAME",
+      "characterNamePlaceholder": "Charaktername...",
+
+      "relationships": "Beziehungen der Gefolgschaft",
+      "addRelationship": "Beziehung hinzufügen",
+      "companion": "Begleiter",
+      "companionPlaceholder": "Gefolge",
+      "relationship": "Beziehung",
+      "relationshipCompanionNoName": "KEIN NAME",
+      "relationshipPlaceholder": "Beziehung",
+      "relationshipRelationNoName": "KEIN MERKMAL",
+
+      "quintessences": "Quintessenzen",
+      "addQuintessence": "Quintessenz hinzufügen"
+   },
+   "backpack": {
+      "title": "Rucksack",
+      "addItem": "Eintrag hinzufügen",
+      "noName": "KEIN EINTRAG",
+      "placeholder": "Schreibe den Eintrag..."
+   },
+   "quintessences": {
+      "placeholder": "Schreibe die Quintessenz...",
+      "noName": "KEINE QUINTESSENz"
+   },
+   "improvements": {
+      "placeholder": "Schreibe die Verbesserung...",
+      "noName": "KEINE VERBESSERUNG"
+   },
+   "Trackers": {
+      "addStatus": "Status hinzufügen",
+      "addStoryTag": "Handlungsmerkmal hinzufügen",
+      "statusPlaceholder": "Gib den Status ein...",
+      "statusNoName": "KEIN STATUS",
+      "storyTagPlaceholder": "Gib das Handlungsmerkmal ein...",
+      "storyTagNoName": "KEIN HANDLUNGSMERKMAL"
+   },
+
+
+
+   "LegendsData": {
+      "themebook": {
+         "circumstance": "Umstände",
+         "devotion": "Hingabe",
+         "past": "Vergangenheit",
+         "people": "Völker",
+         "personality": "Persönlichkeit",
+         "skillOrTrade": "Fähigkeit oder Handwerk",
+         "trait": "Eigenschaft",
+
+         "duty": "Pflicht",
+         "influence": "Einfluss",
+         "knowledge": "Wissen",
+         "prodigiousAbility": "Außergewöhnliche Begabung",
+         "relic": "Relikt",
+         "uncannyBeing": "Ungewöhnliches Wesen",
+
+         "destiny": "Schicksal",
+         "dominion": "Herrschaftsgebiet",
+         "mastery": "Meisterschaft",
+         "monstrosity": "Monströsität",
+
+         "companion": "Begleiter",
+         "magic": "Magie",
+         "possessions": "Besitztümer"
+      }
+   },
+   "ThemeTypes": {
+      "Origin": "Ursprung",
+      "Adventure": "Abenteuer",
+      "Greatness": "Grossartigkeit",
+
+      "Logos": "Logos",
+      "Mythos": "Mythos",
+
+      "Self": "Ego",
+      "Noise": "Rauschen"
+   }
+}
