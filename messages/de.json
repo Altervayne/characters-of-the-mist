@@ -259,43 +259,9 @@
          "credits": "Würdigungen"
       },
       "content": {
-         "about": "#### Was ist Characters of the Mist?
-
-Characters of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.
-
----
-
-#### Was kann dieses Tool tun?
-
-Dieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:
-
-* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.
-
-* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.
-
-* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.
-
-* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.
-
-* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.
-
-* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.
-
----
-
-#### Kann dieses Tool als VTT verwendet werden?
-
-Aktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.
-
----
-
-#### Kann ich ein Problem mit der App melden?
-
-Sie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
+         "about": "#### Was ist Characters of the Mist?\n\nCharacters of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.\n\n---\n\n#### Was kann dieses Tool tun?\n\nDieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:\n\n* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.\n\n* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.\n\n* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.\n\n* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.\n\n* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.\n\n* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.\n\n---\n\n#### Kann dieses Tool als VTT verwendet werden?\n\nAktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.\n\n---\n\n#### Kann ich ein Problem mit der App melden?\n\nSie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
          "license": "#### Unter welcher Lizenz steht dieser Code?\n\nDiese App steht unter der [Creative Commons 4.0 BY-NC-SA Lizenz](http://creativecommons.org/licenses/by-nc-sa/4.0/).\n\nDas bedeutet, dass Sie das Material kopieren, weiterverbreiten, remixen, transformieren und darauf aufbauen dürfen. Sie müssen jedoch angemessene Anerkennung geben, einen Link zur Lizenz bereitstellen, angeben, ob Änderungen vorgenommen wurden, den Code nicht für kommerzielle Zwecke verwenden und Ihre Beiträge unter derselben Lizenz verteilen.",
-         "credits": "#### Credits & Attributions
-
-Vielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legends in the Mist.",
+         "credits": "#### Credits & Attributions\n\nVielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legends in the Mist.",
          "localization": "#### Localization\n\nVielen Dank an alle, die dazu beigetragen haben, dass Characters of the Mist in anderen Sprachen als Englisch verfügbar ist!",
          "support": "Gefällt Ihnen diese Anwendung? Bitte ziehen Sie in Betracht, mich zu unterstützen!"
       },
@@ -347,7 +313,7 @@ Vielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erst
       "feature3": "Ein vollständiges Dateisystem in der Drawer zur Organisation deiner Charaktere und Komponenten.",
       "feature4": "Ein robustes Rückgängig/Wiederherstellen-System, um Fehler zu beheben.",
       "callToAction": "Es gibt ein einfaches Anfänger-Tutorial, das Sie mit der Schaltfläche unten starten können. Alternativ können Sie die Patch-Notizen lesen. Wenn Sie direkt zur App möchten, können Sie einfach dieses Fenster schließen.",
-      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt \„Über\“ des App-Info-Fensters. Vielen Dank, dass Sie Characters of the Mist verwenden, viel Spaß!",
+      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt „Über“ des App-Info-Fensters. Vielen Dank, dass Sie Characters of the Mist verwenden, viel Spaß!",
       "startTutorialButton": "Tutorial beginnen",
       "patchNotesButton": "Patch Hinweise ansehen"
    },
@@ -461,7 +427,7 @@ Vielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erst
       "sidebar_content": "Dies ist die Hauptseitenleiste. Sie enthält globale Aktionen wie das Umschalten des Bearbeitungsmodus, das Öffnen der Dateiansicht und den Zugriff auf die Einstellungen.",
 
       "playArea_title": "Charakterbogen",
-      "playArea_content": "Characters of the Mist kann sich auf deinen \„Spielbereich\“ oder \„Charakterbogen\“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
+      "playArea_content": "Characters of the Mist kann sich auf deinen „Spielbereich“ oder „Charakterbogen“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
       
       "characterName_title": "Charaktername",
       "characterName_content": "Du kannst den Namen deines Charakters hier jederzeit ändern. Deine Änderungen werden automatisch gespeichert.",
@@ -536,10 +502,10 @@ Vielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erst
       "drawerUndoRedo_content": "Ähnlich wie im Seitenmenü verfügt die Drawer über ein Paar Rückgängig/Wiederholen-Buttons. Diese Buttons ermöglichen es Ihnen, Aktionen innerhalb der Drawer rückgängig zu machen oder wiederherzustellen. Genau wie beim Charakterblatt können Sie, wenn Ihre letzte Aktion in der Drawer war, auch die Tasten CTRL+Z und CTRL+Y verwenden.",
 
       "drawerRichView_title": "Ausführliche Ansicht",
-      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Characters of the Mist als \„Ausführliche Ansicht\“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
+      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Characters of the Mist als „Ausführliche Ansicht“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
 
       "drawerFolders_title": "Ordner",
-      "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche \„Ordner hinzufügen\“, mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von \„...\“ auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
+      "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche „Ordner hinzufügen“, mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von „...“ auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
 
       "drawerItems_title": "Einträge",
       "drawerItems_content": "Hier ist der Ort, an dem Ihre Items gespeichert sind. Items sind Charakterblätter, Karten oder Tracker. Sie können Einträge hinzufügen, indem Sie Ihren Charakter speichern oder sie von Ihrem Charakterblatt in die Schublade ziehen und ablegen. Jeder Eintrag verfügt außerdem über ein Kontextmenü mit verschiedenen Optionen und kann verschoben werden.",
@@ -554,7 +520,7 @@ Vielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erst
       "commandPalette_content": "Characters of the Mist bietet eine leistungsstarke Kommando-Palette, mit der Sie die Funktionen der App nur mit Ihrer Tastatur nutzen können! Um sie zu verwenden, drücken Sie einfach CTRL+K. Beachten Sie, dass dieses Feature auf Power-User ausgerichtet ist.",
 
       "closingWords_title": "Das Ende",
-      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt \„App-Info\“. Vielen Dank, dass Sie Characters of the Mist verwenden!"
+      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt „App-Info“. Vielen Dank, dass Sie Characters of the Mist verwenden!"
    },
 
 
