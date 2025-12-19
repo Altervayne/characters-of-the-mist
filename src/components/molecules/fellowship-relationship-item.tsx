@@ -29,12 +29,13 @@ interface FellowshipRelationshipItemProps {
    relationship: FellowshipRelationship;
    isEditing: boolean;
    index: number;
+   translationNamespace?: string;
 }
 
 
 
-export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index }: FellowshipRelationshipItemProps) {
-   const t = useTranslations('HeroCard');
+export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index, translationNamespace = 'HeroCard' }: FellowshipRelationshipItemProps) {
+   const t = useTranslations(translationNamespace);
    const { updateRelationship, removeRelationship } = useCharacterActions();
 
    const isEvenRow = index % 2 === 0;

@@ -14,18 +14,52 @@ import { STORE_VERSION } from '../config';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
+import { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
 import { GeneralItemType, GameSystem } from '../types/drawer';
 import { CreateCardOptions } from '../types/creation';
 
 
 
 type TagListName = 'powerTags' | 'weaknessTags' | 'items';
-type BlandTagListName = 'quintessences' | 'improvements' | 'backpack' | 'nemeses';
+type BlandTagListName = 'quintessences' | 'improvements' | 'backpack' | 'nemeses' | 'specials';
 type IndexableCardDetails = CardDetails & { [key in BlandTagListName]?: BlandTag[] };
 
 const hasBlandTagList = (details: CardDetails, listName: string): listName is BlandTagListName => {
    return listName in details && Array.isArray((details as unknown as { [key: string]: unknown })[listName]);
+};
+
+// Helper function to update Otherscape essence counts
+const updateOtherscapeEssence = (cards: Card[]): Card[] => {
+   const characterCard = cards.find(c => c.cardType === 'CHARACTER_CARD');
+   if (!characterCard || (characterCard.details as OtherscapeCharacterDetails).game !== 'OTHERSCAPE') {
+      return cards;
+   }
+
+   // Count theme types from CHARACTER_THEME cards
+   const themeCounts = cards.reduce((acc, card) => {
+      if (card.cardType === 'CHARACTER_THEME') {
+         const themeDetails = card.details as OtherscapeThemeDetails;
+         const themeType = themeDetails.themeType;
+         if (themeType === 'Mythos') acc.mythos++;
+         else if (themeType === 'Self') acc.self++;
+         else if (themeType === 'Noise') acc.noise++;
+      }
+      return acc;
+   }, { mythos: 0, self: 0, noise: 0 });
+
+   // Update the character card with new essence counts
+   return cards.map(card => {
+      if (card.cardType === 'CHARACTER_CARD') {
+         return {
+            ...card,
+            details: {
+               ...card.details,
+               essence: themeCounts,
+            } as OtherscapeCharacterDetails,
+         };
+      }
+      return card;
+   });
 };
 
 
@@ -276,14 +310,74 @@ export const useCharacterStore = create<CharacterState>()(
                               } as CityCrewDetails,
                            };
                         }
+                     } else if (state.character.game === 'OTHERSCAPE') {
+                        if (options.cardType === 'CHARACTER_THEME') {
+                           newCard = {
+                              ...baseCard,
+                              cardType: 'CHARACTER_THEME',
+                              title: `${state.character.name}'s Theme Card - ${options.themebook + '/' || ''}${options.themeType}` || '',
+                              details: {
+                                 game: 'OTHERSCAPE',
+                                 themebook: options.themebook || '',
+                                 themeType: options.themeType || 'Mythos',
+                                 attention: 0,
+                                 fadeOrCrack: 0,
+                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
+                                 powerTags: createTags(options.powerTagsCount),
+                                 weaknessTags: createTags(options.weaknessTagsCount),
+                                 mystery: null,
+                                 improvements: [],
+                              } as OtherscapeThemeDetails,
+                           };
+                        } else if (options.cardType === 'GROUP_THEME') {
+                           newCard = {
+                              ...baseCard,
+                              cardType: 'GROUP_THEME',
+                              title: `Crew Theme`,
+                              details: {
+                                 game: 'OTHERSCAPE',
+                                 attention: 0,
+                                 crack: 0,
+                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
+                                 powerTags: createTags(options.powerTagsCount),
+                                 weaknessTags: createTags(options.weaknessTagsCount),
+                                 identity: null,
+                                 improvements: [],
+                              } as OtherscapeCrewDetails,
+                           };
+                        } else if (options.cardType === 'LOADOUT_THEME') {
+                           newCard = {
+                              ...baseCard,
+                              cardType: 'LOADOUT_THEME',
+                              title: `Loadout`,
+                              details: {
+                                 game: 'OTHERSCAPE',
+                                 attention: 0,
+                                 crack: 0,
+                                 mainTag: { id: cuid(), name: '', isActive: false, isScratched: false }, // Not displayed but kept for consistency
+                                 powerTags: createTags(options.powerTagsCount), // Gear items
+                                 weaknessTags: createTags(options.weaknessTagsCount), // Flaws
+                                 description: null,
+                                 improvements: [],
+                                 wildcardSlots: options.wildcardSlots || 0,
+                              } as OtherscapeLoadoutDetails,
+                           };
+                        }
                      }
 
                      if (!newCard) return {};
 
+                     const updatedCards = [...state.character.cards, newCard];
+
+                     // Update essence count for Otherscape characters
+                     const updatedCardsWithEssence = state.character.game === 'OTHERSCAPE'
+                        ? updateOtherscapeEssence(updatedCards)
+                        : updatedCards;
+
                      return {
                         character: {
                            ...state.character,
-                           cards: [...state.character.cards, newCard],
+                           cards: updatedCardsWithEssence,
                         },
                      };
                   });
@@ -318,15 +412,20 @@ export const useCharacterStore = create<CharacterState>()(
                         const newCards = [...state.character.cards];
                         const insertionIndex = index ?? newCards.length;
                         newCards.splice(insertionIndex, 0, newCardCopy);
-                        
+
                         finalCards = newCards.map((c, idx) => ({ ...c, order: idx }));
                      }
+
+                     // Update essence count for Otherscape characters
+                     const updatedCardsWithEssence = state.character.game === 'OTHERSCAPE'
+                        ? updateOtherscapeEssence(finalCards)
+                        : finalCards;
 
                      return {
                         character: {
                            ...state.character,
                            name: newCharacterName,
-                           cards: finalCards,
+                           cards: updatedCardsWithEssence,
                         },
                      };
                   });
@@ -335,10 +434,18 @@ export const useCharacterStore = create<CharacterState>()(
                   set((state) => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+
+                     const updatedCards = state.character.cards.filter((card) => card.id !== cardId);
+
+                     // Update essence count for Otherscape characters
+                     const updatedCardsWithEssence = state.character.game === 'OTHERSCAPE'
+                        ? updateOtherscapeEssence(updatedCards)
+                        : updatedCards;
+
                      return {
                         character: {
                            ...state.character,
-                           cards: state.character.cards.filter((card) => card.id !== cardId),
+                           cards: updatedCardsWithEssence,
                         },
                      };
                   });
@@ -385,8 +492,10 @@ export const useCharacterStore = create<CharacterState>()(
                addTag: (cardId, listName) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newTag: Tag = { id: cuid(), name: '', isActive: false, isScratched: false };
-                     
+                     // For Otherscape loadout cards, gear tags should be burned (unloaded) by default
+                     const isLoadoutGear = card.cardType === 'LOADOUT_THEME' && listName === 'powerTags';
+                     const newTag: Tag = { id: cuid(), name: '', isActive: false, isScratched: isLoadoutGear };
+
                      if ('powerTags' in card.details) {
                         const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
                         const updatedDetails = { ...details };
@@ -396,7 +505,7 @@ export const useCharacterStore = create<CharacterState>()(
                         } else if (listName === 'weaknessTags') {
                            updatedDetails.weaknessTags = [...details.weaknessTags, newTag];
                         }
-                        
+
                         return { ...card, details: updatedDetails };
                      }
                      return card;
@@ -855,50 +964,95 @@ export const useCharacterStore = create<CharacterState>()(
                addRelationship: (cardId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     if (card.cardType !== 'CHARACTER_CARD' || card.details.game !== 'LEGENDS') return card;
-                     const details = card.details as LegendsHeroDetails;
+                     if (card.cardType !== 'CHARACTER_CARD') return card;
+
                      const newRelationship: FellowshipRelationship = {
                         id: cuid(),
                         companionName: '',
                         relationshipTag: '',
                      };
-                     return {
-                        ...card,
-                        details: {
-                           ...details,
-                           fellowshipRelationships: [...details.fellowshipRelationships, newRelationship],
-                        },
-                     };
+
+                     if (card.details.game === 'LEGENDS') {
+                        const details = card.details as LegendsHeroDetails;
+                        return {
+                           ...card,
+                           details: {
+                              ...details,
+                              fellowshipRelationships: [...details.fellowshipRelationships, newRelationship],
+                           },
+                        };
+                     } else if (card.details.game === 'OTHERSCAPE') {
+                        const details = card.details as OtherscapeCharacterDetails;
+                        return {
+                           ...card,
+                           details: {
+                              ...details,
+                              crewRelationships: [...details.crewRelationships, newRelationship],
+                           },
+                        };
+                     }
+
+                     return card;
                   }));
                },
                updateRelationship: (cardId, relationshipId, updates) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     if (card.cardType !== 'CHARACTER_CARD' || card.details.game !== 'LEGENDS') return card;
-                     const details = card.details as LegendsHeroDetails;
-                     return {
-                        ...card,
-                        details: {
-                           ...details,
-                           fellowshipRelationships: details.fellowshipRelationships.map(rel => 
-                              rel.id === relationshipId ? { ...rel, ...updates } : rel
-                           ),
-                        },
-                     };
+                     if (card.cardType !== 'CHARACTER_CARD') return card;
+
+                     if (card.details.game === 'LEGENDS') {
+                        const details = card.details as LegendsHeroDetails;
+                        return {
+                           ...card,
+                           details: {
+                              ...details,
+                              fellowshipRelationships: details.fellowshipRelationships.map(rel =>
+                                 rel.id === relationshipId ? { ...rel, ...updates } : rel
+                              ),
+                           },
+                        };
+                     } else if (card.details.game === 'OTHERSCAPE') {
+                        const details = card.details as OtherscapeCharacterDetails;
+                        return {
+                           ...card,
+                           details: {
+                              ...details,
+                              crewRelationships: details.crewRelationships.map(rel =>
+                                 rel.id === relationshipId ? { ...rel, ...updates } : rel
+                              ),
+                           },
+                        };
+                     }
+
+                     return card;
                   }));
                },
                removeRelationship: (cardId, relationshipId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     if (card.cardType !== 'CHARACTER_CARD' || card.details.game !== 'LEGENDS') return card;
-                     const details = card.details as LegendsHeroDetails;
-                     return {
-                        ...card,
-                        details: {
-                           ...details,
-                           fellowshipRelationships: details.fellowshipRelationships.filter(rel => rel.id !== relationshipId),
-                        },
-                     };
+                     if (card.cardType !== 'CHARACTER_CARD') return card;
+
+                     if (card.details.game === 'LEGENDS') {
+                        const details = card.details as LegendsHeroDetails;
+                        return {
+                           ...card,
+                           details: {
+                              ...details,
+                              fellowshipRelationships: details.fellowshipRelationships.filter(rel => rel.id !== relationshipId),
+                           },
+                        };
+                     } else if (card.details.game === 'OTHERSCAPE') {
+                        const details = card.details as OtherscapeCharacterDetails;
+                        return {
+                           ...card,
+                           details: {
+                              ...details,
+                              crewRelationships: details.crewRelationships.filter(rel => rel.id !== relationshipId),
+                           },
+                        };
+                     }
+
+                     return card;
                   }));
                },
                // --- City of Mist ### Crew Actions ---

@@ -2,6 +2,8 @@
    "Notifications": {
       "general": {
          "importFailed": "File import failed. The data may be incorrect or corrupted.",
+         "importFailedNoCharacter": "Cannot import component: No character loaded. Please create a character first.",
+         "importFailedWrongGame": "Cannot import component: Game system mismatch. This component is for a different game system.",
          "exportSuccess": "File exported.",
          "invalidExportType": "This object cannot be exported.",
          "appReset": "Application successfully reset. Reloading..."
@@ -177,6 +179,15 @@
          "CITY_OF_MIST_STORY_TAG_TRACKER": "Story Tag Tracker",
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Story Theme Tracker",
 
+         "OTHERSCAPE_FULL_CHARACTER_SHEET": "Character Sheet",
+         "OTHERSCAPE_CHARACTER_CARD": "Character Card",
+         "OTHERSCAPE_CHARACTER_THEME": "Character Theme",
+         "OTHERSCAPE_GROUP_THEME": "Crew Theme",
+         "OTHERSCAPE_LOADOUT_THEME": "Loadout Theme",
+         "OTHERSCAPE_STATUS_TRACKER": "Status Tracker",
+         "OTHERSCAPE_STORY_TAG_TRACKER": "Story Tag Tracker",
+         "OTHERSCAPE_STORY_THEME_TRACKER": "Story Theme Tracker",
+
          "cards": "Card(s)",
          "trackers": "Tracker(s)"
       }
@@ -198,6 +209,9 @@
       "riftThemeCard": "Rift Theme",
       "fellowshipCard": "Fellowship Theme",
       "crewCard": "Crew Theme",
+      "otherscapeThemeCard": "Character Theme",
+      "otherscapeCrewCard": "Crew Theme",
+      "otherscapeLoadoutCard": "Loadout Theme",
 
       "selectThemeTypePlaceholder": "Select theme type...",
       "themeTypeLabel": "Theme Type",
@@ -206,10 +220,13 @@
       "searchThemebookPlaceholder": "Search or create a themebook...",
       "noThemebookFound": "Themebook not found in defaults. You can still use it as a custom themebook!",
       "themebookLabel": "Themebook",
-      
+
       "startingTagsLabel": "Starting Tags",
       "powerTagCountLabel": "Power Tags",
-      "weaknessTagCountLabel": "Weakness Tags"
+      "weaknessTagCountLabel": "Weakness Tags",
+      "gearTagCountLabel": "Gear Items",
+      "flawTagCountLabel": "Flaws",
+      "wildcardSlotsLabel": "Wildcard Slots"
    },
    "SettingsDialog": {
       "title": "App Settings",
@@ -455,6 +472,8 @@
          
          "cardTypeCharacter": "Type: Character Theme",
          "cardTypeFellowship": "Type: Fellowship Theme",
+         "cardTypeCrew": "Type: Crew Theme",
+         "cardTypeLoadout": "Type: Loadout Theme",
 
          "trackerTypeStatus": "Type: Status Tracker",
          "trackerTypeStoryTag": "Type: Story Tag Tracker"
@@ -463,7 +482,16 @@
    "Tutorial": {
       "welcome_title": "Welcome to Characters of the Mist!",
       "welcome_content": "This short tour will guide you through the main features. You can exit at any time by pressing the 'X' at the top right of this small window, or anywhere outside. If you exit by accident, you can start the tutorial again from the Settings menu.",
-      
+
+      "mainMenuGames_title": "Choose Your Game",
+      "mainMenuGames_content": "Characters of the Mist supports three game systems: Legends in the Mist, City of Mist, and Otherscape. You can create characters for any of these systems.",
+
+      "mainMenuLegends_title": "Legends in the Mist",
+      "mainMenuLegends_content": "For this tutorial, we'll create a Legends in the Mist character. Click this card to select it, then we'll proceed to create your first character!",
+
+      "mainMenuCreate_title": "Create Your Character",
+      "mainMenuCreate_content": "Click this button to create a new Legends in the Mist character sheet. This will take you to the main character sheet interface.",
+
       "sidebar_title": "Main Sidebar",
       "sidebar_content": "This is the main sidebar. It contains global actions like toggling edit mode, opening the file drawer, and accessing settings.",
 
@@ -607,6 +635,50 @@
       "improvements": "Special Improvements",
       "addImprovement": "Add Improvement"
    },
+   "OtherscapeThemeCard": {
+      "crewThemeTitle": "Crew Theme",
+      "loadoutTitle": "Loadout Theme",
+
+      "placeholderName": "Write your main tag...",
+      "noName": "NO NAME",
+      "power": "POWER",
+      "weakness": "WEAKNESS",
+      "flaw": "FLAW",
+
+      "ritualTitle": "Ritual",
+      "noRitual": "EMPTY RITUAL TEXT",
+      "ritualPlaceholder": "Write your ritual text here...",
+
+      "identityTitle": "Identity",
+      "noIdentity": "EMPTY IDENTITY TEXT",
+      "identityPlaceholder": "Write your identity text here...",
+
+      "itchTitle": "Itch",
+      "noItch": "EMPTY ITCH TEXT",
+      "itchPlaceholder": "Write your itch text here...",
+
+      "descriptionTitle": "Description",
+      "noDescription": "EMPTY DESCRIPTION",
+      "descriptionPlaceholder": "Write your loadout description here...",
+
+      "attention": "Attention",
+      "fade": "Fade",
+      "crack": "Crack",
+      "upgrade": "Upgrade",
+      "decay": "Decay",
+
+      "improvements": "Special Improvements",
+      "addImprovement": "Add Improvement",
+
+      "gearTitle": "GEAR",
+      "addGearTag": "Add Gear",
+      "flawsTitle": "Flaws",
+      "addFlawTag": "Add Flaw",
+      "loadedGear": "Loaded Gear",
+      "unloadedGear": "Unloaded Gear",
+      "wildcardSlots": "Wildcard Slots",
+      "noGear": "No Gear"
+   },
    "TagItem": {
       "placeholder": "Write your tag...",
       "noName": "NO TAG"
@@ -618,7 +690,9 @@
       "promise": "PROMISE",
       "Attention": "ATTENTION",
       "Fade": "FADE",
-      "Crack": "CRACK"
+      "Crack": "CRACK",
+      "Upgrade": "UPGRADE",
+      "Decay": "DECAY"
    },
    "RiftCard": {
       "title": "Rift Card",
@@ -640,6 +714,38 @@
          "addNemesis": "Add Nemesis"
       }
    },
+   "OtherscapeCharacterCard": {
+      "title": "Character Card",
+      "characterNamePlaceholder": "Character Name...",
+      "noName": "NO CHARACTER NAME",
+      "essence": "Essence",
+      "Essence": {
+         "mythos": "Mythos",
+         "self": "Self",
+         "noise": "Noise",
+         "description": "Essence reflects your balance of themes",
+         "vertices": {
+            "nexus": "Nexus",
+            "real": "Real",
+            "spiritualist": "Spiritualist",
+            "avatar": "Avatar",
+            "conduit": "Conduit",
+            "transhuman": "Transhuman",
+            "singularity": "Singularity",
+            "cyborg": "Cyborg"
+         }
+      },
+      "relationships": "Crew Relationships",
+      "addRelationship": "Add Crew Member",
+      "companionPlaceholder": "Member",
+      "relationshipPlaceholder": "Relation",
+      "relationshipCompanionNoName": "NO NAME",
+      "relationshipRelationNoName": "NO RELATIONSHIP",
+      "Specials": {
+         "title": "Specials",
+         "addSpecial": "Add Special"
+      }
+   },
    "HeroCard": {
       "title": "Hero Card",
       "noName": "NO HERO NAME",
@@ -649,7 +755,7 @@
       "addRelationship": "Add relationship",
       "companion": "Companion",
       "companionPlaceholder": "Fellow",
-      "relationship": "Relationship",
+      "relationship": "Relation",
       "relationshipCompanionNoName": "NO NAME",
       "relationshipPlaceholder": "Relation",
       "relationshipRelationNoName": "NO TAG",
@@ -670,6 +776,14 @@
    "improvements": {
       "placeholder": "Write your improvement...",
       "noName": "NO IMPROVEMENT"
+   },
+   "specials": {
+      "placeholder": "Write your special trait...",
+      "noName": "NO SPECIAL TRAIT"
+   },
+   "nemeses": {
+      "placeholder": "Write your nemesis...",
+      "noName": "NO NEMESIS"
    },
    "Trackers": {
       "addStatus": "Add Status",
@@ -727,6 +841,23 @@
          "possessions": "Possessions",
          "routine": "Routine",
          "struggle": "Struggle"
+      }
+   },
+   "OtherscapeData": {
+      "themebook": {
+         "artifact": "Artifact",
+         "esoterica": "Esoterica",
+         "exposure": "Exposure",
+
+         "affiliation": "Affiliation",
+         "assets": "Assets",
+         "expertise": "Expertise",
+         "horizon": "Horizon",
+         "personality": "Personality",
+         "troubledPast": "Troubled Past",
+
+         "augmentation": "Augmentation",
+         "cuttingEdge": "Cutting Edge"
       }
    },
    "ThemeTypes": {

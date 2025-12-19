@@ -876,11 +876,11 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                            </motion.div>
                         </motion.div>
 
-                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="px-3 pb-3">
+                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="px-3 pb-3 flex-1">
                            <div
                               ref={setNodeRef}
                               className={cn(
-                                 "w-full rounded-md transition-colors p-2",
+                                 "w-full h-full rounded-md transition-colors p-2",
                                  { "bg-muted": isDragHovering }
                               )}
                            >
@@ -895,8 +895,8 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                              onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: item }),
                                           };
 
-                                          return isCompactDrawer 
-                                             ? <CompactItemEntry key={item.id} {...commonProps} /> 
+                                          return isCompactDrawer
+                                             ? <CompactItemEntry key={item.id} {...commonProps} />
                                              : <ItemEntry key={item.id} {...commonProps} />;
                                        })}
                                     </SortableContext>

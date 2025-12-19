@@ -22,14 +22,15 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { legendsThemeTypes, legendsThemebooks } from '@/lib/data/legends-data';
 import { cityThemeTypes, cityThemebooks } from '@/lib/data/city-data';
+import { otherscapeThemeTypes, otherscapeThemebooks } from '@/lib/data/otherscape-data';
 
 // -- Type Imports --
-import { Card as CardData, LegendsThemeDetails, CityThemeDetails } from '@/lib/types/character';
+import { Card as CardData, LegendsThemeDetails, CityThemeDetails, OtherscapeThemeDetails } from '@/lib/types/character';
 import { CreateCardOptions, ThemeTypeUnion } from '@/lib/types/creation';
 import { GameSystem } from '@/lib/types/drawer';
 
 
-type CardTypeSelection = 'CHARACTER_THEME' | 'GROUP_THEME';
+type CardTypeSelection = 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME';
 
 interface CreateCardDialogProps {
   isOpen: boolean;
@@ -48,15 +49,18 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
    const tTypes = useTranslations('ThemeTypes');
    const tTheme = useTranslations();
 
-   const [cardType, setCardType] = useState<'CHARACTER_THEME' | 'GROUP_THEME' | ''>('');
-   const [themeType, setThemeType] = useState<ThemeTypeUnion>(game === 'LEGENDS' ? 'Origin' : 'Mythos');
+   const [cardType, setCardType] = useState<'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME' | ''>('');
+   const [themeType, setThemeType] = useState<ThemeTypeUnion>(
+      game === 'LEGENDS' ? 'Origin' : game === 'OTHERSCAPE' ? 'Mythos' : 'Mythos'
+   );
    const [themebook, setThemebook] = useState('');
    const [powerTagsCount, setPowerTagsCount] = useState(2);
    const [weaknessTagsCount, setWeaknessTagsCount] = useState(1);
+   const [wildcardSlots, setWildcardSlots] = useState(0);
    const [popoverOpen, setPopoverOpen] = useState(false);
 
    // Get the appropriate theme types based on game
-   const themeTypes = game === 'LEGENDS' ? legendsThemeTypes : cityThemeTypes;
+   const themeTypes = game === 'LEGENDS' ? legendsThemeTypes : game === 'OTHERSCAPE' ? otherscapeThemeTypes : cityThemeTypes;
 
 
 
@@ -67,6 +71,8 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
          return legendsThemebooks[themeType];
       } else if (game === 'CITY_OF_MIST' && (themeType === 'Mythos' || themeType === 'Logos')) {
          return cityThemebooks[themeType];
+      } else if (game === 'OTHERSCAPE' && (themeType === 'Mythos' || themeType === 'Self' || themeType === 'Noise')) {
+         return otherscapeThemebooks[themeType];
       }
       return [];
    }, [themeType, game]);
@@ -95,10 +101,17 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
             setThemebook(details.themebook);
             setPowerTagsCount(details.powerTags.length);
             setWeaknessTagsCount(details.weaknessTags.length);
+         } else if (game === 'OTHERSCAPE') {
+            const details = cardData.details as OtherscapeThemeDetails;
+            setCardType(cardData.cardType as 'CHARACTER_THEME');
+            setThemeType(details.themeType);
+            setThemebook(details.themebook);
+            setPowerTagsCount(details.powerTags.length);
+            setWeaknessTagsCount(details.weaknessTags.length);
          }
       } else {
          setCardType('');
-         setThemeType(game === 'LEGENDS' ? 'Origin' : 'Mythos');
+         setThemeType(game === 'LEGENDS' ? 'Origin' : game === 'OTHERSCAPE' ? 'Mythos' : 'Mythos');
          setThemebook('');
       }
    }, [isOpen, mode, cardData, game]);
@@ -106,7 +119,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
    const handleConfirm = () => {
       if (cardType) {
          onConfirm(
-            { cardType, themebook: themebook.trim(), themeType, powerTagsCount, weaknessTagsCount },
+            { cardType, themebook: themebook.trim(), themeType, powerTagsCount, weaknessTagsCount, wildcardSlots },
             mode === 'edit' ? cardData?.id : undefined
          );
          onOpenChange(false);
@@ -121,6 +134,11 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
          }
       } else if (game === 'CITY_OF_MIST') {
          if (value === 'Mythos' || value === 'Logos') {
+            setThemeType(value);
+            setThemebook('');
+         }
+      } else if (game === 'OTHERSCAPE') {
+         if (value === 'Mythos' || value === 'Self' || value === 'Noise') {
             setThemeType(value);
             setThemebook('');
          }
@@ -151,9 +169,11 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                         <SelectValue placeholder={t('selectPlaceholder')} />
                      </SelectTrigger>
                      <SelectContent>
-                        <SelectItem value="CHARACTER_THEME">{game === 'LEGENDS' ? t('themeCard') : t('riftThemeCard')}</SelectItem>
+                        <SelectItem value="CHARACTER_THEME">{game === 'LEGENDS' ? t('themeCard') : game === 'OTHERSCAPE' ? t('otherscapeThemeCard') : t('riftThemeCard')}</SelectItem>
                         {game === 'LEGENDS' && <SelectItem value="GROUP_THEME">{t('fellowshipCard')}</SelectItem>}
                         {game === 'CITY_OF_MIST' && <SelectItem value="GROUP_THEME">{t('crewCard')}</SelectItem>}
+                        {game === 'OTHERSCAPE' && <SelectItem value="GROUP_THEME">{t('otherscapeCrewCard')}</SelectItem>}
+                        {game === 'OTHERSCAPE' && <SelectItem value="LOADOUT_THEME">{t('otherscapeLoadoutCard')}</SelectItem>}
                      </SelectContent>
                   </Select>
                </div>
@@ -295,13 +315,19 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                   mode === 'create' && <>
                                           <span className="mt-6 font-bold">{t("startingTagsLabel")}</span>
                                           <div className="grid grid-cols-3 items-center gap-4">
-                                             <Label htmlFor="power-tags" className="text-right">{t('powerTagCountLabel')}</Label>
+                                             <Label htmlFor="power-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('gearTagCountLabel') : t('powerTagCountLabel')}</Label>
                                              <Input id="power-tags" type="number" value={powerTagsCount} onChange={e => setPowerTagsCount(Number(e.target.value))} className="col-span-2" />
                                           </div>
                                           <div className="grid grid-cols-3 items-center gap-4">
-                                             <Label htmlFor="weakness-tags" className="text-right">{t('weaknessTagCountLabel')}</Label>
+                                             <Label htmlFor="weakness-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('flawTagCountLabel') : t('weaknessTagCountLabel')}</Label>
                                              <Input id="weakness-tags" type="number" value={weaknessTagsCount} onChange={e => setWeaknessTagsCount(Number(e.target.value))} className="col-span-2" />
                                           </div>
+                                          {cardType === 'LOADOUT_THEME' && (
+                                             <div className="grid grid-cols-3 items-center gap-4">
+                                                <Label htmlFor="wildcard-slots" className="text-right">{t('wildcardSlotsLabel')}</Label>
+                                                <Input id="wildcard-slots" type="number" value={wildcardSlots} onChange={e => setWildcardSlots(Number(e.target.value))} className="col-span-2" />
+                                             </div>
+                                          )}
                                        </>
                }
             </div>

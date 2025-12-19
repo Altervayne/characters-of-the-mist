@@ -32,8 +32,10 @@ import { harmonizeData } from '@/lib/harmonization';
 import { CommandPalette } from '@/components/organisms/command-palette';
 import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
 import { CityThemeCard } from '@/components/organisms/city-theme-card';
+import { OtherscapeThemeCard } from '@/components/organisms/otherscape-theme-card';
 import { HeroCard } from '@/components/organisms/hero-card';
 import { RiftCard } from '@/components/organisms/rift-card';
+import { OtherscapeCharacterCard } from '@/components/organisms/otherscape-character-card';
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
 import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
 import { StoryThemeTrackerCard } from '@/components/organisms/story-theme-tracker';
@@ -74,14 +76,15 @@ interface CardRendererProps {
 
 const CardRenderer = React.forwardRef<HTMLDivElement, CardRendererProps>(
   ({ card, isEditing, isSnapshot, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
-      const t = useTranslations('CardRenderer');
       const commonProps = { ref, isEditing, isSnapshot, dragAttributes, dragListeners, onEditCard, onExport };
 
-      if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') {
+      if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME') {
          if (card.details.game === 'LEGENDS') {
             return <LegendsThemeCard card={card} {...commonProps} />;
          } else if (card.details.game === 'CITY_OF_MIST') {
             return <CityThemeCard card={card} {...commonProps} />;
+         } else if (card.details.game === 'OTHERSCAPE') {
+            return <OtherscapeThemeCard card={card} {...commonProps} />;
          }
       }
       if (card.cardType === 'CHARACTER_CARD') {
@@ -89,6 +92,8 @@ const CardRenderer = React.forwardRef<HTMLDivElement, CardRendererProps>(
             return <HeroCard card={card} {...commonProps} />;
          } else if (card.details.game === 'CITY_OF_MIST') {
             return <RiftCard card={card} {...commonProps} />;
+         } else if (card.details.game === 'OTHERSCAPE') {
+            return <OtherscapeCharacterCard card={card} {...commonProps} />;
          }
       }
 
@@ -181,7 +186,7 @@ export default function CharacterSheetPage() {
    const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const isTourOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const { setDrawerOpen, setIsEditing, setSettingsOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
-   const { setSidebarCollapsed, toggleSidebarCollapsed } = useAppSettingsActions();
+   const { setSidebarCollapsed, toggleSidebarCollapsed, setContextualGame } = useAppSettingsActions();
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
@@ -275,7 +280,7 @@ export default function CharacterSheetPage() {
 
    const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
-      if (!file || !character) return;
+      if (!file) return;
 
       try {
          const importedData = await importFromFile(file);
@@ -284,18 +289,26 @@ export default function CharacterSheetPage() {
 
          // --- Full character sheet ---
          if (fileType === 'FULL_CHARACTER_SHEET') {
-            loadCharacter(migratedContent as Character);
+            const characterData = migratedContent as Character;
+            loadCharacter(characterData);
+            setContextualGame(characterData.game);
             toast.success(tNotifications('character.imported'));
+            return;
+         }
+
+         // --- Individual components require a character to be loaded ---
+         if (!character) {
+            toast.error(tNotifications('general.importFailedNoCharacter'));
             return;
          }
 
          // --- Compatibility check for individual components ---
          if (game !== character.game) {
-            toast.error(tNotifications('general.importFailed'));
+            toast.error(tNotifications('general.importFailedWrongGame'));
             return;
          }
 
-         const isCardType = fileType === 'CHARACTER_CARD' || fileType === 'CHARACTER_THEME' || fileType === 'GROUP_THEME';
+         const isCardType = fileType === 'CHARACTER_CARD' || fileType === 'CHARACTER_THEME' || fileType === 'GROUP_THEME' || fileType === 'LOADOUT_THEME';
          const isTrackerType = fileType === 'STATUS_TRACKER' || fileType === 'STORY_TAG_TRACKER' || fileType === 'STORY_THEME_TRACKER';
 
          if (isCardType) {
@@ -312,7 +325,7 @@ export default function CharacterSheetPage() {
          console.error("Failed to import file:", error);
          toast.error(tNotifications('general.importFailed'));
       }
-   }, [character, loadCharacter, addImportedCard, addImportedTracker, tNotifications]);
+   }, [character, loadCharacter, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
 
    const { getRootProps, isDragActive: isFileDragActive } = useDropzone({
       onDrop: onFileDrop,
@@ -398,7 +411,9 @@ export default function CharacterSheetPage() {
          if (overIdStr === 'main-character-drop-zone') {
             const draggedItem = active.data.current?.item as DrawerItem;
             if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
-               loadCharacter(draggedItem.content as Character, draggedItem.id);
+               const characterData = draggedItem.content as Character;
+               loadCharacter(characterData, draggedItem.id);
+               setContextualGame(characterData.game);
             }
             return;
          }
@@ -472,7 +487,7 @@ export default function CharacterSheetPage() {
             console.log('Dragged item:', draggedItem.type);
 
             const isTrackerType = draggedItem.type === 'STATUS_TRACKER' || draggedItem.type === 'STORY_TAG_TRACKER' || draggedItem.type === 'STORY_THEME_TRACKER';
-            const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME';
+            const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME';
 
             console.log('Is tracker:', isTrackerType, 'Is card:', isCardType);
 

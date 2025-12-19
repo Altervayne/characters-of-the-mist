@@ -32,11 +32,12 @@ interface TagItemProps {
    cardId?: string;
    trackerId?: string;
    isTrackerTag?: boolean;
+   isLoadoutGear?: boolean;
 }
 
 
 
-export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag }: TagItemProps) {
+export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear }: TagItemProps) {
    const t = useTranslations('TagItem');
    const actions = useCharacterActions();
    const listName = tagType === 'power' ? 'powerTags' : 'weaknessTags';
@@ -95,6 +96,10 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
             tagType === 'power' ? powerBg : weaknessBg,
             tag.isScratched && 'opacity-50'
          )}
+         style={tagType === 'weakness' ? (isEvenRow
+            ? { backgroundColor: 'color-mix(in srgb, var(--card-destructive-bg, transparent) 25%, transparent)' }
+            : { backgroundColor: 'color-mix(in srgb, var(--card-destructive-bg, transparent) 18%, transparent)' }
+         ) : undefined}
       >
          <div className="flex items-center justify-center w-6">
             {tagType === 'power' && !isEditing && (
@@ -112,7 +117,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
                placeholder={t('placeholder')}
             />
          ) : (
-            <p className={cn('text-sm text-center py-1', tag.isScratched ? 'line-through' : tag.isActive && 'underline')}>
+            <p className={cn('text-sm text-center py-1', tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline')}>
                {tag.name || `[${t('noName')}]`}
             </p>
          )}

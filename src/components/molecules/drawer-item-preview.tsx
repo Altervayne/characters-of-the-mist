@@ -12,8 +12,10 @@ import { Folder, GripVertical } from 'lucide-react';
 // -- Component Imports --
 import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
 import { CityThemeCard } from '@/components/organisms/city-theme-card';
+import { OtherscapeThemeCard } from '@/components/organisms/otherscape-theme-card';
 import { HeroCard } from '@/components/organisms/hero-card';
 import { RiftCard } from '@/components/organisms/rift-card';
+import { OtherscapeCharacterCard } from '@/components/organisms/otherscape-character-card';
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
 import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
 import { CharacterSheetPreview } from '@/components/molecules/character-sheet-preview';
@@ -80,6 +82,7 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
          if ('cardType' in content) {
             switch (type) {
             case 'CHARACTER_THEME':
+            case 'GROUP_THEME':
                return <CityThemeCard card={content} isDrawerPreview />;
             case 'CHARACTER_CARD':
                return <RiftCard card={content} isDrawerPreview />;
@@ -102,7 +105,36 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
             return <CharacterSheetPreview item={item} />;
          }
       }
-   
+
+      if (game === 'OTHERSCAPE') {
+         if ('cardType' in content) {
+            switch (type) {
+            case 'CHARACTER_THEME':
+            case 'GROUP_THEME':
+            case 'LOADOUT_THEME':
+               return <OtherscapeThemeCard card={content} isDrawerPreview />;
+            case 'CHARACTER_CARD':
+               return <OtherscapeCharacterCard card={content} isDrawerPreview />;
+            }
+         }
+
+         if ('trackerType' in content) {
+            if (content.trackerType === 'STATUS') {
+               return <StatusTrackerCard tracker={content} isDrawerPreview />;
+            }
+            if (content.trackerType === 'STORY_TAG') {
+               return <StoryTagTrackerCard tracker={content} isDrawerPreview />;
+            }
+            if (content.trackerType === 'STORY_THEME') {
+               return <StoryThemeTrackerCard tracker={content} isDrawerPreview />;
+            }
+         }
+
+         if (type === 'FULL_CHARACTER_SHEET') {
+            return <CharacterSheetPreview item={item} />;
+         }
+      }
+
       return (
          <div className="w-[250px] h-[100px] flex items-center justify-center bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
                <p className="text-xs">{t('unavailablePreview')}</p>

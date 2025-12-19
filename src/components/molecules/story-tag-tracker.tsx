@@ -53,7 +53,11 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
 
    // Determine card theme based on game system
-   const cardTheme = tracker.game === 'CITY_OF_MIST' ? 'card-type-tracker-city' : 'card-type-tracker-legends';
+   const cardTheme = tracker.game === 'CITY_OF_MIST'
+      ? 'card-type-tracker-city'
+      : tracker.game === 'OTHERSCAPE'
+         ? 'card-type-tracker-otherscape'
+         : 'card-type-tracker-legends';
 
 
 

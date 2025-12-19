@@ -13,6 +13,7 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
          case 'CHARACTER_CARD': return ['CHARACTER_CARD', game];
          case 'CHARACTER_THEME': return ['CHARACTER_THEME', game];
          case 'GROUP_THEME': return ['GROUP_THEME', game];
+         case 'LOADOUT_THEME': return ['LOADOUT_THEME', game];
          default: return null;
       }
    }
@@ -90,6 +91,35 @@ export const customCollisionDetection: CollisionDetection = (args) => {
          return type === 'drawer-item' || type === 'sheet-card' || type === 'sheet-tracker';
       });
       return closestCenter({ ...args, droppableContainers: itemDroppables });
+   }
+
+   // --- If dragging from sheet (card or tracker) ---
+   if (activeDataType === 'sheet-card' || activeDataType === 'sheet-tracker') {
+      // First priority: drawer drop zones (current folder)
+      const drawerZoneDroppables = args.droppableContainers.filter((container) => {
+         const id = container.id.toString();
+         return id.startsWith('drawer-drop-zone-');
+      });
+      const drawerZoneCollisions = pointerWithin({ ...args, droppableContainers: drawerZoneDroppables });
+      if (drawerZoneCollisions.length > 0) {
+         return drawerZoneCollisions;
+      }
+
+      // Second priority: folders and back buttons (only if not over a drop zone)
+      const folderDroppables = args.droppableContainers.filter(
+         (container) => container.data.current?.type === 'drawer-folder' || container.id.toString().startsWith('drawer-back-button-')
+      );
+      const folderCollisions = pointerWithin({ ...args, droppableContainers: folderDroppables });
+      if (folderCollisions.length > 0) {
+         return folderCollisions;
+      }
+
+      // Third priority: other sheet items for reordering
+      const sheetItemDroppables = args.droppableContainers.filter((container) => {
+         const type = container.data.current?.type as string;
+         return type === 'sheet-card' || type === 'sheet-tracker';
+      });
+      return closestCenter({ ...args, droppableContainers: sheetItemDroppables });
    }
 
    return closestCenter(args);

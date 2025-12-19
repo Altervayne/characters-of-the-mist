@@ -113,8 +113,44 @@ export interface OtherscapeCharacterDetails {
       self: number;   // Count of Self themes
       noise: number;  // Count of Noise themes
    };
-   crewRelationships: CrewMember[]; // Reusing CrewMember for crew relationships
+   crewRelationships: FellowshipRelationship[]; // Same structure as Fellowship relationships: Name + Tag
    specials: BlandTag[]; // Special attributes/abilities
+}
+
+export interface OtherscapeThemeDetails {
+   game: 'OTHERSCAPE';
+   themebook: string;
+   themeType: OtherscapeThemeType;
+   attention: number;
+   fadeOrCrack: number; // Fade for Mythos/Self, Crack for Noise
+   mainTag: Tag;
+   powerTags: Tag[];
+   weaknessTags: Tag[];
+   mystery: string | null;
+   improvements: BlandTag[];
+}
+
+export interface OtherscapeCrewDetails {
+   game: 'OTHERSCAPE';
+   attention: number;
+   crack: number; // Crew uses crack
+   mainTag: Tag;
+   powerTags: Tag[];
+   weaknessTags: Tag[];
+   identity: string | null;
+   improvements: BlandTag[];
+}
+
+export interface OtherscapeLoadoutDetails {
+   game: 'OTHERSCAPE';
+   attention: number;
+   crack: number; // Loadout uses crack
+   mainTag: Tag; // Not displayed, but kept for structural consistency
+   powerTags: Tag[]; // Gear items (isActive = loaded, !isActive = unloaded)
+   weaknessTags: Tag[]; // Flaws
+   description: string | null;
+   improvements: BlandTag[];
+   wildcardSlots: number; // Number of wildcard slots available
 }
 
 
@@ -169,6 +205,10 @@ export type CardDetails =
    | LegendsThemeDetails
    | LegendsFellowshipDetails
    | LegendsHeroDetails
+   | OtherscapeThemeDetails
+   | OtherscapeCrewDetails
+   | OtherscapeLoadoutDetails
+   | OtherscapeCharacterDetails
    | CityThemeDetails
    | CityCrewDetails
    | CityRiftDetails;

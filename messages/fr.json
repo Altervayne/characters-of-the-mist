@@ -2,6 +2,8 @@
    "Notifications": {
       "general": {
          "importFailed": "Import du fichier échoué. Les données sont corrompues ou incorrectes.",
+         "importFailedNoCharacter": "Impossible d'importer le composant : Aucun personnage chargé. Veuillez créer un personnage d'abord.",
+         "importFailedWrongGame": "Impossible d'importer le composant : Incompatibilité de système de jeu. Ce composant est pour un système de jeu différent.",
          "exportSuccess": "Fichier exporté.",
          "invalidExportType": "Cet objet ne peut pas être exporté.",
          "appReset": "Réinitialisation de l'application terminée. Actualisation..."
@@ -177,6 +179,15 @@
          "CITY_OF_MIST_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
 
+         "OTHERSCAPE_FULL_CHARACTER_SHEET": "Fiche de Perso.",
+         "OTHERSCAPE_CHARACTER_CARD": "Carte de Personnage",
+         "OTHERSCAPE_CHARACTER_THEME": "Thème de Personnage",
+         "OTHERSCAPE_GROUP_THEME": "Thème d'Équipe",
+         "OTHERSCAPE_LOADOUT_THEME": "Thème d'Équipement",
+         "OTHERSCAPE_STATUS_TRACKER": "Suivi de Statut",
+         "OTHERSCAPE_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
+         "OTHERSCAPE_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
+
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"
       }
@@ -198,6 +209,9 @@
       "riftThemeCard": "Thème de Réceptacle",
       "fellowshipCard": "Thème de Compagnie",
       "crewCard": "Thème de Bande",
+      "otherscapeThemeCard": "Carte de Thème",
+      "otherscapeCrewCard": "Thème d'Équipe",
+      "otherscapeLoadoutCard": "Équipement",
 
       "selectThemeTypePlaceholder": "Sélectionnez un type...",
       "themeTypeLabel": "Type de Thème",
@@ -206,10 +220,13 @@
       "searchThemebookPlaceholder": "Cherchez ou créez un thème...",
       "noThemebookFound": "Thème introuvable dans les thèmes par défaut. Vous pouvez l'utiliser comme thème customisé !",
       "themebookLabel": "Thème",
-      
+
       "startingTagsLabel": "Traits de Départ",
       "powerTagCountLabel": "Traits d'Atout",
-      "weaknessTagCountLabel": "Traits de Contrainte"
+      "weaknessTagCountLabel": "Traits de Contrainte",
+      "gearTagCountLabel": "Objets d'Équipement",
+      "flawTagCountLabel": "Défauts",
+      "wildcardSlotsLabel": "Emplacements Joker"
    },
    "SettingsDialog": {
       "title": "Paramètres de l'Application",
@@ -253,7 +270,7 @@
             "title": "Supprimer le Tiroir entier",
             "description": "Vous êtes sur le point de supprimer votre tiroir entier, avec tous ses objets et dossiers. Êtes vous absolument certain que c'est ce que vous voulez faire ?",
 
-            "confirm": "Oui, supprime mon Tiroir."
+            "confirm": "Oui, supprimer mon Tiroir."
          },
 
          "resetButton": "Réinitialiser l'Appli.",
@@ -263,7 +280,7 @@
             "confirmationPrompt": "Pour procéder, veuillez écrire le texte suivant dans la zone d'entrée ci-dessous :",
 
             "cancel": "Non, je veux préserver mes données",
-            "confirm": "Oui, supprime tout."
+            "confirm": "Oui, supprimer tout."
          }
       }
    },
@@ -455,6 +472,8 @@
          
          "cardTypeCharacter": "Type : Thème de Personnage",
          "cardTypeFellowship": "Type : Thème de Groupe",
+         "cardTypeCrew": "Type : Thème d'Équipe",
+         "cardTypeLoadout": "Type : Équipement",
 
          "trackerTypeStatus": "Type : Suivi de Statut",
          "trackerTypeStoryTag": "Type : Suivi de Trait Narratif"
@@ -463,6 +482,15 @@
    "Tutorial": {
       "welcome_title": "Bienvenue dans Characters of the Mist !",
       "welcome_content": "Ce court tutoriel vous guidera à travers les fonctionnalités principales. Vous pouvez quitter à tout moment en appuyant sur le 'X' en haut à droite de cette petite fenêtre, ou n'importe où à l'extérieur. Si vous quittez par accident, vous pouvez relancer le tutoriel depuis le menu des Paramètres.",
+
+      "mainMenuGames_title": "Choisissez votre jeu",
+      "mainMenuGames_content": "Characters of the Mist supporte trois systèmes de jeu : Legends in the Mist, City of Mist et Otherscape. Vous pouvez créer des personnages pour chacun de ces systèmes.",
+
+      "mainMenuLegends_title": "Legends in the Mist",
+      "mainMenuLegends_content": "Pour ce tutoriel, nous créerons un personnage Legends in the Mist. Cliquez sur cette carte pour la sélectionner, puis nous procéderons à la création de votre premier personnage !",
+
+      "mainMenuCreate_title": "Créer votre personnage",
+      "mainMenuCreate_content": "Cliquez sur ce bouton pour créer une nouvelle feuille de personnage Legends in the Mist. Cela vous amènera à l'interface principale de la feuille de personnage.",
 
       "sidebar_title": "Menu Latéral Principal",
       "sidebar_content": "Ceci est la barre latérale principale. Elle contient des actions globales comme basculer le mode édition, ouvrir le tiroir de fichiers, et accéder aux paramètres.",
@@ -601,6 +629,50 @@
       "improvements": "Améliorations Spéciales",
       "addImprovement": "Ajouter une Amélioration"
    },
+   "OtherscapeThemeCard": {
+      "crewThemeTitle": "Thème d'Équipe",
+      "loadoutTitle": "Équipement",
+
+      "placeholderName": "Trait principal...",
+      "noName": "SANS NOM",
+      "power": "ATOUT",
+      "weakness": "CONTRAINTE",
+      "flaw": "DÉFAUT",
+
+      "ritualTitle": "Rituel",
+      "noRitual": "TEXTE DE RITUEL VIDE",
+      "ritualPlaceholder": "Entrez votre texte de Rituel...",
+
+      "identityTitle": "Identité",
+      "noIdentity": "TEXTE D'IDENTITÉ VIDE",
+      "identityPlaceholder": "Entrez votre texte d'Identité...",
+
+      "itchTitle": "Pulsion",
+      "noItch": "TEXTE DE PULSION VIDE",
+      "itchPlaceholder": "Entrez votre texte de Pulsion...",
+
+      "descriptionTitle": "Description",
+      "noDescription": "DESCRIPTION VIDE",
+      "descriptionPlaceholder": "Entrez la description de votre équipement...",
+
+      "attention": "Attention",
+      "fade": "Dissipation",
+      "crack": "Fissure",
+      "upgrade": "Amélioration",
+      "decay": "Déclin",
+
+      "improvements": "Améliorations Spéciales",
+      "addImprovement": "Ajouter une Amélioration",
+
+      "gearTitle": "ÉQUIPEMENT",
+      "addGearTag": "Ajouter de l'Équipement",
+      "flawsTitle": "Défauts",
+      "addFlawTag": "Ajouter un Défaut",
+      "loadedGear": "Équipement Chargé",
+      "unloadedGear": "Équipement Déchargé",
+      "wildcardSlots": "Emplacements Joker",
+      "noGear": "Aucun Équipement"
+   },
    "TagItem": {
       "placeholder": "Entrez votre Trait...",
       "noName": "SANS NOM"
@@ -612,7 +684,9 @@
       "promise": "PROMESSE",
       "Attention": "ATTENTION",
       "Fade": "DISSIPATION",
-      "Crack": "FISSURE"
+      "Crack": "FISSURE",
+      "Upgrade": "AMÉLIORATION",
+      "Decay": "DÉCLIN"
    },
    "RiftCard": {
       "title": "Carte de Réceptacle",
@@ -624,7 +698,7 @@
          "title": "Bande",
          "name": "Nom",
          "help": "Aide",
-         "hurt": "Blessé",
+         "hurt": "Blesse",
          "noName": "SANS NOM",
          "addCrewMember": "Ajouter un Membre"
       },
@@ -632,6 +706,38 @@
       "Nemesis": {
          "title": "Némésis",
          "addNemesis": "Ajouter un Némésis"
+      }
+   },
+   "OtherscapeCharacterCard": {
+      "title": "Carte de Personnage",
+      "characterNamePlaceholder": "Nom du Personnage...",
+      "noName": "SANS NOM",
+      "essence": "Essence",
+      "Essence": {
+         "mythos": "Mythos",
+         "self": "Soi",
+         "noise": "Bruit",
+         "description": "L'essence reflète votre équilibre de thèmes",
+         "vertices": {
+            "nexus": "Nexus",
+            "real": "Réel",
+            "spiritualist": "Spiritualiste",
+            "avatar": "Avatar",
+            "conduit": "Conduit",
+            "transhuman": "Transhumain",
+            "singularity": "Singularité",
+            "cyborg": "Cyborg"
+         }
+      },
+      "relationships": "Relations d'Équipe",
+      "addRelationship": "Ajouter un Membre",
+      "companionPlaceholder": "Membre",
+      "relationshipPlaceholder": "Relation",
+      "relationshipCompanionNoName": "SANS NOM",
+      "relationshipRelationNoName": "SANS RELATION",
+      "Specials": {
+         "title": "Spéciaux",
+         "addSpecial": "Ajouter un Spécial"
       }
    },
    "HeroCard": {
@@ -663,6 +769,14 @@
    },
    "improvements": {
       "placeholder": "Entrez votre amélioration...",
+      "noName": "SANS NOM"
+   },
+   "specials": {
+      "placeholder": "Entrez votre trait spécial...",
+      "noName": "SANS NOM"
+   },
+   "nemeses": {
+      "placeholder": "Entrez votre némésis...",
       "noName": "SANS NOM"
    },
    "Trackers": {
@@ -721,6 +835,23 @@
          "possessions": "Possessions",
          "routine": "Routine",
          "struggle": "Conflit"
+      }
+   },
+   "OtherscapeData": {
+      "themebook": {
+         "artifact": "Artefact",
+         "esoterica": "Ésotérique",
+         "exposure": "Exposition",
+
+         "affiliation": "Affiliation",
+         "assets": "Ressources",
+         "expertise": "Expertise",
+         "horizon": "Horizon",
+         "personality": "Personnalité",
+         "troubledPast": "Passé Tourmenté",
+
+         "augmentation": "Augmentation",
+         "cuttingEdge": "Pointe du Progrès"
       }
    },
    "ThemeTypes": {

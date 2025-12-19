@@ -48,7 +48,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView } = useAppSettingsActions();
    const { setTheme: setMode } = useTheme();
-   
+
    const handleExportCharacter = () => {
       if (!character) {
          toast.error(tNotifications('character.exportFailedNoChar'));
@@ -63,17 +63,19 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       toast.success(tNotifications('drawer.exported'));
    };
 
-
+   // Determine if creation commands should be shown
+   const currentGame = character?.game;
+   const showCreationCommands = currentGame && currentGame !== 'NEUTRAL';
 
    const staticCommands: CommandAction[] = [
-      
+
       // #########################
       // ###   GENERAL GROUP   ###
       // #########################
       { id: 'toggleEdit', label: `APP_EDIT | ${t('commands.toggleEdit')}`, icon: Pencil, group: t('groups.general'), action: onToggleEditMode },
       { id: 'toggleDrawer', label: `APP_DRAW | ${t('commands.toggleDrawer')}`, icon: PanelLeftOpen, group: t('groups.general'), action: onToggleDrawer },
       { id: 'openSettings', label: `APP_STNG | ${t('commands.openSettings')}`, icon: Settings, group: t('groups.general'), action: onOpenSettings },
-      
+
       // ##########################
       // ###   SETTINGS GROUP   ###
       // ##########################
@@ -82,7 +84,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setThemePalette', label: `STNG_PAL | ${t('commands.setThemePalette')}`, icon: Palette, group: t('groups.settings'), pageId: 'setThemePalette' },
       { id: 'viewFlipping', label: `STNG_FLIP | ${t('commands.viewFlipping')}`, icon: FlipHorizontal, group: t('groups.settings'), action: () => setSideBySideView(false) },
       { id: 'viewSideBySide', label: `STNG_SBS | ${t('commands.viewSideBySide')}`, icon: BookOpen, group: t('groups.settings'), action: () => setSideBySideView(true) },
-      
+
       // ########################
       // ###   EXPORT GROUP   ###
       // ########################
@@ -98,9 +100,12 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // ##########################
       // ###   CREATION GROUP   ###
       // ##########################
-      { id: 'createCard', label: `NEW_CARD | ${t('commands.createCard')}`, icon: FilePlus, group: t('groups.creation'), pageId: 'createCard_Type' },
-      { id: 'createTracker', label: `NEW_TRCK | ${t('commands.createTracker')}`, icon: ListPlus, group: t('groups.creation'), pageId: 'createTracker_Type' },
+      // Only show creation commands if the current game is not NEUTRAL
+      ...(showCreationCommands ? [
+         { id: 'createCard', label: `NEW_CARD | ${t('commands.createCard')}`, icon: FilePlus, group: t('groups.creation'), pageId: 'createCard_Type' },
+         { id: 'createTracker', label: `NEW_TRCK | ${t('commands.createTracker')}`, icon: ListPlus, group: t('groups.creation'), pageId: 'createTracker_Type' },
+      ] : []),
    ];
-   
+
    return staticCommands;
 };

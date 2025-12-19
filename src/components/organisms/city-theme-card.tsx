@@ -161,6 +161,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                   <CardHeaderMolecule
                      title={(details as CityThemeDetails).themebook}
                      type={(details as CityThemeDetails).themeType}
+                     game="CITY_OF_MIST"
                      className={cn("bg-card-header-bg text-card-header-fg")}
                   />
                ) : (
@@ -247,7 +248,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
             {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             {card.cardType === 'CHARACTER_THEME' ? (
-               <CardHeaderMolecule title={(details as CityThemeDetails).themebook} type={(details as CityThemeDetails).themeType} />
+               <CardHeaderMolecule title={(details as CityThemeDetails).themebook} type={(details as CityThemeDetails).themeType} game="CITY_OF_MIST" />
             ) : (
                <CardHeaderMolecule title={t('crewThemeTitle')} />
             )}

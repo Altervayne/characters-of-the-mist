@@ -97,9 +97,9 @@ export default async function LocaleLayout({children}: {children: React.ReactNod
                      toastOptions={{
                         className: 'bg-card text-card-foreground border rounded-md shadow-lg',
                         style: {
-                        background: 'hsl(var(--card))',
-                        color: 'hsl(var(--foreground))',
-                        border: '1px solid hsl(var(--border))',
+                        background: 'var(--card)',
+                        color: 'var(--foreground)',
+                        border: '1px solid var(--border)',
                         },
                      }}
                   />

@@ -12,21 +12,24 @@ import { AnimatePresence, motion, Variants } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { CheckSquare, CornerDownLeft, Crown, FileText, Leaf, ListTodo, Palette, Swords, Users } from 'lucide-react';
+import { Backpack, CheckSquare, CornerDownLeft, Crown, FileText, Leaf, ListTodo, Palette, Swords, Users } from 'lucide-react';
+import { CityMythosIcon, CityLogosIcon, OtherscapeMythosIcon, OtherscapeSelfIcon, OtherscapeNoiseIcon } from '@/components/icons/theme-icons';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { legendsThemebooks, legendsThemeTypes } from '@/lib/data/legends-data';
-import { cityThemebooks } from '@/lib/data/city-data';
+import { cityThemebooks, cityThemeTypes } from '@/lib/data/city-data';
+import { otherscapeThemebooks, otherscapeThemeTypes } from '@/lib/data/otherscape-data';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { ThemeName, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { CommandAction } from '@/hooks/useCommandPaletteActions';
 
 // -- Type Imports --
 import { CreateCardOptions, LegendsThemeTypes, ThemeTypeUnion } from '@/lib/types/creation';
+import { CityThemeType, OtherscapeThemeType } from '@/lib/types/character';
 
 
 
@@ -133,25 +136,43 @@ const SetThemePalettePage = () => {
 // ###### CREATE CARD ######
 // --- Step 1: Choose Type ---
 interface CreateCard_TypePageProps {
-   onSelect: (type: 'CHARACTER_THEME' | 'GROUP_THEME') => void;
+   currentGame?: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL';
+   onSelect: (type: 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME') => void;
 }
-const CreateCard_TypePage = ({ onSelect }: CreateCard_TypePageProps) => {
+const CreateCard_TypePage = ({ currentGame, onSelect }: CreateCard_TypePageProps) => {
    const t = useTranslations('CommandPalette');
    return (
       <Command.Group heading={t('groups.creation')}>
          <Command.Item value={t('commands.cardTypeCharacter')} onSelect={() => onSelect('CHARACTER_THEME')} className={commonItemClass}>
             <FileText className="mr-2 h-4 w-4" />{t('commands.cardTypeCharacter')}
          </Command.Item>
-         <Command.Item value={t('commands.cardTypeFellowship')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
-            <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeFellowship')}
-         </Command.Item>
+         {currentGame === 'LEGENDS' && (
+            <Command.Item value={t('commands.cardTypeFellowship')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
+               <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeFellowship')}
+            </Command.Item>
+         )}
+         {currentGame === 'CITY_OF_MIST' && (
+            <Command.Item value={t('commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
+               <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeCrew')}
+            </Command.Item>
+         )}
+         {currentGame === 'OTHERSCAPE' && (
+            <>
+               <Command.Item value={t('commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
+                  <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeCrew')}
+               </Command.Item>
+               <Command.Item value={t('commands.cardTypeLoadout')} onSelect={() => onSelect('LOADOUT_THEME')} className={commonItemClass}>
+                  <Backpack className="mr-2 h-4 w-4" />{t('commands.cardTypeLoadout')}
+               </Command.Item>
+            </>
+         )}
       </Command.Group>
    );
 };
 
-// --- Step 2: Input Text ---
-interface CreateCard_ThemeTypePageProps { onSelect: (type: LegendsThemeTypes) => void; }
-const CreateCard_ThemeTypePage = ({ onSelect }: CreateCard_ThemeTypePageProps) => {
+// --- Step 2a: Legends Theme Type ---
+interface CreateCard_LegendsThemeTypePageProps { onSelect: (type: LegendsThemeTypes) => void; }
+const CreateCard_LegendsThemeTypePage = ({ onSelect }: CreateCard_LegendsThemeTypePageProps) => {
       const t = useTranslations('CommandPalette');
       const tTypes = useTranslations('ThemeTypes');
       const themeTypeIcons: { [key in LegendsThemeTypes]: React.ElementType } = { Origin: Leaf, Adventure: Swords, Greatness: Crown };
@@ -170,22 +191,67 @@ const CreateCard_ThemeTypePage = ({ onSelect }: CreateCard_ThemeTypePageProps) =
       );
 };
 
+// --- Step 2b: City Theme Type ---
+interface CreateCard_CityThemeTypePageProps { onSelect: (type: CityThemeType) => void; }
+const CreateCard_CityThemeTypePage = ({ onSelect }: CreateCard_CityThemeTypePageProps) => {
+      const t = useTranslations('CommandPalette');
+      const tTypes = useTranslations('ThemeTypes');
+      const themeTypeIcons: { [key in CityThemeType]: React.ElementType } = { Mythos: CityMythosIcon, Logos: CityLogosIcon };
+      return (
+         <Command.Group heading={t('groups.chooseThemeType')}>
+            {cityThemeTypes.map(type => {
+                const IconComponent = themeTypeIcons[type as CityThemeType];
+                return (
+                    <Command.Item key={type} value={type} onSelect={() => onSelect(type as CityThemeType)} className={commonItemClass}>
+                        <IconComponent className="mr-2 h-4 w-4" />
+                        {tTypes(type)}
+                    </Command.Item>
+                );
+            })}
+         </Command.Group>
+      );
+};
+
+// --- Step 2c: Otherscape Theme Type ---
+interface CreateCard_OtherscapeThemeTypePageProps { onSelect: (type: OtherscapeThemeType) => void; }
+const CreateCard_OtherscapeThemeTypePage = ({ onSelect }: CreateCard_OtherscapeThemeTypePageProps) => {
+      const t = useTranslations('CommandPalette');
+      const tTypes = useTranslations('ThemeTypes');
+      const themeTypeIcons: { [key in OtherscapeThemeType]: React.ElementType } = { Mythos: OtherscapeMythosIcon, Self: OtherscapeSelfIcon, Noise: OtherscapeNoiseIcon };
+      return (
+         <Command.Group heading={t('groups.chooseThemeType')}>
+            {otherscapeThemeTypes.map(type => {
+                const IconComponent = themeTypeIcons[type as OtherscapeThemeType];
+                return (
+                    <Command.Item key={type} value={type} onSelect={() => onSelect(type as OtherscapeThemeType)} className={commonItemClass}>
+                        <IconComponent className="mr-2 h-4 w-4" />
+                        {tTypes(type)}
+                    </Command.Item>
+                );
+            })}
+         </Command.Group>
+      );
+};
+
 // --- Step 3: Choose Themebook ---
 interface CreateCard_ThemebookPageProps {
     themeType: ThemeTypeUnion;
     inputValue: string;
+    currentGame?: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL';
     onSelect: (themebook: string) => void;
 }
-const CreateCard_ThemebookPage = ({ themeType, inputValue, onSelect }: CreateCard_ThemebookPageProps) => {
+const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, onSelect }: CreateCard_ThemebookPageProps) => {
    const t = useTranslations('CommandPalette');
    const tData = useTranslations();
 
-   // Determine which themebook list to use based on theme type
+   // Determine which themebook list to use based on theme type and current game
    let availableThemebooks: { value: string; key: string; }[] = [];
    if (themeType === 'Origin' || themeType === 'Adventure' || themeType === 'Greatness') {
       availableThemebooks = legendsThemebooks[themeType] || [];
-   } else if (themeType === 'Mythos' || themeType === 'Logos') {
+   } else if (currentGame === 'CITY_OF_MIST' && (themeType === 'Mythos' || themeType === 'Logos')) {
       availableThemebooks = cityThemebooks[themeType] || [];
+   } else if (currentGame === 'OTHERSCAPE' && (themeType === 'Mythos' || themeType === 'Self' || themeType === 'Noise')) {
+      availableThemebooks = otherscapeThemebooks[themeType] || [];
    }
 
    const text = t('actions.createWith', { name: inputValue || '...' });
@@ -296,6 +362,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    const t = useTranslations('CommandPalette');
    const tNotify = useTranslations('Notifications');
    const { addCard, addStatus, addStoryTag } = useCharacterActions();
+   const character = useCharacterStore((state) => state.character);
+   const currentGame = character?.game;
    const isOpen = useAppGeneralStateStore((state) => state.isCommandPaletteOpen);
    const { setCommandPaletteOpen, toggleCommandPalette } = useAppGeneralStateActions();
 
@@ -303,7 +371,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    const [cardOptions, setCardOptions] = useState<Partial<CreateCardOptions>>({});
    const [trackerType, setTrackerType] = useState<'STATUS' | 'STORY_TAG' | null>(null);
    const [placeholder, setPlaceholder] = useState(t('placeholder_1'));
-   
+
    const paletteRef = useRef<HTMLDivElement>(null);
    const inputRef = useRef<HTMLInputElement>(null);
 
@@ -480,23 +548,51 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                      {/* ------------- */}
 
                      {activePage === 'createCard_Type' && (
-                        <CreateCard_TypePage onSelect={(type) => {
-                           setCardOptions({ cardType: type });
-                           setPages(p => [...p, type === 'CHARACTER_THEME' ? 'createCard_ThemeType' : 'createCard_MainTag']);
+                        <CreateCard_TypePage currentGame={currentGame} onSelect={(type) => {
+                           if (type === 'LOADOUT_THEME') {
+                              // Loadout cards don't have theme types or main tags, create immediately
+                              addCard({
+                                 cardType: 'LOADOUT_THEME',
+                                 powerTagsCount: 2,
+                                 weaknessTagsCount: 1
+                              });
+                              toast.success(tNotify('card.created'));
+                              setCommandPaletteOpen(false);
+                           } else {
+                              setCardOptions({ cardType: type });
+                              setPages(p => [...p, type === 'CHARACTER_THEME' ? 'createCard_ThemeType' : 'createCard_MainTag']);
+                           }
                         }} />
                      )}
-                     {activePage === 'createCard_ThemeType' && (
-                        <CreateCard_ThemeTypePage onSelect={(type) => {
+                     {activePage === 'createCard_ThemeType' && currentGame === 'LEGENDS' && (
+                        <CreateCard_LegendsThemeTypePage onSelect={(type) => {
+                            setCardOptions(prev => ({ ...prev, themeType: type }));
+                            setPages(p => [...p, 'createCard_Themebook']);
+                        }} />
+                     )}
+                     {activePage === 'createCard_ThemeType' && currentGame === 'CITY_OF_MIST' && (
+                        <CreateCard_CityThemeTypePage onSelect={(type) => {
+                            setCardOptions(prev => ({ ...prev, themeType: type }));
+                            setPages(p => [...p, 'createCard_Themebook']);
+                        }} />
+                     )}
+                     {activePage === 'createCard_ThemeType' && currentGame === 'OTHERSCAPE' && (
+                        <CreateCard_OtherscapeThemeTypePage onSelect={(type) => {
                             setCardOptions(prev => ({ ...prev, themeType: type }));
                             setPages(p => [...p, 'createCard_Themebook']);
                         }} />
                      )}
                      {activePage === 'createCard_Themebook' && (
-                        <CreateCard_ThemebookPage themeType={cardOptions.themeType!} inputValue={inputValue} onSelect={(themebook) => {
-                           setCardOptions(prev => ({ ...prev, themebook: themebook }));
-                           setPages(p => [...p, 'createCard_MainTag']);
-                           setInputValue('');
-                        }} />
+                        <CreateCard_ThemebookPage
+                           themeType={cardOptions.themeType!}
+                           inputValue={inputValue}
+                           currentGame={currentGame}
+                           onSelect={(themebook) => {
+                              setCardOptions(prev => ({ ...prev, themebook: themebook }));
+                              setPages(p => [...p, 'createCard_MainTag']);
+                              setInputValue('');
+                           }}
+                        />
                      )}
                      {activePage === 'createCard_MainTag' && (
                         <CreateCard_InputPage inputValue={inputValue} onSelect={() => {

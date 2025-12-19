@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Types Imports --
-import { Character, CityRiftDetails, LegendsHeroDetails } from '@/lib/types/character';
+import { Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
 import { GameSystem } from '../types/drawer';
 
 
@@ -47,10 +47,30 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
          };
 
       case 'OTHERSCAPE':
+         const characterCardId = cuid();
          return {
             ...baseCharacter,
             game: 'OTHERSCAPE',
-            cards: [],
+            cards: [
+               {
+                  id: characterCardId,
+                  cardType: 'CHARACTER_CARD',
+                  title: 'Character Card',
+                  order: 0,
+                  isFlipped: false,
+                  details: {
+                     game: 'OTHERSCAPE',
+                     characterName: name,
+                     essence: {
+                        mythos: 0,
+                        self: 0,
+                        noise: 0,
+                     },
+                     crewRelationships: [],
+                     specials: [],
+                  } as OtherscapeCharacterDetails,
+               },
+            ],
          };
 
       case 'LEGENDS':

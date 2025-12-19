@@ -7,18 +7,52 @@ import 'driver.js/dist/driver.css';
 interface TourActions {
    setIsEditing: (isEditing: boolean) => void;
    setDrawerOpen: (isOpen: boolean) => void;
+   setContextualGame: (game: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL') => void;
+   createCharacter: (game: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL') => void;
 }
 
 
 
 export const getTourSteps = (t: (key: string) => string, actions: TourActions): DriveStep[] => {
-   const { setIsEditing, setDrawerOpen } = actions;
+   const { setIsEditing, setDrawerOpen, setContextualGame, createCharacter } = actions;
 
    return [
       {
          popover: {
             title: t('welcome_title'),
             description: t('welcome_content'),
+         },
+      },
+      {
+         element: '[data-tour="main-menu-game-selection"]',
+         popover: {
+            title: t('mainMenuGames_title'),
+            description: t('mainMenuGames_content'),
+            side: 'bottom',
+         },
+      },
+      {
+         element: '[data-tour="main-menu-legends-card"]',
+         popover: {
+            title: t('mainMenuLegends_title'),
+            description: t('mainMenuLegends_content'),
+            side: 'bottom',
+            onNextClick: (_element, _step, { driver }) => {
+               setContextualGame('LEGENDS');
+               driver.moveNext();
+            },
+         },
+      },
+      {
+         element: '[data-tour="main-menu-create-button"]',
+         popover: {
+            title: t('mainMenuCreate_title'),
+            description: t('mainMenuCreate_content'),
+            side: 'bottom',
+            onNextClick: (_element, _step, { driver }) => {
+               createCharacter('LEGENDS');
+               driver.moveNext();
+            },
          },
       },
       {

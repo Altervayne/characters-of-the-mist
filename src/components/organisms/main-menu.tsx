@@ -208,13 +208,14 @@ const MainMenu: React.FC = () => {
             </div>
 
             {/* Game Selection Cards */}
-            <div className="flex flex-wrap justify-center gap-6">
+            <div data-tour="main-menu-game-selection" className="flex flex-wrap justify-center gap-6">
                {gameOptions.map((option, index) => (
                   <motion.div
                      key={option.game}
                      initial={{ opacity: 0, y: 20 }}
                      animate={{ opacity: 1, y: 0 }}
                      transition={{ delay: 0.1 * (index + 1) }}
+                     data-tour={option.game === 'LEGENDS' ? 'main-menu-legends-card' : undefined}
                   >
                      <GameCard
                         {...option}
@@ -233,6 +234,7 @@ const MainMenu: React.FC = () => {
                className="flex flex-col sm:flex-row gap-4"
             >
                <Button
+                  data-tour="main-menu-create-button"
                   onClick={handleCreateCharacter}
                   size="lg"
                   className="cursor-pointer gap-2 px-8 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all"

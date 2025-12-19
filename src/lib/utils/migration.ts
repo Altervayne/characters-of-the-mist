@@ -5,11 +5,15 @@ import {
    LegendsHeroDetails,
    CityThemeDetails,
    CityRiftDetails,
+   OtherscapeThemeDetails,
+   OtherscapeLoadoutDetails,
+   OtherscapeCharacterDetails,
    Tag,
    StatusTracker,
    BlandTag,
    LegendsThemeType,
    CityThemeType,
+   OtherscapeThemeType,
 } from '../types/character';
 import cuid from 'cuid';
 
@@ -45,9 +49,21 @@ interface LegacyCityThemeContent {
    improvement: { name: string, isUnlocked: boolean }[] | { name: string, isUnlocked: boolean };
 }
 
+interface LegacyOtherscapeThemeContent {
+   themebook: string;
+   level: 'MythosOS' | 'SelfOS' | 'NoiseOS'; // Legacy format
+   mainTag: LegacyTag;
+   powerTags: LegacyTag[];
+   weaknessTags: LegacyTag[];
+   experience: number;
+   decay: number;
+   bio: { title: string; body: string };
+   improvement: { name: string, isUnlocked: boolean }[] | { name: string, isUnlocked: boolean };
+}
+
 interface LegacyTheme {
    isEmpty: boolean;
-   content?: LegacyLegendsThemeContent | LegacyCityThemeContent;
+   content?: LegacyLegendsThemeContent | LegacyCityThemeContent | LegacyOtherscapeThemeContent;
 }
 
 interface LegacyCharacter {
@@ -79,6 +95,8 @@ export function transformLegacyCharacter(legacyData: LegacyCharacter): MigratedC
       return transformLegacyLegendsCharacter(legacyData);
    } else if (legacyData.compatibility === 'com') {
       return transformLegacyCityCharacter(legacyData);
+   } else if (legacyData.compatibility === 'os') {
+      return transformLegacyOtherscapeCharacter(legacyData);
    } else {
       throw new Error('UNSUPPORTED_GAME_SYSTEM');
    }
@@ -111,26 +129,27 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
    const themeCards: Card[] = themes.map((theme, index) => {
       if (!theme.isEmpty && theme.content) {
          const { content } = theme;
+         const legendsContent = content as LegacyLegendsThemeContent;
 
          const themeDetails: LegendsThemeDetails = {
             game: 'LEGENDS',
-            themebook: content.themebook,
-            themeType: content.level,
-            mainTag: mapToTag(content.mainTag),
-            powerTags: content.powerTags.map(mapToTag),
-            weaknessTags: content.weaknessTags.map(mapWeaknessTag),
-            improve: content.experience,
-            abandon: content.decay,
+            themebook: legendsContent.themebook,
+            themeType: legendsContent.level,
+            mainTag: mapToTag(legendsContent.mainTag),
+            powerTags: legendsContent.powerTags.map(mapToTag),
+            weaknessTags: legendsContent.weaknessTags.map(mapWeaknessTag),
+            improve: legendsContent.experience,
+            abandon: legendsContent.decay,
             milestone: 0,
-            quest: content.bio.body,
-            improvements: Array.isArray(content.improvement)
-               ? content.improvement.map(imp => mapToBlandTag(imp.name))
-               : [mapToBlandTag(content.improvement.name)],
+            quest: legendsContent.bio.body,
+            improvements: Array.isArray(legendsContent.improvement)
+               ? legendsContent.improvement.map(imp => mapToBlandTag(imp.name))
+               : [mapToBlandTag(legendsContent.improvement.name)],
          };
 
          const newCard: Card = {
             id: cuid(),
-            title: content.mainTag.name,
+            title: legendsContent.mainTag.name,
             order: index,
             isFlipped: false,
             cardType: 'CHARACTER_THEME',
@@ -288,6 +307,153 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
       name: legacyData.name,
       game: 'CITY_OF_MIST',
       cards: [riftCard, ...themeCards.map((card, index) => ({ ...card, order: index + 1 }))],
+      trackers: {
+         statuses: deconstructedTrackers,
+         storyTags: [],
+         storyThemes: []
+      },
+   };
+
+   return {
+      character: newCharacter,
+      deconstructedCards,
+      deconstructedTrackers,
+   };
+}
+
+function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): MigratedCharacterPayload {
+   const deconstructedCards: Card[] = [];
+   const themes: LegacyTheme[] = [legacyData.themeOne, legacyData.themeTwo, legacyData.themeThree, legacyData.themeFour];
+
+   const mapToTag = (tag: LegacyTag): Tag => ({
+      id: cuid(),
+      name: tag.name,
+      isActive: tag.isActive,
+      isScratched: tag.isBurnt,
+   });
+
+   const mapToBlandTag = (tag: LegacyTag | string): BlandTag => ({
+      id: cuid(),
+      name: typeof tag === 'string' ? tag : tag.name,
+   });
+
+   const themeCards: Card[] = themes.map((theme, index) => {
+      if (!theme.isEmpty && theme.content) {
+         const { content } = theme;
+         const othContent = content as LegacyOtherscapeThemeContent;
+
+         // Convert legacy theme type values (MythosOS/SelfOS/NoiseOS) to modern values (Mythos/Self/Noise)
+         let themeType: OtherscapeThemeType;
+         if (othContent.level === 'MythosOS') {
+            themeType = 'Mythos';
+         } else if (othContent.level === 'SelfOS') {
+            themeType = 'Self';
+         } else if (othContent.level === 'NoiseOS') {
+            themeType = 'Noise';
+         } else {
+            // Fallback to Mythos if unknown
+            themeType = 'Mythos';
+         }
+
+         const themeDetails: OtherscapeThemeDetails = {
+            game: 'OTHERSCAPE',
+            themebook: othContent.themebook,
+            themeType: themeType,
+            mainTag: mapToTag(othContent.mainTag),
+            powerTags: othContent.powerTags.map(mapToTag),
+            weaknessTags: othContent.weaknessTags.map(mapToTag),
+            attention: othContent.experience,
+            fadeOrCrack: othContent.decay,
+            mystery: othContent.bio.body || null,
+            improvements: Array.isArray(othContent.improvement)
+               ? othContent.improvement.map(imp => mapToBlandTag(imp.name))
+               : [mapToBlandTag(othContent.improvement.name)],
+         };
+
+         const newCard: Card = {
+            id: cuid(),
+            title: othContent.mainTag.name,
+            order: index,
+            isFlipped: false,
+            cardType: 'CHARACTER_THEME',
+            details: themeDetails,
+         };
+         deconstructedCards.push(newCard);
+         return newCard;
+      }
+      return null;
+   }).filter((card): card is Card => card !== null);
+
+   // Create Loadout card from backpack items
+   const loadoutDetails: OtherscapeLoadoutDetails = {
+      game: 'OTHERSCAPE',
+      attention: 0,
+      crack: 0,
+      mainTag: { id: cuid(), name: '', isActive: false, isScratched: false },
+      powerTags: legacyData.backpack.map(tag => ({
+         id: cuid(),
+         name: tag.name,
+         isActive: false,
+         isScratched: true, // Gear is burned (unloaded) by default
+      })),
+      weaknessTags: [],
+      description: null,
+      improvements: [],
+      wildcardSlots: 0,
+   };
+
+   const loadoutCard: Card = {
+      id: cuid(),
+      title: 'Loadout',
+      order: themeCards.length,
+      isFlipped: false,
+      cardType: 'LOADOUT_THEME',
+      details: loadoutDetails,
+   };
+
+   // Count themes by type for essence
+   const essenceCounts = themeCards.reduce((acc, card) => {
+      const details = card.details as OtherscapeThemeDetails;
+      if (details.themeType === 'Mythos') acc.mythos++;
+      else if (details.themeType === 'Self') acc.self++;
+      else if (details.themeType === 'Noise') acc.noise++;
+      return acc;
+   }, { mythos: 0, self: 0, noise: 0 });
+
+   const characterDetails: OtherscapeCharacterDetails = {
+      game: 'OTHERSCAPE',
+      characterName: legacyData.name,
+      essence: essenceCounts,
+      crewRelationships: [],
+      specials: [],
+   };
+
+   const characterCard: Card = {
+      id: cuid(),
+      title: 'Character Card',
+      order: 0,
+      isFlipped: false,
+      cardType: 'CHARACTER_CARD',
+      details: characterDetails,
+   };
+
+   const deconstructedTrackers: StatusTracker[] = legacyData.statuses.map(status => ({
+      id: cuid(),
+      name: status.name,
+      game: 'OTHERSCAPE',
+      trackerType: 'STATUS',
+      tiers: status.level,
+   }));
+
+   const newCharacter: Character = {
+      id: cuid(),
+      name: legacyData.name,
+      game: 'OTHERSCAPE',
+      cards: [
+         characterCard,
+         ...themeCards.map((card, index) => ({ ...card, order: index + 1 })),
+         { ...loadoutCard, order: themeCards.length + 1 }
+      ],
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],

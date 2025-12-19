@@ -153,6 +153,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
          console.error("Migration failed:", error);
       }
 
+      setFiles([]);
       onOpenChange(false);
    };
 
