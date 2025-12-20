@@ -42,5 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 # pwa
-/public/workbox-f52fd911.js
-/public/fallback-O54LkBo35vJeSqqBMySR1.js
+/public/sw.js
+/public/workbox-*.js
+/public/fallback-*.js
+/public/swe-worker-*.js

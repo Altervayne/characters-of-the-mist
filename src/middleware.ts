@@ -15,8 +15,8 @@ export default function middleware(request: NextRequest) {
       locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
    );
 
-   const isValidLocale = (locale: string): locale is 'en' | 'fr' => {
-      return routing.locales.includes(locale as 'en' | 'fr');
+   const isValidLocale = (locale: string): locale is 'en' | 'fr' | 'de' => {
+      return routing.locales.includes(locale as 'en' | 'fr' | 'de');
    };
 
    if (savedLocale && isValidLocale(savedLocale) && savedLocale !== pathnameLocale) {
