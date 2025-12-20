@@ -30,7 +30,7 @@ export function CardSectionHeader({ title, icon: Icon, className }: SectionHeade
          )}
       >
          {Icon && <Icon className="h-4 w-4" />}
-         <span>{title}</span>
+         <span className={cn(Icon && "max-w-10/12")}>{title}</span>
       </h3>
    );
 }
