@@ -3,6 +3,7 @@
 	"short_name": "CotM",
 	"description": "A modern and robust, made by the people for the people, character creator and manager for the Son of Oak TTRPGs.",
 	"start_url": "/",
+	"scope": "/",
 	"display": "standalone",
 	"theme_color": "#4e432d",
 	"background_color": "#fae8c3",

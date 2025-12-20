@@ -13,11 +13,6 @@ const withPWA = withPWAInit({
     disableDevLogs: true,
     skipWaiting: true,
     clientsClaim: true,
-    additionalManifestEntries: [
-      { url: '/messages/en.json', revision: null },
-      { url: '/messages/fr.json', revision: null },
-      { url: '/messages/de.json', revision: null }
-    ],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,
