@@ -41,8 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# pwa
-/public/sw.js
-/public/workbox-*.js
-/public/fallback-*.js
-/public/swe-worker-*.js
+# other
+MIGRATION_PLAN.md
