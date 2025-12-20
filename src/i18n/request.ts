@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 
 
 
-export default getRequestConfig(async ({requestLocale}) => {
+export default getRequestConfig(async () => {
    const cookieStore = await cookies();
    const savedLocale = cookieStore.get('NEXT_LOCALE')?.value;
 
@@ -16,22 +16,22 @@ export default getRequestConfig(async ({requestLocale}) => {
       locale = savedLocale;
    }
 
-   // Load the current locale's messages
    const messages = (await import(`../../messages/${locale}.json`)).default;
 
-   // Load English messages as fallback (only if not already English and not in dev mode)
-   const isDevelopment = process.env.NODE_ENV === 'development';
+   const isDevelopment = process.env.VERCEL_ENV === 'development';
    let fallbackMessages = {};
-   if (locale !== 'en' && !isDevelopment) {
+   if (locale !== 'en') {
       fallbackMessages = (await import(`../../messages/en.json`)).default;
    }
 
    return {
       locale,
-      messages: {
-         ...fallbackMessages,
-         ...messages
-      },
+      messages: isDevelopment && locale !== 'en'
+         ? messages
+         : {
+            ...fallbackMessages,
+            ...messages
+         },
       getMessageFallback({ namespace, key, error }) {
          const path = [namespace, key].filter((part) => part != null).join('.');
 
