@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -54,7 +54,7 @@ interface OtherscapeThemeCardProps {
 
 export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeThemeCardProps>(
    ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
-      const t = useTranslations('OtherscapeThemeCard');
+      const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as OtherscapeThemeDetails | OtherscapeCrewDetails | OtherscapeLoadoutDetails;
 
@@ -173,15 +173,15 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                      className={cn("bg-card-header-bg text-card-header-fg")}
                   />
                ) : card.cardType === 'GROUP_THEME' ? (
-                  <CardHeaderMolecule title={t('crewThemeTitle')} />
+                  <CardHeaderMolecule title={t('OtherscapeThemeCard.crewThemeTitle')} />
                ) : (
-                  <CardHeaderMolecule title={t('loadoutTitle')} />
+                  <CardHeaderMolecule title={t('OtherscapeThemeCard.loadoutTitle')} />
                )}
                <div className="px-2 text-xs font-semibold text-center">
                   {card.cardType === 'LOADOUT_THEME' ? (
-                     <><span>{t('gearTitle')}</span> • <span style={{ color: 'var(--card-destructive-bg)' }}>{t('flaw')}</span></>
+                     <><span>{t('OtherscapeThemeCard.gearTitle')}</span> • <span style={{ color: 'var(--card-destructive-bg)' }}>{t('OtherscapeThemeCard.flaw')}</span></>
                   ) : (
-                     <><span>{t('power')}</span> • <span style={{ color: 'var(--card-destructive-bg)' }}>{t('weakness')}</span></>
+                     <><span>{t('OtherscapeThemeCard.power')}</span> • <span style={{ color: 'var(--card-destructive-bg)' }}>{t('OtherscapeThemeCard.weakness')}</span></>
                   )}
                </div>
             </CardHeader>
@@ -192,7 +192,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                   <>
                      {/* Wildcard Slots as single line */}
                      <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold bg-black/10 border-y border-card-accent/30">
-                        <span>{t('wildcardSlots')}</span>
+                        <span>{t('OtherscapeThemeCard.wildcardSlots')}</span>
                         <div className="flex items-center gap-2">
                            {isEditing && (
                               <Button
@@ -221,32 +221,32 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                      {/* Tags section with more space */}
                      <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
                         {/* Loaded Gear Section - gear that is NOT burned */}
-                        <CardSectionHeader title={t('loadedGear')} />
+                        <CardSectionHeader title={t('OtherscapeThemeCard.loadedGear')} />
                         {details.powerTags.filter(tag => !tag.isScratched).length > 0 ? (
                            details.powerTags.filter(tag => !tag.isScratched).map((tag, index) =>
                               <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} isLoadoutGear={true} />
                            )
                         ) : (
-                           <p className="text-sm text-center text-muted-foreground py-2">{t('noGear')}</p>
+                           <p className="text-sm text-center text-muted-foreground py-2">{t('OtherscapeThemeCard.noGear')}</p>
                         )}
 
                         {/* Unloaded Gear Section - gear that IS burned */}
-                        <CardSectionHeader title={t('unloadedGear')} className="mt-2" />
+                        <CardSectionHeader title={t('OtherscapeThemeCard.unloadedGear')} className="mt-2" />
                         {details.powerTags.filter(tag => tag.isScratched).length > 0 ? (
                            details.powerTags.filter(tag => tag.isScratched).map((tag, index) =>
                               <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} isLoadoutGear={true} />
                            )
                         ) : (
-                           <p className="text-sm text-center text-muted-foreground py-2">{t('noGear')}</p>
+                           <p className="text-sm text-center text-muted-foreground py-2">{t('OtherscapeThemeCard.noGear')}</p>
                         )}
-                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('addGearTag')}</Button>}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addGearTag')}</Button>}
 
                         {/* Flaws Section */}
-                        <CardSectionHeader title={t('flawsTitle')} className="mt-2" />
+                        <CardSectionHeader title={t('OtherscapeThemeCard.flawsTitle')} className="mt-2" />
                         {details.weaknessTags.map((tag, index) =>
                            <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />
                         )}
-                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('addFlawTag')}</Button>}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addFlawTag')}</Button>}
                      </div>
                   </>
                ) : (
@@ -263,13 +263,13 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                         {isEditing ? (
                            <Input
                               className="text-xl font-bold text-center flex-grow border-0 shadow-none"
-                              placeholder={t('placeholderName')}
+                              placeholder={t('OtherscapeThemeCard.placeholderName')}
                               value={localMainTagName}
                               onChange={(e) => setLocalMainTagName(e.target.value)}
                            />
                         ) : (
                            <h2 className={cn("text-xl font-bold", details.mainTag.isScratched ? 'line-through opacity-50' : details.mainTag.isActive && 'underline')}>
-                              {details.mainTag.name || `[${t('noName')}]`}
+                              {details.mainTag.name || `[${t('OtherscapeThemeCard.noName')}]`}
                            </h2>
                         )}
                         <div className="w-6">
@@ -295,14 +295,14 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
                   <CardSectionHeader title={`${
                      card.cardType === 'GROUP_THEME'
-                        ? t('identityTitle')
+                        ? t('OtherscapeThemeCard.identityTitle')
                         : card.cardType === 'CHARACTER_THEME'
                            ? ((details as OtherscapeThemeDetails).themeType === 'Mythos'
-                              ? t('ritualTitle')
+                              ? t('OtherscapeThemeCard.ritualTitle')
                               : (details as OtherscapeThemeDetails).themeType === 'Self'
-                                 ? t('identityTitle')
-                                 : t('itchTitle'))
-                           : t('descriptionTitle')
+                                 ? t('OtherscapeThemeCard.identityTitle')
+                                 : t('OtherscapeThemeCard.itchTitle'))
+                           : t('OtherscapeThemeCard.descriptionTitle')
                   }`}></CardSectionHeader>
                   <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
                      {isEditing ? (
@@ -310,14 +310,14 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"
                            placeholder={
                               card.cardType === 'GROUP_THEME'
-                                 ? t('identityPlaceholder')
+                                 ? t('OtherscapeThemeCard.identityPlaceholder')
                                  : card.cardType === 'CHARACTER_THEME'
                                     ? ((details as OtherscapeThemeDetails).themeType === 'Mythos'
-                                       ? t('ritualPlaceholder')
+                                       ? t('OtherscapeThemeCard.ritualPlaceholder')
                                        : (details as OtherscapeThemeDetails).themeType === 'Self'
-                                          ? t('identityPlaceholder')
-                                          : t('itchPlaceholder'))
-                                    : t('descriptionPlaceholder')
+                                          ? t('OtherscapeThemeCard.identityPlaceholder')
+                                          : t('OtherscapeThemeCard.itchPlaceholder'))
+                                    : t('OtherscapeThemeCard.descriptionPlaceholder')
                            }
                            value={localMystery || ''}
                            onChange={(e) => setLocalMystery(e.target.value)}
@@ -326,14 +326,14 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                         <p className="p-2 text-xs text-center whitespace-pre-wrap">{
                            mysteryIdentityOrDescription || `[${
                               card.cardType === 'GROUP_THEME'
-                                 ? t('noIdentity')
+                                 ? t('OtherscapeThemeCard.noIdentity')
                                  : card.cardType === 'CHARACTER_THEME'
                                     ? ((details as OtherscapeThemeDetails).themeType === 'Mythos'
-                                       ? t('noRitual')
+                                       ? t('OtherscapeThemeCard.noRitual')
                                        : (details as OtherscapeThemeDetails).themeType === 'Self'
-                                          ? t('noIdentity')
-                                          : t('noItch'))
-                                    : t('noDescription')
+                                          ? t('OtherscapeThemeCard.noIdentity')
+                                          : t('OtherscapeThemeCard.noItch'))
+                                    : t('OtherscapeThemeCard.noDescription')
                            }]`
                         }</p>
                      )}
@@ -366,12 +366,12 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
             {card.cardType === 'CHARACTER_THEME' ? (
                <CardHeaderMolecule title={(details as OtherscapeThemeDetails).themebook} type={(details as OtherscapeThemeDetails).themeType} game="OTHERSCAPE" />
             ) : card.cardType === 'GROUP_THEME' ? (
-               <CardHeaderMolecule title={t('crewThemeTitle')} />
+               <CardHeaderMolecule title={t('OtherscapeThemeCard.crewThemeTitle')} />
             ) : (
-               <CardHeaderMolecule title={t('loadoutTitle')} />
+               <CardHeaderMolecule title={t('OtherscapeThemeCard.loadoutTitle')} />
             )}
 
-            <CardSectionHeader title={t('improvements')} />
+            <CardSectionHeader title={t('OtherscapeThemeCard.improvements')} />
 
             <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
@@ -388,7 +388,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                   {isEditing && (
                      <div className="p-2 w-full">
                         <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addImprovement')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('OtherscapeThemeCard.addImprovement')}
                         </Button>
                      </div>
                   )}

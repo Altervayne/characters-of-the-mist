@@ -4,7 +4,7 @@
 import React from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import useDrawerTemporalStore from '@/hooks/useDrawerTemporalStore';
 
 
 export function DrawerUndoRedoControls() {
-   const t = useTranslations('Actions');
+   const { t: t } = useTranslation();
    const { undo, redo, pastStates, futureStates } = useDrawerTemporalStore(
       (state) => state,
    );
@@ -35,23 +35,23 @@ export function DrawerUndoRedoControls() {
             size="sm"
             onClick={() => undo()}
             disabled={!canUndo}
-            aria-label={t('undo')}
-            title={t('undo')}
+            aria-label={t('Actions.undo')}
+            title={t('Actions.undo')}
             className={ canUndo ? "cursor-pointer flex-1 min-w-0" : "flex-1 min-w-0" }
          >
             <Undo className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{t('undo')}</span>
+            <span className="truncate">{t('Actions.undo')}</span>
          </Button>
          <Button
             variant="outline"
             size="sm"
             onClick={() => redo()}
             disabled={!canRedo}
-            aria-label={t('redo')}
-            title={t('redo')}
+            aria-label={t('Actions.redo')}
+            title={t('Actions.redo')}
             className={ canRedo ? "cursor-pointer flex-1 min-w-0" : "flex-1 min-w-0" }
          >
-            <span className="truncate">{t('redo')}</span>
+            <span className="truncate">{t('Actions.redo')}</span>
             <Redo className="h-4 w-4 ml-1 flex-shrink-0" />
          </Button>
       </div>

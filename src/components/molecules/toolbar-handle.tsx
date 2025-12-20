@@ -4,7 +4,7 @@
 import React from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion, AnimatePresence, Variants } from 'framer-motion';
@@ -84,11 +84,11 @@ const ViewModeIcon = ({ mode }: { mode: CardViewMode | null | undefined }) => {
 };
 
 const ViewModeTooltip = ({ mode }: { mode: CardViewMode | null | undefined }) => {
-   const t = useTranslations('Tooltips');
+   const { t: t } = useTranslation();
 
-   if (mode === 'SIDE_BY_SIDE') return <p>{t('ViewMode.SideBySide')}</p>;
-   if (mode === 'FLIP') return <p>{t('ViewMode.Flipping')}</p>;
-   return <p>{t('ViewMode.Global')}</p>;
+   if (mode === 'SIDE_BY_SIDE') return <p>{t('Tooltips.ViewMode.SideBySide')}</p>;
+   if (mode === 'FLIP') return <p>{t('Tooltips.ViewMode.Flipping')}</p>;
+   return <p>{t('Tooltips.ViewMode.Global')}</p>;
 };
 
 

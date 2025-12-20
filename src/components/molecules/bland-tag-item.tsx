@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Input } from '@/components/ui/input';

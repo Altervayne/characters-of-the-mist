@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -45,7 +45,7 @@ interface StatusTrackerCardProps {
 
 
 export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, dragAttributes, dragListeners, onExport }: StatusTrackerCardProps) {
-   const t = useTranslations('Trackers');
+   const { t: t } = useTranslation();
    const { updateStatus, removeStatus } = useCharacterActions();
    const [isHovered, setIsHovered] = useState(false);
 
@@ -126,10 +126,10 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
                         value={localName}
                         onChange={(e) => setLocalName(e.target.value)}
                         className="h-8 font-semibold border-dashed border-card-accent bg-card-paper-bg text-card-paper-fg placeholder-card-paper-fg"
-                        placeholder={t('statusPlaceholder')}
+                        placeholder={t('Trackers.statusPlaceholder')}
                      />
                   ) : (
-                     <p className="text-base font-semibold px-2">{tracker.name ? tracker.name : `[${t('statusNoName')}]`}</p>
+                     <p className="text-base font-semibold px-2">{tracker.name ? tracker.name : `[${t('Trackers.statusNoName')}]`}</p>
                   )}
                </div>
                {isEffectivelyEditing && (

@@ -20,7 +20,7 @@ import { WelcomeDialog } from '@/components/organisms/welcome-dialog';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
-import { usePathname, useRouter } from 'next/navigation';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 
 

@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -64,7 +64,7 @@ const getCardTypeClass = (type: string) => {
 
 export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>(
    ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
-      const t = useTranslations('ThemeCard');
+      const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
 
@@ -173,7 +173,7 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                   <CardHeaderMolecule title={"Fellowship"} />
                )}
                <div className="px-2 text-xs font-semibold text-center">
-                  <span>{t('power')}</span> • <span className="text-destructive/50">{t('weakness')}</span>
+                  <span>{t('ThemeCard.power')}</span> • <span className="text-destructive/50">{t('ThemeCard.weakness')}</span>
                </div>
             </CardHeader>
             
@@ -189,13 +189,13 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                   {isEditing ? (
                      <Input 
                         className="text-xl font-bold text-center flex-grow border-0 shadow-none"
-                        placeholder={t('placeholderName')}
+                        placeholder={t('ThemeCard.placeholderName')}
                         value={localMainTagName}
                         onChange={(e) => setLocalMainTagName(e.target.value)}
                      />
                   ) : (
                      <h2 className={cn("text-xl font-bold", details.mainTag.isScratched ? 'line-through opacity-50' : details.mainTag.isActive && 'underline')}>
-                        {details.mainTag.name || `[${t('noName')}]`}
+                        {details.mainTag.name || `[${t('ThemeCard.noName')}]`}
                      </h2>
                   )}
                   <div className="w-6">
@@ -217,17 +217,17 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
 
             {!isDrawerPreview &&
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
-                  <CardSectionHeader title={`${t('questTitle')}`}></CardSectionHeader>
+                  <CardSectionHeader title={`${t('ThemeCard.questTitle')}`}></CardSectionHeader>
                   <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={questScrollRef}>
                      {isEditing ? (
                         <Textarea 
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none" 
-                           placeholder={t('questPlaceholder')} 
+                           placeholder={t('ThemeCard.questPlaceholder')} 
                            value={localQuest || ''} 
                            onChange={(e) => setLocalQuest(e.target.value)} 
                         />
                      ) : (
-                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{details.quest || `[${t('noQuest')}]`}</p>
+                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{details.quest || `[${t('ThemeCard.noQuest')}]`}</p>
                      )}
                   </div>
                   
@@ -255,7 +255,7 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                <CardHeaderMolecule title={card.title} />
             )}
             
-            <CardSectionHeader title={t('improvements')} />
+            <CardSectionHeader title={t('ThemeCard.improvements')} />
 
             <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
@@ -272,7 +272,7 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                   {isEditing && (
                      <div className="p-2 w-full">
                         <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addImprovement')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('ThemeCard.addImprovement')}
                         </Button>
                      </div>
                   )}

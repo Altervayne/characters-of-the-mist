@@ -1,7 +1,7 @@
 'use client';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Card as CardComponent } from '@/components/ui/card';

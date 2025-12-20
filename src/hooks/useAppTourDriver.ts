@@ -1,7 +1,7 @@
 'use client';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { driver } from 'driver.js';
@@ -17,7 +17,7 @@ import { useCharacterActions } from '@/lib/stores/characterStore';
 
 
 export const useAppTourDriver = () => {
-   const t = useTranslations('Tutorial');
+   const { t: t } = useTranslation();
    const { setTourOpen, setIsEditing, setDrawerOpen } = useAppGeneralStateActions();
    const { setContextualGame } = useAppSettingsActions();
    const { createCharacter } = useCharacterActions();

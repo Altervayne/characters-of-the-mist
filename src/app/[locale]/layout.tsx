@@ -1,7 +1,7 @@
 // -- Next Imports --
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider } from 'react-i18next';
 import { getLocale, getMessages } from 'next-intl/server';
 
 // -- Other Library Imports --

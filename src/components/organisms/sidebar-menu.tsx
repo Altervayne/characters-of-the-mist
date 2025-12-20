@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -74,7 +74,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
       if (character.drawerItemId) {
          updateItem(character.drawerItemId, character);
-         toast.success(tNotifications('character.savedToDrawer'));
+         toast.success(tNotifications('Notifications.character.savedToDrawer'));
       } else {
          handleSaveCharacterAsToDrawer();
       }
@@ -115,7 +115,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const handleExportCharacter = () => {
       if (!character) return;
       exportCharacterSheet(character);
-      toast.success(tNotifications('character.exported'));
+      toast.success(tNotifications('Notifications.character.exported'));
    };
 
    const handleCharacterFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,13 +129,13 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
             const newCharacter = migratedContent as Character;
             loadCharacter(newCharacter);
-            toast.success(tNotifications('character.imported'));
+            toast.success(tNotifications('Notifications.character.imported'));
          } else {
-            toast.error(tNotifications('general.importFailed'));
+            toast.error(tNotifications('Notifications.general.importFailed'));
          }
       } catch (error) {
          console.error("Failed to import character file:", error);
-         toast.error(tNotifications('general.importFailed'));
+         toast.error(tNotifications('Notifications.general.importFailed'));
       }
 
       characterFormRef.current?.reset();
@@ -155,16 +155,16 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
          if (isCardType) {
             addImportedCard(migratedContent as CardData);
-            toast.success(tNotifications('character.componentImported'));
+            toast.success(tNotifications('Notifications.character.componentImported'));
          } else if (isTrackerType) {
             addImportedTracker(migratedContent as Tracker);
-            toast.success(tNotifications('character.componentImported'));
+            toast.success(tNotifications('Notifications.character.componentImported'));
          } else {
-            toast.error(tNotifications('general.importFailed'));
+            toast.error(tNotifications('Notifications.general.importFailed'));
          }
       } catch (error) {
          console.error("Failed to import component file:", error);
-         toast.error(tNotifications('general.importFailed'));
+         toast.error(tNotifications('Notifications.general.importFailed'));
       }
       
       componentFormRef.current?.reset();
@@ -175,7 +175,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
    const handleResetCharacter = () => {
       resetCharacter();
-      toast.success(tNotifications('character.reset'));
+      toast.success(tNotifications('Notifications.character.reset'));
    };
 
    const [isUnloadDialogOpen, setIsUnloadDialogOpen] = useState(false);
@@ -203,7 +203,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
    const handleUnloadCharacter = () => {
       unloadCharacter();
-      toast.success(tNotifications('character.unloaded'));
+      toast.success(tNotifications('Notifications.character.unloaded'));
    };
 
 

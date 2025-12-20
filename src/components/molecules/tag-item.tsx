@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ interface TagItemProps {
 
 
 export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear }: TagItemProps) {
-   const t = useTranslations('TagItem');
+   const { t: t } = useTranslation();
    const actions = useCharacterActions();
    const listName = tagType === 'power' ? 'powerTags' : 'weaknessTags';
 
@@ -114,11 +114,11 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
                value={localName}
                onChange={(e) => setLocalName(e.target.value)}
                className="mx-1 h-7 text-center text-sm border-0 shadow-none"
-               placeholder={t('placeholder')}
+               placeholder={t('TagItem.placeholder')}
             />
          ) : (
             <p className={cn('text-sm text-center py-1', tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline')}>
-               {tag.name || `[${t('noName')}]`}
+               {tag.name || `[${t('TagItem.noName')}]`}
             </p>
          )}
 

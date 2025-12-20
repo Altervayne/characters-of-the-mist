@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -54,8 +54,8 @@ interface HeroCardProps {
 
 const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
    ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
-      const t = useTranslations('HeroCard');
-      const tBackpack = useTranslations('backpack');
+      const { t: t } = useTranslation();
+      const { t: tBackpack } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as LegendsHeroDetails;
 
@@ -124,7 +124,7 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
             {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
-               <CardHeaderMolecule title={t('title')}></CardHeaderMolecule>
+               <CardHeaderMolecule title={t('HeroCard.title')}></CardHeaderMolecule>
             </CardHeader>
             
             <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
@@ -134,26 +134,26 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                         className="text-2xl font-bold text-center bg-transparent border-none shadow-none"
                         value={localCharName || ''}
                         onChange={(e) => setLocalCharName(e.target.value)}
-                        placeholder={t('characterNamePlaceholder')}
+                        placeholder={t('HeroCard.characterNamePlaceholder')}
                      />
                   ) : (
-                     <h2 className="text-2xl font-bold">{details.characterName || `[${t('noName')}]`}</h2>
+                     <h2 className="text-2xl font-bold">{details.characterName || `[${t('HeroCard.noName')}]`}</h2>
                   )}
                </div>
 
                <div className="flex flex-col h-[45%]">
-                  <CardSectionHeader title={t('relationships')} icon={Users} />
+                  <CardSectionHeader title={t('HeroCard.relationships')} icon={Users} />
                   <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
                      <div className="flex bg-card-accent/15">
-                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('companion')}</p>
-                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('relationship')}</p>
+                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('HeroCard.companion')}</p>
+                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('HeroCard.relationship')}</p>
                      </div>
                      {details.fellowshipRelationships.map((relation, index) => (
                         <FellowshipRelationshipItem key={relation.id} cardId={card.id} relationship={relation} isEditing={isEditing} index={index} />
                      ))}
                      {isEditing && (
                         <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addRelationship(card.id)}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addRelationship')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('HeroCard.addRelationship')}
                         </Button>
                      )}
                   </div>
@@ -169,7 +169,7 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                </div>
 
                <div className="flex flex-col flex-grow overflow-hidden">
-                  <CardSectionHeader title={t('quintessences')} icon={Sparkles} />
+                  <CardSectionHeader title={t('HeroCard.quintessences')} icon={Sparkles} />
                   <div className="flex flex-col flex-grow align-middle overflow-y-scroll overscroll-contain" ref={quintessencesScrollRef}>
                      {details.quintessences.map((quint, index) => (
                         <BlandTagItem 
@@ -183,7 +183,7 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                      ))}
                      {isEditing && (
                         <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'quintessences')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addQuintessence')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('HeroCard.addQuintessence')}
                         </Button>
                      )}
                   </div>
@@ -200,8 +200,8 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
             "card-type-hero",
             {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
-            <CardHeaderMolecule title={t('title')} />
-            <CardSectionHeader title={`${tBackpack('title')}`}></CardSectionHeader>
+            <CardHeaderMolecule title={t('HeroCard.title')} />
+            <CardSectionHeader title={`${tBackpack('backpack.title')}`}></CardSectionHeader>
             <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="flex-grow space-y-0 overflow-y-auto overscroll-contain" ref={backpackScrollRef}>
                   {details.backpack.map((tag, index) => (
@@ -217,7 +217,7 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                   {isEditing && (
                      <div className="p-2 w-full">
                         <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'backpack')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {tBackpack('addItem')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {tBackpack('backpack.addItem')}
                         </Button>
                      </div>
                   )}

@@ -4,7 +4,7 @@
 import React from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -86,7 +86,7 @@ const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSelected, 
 
 
 const MainMenu: React.FC = () => {
-   const t = useTranslations('MainMenu');
+   const { t: t } = useTranslation();
    const { contextualGame } = useAppSettingsStore();
    const { createCharacter } = useCharacterActions();
    const { setContextualGame } = useAppSettingsActions();
@@ -107,22 +107,22 @@ const MainMenu: React.FC = () => {
    const gameOptions = [
       {
          game: 'LEGENDS' as GameSystem,
-         title: t('games.legends.title'),
-         subtitle: t('games.legends.subtitle'),
+         title: t('MainMenu.games.legends.title'),
+         subtitle: t('MainMenu.games.legends.subtitle'),
          icon: <ScrollText className="h-6 w-6 text-amber-500" />,
          gradient: 'bg-gradient-to-br from-amber-500 via-orange-400 to-rose-500'
       },
       {
          game: 'CITY_OF_MIST' as GameSystem,
-         title: t('games.cityOfMist.title'),
-         subtitle: t('games.cityOfMist.subtitle'),
+         title: t('MainMenu.games.cityOfMist.title'),
+         subtitle: t('MainMenu.games.cityOfMist.subtitle'),
          icon: <Building2 className="h-6 w-6 text-purple-500" />,
          gradient: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600'
       },
       {
          game: 'OTHERSCAPE' as GameSystem,
-         title: t('games.otherscape.title'),
-         subtitle: t('games.otherscape.subtitle'),
+         title: t('MainMenu.games.otherscape.title'),
+         subtitle: t('MainMenu.games.otherscape.subtitle'),
          icon: <Bot className="h-6 w-6 text-cyan-500" />,
          gradient: 'bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600'
       }
@@ -200,10 +200,10 @@ const MainMenu: React.FC = () => {
                   </svg>
                </motion.div>
                <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                  {t('title')}
+                  {t('MainMenu.title')}
                </h1>
                <p className="text-muted-foreground max-w-md">
-                  {t('subtitle')}
+                  {t('MainMenu.subtitle')}
                </p>
             </div>
 
@@ -240,7 +240,7 @@ const MainMenu: React.FC = () => {
                   className="cursor-pointer gap-2 px-8 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
                >
                   <Plus className="h-5 w-5" />
-                  {t('createButton')}
+                  {t('MainMenu.createButton')}
                </Button>
                <Button
                   onClick={handleOpenDrawer}
@@ -249,7 +249,7 @@ const MainMenu: React.FC = () => {
                   className="cursor-pointer gap-2 px-8 h-12 text-base font-semibold border-2 hover:bg-accent/50 transition-all"
                >
                   <FolderOpen className="h-5 w-5" />
-                  {t('openDrawerButton')}
+                  {t('MainMenu.openDrawerButton')}
                </Button>
             </motion.div>
 
@@ -260,7 +260,7 @@ const MainMenu: React.FC = () => {
                transition={{ delay: 0.7 }}
                className="text-xs text-muted-foreground/70 text-center"
             >
-               {t('hint')}
+               {t('MainMenu.hint')}
             </motion.p>
          </motion.div>
       </main>

@@ -1,6 +1,6 @@
 // -- Next Imports --
 import { getRequestConfig } from 'next-intl/server';
-import { hasLocale } from 'next-intl';
+import { hasLocale } from 'react-i18next';
 import { routing } from './routing';
 import { cookies } from 'next/headers';
 

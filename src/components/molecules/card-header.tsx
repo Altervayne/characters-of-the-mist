@@ -4,11 +4,10 @@
 import React from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { Leaf, Swords, Crown } from 'lucide-react';
-import Image from 'next/image';
 
 // -- Basic UI Imports --
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -28,7 +27,7 @@ interface CardHeaderMoleculeProps {
 
 
 const ThemeTypeIcon = ({ type, game }: { type: string; game?: string }) => {
-   const t = useTranslations('ThemeTypes');
+   const { t: t } = useTranslation();
    const translationKey = type as string
 
    let IconComponent;
@@ -38,19 +37,19 @@ const ThemeTypeIcon = ({ type, game }: { type: string; game?: string }) => {
       if (type === 'Self') {
          IconComponent = (
             <div className="h-5 w-5" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
-               <Image src="/icons/Themes/os_self.svg" alt="Self" width={20} height={20} className="h-5 w-5" />
+               <img src="/icons/Themes/os_self.svg" alt="Self" width={20} height={20} className="h-5 w-5" />
             </div>
          );
       } else if (type === 'Noise') {
          IconComponent = (
             <div className="h-5 w-5" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
-               <Image src="/icons/Themes/os_noise.svg" alt="Noise" width={20} height={20} className="h-5 w-5" />
+               <img src="/icons/Themes/os_noise.svg" alt="Noise" width={20} height={20} className="h-5 w-5" />
             </div>
          );
       } else if (type === 'Mythos') {
          IconComponent = (
             <div className="h-5 w-5" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
-               <Image src="/icons/Themes/os_mythos.svg" alt="Mythos" width={20} height={20} className="h-5 w-5" />
+               <img src="/icons/Themes/os_mythos.svg" alt="Mythos" width={20} height={20} className="h-5 w-5" />
             </div>
          );
       }
@@ -60,13 +59,13 @@ const ThemeTypeIcon = ({ type, game }: { type: string; game?: string }) => {
       if (type === 'Logos') {
          IconComponent = (
             <div className="h-5 w-5" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
-               <Image src="/icons/Themes/com_logos.svg" alt="Logos" width={20} height={20} className="h-5 w-5" />
+               <img src="/icons/Themes/com_logos.svg" alt="Logos" width={20} height={20} className="h-5 w-5" />
             </div>
          );
       } else if (type === 'Mythos') {
          IconComponent = (
             <div className="h-5 w-5" style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}>
-               <Image src="/icons/Themes/com_mythos.svg" alt="Mythos" width={20} height={20} className="h-5 w-5" />
+               <img src="/icons/Themes/com_mythos.svg" alt="Mythos" width={20} height={20} className="h-5 w-5" />
             </div>
          );
       }

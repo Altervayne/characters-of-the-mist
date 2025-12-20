@@ -4,7 +4,7 @@
 import React from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { PlusCircle } from 'lucide-react';
@@ -21,7 +21,7 @@ interface AddCardButtonProps {
 
 
 export function AddCardButton({ onClick }: AddCardButtonProps) {
-   const t = useTranslations('CharacterSheetPage');
+   const { t: t } = useTranslation();
 
    return (
       <div
@@ -34,7 +34,7 @@ export function AddCardButton({ onClick }: AddCardButtonProps) {
          )}
       >
          <PlusCircle className="w-10 h-10" />
-         <span className="text-3xl font-semibold">{t('addCard')}</span>
+         <span className="text-3xl font-semibold">{t('CharacterSheetPage.addCard')}</span>
       </div>
    );
 }

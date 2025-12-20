@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { AnimatePresence, motion, Variants } from 'framer-motion';
@@ -153,19 +153,19 @@ function FolderEntry({ folder, isOver, onNavigate, onRename, onDelete, onMove }:
                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }} className="cursor-pointer">
                      <Pencil className="mr-2 h-4 w-4" />
-                     <span>{t('rename')}</span>
+                     <span>{t('Drawer.rename')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }} className="cursor-pointer">
                      <Move className="mr-2 h-4 w-4" />
-                     <span>{t('move')}</span>
+                     <span>{t('Drawer.move')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
                      <Upload className="mr-2 h-4 w-4" />
-                     <span>{t('export')}</span>
+                     <span>{t('Drawer.export')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive cursor-pointer">
                      <Trash2 className="mr-2 h-4 w-4" />
-                     <span>{t('delete')}</span>
+                     <span>{t('Drawer.delete')}</span>
                   </DropdownMenuItem>
                </DropdownMenuContent>
             </DropdownMenu>
@@ -238,19 +238,19 @@ function ItemEntry({ item, onRename, onDelete, onMove }: { item: DrawerItem, onR
                   <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                      <DropdownMenuItem onClick={onRename} className="cursor-pointer">
                         <Pencil className="mr-2 h-4 w-4" />
-                        <span>{t('rename')}</span>
+                        <span>{t('Drawer.rename')}</span>
                      </DropdownMenuItem>
                      <DropdownMenuItem onClick={onMove} className="cursor-pointer">
                         <Move className="mr-2 h-4 w-4" />
-                        <span>{t('move')}</span>
+                        <span>{t('Drawer.move')}</span>
                      </DropdownMenuItem>
                      <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
                         <Upload className="mr-2 h-4 w-4" />
-                        <span>{t('export')}</span>
+                        <span>{t('Drawer.export')}</span>
                      </DropdownMenuItem>
                      <DropdownMenuItem onClick={onDelete} className="bg-destructive text-destructive-foreground cursor-pointer">
                         <Trash2 className="text-destructive-foreground mr-2 h-4 w-4" />
-                        <span>{t('delete')}</span>
+                        <span>{t('Drawer.delete')}</span>
                      </DropdownMenuItem>
                   </DropdownMenuContent>
                </DropdownMenu>
@@ -342,10 +342,10 @@ export function CompactItemEntry({ item, onRename, onDelete, onMove, isPreview =
                      </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                     <DropdownMenuItem onClick={onRename} className="cursor-pointer"><Pencil className="mr-2 h-4 w-4" /><span>{t('rename')}</span></DropdownMenuItem>
-                     <DropdownMenuItem onClick={onMove} className="cursor-pointer"><Move className="mr-2 h-4 w-4" /><span>{t('move')}</span></DropdownMenuItem>
-                     <DropdownMenuItem onClick={handleExport} className="cursor-pointer"><Upload className="mr-2 h-4 w-4" /><span>{t('export')}</span></DropdownMenuItem>
-                     <DropdownMenuItem onClick={onDelete} className="text-destructive cursor-pointer"><Trash2 className="mr-2 h-4 w-4" /><span>{t('delete')}</span></DropdownMenuItem>
+                     <DropdownMenuItem onClick={onRename} className="cursor-pointer"><Pencil className="mr-2 h-4 w-4" /><span>{t('Drawer.rename')}</span></DropdownMenuItem>
+                     <DropdownMenuItem onClick={onMove} className="cursor-pointer"><Move className="mr-2 h-4 w-4" /><span>{t('Drawer.move')}</span></DropdownMenuItem>
+                     <DropdownMenuItem onClick={handleExport} className="cursor-pointer"><Upload className="mr-2 h-4 w-4" /><span>{t('Drawer.export')}</span></DropdownMenuItem>
+                     <DropdownMenuItem onClick={onDelete} className="text-destructive cursor-pointer"><Trash2 className="mr-2 h-4 w-4" /><span>{t('Drawer.delete')}</span></DropdownMenuItem>
                   </DropdownMenuContent>
                </DropdownMenu>
             }
@@ -381,8 +381,8 @@ function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveActio
          <header className="p-4 border-b">
             <div className="flex justify-between items-center mb-2">
                <div>
-                  <h3 className="font-semibold">{(action.type == 'move-folder') && t('moveFolderTitle')}{(action.type == 'move-item') && t('moveItemTitle')}</h3>
-                  <p className="text-sm text-muted-foreground truncate">{`${t('moveVerb')}:  ${itemToMove?.name ?? t('movingUnknown')}`}</p>
+                  <h3 className="font-semibold">{(action.type == 'move-folder') && t('Drawer.moveFolderTitle')}{(action.type == 'move-item') && t('Drawer.moveItemTitle')}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{`${t('Drawer.moveVerb')}:  ${itemToMove?.name ?? t('Drawer.movingUnknown')}`}</p>
                </div>
                {currentNavFolderId && (
                   <div onClick={() => setCurrentNavFolderId(null)} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-muted cursor-pointer flex-shrink-0" role="button" aria-label="Back to root">
@@ -400,7 +400,7 @@ function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveActio
             
             {currentNavFolderId && (
                <div onClick={() => setCurrentNavFolderId(currentView.parent?.id ?? null)} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
-                  <ArrowLeft className="h-6 w-6" /> <span>{t('moveUp')}</span>
+                  <ArrowLeft className="h-6 w-6" /> <span>{t('Drawer.moveUp')}</span>
                </div>
             )}
             {currentView.folders.map(folder => {
@@ -421,12 +421,12 @@ function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveActio
          </div>
 
          <footer className="p-4 border-t flex gap-2 justify-end">
-            <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('cancel')}</Button>
+            <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('Drawer.cancel')}</Button>
             <Button 
                onClick={() => onConfirm(currentNavFolderId ?? undefined)}
                disabled={(parentOfItemToMove?.id ?? null) === currentNavFolderId}
             >
-               {t('moveHere')}
+               {t('Drawer.moveHere')}
             </Button>
          </footer>
       </div>
@@ -447,13 +447,13 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
       if (!initialName && action.type === 'add-item' && action.target && 'type' in action.target) {
          const itemType = (action.target as PendingDrawerItem).type;
          switch (itemType) {
-            case 'CHARACTER_CARD':        initialName = t('defaultNames.characterCard'); break;
-            case 'FULL_CHARACTER_SHEET':  initialName = t('defaultNames.fullSheet'); break;
-            case 'CHARACTER_THEME':       initialName = t('defaultNames.characterTheme'); break;
-            case 'GROUP_THEME':           initialName = t('defaultNames.groupTheme'); break;
-            case 'STATUS_TRACKER':        initialName = t('defaultNames.statusTracker'); break;
-            case 'STORY_TAG_TRACKER':     initialName = t('defaultNames.storyTagTracker'); break;
-            default:                      initialName = t('defaultNames.defaultItem'); break;
+            case 'CHARACTER_CARD':        initialName = t('Drawer.defaultNames.characterCard'); break;
+            case 'FULL_CHARACTER_SHEET':  initialName = t('Drawer.defaultNames.fullSheet'); break;
+            case 'CHARACTER_THEME':       initialName = t('Drawer.defaultNames.characterTheme'); break;
+            case 'GROUP_THEME':           initialName = t('Drawer.defaultNames.groupTheme'); break;
+            case 'STATUS_TRACKER':        initialName = t('Drawer.defaultNames.statusTracker'); break;
+            case 'STORY_TAG_TRACKER':     initialName = t('Drawer.defaultNames.storyTagTracker'); break;
+            default:                      initialName = t('Drawer.defaultNames.defaultItem'); break;
          }
       }
 
@@ -466,34 +466,34 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
 
       switch (action.type) {
          case 'add-folder':
-            title = t('addFolderTitle');
-            confirmText = t('createFolder');
+            title = t('Drawer.addFolderTitle');
+            confirmText = t('Drawer.createFolder');
             break;
 
          case 'add-item':
-            title = t('nameItemTitle');
-            confirmText = t('saveChanges');
+            title = t('Drawer.nameItemTitle');
+            confirmText = t('Drawer.saveChanges');
             break;
 
          case 'rename-folder':
-            title = t('renameFolderTitle');
-            confirmText = t('saveChanges');
+            title = t('Drawer.renameFolderTitle');
+            confirmText = t('Drawer.saveChanges');
             break;
 
          case 'rename-item':
-            title = t('renameItemTitle');
-            confirmText = t('saveChanges');
+            title = t('Drawer.renameItemTitle');
+            confirmText = t('Drawer.saveChanges');
             break;
 
          case 'delete-folder':
-            title = t('deleteFolderTitle');
-            confirmText = t('confirmDelete');
+            title = t('Drawer.deleteFolderTitle');
+            confirmText = t('Drawer.confirmDelete');
             isDelete = true;
             break;
 
          case 'delete-item':
-            title = t('deleteItemTitle');
-            confirmText = t('confirmDelete');
+            title = t('Drawer.deleteItemTitle');
+            confirmText = t('Drawer.confirmDelete');
             isDelete = true;
             break;
       }
@@ -531,7 +531,7 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
                <p className="text-sm text-muted-foreground">{t(isFolder ? 'deleteFolderMessage' : 'deleteItemMessage', { name: (action.target && 'name' in action.target) ? action.target.name : '' })}</p>
             )}
             <div className="flex justify-end gap-2 mt-4">
-               <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('cancel')}</Button>
+               <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('Drawer.cancel')}</Button>
                <Button variant={isDelete ? 'destructive' : 'default'} onClick={() => onConfirm(inputValue)} className="cursor-pointer">
                   {confirmText}
                </Button>
@@ -544,9 +544,9 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
 
 
 export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHovering : boolean, activeDragId: string | null, overDragId: string | null; }) {
-   const t = useTranslations('Drawer');
+   const { t: t } = useTranslation();
    const tActions = useTranslations('Drawer.Actions')
-   const tNotifications = useTranslations('Notifications');
+   const { t: tNotifications } = useTranslation();
 
    const folders = useDrawerStore((state) => state.drawer.folders);
    const rootItems = useDrawerStore((state) => state.drawer.rootItems);
@@ -617,28 +617,28 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
          case 'add-folder':
             if (value) {
                addFolder(value, activeAction.parentId ?? undefined);
-               toast.success(tNotifications('drawer.folderCreated'));
+               toast.success(tNotifications('Notifications.drawer.folderCreated'));
             }   
             break;
 
          case 'rename-folder':
             if (target && 'items' in target && value) {
                renameFolder(target.id, value);
-               toast.success(tNotifications('drawer.folderRenamed'));
+               toast.success(tNotifications('Notifications.drawer.folderRenamed'));
             }
             break;
 
          case 'delete-folder':
             if (target && 'items' in target) {
                deleteFolder(target.id);
-               toast.success(tNotifications('drawer.folderDeleted'));
+               toast.success(tNotifications('Notifications.drawer.folderDeleted'));
             }
             break;
 
          case 'move-folder':
             if (target && 'items' in target) {
                moveFolder(target.id, value);
-               toast.success(tNotifications('drawer.folderMoved'));
+               toast.success(tNotifications('Notifications.drawer.folderMoved'));
             }   
             break;
 
@@ -647,14 +647,14 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
          case 'rename-item':
             if (target && 'id' in target && 'content' in target && value) {
                renameItem(target.id, value);
-               toast.success(tNotifications('drawer.itemRenamed'));
+               toast.success(tNotifications('Notifications.drawer.itemRenamed'));
             }
             break;
 
          case 'delete-item':
             if (target && 'id' in target && 'content' in target) {
                deleteItem(target.id);
-               toast.success(tNotifications('drawer.itemDeleted'));
+               toast.success(tNotifications('Notifications.drawer.itemDeleted'));
             }
             break;
 
@@ -662,7 +662,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
             if (value && target && 'defaultName' in target) {
                const { game, type, content, parentFolderId } = target;
                addItem(value, game, type, content, parentFolderId);
-               toast.success(tNotifications('drawer.itemCreated'));
+               toast.success(tNotifications('Notifications.drawer.itemCreated'));
             }
             clearPendingItemDrop();
             break;
@@ -670,7 +670,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
          case 'move-item':
             if (target && 'id' in target && 'content' in target) {
                moveItem(target.id, value);
-               toast.success(tNotifications('drawer.itemMoved'));
+               toast.success(tNotifications('Notifications.drawer.itemMoved'));
             }   
             break;
       }
@@ -725,10 +725,10 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                break;
          }
 
-         toast.success(tNotifications('drawer.importSuccess'));
+         toast.success(tNotifications('Notifications.drawer.importSuccess'));
          
       } catch (error) {
-         toast.error(tNotifications('general.importFailed'));
+         toast.error(tNotifications('Notifications.general.importFailed'));
          console.error("Failed to import file:", error);
       }
    }, [currentFolderId, addImportedFolder, addImportedItem, importFullDrawer, tNotifications]);
@@ -761,7 +761,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
 
    const handleExportDrawer = () => {
       exportDrawer(drawerState);
-      toast.success(tNotifications('drawer.exported'));
+      toast.success(tNotifications('Notifications.drawer.exported'));
    };
 
 
@@ -784,12 +784,12 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                >
                      <header className="flex-shrink-0 p-4 h-26 border-b-2 border-border">
                         <div className="flex flex-grow h-8 items-center justify-between my-2">
-                           <h2 className="flex-1 text-xl font-bold">{t('title')}</h2>
+                           <h2 className="flex-1 text-xl font-bold">{t('Drawer.title')}</h2>
                            <div className="flex-2">
                               <DrawerUndoRedoControls/>
                            </div>
                            <div className="flex-1 flex items-center justify-end gap-1">
-                              <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('toggleView')} data-tour="drawer-rich-view-toggle">
+                              <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.toggleView')} data-tour="drawer-rich-view-toggle">
                                  {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
                               </div>
                               <div onClick={() => setDrawerOpen(false)} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label="Close drawer">
@@ -871,7 +871,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                            <motion.div layout transition={{ duration: 0.1 }} className="bg-card mt-1 border-2 border-dashed border-border rounded">
                               <Button variant="ghost" className="w-full justify-start cursor-pointer" onClick={handleAddFolder}>
                                  <Plus className="mr-2 h-4 w-4" />
-                                 {t('addFolder')}
+                                 {t('Drawer.addFolder')}
                               </Button>
                            </motion.div>
                         </motion.div>
@@ -904,7 +904,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                               ) : (
                                  <motion.div layout transition={{ duration: 0.1 }} className="text-center py-8 h-full flex flex-col justify-center items-center">
                                     <Inbox className="mx-auto h-16 w-16 text-muted-foreground" />
-                                    <p className="text-lg text-muted-foreground mt-2">{t('emptyFolder')}</p>
+                                    <p className="text-lg text-muted-foreground mt-2">{t('Drawer.emptyFolder')}</p>
                                  </motion.div>
                               )}
                            </div>
@@ -980,7 +980,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                      <div className="flex flex-col items-center justify-center w-full h-full text-center p-12 border-4 border-dashed border-primary/30">
                         <Download className="mx-auto h-12 w-12 text-primary" />
                         <p className="mt-2 font-semibold text-foreground">
-                           {t('dropToImport')}
+                           {t('Drawer.dropToImport')}
                         </p>
                      </div>
                   </motion.div>

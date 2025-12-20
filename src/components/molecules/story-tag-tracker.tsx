@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -45,7 +45,7 @@ interface StoryTagTrackerCardProps {
 
 
 export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview, dragAttributes, dragListeners, onExport }: StoryTagTrackerCardProps) {
-   const t = useTranslations('Trackers');
+   const { t: t } = useTranslation();
    const { updateStoryTag, removeStoryTag, upgradeStoryTagToTheme } = useCharacterActions();
    const [isHovered, setIsHovered] = useState(false);
 
@@ -119,7 +119,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
                         value={localName}
                         onChange={(e) => setLocalName(e.target.value)}
                         className="h-8 text-card-paper-fg font-semibold border-dashed bg-transparent placeholder-card-paper-fg"
-                        placeholder={t('storyTagPlaceholder')}
+                        placeholder={t('Trackers.storyTagPlaceholder')}
                      />
                   </div>
                   <Button
@@ -135,7 +135,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
                <>
                   <div className="flex-grow p-1">
                      <span className={cn("text-card-paper-fg font-semibold", tracker.isScratched && 'line-through opacity-50')}>
-                        {tracker.name ? tracker.name : `[${t('storyTagNoName')}]`}
+                        {tracker.name ? tracker.name : `[${t('Trackers.storyTagNoName')}]`}
                      </span>
                   </div>
                   <Button 

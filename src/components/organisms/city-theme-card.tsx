@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -54,7 +54,7 @@ interface CityThemeCardProps {
 
 export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps>(
    ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
-      const t = useTranslations('ThemeCard');
+      const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as CityThemeDetails | CityCrewDetails;
 
@@ -165,10 +165,10 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                      className={cn("bg-card-header-bg text-card-header-fg")}
                   />
                ) : (
-                  <CardHeaderMolecule title={t('crewThemeTitle')} />
+                  <CardHeaderMolecule title={t('ThemeCard.crewThemeTitle')} />
                )}
                <div className="px-2 text-xs font-semibold text-center">
-                  <span>{t('power')}</span> • <span className="text-destructive/50">{t('weakness')}</span>
+                  <span>{t('ThemeCard.power')}</span> • <span className="text-destructive/50">{t('ThemeCard.weakness')}</span>
                </div>
             </CardHeader>
 
@@ -184,13 +184,13 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                   {isEditing ? (
                      <Input
                         className="text-xl font-bold text-center flex-grow border-0 shadow-none"
-                        placeholder={t('placeholderName')}
+                        placeholder={t('ThemeCard.placeholderName')}
                         value={localMainTagName}
                         onChange={(e) => setLocalMainTagName(e.target.value)}
                      />
                   ) : (
                      <h2 className={cn("text-xl font-bold", details.mainTag.isScratched ? 'line-through opacity-50' : details.mainTag.isActive && 'underline')}>
-                        {details.mainTag.name || `[${t('noName')}]`}
+                        {details.mainTag.name || `[${t('ThemeCard.noName')}]`}
                      </h2>
                   )}
                   <div className="w-6">
@@ -212,26 +212,26 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
 
             {!isDrawerPreview &&
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
-                  <CardSectionHeader title={`${card.cardType === 'GROUP_THEME' ? t('identityTitle') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('mysteryTitle') : t('identityTitle'))}`}></CardSectionHeader>
+                  <CardSectionHeader title={`${card.cardType === 'GROUP_THEME' ? t('ThemeCard.identityTitle') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.mysteryTitle') : t('ThemeCard.identityTitle'))}`}></CardSectionHeader>
                   <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
                      {isEditing ? (
                         <Textarea
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"
-                           placeholder={card.cardType === 'GROUP_THEME' ? t('identityPlaceholder') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('mysteryPlaceholder') : t('identityPlaceholder'))}
+                           placeholder={card.cardType === 'GROUP_THEME' ? t('ThemeCard.identityPlaceholder') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.mysteryPlaceholder') : t('ThemeCard.identityPlaceholder'))}
                            value={localMystery || ''}
                            onChange={(e) => setLocalMystery(e.target.value)}
                         />
                      ) : (
-                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{mysteryOrIdentity || `[${card.cardType === 'GROUP_THEME' ? t('noIdentity') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('noMystery') : t('noIdentity'))}]`}</p>
+                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{mysteryOrIdentity || `[${card.cardType === 'GROUP_THEME' ? t('ThemeCard.noIdentity') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.noMystery') : t('ThemeCard.noIdentity'))}]`}</p>
                      )}
                   </div>
 
                   <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
-                     <PipTracker label={t('attention')} value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
+                     <PipTracker label={t('ThemeCard.attention')} value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
                      {card.cardType === 'GROUP_THEME' ? (
-                        <PipTracker label={t('crack')} value={(details as CityCrewDetails).crack} onUpdate={(val) => handleDetailChange('crack', val)} />
+                        <PipTracker label={t('ThemeCard.crack')} value={(details as CityCrewDetails).crack} onUpdate={(val) => handleDetailChange('crack', val)} />
                      ) : (
-                        <PipTracker label={(details as CityThemeDetails).themeType === 'Mythos' ? t('fade') : t('crack')} value={(details as CityThemeDetails).fadeOrCrack} onUpdate={(val) => handleDetailChange('fadeOrCrack', val)} />
+                        <PipTracker label={(details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.fade') : t('ThemeCard.crack')} value={(details as CityThemeDetails).fadeOrCrack} onUpdate={(val) => handleDetailChange('fadeOrCrack', val)} />
                      )}
                   </div>
                </CardFooter>
@@ -250,10 +250,10 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
             {card.cardType === 'CHARACTER_THEME' ? (
                <CardHeaderMolecule title={(details as CityThemeDetails).themebook} type={(details as CityThemeDetails).themeType} game="CITY_OF_MIST" />
             ) : (
-               <CardHeaderMolecule title={t('crewThemeTitle')} />
+               <CardHeaderMolecule title={t('ThemeCard.crewThemeTitle')} />
             )}
 
-            <CardSectionHeader title={t('improvements')} />
+            <CardSectionHeader title={t('ThemeCard.improvements')} />
 
             <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
@@ -270,7 +270,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                   {isEditing && (
                      <div className="p-2 w-full">
                         <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addImprovement')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('ThemeCard.addImprovement')}
                         </Button>
                      </div>
                   )}

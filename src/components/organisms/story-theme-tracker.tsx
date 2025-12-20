@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
@@ -47,7 +47,7 @@ interface StoryThemeTrackerCardProps {
 
 
 export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPreview = false, dragAttributes, dragListeners, onExport }: StoryThemeTrackerCardProps) {
-   const tThemeCard = useTranslations('ThemeCard');
+   const { t: tThemeCard } = useTranslation();
    const actions = useCharacterActions();
    const [isHovered, setIsHovered] = useState(false);
    const scrollRef = useRef<HTMLDivElement>(null);
@@ -117,7 +117,7 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
                   {isEffectivelyEditing ? (
                      <Input
                         className="text-lg font-bold text-center flex-grow border-0 shadow-none bg-card-paper-bg text-card-paper-fg"
-                        placeholder={tThemeCard('placeholderName')}
+                        placeholder={tThemeCard('ThemeCard.placeholderName')}
                         value={localMainTagName}
                         onChange={(e) => setLocalMainTagName(e.target.value)}
                      />
@@ -127,7 +127,7 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
                            {tracker.mainTag.isActive ? <Disc2 className="h-5 w-5 text-primary" /> : <Circle className="h-4 w-4" />}
                         </Button>
                         <h3 className={cn("text-lg font-bold", tracker.mainTag.isScratched ? 'line-through opacity-50' : tracker.mainTag.isActive && 'underline')}>
-                           {tracker.mainTag.name || `[${tThemeCard('noName')}]`}
+                           {tracker.mainTag.name || `[${tThemeCard('ThemeCard.noName')}]`}
                         </h3>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => actions.updateTagInStoryTheme(tracker.id, 'mainTag', tracker.mainTag.id, { isScratched: !tracker.mainTag.isScratched })}>
                            <Flame className={cn('h-4 w-4', tracker.mainTag.isScratched && 'text-destructive fill-destructive')} />
@@ -146,11 +146,11 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
                >
                   {/* Power Tags */}
                   {tracker.powerTags.map((tag, index) => <TagItem key={tag.id} trackerId={tracker.id} tag={tag} tagType="power" isEditing={isEffectivelyEditing} index={index} isTrackerTag />)}
-                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full p-2 border-1 border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('addPowerTag')}</Button></div>}
+                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full p-2 border-1 border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('ThemeCard.addPowerTag')}</Button></div>}
 
                   {/* Weakness Tags */}
                   {tracker.weaknessTags.map((tag, index) => <TagItem key={tag.id} trackerId={tracker.id} tag={tag} tagType="weakness" isEditing={isEffectivelyEditing} index={index} isTrackerTag />)}
-                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full border-1 border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('addWeaknessTag')}</Button></div>}
+                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full border-1 border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('ThemeCard.addWeaknessTag')}</Button></div>}
                </div>
             </div>
          </div>

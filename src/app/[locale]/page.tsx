@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -165,9 +165,9 @@ function SortableTrackerItem({ tracker, isEditing, isBeingDragged, onExport }: {
 
 export default function CharacterSheetPage() {
    // --- Localization ---
-   const t = useTranslations('CharacterSheetPage');
+   const { t: t } = useTranslation();
    const tNotifications = useTranslations('Notifications')
-   const tTrackers = useTranslations('Trackers');
+   const { t: tTrackers } = useTranslation();
 
    // --- Data Stores ---
    const character = useCharacterStore((state) => state.character);
@@ -222,10 +222,10 @@ export default function CharacterSheetPage() {
    const handleDialogConfirm = (options: CreateCardOptions, cardId?: string) => {
       if (dialogMode === 'edit' && cardId) {
          updateCardDetails(cardId, { themebook: options.themebook, themeType: options.themeType });
-         toast.success(tNotifications('card.updated'));
+         toast.success(tNotifications('Notifications.card.updated'));
       } else {
          addCard(options);
-         toast.success(tNotifications('card.created'));
+         toast.success(tNotifications('Notifications.card.created'));
       }
    };
 
@@ -259,7 +259,7 @@ export default function CharacterSheetPage() {
       const storableInfo = mapItemToStorableInfo(item);
       
       if (!storableInfo) {
-         toast.error(tNotifications('general.invalidExportType'));
+         toast.error(tNotifications('Notifications.general.invalidExportType'));
          return;
       }
       
@@ -275,7 +275,7 @@ export default function CharacterSheetPage() {
 
       const fileName = generateExportFilename(gameSystem, itemType, handle);
       exportToFile(item, itemType, gameSystem, fileName);
-      toast.success(tNotifications('general.exportSuccess'));
+      toast.success(tNotifications('Notifications.general.exportSuccess'));
    };
 
    const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -292,19 +292,19 @@ export default function CharacterSheetPage() {
             const characterData = migratedContent as Character;
             loadCharacter(characterData);
             setContextualGame(characterData.game);
-            toast.success(tNotifications('character.imported'));
+            toast.success(tNotifications('Notifications.character.imported'));
             return;
          }
 
          // --- Individual components require a character to be loaded ---
          if (!character) {
-            toast.error(tNotifications('general.importFailedNoCharacter'));
+            toast.error(tNotifications('Notifications.general.importFailedNoCharacter'));
             return;
          }
 
          // --- Compatibility check for individual components ---
          if (game !== character.game) {
-            toast.error(tNotifications('general.importFailedWrongGame'));
+            toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
             return;
          }
 
@@ -313,17 +313,17 @@ export default function CharacterSheetPage() {
 
          if (isCardType) {
             addImportedCard(migratedContent as CardData);
-            toast.success(tNotifications('character.componentImported'));
+            toast.success(tNotifications('Notifications.character.componentImported'));
          } else if (isTrackerType) {
             addImportedTracker(migratedContent as Tracker);
-            toast.success(tNotifications('character.componentImported'));
+            toast.success(tNotifications('Notifications.character.componentImported'));
          } else {
-            toast.error(tNotifications('general.importFailed'));
+            toast.error(tNotifications('Notifications.general.importFailed'));
          }
 
       } catch (error) {
          console.error("Failed to import file:", error);
-         toast.error(tNotifications('general.importFailed'));
+         toast.error(tNotifications('Notifications.general.importFailed'));
       }
    }, [character, loadCharacter, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
 
@@ -493,10 +493,10 @@ export default function CharacterSheetPage() {
 
             if (isTrackerType) {
                addImportedTracker(draggedItem.content as Tracker);
-               toast.success(tNotifications('character.componentImported'));
+               toast.success(tNotifications('Notifications.character.componentImported'));
             } else if (isCardType) {
                addImportedCard(draggedItem.content as CardData);
-               toast.success(tNotifications('character.componentImported'));
+               toast.success(tNotifications('Notifications.character.componentImported'));
             } else {
                console.log('Drop rejected - unsupported item type:', draggedItem.type);
             }
@@ -672,7 +672,7 @@ export default function CharacterSheetPage() {
    if (!isClient) {
       return (
          <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
-            <p className="text-muted-foreground">{t('loading')}</p>
+            <p className="text-muted-foreground">{t('CharacterSheetPage.loading')}</p>
          </main>
       );
    }
@@ -707,7 +707,7 @@ export default function CharacterSheetPage() {
                            value={localName}
                            onChange={(e) => setLocalName(e.target.value)}
                            className="text-2xl text-popover-foreground font-bold bg-transparent focus:outline-none w-full"
-                           placeholder={t('characterNamePlaceholder')}
+                           placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
                         />
                      </header>
 
@@ -749,7 +749,7 @@ export default function CharacterSheetPage() {
                                              )}
                                           >
                                              <PlusCircle className="mr-2 h-4 w-4" />
-                                             {tTrackers('addStatus')}
+                                             {tTrackers('Trackers.addStatus')}
                                           </Button>
                                        )}
                                     </div>
@@ -772,14 +772,14 @@ export default function CharacterSheetPage() {
                                              data-tour="add-story-tag-button"
                                              variant="ghost"
                                              onClick={() => addStoryTag()}
-                                             title={tTrackers('addStoryTag')}
+                                             title={tTrackers('Trackers.addStoryTag')}
                                              className={cn("cursor-pointer flex items-center justify-center w-[220px] min-h-[55px] py-2",
                                                             "rounded-lg border-2 border-dashed border-bg text-bg border-primary/25 text-muted-foreground bg-primary/5",
                                                             "hover:text-foreground hover:border-foreground"
                                              )}
                                           >
                                              <PlusCircle className="mr-2 h-4 w-4 flex-shrink-0" />
-                                             <span className="text-center whitespace-normal">{tTrackers('addStoryTag')}</span>
+                                             <span className="text-center whitespace-normal">{tTrackers('Trackers.addStoryTag')}</span>
                                           </Button>
                                        )}
                                     </div>
@@ -858,7 +858,7 @@ export default function CharacterSheetPage() {
                         <div className="flex flex-col items-center justify-center w-full h-full text-center p-12 border-4 border-dashed border-primary/30">
                            <Download className="mx-auto h-12 w-12 text-primary" />
                            <p className="mt-2 font-semibold text-foreground">
-                              {t('dropToImport')}
+                              {t('CharacterSheetPage.dropToImport')}
                            </p>
                         </div>
                      </motion.div>

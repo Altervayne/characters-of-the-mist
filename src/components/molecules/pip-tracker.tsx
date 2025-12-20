@@ -4,7 +4,7 @@
 import React from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { Circle } from 'lucide-react';
@@ -25,7 +25,7 @@ interface PipTrackerProps {
 
 
 export function PipTracker({ label, value, onUpdate, maxPips = 3, flexDir = "flex-col" }: PipTrackerProps) {
-   const t = useTranslations('PipTracker');
+   const { t: t } = useTranslation();
 
    const handleClick = (pipValue: number) => {
       if (value === pipValue) {
