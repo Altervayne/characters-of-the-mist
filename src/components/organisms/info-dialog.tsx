@@ -24,7 +24,7 @@ interface InfoDialogProps {
 export function InfoDialog({ isOpen, onOpenChange }: InfoDialogProps) {
    const t = useTranslations('InfoDialog');
    
-   /* const localizationContributors = '- **English:** Altervayne\n- **Français:** Altervayne\n- **Deutsch:** N/A' */
+   const localizationContributors = '- **Deutsch:** Markus Raab'
 
    
    return (
@@ -63,8 +63,8 @@ export function InfoDialog({ isOpen, onOpenChange }: InfoDialogProps) {
                   <TabsContent value="credits">
                      <MarkdownContent content={t('content.credits')} />
 
-                     {/* <MarkdownContent content={t('content.localization')} />
-                     <MarkdownContent content={localizationContributors} /> */}
+                     <MarkdownContent content={t('content.localization')} />
+                     <MarkdownContent content={localizationContributors} />
 
                      <MarkdownContent content={t('content.support')} />
                      <a href="https://ko-fi.com/altervayne" target="_blank" rel="noopener noreferrer" className="inline-block mt-4">
@@ -80,7 +80,7 @@ export function InfoDialog({ isOpen, onOpenChange }: InfoDialogProps) {
             </Tabs>
             
             <DialogFooter>
-               <Button className="cursor-pointer" onClick={() => onOpenChange(false)}>{t('close')}</Button>
+               <Button className="cursor-pointer" title={t('close')} onClick={() => onOpenChange(false)}>{t('close')}</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>

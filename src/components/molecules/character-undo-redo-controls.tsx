@@ -35,10 +35,10 @@ export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolea
    return (
       <motion.div
          data-tour="menu-undo-redo-buttons"
-         layout 
+         layout
          className={cn(
-            "flex flex-grow items-center gap-2 mt-2 justify-evenly",
-            isCollapsed ? "flex-col px-2" : "flex-row px-4"
+            "flex items-center gap-2 mt-2 justify-evenly",
+            isCollapsed ? "flex-col px-2 flex-grow" : "flex-row px-4"
          )}
       >
          <IconButton
@@ -49,16 +49,17 @@ export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolea
             onClick={() => undo()}
             disabled={!canUndo}
             aria-label={t('undo')}
+            title={t('undo')}
             className={cn(
-               isCollapsed ? "w-10 h-10" : "h-8 flex justify-evenly flex-1",
+               isCollapsed ? "w-10 h-10" : "h-8 flex justify-evenly flex-1 min-w-0 max-w-32",
                canUndo ? "cursor-pointer" : ""
             )}
          >
             <Undo className={cn(
-                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5"
+                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5 flex-shrink-0"
                )}
             />
-            { !isCollapsed && t('undo') }
+            { !isCollapsed && <span className="truncate">{t('undo')}</span> }
          </IconButton>
 
          <IconButton
@@ -69,14 +70,15 @@ export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolea
             onClick={() => redo()}
             disabled={!canRedo}
             aria-label={t('redo')}
+            title={t('redo')}
             className={cn(
-               isCollapsed ? "w-10 h-10" : "h-8 flex justify-evenly flex-1",
+               isCollapsed ? "w-10 h-10" : "h-8 flex justify-evenly flex-1 min-w-0 max-w-32",
                canRedo ? "cursor-pointer" : ""
             )}
          >
-            { !isCollapsed && t('redo') }
+            { !isCollapsed && <span className="truncate">{t('redo')}</span> }
             <Redo className={cn(
-                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5"
+                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5 flex-shrink-0"
                )}
             />
          </IconButton>

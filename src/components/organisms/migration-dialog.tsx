@@ -209,7 +209,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                            <File className="h-5 w-5 flex-shrink-0" />
                            <span className="font-mono text-sm truncate" title={file.name}>{file.name}</span>
                            </div>
-                           <Button variant="ghost" size="icon" onClick={() => handleRemoveFile(file)}>
+                           <Button variant="ghost" size="icon" title="Remove file" onClick={() => handleRemoveFile(file)}>
                            <X className="h-4 w-4" />
                            </Button>
                         </div>
@@ -219,8 +219,8 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
             </div>
 
             <DialogFooter>
-               <Button variant="ghost" onClick={() => handleOpenChange(false)} className="cursor-pointer">{t('cancel')}</Button>
-               <Button onClick={handleMigrate} disabled={files.length === 0} className="cursor-pointer">{t('migrateButton')}</Button>
+               <Button variant="ghost" onClick={() => handleOpenChange(false)} title={t('cancel')} className="cursor-pointer">{t('cancel')}</Button>
+               <Button onClick={handleMigrate} disabled={files.length === 0} title={t('migrateButton')} className="cursor-pointer">{t('migrateButton')}</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>

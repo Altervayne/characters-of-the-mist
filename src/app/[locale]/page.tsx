@@ -769,16 +769,17 @@ export default function CharacterSheetPage() {
                                        ))}
                                        {areTrackersEditable && (
                                           <Button
-                                             data-tour="add-story-tag-button" 
-                                             variant="ghost" 
-                                             onClick={() => addStoryTag()} 
-                                             className={cn("cursor-pointer flex items-center justify-center w-[220px] h-[55px]",
+                                             data-tour="add-story-tag-button"
+                                             variant="ghost"
+                                             onClick={() => addStoryTag()}
+                                             title={tTrackers('addStoryTag')}
+                                             className={cn("cursor-pointer flex items-center justify-center w-[220px] min-h-[55px] py-2",
                                                             "rounded-lg border-2 border-dashed border-bg text-bg border-primary/25 text-muted-foreground bg-primary/5",
                                                             "hover:text-foreground hover:border-foreground"
                                              )}
                                           >
-                                             <PlusCircle className="mr-2 h-4 w-4" />
-                                             {tTrackers('addStoryTag')}
+                                             <PlusCircle className="mr-2 h-4 w-4 flex-shrink-0" />
+                                             <span className="text-center whitespace-normal">{tTrackers('addStoryTag')}</span>
                                           </Button>
                                        )}
                                     </div>

@@ -29,17 +29,18 @@ export function DrawerUndoRedoControls() {
 
 
    return (
-      <div data-tour="drawer-undo-redo-buttons" className="flex items-center gap-2 justify-evenly">
+      <div data-tour="drawer-undo-redo-buttons" className="flex items-center gap-2 justify-evenly max-w-50">
          <Button
             variant="outline"
             size="sm"
             onClick={() => undo()}
             disabled={!canUndo}
             aria-label={t('undo')}
-            className={ canUndo ? "cursor-pointer" : "" }
+            title={t('undo')}
+            className={ canUndo ? "cursor-pointer flex-1 min-w-0" : "flex-1 min-w-0" }
          >
-            <Undo className="h-4 w-4 mr-1" />
-            {t('undo')}
+            <Undo className="h-4 w-4 mr-1 flex-shrink-0" />
+            <span className="truncate">{t('undo')}</span>
          </Button>
          <Button
             variant="outline"
@@ -47,10 +48,11 @@ export function DrawerUndoRedoControls() {
             onClick={() => redo()}
             disabled={!canRedo}
             aria-label={t('redo')}
-            className={ canRedo ? "cursor-pointer" : "" }
+            title={t('redo')}
+            className={ canRedo ? "cursor-pointer flex-1 min-w-0" : "flex-1 min-w-0" }
          >
-            {t('redo')}
-            <Redo className="h-4 w-4 ml-1" />
+            <span className="truncate">{t('redo')}</span>
+            <Redo className="h-4 w-4 ml-1 flex-shrink-0" />
          </Button>
       </div>
    );

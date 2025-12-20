@@ -36,6 +36,7 @@ import { useDrawerStore } from '@/lib/stores/drawerStore';
 const locales = [
    { code: 'en', name: 'English' },
    { code: 'fr', name: 'Français' },
+   { code: 'de', name: 'Deutsch' },
 ];
 
 
@@ -209,16 +210,20 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <Button
                            variant={resolvedTheme === 'light' ? 'default' : 'outline'}
                            onClick={() => setMode('light')}
-                           className="flex-1 w-full cursor-pointer"
+                           title={t('light')}
+                           className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Sun className="mr-2 h-4 w-4" /> {t('light')}
+                           <Sun className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <span className="truncate">{t('light')}</span>
                         </Button>
                         <Button
                            variant={resolvedTheme === 'dark' ? 'default' : 'outline'}
                            onClick={() => setMode('dark')}
-                           className="flex-1 w-full cursor-pointer"
+                           title={t('dark')}
+                           className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Moon className="mr-2 h-4 w-4" /> {t('dark')}
+                           <Moon className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <span className="truncate">{t('dark')}</span>
                         </Button>
                      </div>
                   </div>
@@ -229,16 +234,20 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <Button
                            variant={!isSideBySideView ? 'default' : 'outline'}
                            onClick={() => setSideBySideView(false)}
-                           className="flex-1 w-full cursor-pointer text-wrap"
+                           title={t('cardView.flipping')}
+                           className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <FlipHorizontal className="mr-2 h-4 w-4" /> {t('cardView.flipping')}
+                           <FlipHorizontal className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <span className="truncate">{t('cardView.flipping')}</span>
                         </Button>
                         <Button
                            variant={isSideBySideView ? 'default' : 'outline'}
                            onClick={() => setSideBySideView(true)}
-                           className="flex-1 w-full cursor-pointer text-wrap"
+                           title={t('cardView.sideBySide')}
+                           className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <BookOpen className="mr-2 h-4 w-4" /> {t('cardView.sideBySide')}
+                           <BookOpen className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <span className="truncate">{t('cardView.sideBySide')}</span>
                         </Button>
                      </div>
                   </div>
@@ -249,33 +258,37 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <Button
                            variant={!isTrackersAlwaysEditable ? 'default' : 'outline'}
                            onClick={() => setTrackersAlwaysEditable(false)}
-                           className="flex-1 w-full cursor-pointer text-wrap"
+                           title={t('trackerEdit.unlocked')}
+                           className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <UnlockIcon className="mr-2 h-4 w-4" /> {t('trackerEdit.unlocked')}
+                           <UnlockIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <span className="truncate">{t('trackerEdit.unlocked')}</span>
                         </Button>
                         <Button
                            variant={isTrackersAlwaysEditable ? 'default' : 'outline'}
                            onClick={() => setTrackersAlwaysEditable(true)}
-                           className="flex-1 w-full cursor-pointer text-wrap"
+                           title={t('trackerEdit.locked')}
+                           className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Lock className="mr-2 h-4 w-4" /> {t('trackerEdit.locked')}
+                           <Lock className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <span className="truncate">{t('trackerEdit.locked')}</span>
                         </Button>
                      </div>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label className="text-left">{t('migration.label')}</Label>
-                     <Button onClick={() => setIsMigrationDialogOpen(true)} className="col-span-2 cursor-pointer">
-                        <DatabaseBackup className="mr-2 h-4 w-4" />
-                        {t('migration.button')}
+                     <Button onClick={() => setIsMigrationDialogOpen(true)} title={t('migration.button')} className="col-span-2 cursor-pointer min-w-0">
+                        <DatabaseBackup className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{t('migration.button')}</span>
                      </Button>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label className="text-left">{t('tutorial')}</Label>
-                     <Button onClick={onStartTour} className="col-span-2 cursor-pointer">
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                        {t('tutorialButton')}
+                     <Button onClick={onStartTour} title={t('tutorialButton')} className="col-span-2 cursor-pointer min-w-0">
+                        <PlayCircle className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{t('tutorialButton')}</span>
                      </Button>
                   </div>
                </div>
@@ -294,19 +307,21 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                   <div className="flex gap-2">
                      <Button
                         variant="destructive"
-                        className="cursor-pointer flex-grow flex-1"
+                        className="cursor-pointer flex-1 min-w-0"
                         onClick={() => setIsDeleteDrawerDialogOpen(true)}
+                        title={t('dangerZone.deleteDrawerButton')}
                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t('dangerZone.deleteDrawerButton')}
+                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{t('dangerZone.deleteDrawerButton')}</span>
                      </Button>
                      <Button
                         variant="destructive"
-                        className="cursor-pointer flex-grow flex-1"
+                        className="cursor-pointer flex-1 min-w-0"
                         onClick={() => setIsResetAppDialogOpen(true)}
+                        title={t('dangerZone.resetButton')}
                      >
-                        <OctagonMinus className="mr-2 h-4 w-4" />
-                        {t('dangerZone.resetButton')}
+                        <OctagonMinus className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{t('dangerZone.resetButton')}</span>
                      </Button>
                   </div>
                </div>

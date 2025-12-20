@@ -60,6 +60,10 @@ Here’s how you can add a new language:
 
 Thank you so much for helping make this tool accessible to more people!
 
+### Localization Contributors :
+
+- **Deutsch**: Markus Raab
+
 ---
 ## 📜 License
 

@@ -22,13 +22,16 @@ interface SidebarButtonProps extends Omit<IconButtonProps, 'children'> {
 }
 
 export function SidebarButton({ isCollapsed, Icon, children, ...props }: SidebarButtonProps) {
+  const buttonText = typeof children === 'string' ? children : '';
+
   return (
      <IconButton
          layout
          transition={{ duration: 0.2 }}
+         title={buttonText}
          className={cn(
             "flex cursor-pointer overflow-hidden transition-all duration-200 ease-in-out",
-            isCollapsed ? "w-10 px-2 justify-center" : "w-56 px-4 justify-start"
+            isCollapsed ? "w-10 px-2 justify-center" : "w-56 px-4 justify-start min-w-0"
          )}
          {...props}
       >
@@ -41,7 +44,7 @@ export function SidebarButton({ isCollapsed, Icon, children, ...props }: Sidebar
          />
 
          <motion.span
-               className="whitespace-nowrap"
+               className="truncate"
                initial={false}
                animate={{
                   width: isCollapsed ? 0 : 'auto',
