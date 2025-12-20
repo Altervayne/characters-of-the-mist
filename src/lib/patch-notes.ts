@@ -8,8 +8,7 @@ export const patchNotes: PatchNote[] = [
       version: '1.1.0',
       content: `
 ### A Big One !
-
----
+This is THE long awaited update.
 
 ### **⚠️ Important!**
 * App's version of NextJS updated to get the latest security fixes which properly patches a serious security problem found in React Server Components.
@@ -28,8 +27,6 @@ export const patchNotes: PatchNote[] = [
 * As requested, the Drawer now has a button in its header to close it.
 * Adjusted Legends in the Mist Light mode color palette for a more "Wood and Stone" feel.
 
----
-
 ### So what's next ?
 As always, please do not hesitate to send feature requests and bug reports on the Tools of the Mist server, even if I work slowly due to lack of time, I read them, and I try my best to implement them!
 The next feature that will come to Characters of the Mist is offline app capabilities. You will be able to install Characters of the Mist as a PWA (Progressive Web App), which will act like a regular app and will keep working even if you're not online.
@@ -39,6 +36,7 @@ The next feature that will come to Characters of the Mist is offline app capabil
       version: '1.0.4',
       content: `
 ### I have been informed that there were new Demo themebooks!
+So I made sure they were in the app.
 
 ### 🐛 Bugfixes
 * Theme **type** translations wouldn't show up in card creation window and command palette.
@@ -51,6 +49,7 @@ The next feature that will come to Characters of the Mist is offline app capabil
       version: '1.0.3',
       content: `
 ### This one is a very small bugfix!
+Small, but necessary.
 
 ### 🐛 Bugfixes
 * Card creation window wouldn't always allow for a custom themebook.
