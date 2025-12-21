@@ -838,9 +838,7 @@
          "definingRelationship": "Defining Relationship",
          "mission": "Mission",
          "personality": "Personality",
-         "possessions": "Possessions",
-         "routine": "Routine",
-         "struggle": "Struggle"
+         "occupation": "Occupation"
       }
    },
    "OtherscapeData": {
