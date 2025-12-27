@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React from 'react';
@@ -38,7 +38,7 @@ export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolea
          layout
          className={cn(
             "flex items-center gap-2 mt-2 justify-evenly",
-            isCollapsed ? "flex-col px-2 flex-grow" : "flex-row px-4"
+            isCollapsed ? "flex-col px-2 grow" : "flex-row px-4"
          )}
       >
          <IconButton
@@ -56,7 +56,7 @@ export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolea
             )}
          >
             <Undo className={cn(
-                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5 flex-shrink-0"
+                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5 shrink-0"
                )}
             />
             { !isCollapsed && <span className="truncate">{t('Actions.undo')}</span> }
@@ -78,7 +78,7 @@ export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolea
          >
             { !isCollapsed && <span className="truncate">{t('Actions.redo')}</span> }
             <Redo className={cn(
-                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5 flex-shrink-0"
+                  isCollapsed ? "m-0 h-6 w-6" : "ml-1 h-5 w-5 shrink-0"
                )}
             />
          </IconButton>

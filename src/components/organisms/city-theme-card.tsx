@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -37,7 +37,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, CityThemeDetails, CityCrewDetails, Tag, BlandTag } from '@/lib/types/character';
+import type { Card as CardData, CardViewMode, CityThemeDetails, CityCrewDetails, Tag, BlandTag } from '@/lib/types/character';
 
 interface CityThemeCardProps {
    card: CardData;
@@ -150,11 +150,11 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
                {card.cardType === 'CHARACTER_THEME' ? (
@@ -172,8 +172,8 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                </div>
             </CardHeader>
 
-            <CardContent className="flex-grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-1 py-2.5 flex-shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
+            <CardContent className="grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-1 py-2.5 shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
                   <div className="w-6">
                      {!isEditing && (
                         <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={() => handleDetailChange('mainTag', { ...details.mainTag, isActive: !details.mainTag.isActive })}>
@@ -183,7 +183,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                   </div>
                   {isEditing ? (
                      <Input
-                        className="text-xl font-bold text-center flex-grow border-0 shadow-none"
+                        className="text-xl font-bold text-center grow border-0 shadow-none"
                         placeholder={t('ThemeCard.placeholderName')}
                         value={localMainTagName}
                         onChange={(e) => setLocalMainTagName(e.target.value)}
@@ -201,19 +201,19 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                      )}
                   </div>
                </div>
-               <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+               <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
                   {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
-                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
+                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
 
                   {details.weaknessTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />)}
-                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
+                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
                </div>
             </CardContent>
 
             {!isDrawerPreview &&
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
                   <CardSectionHeader title={`${card.cardType === 'GROUP_THEME' ? t('ThemeCard.identityTitle') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.mysteryTitle') : t('ThemeCard.identityTitle'))}`}></CardSectionHeader>
-                  <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
+                  <div className="w-full grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
                      {isEditing ? (
                         <Textarea
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"
@@ -226,7 +226,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                      )}
                   </div>
 
-                  <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
+                  <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-card-accent/30">
                      <PipTracker label={t('ThemeCard.attention')} value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
                      {card.cardType === 'GROUP_THEME' ? (
                         <PipTracker label={t('ThemeCard.crack')} value={(details as CityCrewDetails).crack} onUpdate={(val) => handleDetailChange('crack', val)} />
@@ -241,11 +241,11 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             {card.cardType === 'CHARACTER_THEME' ? (
                <CardHeaderMolecule title={(details as CityThemeDetails).themebook} type={(details as CityThemeDetails).themeType} game="CITY_OF_MIST" />
@@ -255,8 +255,8 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
 
             <CardSectionHeader title={t('ThemeCard.improvements')} />
 
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
                   {details.improvements.map((imp, index) => (
                      <BlandTagItem
                         key={imp.id}
@@ -269,7 +269,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {t('ThemeCard.addImprovement')}
                         </Button>
                      </div>

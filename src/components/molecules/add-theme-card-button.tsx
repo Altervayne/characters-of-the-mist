@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React from 'react';
@@ -28,7 +28,7 @@ export function AddCardButton({ onClick }: AddCardButtonProps) {
          data-tour="add-card-button"
          onClick={onClick}
          className={cn(
-            "cursor-pointer flex flex-col gap-4 items-center justify-center w-[250px] h-[600px]",
+            "cursor-pointer flex flex-col gap-4 items-center justify-center w-62.5 h-150",
             "rounded-lg border-2 border-dashed border-bg text-bg border-border text-muted-foreground text-center bg-muted/50",
             "hover:text-foreground hover:border-foreground transition-all duration-150"
          )}

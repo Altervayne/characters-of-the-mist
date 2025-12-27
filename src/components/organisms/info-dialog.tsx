@@ -1,8 +1,5 @@
-'use client';
-
-// -- Next Imports --
+// -- React Imports --
 import { useTranslation } from 'react-i18next';
-import Image from 'next/image';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -50,11 +47,11 @@ export function InfoDialog({ isOpen, onOpenChange }: InfoDialogProps) {
                   <TabsContent value="license">
                      <MarkdownContent content={t('InfoDialog.content.license')} />
                      <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" className="inline-block my-4">
-                        <Image 
-                           alt="Creative Commons License" 
-                           width={88} 
-                           height={31} 
-                           src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" 
+                        <img
+                           alt="Creative Commons License"
+                           width={88}
+                           height={31}
+                           src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"
                         />
                      </a>
                      <p className="text-xs text-muted-foreground">{t('InfoDialog.license_credit')}</p>
@@ -68,11 +65,11 @@ export function InfoDialog({ isOpen, onOpenChange }: InfoDialogProps) {
 
                      <MarkdownContent content={t('InfoDialog.content.support')} />
                      <a href="https://ko-fi.com/altervayne" target="_blank" rel="noopener noreferrer" className="inline-block mt-4">
-                        <Image 
-                           alt={t('InfoDialog.kofi_alt')} 
-                           src="https://storage.ko-fi.com/cdn/brandasset/kofi_button_dark.png" 
-                           width={214} 
-                           height={40} 
+                        <img
+                           alt={t('InfoDialog.kofi_alt')}
+                           src="https://storage.ko-fi.com/cdn/brandasset/kofi_button_dark.png"
+                           width={214}
+                           height={40}
                         />
                      </a>
                   </TabsContent>

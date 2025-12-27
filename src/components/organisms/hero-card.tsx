@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -36,7 +36,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, LegendsHeroDetails } from '@/lib/types/character';
+import type { Card as CardData, CardViewMode, LegendsHeroDetails } from '@/lib/types/character';
 
 
 
@@ -117,18 +117,18 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-hero",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
                <CardHeaderMolecule title={t('HeroCard.title')}></CardHeaderMolecule>
             </CardHeader>
             
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-2 py-1 mb-1 flex-shrink-0">
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-2 py-1 mb-1 shrink-0">
                   {isEditing ? (
                      <Input
                         className="text-2xl font-bold text-center bg-transparent border-none shadow-none"
@@ -143,23 +143,23 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
 
                <div className="flex flex-col h-[45%]">
                   <CardSectionHeader title={t('HeroCard.relationships')} icon={Users} />
-                  <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
+                  <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
                      <div className="flex bg-card-accent/15">
-                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('HeroCard.companion')}</p>
-                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('HeroCard.relationship')}</p>
+                        <p className="grow text-sm text-center py-1 border-b">{t('HeroCard.companion')}</p>
+                        <p className="grow text-sm text-center py-1 border-b">{t('HeroCard.relationship')}</p>
                      </div>
                      {details.fellowshipRelationships.map((relation, index) => (
                         <FellowshipRelationshipItem key={relation.id} cardId={card.id} relationship={relation} isEditing={isEditing} index={index} />
                      ))}
                      {isEditing && (
-                        <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addRelationship(card.id)}>
+                        <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addRelationship(card.id)}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {t('HeroCard.addRelationship')}
                         </Button>
                      )}
                   </div>
                </div>
 
-               <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-black/30">
+               <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-black/30">
                   <PipTracker 
                      label="promise" 
                      value={details.promise} 
@@ -168,9 +168,9 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                   />
                </div>
 
-               <div className="flex flex-col flex-grow overflow-hidden">
+               <div className="flex flex-col grow overflow-hidden">
                   <CardSectionHeader title={t('HeroCard.quintessences')} icon={Sparkles} />
-                  <div className="flex flex-col flex-grow align-middle overflow-y-scroll overscroll-contain" ref={quintessencesScrollRef}>
+                  <div className="flex flex-col grow align-middle overflow-y-scroll overscroll-contain" ref={quintessencesScrollRef}>
                      {details.quintessences.map((quint, index) => (
                         <BlandTagItem 
                            key={quint.id} 
@@ -182,7 +182,7 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                         />
                      ))}
                      {isEditing && (
-                        <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'quintessences')}>
+                        <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'quintessences')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {t('HeroCard.addQuintessence')}
                         </Button>
                      )}
@@ -194,16 +194,16 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-hero",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeaderMolecule title={t('HeroCard.title')} />
             <CardSectionHeader title={`${tBackpack('backpack.title')}`}></CardSectionHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow space-y-0 overflow-y-auto overscroll-contain" ref={backpackScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={backpackScrollRef}>
                   {details.backpack.map((tag, index) => (
                      <BlandTagItem 
                         key={tag.id}
@@ -216,7 +216,7 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'backpack')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'backpack')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {tBackpack('backpack.addItem')}
                         </Button>
                      </div>

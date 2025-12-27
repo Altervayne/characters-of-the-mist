@@ -1,7 +1,8 @@
-import { closestCenter, CollisionDetection, pointerWithin } from "@dnd-kit/core";
-import { DrawerItem, GameSystem, GeneralItemType } from "../types/drawer";
-import { Card, Tracker } from "../types/character";
-import { SortingStrategy } from "@dnd-kit/sortable";
+import { closestCenter, pointerWithin } from "@dnd-kit/core";
+import type { CollisionDetection } from "@dnd-kit/core";
+import type { DrawerItem, GameSystem, GeneralItemType } from "../types/drawer";
+import type { Card, Tracker } from "../types/character";
+import type { SortingStrategy } from "@dnd-kit/sortable";
 
 
 // --- Utility functions ---

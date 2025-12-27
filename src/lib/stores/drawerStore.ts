@@ -12,8 +12,8 @@ import { STORE_VERSION } from '../config';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Drawer, Folder, DrawerItem, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
-import { harmonizeData } from '../harmonization';
+import type { Drawer, Folder, DrawerItem, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
+import type { harmonizeData } from '../harmonization';
 
 
 

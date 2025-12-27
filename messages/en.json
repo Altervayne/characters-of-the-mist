@@ -47,7 +47,18 @@
    },
    "Errors": {
       "localStorageDisabled_title": "Critical Storage Error",
-      "localStorageDisabled_description": "It seems that for one reason or another, your browser's local storage is not accessible for the App. Characters of the Mist relies solely on browser local storage for data management and persistance, and does not use a server at all. This means that in your case, it cannot run."
+      "localStorageDisabled_description": "It seems that for one reason or another, your browser's local storage is not accessible for the App. Characters of the Mist relies solely on browser local storage for data management and persistance, and does not use a server at all. This means that in your case, it cannot run.",
+      "ErrorBoundary": {
+         "title": "Something went wrong",
+         "description": "I'm sorry, but an unexpected error occurred. Please submit a bug report to the Tools of the Mist discord, while explaining what you were doing at the time of the error. You can try reloading the app to fix it.",
+         "errorMessage": "Error Message:",
+         "technicalDetails": "Technical Details:",
+         "appSettings": "App Settings:",
+         "copyButton": "Copy Error Details",
+         "reloadButton": "Reload Page",
+         "copySuccess": "Error details copied to clipboard",
+         "copyFailed": "Failed to copy to clipboard"
+      }
    },
    "Tooltips": {
       "ViewMode": {

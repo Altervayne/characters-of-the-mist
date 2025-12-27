@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 // -- Types Imports --
-import { GameSystem } from '../types/drawer';
+import type { GameSystem } from '../types/drawer';
 
 
 
@@ -17,7 +17,6 @@ interface AppSettingsState {
    isTrackersAlwaysEditable: boolean;
    isSidebarCollapsed: boolean;
    contextualGame: GameSystem;
-   locale: string;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -27,7 +26,6 @@ interface AppSettingsState {
       setSidebarCollapsed: (isCollapsed: boolean) => void;
       toggleSidebarCollapsed: () => void;
       setContextualGame: (game: GameSystem) => void;
-      setLocale: (newLocale: string) => void;
    };
 }
 
@@ -43,7 +41,6 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
          contextualGame: 'LEGENDS',
-         locale: "en",
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -52,11 +49,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setTrackersAlwaysEditable: (isEditable) => set({ isTrackersAlwaysEditable: isEditable }),
             setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
-            setContextualGame: (game) => set({ contextualGame: game }),
-            setLocale: (newLocale) => {
-               document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
-               set({ locale: newLocale });
-            }
+            setContextualGame: (game) => set({ contextualGame: game })
          },
       }),
       {
@@ -69,8 +62,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             lastVisitedVersion: state.lastVisitedVersion,
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
-            contextualGame: state.contextualGame,
-            locale: state.locale
+            contextualGame: state.contextualGame
          }),
       }
    )

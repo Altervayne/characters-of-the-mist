@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React from 'react';
@@ -7,7 +7,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
-import { motion, Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 
 // -- Icon Imports --
@@ -17,8 +17,9 @@ import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import { Card as CardData, Tracker } from '@/lib/types/character';
-import { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { Variants } from 'framer-motion';
+import type { Card as CardData, Tracker } from '@/lib/types/character';
+import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 
 
 const overlayVariants: Variants = {

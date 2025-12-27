@@ -1,5 +1,5 @@
 // src/components/organisms/MainMenu.tsx
-'use client';
+
 
 import React from 'react';
 
@@ -129,7 +129,7 @@ const MainMenu: React.FC = () => {
    ];
 
    return (
-      <main className="absolute flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+      <main className="absolute flex h-full w-full flex-col items-center justify-center bg-linear-to-br from-background via-background to-muted/20 overflow-hidden">
          {/* Wave/Mist Background Layers */}
          <div className="absolute inset-0 pointer-events-none">
             {/* Wave Layer 1 - Bottom */}

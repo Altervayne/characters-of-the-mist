@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useState, useEffect, useCallback } from 'react';
@@ -8,12 +8,13 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDroppable, DragOverEvent, DraggableAttributes } from '@dnd-kit/core';
+import { DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent, DragOverEvent, DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -58,9 +59,9 @@ import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 
 // -- Type Imports --
-import { Character, Card as CardData, Tracker, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
-import { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
-import { CreateCardOptions } from '@/lib/types/creation';
+import type { Character, Card as CardData, Tracker, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
+import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { CreateCardOptions } from '@/lib/types/creation';
 
 
 
@@ -166,7 +167,7 @@ function SortableTrackerItem({ tracker, isEditing, isBeingDragged, onExport }: {
 export default function CharacterSheetPage() {
    // --- Localization ---
    const { t: t } = useTranslation();
-   const tNotifications = useTranslations('Notifications')
+   const { t: tNotifications } = useTranslation('Notifications');
    const { t: tTrackers } = useTranslation();
 
    // --- Data Stores ---
@@ -191,7 +192,6 @@ export default function CharacterSheetPage() {
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
    // --- Utility & Library States ---
-   const [isClient, setIsClient] = useState(false);
    const [isOverDrawer, setIsOverDrawer] = useState(false);
    const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
    const [overDragId, setOverDragId] = useState<string | null>(null);
@@ -234,10 +234,6 @@ export default function CharacterSheetPage() {
    // #################################
    // ###   PAGE STARTUP HANDLERS   ###
    // #################################
-
-   useEffect(() => {
-      setIsClient(true);
-   }, []);
 
    useEffect(() => {
       const settingsStorageKey = 'characters-of-the-mist_app-settings';
@@ -366,7 +362,7 @@ export default function CharacterSheetPage() {
       if (item) {
          setActiveDragItem(item);
       }
-   };
+   }
 
    function handleDragOver(event: DragOverEvent) {
       const { active, over } = event;
@@ -383,9 +379,9 @@ export default function CharacterSheetPage() {
             isHoveringDrawer = true;
          }
       }
-      
+
       setIsOverDrawer(isHoveringDrawer);
-   };
+   }
 
    function handleDragEnd(event: DragEndEvent) {
       const { active, over } = event;
@@ -666,16 +662,6 @@ export default function CharacterSheetPage() {
         setDrawerOpen(false);
         startTour();
     };
-
-
-
-   if (!isClient) {
-      return (
-         <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
-            <p className="text-muted-foreground">{t('CharacterSheetPage.loading')}</p>
-         </main>
-      );
-   }
 
 
 

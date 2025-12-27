@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useRef, useState } from 'react';
@@ -29,9 +29,11 @@ import { SidebarButton } from '../molecules/sidebar-button';
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useDrawerActions } from '@/lib/stores/drawerStore';
 
-// -- Type Imports --
-import { Character, Card as CardData, Tracker } from '@/lib/types/character';
+// -- Other Imports --
 import cuid from 'cuid';
+
+// -- Type Imports --
+import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 
 
 
@@ -55,8 +57,8 @@ const UNLOAD_TIMER_SECONDS = 3;
 
 
 export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
-   const t = useTranslations('CharacterSheetPage.SidebarMenu');
-   const tNotifications = useTranslations('Notifications')
+   const { t } = useTranslation();
+   const { t: tNotifications } = useTranslation();
 
    const character = useCharacterStore((state) => state.character);
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, unloadCharacter } = useCharacterActions();
@@ -224,7 +226,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   isCollapsed ? "px-2 justify-center" : "px-4 justify-between",
                   activeWindow === 'MAIN_MENU' && "pb-4 border-b-2 border-border"
                )}>
-                  {!isCollapsed && <h2 className="text-lg font-bold">{t('sidebarTitle')}</h2>}
+                  {!isCollapsed && <h2 className="text-lg font-bold">{t('CharacterSheetPage.SidebarMenu.sidebarTitle')}</h2>}
 
                   <div data-tour="menu-collapse-button" onClick={onToggleCollapse} className="rounded p-2 hover:bg-muted cursor-pointer">
                      {isCollapsed ? <PanelLeftOpen className="h-6 w-6" /> : <PanelLeftClose className="h-6 w-6" />}
@@ -239,51 +241,51 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
             </motion.section>
 
             {/* Context-specific scrollable buttons */}
-            <div className="flex flex-col flex-grow w-full min-h-0 overflow-y-auto overscroll-contain">
+            <div className="flex flex-col grow w-full min-h-0 overflow-y-auto overscroll-contain">
                { activeWindow === 'PLAY_AREA' && 
                   <>
                      <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                        "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
                         isCollapsed ? "px-0" : "px-4"
                      )}>
                         <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} Icon={isEditing ? Dices : Edit}>
-                           {isEditing ? t('playMode') : t('editMode')}
+                           {isEditing ? t('CharacterSheetPage.SidebarMenu.playMode') : t('CharacterSheetPage.SidebarMenu.editMode')}
                         </SidebarButton>
                         <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
-                           {isDrawerOpen ? t('closeDrawer') : t('openDrawer')}
+                           {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
                         </SidebarButton>
                      </motion.section>
 
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                        "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
                         isCollapsed ? "px-2" : "px-4"
                      )}>
                         <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterToDrawer} Icon={Save}>
-                           {t('saveToDrawer')}
+                           {t('CharacterSheetPage.SidebarMenu.saveToDrawer')}
                         </SidebarButton>
                         <SidebarButton data-tour="save-character-as-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterAsToDrawer} Icon={SaveAll}>
-                           {t('saveToDrawerAs')}
+                           {t('CharacterSheetPage.SidebarMenu.saveToDrawerAs')}
                         </SidebarButton>
                         <SidebarButton data-tour="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
-                           {t('exportCharacter')}
+                           {t('CharacterSheetPage.SidebarMenu.exportCharacter')}
                         </SidebarButton>
                         <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
-                           {t('importCharacter')}
+                           {t('CharacterSheetPage.SidebarMenu.importCharacter')}
                         </SidebarButton>
                         <SidebarButton data-tour="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
-                           {t('importComponent')}
+                           {t('CharacterSheetPage.SidebarMenu.importComponent')}
                         </SidebarButton>
                      </motion.section>
 
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                        "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
                         isCollapsed ? "px-2" : "px-4"
                      )}>
                         <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
-                           {t('resetCharacter')}
+                           {t('CharacterSheetPage.SidebarMenu.resetCharacter')}
                         </SidebarButton>
                         <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
-                           {t('unloadCharacter')}
+                           {t('CharacterSheetPage.SidebarMenu.unloadCharacter')}
                         </SidebarButton>
                      </motion.section>
                   </>
@@ -291,33 +293,33 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
                { activeWindow === 'MAIN_MENU' &&
                   <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
-                     "flex flex-col items-center gap-2 py-4 bg-popover border-b-1 border-border",
+                     "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
                      isCollapsed ? "px-0" : "px-4"
                   )}>
                      <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
-                        {t('importCharacter')}
+                        {t('CharacterSheetPage.SidebarMenu.importCharacter')}
                      </SidebarButton>
                      <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
-                        {isDrawerOpen ? t('closeDrawer') : t('openDrawer')}
+                        {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
                      </SidebarButton>
                   </motion.section>
                }
             </div>
 
             {/* Bottom-aligned sub-menu buttons */}
-            <div className="flex flex-col flex-shrink-0 w-full">
+            <div className="flex flex-col shrink-0 w-full">
                <motion.section layout transition={{ duration: 0.2 }} className={cn(
                   "flex flex-col items-center gap-2 py-4 bg-card border-t-2 border-border",
                   isCollapsed ? "px-2" : "px-4"
                )}>
                   <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
-                     {t('settings')}
+                     {t('CharacterSheetPage.SidebarMenu.settings')}
                   </SidebarButton>
                   <SidebarButton data-tour="app-info-button" isCollapsed={isCollapsed} onClick={onOpenInfo} Icon={Info}>
-                     {t('info')}
+                     {t('CharacterSheetPage.SidebarMenu.info')}
                   </SidebarButton>
                   <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
-                     {t('patchNotes')}
+                     {t('CharacterSheetPage.SidebarMenu.patchNotes')}
                   </SidebarButton>
                </motion.section>
             </div>
@@ -346,14 +348,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
             <AlertDialogContent>
                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('resetConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.resetConfirmTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                     {t('resetConfirmDescription')}
+                     {t('CharacterSheetPage.SidebarMenu.resetConfirmDescription')}
                   </AlertDialogDescription>
                </AlertDialogHeader>
                <AlertDialogFooter>
-                  <AlertDialogCancel className="cursor-pointer">{t('resetConfirmCancelButton')}</AlertDialogCancel>
-                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={handleResetCharacter}>{t('resetConfirmButton')}</AlertDialogAction>
+                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.resetConfirmCancelButton')}</AlertDialogCancel>
+                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={handleResetCharacter}>{t('CharacterSheetPage.SidebarMenu.resetConfirmButton')}</AlertDialogAction>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>
@@ -361,18 +363,18 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          <AlertDialog open={isUnloadDialogOpen} onOpenChange={setIsUnloadDialogOpen}>
             <AlertDialogContent className="border-2 border-dashed border-destructive">
                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('unloadConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.unloadConfirmTitle')}</AlertDialogTitle>
 
-                  <AlertDialogDescription>{t('unloadConfirmDescription')}</AlertDialogDescription>
+                  <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.unloadConfirmDescription')}</AlertDialogDescription>
                </AlertDialogHeader>
                <AlertDialogFooter>
-                  <AlertDialogCancel className="cursor-pointer">{t('unloadConfirmCancelButton')}</AlertDialogCancel>
+                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.unloadConfirmCancelButton')}</AlertDialogCancel>
                   <AlertDialogAction 
                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
                      onClick={handleUnloadCharacter}
                      disabled={unloadCountdown > 0}
                   >
-                     {unloadCountdown > 0 ? `${unloadCountdown}...` : t('unloadConfirmButton')}
+                     {unloadCountdown > 0 ? `${unloadCountdown}...` : t('CharacterSheetPage.SidebarMenu.unloadConfirmButton')}
                   </AlertDialogAction>
                </AlertDialogFooter>
             </AlertDialogContent>

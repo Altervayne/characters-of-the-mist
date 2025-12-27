@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -35,7 +35,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, OtherscapeCharacterDetails } from '@/lib/types/character';
+import type { Card as CardData, CardViewMode, OtherscapeCharacterDetails } from '@/lib/types/character';
 
 interface OtherscapeCharacterCardProps {
   card: CardData;
@@ -52,7 +52,7 @@ interface OtherscapeCharacterCardProps {
 const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
    ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
-      const tSpecials = useTranslations('OtherscapeCharacterCard.Specials');
+      const { t: tSpecials } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as OtherscapeCharacterDetails;
 
@@ -114,17 +114,17 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-character-os",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
                <CardHeaderMolecule title={t('OtherscapeCharacterCard.title')}></CardHeaderMolecule>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-2 py-1 mb-1 flex-shrink-0">
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-2 py-1 mb-1 shrink-0">
                   {isEditing ? (
                      <Input
                         className="text-2xl font-bold text-center bg-transparent border-none shadow-none"
@@ -389,9 +389,9 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                </div>
 
                {/* Crew Relationships Section */}
-               <div className="flex flex-col flex-grow overflow-hidden min-h-0">
+               <div className="flex flex-col grow overflow-hidden min-h-0">
                   <CardSectionHeader title={t('OtherscapeCharacterCard.relationships')} />
-                  <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
+                  <div className="flex flex-col grow overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
                      {details.crewRelationships.map((relationship, index) => (
                         <FellowshipRelationshipItem
                            key={relationship.id}
@@ -404,7 +404,7 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                      ))}
                      {isEditing && (
                         <div className="p-2">
-                           <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={handleAddRelationship}>
+                           <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={handleAddRelationship}>
                               <PlusCircle className="h-4 w-4 mr-2" /> {t('OtherscapeCharacterCard.addRelationship')}
                            </Button>
                         </div>
@@ -417,16 +417,16 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-character-os",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeaderMolecule title={t('OtherscapeCharacterCard.title')} />
             <CardSectionHeader title={`${tSpecials('title')}`}></CardSectionHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
                   {details.specials.map((tag, index) => (
                      <BlandTagItem
                         key={tag.id}
@@ -439,7 +439,7 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'specials')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'specials')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {tSpecials('addSpecial')}
                         </Button>
                      </div>

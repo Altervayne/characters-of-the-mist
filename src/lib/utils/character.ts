@@ -2,8 +2,8 @@
 import cuid from 'cuid';
 
 // -- Types Imports --
-import { Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
-import { GameSystem } from '../types/drawer';
+import type { Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
+import type { GameSystem } from '../types/drawer';
 
 
 

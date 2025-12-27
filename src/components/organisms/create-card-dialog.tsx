@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useState, useMemo, useEffect } from 'react';
@@ -25,9 +25,9 @@ import { cityThemeTypes, cityThemebooks } from '@/lib/data/city-data';
 import { otherscapeThemeTypes, otherscapeThemebooks } from '@/lib/data/otherscape-data';
 
 // -- Type Imports --
-import { Card as CardData, LegendsThemeDetails, CityThemeDetails, OtherscapeThemeDetails } from '@/lib/types/character';
-import { CreateCardOptions, ThemeTypeUnion } from '@/lib/types/creation';
-import { GameSystem } from '@/lib/types/drawer';
+import type { Card as CardData, LegendsThemeDetails, CityThemeDetails, OtherscapeThemeDetails } from '@/lib/types/character';
+import type { CreateCardOptions, ThemeTypeUnion } from '@/lib/types/creation';
+import type { GameSystem } from '@/lib/types/drawer';
 
 
 type CardTypeSelection = 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME';
@@ -47,7 +47,7 @@ interface CreateCardDialogProps {
 export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardData, modal = true, game }: CreateCardDialogProps) {
    const { t: t } = useTranslation();
    const { t: tTypes } = useTranslation();
-   const tTheme = useTranslations();
+   const { t: tTheme } = useTranslation();
 
    const [cardType, setCardType] = useState<'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME' | ''>('');
    const [themeType, setThemeType] = useState<ThemeTypeUnion>(
@@ -207,7 +207,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                            </PopoverTrigger>
-                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-[var(--radix-popover-trigger-width)] p-0">
+                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-(--radix-popover-trigger-width) p-0">
                               <Command>
                                  <CommandInput
                                     placeholder={t('CreateCardDialog.searchThemebookPlaceholder')}
@@ -274,7 +274,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                            </PopoverTrigger>
-                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-[var(--radix-popover-trigger-width)] p-0">
+                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-(--radix-popover-trigger-width) p-0">
                               <Command>
                                  <CommandInput
                                     placeholder={t('CreateCardDialog.searchThemebookPlaceholder')}

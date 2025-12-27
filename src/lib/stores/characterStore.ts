@@ -14,9 +14,9 @@ import { STORE_VERSION } from '../config';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
-import { GeneralItemType, GameSystem } from '../types/drawer';
-import { CreateCardOptions } from '../types/creation';
+import type { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
+import type { GeneralItemType, GameSystem } from '../types/drawer';
+import type { CreateCardOptions } from '../types/creation';
 
 
 

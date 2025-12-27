@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import { useEffect, useState } from 'react';
@@ -83,7 +83,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
                <div className="flex items-center justify-between pt-2">
                   <DialogDescription>{t('PatchNotesDialog.description')}</DialogDescription>
                   <Select value={selectedNote?.version || ''} onValueChange={handleVersionSelect}>
-                     <SelectTrigger className="w-[180px]">
+                     <SelectTrigger className="w-45">
                         <SelectValue placeholder={t('PatchNotesDialog.selectVersion')} />
                      </SelectTrigger>
                      <SelectContent>
@@ -102,7 +102,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
                disabled={currentIndex === totalNotes - 1}
                aria-label="Previous patch note"
                className={cn(
-                  "absolute left-[-3.5rem] top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
+                  "absolute -left-14 top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
                )}
             >
                <ChevronLeft className="w-8 h-8"/>
@@ -117,7 +117,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
                disabled={currentIndex === 0}
                aria-label="Next patch note"
                className={cn(
-                  "absolute right-[-3.5rem] top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
+                  "absolute -right-14 top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
                )}
             >
                <ChevronRight className="w-8 h-8"/>

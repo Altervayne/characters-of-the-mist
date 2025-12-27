@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useState } from 'react';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
-import { BlandTag } from '@/lib/types/character';
+import type { BlandTag } from '@/lib/types/character';
 
 
 
@@ -35,7 +35,7 @@ interface BlandTagItemProps {
 
 
 export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandTagItemProps) {
-   const t = useTranslations(listName);
+   const { t } = useTranslation();
    const { updateBlandTag, removeBlandTag } = useCharacterActions();
 
    const isEvenRow = index % 2 === 0;

@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React from 'react';
@@ -39,7 +39,7 @@ export function DrawerUndoRedoControls() {
             title={t('Actions.undo')}
             className={ canUndo ? "cursor-pointer flex-1 min-w-0" : "flex-1 min-w-0" }
          >
-            <Undo className="h-4 w-4 mr-1 flex-shrink-0" />
+            <Undo className="h-4 w-4 mr-1 shrink-0" />
             <span className="truncate">{t('Actions.undo')}</span>
          </Button>
          <Button
@@ -52,7 +52,7 @@ export function DrawerUndoRedoControls() {
             className={ canRedo ? "cursor-pointer flex-1 min-w-0" : "flex-1 min-w-0" }
          >
             <span className="truncate">{t('Actions.redo')}</span>
-            <Redo className="h-4 w-4 ml-1 flex-shrink-0" />
+            <Redo className="h-4 w-4 ml-1 shrink-0" />
          </Button>
       </div>
    );

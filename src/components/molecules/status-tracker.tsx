@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -26,10 +26,10 @@ import { ToolbarHandle } from './toolbar-handle';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
-import { StatusTracker } from '@/lib/types/character';
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import type { StatusTracker } from '@/lib/types/character';
 
 
 
@@ -110,7 +110,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
 
          <div className={cn(
             isHovered ? "z-1" : "z-0",
-            "relative z-0 flex flex-col h-[100px] w-[220px] border-2 rounded-lg overflow-hidden",
+            "relative z-0 flex flex-col h-25 w-55 border-2 rounded-lg overflow-hidden",
             {"pointer-events-none shadow-none border-2 border-border": isDrawerPreview},
             cardTheme,
             "border-card-border bg-card-paper-bg text-card-paper-fg",
@@ -120,7 +120,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
                "flex items-center border-b",
                "text-card-header-fg bg-card-header-bg"
             )}>
-               <div className="flex-grow p-1">
+               <div className="grow p-1">
                   {isEffectivelyEditing ? (
                      <Input
                         value={localName}
@@ -136,7 +136,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
                   <Button
                      variant="ghost"
                      size="icon"
-                     className="h-8 w-8 mr-1 text-destructive bg-card-paper-bg flex-shrink-0 cursor-pointer"
+                     className="h-8 w-8 mr-1 text-destructive bg-card-paper-bg shrink-0 cursor-pointer"
                      onClick={() => removeStatus(tracker.id)}
                   >
                      <Trash2 className="h-5 w-5" />
@@ -145,7 +145,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
             </div>
 
             {/* Tiers Section */}
-            <div className="flex flex-grow">
+            <div className="flex grow">
                {tracker.tiers.map((isActive, index) => (
                   <div 
                      key={index} 

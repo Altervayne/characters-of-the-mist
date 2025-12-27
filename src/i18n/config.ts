@@ -20,9 +20,8 @@ i18n
       escapeValue: false
     },
     detection: {
-      order: ['path', 'localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupFromPathIndex: 0
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage']
     }
   });
 

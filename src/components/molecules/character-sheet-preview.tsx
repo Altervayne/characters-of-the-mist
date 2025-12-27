@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- Next Imports --
 import { useTranslation } from 'react-i18next';
@@ -13,8 +13,8 @@ import { Package, CreditCard, File } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import { Character } from '@/lib/types/character';
-import { DrawerItem } from '@/lib/types/drawer';
+import type { Character } from '@/lib/types/character';
+import type { DrawerItem } from '@/lib/types/drawer';
 
 
 
@@ -27,7 +27,7 @@ type CharacterCardThemes = 'card-type-hero' | 'card-type-character-com' | 'card-
 
 
 export const CharacterSheetPreview = ({ item }: CharacterSheetPreviewProps) => {
-   const t = useTranslations('Drawer.Types');
+   const { t } = useTranslation();
 
    const character = item.content as Character;
    const type = `${character.game}_FULL_CHARACTER_SHEET`
@@ -61,7 +61,7 @@ export const CharacterSheetPreview = ({ item }: CharacterSheetPreviewProps) => {
       <CardComponent
          className={cn(
             cardThemeClass,
-            "w-[250px] h-[120px] flex flex-col p-0 justify-between overflow-hidden gap-1",
+            "w-62.5 h-30 flex flex-col p-0 justify-between overflow-hidden gap-1",
             "border-2 border-card-border shadow-lg bg-card-paper-bg text-card-foreground"
          )}
       >
@@ -70,7 +70,7 @@ export const CharacterSheetPreview = ({ item }: CharacterSheetPreviewProps) => {
             <h3 className="font-bold text-sm text-card-header-fg">{t(type)}</h3>
          </header>
          
-         <div className="flex flex-col p-2 justify-center items-center flex-grow pl-1">
+         <div className="flex flex-col p-2 justify-center items-center grow pl-1">
             <p className="text-md text-card-paper-fg font-bold truncate leading-tight">
                {character.name || "Unnamed Character"}
             </p>

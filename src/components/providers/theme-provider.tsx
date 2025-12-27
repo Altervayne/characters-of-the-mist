@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import * as React from 'react';

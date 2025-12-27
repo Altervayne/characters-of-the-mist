@@ -1,23 +1,11 @@
 // -- Type Imports --
-import { Card, Tracker, Character } from './character';
+import type { Card, Tracker, Character } from './character.ts';
+import type { GameSystem, GeneralItemType } from './common.ts';
 
-
+// Re-export common types for backward compatibility
+export type { GameSystem, GeneralItemType };
 
 export type DrawerItemContent = Card | Tracker | Character;
-
-export type GameSystem = 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL';
-
-export type GeneralItemType =
-   | 'FULL_DRAWER'
-   | 'FOLDER'
-   | 'CHARACTER_CARD'
-   | 'CHARACTER_THEME'
-   | 'GROUP_THEME'
-   | 'LOADOUT_THEME'
-   | 'STATUS_TRACKER'
-   | 'STORY_TAG_TRACKER'
-   | 'STORY_THEME_TRACKER'
-   | 'FULL_CHARACTER_SHEET';
 
 export interface DrawerItem {
    id: string;

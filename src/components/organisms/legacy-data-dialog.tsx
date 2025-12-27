@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useState } from 'react';
@@ -60,7 +60,7 @@ export function LegacyDataDialog({ isOpen, onOpenChange }: LegacyDataDialogProps
 
    return (
       <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-         <AlertDialogContent className="border-3 border-primary border-dashed z-[10000]">
+         <AlertDialogContent className="border-3 border-primary border-dashed z-10000">
             <AlertDialogHeader>
                <AlertDialogTitle>{t('LegacyDataDialog.title')}</AlertDialogTitle>
                <AlertDialogDescription>{t('LegacyDataDialog.info')}</AlertDialogDescription>

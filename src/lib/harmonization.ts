@@ -1,9 +1,9 @@
-'use client';
+
 
 import { APP_VERSION } from "./config";
 import { compare } from 'semver';
-import { GeneralItemType, Drawer, DrawerItem, Folder } from './types/drawer';
-import { Character } from './types/character';
+import type { GeneralItemType, Drawer, DrawerItem, Folder } from './types/drawer';
+import type { Character } from './types/character';
 
 
 

@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useRef, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Type Imports --
-import { StoryThemeTracker } from '@/lib/types/character';
+import type { StoryThemeTracker } from '@/lib/types/character';
 
 
 
@@ -105,18 +105,18 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
 
          <div className={cn(
             isHovered ? "z-1" : "z-0",
-            "relative z-0 flex flex-col h-[220px] w-[250px] border-2 rounded-lg overflow-hidden",
+            "relative z-0 flex flex-col h-55 w-62.5 border-2 rounded-lg overflow-hidden",
             cardTheme,
             "border-card-border bg-card-paper-bg text-card-paper-fg",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
 
-            <div className="flex-grow flex flex-col min-h-0">
+            <div className="grow flex flex-col min-h-0">
                {/* Main Tag Section */}
-               <div className="w-full text-center p-1 flex-shrink-0 flex items-center justify-between gap-2 border-b-2 border-card-accent/30 bg-card-header-bg text-card-header-fg">
+               <div className="w-full text-center p-1 shrink-0 flex items-center justify-between gap-2 border-b-2 border-card-accent/30 bg-card-header-bg text-card-header-fg">
                   {isEffectivelyEditing ? (
                      <Input
-                        className="text-lg font-bold text-center flex-grow border-0 shadow-none bg-card-paper-bg text-card-paper-fg"
+                        className="text-lg font-bold text-center grow border-0 shadow-none bg-card-paper-bg text-card-paper-fg"
                         placeholder={tThemeCard('ThemeCard.placeholderName')}
                         value={localMainTagName}
                         onChange={(e) => setLocalMainTagName(e.target.value)}
@@ -140,17 +140,17 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
                <div
                   ref={scrollRef}
                   className={cn(
-                     "flex-grow",
+                     "grow",
                      isDrawerPreview ? "overflow-y-hidden" : "overflow-y-scroll overscroll-contain"
                   )}
                >
                   {/* Power Tags */}
                   {tracker.powerTags.map((tag, index) => <TagItem key={tag.id} trackerId={tracker.id} tag={tag} tagType="power" isEditing={isEffectivelyEditing} index={index} isTrackerTag />)}
-                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full p-2 border-1 border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('ThemeCard.addPowerTag')}</Button></div>}
+                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full p-2 border border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('ThemeCard.addPowerTag')}</Button></div>}
 
                   {/* Weakness Tags */}
                   {tracker.weaknessTags.map((tag, index) => <TagItem key={tag.id} trackerId={tracker.id} tag={tag} tagType="weakness" isEditing={isEffectivelyEditing} index={index} isTrackerTag />)}
-                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full border-1 border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('ThemeCard.addWeaknessTag')}</Button></div>}
+                  {isEffectivelyEditing && <div className="p-2"><Button variant="ghost" size="sm" className="w-full border border-dashed" onClick={() => actions.addTagToStoryTheme(tracker.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{tThemeCard('ThemeCard.addWeaknessTag')}</Button></div>}
                </div>
             </div>
          </div>

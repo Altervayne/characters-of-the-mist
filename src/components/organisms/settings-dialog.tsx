@@ -5,8 +5,7 @@ import React, { useState } from 'react';
 
 // -- Next Imports --
 import { useTheme } from 'next-themes';
-import { useLocale, useTranslations } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -56,7 +55,7 @@ interface ConfirmationDialogProps {
 }
 
 function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description, confirmationText, confirmButtonText }: ConfirmationDialogProps) {
-   const { t: t } = useTranslation();
+   const { t } = useTranslation();
    const [input, setInput] = useState("");
 
    const handleOpenChange = (isOpen: boolean) => {
@@ -71,7 +70,7 @@ function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description,
          <AlertDialogContent className="border-2 border-dashed border-destructive">
             <AlertDialogHeader>
                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
+                  <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
                   <AlertDialogTitle>{title}</AlertDialogTitle>
                </div>
                <AlertDialogDescription>
@@ -118,16 +117,13 @@ interface SettingsDialogProps {
 
 
 export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDialogProps) {
-   const t = useTranslations('SettingsDialog');
-   const tNotifications = useTranslations('Notifications')
-   const { i18n } = useTranslation(); const locale = i18n.language;
-   const navigate = useNavigate();
-   const { pathname } = useLocation();
+   const { t, i18n } = useTranslation();
+   const locale = i18n.language?.split('-')[0] || 'en';
 
    const { resolvedTheme, setTheme: setMode } = useTheme(); 
    
    const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable } = useAppSettingsStore();
-   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setLocale } = useAppSettingsActions();
+   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable } = useAppSettingsActions();
 
    const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
@@ -140,20 +136,17 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
       useDrawerStore.persist.clearStorage();
       useAppSettingsStore.persist.clearStorage();
       setTimeout(() => window.location.reload(), 500);
-      toast.success(tNotifications('Notifications.general.appReset'));
+      toast.success(t('Notifications.general.appReset'));
    };
 
    const handleDeleteDrawer = () => {
       useDrawerStore.persist.clearStorage();
       setTimeout(() => window.location.reload(), 500);
-      toast.success(tNotifications('Notifications.drawer.deleted'));
+      toast.success(t('Notifications.drawer.deleted'));
    }
 
    const handleLocaleChange = (newLocale: string) => {
-      setLocale(newLocale);
-      const segments = pathname.split('SettingsDialog./');
-      segments[1] = newLocale;
-      router.replace(segments.join('/'));
+      i18n.changeLanguage(newLocale);
    };
 
    
@@ -197,7 +190,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <SelectContent>
                            {colorThemeOptions.map(themeName => (
                               <SelectItem key={themeName} value={themeName} className="cursor-pointer">
-                                 {themeName.replace('theme-', '').charAt(0).toUpperCase() + themeName.slice(7)}
+                                 {themeName === 'theme-city-of-mist' ? "City of Mist" : themeName.replace('theme-', '').charAt(0).toUpperCase() + themeName.slice(7)}
                               </SelectItem>
                            ))}
                         </SelectContent>
@@ -213,7 +206,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            title={t('SettingsDialog.light')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Sun className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <Sun className="mr-2 h-4 w-4 shrink-0" />
                            <span className="truncate">{t('SettingsDialog.light')}</span>
                         </Button>
                         <Button
@@ -222,7 +215,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            title={t('SettingsDialog.dark')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Moon className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <Moon className="mr-2 h-4 w-4 shrink-0" />
                            <span className="truncate">{t('SettingsDialog.dark')}</span>
                         </Button>
                      </div>
@@ -237,7 +230,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            title={t('SettingsDialog.cardView.flipping')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <FlipHorizontal className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <FlipHorizontal className="mr-2 h-4 w-4 shrink-0" />
                            <span className="truncate">{t('SettingsDialog.cardView.flipping')}</span>
                         </Button>
                         <Button
@@ -246,7 +239,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            title={t('SettingsDialog.cardView.sideBySide')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <BookOpen className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <BookOpen className="mr-2 h-4 w-4 shrink-0" />
                            <span className="truncate">{t('SettingsDialog.cardView.sideBySide')}</span>
                         </Button>
                      </div>
@@ -261,7 +254,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            title={t('SettingsDialog.trackerEdit.unlocked')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <UnlockIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <UnlockIcon className="mr-2 h-4 w-4 shrink-0" />
                            <span className="truncate">{t('SettingsDialog.trackerEdit.unlocked')}</span>
                         </Button>
                         <Button
@@ -270,7 +263,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            title={t('SettingsDialog.trackerEdit.locked')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Lock className="mr-2 h-4 w-4 flex-shrink-0" />
+                           <Lock className="mr-2 h-4 w-4 shrink-0" />
                            <span className="truncate">{t('SettingsDialog.trackerEdit.locked')}</span>
                         </Button>
                      </div>
@@ -279,7 +272,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label className="text-left">{t('SettingsDialog.migration.label')}</Label>
                      <Button onClick={() => setIsMigrationDialogOpen(true)} title={t('SettingsDialog.migration.button')} className="col-span-2 cursor-pointer min-w-0">
-                        <DatabaseBackup className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <DatabaseBackup className="mr-2 h-4 w-4 shrink-0" />
                         <span className="truncate">{t('SettingsDialog.migration.button')}</span>
                      </Button>
                   </div>
@@ -287,7 +280,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label className="text-left">{t('SettingsDialog.tutorial')}</Label>
                      <Button onClick={onStartTour} title={t('SettingsDialog.tutorialButton')} className="col-span-2 cursor-pointer min-w-0">
-                        <PlayCircle className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <PlayCircle className="mr-2 h-4 w-4 shrink-0" />
                         <span className="truncate">{t('SettingsDialog.tutorialButton')}</span>
                      </Button>
                   </div>
@@ -297,7 +290,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
                <div className="space-y-4 rounded-lg border-2 border-destructive bg-destructive/5 p-4">
                   <div className="flex items-center gap-4">
-                     <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
+                     <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
                      <div>
                         <h3 className="font-semibold">{t('SettingsDialog.dangerZone.title')}</h3>
                         <p className="text-sm text-muted-foreground">{t('SettingsDialog.dangerZone.description')}</p>
@@ -311,7 +304,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         onClick={() => setIsDeleteDrawerDialogOpen(true)}
                         title={t('SettingsDialog.dangerZone.deleteDrawerButton')}
                      >
-                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <Trash2 className="mr-2 h-4 w-4 shrink-0" />
                         <span className="truncate">{t('SettingsDialog.dangerZone.deleteDrawerButton')}</span>
                      </Button>
                      <Button
@@ -320,7 +313,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         onClick={() => setIsResetAppDialogOpen(true)}
                         title={t('SettingsDialog.dangerZone.resetButton')}
                      >
-                        <OctagonMinus className="mr-2 h-4 w-4 flex-shrink-0" />
+                        <OctagonMinus className="mr-2 h-4 w-4 shrink-0" />
                         <span className="truncate">{t('SettingsDialog.dangerZone.resetButton')}</span>
                      </Button>
                   </div>

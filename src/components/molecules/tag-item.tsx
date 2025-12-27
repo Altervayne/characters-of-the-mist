@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useState } from 'react';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
-import { Tag } from '@/lib/types/character';
+import type { Tag } from '@/lib/types/character';
 
 
 

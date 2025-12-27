@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useState } from 'react';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
-import { FellowshipRelationship } from '@/lib/types/character';
+import type { FellowshipRelationship } from '@/lib/types/character';
 
 
 
@@ -34,8 +34,8 @@ interface FellowshipRelationshipItemProps {
 
 
 
-export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index, translationNamespace = 'HeroCard' }: FellowshipRelationshipItemProps) {
-   const t = useTranslations(translationNamespace);
+export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index }: FellowshipRelationshipItemProps) {
+   const { t } = useTranslation();
    const { updateRelationship, removeRelationship } = useCharacterActions();
 
    const isEvenRow = index % 2 === 0;

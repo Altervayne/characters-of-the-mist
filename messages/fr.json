@@ -47,7 +47,18 @@
    },
    "Errors": {
       "localStorageDisabled_title": "Erreur Critique de Stockage",
-      "localStorageDisabled_description": "Il semblerait que pour une raison ou pour une autre, le stockage local de votre navigateur n'est pas accessible par l'application. Characters of the Mist dépend uniquement du stockage local de votre navigateur pour la persistance et la gestion des données, et n'utilise aucun serveur. Cela signifie que l'application ne peut pas fonctionner dans votre cas."
+      "localStorageDisabled_description": "Il semblerait que pour une raison ou pour une autre, le stockage local de votre navigateur n'est pas accessible par l'application. Characters of the Mist dépend uniquement du stockage local de votre navigateur pour la persistance et la gestion des données, et n'utilise aucun serveur. Cela signifie que l'application ne peut pas fonctionner dans votre cas.",
+      "ErrorBoundary": {
+         "title": "Une erreur s'est produite",
+         "description": "Je suis désolé, mais une erreur inattendue s'est produite. Merci d'envoyer les information de l'erreur en incluant ce que vous faisiez au moment où elle est survenue sur le serveur Discord de Tools of the Mist. Vous pouvez essayer de recharger la page pour corriger l'erreur.",
+         "errorMessage": "Message d'erreur :",
+         "technicalDetails": "Détails techniques :",
+         "appSettings": "Paramètres de l'application :",
+         "copyButton": "Copier les détails de l'erreur",
+         "reloadButton": "Recharger la page",
+         "copySuccess": "Détails de l'erreur copiés dans le presse-papier",
+         "copyFailed": "Échec de la copie dans le presse-papier"
+      }
    },
    "Tooltips": {
       "ViewMode": {

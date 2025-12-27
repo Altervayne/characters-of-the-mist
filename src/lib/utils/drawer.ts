@@ -1,5 +1,5 @@
 import cuid from "cuid";
-import { DrawerItem, Folder } from "../types/drawer";
+import type { DrawerItem, Folder } from "../types/drawer";
 
 
 

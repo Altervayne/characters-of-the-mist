@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useState, useEffect } from 'react';
@@ -20,7 +20,6 @@ import { WelcomeDialog } from '@/components/organisms/welcome-dialog';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 
 
@@ -58,18 +57,9 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
 
 
-   // --- Client check ---
-   const [isClient, setIsClient] = useState(false);
-
-   useEffect(() => {
-      setIsClient(true);
-   }, []);
-
-
-
    // --- Dialog queue generator and handler ---
    useEffect(() => {
-      if (!isClient || didInit) return;
+      if (didInit) return;
       if (!isLocalStorageAvailable()) return;
 
       const legacyData = localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -108,7 +98,7 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
       appSettings.actions.setLastVisitedVersion(APP_VERSION);
       setDidInit(true);
-   }, [isClient, didInit]);
+   }, [didInit]);
 
    useEffect(() => {
       switch (currentDialog) {
@@ -182,8 +172,6 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    }
 
 
-
-   if (!isClient) return null;
 
    if (!isLocalStorageAvailable) {
       return <LocalStorageError />;

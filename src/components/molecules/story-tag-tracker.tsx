@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,8 @@ import { ToolbarHandle } from './toolbar-handle';
 import { useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
-import { StoryTagTracker } from '@/lib/types/character';
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import type { StoryTagTracker } from '@/lib/types/character';
+import type { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 
 
@@ -105,7 +105,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
 
          <div className={cn(
             isHovered ? "z-1" : "z-0",
-            "relative flex items-center justify-between h-[55px] w-[220px] p-2 rounded-lg border-2",
+            "relative flex items-center justify-between h-13.75 w-55 p-2 rounded-lg border-2",
             {"pointer-events-none shadow-none border-2 border-border": isDrawerPreview},
             cardTheme, "border-card-border",
             tracker.isWeakness 
@@ -114,7 +114,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
          )}>
             {isEffectivelyEditing ? (
                <>
-                  <div className="flex-grow p-1">
+                  <div className="grow p-1">
                      <Input
                         value={localName}
                         onChange={(e) => setLocalName(e.target.value)}
@@ -133,7 +133,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
                </>
             ) : (
                <>
-                  <div className="flex-grow p-1">
+                  <div className="grow p-1">
                      <span className={cn("text-card-paper-fg font-semibold", tracker.isScratched && 'line-through opacity-50')}>
                         {tracker.name ? tracker.name : `[${t('Trackers.storyTagNoName')}]`}
                      </span>

@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -35,7 +35,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, CityRiftDetails, CrewMember } from '@/lib/types/character';
+import type { Card as CardData, CardViewMode, CityRiftDetails, CrewMember } from '@/lib/types/character';
 
 interface RiftCardProps {
   card: CardData;
@@ -52,7 +52,7 @@ interface RiftCardProps {
 const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
    ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
-      const tNemesis = useTranslations('RiftCard.Nemesis');
+      const { t: tNemesis } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as CityRiftDetails;
 
@@ -124,17 +124,17 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-rift-com",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
                <CardHeaderMolecule title={t('RiftCard.title')}></CardHeaderMolecule>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-2 py-1 mb-1 flex-shrink-0">
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-2 py-1 mb-1 shrink-0">
                   {isEditing ? (
                      <Input
                         className="text-2xl font-bold text-center bg-transparent border-none shadow-none"
@@ -159,7 +159,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                            className="text-sm h-8"
                         />
                      ) : (
-                        <div className="text-sm min-h-[2rem] flex items-center">
+                        <div className="text-sm min-h-8 flex items-center">
                            <p>{details.mythos || "No Mythos defined"}</p>
                         </div>
                      )}
@@ -178,7 +178,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                            className="text-sm h-8"
                         />
                      ) : (
-                        <div className="text-sm min-h-[2rem] flex items-center">
+                        <div className="text-sm min-h-8 flex items-center">
                            <p>{details.logos || "No Logos defined"}</p>
                         </div>
                      )}
@@ -186,15 +186,15 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                </div>
 
                {/* Crew Section */}
-               <div className="flex flex-col flex-grow overflow-hidden min-h-0">
+               <div className="flex flex-col grow overflow-hidden min-h-0">
                   <CardSectionHeader title={t('RiftCard.Crew.title')} />
-                  <div className={cn("grid gap-1 bg-card-accent/15 px-2 border-b-1 flex-shrink-0", isEditing ? "grid-cols-12" : "grid-cols-10")}>
+                  <div className={cn("grid gap-1 bg-card-accent/15 px-2 border-b shrink-0", isEditing ? "grid-cols-12" : "grid-cols-10")}>
                      <p className="col-span-6 text-sm text-center py-1">{t('RiftCard.Crew.name')}</p>
                      <p className="col-span-2 text-sm text-center py-1">{t('RiftCard.Crew.help')}</p>
                      <p className="col-span-2 text-sm text-center py-1">{t('RiftCard.Crew.hurt')}</p>
                      {isEditing && <p className="col-span-2 text-sm text-center py-1"></p>}
                   </div>
-                  <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain p-2" ref={crewScrollRef}>
+                  <div className="flex flex-col grow overflow-y-auto overscroll-contain p-2" ref={crewScrollRef}>
                      {details.crewMembers.map((member) => (
                         <div key={member.id} className={cn("mb-2 grid gap-1 items-center", isEditing ? "grid-cols-12" : "grid-cols-10")}>
                            <div className="col-span-6">
@@ -248,7 +248,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                         </div>
                      ))}
                      {isEditing && (
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={handleAddCrewMember}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={handleAddCrewMember}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {t('RiftCard.Crew.addCrewMember')}
                         </Button>
                      )}
@@ -256,7 +256,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                </div>
 
                {/* Build-up Tracker */}
-               <div className="px-4 py-3 border-t-1">
+               <div className="px-4 py-3 border-t">
                   <div className="text-xs font-semibold text-card-paper-fg mb-2 text-center">{t("RiftCard.buildup")}</div>
                   <PipTracker
                      value={details.buildup}
@@ -270,16 +270,16 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-rift-com",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeaderMolecule title={t('RiftCard.title')} />
             <CardSectionHeader title={`${tNemesis('title')}`}></CardSectionHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow space-y-0 overflow-y-auto overscroll-contain" ref={nemesesScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={nemesesScrollRef}>
                   {details.nemeses.map((tag, index) => (
                      <BlandTagItem 
                         key={tag.id}
@@ -292,7 +292,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'nemeses')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'nemeses')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {tNemesis('addNemesis')}
                         </Button>
                      </div>

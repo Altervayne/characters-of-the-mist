@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- Next Imports --
 import { useTranslation } from 'react-i18next';

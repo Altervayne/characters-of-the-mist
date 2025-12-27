@@ -1,4 +1,4 @@
-'use client';
+
 
 // -- React Imports --
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -37,7 +37,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, Tag, BlandTag } from '@/lib/types/character';
+import type { Card as CardData, CardViewMode, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, Tag, BlandTag } from '@/lib/types/character';
 
 interface OtherscapeThemeCardProps {
    card: CardData;
@@ -158,11 +158,11 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
                {card.cardType === 'CHARACTER_THEME' ? (
@@ -186,7 +186,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                </div>
             </CardHeader>
 
-            <CardContent className="flex-grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
+            <CardContent className="grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
                {card.cardType === 'LOADOUT_THEME' ? (
                   // Loadout card: Loaded/Unloaded Gear + Flaws + Wildcard Slots
                   <>
@@ -204,7 +204,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                                  <Circle className="h-3 w-3" />
                               </Button>
                            )}
-                           <span className="text-sm font-bold min-w-[1.5rem] text-center">{(details as OtherscapeLoadoutDetails).wildcardSlots || 0}</span>
+                           <span className="text-sm font-bold min-w-6 text-center">{(details as OtherscapeLoadoutDetails).wildcardSlots || 0}</span>
                            {isEditing && (
                               <Button
                                  variant="ghost"
@@ -219,7 +219,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                      </div>
 
                      {/* Tags section with more space */}
-                     <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+                     <div className="flex flex-col grow overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
                         {/* Loaded Gear Section - gear that is NOT burned */}
                         <CardSectionHeader title={t('OtherscapeThemeCard.loadedGear')} />
                         {details.powerTags.filter(tag => !tag.isScratched).length > 0 ? (
@@ -239,20 +239,20 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                         ) : (
                            <p className="text-sm text-center text-muted-foreground py-2">{t('OtherscapeThemeCard.noGear')}</p>
                         )}
-                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addGearTag')}</Button>}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addGearTag')}</Button>}
 
                         {/* Flaws Section */}
                         <CardSectionHeader title={t('OtherscapeThemeCard.flawsTitle')} className="mt-2" />
                         {details.weaknessTags.map((tag, index) =>
                            <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />
                         )}
-                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addFlawTag')}</Button>}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addFlawTag')}</Button>}
                      </div>
                   </>
                ) : (
                   // Regular theme card: Main Tag + Power/Weakness Tags
                   <>
-                     <div className="w-full text-center px-1 py-2.5 flex-shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
+                     <div className="w-full text-center px-1 py-2.5 shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
                         <div className="w-6">
                            {!isEditing && (
                               <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={() => handleDetailChange('mainTag', { ...details.mainTag, isActive: !details.mainTag.isActive })}>
@@ -262,7 +262,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                         </div>
                         {isEditing ? (
                            <Input
-                              className="text-xl font-bold text-center flex-grow border-0 shadow-none"
+                              className="text-xl font-bold text-center grow border-0 shadow-none"
                               placeholder={t('OtherscapeThemeCard.placeholderName')}
                               value={localMainTagName}
                               onChange={(e) => setLocalMainTagName(e.target.value)}
@@ -280,12 +280,12 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                            )}
                         </div>
                      </div>
-                     <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+                     <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
                         {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
-                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
 
                         {details.weaknessTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />)}
-                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
+                        {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
                      </div>
                   </>
                )}
@@ -304,7 +304,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                                  : t('OtherscapeThemeCard.itchTitle'))
                            : t('OtherscapeThemeCard.descriptionTitle')
                   }`}></CardSectionHeader>
-                  <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
+                  <div className="w-full grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
                      {isEditing ? (
                         <Textarea
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"
@@ -339,7 +339,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                      )}
                   </div>
 
-                  <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
+                  <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-card-accent/30">
                      <PipTracker label="Upgrade" value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
                      <PipTracker label="Decay" value={card.cardType === 'CHARACTER_THEME' ? (details as OtherscapeThemeDetails).fadeOrCrack : (details as OtherscapeCrewDetails).crack} onUpdate={(val) => handleDetailChange(card.cardType === 'CHARACTER_THEME' ? 'fadeOrCrack' : 'crack', val)} />
                   </div>
@@ -347,7 +347,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
             }
             {!isDrawerPreview && card.cardType === 'LOADOUT_THEME' &&
                <CardFooter className="p-0 flex flex-col">
-                  <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
+                  <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-card-accent/30">
                      <PipTracker label="Upgrade" value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
                   </div>
                </CardFooter>
@@ -357,11 +357,11 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             {card.cardType === 'CHARACTER_THEME' ? (
                <CardHeaderMolecule title={(details as OtherscapeThemeDetails).themebook} type={(details as OtherscapeThemeDetails).themeType} game="OTHERSCAPE" />
@@ -373,8 +373,8 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
 
             <CardSectionHeader title={t('OtherscapeThemeCard.improvements')} />
 
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
                   {details.improvements.map((imp, index) => (
                      <BlandTagItem
                         key={imp.id}
@@ -387,7 +387,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {t('OtherscapeThemeCard.addImprovement')}
                         </Button>
                      </div>
