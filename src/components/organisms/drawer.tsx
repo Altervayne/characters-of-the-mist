@@ -121,9 +121,8 @@ function FolderEntry({ folder, parentFolderId, isOver, onNavigate, onRename, onD
          onClick={() => onNavigate(folder.id)}
       >
          <motion.div
-            layout="position"
-            transition={{ duration: 0.1 }}
             animate={{ opacity: isDragging ? 0.5 : 1 }}
+            transition={{ duration: 0.1 }}
             className={cn(
                            "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
                            {
@@ -219,9 +218,8 @@ function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item:
          style={style}
       >
          <motion.div
-            layout="position"
-            transition={{ duration: 0.1 }}
             animate={{ opacity: isDragging ? 0.5 : 1 }}
+            transition={{ duration: 0.1 }}
             className="relative group/item data-[state=open]:bg-muted"
          >
             <div {...attributes} {...listeners} className="cursor-grab">
@@ -319,7 +317,7 @@ export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onM
    return (
       <div ref={setNodeRef} style={style}>
          <motion.div
-            layout="position"
+            animate={{ opacity: isDragging ? 0.5 : 1 }}
             transition={{ duration: 0.1 }}
             className={cn(
                "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",

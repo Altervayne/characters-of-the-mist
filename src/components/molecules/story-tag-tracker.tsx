@@ -27,9 +27,11 @@ import { ToolbarHandle } from './toolbar-handle';
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 
+// -- Other Imports --
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+
 // -- Type Imports --
 import type { StoryTagTracker } from '@/lib/types/character';
-import type { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 
 
