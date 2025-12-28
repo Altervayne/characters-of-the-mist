@@ -328,7 +328,7 @@ export default function CharacterSheetPage() {
       if (item) {
          setActiveDragItem(item);
       }
-   }, [character?.cards, character?.trackers.statuses, character?.trackers.storyTags, character?.trackers.storyThemes]);
+   }, [character?.cards, character?.trackers]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
@@ -365,8 +365,8 @@ export default function CharacterSheetPage() {
     * Handle reordering trackers on the character sheet
     */
    const handleSheetTrackerReorder = useCallback((
-      active: any,
-      over: any
+      active: DragStartEvent['active'],
+      over: NonNullable<DragOverEvent['over']>
    ) => {
       if (!character) return;
 
@@ -400,7 +400,7 @@ export default function CharacterSheetPage() {
    const handleSheetToDrawerDrop = useCallback((
       overIdStr: string,
       overType: string,
-      over: any
+      over: NonNullable<DragOverEvent['over']>
    ) => {
       if (!activeDragItem) return;
 
@@ -566,8 +566,6 @@ export default function CharacterSheetPage() {
    }, [
       character,
       drawer,
-      addCard,
-      initiateItemDrop,
       moveFolder,
       reorderFolders,
       moveItem,
@@ -579,6 +577,7 @@ export default function CharacterSheetPage() {
       setContextualGame,
       addImportedTracker,
       addImportedCard,
+      tNotifications,
    ]);
 
 
