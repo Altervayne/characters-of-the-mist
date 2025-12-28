@@ -244,6 +244,8 @@
       "description": "Vous trouverez ici des paramètres pour l'application en général comme la palette de thème, le mode sombre ou clair, etc...",
 
       "language": "Langue",
+      "selectLanguagePlaceholder": "Sélectionner une langue",
+      "selectThemePlaceholder": "Sélectionner un thème",
 
       "accentColor": "Palette",
       "appearance": "Mode",
@@ -702,7 +704,9 @@
    "RiftCard": {
       "title": "Carte de Réceptacle",
       "mythos": "Mythos",
+      "mythosPlaceholder": "Entrez votre Mythos...",
       "logos": "Logos",
+      "logosPlaceholder": "Entrez votre Logos...",
       "characterNamePlaceholder": "Nom du Personnage...",
       "noName": "SANS NOM",
       "Crew": {

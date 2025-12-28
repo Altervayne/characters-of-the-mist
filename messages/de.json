@@ -198,6 +198,8 @@
       "description": "Hier finden Sie allgemeine einstellbare Einstellungen für die App, wie das Farbschema oder den Hell- und Dunkelmodus.",
 
       "language": "Sprache",
+      "selectLanguagePlaceholder": "Sprache wählen",
+      "selectThemePlaceholder": "Design wählen",
 
       "accentColor": "Themen Palette",
       "appearance": "Themen Modi",

@@ -25,12 +25,12 @@ interface FellowshipRelationshipItemProps {
    relationship: FellowshipRelationship;
    isEditing: boolean;
    index: number;
-   translationNamespace?: string;
+   translationNamespace?: 'HeroCard' | 'OtherscapeCharacterCard';
 }
 
 
 
-export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index }: FellowshipRelationshipItemProps) {
+export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index, translationNamespace = 'HeroCard' }: FellowshipRelationshipItemProps) {
    const { t } = useTranslation();
    const { updateRelationship, removeRelationship } = useCharacterActions();
 
@@ -66,10 +66,10 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
                value={localCompanionName}
                onChange={(e) => setLocalCompanionName(e.target.value)}
                className="h-7 flex-1 border-dashed"
-               placeholder={t('companionPlaceholder')}
+               placeholder={t(`${translationNamespace}.companionPlaceholder`)}
             />
          ) : (
-            <span className="flex-1 font-semibold text-center">{relationship.companionName ? relationship.companionName : `[${t('relationshipCompanionNoName')}]`}</span>
+            <span className="flex-1 font-semibold text-center">{relationship.companionName ? relationship.companionName : `[${t(`${translationNamespace}.relationshipCompanionNoName`)}]`}</span>
          )}
 
          {isEditing ? (
@@ -77,10 +77,10 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
                value={localRelationshipTag}
                onChange={(e) => setLocalRelationshipTag(e.target.value)}
                className="h-7 flex-1 border-dashed italic"
-               placeholder={t('relationshipPlaceholder')}
+               placeholder={t(`${translationNamespace}.relationshipPlaceholder`)}
             />
          ) : (
-            <span className="flex-1 italic text-muted-foreground text-center">&quot;{relationship.relationshipTag ? relationship.relationshipTag : `[${t('relationshipRelationNoName')}]`}&quot;</span>
+            <span className="flex-1 italic text-muted-foreground text-center">&quot;{relationship.relationshipTag ? relationship.relationshipTag : `[${t(`${translationNamespace}.relationshipRelationNoName`)}]`}&quot;</span>
          )}
 
          {isEditing && (

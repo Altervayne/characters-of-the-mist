@@ -244,6 +244,8 @@
       "description": "You will find adjustable settings for the app in general here, like the color theme, or light and dark mode.",
 
       "language": "Language",
+      "selectLanguagePlaceholder": "Select a language",
+      "selectThemePlaceholder": "Select a theme",
 
       "accentColor": "Theme Palette",
       "appearance": "Theme Mode",
@@ -708,7 +710,9 @@
    "RiftCard": {
       "title": "Rift Card",
       "mythos": "Mythos",
+      "mythosPlaceholder": "Enter your Mythos...",
       "logos": "Logos",
+      "logosPlaceholder": "Enter your Logos...",
       "characterNamePlaceholder": "Character Name...",
       "noName": "NO RIFT NAME",
       "Crew": {

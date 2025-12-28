@@ -142,7 +142,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                         <Input
                            value={details.mythos}
                            onChange={(e) => handleDetailChange('mythos', e.target.value)}
-                           placeholder="Enter your Mythos..."
+                           placeholder={t('RiftCard.mythosPlaceholder')}
                            className="text-sm h-8"
                         />
                      ) : (
@@ -161,7 +161,7 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
                         <Input
                            value={details.logos}
                            onChange={(e) => handleDetailChange('logos', e.target.value)}
-                           placeholder="Enter your Logos..."
+                           placeholder={t('RiftCard.logosPlaceholder')}
                            className="text-sm h-8"
                         />
                      ) : (

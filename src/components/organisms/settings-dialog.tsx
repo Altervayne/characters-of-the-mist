@@ -165,7 +165,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                      </Label>
                      <Select value={locale} onValueChange={handleLocaleChange}>
                         <SelectTrigger id="language-select" className="col-span-2 cursor-pointer">
-                           <SelectValue placeholder="Select a language" />
+                           <SelectValue placeholder={t('SettingsDialog.selectLanguagePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                            {locales.map((loc) => (
@@ -181,7 +181,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                      <Label htmlFor="theme-select" className="text-left">{t('SettingsDialog.accentColor')}</Label>
                      <Select value={colorTheme} onValueChange={setColorTheme}>
                         <SelectTrigger id="theme-select" className="col-span-2 cursor-pointer">
-                           <SelectValue placeholder="Select a theme" />
+                           <SelectValue placeholder={t('SettingsDialog.selectThemePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                            {colorThemeOptions.map(themeName => (
