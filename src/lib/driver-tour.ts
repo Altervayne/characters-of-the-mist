@@ -19,23 +19,23 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
    return [
       {
          popover: {
-            title: t('welcome_title'),
-            description: t('welcome_content'),
+            title: t('Tutorial.welcome_title'),
+            description: t('Tutorial.welcome_content'),
          },
       },
       {
          element: '[data-tour="main-menu-game-selection"]',
          popover: {
-            title: t('mainMenuGames_title'),
-            description: t('mainMenuGames_content'),
+            title: t('Tutorial.mainMenuGames_title'),
+            description: t('Tutorial.mainMenuGames_content'),
             side: 'bottom',
          },
       },
       {
          element: '[data-tour="main-menu-legends-card"]',
          popover: {
-            title: t('mainMenuLegends_title'),
-            description: t('mainMenuLegends_content'),
+            title: t('Tutorial.mainMenuLegends_title'),
+            description: t('Tutorial.mainMenuLegends_content'),
             side: 'bottom',
             onNextClick: (_element, _step, { driver }) => {
                setContextualGame('LEGENDS');
@@ -46,8 +46,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="main-menu-create-button"]',
          popover: {
-            title: t('mainMenuCreate_title'),
-            description: t('mainMenuCreate_content'),
+            title: t('Tutorial.mainMenuCreate_title'),
+            description: t('Tutorial.mainMenuCreate_content'),
             side: 'bottom',
             onNextClick: (_element, _step, { driver }) => {
                createCharacter('LEGENDS');
@@ -58,32 +58,32 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="sidebar-menu"]',
          popover: {
-            title: t('sidebar_title'),
-            description: t('sidebar_content'),
+            title: t('Tutorial.sidebar_title'),
+            description: t('Tutorial.sidebar_content'),
             side: 'right',
          },
       },
       {
          element: '[data-tour="menu-collapse-button"]',
          popover: {
-            title: t('menuCollapse_title'),
-            description: t('menuCollapse_content'),
+            title: t('Tutorial.menuCollapse_title'),
+            description: t('Tutorial.menuCollapse_content'),
             side: 'right',
          },
       },
       {
          element: '[data-tour="menu-undo-redo-buttons"]',
          popover: {
-            title: t('menuUndoRedo_title'),
-            description: t('menuUndoRedo_content'),
+            title: t('Tutorial.menuUndoRedo_title'),
+            description: t('Tutorial.menuUndoRedo_content'),
             side: 'right',
          },
       },
       {
          element: '[data-tour="menu-edit-drawer-buttons"]',
          popover: {
-            title: t('menuEditDrawer_title'),
-            description: t('menuEditDrawer_content'),
+            title: t('Tutorial.menuEditDrawer_title'),
+            description: t('Tutorial.menuEditDrawer_content'),
             side: 'right',
             align: 'center',
          },
@@ -91,8 +91,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="save-character-button"]',
          popover: {
-            title: t('saveCharacter_title'),
-            description: t('saveCharacter_content'),
+            title: t('Tutorial.saveCharacter_title'),
+            description: t('Tutorial.saveCharacter_content'),
             side: 'right',
             align: 'center',
          },
@@ -100,8 +100,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="export-character-button"]',
          popover: {
-            title: t('exportCharacter_title'),
-            description: t('exportCharacter_content'),
+            title: t('Tutorial.exportCharacter_title'),
+            description: t('Tutorial.exportCharacter_content'),
             side: 'right',
             align: 'center',
          },
@@ -109,8 +109,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="import-character-button"]',
          popover: {
-            title: t('importCharacter_title'),
-            description: t('importCharacter_content'),
+            title: t('Tutorial.importCharacter_title'),
+            description: t('Tutorial.importCharacter_content'),
             side: 'right',
             align: 'center',
          },
@@ -118,8 +118,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="import-component-button"]',
          popover: {
-            title: t('importComponent_title'),
-            description: t('importComponent_content'),
+            title: t('Tutorial.importComponent_title'),
+            description: t('Tutorial.importComponent_content'),
             side: 'right',
             align: 'center',
          },
@@ -127,8 +127,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="reset-character-button"]',
          popover: {
-            title: t('resetCharacter_title'),
-            description: t('resetCharacter_content'),
+            title: t('Tutorial.resetCharacter_title'),
+            description: t('Tutorial.resetCharacter_content'),
             side: 'right',
             align: 'center',
          },
@@ -136,8 +136,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="unload-character-button"]',
          popover: {
-            title: t('unloadCharacter_title'),
-            description: t('unloadCharacter_content'),
+            title: t('Tutorial.unloadCharacter_title'),
+            description: t('Tutorial.unloadCharacter_content'),
             side: 'right',
             align: 'center',
          },
@@ -145,8 +145,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="settings-button"]',
          popover: {
-            title: t('settings_title'),
-            description: t('settings_content'),
+            title: t('Tutorial.settings_title'),
+            description: t('Tutorial.settings_content'),
             side: 'right',
             align: 'end',
          },
@@ -154,8 +154,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="app-info-button"]',
          popover: {
-            title: t('appInfo_title'),
-            description: t('appInfo_content'),
+            title: t('Tutorial.appInfo_title'),
+            description: t('Tutorial.appInfo_content'),
             side: 'right',
             align: 'end',
          },
@@ -163,8 +163,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="patch-notes-button"]',
          popover: {
-            title: t('patchNotes_title'),
-            description: t('patchNotes_content'),
+            title: t('Tutorial.patchNotes_title'),
+            description: t('Tutorial.patchNotes_content'),
             side: 'right',
             align: 'end',
          },
@@ -172,23 +172,23 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="character-sheet"]',
          popover: {
-            title: t('playArea_title'),
-            description: t('playArea_content'),
+            title: t('Tutorial.playArea_title'),
+            description: t('Tutorial.playArea_content'),
          },
       },
       {
          element: '[data-tour="character-name-input"]',
          popover: {
-            title: t('characterName_title'),
-            description: t('characterName_content'),
+            title: t('Tutorial.characterName_title'),
+            description: t('Tutorial.characterName_content'),
             side: 'bottom',
          },
       },
       {
          element: '[data-tour="trackers-section"]',
          popover: {
-            title: t('trackers_title'),
-            description: t('trackers_content'),
+            title: t('Tutorial.trackers_title'),
+            description: t('Tutorial.trackers_content'),
             side: 'bottom',
             align: 'center',
          },
@@ -196,8 +196,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="cards-section"]',
          popover: {
-            title: t('cards_title'),
-            description: t('cards_content'),
+            title: t('Tutorial.cards_title'),
+            description: t('Tutorial.cards_content'),
             side: 'top',
             align: 'center',
          },
@@ -205,8 +205,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="edit-mode-toggle"]',
          popover: {
-            title: t('editMode_title'),
-            description: t('editMode_content'),
+            title: t('Tutorial.editMode_title'),
+            description: t('Tutorial.editMode_content'),
             side: 'right',
             onNextClick: (_element, _step, { driver }) => {
                setIsEditing(true);
@@ -217,8 +217,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="edit-mode-toggle"]',
          popover: {
-            title: t('playMode_title'),
-            description: t('playMode_content'),
+            title: t('Tutorial.playMode_title'),
+            description: t('Tutorial.playMode_content'),
             side: 'right',
             onPrevClick: (_element, _step, { driver }) => {
                setIsEditing(false);
@@ -229,8 +229,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="add-status-button"]',
          popover: {
-            title: t('addStatus_title'),
-            description: t('addStatus_content'),
+            title: t('Tutorial.addStatus_title'),
+            description: t('Tutorial.addStatus_content'),
             side: 'bottom',
             align: 'center',
          },
@@ -238,8 +238,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="add-story-tag-button"]',
          popover: {
-            title: t('addStoryTag_title'),
-            description: t('addStoryTag_content'),
+            title: t('Tutorial.addStoryTag_title'),
+            description: t('Tutorial.addStoryTag_content'),
             side: 'bottom',
             align: 'center',
          },
@@ -247,8 +247,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="add-card-button"]',
          popover: {
-            title: t('addCard_title'),
-            description: t('addCard_content'),
+            title: t('Tutorial.addCard_title'),
+            description: t('Tutorial.addCard_content'),
             side: 'left',
             align: 'center',
             onNextClick: (_element, _step, { driver }) => {
@@ -260,8 +260,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="drawer-toggle"]',
          popover: {
-            title: t('menuDrawer_title'),
-            description: t('menuDrawer_content'),
+            title: t('Tutorial.menuDrawer_title'),
+            description: t('Tutorial.menuDrawer_content'),
             side: 'right',
             onPrevClick: (_element, _step, { driver }) => {
                setDrawerOpen(false);
@@ -277,8 +277,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="drawer"]',
          popover: {
-            title: t('drawer_title'),
-            description: t('drawer_content'),
+            title: t('Tutorial.drawer_title'),
+            description: t('Tutorial.drawer_content'),
             side: 'left',
             align: 'center',
             onPrevClick: (_element, _step, { driver }) => {
@@ -290,24 +290,24 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="drawer-undo-redo-buttons"]',
          popover: {
-            title: t('drawerUndoRedo_title'),
-            description: t('drawerUndoRedo_content'),
+            title: t('Tutorial.drawerUndoRedo_title'),
+            description: t('Tutorial.drawerUndoRedo_content'),
             side: 'left',
          },
       },
       {
          element: '[data-tour="drawer-rich-view-toggle"]',
          popover: {
-            title: t('drawerRichView_title'),
-            description: t('drawerRichView_content'),
+            title: t('Tutorial.drawerRichView_title'),
+            description: t('Tutorial.drawerRichView_content'),
             side: 'left',
          },
       },
       {
          element: '[data-tour="drawer-folders"]',
          popover: {
-            title: t('drawerFolders_title'),
-            description: t('drawerFolders_content'),
+            title: t('Tutorial.drawerFolders_title'),
+            description: t('Tutorial.drawerFolders_content'),
             side: 'left',
             align: 'center',
          },
@@ -315,8 +315,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="drawer-items"]',
          popover: {
-            title: t('drawerItems_title'),
-            description: t('drawerItems_content'),
+            title: t('Tutorial.drawerItems_title'),
+            description: t('Tutorial.drawerItems_content'),
             side: 'left',
             align: 'center',
          },
@@ -324,8 +324,8 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="drawer-import"]',
          popover: {
-            title: t('drawerImport_title'),
-            description: t('drawerImport_content'),
+            title: t('Tutorial.drawerImport_title'),
+            description: t('Tutorial.drawerImport_content'),
             side: 'left',
             align: 'end',
          },
@@ -333,22 +333,22 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
       {
          element: '[data-tour="drawer-export"]',
          popover: {
-            title: t('drawerExport_title'),
-            description: t('drawerExport_content'),
+            title: t('Tutorial.drawerExport_title'),
+            description: t('Tutorial.drawerExport_content'),
             side: 'left',
             align: 'end',
          },
       },
       {
          popover: {
-            title: t('commandPalette_title'),
-            description: t('commandPalette_content'),
+            title: t('Tutorial.commandPalette_title'),
+            description: t('Tutorial.commandPalette_content'),
          },
       },
       {
          popover: {
-            title: t('closingWords_title'),
-            description: t('closingWords_content'),
+            title: t('Tutorial.closingWords_title'),
+            description: t('Tutorial.closingWords_content'),
          },
       },
    ];
