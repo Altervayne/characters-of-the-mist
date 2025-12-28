@@ -1,7 +1,10 @@
 
 
 // -- React Imports --
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+// -- Custom Hooks --
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Next Imports --
 import { useTranslation } from 'react-i18next';
@@ -11,8 +14,7 @@ import toast from 'react-hot-toast';
 import { DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent, DragOverEvent, DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 
@@ -28,6 +30,10 @@ import { findFolder } from '@/lib/utils/drawer';
 import { customCollisionDetection, mapItemToStorableInfo } from '@/lib/utils/dnd';
 import { exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
+import { DRAG_TYPES } from '@/lib/constants/drag-drop';
+
+// -- DnD Component Imports --
+import { Sortable, DragLayoutWrapper } from '@/components/dnd';
 
 // -- Component Imports --
 import { CommandPalette } from '@/components/organisms/command-palette';
@@ -98,7 +104,7 @@ const CardRenderer = React.forwardRef<HTMLDivElement, CardRendererProps>(
          }
       }
 
-      return <div ref={ref} className="h-[300px] w-[250px] bg-card overflow-hidden text-card-foreground border-2 rounded-lg flex items-center justify-center">
+      return <div ref={ref} className="h-75 w-62.5 bg-card overflow-hidden text-card-foreground border-2 rounded-lg flex items-center justify-center">
                <p className='w-full text-wrap text-center'>{`NO RENDER AVAILABLE FOR THIS TYPE: ${card.details.game} ${card.cardType}`}</p>
             </div>;
 });
@@ -106,68 +112,10 @@ CardRenderer.displayName = 'CardRenderer';
 
 
 
-function SortableCardItem({ card, isEditing, isBeingDragged, onEditCard, onExport }: { card: CardData; isEditing: boolean; isBeingDragged: boolean; onEditCard: () => void; onExport: () => void; }) {
-   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-      id: card.id,
-      data: {
-         type: 'sheet-card',
-         item: card,
-      }
-   });
-
-   const style = {
-      transform: CSS.Translate.toString(transform),
-      transition,
-   };
-
-   return (
-      <div ref={setNodeRef} style={style}>
-         <motion.div
-            layout
-            animate={{ opacity: isBeingDragged ? 0.4 : 1 }}
-            transition={{ duration: 0.2 }}
-         >
-            <CardRenderer card={card} isEditing={isEditing} dragAttributes={attributes} dragListeners={listeners} onEditCard={onEditCard} onExport={onExport} />
-         </motion.div>
-      </div>
-   );
-}
-
-function SortableTrackerItem({ tracker, isEditing, isBeingDragged, onExport }: { tracker: Tracker; isEditing: boolean; isBeingDragged: boolean; onExport: () => void; }) {
-   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-      id: tracker.id,
-      data: {
-         type: 'sheet-tracker',
-         item: tracker,
-      }
-   });
-
-   const style = {
-      transform: CSS.Translate.toString(transform),
-      transition,
-   };
-
-   return (
-      <div ref={setNodeRef} style={style}>
-         <motion.div
-            layout
-            animate={{ opacity: isBeingDragged ? 0.4 : 1 }}
-            transition={{ duration: 0.2 }}
-         >
-            {tracker.trackerType === 'STATUS' && <StatusTrackerCard tracker={tracker} isEditing={isEditing} dragAttributes={attributes} dragListeners={listeners} onExport={onExport} />}
-            {tracker.trackerType === 'STORY_TAG' && <StoryTagTrackerCard tracker={tracker} isEditing={isEditing} dragAttributes={attributes} dragListeners={listeners} onExport={onExport} />}
-            {tracker.trackerType === 'STORY_THEME' && <StoryThemeTrackerCard tracker={tracker} isEditing={isEditing} dragAttributes={attributes} dragListeners={listeners} onExport={onExport} />}
-         </motion.div>
-      </div>
-   );
-}
-
-
-
 export default function CharacterSheetPage() {
    // --- Localization ---
    const { t: t } = useTranslation();
-   const { t: tNotifications } = useTranslation('Notifications');
+   const { t: tNotifications } = useTranslation();
    const { t: tTrackers } = useTranslation();
 
    // --- Data Stores ---
@@ -349,7 +297,25 @@ export default function CharacterSheetPage() {
       data: { type: 'character-sheet-main-drop-zone' }
    });
 
-   function handleDragStart(event: DragStartEvent) {
+   // Memoize SortableContext arrays to prevent unnecessary re-renders
+   const statusIds = useMemo(
+      () => character?.trackers.statuses.map(t => t.id) || [],
+      [character?.trackers.statuses]
+   );
+   const storyTagIds = useMemo(
+      () => character?.trackers.storyTags.map(t => t.id) || [],
+      [character?.trackers.storyTags]
+   );
+   const storyThemeIds = useMemo(
+      () => character?.trackers.storyThemes.map(t => t.id) || [],
+      [character?.trackers.storyThemes]
+   );
+   const cardIds = useMemo(
+      () => character?.cards.map(c => c.id) || [],
+      [character?.cards]
+   );
+
+   const handleDragStart = useCallback((event: DragStartEvent) => {
       const { active } = event;
 
       if (active.data.current?.isDrawer) {
@@ -362,9 +328,9 @@ export default function CharacterSheetPage() {
       if (item) {
          setActiveDragItem(item);
       }
-   }
+   }, [character?.cards, character?.trackers.statuses, character?.trackers.storyTags, character?.trackers.storyThemes]);
 
-   function handleDragOver(event: DragOverEvent) {
+   const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
 
       setOverDragId(over ? over.id.toString() : null);
@@ -381,9 +347,94 @@ export default function CharacterSheetPage() {
       }
 
       setIsOverDrawer(isHoveringDrawer);
-   }
+   }, []);
 
-   function handleDragEnd(event: DragEndEvent) {
+   /**
+    * Handle reordering cards on the character sheet
+    */
+   const handleSheetCardReorder = useCallback((activeId: string, overId: string) => {
+      if (!character) return;
+      const oldIndex = character.cards.findIndex(item => item.id === activeId);
+      const newIndex = character.cards.findIndex(item => item.id === overId);
+      if (oldIndex !== -1 && newIndex !== -1) {
+         reorderCards(oldIndex, newIndex);
+      }
+   }, [character, reorderCards]);
+
+   /**
+    * Handle reordering trackers on the character sheet
+    */
+   const handleSheetTrackerReorder = useCallback((
+      active: any,
+      over: any
+   ) => {
+      if (!character) return;
+
+      const activeTracker = active.data.current?.item as Tracker;
+      const overTracker = over.data.current?.item as Tracker;
+
+      if (!activeTracker?.trackerType || !overTracker?.trackerType) return;
+      if (activeTracker.trackerType !== overTracker.trackerType) return;
+
+      const activeId = active.id as string;
+      const overId = over.id as string;
+
+      if (activeTracker.trackerType === 'STATUS') {
+         const oldIndex = character.trackers.statuses.findIndex(item => item.id === activeId);
+         const newIndex = character.trackers.statuses.findIndex(item => item.id === overId);
+         if (oldIndex !== -1 && newIndex !== -1) reorderStatuses(oldIndex, newIndex);
+      } else if (activeTracker.trackerType === 'STORY_TAG') {
+         const oldIndex = character.trackers.storyTags.findIndex(item => item.id === activeId);
+         const newIndex = character.trackers.storyTags.findIndex(item => item.id === overId);
+         if (oldIndex !== -1 && newIndex !== -1) reorderStoryTags(oldIndex, newIndex);
+      } else if (activeTracker.trackerType === 'STORY_THEME') {
+         const oldIndex = character.trackers.storyThemes.findIndex(item => item.id === activeId);
+         const newIndex = character.trackers.storyThemes.findIndex(item => item.id === overId);
+         if (oldIndex !== -1 && newIndex !== -1) reorderStoryThemes(oldIndex, newIndex);
+      }
+   }, [character, reorderStatuses, reorderStoryTags, reorderStoryThemes]);
+
+   /**
+    * Handle dropping sheet items (cards/trackers) back into the drawer
+    */
+   const handleSheetToDrawerDrop = useCallback((
+      overIdStr: string,
+      overType: string,
+      over: any
+   ) => {
+      if (!activeDragItem) return;
+
+      let destinationFolderId: string | undefined = undefined;
+
+      if (overType === 'drawer-folder') {
+         destinationFolderId = overIdStr;
+      } else if (overIdStr.startsWith('drawer-drop-zone-')) {
+         const parsedId = overIdStr.replace('drawer-drop-zone-', '');
+         destinationFolderId = parsedId === 'root' ? undefined : parsedId;
+      } else if (overType === 'drawer-back-button') {
+         destinationFolderId = over.data.current?.destinationId ?? undefined;
+      }
+
+      const storableInfo = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
+      if (!storableInfo) return;
+      const [generalType, gameSystem] = storableInfo;
+
+      const itemContentCopy = JSON.parse(JSON.stringify(activeDragItem));
+      if ('isFlipped' in itemContentCopy) itemContentCopy.isFlipped = false;
+
+      const defaultName = 'title' in activeDragItem ? activeDragItem.title :
+                     'name' in activeDragItem ? activeDragItem.name : 'New Item';
+
+      initiateItemDrop({
+         game: gameSystem,
+         type: generalType,
+         content: itemContentCopy,
+         parentFolderId: destinationFolderId,
+         defaultName
+      });
+   }, [activeDragItem, initiateItemDrop]);
+
+   const handleDragEnd = useCallback((event: DragEndEvent) => {
       const { active, over } = event;
 
       setActiveDragItem(null);
@@ -472,20 +523,14 @@ export default function CharacterSheetPage() {
                               overType === 'sheet-card' ||
                               overType === 'sheet-tracker';
 
-         console.log('Drop target:', overIdStr, 'Drop type:', overType, 'Is over sheet:', isOverSheet);
-
          if (isOverSheet) {
             if (activeType !== 'drawer-item') return;
 
             const draggedItem = active.data.current?.item as DrawerItem;
             if (!draggedItem || draggedItem.game !== character.game) return;
 
-            console.log('Dragged item:', draggedItem.type);
-
             const isTrackerType = draggedItem.type === 'STATUS_TRACKER' || draggedItem.type === 'STORY_TAG_TRACKER' || draggedItem.type === 'STORY_THEME_TRACKER';
             const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME';
-
-            console.log('Is tracker:', isTrackerType, 'Is card:', isCardType);
 
             if (isTrackerType) {
                addImportedTracker(draggedItem.content as Tracker);
@@ -493,8 +538,6 @@ export default function CharacterSheetPage() {
             } else if (isCardType) {
                addImportedCard(draggedItem.content as CardData);
                toast.success(tNotifications('Notifications.character.componentImported'));
-            } else {
-               console.log('Drop rejected - unsupported item type:', draggedItem.type);
             }
             return;
          }
@@ -507,66 +550,36 @@ export default function CharacterSheetPage() {
 
          // --- SCENARIO 2.1: Dropping ONTO the drawer ---
          if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
-            if (!activeDragItem || active.data.current?.isDrawer) return;
-
-            let destinationFolderId: string | undefined = undefined;
-
-            if (overType === 'drawer-folder') {
-               destinationFolderId = overIdStr;
-            } else if (overIdStr.startsWith('drawer-drop-zone-')) {
-               const parsedId = overIdStr.replace('drawer-drop-zone-', '');
-               destinationFolderId = parsedId === 'root' ? undefined : parsedId;
-            } else if (overType === 'drawer-back-button') {
-               destinationFolderId = over.data.current?.destinationId ?? undefined;
-            }
-
-            const storableInfo = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
-            if (!storableInfo) return;
-            const [generalType, gameSystem] = storableInfo;
-
-            const itemContentCopy = JSON.parse(JSON.stringify(activeDragItem));
-            if ('isFlipped' in itemContentCopy) itemContentCopy.isFlipped = false;
-
-            const defaultName = 'title' in activeDragItem ? activeDragItem.title :
-                           'name' in activeDragItem ? activeDragItem.name : 'New Item';
-
-            initiateItemDrop({
-               game: gameSystem,
-               type: generalType,
-               content: itemContentCopy,
-               parentFolderId: destinationFolderId,
-               defaultName
-            });
+            handleSheetToDrawerDrop(overIdStr, overType, over);
             return;
          }
 
          // --- SCENARIO 2.2: Reordering ON the sheet ---
          if (overType?.startsWith('sheet-') && character) {
-            const isCardDrag = activeType === 'sheet-card';
-            const isStatusDrag = (active.data.current?.item as Tracker)?.trackerType === 'STATUS';
-            const isStoryTagDrag = (active.data.current?.item as Tracker)?.trackerType === 'STORY_TAG';
-            const isStoryThemeDrag = (active.data.current?.item as Tracker)?.trackerType === 'STORY_THEME';
-
-            if (isCardDrag && overType === 'sheet-card') {
-               const oldIndex = character.cards.findIndex(item => item.id === active.id);
-               const newIndex = character.cards.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) reorderCards(oldIndex, newIndex);
-            } else if (isStatusDrag && (over.data.current?.item as Tracker)?.trackerType === 'STATUS') {
-               const oldIndex = character.trackers.statuses.findIndex(item => item.id === active.id);
-               const newIndex = character.trackers.statuses.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) reorderStatuses(oldIndex, newIndex);
-            } else if (isStoryTagDrag && (over.data.current?.item as Tracker)?.trackerType === 'STORY_TAG') {
-               const oldIndex = character.trackers.storyTags.findIndex(item => item.id === active.id);
-               const newIndex = character.trackers.storyTags.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) reorderStoryTags(oldIndex, newIndex);
-            } else if (isStoryThemeDrag && (over.data.current?.item as Tracker)?.trackerType === 'STORY_THEME') {
-               const oldIndex = character.trackers.storyThemes.findIndex(item => item.id === active.id);
-               const newIndex = character.trackers.storyThemes.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) reorderStoryThemes(oldIndex, newIndex);
+            if (activeType === DRAG_TYPES.SHEET_CARD && overType === DRAG_TYPES.SHEET_CARD) {
+               handleSheetCardReorder(active.id as string, over.id as string);
+            } else if (activeType === DRAG_TYPES.SHEET_TRACKER) {
+               handleSheetTrackerReorder(active, over);
             }
          }
       }
-   }
+   }, [
+      character,
+      drawer,
+      addCard,
+      initiateItemDrop,
+      moveFolder,
+      reorderFolders,
+      moveItem,
+      reorderItems,
+      handleSheetCardReorder,
+      handleSheetTrackerReorder,
+      handleSheetToDrawerDrop,
+      loadCharacter,
+      setContextualGame,
+      addImportedTracker,
+      addImportedCard,
+   ]);
 
 
 
@@ -574,27 +587,10 @@ export default function CharacterSheetPage() {
    // ###   CHARACTER NAME INPUT DEBOUNCER   ###
    // ##########################################
 
-   const [localName, setLocalName] = useState(character?.name ?? '');
-
-   useEffect(() => {
-      if (!character) return;
-      
-      const handler = setTimeout(() => {
-         if (character.name !== localName) {
-            updateCharacterName(localName);
-         }
-      }, 500);
-
-      return () => {
-         clearTimeout(handler);
-      };
-   }, [localName, character, updateCharacterName]);
-
-   useEffect(() => {
-      if (character) {
-         setLocalName(character.name);
-      }
-   }, [character?.name, character]);
+   const [localName, setLocalName] = useInputDebouncer(
+      character?.name ?? '',
+      (value) => updateCharacterName(value)
+   );
 
 
 
@@ -713,16 +709,26 @@ export default function CharacterSheetPage() {
                            >
                               <div className="flex-1 min-w-0 space-y-4">
                                  {/* Statuses Group */}
-                                 <SortableContext items={character.trackers.statuses.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
+                                 <SortableContext items={statusIds} strategy={rectSortingStrategy}>
                                     <div className="flex flex-wrap gap-4">
                                        {character.trackers.statuses.map(tracker => (
-                                          <SortableTrackerItem
+                                          <Sortable
                                              key={tracker.id}
-                                             tracker={tracker}
-                                             isEditing={isEditing}
-                                             isBeingDragged={activeDragItem?.id === tracker.id}
-                                             onExport={() => handleExportComponent(tracker)}
-                                          />
+                                             id={tracker.id}
+                                             data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                                          >
+                                             {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                                                <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                                                   <StatusTrackerCard
+                                                      tracker={tracker}
+                                                      isEditing={isEditing}
+                                                      dragAttributes={dragAttributes}
+                                                      dragListeners={dragListeners}
+                                                      onExport={() => handleExportComponent(tracker)}
+                                                   />
+                                                </DragLayoutWrapper>
+                                             )}
+                                          </Sortable>
                                        ))}
                                        {areTrackersEditable && (
                                           <Button
@@ -742,16 +748,26 @@ export default function CharacterSheetPage() {
                                  </SortableContext>
 
                                  {/* Story Tags Group */}
-                                 <SortableContext items={character.trackers.storyTags.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
+                                 <SortableContext items={storyTagIds} strategy={rectSortingStrategy}>
                                     <div className="flex flex-wrap gap-4">
                                        {character.trackers.storyTags.map(tracker => (
-                                          <SortableTrackerItem
+                                          <Sortable
                                              key={tracker.id}
-                                             tracker={tracker}
-                                             isEditing={isEditing}
-                                             isBeingDragged={activeDragItem?.id === tracker.id}
-                                             onExport={() => handleExportComponent(tracker)}
-                                          />
+                                             id={tracker.id}
+                                             data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                                          >
+                                             {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                                                <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                                                   <StoryTagTrackerCard
+                                                      tracker={tracker}
+                                                      isEditing={isEditing}
+                                                      dragAttributes={dragAttributes}
+                                                      dragListeners={dragListeners}
+                                                      onExport={() => handleExportComponent(tracker)}
+                                                   />
+                                                </DragLayoutWrapper>
+                                             )}
+                                          </Sortable>
                                        ))}
                                        {areTrackersEditable && (
                                           <Button
@@ -781,16 +797,26 @@ export default function CharacterSheetPage() {
                                  }}
                               >
                                  {/* Story Themes Group */}
-                                 <SortableContext items={character.trackers.storyThemes.map(tracker => tracker.id)} strategy={rectSortingStrategy}>
+                                 <SortableContext items={storyThemeIds} strategy={rectSortingStrategy}>
                                     <div className="flex flex-wrap justify-end gap-4">
                                        {character.trackers.storyThemes.map(tracker => (
-                                          <SortableTrackerItem
+                                          <Sortable
                                              key={tracker.id}
-                                             tracker={tracker}
-                                             isEditing={isEditing}
-                                             isBeingDragged={activeDragItem?.id === tracker.id}
-                                             onExport={() => handleExportComponent(tracker)}
-                                          />
+                                             id={tracker.id}
+                                             data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                                          >
+                                             {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                                                <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                                                   <StoryThemeTrackerCard
+                                                      tracker={tracker}
+                                                      isEditing={isEditing}
+                                                      dragAttributes={dragAttributes}
+                                                      dragListeners={dragListeners}
+                                                      onExport={() => handleExportComponent(tracker)}
+                                                   />
+                                                </DragLayoutWrapper>
+                                             )}
+                                          </Sortable>
                                        ))}
                                     </div>
                                  </SortableContext>
@@ -806,16 +832,26 @@ export default function CharacterSheetPage() {
                               )}
                            >
                               {/* Cards Group */}
-                              <SortableContext items={character.cards.map(card => card.id)} strategy={rectSortingStrategy}>
+                              <SortableContext items={cardIds} strategy={rectSortingStrategy}>
                                  {character.cards.map(card => (
-                                    <SortableCardItem
+                                    <Sortable
                                        key={card.id}
-                                       card={card}
-                                       isEditing={isEditing}
-                                       isBeingDragged={activeDragItem?.id === card.id}
-                                       onEditCard={() => handleEditCard(card)}
-                                       onExport={() => handleExportComponent(card)}
-                                    />
+                                       id={card.id}
+                                       data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}
+                                    >
+                                       {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                                          <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                                             <CardRenderer
+                                                card={card}
+                                                isEditing={isEditing}
+                                                dragAttributes={dragAttributes}
+                                                dragListeners={dragListeners}
+                                                onEditCard={() => handleEditCard(card)}
+                                                onExport={() => handleExportComponent(card)}
+                                             />
+                                          </DragLayoutWrapper>
+                                       )}
+                                    </Sortable>
                                  ))}
                               </SortableContext>
                               {isEditing && <AddCardButton onClick={handleAddCardClick} />}

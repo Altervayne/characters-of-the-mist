@@ -431,10 +431,10 @@
       },
 
       "actions": {
-         "renameTo": "Rename to: \"{name}\"",
-         "createWith": "Create with: \"{name}\"",
-         "setPowerTags": "Set Power Tags: {count}",
-         "setWeaknessTags": "Set Weakness Tags: {count}"
+         "renameTo": "Rename to: \"{{name}}\"",
+         "createWith": "Create with: \"{{name}}\"",
+         "setPowerTags": "Set Power Tags: {{count}}",
+         "setWeaknessTags": "Set Weakness Tags: {{count}}"
       },
 
       "themes": {
@@ -609,8 +609,8 @@
 
 
    "CardRenderer": {
-      "themeCardPlaceholder": "Theme Card: {title}",
-      "listCardPlaceholder": "List Card: {title}"
+      "themeCardPlaceholder": "Theme Card: {{title}}",
+      "listCardPlaceholder": "List Card: {{title}}"
    },
    "ThemeCard": {
       "fellowshipTitle": "Fellowship Theme",

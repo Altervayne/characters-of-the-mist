@@ -1,9 +1,5 @@
-
-
 // -- React Imports --
 import React, { useEffect, useRef, useState } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -145,25 +141,25 @@ const CreateCard_TypePage = ({ currentGame, onSelect }: CreateCard_TypePageProps
    const { t } = useTranslation();
    return (
       <Command.Group heading={t('CommandPalette.groups.creation')}>
-         <Command.Item value={t('CommandPalette.commands.cardTypeCharacter')} onSelect={() => onSelect('CommandPalette.CHARACTER_THEME')} className={commonItemClass}>
+         <Command.Item value={t('CommandPalette.commands.cardTypeCharacter')} onSelect={() => onSelect('CHARACTER_THEME')} className={commonItemClass}>
             <FileText className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeCharacter')}
          </Command.Item>
          {currentGame === 'LEGENDS' && (
-            <Command.Item value={t('CommandPalette.commands.cardTypeFellowship')} onSelect={() => onSelect('CommandPalette.GROUP_THEME')} className={commonItemClass}>
+            <Command.Item value={t('CommandPalette.commands.cardTypeFellowship')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
                <Users className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeFellowship')}
             </Command.Item>
          )}
          {currentGame === 'CITY_OF_MIST' && (
-            <Command.Item value={t('CommandPalette.commands.cardTypeCrew')} onSelect={() => onSelect('CommandPalette.GROUP_THEME')} className={commonItemClass}>
+            <Command.Item value={t('CommandPalette.commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
                <Users className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeCrew')}
             </Command.Item>
          )}
          {currentGame === 'OTHERSCAPE' && (
             <>
-               <Command.Item value={t('CommandPalette.commands.cardTypeCrew')} onSelect={() => onSelect('CommandPalette.GROUP_THEME')} className={commonItemClass}>
+               <Command.Item value={t('CommandPalette.commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
                   <Users className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeCrew')}
                </Command.Item>
-               <Command.Item value={t('CommandPalette.commands.cardTypeLoadout')} onSelect={() => onSelect('CommandPalette.LOADOUT_THEME')} className={commonItemClass}>
+               <Command.Item value={t('CommandPalette.commands.cardTypeLoadout')} onSelect={() => onSelect('LOADOUT_THEME')} className={commonItemClass}>
                   <Backpack className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeLoadout')}
                </Command.Item>
             </>
@@ -256,7 +252,7 @@ const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, onSelect
       availableThemebooks = otherscapeThemebooks[themeType] || [];
    }
 
-   const text = t('actions.createWith', { name: inputValue || '...' });
+   const text = t('CommandPalette.actions.createWith', { name: inputValue || '...' });
 
    return (
       <Command.Group heading={t('CommandPalette.groups.chooseThemebook')}>
@@ -291,7 +287,7 @@ const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputPageProp
 interface CreateCard_NumberInputPageProps { inputValue: string; labelKey: 'actions.setPowerTags' | 'actions.setWeaknessTags'; onSelect: () => void; }
 const CreateCard_NumberInputPage = ({ inputValue, labelKey, onSelect }: CreateCard_NumberInputPageProps) => {
    const { t } = useTranslation();
-   const text = t(labelKey, { count: inputValue || '0' });
+   const text = t(labelKey, { count: Number(inputValue) || 0 });
    return (
       <Command.Item value={text} onSelect={onSelect} className={commonItemClass}>
          <CornerDownLeft className="mr-2 h-4 w-4" />
@@ -311,10 +307,10 @@ const CreateTracker_TypePage = ({ onSelect }: CreateTracker_TypePageProps) => {
    const { t } = useTranslation();
    return (
       <Command.Group heading={t('CommandPalette.groups.creation')}>
-         <Command.Item value={t('CommandPalette.commands.trackerTypeStatus')} onSelect={() => onSelect('CommandPalette.STATUS')} className={commonItemClass}>
+         <Command.Item value={t('CommandPalette.commands.trackerTypeStatus')} onSelect={() => onSelect('STATUS')} className={commonItemClass}>
             <CheckSquare className="mr-2 h-4 w-4" />{t('CommandPalette.commands.trackerTypeStatus')}
          </Command.Item>
-         <Command.Item value={t('CommandPalette.commands.trackerTypeStoryTag')} onSelect={() => onSelect('CommandPalette.STORY_TAG')} className={commonItemClass}>
+         <Command.Item value={t('CommandPalette.commands.trackerTypeStoryTag')} onSelect={() => onSelect('STORY_TAG')} className={commonItemClass}>
             <ListTodo className="mr-2 h-4 w-4" />{t('CommandPalette.commands.trackerTypeStoryTag')}
          </Command.Item>
       </Command.Group>
@@ -383,6 +379,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
    useEffect(() => {
       if (!isOpen) {
+         // Reset command palette state when closed
+         // eslint-disable-next-line react-hooks/set-state-in-effect
          setPages(['root']);
          setInputValue('');
          setCardOptions({});
@@ -395,6 +393,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    useEffect(() => {
       if (isOpen) {
          let newPlaceholder = '';
+         const randomIndex = Math.floor(Math.random() * 25) + 1;
+
          switch(activePage) {
             case 'renameCharacter': newPlaceholder = t('CommandPalette.placeholders.renameCharacter'); break;
 
@@ -406,11 +406,13 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
             case 'createTracker_Type': newPlaceholder = t('CommandPalette.placeholders.trackerType'); break;
             case 'createTracker_Name': newPlaceholder = t('CommandPalette.placeholders.trackerName'); break;
-            
+
             default:
-               const randomIndex = Math.floor(Math.random() * 25) + 1;
                newPlaceholder = t(`CommandPalette.placeholder_${randomIndex}`);
          }
+
+         // Update placeholder based on active page
+         // eslint-disable-next-line react-hooks/set-state-in-effect
          setPlaceholder(newPlaceholder);
          inputRef.current?.focus();
       }

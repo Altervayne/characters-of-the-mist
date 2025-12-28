@@ -1,9 +1,4 @@
-
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -29,6 +24,8 @@ import { useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Other Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
 import type { StoryTagTracker } from '@/lib/types/character';
@@ -49,7 +46,7 @@ interface StoryTagTrackerCardProps {
 export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview, dragAttributes, dragListeners, onExport }: StoryTagTrackerCardProps) {
    const { t: t } = useTranslation();
    const { updateStoryTag, removeStoryTag, upgradeStoryTagToTheme } = useCharacterActions();
-   const [isHovered, setIsHovered] = useState(false);
+   const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
@@ -67,27 +64,16 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
    // ###   STORY TAG NAME INPUT DEBOUNCER   ###
    // ##########################################
 
-   const [localName, setLocalName] = useState(tracker.name);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (tracker.name !== localName) {
-            updateStoryTag(tracker.id, { name: localName });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localName, tracker.id, tracker.name, updateStoryTag]);
-
-   useEffect(() => {
-      setLocalName(tracker.name);
-   }, [tracker.name]);
+   const [localName, setLocalName] = useInputDebouncer(
+      tracker.name,
+      (value) => updateStoryTag(tracker.id, { name: value })
+   );
 
 
 
    return (
       <motion.div
-         onHoverStart={() => !isDrawerPreview && setIsHovered(true)}
-         onHoverEnd={() => !isDrawerPreview && setIsHovered(false)}
+         {...hoverHandlers}
          className="relative"
       >
          {!isDrawerPreview && (

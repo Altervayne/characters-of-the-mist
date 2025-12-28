@@ -1,19 +1,17 @@
-
-
 // -- React Imports --
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import cuid from 'cuid';
 import toast from 'react-hot-toast';
+
+// -- DnD Component Imports --
+import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
 // -- Basic UI Imports --
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -26,9 +24,10 @@ import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, Arro
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { buildBreadcrumb, findFolder, findItemFolder, findParentFolder } from '@/lib/utils/drawer';
+import { buildBreadcrumb, findFolder, findParentFolder } from '@/lib/utils/drawer';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
 import { exportDrawer, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
+import { DRAG_TYPES } from '@/lib/constants/drag-drop';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '../molecules/drawer-item-preview';
@@ -40,13 +39,12 @@ import { DrawerUndoRedoControls } from '../molecules/drawer-undo-redo-controls';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
 import type { PendingDrawerItem } from '@/lib/stores/drawerStore';
 import type { Folder as FolderType, DrawerItem, DrawerItemContent, Drawer as DrawerType, GeneralItemType } from '@/lib/types/drawer';
-import type { LegendsHeroDetails, LegendsThemeDetails, Card as CardData, Character } from '@/lib/types/character';
+import type { LegendsHeroDetails, LegendsThemeDetails, Card as CardData } from '@/lib/types/character';
 
 
 
@@ -90,111 +88,86 @@ const contentVariants: Variants = {
 function FolderEntry({ folder, parentFolderId, isOver, onNavigate, onRename, onDelete, onMove }: { folder: FolderType, parentFolderId: string | null, isOver: boolean, onNavigate: (id: string) => void, onRename: () => void, onDelete: () => void, onMove: () => void }) {
    const { t } = useTranslation();
 
-   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id: folder.id,
-      data: {
-         type: 'drawer-folder',
-         item: folder,
-         parentFolderId,
-         isDrawer: true
-      }
-   });
-
-   const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-   };
-
    const handleExport = (e: React.MouseEvent) => {
       e.stopPropagation();
       const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
       exportToFile(folder, 'FOLDER', 'NEUTRAL', fileName);
    };
 
-
-
    return (
-      <div 
-         ref={setNodeRef}
-         style={style}
-         onClick={() => onNavigate(folder.id)}
+      <Sortable
+         id={folder.id}
+         data={{
+            type: DRAG_TYPES.DRAWER_FOLDER,
+            item: folder,
+            parentFolderId,
+            isDrawer: true
+         }}
       >
-         <motion.div
-            animate={{ opacity: isDragging ? 0.5 : 1 }}
-            transition={{ duration: 0.1 }}
-            className={cn(
-                           "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
-                           {
-                              "bg-muted": isOver,
-                           }
-                        )}
-         >
-            <div
-               className="flex h-8 items-center gap-2 truncate"
-               onClick={() => onNavigate(folder.id)}
-            >
-               <GripVertical
-                  className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab"
-                  {...attributes}
-                  {...listeners}
-               />
-               <Folder className="h-6 w-6 shrink-0 text-muted-foreground"/>
-               <span className="truncate hover:text-wrap font-medium text-sm">{folder.name}</span>
-            </div>
+         {({ dragAttributes, dragListeners, isBeingDragged }) => (
+            <div onClick={() => onNavigate(folder.id)}>
+               <DragStaticWrapper isBeingDragged={isBeingDragged}>
+                  <div
+                     className={cn(
+                        "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
+                        {
+                           "bg-muted": isOver,
+                        }
+                     )}
+                  >
+                     <div
+                        className="flex h-8 items-center gap-2 truncate"
+                        onClick={() => onNavigate(folder.id)}
+                     >
+                        <GripVertical
+                           className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab"
+                           {...dragAttributes}
+                           {...dragListeners}
+                        />
+                        <Folder className="h-6 w-6 shrink-0 text-muted-foreground"/>
+                        <span className="truncate hover:text-wrap font-medium text-sm">{folder.name}</span>
+                     </div>
 
-            <DropdownMenu>
-               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }} className="cursor-pointer">
-                     <Pencil className="mr-2 h-4 w-4" />
-                     <span>{t('Drawer.Actions.rename')}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }} className="cursor-pointer">
-                     <Move className="mr-2 h-4 w-4" />
-                     <span>{t('Drawer.Actions.move')}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
-                     <Upload className="mr-2 h-4 w-4" />
-                     <span>{t('Drawer.Actions.export')}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive cursor-pointer">
-                     <Trash2 className="mr-2 h-4 w-4" />
-                     <span>{t('Drawer.Actions.delete')}</span>
-                  </DropdownMenuItem>
-               </DropdownMenuContent>
-            </DropdownMenu>
-         </motion.div>
-      </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
+                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <MoreHorizontal className="h-4 w-4" />
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }} className="cursor-pointer">
+                              <Pencil className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.rename')}</span>
+                           </DropdownMenuItem>
+                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }} className="cursor-pointer">
+                              <Move className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.move')}</span>
+                           </DropdownMenuItem>
+                           <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
+                              <Upload className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.export')}</span>
+                           </DropdownMenuItem>
+                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive cursor-pointer">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.delete')}</span>
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  </div>
+               </DragStaticWrapper>
+            </div>
+         )}
+      </Sortable>
    );
 };
 
 function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item: DrawerItem, parentFolderId: string | null, onRename: () => void, onDelete: () => void, onMove: () => void }) {
    const { t } = useTranslation();
 
-   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id: item.id,
-      data: {
-         type: 'drawer-item',
-         item: item,
-         parentFolderId,
-         isDrawer: true
-      },
-   });
-
-   const style = {
-      transform: CSS.Transform.toString(transform),
-      transition
-   };
-
    const handleExport = (e: React.MouseEvent) => {
       e.stopPropagation();
       const { content, type, game, name } = item;
-      
+
       let handle: string | undefined = name;
       if ('cardType' in content) {
          const cardContent = content as CardData;
@@ -205,55 +178,58 @@ function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item:
             handle = (cardContent.details as LegendsHeroDetails).characterName;
          }
       }
-      
+
       const fileName = generateExportFilename(game, type, handle);
       exportToFile(content, type, game, fileName);
    };
 
-
-
    return (
-      <div
-         ref={setNodeRef}
-         style={style}
+      <Sortable
+         id={item.id}
+         data={{
+            type: DRAG_TYPES.DRAWER_ITEM,
+            item: item,
+            parentFolderId,
+            isDrawer: true
+         }}
       >
-         <motion.div
-            animate={{ opacity: isDragging ? 0.5 : 1 }}
-            transition={{ duration: 0.1 }}
-            className="relative group/item data-[state=open]:bg-muted"
-         >
-            <div {...attributes} {...listeners} className="cursor-grab">
-               <DrawerItemPreview item={item} />
-            </div>
-            <div className="absolute top-1 right-1 z-10">
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer">
-                        <MoreHorizontal className="h-4 w-4" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                     <DropdownMenuItem onClick={onRename} className="cursor-pointer">
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>{t('Drawer.Actions.rename')}</span>
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={onMove} className="cursor-pointer">
-                        <Move className="mr-2 h-4 w-4" />
-                        <span>{t('Drawer.Actions.move')}</span>
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
-                        <Upload className="mr-2 h-4 w-4" />
-                        <span>{t('Drawer.Actions.export')}</span>
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={onDelete} className="bg-destructive text-destructive-foreground cursor-pointer">
-                        <Trash2 className="text-destructive-foreground mr-2 h-4 w-4" />
-                        <span>{t('Drawer.Actions.delete')}</span>
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            </div>
-         </motion.div>
-      </div>
+         {({ dragAttributes, dragListeners, isBeingDragged }) => (
+            <DragStaticWrapper isBeingDragged={isBeingDragged}>
+               <div className="relative group/item data-[state=open]:bg-muted">
+                  <div {...dragAttributes} {...dragListeners} className="cursor-grab">
+                     <DrawerItemPreview item={item} />
+                  </div>
+                  <div className="absolute top-1 right-1 z-10">
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer">
+                              <MoreHorizontal className="h-4 w-4" />
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                           <DropdownMenuItem onClick={onRename} className="cursor-pointer">
+                              <Pencil className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.rename')}</span>
+                           </DropdownMenuItem>
+                           <DropdownMenuItem onClick={onMove} className="cursor-pointer">
+                              <Move className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.move')}</span>
+                           </DropdownMenuItem>
+                           <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
+                              <Upload className="mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.export')}</span>
+                           </DropdownMenuItem>
+                           <DropdownMenuItem onClick={onDelete} className="bg-destructive text-destructive-foreground cursor-pointer">
+                              <Trash2 className="text-destructive-foreground mr-2 h-4 w-4" />
+                              <span>{t('Drawer.Actions.delete')}</span>
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  </div>
+               </div>
+            </DragStaticWrapper>
+         )}
+      </Sortable>
    );
 };
 
@@ -283,20 +259,10 @@ const getItemTypeIcon = (type: GeneralItemType) => {
 export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
    const { t } = useTranslation();
 
-   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id: item.id,
-      data: { type: 'drawer-item', item, parentFolderId: parentFolderId ?? null, isDrawer: true },
-      disabled: isPreview,
-   });
-
-   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-
-
-
    const handleExport = (e: React.MouseEvent) => {
       e.stopPropagation();
       const { content, type, game, name } = item;
-      
+
       let handle: string | undefined = name;
       if ('cardType' in content) {
          const cardContent = content as CardData;
@@ -307,45 +273,49 @@ export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onM
             handle = (cardContent.details as LegendsHeroDetails).characterName;
          }
       }
-      
+
       const fileName = generateExportFilename(game, type, handle);
       exportToFile(content, type, game, fileName);
    };
 
-
-
    return (
-      <div ref={setNodeRef} style={style}>
-         <motion.div
-            animate={{ opacity: isDragging ? 0.5 : 1 }}
-            transition={{ duration: 0.1 }}
-            className={cn(
-               "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
-               { "border-2 border-border bg-muted/50": isPreview }
-            )}
-         >
-            <div className="flex h-8 items-center gap-2 truncate">
-               <GripVertical className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab" {...attributes} {...listeners} />
-               {getItemTypeIcon(item.type)}
-               <span className="truncate hover:text-wrap font-medium text-sm">{item.name}</span>
-            </div>
-            {!isPreview &&
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                     <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal className="h-4 w-4" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                     <DropdownMenuItem onClick={onRename} className="cursor-pointer"><Pencil className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.rename')}</span></DropdownMenuItem>
-                     <DropdownMenuItem onClick={onMove} className="cursor-pointer"><Move className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.move')}</span></DropdownMenuItem>
-                     <DropdownMenuItem onClick={handleExport} className="cursor-pointer"><Upload className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.export')}</span></DropdownMenuItem>
-                     <DropdownMenuItem onClick={onDelete} className="text-destructive cursor-pointer"><Trash2 className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.delete')}</span></DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            }
-         </motion.div>
-      </div>
+      <Sortable
+         id={item.id}
+         data={{ type: DRAG_TYPES.DRAWER_ITEM, item, parentFolderId: parentFolderId ?? null, isDrawer: true }}
+         disabled={isPreview}
+      >
+         {({ dragAttributes, dragListeners, isBeingDragged }) => (
+            <DragStaticWrapper isBeingDragged={isBeingDragged}>
+               <div
+                  className={cn(
+                     "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
+                     { "border-2 border-border bg-muted/50": isPreview }
+                  )}
+               >
+                  <div className="flex h-8 items-center gap-2 truncate">
+                     <GripVertical className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab" {...dragAttributes} {...dragListeners} />
+                     {getItemTypeIcon(item.type)}
+                     <span className="truncate hover:text-wrap font-medium text-sm">{item.name}</span>
+                  </div>
+                  {!isPreview &&
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
+                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <MoreHorizontal className="h-4 w-4" />
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                           <DropdownMenuItem onClick={onRename} className="cursor-pointer"><Pencil className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.rename')}</span></DropdownMenuItem>
+                           <DropdownMenuItem onClick={onMove} className="cursor-pointer"><Move className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.move')}</span></DropdownMenuItem>
+                           <DropdownMenuItem onClick={handleExport} className="cursor-pointer"><Upload className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.export')}</span></DropdownMenuItem>
+                           <DropdownMenuItem onClick={onDelete} className="text-destructive cursor-pointer"><Trash2 className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.delete')}</span></DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  }
+               </div>
+            </DragStaticWrapper>
+         )}
+      </Sortable>
    );
 }
 
@@ -547,13 +517,10 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
    const rootItems = useDrawerStore((state) => state.drawer.rootItems);
    const pendingItem = useDrawerStore((state) => state.pendingItem);
    
-   const {  importFullDrawer, 
+   const {  importFullDrawer,
             addFolder, addImportedFolder, renameFolder, deleteFolder, moveFolder,
             addItem, addImportedItem, renameItem, deleteItem, moveItem,
             clearPendingItemDrop } = useDrawerActions();
-
-   const { loadCharacter: updateActiveCharacter } = useCharacterActions();
-   const character = useCharacterStore((state) => state.character);
 
    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
    const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
@@ -691,7 +658,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
    const { setNodeRef: backButtonRef, isOver: isOverBackButton } = useDroppable({
       id: `drawer-back-button-${currentFolderId}`,
       data: {
-         type: 'drawer-back-button',
+         type: DRAG_TYPES.DRAWER_BACK_BUTTON,
          destinationId: parentFolderId,
       },
       disabled: !currentFolderId,

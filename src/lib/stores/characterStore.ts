@@ -1113,7 +1113,7 @@ export const useCharacterStore = create<CharacterState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({ character: state.character }),
             version: STORE_VERSION,
-            migrate: (persistedState, version) => {
+            migrate: (persistedState, _version) => {
                const state = persistedState as Pick<CharacterState, 'character'>;
 
                if (state.character) {

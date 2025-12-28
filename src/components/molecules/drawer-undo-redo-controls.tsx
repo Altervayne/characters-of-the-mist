@@ -1,9 +1,4 @@
-
-
-// -- React Imports --
-import React from 'react';
-
-// -- Next Imports --
+// -- React Imports--
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --

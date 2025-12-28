@@ -1,15 +1,6 @@
-
-
 // -- React Imports --
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-// -- Next Imports --
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-
-// -- Other Library Imports --
-import { motion } from 'framer-motion';
-import type { DraggableAttributes } from '@dnd-kit/core';
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -29,15 +20,21 @@ import { CardSectionHeader } from '@/components/molecules/card-section-header';
 import { TagItem } from '@/components/molecules/tag-item';
 import { PipTracker } from '@/components/molecules/pip-tracker';
 import { BlandTagItem } from '@/components/molecules/bland-tag-item';
-import { ToolbarHandle } from '@/components/molecules/toolbar-handle';
+import { CardFlipWrapper } from '@/components/molecules/card-flip-wrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { Card as CardData, CardViewMode, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, Tag, BlandTag } from '@/lib/types/character';
+
+
 
 interface OtherscapeThemeCardProps {
    card: CardData;
@@ -58,7 +55,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
       const actions = useCharacterActions();
       const details = card.details as OtherscapeThemeDetails | OtherscapeCrewDetails | OtherscapeLoadoutDetails;
 
-      const [isHovered, setIsHovered] = useState(false);
+      const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
       const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
       const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
@@ -111,21 +108,10 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
       // ###########################
 
       // --- Main Tag ---
-      const [localMainTagName, setLocalMainTagName] = useState(details.mainTag.name);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (details.mainTag.name !== localMainTagName) {
-               actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: localMainTagName }});
-            }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localMainTagName, details, card.id, actions]);
-
-      useEffect(() => {
-         setLocalMainTagName(details.mainTag.name);
-      }, [details.mainTag.name]);
-
+      const [localMainTagName, setLocalMainTagName] = useInputDebouncer(
+         details.mainTag.name,
+         (value) => actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: value }})
+      );
 
       // --- Mystery/Identity/Description Text ---
       const mysteryIdentityOrDescription =
@@ -135,24 +121,18 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
                ? (details as OtherscapeCrewDetails).identity
                : (details as OtherscapeLoadoutDetails).description;
 
-      const [localMystery, setLocalMystery] = useState(mysteryIdentityOrDescription);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (card.cardType === 'CHARACTER_THEME' && (details as OtherscapeThemeDetails).mystery !== localMystery) {
-               actions.updateCardDetails(card.id, { ...details, mystery: localMystery });
-            } else if (card.cardType === 'GROUP_THEME' && (details as OtherscapeCrewDetails).identity !== localMystery) {
-               actions.updateCardDetails(card.id, { ...details, identity: localMystery });
-            } else if ((details as OtherscapeLoadoutDetails).description !== localMystery) {
-               actions.updateCardDetails(card.id, { ...details, description: localMystery });
+      const [localMystery, setLocalMystery] = useInputDebouncer(
+         mysteryIdentityOrDescription,
+         (value) => {
+            if (card.cardType === 'CHARACTER_THEME') {
+               actions.updateCardDetails(card.id, { ...details, mystery: value });
+            } else if (card.cardType === 'GROUP_THEME') {
+               actions.updateCardDetails(card.id, { ...details, identity: value });
+            } else {
+               actions.updateCardDetails(card.id, { ...details, description: value });
             }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localMystery, details, card.id, card.cardType, actions]);
-
-      useEffect(() => {
-         setLocalMystery(mysteryIdentityOrDescription);
-      }, [mysteryIdentityOrDescription]);
+         }
+      );
 
 
 
@@ -398,83 +378,27 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
       );
 
 
-      if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
-         return (
-            <motion.div
-               ref={ref}
-               onHoverStart={() => setIsHovered(true)}
-               onHoverEnd={() => setIsHovered(false)}
-               className="relative"
-            >
-               <ToolbarHandle
-                  isEditing={isEditing}
-                  isHovered={isHovered}
-                  onDelete={() => actions.deleteCard(card.id)}
-                  dragAttributes={dragAttributes}
-                  dragListeners={dragListeners}
-                  cardTheme={cardTypeClass}
-                  onEditCard={onEditCard}
-                  onExport={onExport}
-                  onCycleViewMode={handleCycleViewMode}
-                  cardViewMode={card.viewMode}
-               />
-               <div className="flex gap-1 items-start">
-                  {CardFront}
-                  {CardBack}
-               </div>
-            </motion.div>
-         );
-      }
-
-
-
       return (
-         <motion.div
+         <CardFlipWrapper
             ref={ref}
-            onHoverStart={() => setIsHovered(true)}
-            onHoverEnd={() => setIsHovered(false)}
-            className="relative"
-         >
-            <motion.div
-               className="w-full h-full"
-               style={{ transformStyle: 'preserve-3d' }}
-               initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
-               animate={{ rotateY: card.isFlipped ? 180 : 0 }}
-               transition={{ duration: 0.5, ease: 'easeInOut' }}
-            >
-
-               {!isDrawerPreview &&
-                  <ToolbarHandle
-                     isEditing={isEditing}
-                     isHovered={isHovered}
-                     onDelete={() => actions.deleteCard(card.id)}
-                     onFlip={() => actions.flipCard(card.id)}
-                     dragAttributes={dragAttributes}
-                     dragListeners={dragListeners}
-                     cardTheme={cardTypeClass}
-                     onEditCard={onEditCard}
-                     onExport={onExport}
-                     onCycleViewMode={handleCycleViewMode}
-                     cardViewMode={card.viewMode}
-                  />
-               }
-
-               {/* ============================================
-                             CARD FRONT
-                  ============================================ */}
-               <div style={{ backfaceVisibility: 'hidden' }}>
-                  {CardFront}
-               </div>
-
-               {/* ============================================
-                             CARD BACK
-                  ============================================ */}
-               <div className="absolute top-0 left-0 w-full h-full" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                  {CardBack}
-               </div>
-
-            </motion.div>
-         </motion.div>
+            effectiveViewMode={effectiveViewMode}
+            isDrawerPreview={isDrawerPreview ?? false}
+            isSnapshot={isSnapshot}
+            card={card}
+            isHovered={isHovered}
+            hoverHandlers={hoverHandlers}
+            isEditing={isEditing}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            cardTheme={cardTypeClass}
+            onExport={onExport}
+            onCycleViewMode={handleCycleViewMode}
+            onFlip={() => actions.flipCard(card.id)}
+            onDelete={() => actions.deleteCard(card.id)}
+            onEditCard={onEditCard}
+            cardFront={CardFront}
+            cardBack={CardBack}
+         />
       );
    }
 );

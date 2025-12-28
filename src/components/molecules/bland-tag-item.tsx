@@ -1,9 +1,4 @@
-
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -18,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
 import type { BlandTag } from '@/lib/types/character';
@@ -44,21 +40,10 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
    // ###   INPUT DEBOUNCER   ###
    // ###########################
 
-   const [localName, setLocalName] = useState(tag.name);
-
-   useEffect(() => {
-     const handler = setTimeout(() => {
-       if (tag.name !== localName) {
-         updateBlandTag(cardId, listName, tag.id, localName);
-       }
-     }, 500);
-
-     return () => clearTimeout(handler);
-   }, [localName, cardId, listName, tag.id, tag.name, updateBlandTag]);
-
-   useEffect(() => {
-     setLocalName(tag.name);
-   }, [tag.name]);
+   const [localName, setLocalName] = useInputDebouncer(
+      tag.name,
+      (value) => updateBlandTag(cardId, listName, tag.id, value)
+   );
 
 
 

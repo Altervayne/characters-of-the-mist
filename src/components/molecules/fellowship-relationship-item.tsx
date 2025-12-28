@@ -1,9 +1,4 @@
-
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -18,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
 import type { FellowshipRelationship } from '@/lib/types/character';
@@ -48,37 +44,16 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
    // ###########################
 
    // --- Companion Name ---
-   const [localCompanionName, setLocalCompanionName] = useState(relationship.companionName);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (relationship.companionName !== localCompanionName) {
-            updateRelationship(cardId, relationship.id, { companionName: localCompanionName });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localCompanionName, relationship, cardId, updateRelationship]);
-
-   useEffect(() => {
-      setLocalCompanionName(relationship.companionName);
-   }, [relationship.companionName]);
-
+   const [localCompanionName, setLocalCompanionName] = useInputDebouncer(
+      relationship.companionName,
+      (value) => updateRelationship(cardId, relationship.id, { companionName: value })
+   );
 
    // --- Relationship Tag ---
-   const [localRelationshipTag, setLocalRelationshipTag] = useState(relationship.relationshipTag);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (relationship.relationshipTag !== localRelationshipTag) {
-            updateRelationship(cardId, relationship.id, { relationshipTag: localRelationshipTag });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localRelationshipTag, relationship, cardId, updateRelationship]);
-
-   useEffect(() => {
-      setLocalRelationshipTag(relationship.relationshipTag);
-   }, [relationship.relationshipTag]);
+   const [localRelationshipTag, setLocalRelationshipTag] = useInputDebouncer(
+      relationship.relationshipTag,
+      (value) => updateRelationship(cardId, relationship.id, { relationshipTag: value })
+   );
 
 
 

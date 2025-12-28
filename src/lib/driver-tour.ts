@@ -208,7 +208,7 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             title: t('editMode_title'),
             description: t('editMode_content'),
             side: 'right',
-            onNextClick: (element, step, { driver }) => {
+            onNextClick: (_element, _step, { driver }) => {
                setIsEditing(true);
                driver.moveNext();
             },
@@ -220,7 +220,7 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             title: t('playMode_title'),
             description: t('playMode_content'),
             side: 'right',
-            onPrevClick: (element, step, { driver }) => {
+            onPrevClick: (_element, _step, { driver }) => {
                setIsEditing(false);
                driver.movePrevious();
             },
@@ -251,7 +251,7 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             description: t('addCard_content'),
             side: 'left',
             align: 'center',
-            onNextClick: (element, step, { driver }) => {
+            onNextClick: (_element, _step, { driver }) => {
                setDrawerOpen(true);
                driver.moveNext();
             },
@@ -263,11 +263,11 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             title: t('menuDrawer_title'),
             description: t('menuDrawer_content'),
             side: 'right',
-            onPrevClick: (element, step, { driver }) => {
+            onPrevClick: (_element, _step, { driver }) => {
                setDrawerOpen(false);
                driver.movePrevious();
             },
-            onNextClick: (element, step, { driver }) => {
+            onNextClick: (_element, _step, { driver }) => {
                setIsEditing(false);
                setDrawerOpen(true);
                driver.moveNext();
@@ -281,7 +281,7 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
             description: t('drawer_content'),
             side: 'left',
             align: 'center',
-            onPrevClick: (element, step, { driver }) => {
+            onPrevClick: (_element, _step, { driver }) => {
                setIsEditing(true);
                driver.movePrevious();
             },

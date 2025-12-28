@@ -1,9 +1,4 @@
-
-
 // -- React Imports --
-import React from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -16,10 +11,10 @@ import { Newspaper, BookOpenText } from 'lucide-react';
 
 
 interface WelcomeDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onStartTutorial: () => void;
-  onShowPatchNotes: () => void;
+   isOpen: boolean;
+   onOpenChange: (isOpen: boolean) => void;
+   onStartTutorial: () => void;
+   onShowPatchNotes: () => void;
 }
 
 

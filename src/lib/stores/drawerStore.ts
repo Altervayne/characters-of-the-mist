@@ -13,7 +13,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
 import type { Drawer, Folder, DrawerItem, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
-import type { harmonizeData } from '../harmonization';
+import { harmonizeData } from '../harmonization';
 
 
 
@@ -344,7 +344,7 @@ export const useDrawerStore = create<DrawerState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({ drawer: state.drawer }),
             version: STORE_VERSION,
-            migrate: (persistedState, version) => {
+            migrate: (persistedState, _version) => {
                const state = persistedState as Pick<DrawerState, 'drawer'>;
 
                if (state.drawer) {
@@ -352,7 +352,7 @@ export const useDrawerStore = create<DrawerState>()(
                   state.drawer = harmonizeData(state.drawer, 'FULL_DRAWER');
                   console.log("Drawer data harmonization complete.");
                }
-               
+
                return state;
             },
          }

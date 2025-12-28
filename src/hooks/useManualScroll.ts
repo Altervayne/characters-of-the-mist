@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
 
 
 

@@ -1,9 +1,4 @@
-
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -18,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
 import type { Tag } from '@/lib/types/character';
@@ -52,22 +48,16 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
    // ###   TAG NAME INPUT DEBOUNCER   ###
    // ####################################
 
-   const [localName, setLocalName] = useState(tag.name);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (tag.name !== localName) {
+   const [localName, setLocalName] = useInputDebouncer(
+      tag.name,
+      (value) => {
          if (isTrackerTag && trackerId) {
-            actions.updateTagInStoryTheme(trackerId, listName, tag.id, { name: localName });
+            actions.updateTagInStoryTheme(trackerId, listName, tag.id, { name: value });
          } else if (cardId) {
-            actions.updateTag(cardId, listName, tag.id, { name: localName });
+            actions.updateTag(cardId, listName, tag.id, { name: value });
          }
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localName, tag.name, tag.id, listName, cardId, trackerId, isTrackerTag, actions]);
-
-   useEffect(() => { setLocalName(tag.name); }, [tag.name]);
+      }
+   );
 
 
 

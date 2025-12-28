@@ -1,9 +1,5 @@
-// src/components/organisms/MainMenu.tsx
-
-
+// -- React Imports --
 import React from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --

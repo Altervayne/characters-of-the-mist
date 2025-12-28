@@ -1,9 +1,5 @@
-
-
 // -- React Imports --
 import { useEffect, useState } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --

@@ -431,10 +431,10 @@
       },
 
       "actions": {
-         "renameTo": "Renommer en : \"{name}\"",
-         "createWith": "Créer avec : \"{name}\"",
-         "setPowerTags": "Nombre de Traits d'Atout: {count}",
-         "setWeaknessTags": "Nombre de Traits de Contrainte: {count}"
+         "renameTo": "Renommer en : \"{{name}}\"",
+         "createWith": "Créer avec : \"{{name}}\"",
+         "setPowerTags": "Nombre de Traits d'Atout: {{count}}",
+         "setWeaknessTags": "Nombre de Traits de Contrainte: {{count}}"
       },
 
       "themes": {
@@ -603,8 +603,8 @@
 
 
    "CardRenderer": {
-      "themeCardPlaceholder": "Carte de Thème : {title}",
-      "listCardPlaceholder": "Carte Liste : {title}"
+      "themeCardPlaceholder": "Carte de Thème : {{title}}",
+      "listCardPlaceholder": "Carte Liste : {{title}}"
    },
    "ThemeCard": {
       "fellowshipTitle": "Thème de Compagnie",

@@ -1,9 +1,5 @@
-'use client';
-
 // -- React Imports --
-import React, { useState } from 'react';
-
-// -- Next Imports --
+import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 

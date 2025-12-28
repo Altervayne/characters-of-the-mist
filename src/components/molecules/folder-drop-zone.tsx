@@ -1,8 +1,3 @@
-
-
-// -- React Imports --
-import React from 'react';
-
 // -- Other Library Imports --
 import { useDroppable } from '@dnd-kit/core';
 

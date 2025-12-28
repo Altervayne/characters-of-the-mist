@@ -1,9 +1,5 @@
-
-
 // -- React Imports --
-import React, { useState } from 'react';
-
-// -- Next Imports --
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -39,7 +35,7 @@ export function LegacyDataDialog({ isOpen, onOpenChange }: LegacyDataDialogProps
       const blob = new Blob([legacyData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
 
-      const a = document.createElement('LegacyDataDialog.a');
+      const a = document.createElement('a');
       a.href = url;
       a.download = 'legacy-character-data.json';
       document.body.appendChild(a);

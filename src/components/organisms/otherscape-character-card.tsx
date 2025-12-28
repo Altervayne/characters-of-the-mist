@@ -1,15 +1,6 @@
-
-
 // -- React Imports --
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-// -- Next Imports --
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-
-// -- Other Library Imports --
-import { motion } from 'framer-motion';
-import type { DraggableAttributes } from '@dnd-kit/core';
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -25,26 +16,32 @@ import { cn } from '@/lib/utils';
 // -- Component Imports --
 import { CardHeaderMolecule } from '../molecules/card-header';
 import { CardSectionHeader } from '@/components/molecules/card-section-header';
-import { ToolbarHandle } from '../molecules/toolbar-handle';
 import { BlandTagItem } from '../molecules/bland-tag-item';
 import { FellowshipRelationshipItem } from '@/components/molecules/fellowship-relationship-item';
+import { CardFlipWrapper } from '../molecules/card-flip-wrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { Card as CardData, CardViewMode, OtherscapeCharacterDetails } from '@/lib/types/character';
 
+
+
 interface OtherscapeCharacterCardProps {
-  card: CardData;
-  isEditing?: boolean;
-  isSnapshot?: boolean;
-  isDrawerPreview?: boolean;
-  dragAttributes?: DraggableAttributes;
-  dragListeners?: SyntheticListenerMap;
-  onExport?: () => void;
+   card: CardData;
+   isEditing?: boolean;
+   isSnapshot?: boolean;
+   isDrawerPreview?: boolean;
+   dragAttributes?: DraggableAttributes;
+   dragListeners?: SyntheticListenerMap;
+   onExport?: () => void;
 }
 
 
@@ -56,7 +53,7 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
       const actions = useCharacterActions();
       const details = card.details as OtherscapeCharacterDetails;
 
-      const [isHovered, setIsHovered] = useState(false);
+      const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
       const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
       const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
@@ -66,10 +63,6 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
       useManualScroll(relationshipsScrollRef);
       useManualScroll(specialsScrollRef);
-
-      const handleDetailChange = (field: keyof OtherscapeCharacterDetails, value: OtherscapeCharacterDetails[keyof OtherscapeCharacterDetails]) => {
-         actions.updateCardDetails(card.id, { ...details, [field]: value });
-      };
 
       const handleCycleViewMode = () => {
          let nextMode: CardViewMode | null = null;
@@ -95,20 +88,10 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
       // ###   CHARACTER NAME INPUT DEBOUNCER   ###
       // ##########################################
 
-      const [localCharName, setLocalCharName] = useState(details.characterName);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (details.characterName !== localCharName) {
-               actions.updateCharacterName(localCharName);
-            }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localCharName, details.characterName, actions]);
-
-      useEffect(() => {
-         setLocalCharName(details.characterName);
-      }, [details.characterName]);
+      const [localCharName, setLocalCharName] = useInputDebouncer(
+         details.characterName,
+         (value) => actions.updateCharacterName(value)
+      );
 
 
 
@@ -451,85 +434,36 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
 
 
-      if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
-         return (
-            <motion.div
-               ref={ref}
-               onHoverStart={() => setIsHovered(true)}
-               onHoverEnd={() => setIsHovered(false)}
-               className="relative"
-            >
-               <ToolbarHandle
-                  isEditing={isEditing}
-                  isHovered={isHovered}
-                  dragAttributes={dragAttributes}
-                  dragListeners={dragListeners}
-                  onExport={onExport}
-                  onCycleViewMode={handleCycleViewMode}
-                  cardViewMode={card.viewMode}
-                  cardTheme="card-type-character-os"
-               />
-               <div className="flex gap-1 items-start">
-                  {CardFront}
-                  {CardBack}
-               </div>
-            </motion.div>
-         );
-      }
-
-
-
       return (
-         <motion.div
+         <CardFlipWrapper
             ref={ref}
-            onHoverStart={() => setIsHovered(true)}
-            onHoverEnd={() => setIsHovered(false)}
-            className="relative"
-         >
-            <motion.div
-               className="w-full h-full"
-               style={{ transformStyle: 'preserve-3d' }}
-               initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
-               animate={{ rotateY: card.isFlipped ? 180 : 0 }}
-               transition={{ duration: 0.5, ease: 'easeInOut' }}
-            >
-
-               {!isDrawerPreview &&
-                  <ToolbarHandle
-                     isEditing={isEditing}
-                     isHovered={isHovered}
-                     onFlip={() => actions.flipCard(card.id)}
-                     dragAttributes={dragAttributes}
-                     dragListeners={dragListeners}
-                     onExport={onExport}
-                     onCycleViewMode={handleCycleViewMode}
-                     cardViewMode={card.viewMode}
-                     cardTheme="card-type-character-os"
-                  />
-               }
-
-               {/* Card Front */}
-               <div style={{ backfaceVisibility: 'hidden' }}>
-                  {CardFront}
-               </div>
-
-               {/* Card Back */}
-               <div className="absolute top-0 left-0 w-full h-full" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                  {CardBack}
-               </div>
-            </motion.div>
-         </motion.div>
+            effectiveViewMode={effectiveViewMode}
+            isDrawerPreview={isDrawerPreview ?? false}
+            isSnapshot={isSnapshot}
+            card={card}
+            isHovered={isHovered}
+            hoverHandlers={hoverHandlers}
+            isEditing={isEditing}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            cardTheme="card-type-character-os"
+            onExport={onExport}
+            onCycleViewMode={handleCycleViewMode}
+            onFlip={() => actions.flipCard(card.id)}
+            cardFront={CardFront}
+            cardBack={CardBack}
+         />
       );
    }
 );
 OtherscapeCharacterCardContent.displayName = 'OtherscapeCharacterCardContent';
 
 export const OtherscapeCharacterCard = React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
-  (props, ref) => {
-    if (props.card.details.game !== 'OTHERSCAPE') {
-      return null;
-    }
-    return <OtherscapeCharacterCardContent {...props} ref={ref} />;
-  }
+   (props, ref) => {
+      if (props.card.details.game !== 'OTHERSCAPE') {
+         return null;
+      }
+      return <OtherscapeCharacterCardContent {...props} ref={ref} />;
+   }
 );
 OtherscapeCharacterCard.displayName = 'OtherscapeCharacterCard';

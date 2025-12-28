@@ -1,9 +1,5 @@
-
-
 // -- React Imports --
-import React, { useEffect, useRef, useState } from 'react';
-
-// -- Next Imports --
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -28,7 +24,9 @@ import { TagItem } from '../molecules/tag-item';
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
 import type { StoryThemeTracker } from '@/lib/types/character';
@@ -49,7 +47,7 @@ interface StoryThemeTrackerCardProps {
 export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPreview = false, dragAttributes, dragListeners, onExport }: StoryThemeTrackerCardProps) {
    const { t: tThemeCard } = useTranslation();
    const actions = useCharacterActions();
-   const [isHovered, setIsHovered] = useState(false);
+   const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
    const scrollRef = useRef<HTMLDivElement>(null);
    useManualScroll(scrollRef);
 
@@ -69,24 +67,19 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
    // ###   STORY THEME MAIN TAG INPUT DEBOUNCER   ###
    // ################################################
 
-   const [localMainTagName, setLocalMainTagName] = useState(tracker.mainTag.name);
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (tracker.mainTag.name !== localMainTagName) {
-            actions.updateTagInStoryTheme(tracker.id, 'mainTag', tracker.mainTag.id, { name: localMainTagName });
-            actions.updateStoryTheme(tracker.id, { name: localMainTagName });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localMainTagName, tracker.id, tracker.mainTag, tracker.name, actions]);
-   useEffect(() => { setLocalMainTagName(tracker.mainTag.name); }, [tracker.mainTag.name]);
+   const [localMainTagName, setLocalMainTagName] = useInputDebouncer(
+      tracker.mainTag.name,
+      (value) => {
+         actions.updateTagInStoryTheme(tracker.id, 'mainTag', tracker.mainTag.id, { name: value });
+         actions.updateStoryTheme(tracker.id, { name: value });
+      }
+   );
 
 
 
    return (
       <motion.div
-         onHoverStart={() => setIsHovered(true)}
-         onHoverEnd={() => setIsHovered(false)}
+         {...hoverHandlers}
          className="relative"
       >
          { !isDrawerPreview &&
