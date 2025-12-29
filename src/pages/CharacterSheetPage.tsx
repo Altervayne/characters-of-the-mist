@@ -1,13 +1,9 @@
-
-
 // -- React Imports --
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Custom Hooks --
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
-
-// -- Next Imports --
-import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -734,7 +730,7 @@ export default function CharacterSheetPage() {
                                              data-tour="add-status-button"
                                              variant="ghost"
                                              onClick={() => addStatus()}
-                                             className={cn("cursor-pointer flex items-center justify-center w-[220px] h-[100px]",
+                                             className={cn("cursor-pointer flex items-center justify-center w-55 h-25",
                                                             "rounded-lg border-2 border-dashed text-bg border-primary/25 text-muted-foreground bg-primary/5",
                                                             "hover:text-foreground hover:border-foreground"
                                              )}
@@ -774,12 +770,12 @@ export default function CharacterSheetPage() {
                                              variant="ghost"
                                              onClick={() => addStoryTag()}
                                              title={tTrackers('Trackers.addStoryTag')}
-                                             className={cn("cursor-pointer flex items-center justify-center w-[220px] min-h-[55px] py-2",
+                                             className={cn("cursor-pointer flex items-center justify-center w-55 min-h-13.75 py-2",
                                                             "rounded-lg border-2 border-dashed border-bg text-bg border-primary/25 text-muted-foreground bg-primary/5",
                                                             "hover:text-foreground hover:border-foreground"
                                              )}
                                           >
-                                             <PlusCircle className="mr-2 h-4 w-4 flex-shrink-0" />
+                                             <PlusCircle className="mr-2 h-4 w-4 shrink-0" />
                                              <span className="text-center whitespace-normal">{tTrackers('Trackers.addStoryTag')}</span>
                                           </Button>
                                        )}
@@ -788,7 +784,7 @@ export default function CharacterSheetPage() {
                               </div>
 
                               <div 
-                                 className="flex-shrink-0 max-w-[45%]"
+                                 className="shrink-0 max-w-[45%]"
                                  style={{ 
                                     width: character.trackers.storyThemes.length >= 2 
                                        ? '520px'
