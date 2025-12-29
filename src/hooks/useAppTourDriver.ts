@@ -28,6 +28,8 @@ export const useAppTourDriver = () => {
          showProgress: true,
          progressText: "{{current}} / {{total}}",
          disableActiveInteraction: true,
+         smoothScroll: true,
+         stagePadding: 12,
          onDestroyStarted: () => {
             setTourOpen(false);
             setIsEditing(false);

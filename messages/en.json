@@ -515,10 +515,10 @@
       "characterName_content": "You can edit your character's name here at any time. Your changes are saved automatically.",
       
       "trackers_title": "Trackers",
-      "trackers_content": "This area holds your Status and Story Tag trackers, along with your Story Theme trackers. You can add new ones when in 'Edit Mode'. Each Tracker has a sliding handle that appears upon hovering them with your mouse. Using it, you can move them around or export them.",
+      "trackers_content": "This area holds your Status and Story Tag trackers, along with your Story Theme trackers. You can add new ones when in 'Edit Mode'. Each Tracker has a sliding handle that appears upon hovering over them with your mouse. Using it, you can move them around or export them.",
 
       "cards_title": "Cards",
-      "cards_content": "This area holds your character's Cards, whether it is a Theme Card, or a Character Card. Each Card, like the Trackers, has a sliding handle that appears upon hovering. You will find a dragging grip to move them around and a few buttons to flip, delete (in Edit mode) or export the Card.",
+      "cards_content": "This area holds your character's Cards, whether it is a Theme Card, or a Character Card. Each Card, like the Trackers, has a sliding handle that appears upon hovering over them. You will find a dragging grip to move them around and a few buttons to flip, delete (in Edit mode) or export the Card.",
 
       "menuCollapse_title": "Collapsing",
       "menuCollapse_content": "This button lets you collapse the Sidebar into a much thinner version, with only icons on the buttons.",
@@ -566,7 +566,7 @@
       "addStatus_content": "In Edit Mode, you can now see a button to add a new Status tracker.",
 
       "addStoryTag_title": "Add Story Tag",
-      "addStoryTag_content": "Similarly, you can now see a button to add a new Story Tag tracker. You can evolve a Story Tag into a Story Theme with a button on the toolbar that appears when hovering the tracker.",
+      "addStoryTag_content": "Similarly, you can now see a button to add a new Story Tag tracker. You can evolve a Story Tag into a Story Theme with a button on the toolbar that appears when hovering over the tracker.",
     
       "addCard_title": "Add New Cards",
       "addCard_content": "Furthermore, this button has now appeared in your cards list, which allows you to create a Card.",

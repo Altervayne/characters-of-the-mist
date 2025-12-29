@@ -587,3 +587,28 @@ body {
 .driver-stage, .driver-highlighted-element {
    pointer-events: none !important;
 }
+
+
+/* Prevent Driver.js from crushing elements when on smaller screens */
+aside section[data-tour],
+aside div.overflow-y-auto {
+   height: auto !important;
+   max-height: none !important;
+}
+
+aside .flex-col.gap-2 {
+   flex-shrink: 0 !important;
+}
+
+aside .flex-col.gap-2 > * {
+   flex-shrink: 0 !important;
+   min-height: 2.5rem !important;
+}
+
+input[data-tour="character-name-input"] {
+   flex-shrink: 0 !important;
+}
+
+main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-input"]) {
+   flex-shrink: 0 !important;
+}
