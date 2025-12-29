@@ -343,11 +343,11 @@ function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveActio
 
    return (
       <div className="flex flex-col h-150">
-         <header className="p-4 border-b">
+         <header className="p-4 border-y">
             <div className="flex justify-between items-center mb-2">
                <div>
                   <h3 className="font-semibold">{(action.type == 'move-folder') && t('Drawer.Actions.moveFolderTitle')}{(action.type == 'move-item') && t('Drawer.Actions.moveItemTitle')}</h3>
-                  <p className="text-sm text-muted-foreground truncate">{`${t('Drawer.Actions.moveVerb')}:  ${itemToMove?.name ?? t('Drawer.movingUnknown')}`}</p>
+                  <p className="text-sm text-muted-foreground">{`${t('Drawer.Actions.moveVerb')}:  ${itemToMove?.name ?? t('Drawer.movingUnknown')}`}</p>
                </div>
                {currentNavFolderId && (
                   <div onClick={() => setCurrentNavFolderId(null)} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-muted cursor-pointer shrink-0" role="button" aria-label="Back to root">
