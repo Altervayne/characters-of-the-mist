@@ -7,9 +7,7 @@ import type { ReactNode } from 'react';
 
 
 export interface DragWrapperProps {
-  /** Whether this item is currently being dragged */
   isBeingDragged: boolean;
-  /** The content to wrap */
   children: ReactNode;
 }
 
@@ -17,12 +15,6 @@ export interface DragWrapperProps {
 
 /**
  * Motion wrapper for cards and trackers on the character sheet.
- *
- * Uses Framer Motion's `layout` animation (without "position") to handle
- * reordering animations safely alongside dnd-kit's transforms.
- *
- * **Important**: This wrapper is safe to use with dnd-kit because it uses
- * `layout` (not `layout="position"`), which doesn't conflict with CSS transforms.
  *
  * @example
  * ```tsx

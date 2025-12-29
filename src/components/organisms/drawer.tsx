@@ -11,7 +11,7 @@ import cuid from 'cuid';
 import toast from 'react-hot-toast';
 
 // -- DnD Component Imports --
-import { Sortable, DragStaticWrapper } from '@/components/dnd';
+import { Sortable, DragStaticWrapper, DragLayoutWrapper } from '@/components/dnd';
 
 // -- Basic UI Imports --
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -285,7 +285,7 @@ export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onM
          disabled={isPreview}
       >
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <DragStaticWrapper isBeingDragged={isBeingDragged}>
+            <DragLayoutWrapper isBeingDragged={isBeingDragged}>
                <div
                   className={cn(
                      "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
@@ -313,7 +313,7 @@ export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onM
                      </DropdownMenu>
                   }
                </div>
-            </DragStaticWrapper>
+            </DragLayoutWrapper>
          )}
       </Sortable>
    );
@@ -527,6 +527,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
 
    useEffect(() => {
       if (pendingItem) {
+         // eslint-disable-next-line react-hooks/set-state-in-effect
          setActiveAction({
             id: cuid(),
             type: 'add-item',
