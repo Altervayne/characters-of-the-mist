@@ -194,7 +194,7 @@ function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item:
          }}
       >
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <DragStaticWrapper isBeingDragged={isBeingDragged}>
+            <DragLayoutWrapper isBeingDragged={isBeingDragged}>
                <div className="relative group/item data-[state=open]:bg-muted">
                   <div {...dragAttributes} {...dragListeners} className="cursor-grab">
                      <DrawerItemPreview item={item} />
@@ -227,7 +227,7 @@ function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item:
                      </DropdownMenu>
                   </div>
                </div>
-            </DragStaticWrapper>
+            </DragLayoutWrapper>
          )}
       </Sortable>
    );
