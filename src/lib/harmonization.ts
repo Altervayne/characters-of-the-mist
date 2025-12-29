@@ -1,5 +1,3 @@
-
-
 import { APP_VERSION } from "./config";
 import { compare } from 'semver';
 import type { GeneralItemType, Drawer, DrawerItem, Folder } from './types/drawer';

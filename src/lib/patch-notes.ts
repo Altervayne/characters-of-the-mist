@@ -5,6 +5,24 @@ export interface PatchNote {
 
 export const patchNotes: PatchNote[] = [
    {
+      version: '1.2.0',
+      content: `
+### Another big one, back to back!
+Not as long awaited, but a big milestone for me.
+
+### ✨ **New !**
+* **PWA support**: Characters of the Mist can now be installed as a PWA on compatible browser. PWAs (Progressive Web Apps) are web application that behave almost like native applications. You can now have a shortcut for Characters of the Mist on your computer, it can run in its own window, and... it can work offline!
+
+### 🔧 Changes
+* Completely migrated Characters of the Mist to a front-end only framework to facilitate offline capabilities. This means there could be a few issues I missed. Don't hesitate to report them on the discord!
+
+### What's next ?
+The migration was quite intense, but it was worth it. I took that opportunity to refactor quite a lot of things and make the code easier to maintain. Since Otherscape and City of Mist are integrated, Offline works, and some of the requested features have been implemented, I will now seriously look into mobile compatibility.
+Please keep in mind that I make no promises. I will seriously look into it, and how I can make it happen. But I greatly value user experience. If I can't find a user friendly way to do it, it'll have to wait.
+As usual, please ask for features you'd like to see in the app on the discord! I listen, even though I can be quiet at times.
+`
+   },
+   {
       version: '1.1.0',
       content: `
 ### A Big One !
