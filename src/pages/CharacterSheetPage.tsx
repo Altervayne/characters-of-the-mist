@@ -652,11 +652,11 @@ export default function CharacterSheetPage() {
    const { startTour } = useAppTourDriver();
 
    const handleStartTour = () => {
-        setSidebarCollapsed(false);
-        setSettingsOpen(false);
-        setDrawerOpen(false);
-        startTour();
-    };
+      setSidebarCollapsed(false);
+      setSettingsOpen(false);
+      setDrawerOpen(false);
+      startTour();
+   };
 
 
 

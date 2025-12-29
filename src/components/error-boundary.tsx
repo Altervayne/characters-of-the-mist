@@ -1,22 +1,15 @@
+import { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Copy, RefreshCw } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import toast, { Toaster } from 'react-hot-toast';
 
-export function ErrorBoundary() {
+
+
+export function RouterErrorBoundary() {
    const error = useRouteError();
-   const { t } = useTranslation();
-   const appSettings = useAppSettingsStore((state) => ({
-      theme: state.theme,
-      contextualGame: state.contextualGame,
-      isCompactDrawer: state.isCompactDrawer,
-      isSideBySideView: state.isSideBySideView,
-      isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
-      isSidebarCollapsed: state.isSidebarCollapsed
-   }));
 
    let errorMessage = 'An unexpected error occurred';
    let errorDetails = '';
@@ -31,6 +24,44 @@ export function ErrorBoundary() {
       errorMessage = error;
    }
 
+   let errorObj: Error;
+   if (error instanceof Error) {
+      errorObj = error;
+   } else {
+      errorObj = new Error(errorMessage);
+      if (errorDetails) {
+         errorObj.stack = errorDetails;
+      }
+   }
+
+   return <ErrorFallback error={errorObj} />;
+}
+
+
+
+function ErrorFallback({ error, resetError }: { error: Error; resetError?: () => void }) {
+   const errorMessage = error.message;
+   const errorDetails = error.stack || '';
+
+   let appSettings: Record<string, unknown> = {};
+   try {
+      const storedSettings = localStorage.getItem('characters-of-the-mist_app-settings');
+      if (storedSettings) {
+         const parsed = JSON.parse(storedSettings);
+         appSettings = {
+            theme: parsed.state?.theme,
+            contextualGame: parsed.state?.contextualGame,
+            isCompactDrawer: parsed.state?.isCompactDrawer,
+            isSideBySideView: parsed.state?.isSideBySideView,
+            isTrackersAlwaysEditable: parsed.state?.isTrackersAlwaysEditable,
+            isSidebarCollapsed: parsed.state?.isSidebarCollapsed,
+            lastVisitedVersion: parsed.state?.lastVisitedVersion
+         };
+      }
+   } catch (err) {
+      console.warn('Failed to read app settings from localStorage:', err);
+   }
+
    const handleCopyError = async () => {
       const appSettingsText = Object.entries(appSettings)
          .map(([key, value]) => `${key}: ${value}`)
@@ -38,11 +69,10 @@ export function ErrorBoundary() {
 
       const errorText = `Error: ${errorMessage}\n\nDetails:\n${errorDetails}\n\nApp Settings:\n${appSettingsText}\n\nUser Agent: ${navigator.userAgent}\nTimestamp: ${new Date().toISOString()}`;
 
-
       if (navigator.clipboard && navigator.clipboard.writeText) {
          try {
             await navigator.clipboard.writeText(errorText);
-            toast.success(t('Errors.ErrorBoundary.copySuccess'));
+            toast.success('Error details copied!');
             return;
          } catch (err) {
             console.error('Clipboard API failed:', err);
@@ -62,71 +92,136 @@ export function ErrorBoundary() {
          document.body.removeChild(textarea);
 
          if (successful) {
-            toast.success(t('Errors.ErrorBoundary.copySuccess'));
+            toast.success('Error details copied!');
          } else {
-            toast.error(t('Errors.ErrorBoundary.copyFailed'));
+            toast.error('Failed to copy error details');
          }
       } catch (err) {
          console.error('Fallback copy failed:', err);
-         toast.error(t('Errors.ErrorBoundary.copyFailed'));
+         toast.error('Failed to copy error details');
       }
    };
 
-   const handleReload = () => {
-      window.location.reload();
+   const handleAction = () => {
+      if (resetError) {
+         resetError();
+      } else {
+         window.location.reload();
+      }
    };
 
    return (
-      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-black/80">
-         <Card className="max-w-2xl w-full border-destructive/50">
+      <>
+         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background">
+            <Card className="max-w-2xl w-full border-destructive/50">
             <CardHeader>
                <div className="flex items-center gap-3">
                   <AlertTriangle className="h-8 w-8 text-destructive shrink-0" />
                   <div>
-                  <CardTitle className="text-2xl">{t('Errors.ErrorBoundary.title')}</CardTitle>
-                  <CardDescription className="mt-1">
-                     {t('Errors.ErrorBoundary.description')}
-                  </CardDescription>
+                     <CardTitle className="text-2xl">Hey, something unexpected happened</CardTitle>
+                     <CardDescription className="mt-1">
+                        I'm sorry, but an unexpected error occurred. Please submit a bug report to the Tools of the Mist discord, while explaining what you were doing at the time of the error. You can try reloading the app to fix it.
+                     </CardDescription>
                   </div>
                </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
-                  <p className="font-semibold text-sm text-destructive mb-2">{t('Errors.ErrorBoundary.errorMessage')}</p>
+                  <p className="font-semibold text-sm text-destructive mb-2">Error Message</p>
                   <p className="text-sm font-mono wrap-break-word">{errorMessage}</p>
                </div>
 
                {errorDetails && (
                   <div className="rounded-lg bg-muted p-4 max-h-64 overflow-auto">
-                  <p className="font-semibold text-sm mb-2">{t('Errors.ErrorBoundary.technicalDetails')}</p>
-                  <pre className="text-xs font-mono whitespace-pre-wrap wrap-break-word">{errorDetails}</pre>
+                     <p className="font-semibold text-sm mb-2">Technical Details</p>
+                     <pre className="text-xs font-mono whitespace-pre-wrap wrap-break-word">{errorDetails}</pre>
                   </div>
                )}
 
-               <div className="rounded-lg bg-muted/50 border border-muted p-4">
-                  <p className="font-semibold text-sm mb-2">{t('Errors.ErrorBoundary.appSettings')}</p>
-                  <div className="text-xs font-mono space-y-1">
-                  {Object.entries(appSettings).map(([key, value]) => (
-                     <div key={key}>
-                        <span className="text-muted-foreground">{key}:</span> {String(value)}
+               {Object.keys(appSettings).length > 0 && (
+                  <div className="rounded-lg bg-muted/50 border border-muted p-4">
+                     <p className="font-semibold text-sm mb-2">App Settings</p>
+                     <div className="text-xs font-mono space-y-1">
+                        {Object.entries(appSettings).map(([key, value]) => (
+                           <div key={key}>
+                              <span className="text-muted-foreground">{key}:</span> {String(value)}
+                           </div>
+                        ))}
                      </div>
-                  ))}
                   </div>
-               </div>
+               )}
             </CardContent>
 
             <CardFooter className="flex gap-2 flex-wrap">
                <Button onClick={handleCopyError} variant="outline" className="gap-2">
                   <Copy className="h-4 w-4" />
-                  {t('Errors.ErrorBoundary.copyButton')}
+                  Copy Error Details
                </Button>
-               <Button onClick={handleReload} className="gap-2">
+               <Button onClick={handleAction} className="gap-2">
                   <RefreshCw className="h-4 w-4" />
-                  {t('Errors.ErrorBoundary.reloadButton')}
+                  {resetError ? 'Try Again' : 'Reload Page'}
                </Button>
             </CardFooter>
          </Card>
       </div>
+      <Toaster
+         position="bottom-center"
+         toastOptions={{
+            className: 'bg-card text-card-foreground border rounded-md shadow-lg',
+            style: {
+               background: 'var(--card)',
+               color: 'var(--foreground)',
+               border: '1px solid var(--border)',
+            },
+         }}
+      />
+      </>
    );
+}
+
+
+
+interface ErrorBoundaryProps {
+   children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+   hasError: boolean;
+   error: Error | null;
+}
+
+
+
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+   constructor(props: ErrorBoundaryProps) {
+      super(props);
+      this.state = {
+         hasError: false,
+         error: null
+      };
+   }
+
+   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+      return {
+         hasError: true,
+         error
+      };
+   }
+
+   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+      console.error('Error caught by boundary:', error, errorInfo);
+   }
+
+   handleReload = () => {
+      window.location.reload();
+   };
+
+   render() {
+      if (this.state.hasError && this.state.error) {
+         return <ErrorFallback error={this.state.error} resetError={this.handleReload} />;
+      }
+
+      return this.props.children;
+   }
 }

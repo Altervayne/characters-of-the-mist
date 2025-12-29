@@ -1,11 +1,15 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import CharacterSheetPage from './pages/CharacterSheetPage';
-import { ErrorBoundary } from './components/error-boundary';
+import { RouterErrorBoundary } from './components/error-boundary';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <CharacterSheetPage />,
-    errorElement: <ErrorBoundary />
+    errorElement: <RouterErrorBoundary />
+  },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />
   }
 ]);
