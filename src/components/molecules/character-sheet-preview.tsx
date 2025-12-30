@@ -65,7 +65,7 @@ export const CharacterSheetPreview = ({ item }: CharacterSheetPreviewProps) => {
       >
          <header className="flex items-center p-2 gap-2 bg-card-header-bg pb-1 border-b border-card-accent">
             <Package className="h-5 w-5 text-card-header-fg" />
-            <h3 className="font-bold text-sm text-card-header-fg">{t(type)}</h3>
+            <h3 className="font-bold text-sm text-card-header-fg">{t(`Drawer.Types.${type}`)}</h3>
          </header>
          
          <div className="flex flex-col p-2 justify-center items-center grow pl-1">
@@ -77,11 +77,11 @@ export const CharacterSheetPreview = ({ item }: CharacterSheetPreviewProps) => {
          <footer className="flex items-center p-2 gap-4 pt-1 border-t border-card-accent bg-card-popover-bg">
             <div className="flex items-center gap-1.5 text-xs text-card-popover-fg">
                <File className="h-4 w-4" />
-               <span>{cardCount} {t('cards')}</span>
+               <span>{cardCount} {t('Drawer.Types.cards')}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-card-popover-fg">
                <CreditCard className="h-4 w-4" />
-               <span>{trackerCount} {t('trackers')}</span>
+               <span>{trackerCount} {t('Drawer.Types.trackers')}</span>
             </div>
          </footer>
       </CardComponent>
