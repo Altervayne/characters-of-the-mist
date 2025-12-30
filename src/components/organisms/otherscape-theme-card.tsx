@@ -395,7 +395,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
             onCycleViewMode={handleCycleViewMode}
             onFlip={() => actions.flipCard(card.id)}
             onDelete={() => actions.deleteCard(card.id)}
-            onEditCard={onEditCard}
+            onEditCard={card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME' ? undefined : onEditCard}
             cardFront={CardFront}
             cardBack={CardBack}
          />

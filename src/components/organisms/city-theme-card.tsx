@@ -275,7 +275,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
             onCycleViewMode={handleCycleViewMode}
             onFlip={() => actions.flipCard(card.id)}
             onDelete={() => actions.deleteCard(card.id)}
-            onEditCard={onEditCard}
+            onEditCard={card.cardType === 'GROUP_THEME' ? undefined : onEditCard}
             cardFront={CardFront}
             cardBack={CardBack}
          />
