@@ -20,7 +20,6 @@ function createDebouncedLocalStorage(delay: number = 300): Storage {
         timeoutId = null;
     };
 
-    // Flush writes on page unload to prevent data loss
     if (typeof window !== 'undefined') {
         window.addEventListener('beforeunload', () => {
             if (pendingWrites.size > 0) {
@@ -31,7 +30,6 @@ function createDebouncedLocalStorage(delay: number = 300): Storage {
 
     return {
         getItem: (name: string): string | null => {
-            // Check pending writes first (not yet flushed to storage)
             if (pendingWrites.has(name)) {
                 return pendingWrites.get(name)!;
             }

@@ -7,6 +7,10 @@ import type { SortingStrategy } from "@dnd-kit/sortable";
 
 // --- Utility functions ---
 
+/**
+ * Converts a character sheet card or tracker into drawer-compatible storage info.
+ * Returns a tuple of [item type, game system] - useful when saving items to the drawer.
+ */
 export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, GameSystem] | null {
    if ('cardType' in item) {
       const game: GameSystem = item.details.game;
@@ -32,8 +36,13 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
 
 
 
-// --- Custom DndToolkit sorting trategies and collision detection ---
+// --- Custom DndToolkit sorting strategies and collision detection ---
 
+/**
+ * Custom collision detection for drag-and-drop operations throughout the app.
+ * Handles complex drop logic for character sheets, drawer items, folders, and trackers.
+ * Makes sure you can only drop items where it actually makes sense to drop them!
+ */
 export const customCollisionDetection: CollisionDetection = (args) => {
    const activeData = args.active.data.current;
    const activeDataType = args.active.data.current?.type as string;
@@ -126,6 +135,10 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    return closestCenter(args);
 };
 
+/**
+ * Sorting strategy that keeps items visually static during drag operations.
+ * Prevents the jarring "items jumping around" effect - drag previews move, but the list stays put.
+ */
 export const staticListSortingStrategy: SortingStrategy = () => {
    return {
       x: 0,
