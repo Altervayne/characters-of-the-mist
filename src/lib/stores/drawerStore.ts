@@ -1,11 +1,12 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import cuid from 'cuid';
 
 // -- Utils Imports --
 import { addFolderRecursively, addItemRecursively, deepReId, deleteFolderRecursively, deleteItemRecursively, findAndRemoveFolder, findAndRemoveItem, mergeIntoFolderRecursively, renameFolderRecursively, renameItemRecursively, reorderFoldersRecursively, reorderItemsRecursively, reorderList } from '../utils/drawer';
+import { createDebouncedStorage } from '../utils/debouncedStorage';
 import { STORE_VERSION } from '../config';
 
 // -- Store and Hook Imports --
@@ -341,7 +342,7 @@ export const useDrawerStore = create<DrawerState>()(
          }),
          {
             name: 'characters-of-the-mist_drawer-storage',
-            storage: createJSONStorage(() => localStorage),
+            storage: createDebouncedStorage(300), // 300ms debounce to reduce localStorage writes
             partialize: (state) => ({ drawer: state.drawer }),
             version: STORE_VERSION,
             migrate: (persistedState, _version) => {

@@ -24,7 +24,7 @@ import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, Arro
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { buildBreadcrumb, findFolder, findParentFolder } from '@/lib/utils/drawer';
+import { buildBreadcrumb, buildFolderPathIds, getParentFromPath, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
 import { exportDrawer, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/drag-drop';
@@ -331,14 +331,14 @@ function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveActio
 
    const currentView = useMemo(() => {
       if (!currentNavFolderId) return { folders: allFolders, parent: null };
-      const folder = findFolder(allFolders, currentNavFolderId);
-      return { folders: folder?.folders ?? [], parent: findParentFolder(allFolders, currentNavFolderId) };
+      const folder = findFolderMemoized(allFolders, currentNavFolderId);
+      return { folders: folder?.folders ?? [], parent: findParentFolderMemoized(allFolders, currentNavFolderId) };
    }, [currentNavFolderId, allFolders]);
-   
+
    const breadcrumbPath = useMemo(() => buildBreadcrumb(allFolders, currentNavFolderId), [allFolders, currentNavFolderId]);
 
    const parentOfItemToMove = useMemo(() => {
-      return itemToMove ? findParentFolder(allFolders, itemToMove.id) : null;
+      return itemToMove ? findParentFolderMemoized(allFolders, itemToMove.id) : null;
    }, [allFolders, itemToMove]);
 
    return (
@@ -525,6 +525,10 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
    const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 
+   // Cache folder path as chain of IDs: ['rootId', 'childId', 'currentId']
+   // Provides O(1) access to parent folder ID
+   const currentFolderPath = useMemo(() => buildFolderPathIds(folders, currentFolderId), [folders, currentFolderId]);
+
    useEffect(() => {
       if (pendingItem) {
          // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -556,13 +560,14 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
       if (!currentFolderId) {
          return { currentItems: rootItems, currentFolders: folders, parentFolderId: null };
       }
-      const folder = findFolder(folders, currentFolderId);
+      const folder = findFolderMemoized(folders, currentFolderId);
       if (folder) {
-         const parent = findParentFolder(folders, folder.id);
-         return { currentItems: folder.items, currentFolders: folder.folders, parentFolderId: parent?.id ?? null };
+         // O(1) parent lookup using cached path instead of O(n) tree traversal
+         const parentId = getParentFromPath(currentFolderPath);
+         return { currentItems: folder.items, currentFolders: folder.folders, parentFolderId: parentId };
       }
       return { currentItems: rootItems, currentFolders: folders, parentFolderId: null };
-   }, [currentFolderId, folders, rootItems]);
+   }, [currentFolderId, folders, rootItems, currentFolderPath]);
 
    const breadcrumbPath = useMemo(() => buildBreadcrumb(folders, currentFolderId), [folders, currentFolderId]);
 
