@@ -115,7 +115,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
    const handleConfirm = () => {
       if (cardType) {
          onConfirm(
-            { cardType, themebook: themebook.trim(), themeType, powerTagsCount, weaknessTagsCount, wildcardSlots },
+            { cardType, themebook: themebook?.trim(), themeType, powerTagsCount, weaknessTagsCount, wildcardSlots },
             mode === 'edit' ? cardData?.id : undefined
          );
          onOpenChange(false);
@@ -143,9 +143,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
 
    const isConfirmDisabled = !cardType ||
       (cardType === 'CHARACTER_THEME' && !themebook.trim()) ||
-      (cardType === 'CHARACTER_THEME' && !themeType) ||
-      (cardType === 'GROUP_THEME' && game === 'LEGENDS' && !themebook.trim()) ||
-      (cardType === 'GROUP_THEME' && game === 'LEGENDS' && !themeType);
+      (cardType === 'CHARACTER_THEME' && !themeType);
 
 
 
@@ -241,71 +239,6 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                )}
 
 
-               {(cardType === 'GROUP_THEME' && game === 'LEGENDS') && (
-                  <>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="theme-type" className="text-left">{t('CreateCardDialog.themeTypeLabel')}</Label>
-                        <Select value={themeType} onValueChange={handleThemeTypeChange}>
-                           <SelectTrigger id="theme-type" className="col-span-3 hover:bg-muted border-primary">
-                              <SelectValue placeholder={t('CreateCardDialog.selectThemeTypePlaceholder')} />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {themeTypes.map(type => <SelectItem key={type} value={type}>{tTypes(type)}</SelectItem>)}
-                           </SelectContent>
-                        </Select>
-                     </div>
-
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="themebook" className="text-left">{t('CreateCardDialog.themebookLabel')}</Label>
-                        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                           <PopoverTrigger asChild>
-                              <Button
-                                 variant="outline"
-                                 role="combobox"
-                                 aria-expanded={popoverOpen}
-                                 className="col-span-3 justify-between"
-                                 disabled={!themeType}
-                              >
-                                 {selectedThemebookDisplay}
-                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                           </PopoverTrigger>
-                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-(--radix-popover-trigger-width) p-0">
-                              <Command>
-                                 <CommandInput
-                                    placeholder={t('CreateCardDialog.searchThemebookPlaceholder')}
-                                    value={themebook}
-                                    onValueChange={setThemebook}
-                                 />
-                                 <CommandList>
-                                    <CommandEmpty>{t('CreateCardDialog.noThemebookFound')}</CommandEmpty>
-                                    <CommandGroup onWheel={(e) => e.stopPropagation()}>
-                                       {availableThemebooks.map((book) => (
-                                          <CommandItem
-                                             key={book.value}
-                                             value={book.value}
-                                             onSelect={(currentValue) => {
-                                                setThemebook(currentValue);
-                                                setPopoverOpen(false);
-                                             }}
-                                          >
-                                             <Check
-                                                className={cn(
-                                                   "mr-2 h-4 w-4",
-                                                   themebook.toLowerCase() === book.value.toLowerCase() ? "opacity-100" : "opacity-0"
-                                                )}
-                                             />
-                                                {tTheme(book.key as string)}
-                                          </CommandItem>
-                                       ))}
-                                    </CommandGroup>
-                                 </CommandList>
-                              </Command>
-                           </PopoverContent>
-                        </Popover>
-                     </div>
-                  </>
-               )}
 
                {
                   mode === 'create' && <>

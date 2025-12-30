@@ -58,7 +58,7 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
                   value={localName}
                   onChange={(e) => setLocalName(e.target.value)}
                   className="h-7 flex-1 bg-transparent text-center border-none shadow-none"
-                  placeholder={t('placeholder')}
+                  placeholder={t(`${listName}.placeholder`)}
                />
                <Button
                   variant="ghost"
@@ -70,7 +70,7 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
                </Button>
             </>
          ) : (
-            <span className="w-full text-center">{tag.name ? tag.name : `[${t('noName')}]`}</span>
+            <span className="w-full text-center">{tag.name ? tag.name : `[${t(`${listName}.noName`)}]`}</span>
          )}
       </div>
    );
