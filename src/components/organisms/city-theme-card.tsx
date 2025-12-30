@@ -47,8 +47,9 @@ interface CityThemeCardProps {
 
 
 
-export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+export const CityThemeCard = React.memo(
+   React.forwardRef<HTMLDivElement, CityThemeCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
       const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as CityThemeDetails | CityCrewDetails;
@@ -280,7 +281,7 @@ export const CityThemeCard = React.forwardRef<HTMLDivElement, CityThemeCardProps
             cardBack={CardBack}
          />
       );
-   }
+   })
 );
 
 CityThemeCard.displayName = 'CityThemeCard';

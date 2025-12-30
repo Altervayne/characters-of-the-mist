@@ -57,8 +57,9 @@ const getCardTypeClass = (type: string) => {
 
 
 
-export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+export const LegendsThemeCard = React.memo(
+   React.forwardRef<HTMLDivElement, ThemeCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
       const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
@@ -279,7 +280,7 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
             cardBack={CardBack}
          />
       );
-   }
+   })
 );
 
 LegendsThemeCard.displayName = 'ThemeCard';

@@ -46,8 +46,9 @@ interface RiftCardProps {
 
 
 
-const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
+const RiftCardContent = React.memo(
+   React.forwardRef<HTMLDivElement, RiftCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tNemesis } = useTranslation();
       const actions = useCharacterActions();
@@ -311,16 +312,18 @@ const RiftCardContent = React.forwardRef<HTMLDivElement, RiftCardProps>(
             cardBack={CardBack}
          />
       );
-   }
+   })
 );
 RiftCardContent.displayName = 'RiftCardContent';
 
-export const RiftCard = React.forwardRef<HTMLDivElement, RiftCardProps>(
-   (props, ref) => {
-      if (props.card.details.game !== 'CITY_OF_MIST') {
-         return null;
+export const RiftCard = React.memo(
+   React.forwardRef<HTMLDivElement, RiftCardProps>(
+      (props, ref) => {
+         if (props.card.details.game !== 'CITY_OF_MIST') {
+            return null;
+         }
+         return <RiftCardContent {...props} ref={ref} />;
       }
-      return <RiftCardContent {...props} ref={ref} />;
-   }
+   )
 );
 RiftCard.displayName = 'RiftCard';

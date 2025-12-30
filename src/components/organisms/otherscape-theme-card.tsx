@@ -49,8 +49,9 @@ interface OtherscapeThemeCardProps {
 
 
 
-export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeThemeCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+export const OtherscapeThemeCard = React.memo(
+   React.forwardRef<HTMLDivElement, OtherscapeThemeCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
       const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as OtherscapeThemeDetails | OtherscapeCrewDetails | OtherscapeLoadoutDetails;
@@ -400,7 +401,7 @@ export const OtherscapeThemeCard = React.forwardRef<HTMLDivElement, OtherscapeTh
             cardBack={CardBack}
          />
       );
-   }
+   })
 );
 
 OtherscapeThemeCard.displayName = 'OtherscapeThemeCard';

@@ -46,8 +46,9 @@ interface OtherscapeCharacterCardProps {
 
 
 
-const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
+const OtherscapeCharacterCardContent = React.memo(
+   React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tSpecials } = useTranslation();
       const actions = useCharacterActions();
@@ -454,16 +455,18 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
             cardBack={CardBack}
          />
       );
-   }
+   })
 );
 OtherscapeCharacterCardContent.displayName = 'OtherscapeCharacterCardContent';
 
-export const OtherscapeCharacterCard = React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
-   (props, ref) => {
-      if (props.card.details.game !== 'OTHERSCAPE') {
-         return null;
+export const OtherscapeCharacterCard = React.memo(
+   React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
+      (props, ref) => {
+         if (props.card.details.game !== 'OTHERSCAPE') {
+            return null;
+         }
+         return <OtherscapeCharacterCardContent {...props} ref={ref} />;
       }
-      return <OtherscapeCharacterCardContent {...props} ref={ref} />;
-   }
+   )
 );
 OtherscapeCharacterCard.displayName = 'OtherscapeCharacterCard';

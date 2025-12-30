@@ -47,8 +47,9 @@ interface HeroCardProps {
 
 
 
-const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
+const HeroCardContent = React.memo(
+   React.forwardRef<HTMLDivElement, HeroCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tBackpack } = useTranslation();
       const actions = useCharacterActions();
@@ -233,18 +234,20 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
             cardBack={CardBack}
          />
       );
-   }
+   })
 );
 HeroCardContent.displayName = 'HeroCardContent';
 
 
 
-export const HeroCard = React.forwardRef<HTMLDivElement, HeroCardProps>(
-  (props, ref) => {
-    if (props.card.details.game !== 'LEGENDS') {
-      return null;
-    }
-    return <HeroCardContent {...props} ref={ref} />;
-  }
+export const HeroCard = React.memo(
+   React.forwardRef<HTMLDivElement, HeroCardProps>(
+     (props, ref) => {
+       if (props.card.details.game !== 'LEGENDS') {
+         return null;
+       }
+       return <HeroCardContent {...props} ref={ref} />;
+     }
+   )
 );
 HeroCard.displayName = 'HeroCard';
