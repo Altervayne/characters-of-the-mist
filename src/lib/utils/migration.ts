@@ -1,4 +1,4 @@
-import {
+import type {
    Character,
    Card,
    LegendsThemeDetails,
@@ -88,8 +88,11 @@ export interface MigratedCharacterPayload {
    deconstructedTrackers: StatusTracker[];
 }
 
-
-
+/**
+ * Transforms a legacy character sheet (from the alpha version) into the new format.
+ * Automatically detects the game system and routes to the appropriate migration function.
+ * Returns the migrated character plus any deconstructed cards/trackers for separate storage.
+ */
 export function transformLegacyCharacter(legacyData: LegacyCharacter): MigratedCharacterPayload {
    if (legacyData.compatibility === 'litm') {
       return transformLegacyLegendsCharacter(legacyData);

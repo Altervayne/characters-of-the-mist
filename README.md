@@ -20,17 +20,19 @@ This application is more than just a character sheet; it's a full-fledged charac
 ---
 ## 🛠️ Tech Stack
 
-This project is built with a modern, robust, and scalable tech stack to ensure a high-quality development and user experience. 
+This project is built with a modern, robust, and scalable tech stack to ensure a high-quality development and user experience.
 
-* **Framework:** [Next.js](https://nextjs.org/) (App Router) 
-* **Language:** [TypeScript](https://www.typescriptlang.org/) 
-* **Styling:** [Tailwind CSS](https://tailwindcss.com/) 
-* **UI Components:** [Shadcn/UI](https://ui.shadcn.com/) for accessible component primitives. 
-* **State Management:** [Zustand](https://zustand-demo.pmnd.rs/) with `persist` and `temporal` middleware for state persistence and undo/redo functionality. 
-* **Drag & Drop:** [dnd-kit](https://dndkit.com/) for a lightweight and powerful drag-and-drop experience. 
-* **Command Palette:** [cmdk](https://cmdk.paco.me/) 
-* **Localization:** [next-intl](https://next-intl-docs.vercel.app/) 
-* **PWA:** [next-pwa](https://www.npmjs.com/package/next-pwa) 
+* **Build Tool:** [Vite](https://vitejs.dev/) for lightning-fast development and optimized production builds
+* **Framework:** [React](https://react.dev/)
+* **Language:** [TypeScript](https://www.typescriptlang.org/)
+* **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+* **UI Components:** [Shadcn/UI](https://ui.shadcn.com/) for accessible component primitives
+* **State Management:** [Zustand](https://zustand-demo.pmnd.rs/) with `persist` and `temporal` middleware for state persistence and undo/redo functionality
+* **Drag & Drop:** [dnd-kit](https://dndkit.com/) for a lightweight and powerful drag-and-drop experience
+* **Animations:** [Framer Motion](https://www.framer.com/motion/) for smooth UI animations
+* **Command Palette:** [cmdk](https://cmdk.paco.me/)
+* **Localization:** [react-i18next](https://react.i18next.com/) for internationalization
+* **PWA:** [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) for Progressive Web App capabilities 
 
 ---
 ### 🌍 Contributing to Translations
@@ -40,10 +42,10 @@ I'm thrilled you're interested in helping translate Characters of the Mist! The 
 Here’s how you can add a new language:
 
 1.  **Get the Template File**
-    All translation keys are located in the English source file at `src/messages/en.json`. This is the file you will use as a template.
+    All translation keys are located in the English source file at `messages/en.json`. This is the file you will use as a template.
 
 2.  **Create Your Language File**
-    Make a copy of `en.json` in the same directory (`src/messages/`) and rename it to your language’s two-letter ISO 639-1 code (e.g., `de.json` for German, `es.json` for Spanish).
+    Make a copy of `en.json` in the same directory (`messages/`) and rename it to your language's two-letter ISO 639-1 code (e.g., `de.json` for German, `es.json` for Spanish).
 
 3.  **Translate the Values**
     Open your new language file and translate the text on the **right side** of the colons.

@@ -1,10 +1,6 @@
-'use client';
-
 // -- React Imports --
-import React, { useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -28,8 +24,8 @@ const CONFIRMATION_PHRASE = 'DISMISS OLD DATA';
 
 
 export function LegacyDataDialog({ isOpen, onOpenChange }: LegacyDataDialogProps) {
-   const t = useTranslations('LegacyDataDialog');
-   const tNotifications = useTranslations('Notifications');
+   const { t: t } = useTranslation();
+   const { t: tNotifications } = useTranslation();
    const [confirmationText, setConfirmationText] = useState('');
 
    const handleDownload = () => {
@@ -48,7 +44,7 @@ export function LegacyDataDialog({ isOpen, onOpenChange }: LegacyDataDialogProps
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(tNotifications('migration.legacyDataDownloaded'));
+      toast.success(tNotifications('Notifications.migration.legacyDataDownloaded'));
    };
 
    const handleDismiss = () => {
@@ -60,16 +56,16 @@ export function LegacyDataDialog({ isOpen, onOpenChange }: LegacyDataDialogProps
 
    return (
       <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-         <AlertDialogContent className="border-3 border-primary border-dashed z-[10000]">
+         <AlertDialogContent className="border-3 border-primary border-dashed z-10000">
             <AlertDialogHeader>
-               <AlertDialogTitle>{t('title')}</AlertDialogTitle>
-               <AlertDialogDescription>{t('info')}</AlertDialogDescription>
-               <AlertDialogDescription>{t('description')}</AlertDialogDescription>
-               <AlertDialogDescription>{t('warning')}</AlertDialogDescription>
+               <AlertDialogTitle>{t('LegacyDataDialog.title')}</AlertDialogTitle>
+               <AlertDialogDescription>{t('LegacyDataDialog.info')}</AlertDialogDescription>
+               <AlertDialogDescription>{t('LegacyDataDialog.description')}</AlertDialogDescription>
+               <AlertDialogDescription>{t('LegacyDataDialog.warning')}</AlertDialogDescription>
             </AlertDialogHeader>
 
             <div className="space-y-2 py-2">
-               <Label htmlFor="dismiss-confirmation" className="text-left">{t('confirmationLabel')}</Label>
+               <Label htmlFor="dismiss-confirmation" className="text-left">{t('LegacyDataDialog.confirmationLabel')}</Label>
                <p className="w-full text-center text-sm font-bold text-destructive">{CONFIRMATION_PHRASE}</p>
                <Input
                   id="dismiss-confirmation"
@@ -82,10 +78,10 @@ export function LegacyDataDialog({ isOpen, onOpenChange }: LegacyDataDialogProps
 
             <AlertDialogFooter>
                <Button variant="destructive" onClick={handleDismiss} className="cursor-pointer" disabled={confirmationText !== CONFIRMATION_PHRASE}>
-                  {t('dismissButton')}
+                  {t('LegacyDataDialog.dismissButton')}
                </Button>
                <Button onClick={handleDownload} className="cursor-pointer">
-                  {t('downloadButton')}
+                  {t('LegacyDataDialog.downloadButton')}
                </Button>
             </AlertDialogFooter>
          </AlertDialogContent>

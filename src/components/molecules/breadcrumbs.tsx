@@ -1,5 +1,3 @@
-'use client';
-
 // -- React Imports --
 import React from 'react';
 
@@ -14,7 +12,7 @@ import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import { Folder as FolderType } from '@/lib/types/drawer';
+import type { Folder as FolderType } from '@/lib/types/drawer';
 
 
 
@@ -32,7 +30,7 @@ export function Breadcrumb({ path, onNavigate }: BreadcrumbProps) {
       <span 
          className={cn(
             'cursor-pointer hover:text-foreground truncate',
-            isLast ? 'font-semibold text-foreground flex-shrink-0' : 'min-w-0'
+            isLast ? 'font-semibold text-foreground shrink-0' : 'min-w-0'
          )}
          onClick={(e) => {
             e.stopPropagation();
@@ -50,17 +48,17 @@ export function Breadcrumb({ path, onNavigate }: BreadcrumbProps) {
             path.map((part, index) => (
                <React.Fragment key={part.id}>
                   {renderPart(part, index === path.length - 1)}
-                  {index < path.length - 1 && <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />}
+                  {index < path.length - 1 && <ChevronRight className="h-4 w-4 mx-1 shrink-0" />}
                </React.Fragment>
             ))
          ) : (
             <>
                {renderPart(path[0], false)}
-               <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />
+               <ChevronRight className="h-4 w-4 mx-1 shrink-0" />
                
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                     <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer flex-shrink-0">
+                     <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer shrink-0">
                         <MoreHorizontal className="h-4 w-4" />
                      </Button>
                   </DropdownMenuTrigger>
@@ -73,7 +71,7 @@ export function Breadcrumb({ path, onNavigate }: BreadcrumbProps) {
                   </DropdownMenuContent>
                </DropdownMenu>
 
-               <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />
+               <ChevronRight className="h-4 w-4 mx-1 shrink-0" />
                {renderPart(path[path.length - 1], true)}
             </>
          )}

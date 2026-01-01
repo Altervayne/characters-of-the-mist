@@ -1,15 +1,8 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
-
-// -- Other Library Imports --
-import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import React, { useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -27,16 +20,18 @@ import { CardHeaderMolecule } from '../molecules/card-header';
 import { CardSectionHeader } from '@/components/molecules/card-section-header';
 import { PipTracker } from '@/components/molecules/pip-tracker';
 import { FellowshipRelationshipItem } from '@/components/molecules/fellowship-relationship-item';
-import { ToolbarHandle } from '../molecules/toolbar-handle';
 import { BlandTagItem } from '../molecules/bland-tag-item';
+import { CardFlipWrapper } from '../molecules/card-flip-wrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, LegendsHeroDetails } from '@/lib/types/character';
+import type { Card as CardData, CardViewMode, LegendsHeroDetails } from '@/lib/types/character';
 
 
 
@@ -52,14 +47,15 @@ interface HeroCardProps {
 
 
 
-const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
-      const t = useTranslations('HeroCard');
-      const tBackpack = useTranslations('backpack');
+const HeroCardContent = React.memo(
+   React.forwardRef<HTMLDivElement, HeroCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
+      const { t: t } = useTranslation();
+      const { t: tBackpack } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as LegendsHeroDetails;
 
-      const [isHovered, setIsHovered] = useState(false);
+      const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
       const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
       const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
@@ -98,68 +94,58 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
       // ###   CHARACTER NAME INPUT DEBOUNCER   ###
       // ##########################################
 
-      const [localCharName, setLocalCharName] = useState(details.characterName);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (details.characterName !== localCharName) {
-               actions.updateCharacterName(localCharName);
-            }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localCharName, details.characterName, actions]);
-
-      useEffect(() => {
-         setLocalCharName(details.characterName);
-      }, [details.characterName]);
+      const [localCharName, setLocalCharName] = useInputDebouncer(
+         details.characterName,
+         (value) => actions.updateCharacterName(value)
+      );
 
 
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-hero",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
-               <CardHeaderMolecule title={t('title')}></CardHeaderMolecule>
+               <CardHeaderMolecule title={t('HeroCard.title')}></CardHeaderMolecule>
             </CardHeader>
             
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-2 py-1 mb-1 flex-shrink-0">
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-2 py-1 mb-1 shrink-0">
                   {isEditing ? (
                      <Input
                         className="text-2xl font-bold text-center bg-transparent border-none shadow-none"
                         value={localCharName || ''}
                         onChange={(e) => setLocalCharName(e.target.value)}
-                        placeholder={t('characterNamePlaceholder')}
+                        placeholder={t('HeroCard.characterNamePlaceholder')}
                      />
                   ) : (
-                     <h2 className="text-2xl font-bold">{details.characterName || `[${t('noName')}]`}</h2>
+                     <h2 className="text-2xl font-bold">{details.characterName || `[${t('HeroCard.noName')}]`}</h2>
                   )}
                </div>
 
                <div className="flex flex-col h-[45%]">
-                  <CardSectionHeader title={t('relationships')} icon={Users} />
-                  <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
+                  <CardSectionHeader title={t('HeroCard.relationships')} icon={Users} />
+                  <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
                      <div className="flex bg-card-accent/15">
-                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('companion')}</p>
-                        <p className="flex-grow text-sm text-center py-1 border-b-1">{t('relationship')}</p>
+                        <p className="grow text-sm text-center py-1 border-b">{t('HeroCard.companion')}</p>
+                        <p className="grow text-sm text-center py-1 border-b">{t('HeroCard.relationship')}</p>
                      </div>
                      {details.fellowshipRelationships.map((relation, index) => (
                         <FellowshipRelationshipItem key={relation.id} cardId={card.id} relationship={relation} isEditing={isEditing} index={index} />
                      ))}
                      {isEditing && (
-                        <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addRelationship(card.id)}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addRelationship')}
+                        <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addRelationship(card.id)}>
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('HeroCard.addRelationship')}
                         </Button>
                      )}
                   </div>
                </div>
 
-               <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-black/30">
+               <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-black/30">
                   <PipTracker 
                      label="promise" 
                      value={details.promise} 
@@ -168,9 +154,9 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                   />
                </div>
 
-               <div className="flex flex-col flex-grow overflow-hidden">
-                  <CardSectionHeader title={t('quintessences')} icon={Sparkles} />
-                  <div className="flex flex-col flex-grow align-middle overflow-y-scroll overscroll-contain" ref={quintessencesScrollRef}>
+               <div className="flex flex-col grow overflow-hidden">
+                  <CardSectionHeader title={t('HeroCard.quintessences')} icon={Sparkles} />
+                  <div className="flex flex-col grow align-middle overflow-y-scroll overscroll-contain" ref={quintessencesScrollRef}>
                      {details.quintessences.map((quint, index) => (
                         <BlandTagItem 
                            key={quint.id} 
@@ -182,8 +168,8 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                         />
                      ))}
                      {isEditing && (
-                        <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'quintessences')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addQuintessence')}
+                        <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'quintessences')}>
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('HeroCard.addQuintessence')}
                         </Button>
                      )}
                   </div>
@@ -194,16 +180,16 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-hero",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
-            <CardHeaderMolecule title={t('title')} />
-            <CardSectionHeader title={`${tBackpack('title')}`}></CardSectionHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow space-y-0 overflow-y-auto overscroll-contain" ref={backpackScrollRef}>
+            <CardHeaderMolecule title={t('HeroCard.title')} />
+            <CardSectionHeader title={`${tBackpack('backpack.title')}`}></CardSectionHeader>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={backpackScrollRef}>
                   {details.backpack.map((tag, index) => (
                      <BlandTagItem 
                         key={tag.id}
@@ -216,8 +202,8 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'backpack')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {tBackpack('addItem')}
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'backpack')}>
+                           <PlusCircle className="h-4 w-4 mr-2" /> {tBackpack('backpack.addItem')}
                         </Button>
                      </div>
                   )}
@@ -228,92 +214,40 @@ const HeroCardContent = React.forwardRef<HTMLDivElement, HeroCardProps>(
 
 
 
-      if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
-         return (
-            <motion.div
-               ref={ref}
-               onHoverStart={() => setIsHovered(true)}
-               onHoverEnd={() => setIsHovered(false)}
-               className="relative"
-            >
-               <ToolbarHandle 
-                  isEditing={isEditing}
-                  isHovered={isHovered}
-                  dragAttributes={dragAttributes}
-                  dragListeners={dragListeners}
-                  onExport={onExport}
-                  onCycleViewMode={handleCycleViewMode}
-                  cardViewMode={card.viewMode}
-                  cardTheme="card-type-hero"
-               />
-               <div ref={ref} className="flex gap-1 items-start">
-                  {CardFront}
-                  {CardBack}
-               </div>
-            </motion.div>
-         );
-      }
-
-
-
       return (
-         <motion.div
+         <CardFlipWrapper
             ref={ref}
-            onHoverStart={() => setIsHovered(true)}
-            onHoverEnd={() => setIsHovered(false)}
-            className="relative"
-         >
-         
-            <motion.div
-               className="w-full h-full"
-               style={{ transformStyle: 'preserve-3d' }}
-               initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
-               animate={{ rotateY: card.isFlipped ? 180 : 0 }}
-               transition={{ duration: 0.5, ease: 'easeInOut' }}
-            >
-
-               {!isDrawerPreview &&
-                  <ToolbarHandle 
-                     isEditing={isEditing}
-                     isHovered={isHovered}
-                     onFlip={() => actions.flipCard(card.id)}
-                     dragAttributes={dragAttributes}
-                     dragListeners={dragListeners}
-                     onExport={onExport}
-                     onCycleViewMode={handleCycleViewMode}
-                     cardViewMode={card.viewMode}
-                     cardTheme="card-type-hero"
-                  />   
-               }
-
-               {/* ============================================
-                        CARD FRONT (Hero Details)
-                  ============================================ */}
-               <div style={{ backfaceVisibility: 'hidden' }}>
-                  {CardFront}
-               </div>
-
-               {/* ============================================
-                           CARD BACK (Backpack)
-                  ============================================ */}
-               <div className="absolute top-0 left-0 w-full h-full" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                  {CardBack}
-               </div>
-            </motion.div>
-         </motion.div>
+            effectiveViewMode={effectiveViewMode}
+            isDrawerPreview={isDrawerPreview ?? false}
+            isSnapshot={isSnapshot}
+            card={card}
+            isHovered={isHovered}
+            hoverHandlers={hoverHandlers}
+            isEditing={isEditing}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            cardTheme="card-type-hero"
+            onExport={onExport}
+            onCycleViewMode={handleCycleViewMode}
+            onFlip={() => actions.flipCard(card.id)}
+            cardFront={CardFront}
+            cardBack={CardBack}
+         />
       );
-   }
+   })
 );
 HeroCardContent.displayName = 'HeroCardContent';
 
 
 
-export const HeroCard = React.forwardRef<HTMLDivElement, HeroCardProps>(
-  (props, ref) => {
-    if (props.card.details.game !== 'LEGENDS') {
-      return null;
-    }
-    return <HeroCardContent {...props} ref={ref} />;
-  }
+export const HeroCard = React.memo(
+   React.forwardRef<HTMLDivElement, HeroCardProps>(
+     (props, ref) => {
+       if (props.card.details.game !== 'LEGENDS') {
+         return null;
+       }
+       return <HeroCardContent {...props} ref={ref} />;
+     }
+   )
 );
 HeroCard.displayName = 'HeroCard';

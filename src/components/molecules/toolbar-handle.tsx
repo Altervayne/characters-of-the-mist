@@ -1,15 +1,8 @@
-'use client';
-
 // -- React Imports --
-import React from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
-import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -22,7 +15,10 @@ import { Trash2, GripVertical, RefreshCw, Edit2, Upload, Globe, FlipHorizontal, 
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import { CardViewMode } from '@/lib/types/character';
+import type { Variants } from 'framer-motion';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { CardViewMode } from '@/lib/types/character';
 
 
 
@@ -84,11 +80,11 @@ const ViewModeIcon = ({ mode }: { mode: CardViewMode | null | undefined }) => {
 };
 
 const ViewModeTooltip = ({ mode }: { mode: CardViewMode | null | undefined }) => {
-   const t = useTranslations('Tooltips');
+   const { t: t } = useTranslation();
 
-   if (mode === 'SIDE_BY_SIDE') return <p>{t('ViewMode.SideBySide')}</p>;
-   if (mode === 'FLIP') return <p>{t('ViewMode.Flipping')}</p>;
-   return <p>{t('ViewMode.Global')}</p>;
+   if (mode === 'SIDE_BY_SIDE') return <p>{t('Tooltips.ViewMode.SideBySide')}</p>;
+   if (mode === 'FLIP') return <p>{t('Tooltips.ViewMode.Flipping')}</p>;
+   return <p>{t('Tooltips.ViewMode.Global')}</p>;
 };
 
 
@@ -111,10 +107,10 @@ export function ToolbarHandle({ isEditing, isHovered, cardTheme, onDelete,
                   "absolute flex items-center justify-center",
                   (side === 'left' || side === 'right') && "top-0 h-full flex-col",
                   (side === 'top' || side === 'bottom') && "left-1/2 -translate-x-1/2 w-auto flex-row",
-                  side === 'left' && "left-[-38px]",
-                  side === 'right' && "right-[-38px]",
-                  side === 'top' && "top-[-38px]",
-                  side === 'bottom' && "bottom-[-38px]",
+                  side === 'left' && "-left-9.5",
+                  side === 'right' && "-right-9.5",
+                  side === 'top' && "-top-9.5",
+                  side === 'bottom' && "-bottom-9.5",
                   cardTheme
                )}
             >
@@ -219,7 +215,7 @@ export function ToolbarHandle({ isEditing, isHovered, cardTheme, onDelete,
                      <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="h-7 w-7 cursor-pointer border-1 border-card-border hover:bg-destructive/60"
+                        className="h-7 w-7 cursor-pointer border border-card-border hover:bg-destructive/60"
                         onClick={onDelete}
                      >
                         <Trash2 className="h-4 w-4" />

@@ -1,10 +1,8 @@
-'use client';
-
 // -- React Imports --
 import React, { useState, useCallback } from 'react';
 
 // -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useDropzone } from 'react-dropzone';
@@ -35,8 +33,8 @@ interface MigrationDialogProps {
 
 
 export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpenChange }) => {
-   const t = useTranslations('MigrationDialog');
-   const tNotifications = useTranslations('Notifications');
+   const { t: t } = useTranslation();
+   const { t: tNotifications } = useTranslation();
    const [files, setFiles] = useState<File[]>([]);
 
    const { addFolder, addItem } = useDrawerActions();
@@ -112,7 +110,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
 
                const { character, deconstructedCards, deconstructedTrackers } = transformLegacyCharacter(legacyData);
 
-               const today = new Date().toISOString().split('T')[0];
+               const today = new Date().toISOString().split('MigrationDialog.T')[0];
                const characterFolderName = `${character.name} - ${today}`;
                const characterFolderId = await getOrCreateFolder(characterFolderName, migrationRootFolderId);
 
@@ -135,9 +133,9 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                successCount++;
             } catch (error: unknown) {
                if (error instanceof Error && error.message === 'UNSUPPORTED_GAME_SYSTEM') {
-                  toast.error(tNotifications('migration.unsupported'));
+                  toast.error(tNotifications('Notifications.migration.unsupported'));
                } else {
-                  toast.error(tNotifications('migration.failed'));
+                  toast.error(tNotifications('Notifications.migration.failed'));
                }
                console.error(`Failed to migrate ${file.name}:`, error);
             }
@@ -146,10 +144,10 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
         await Promise.all(migrationPromises);
 
         if (successCount > 0) {
-            toast.success(tNotifications('migration.success'));
+            toast.success(tNotifications('Notifications.migration.success'));
         }
       } catch (error: unknown) {
-         toast.error(tNotifications('migration.folderError'));
+         toast.error(tNotifications('Notifications.migration.folderError'));
          console.error("Migration failed:", error);
       }
 
@@ -170,12 +168,12 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
          <DialogContent>
             <DialogHeader>
-               <DialogTitle>{t('title')}</DialogTitle>
-               <DialogDescription>{t('description')}</DialogDescription>
+               <DialogTitle>{t('MigrationDialog.title')}</DialogTitle>
+               <DialogDescription>{t('MigrationDialog.description')}</DialogDescription>
             </DialogHeader>
 
             <div className="flex flex-col p-4 bg-muted/50 rounded-md mt-4">
-               <DialogDescription>{t('thankYou')}</DialogDescription>
+               <DialogDescription>{t('MigrationDialog.thankYou')}</DialogDescription>
                <span className="flex items-center p-1 gap-2 mt-1">
                   <p className="w-full text-end">{`- Altervayne²`}</p>
                   <Heart/>
@@ -196,9 +194,9 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                   <input {...getInputProps()} />
                   <HardDriveUpload className="h-10 w-10 text-muted-foreground mb-2" />
                   <p className="text-center">
-                     {isDragActive ? t('dropzone.active') : t('dropzone.inactive')}
+                     {isDragActive ? t('MigrationDialog.dropzone.active') : t('MigrationDialog.dropzone.inactive')}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">{t('dropzone.fileTypes')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('MigrationDialog.dropzone.fileTypes')}</p>
                </div>
 
                {files.length > 0 && (
@@ -206,7 +204,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                      {files.map((file, index) => (
                         <div key={`${file.name}-${index}`} className="flex items-center justify-between p-2 rounded-md border">
                            <div className="flex items-center gap-2 overflow-hidden">
-                           <File className="h-5 w-5 flex-shrink-0" />
+                           <File className="h-5 w-5 shrink-0" />
                            <span className="font-mono text-sm truncate" title={file.name}>{file.name}</span>
                            </div>
                            <Button variant="ghost" size="icon" title="Remove file" onClick={() => handleRemoveFile(file)}>
@@ -219,8 +217,8 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
             </div>
 
             <DialogFooter>
-               <Button variant="ghost" onClick={() => handleOpenChange(false)} title={t('cancel')} className="cursor-pointer">{t('cancel')}</Button>
-               <Button onClick={handleMigrate} disabled={files.length === 0} title={t('migrateButton')} className="cursor-pointer">{t('migrateButton')}</Button>
+               <Button variant="ghost" onClick={() => handleOpenChange(false)} title={t('MigrationDialog.cancel')} className="cursor-pointer">{t('MigrationDialog.cancel')}</Button>
+               <Button onClick={handleMigrate} disabled={files.length === 0} title={t('MigrationDialog.migrateButton')} className="cursor-pointer">{t('MigrationDialog.migrateButton')}</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>

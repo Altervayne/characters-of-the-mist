@@ -47,7 +47,18 @@
    },
    "Errors": {
       "localStorageDisabled_title": "Erreur Critique de Stockage",
-      "localStorageDisabled_description": "Il semblerait que pour une raison ou pour une autre, le stockage local de votre navigateur n'est pas accessible par l'application. Characters of the Mist dépend uniquement du stockage local de votre navigateur pour la persistance et la gestion des données, et n'utilise aucun serveur. Cela signifie que l'application ne peut pas fonctionner dans votre cas."
+      "localStorageDisabled_description": "Il semblerait que pour une raison ou pour une autre, le stockage local de votre navigateur n'est pas accessible par l'application. Characters of the Mist dépend uniquement du stockage local de votre navigateur pour la persistance et la gestion des données, et n'utilise aucun serveur. Cela signifie que l'application ne peut pas fonctionner dans votre cas.",
+      "ErrorBoundary": {
+         "title": "Une erreur s'est produite",
+         "description": "Je suis désolé, mais une erreur inattendue s'est produite. Merci d'envoyer les information de l'erreur en incluant ce que vous faisiez au moment où elle est survenue sur le serveur Discord de Tools of the Mist. Vous pouvez essayer de recharger la page pour corriger l'erreur.",
+         "errorMessage": "Message d'erreur :",
+         "technicalDetails": "Détails techniques :",
+         "appSettings": "Paramètres de l'application :",
+         "copyButton": "Copier les détails de l'erreur",
+         "reloadButton": "Recharger la page",
+         "copySuccess": "Détails de l'erreur copiés dans le presse-papier",
+         "copyFailed": "Échec de la copie dans le presse-papier"
+      }
    },
    "Tooltips": {
       "ViewMode": {
@@ -233,6 +244,8 @@
       "description": "Vous trouverez ici des paramètres pour l'application en général comme la palette de thème, le mode sombre ou clair, etc...",
 
       "language": "Langue",
+      "selectLanguagePlaceholder": "Sélectionner une langue",
+      "selectThemePlaceholder": "Sélectionner un thème",
 
       "accentColor": "Palette",
       "appearance": "Mode",
@@ -420,10 +433,10 @@
       },
 
       "actions": {
-         "renameTo": "Renommer en : \"{name}\"",
-         "createWith": "Créer avec : \"{name}\"",
-         "setPowerTags": "Nombre de Traits d'Atout: {count}",
-         "setWeaknessTags": "Nombre de Traits de Contrainte: {count}"
+         "renameTo": "Renommer en : \"{{name}}\"",
+         "createWith": "Créer avec : \"{{name}}\"",
+         "setPowerTags": "Nombre de Traits d'Atout: {{count}}",
+         "setWeaknessTags": "Nombre de Traits de Contrainte: {{count}}"
       },
 
       "themes": {
@@ -592,8 +605,8 @@
 
 
    "CardRenderer": {
-      "themeCardPlaceholder": "Carte de Thème : {title}",
-      "listCardPlaceholder": "Carte Liste : {title}"
+      "themeCardPlaceholder": "Carte de Thème : {{title}}",
+      "listCardPlaceholder": "Carte Liste : {{title}}"
    },
    "ThemeCard": {
       "fellowshipTitle": "Thème de Compagnie",
@@ -691,7 +704,9 @@
    "RiftCard": {
       "title": "Carte de Réceptacle",
       "mythos": "Mythos",
+      "mythosPlaceholder": "Entrez votre Mythos...",
       "logos": "Logos",
+      "logosPlaceholder": "Entrez votre Logos...",
       "characterNamePlaceholder": "Nom du Personnage...",
       "noName": "SANS NOM",
       "Crew": {

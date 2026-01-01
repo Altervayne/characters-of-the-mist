@@ -1,5 +1,5 @@
 // -- Type Imports --
-import { LegendsThemeType, CityThemeType, OtherscapeThemeType } from "./character";
+import type { LegendsThemeType, CityThemeType, OtherscapeThemeType } from "./character";
 
 
 

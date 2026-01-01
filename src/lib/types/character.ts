@@ -1,5 +1,5 @@
 // -- Type Imports --
-import { GameSystem, GeneralItemType } from "./drawer";
+import type { GameSystem, GeneralItemType } from "./common.ts";
 
 
 

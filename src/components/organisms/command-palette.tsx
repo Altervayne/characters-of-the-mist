@@ -1,14 +1,10 @@
-'use client';
-
 // -- React Imports --
 import React, { useEffect, useRef, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { Command } from 'cmdk';
-import { AnimatePresence, motion, Variants } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
@@ -24,12 +20,14 @@ import { otherscapeThemebooks, otherscapeThemeTypes } from '@/lib/data/otherscap
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
-import { ThemeName, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
-import { CommandAction } from '@/hooks/useCommandPaletteActions';
+import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
-import { CreateCardOptions, LegendsThemeTypes, ThemeTypeUnion } from '@/lib/types/creation';
-import { CityThemeType, OtherscapeThemeType } from '@/lib/types/character';
+import type { Variants } from 'framer-motion';
+import type { ThemeName } from '@/lib/stores/appSettingsStore';
+import type { CommandAction } from '@/hooks/useCommandPaletteActions';
+import type { CreateCardOptions, LegendsThemeTypes, ThemeTypeUnion } from '@/lib/types/creation';
+import type { CityThemeType, OtherscapeThemeType } from '@/lib/types/character';
 
 
 
@@ -75,7 +73,7 @@ interface RenameCharacterPageProps {
 };
 
 const RenameCharacterPage = ({ inputValue }: RenameCharacterPageProps) => {
-   const t = useTranslations('CommandPalette');
+   const { t: t } = useTranslation();
    const { updateCharacterName } = useCharacterActions();
    const { setCommandPaletteOpen } = useAppGeneralStateActions();
    const text = t('actions.renameTo', { name: inputValue || '...' });
@@ -103,7 +101,7 @@ const RenameCharacterPage = ({ inputValue }: RenameCharacterPageProps) => {
 
 // ###### SELECT THEME PALETTE ######
 const SetThemePalettePage = () => {
-   const t = useTranslations('CommandPalette');
+   const { t } = useTranslation();
    const { setTheme } = useAppSettingsActions();
    const { setCommandPaletteOpen } = useAppGeneralStateActions();
 
@@ -115,16 +113,16 @@ const SetThemePalettePage = () => {
    };
 
    return (
-      <Command.Group heading={t('groups.themePalette')}>
+      <Command.Group heading={t('CommandPalette.groups.themePalette')}>
          {availableThemes.map((theme) => (
             <Command.Item
                key={theme}
                onSelect={() => handleSelect(theme)}
-               value={t(`themes.${theme}`)}
+               value={t(`CommandPalette.themes.${theme}`)}
                className={commonItemClass}
             >
                <Palette className="mr-2 h-4 w-4" />
-               <span>{t(`themes.${theme}`)}</span>
+               <span>{t(`CommandPalette.themes.${theme}`)}</span>
             </Command.Item>
          ))}
       </Command.Group>
@@ -140,29 +138,29 @@ interface CreateCard_TypePageProps {
    onSelect: (type: 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME') => void;
 }
 const CreateCard_TypePage = ({ currentGame, onSelect }: CreateCard_TypePageProps) => {
-   const t = useTranslations('CommandPalette');
+   const { t } = useTranslation();
    return (
-      <Command.Group heading={t('groups.creation')}>
-         <Command.Item value={t('commands.cardTypeCharacter')} onSelect={() => onSelect('CHARACTER_THEME')} className={commonItemClass}>
-            <FileText className="mr-2 h-4 w-4" />{t('commands.cardTypeCharacter')}
+      <Command.Group heading={t('CommandPalette.groups.creation')}>
+         <Command.Item value={t('CommandPalette.commands.cardTypeCharacter')} onSelect={() => onSelect('CHARACTER_THEME')} className={commonItemClass}>
+            <FileText className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeCharacter')}
          </Command.Item>
          {currentGame === 'LEGENDS' && (
-            <Command.Item value={t('commands.cardTypeFellowship')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
-               <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeFellowship')}
+            <Command.Item value={t('CommandPalette.commands.cardTypeFellowship')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
+               <Users className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeFellowship')}
             </Command.Item>
          )}
          {currentGame === 'CITY_OF_MIST' && (
-            <Command.Item value={t('commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
-               <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeCrew')}
+            <Command.Item value={t('CommandPalette.commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
+               <Users className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeCrew')}
             </Command.Item>
          )}
          {currentGame === 'OTHERSCAPE' && (
             <>
-               <Command.Item value={t('commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
-                  <Users className="mr-2 h-4 w-4" />{t('commands.cardTypeCrew')}
+               <Command.Item value={t('CommandPalette.commands.cardTypeCrew')} onSelect={() => onSelect('GROUP_THEME')} className={commonItemClass}>
+                  <Users className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeCrew')}
                </Command.Item>
-               <Command.Item value={t('commands.cardTypeLoadout')} onSelect={() => onSelect('LOADOUT_THEME')} className={commonItemClass}>
-                  <Backpack className="mr-2 h-4 w-4" />{t('commands.cardTypeLoadout')}
+               <Command.Item value={t('CommandPalette.commands.cardTypeLoadout')} onSelect={() => onSelect('LOADOUT_THEME')} className={commonItemClass}>
+                  <Backpack className="mr-2 h-4 w-4" />{t('CommandPalette.commands.cardTypeLoadout')}
                </Command.Item>
             </>
          )}
@@ -173,11 +171,11 @@ const CreateCard_TypePage = ({ currentGame, onSelect }: CreateCard_TypePageProps
 // --- Step 2a: Legends Theme Type ---
 interface CreateCard_LegendsThemeTypePageProps { onSelect: (type: LegendsThemeTypes) => void; }
 const CreateCard_LegendsThemeTypePage = ({ onSelect }: CreateCard_LegendsThemeTypePageProps) => {
-      const t = useTranslations('CommandPalette');
-      const tTypes = useTranslations('ThemeTypes');
+      const { t } = useTranslation();
+      const { t: tTypes } = useTranslation();
       const themeTypeIcons: { [key in LegendsThemeTypes]: React.ElementType } = { Origin: Leaf, Adventure: Swords, Greatness: Crown };
       return (
-         <Command.Group heading={t('groups.chooseThemeType')}>
+         <Command.Group heading={t('CommandPalette.groups.chooseThemeType')}>
             {legendsThemeTypes.map(type => {
                 const IconComponent = themeTypeIcons[type as LegendsThemeTypes];
                 return (
@@ -194,11 +192,11 @@ const CreateCard_LegendsThemeTypePage = ({ onSelect }: CreateCard_LegendsThemeTy
 // --- Step 2b: City Theme Type ---
 interface CreateCard_CityThemeTypePageProps { onSelect: (type: CityThemeType) => void; }
 const CreateCard_CityThemeTypePage = ({ onSelect }: CreateCard_CityThemeTypePageProps) => {
-      const t = useTranslations('CommandPalette');
-      const tTypes = useTranslations('ThemeTypes');
+      const { t } = useTranslation();
+      const { t: tTypes } = useTranslation();
       const themeTypeIcons: { [key in CityThemeType]: React.ElementType } = { Mythos: CityMythosIcon, Logos: CityLogosIcon };
       return (
-         <Command.Group heading={t('groups.chooseThemeType')}>
+         <Command.Group heading={t('CommandPalette.groups.chooseThemeType')}>
             {cityThemeTypes.map(type => {
                 const IconComponent = themeTypeIcons[type as CityThemeType];
                 return (
@@ -215,11 +213,11 @@ const CreateCard_CityThemeTypePage = ({ onSelect }: CreateCard_CityThemeTypePage
 // --- Step 2c: Otherscape Theme Type ---
 interface CreateCard_OtherscapeThemeTypePageProps { onSelect: (type: OtherscapeThemeType) => void; }
 const CreateCard_OtherscapeThemeTypePage = ({ onSelect }: CreateCard_OtherscapeThemeTypePageProps) => {
-      const t = useTranslations('CommandPalette');
-      const tTypes = useTranslations('ThemeTypes');
+      const { t } = useTranslation();
+      const { t: tTypes } = useTranslation();
       const themeTypeIcons: { [key in OtherscapeThemeType]: React.ElementType } = { Mythos: OtherscapeMythosIcon, Self: OtherscapeSelfIcon, Noise: OtherscapeNoiseIcon };
       return (
-         <Command.Group heading={t('groups.chooseThemeType')}>
+         <Command.Group heading={t('CommandPalette.groups.chooseThemeType')}>
             {otherscapeThemeTypes.map(type => {
                 const IconComponent = themeTypeIcons[type as OtherscapeThemeType];
                 return (
@@ -241,8 +239,8 @@ interface CreateCard_ThemebookPageProps {
     onSelect: (themebook: string) => void;
 }
 const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, onSelect }: CreateCard_ThemebookPageProps) => {
-   const t = useTranslations('CommandPalette');
-   const tData = useTranslations();
+   const { t } = useTranslation();
+   const { t: tData } = useTranslation();
 
    // Determine which themebook list to use based on theme type and current game
    let availableThemebooks: { value: string; key: string; }[] = [];
@@ -254,10 +252,10 @@ const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, onSelect
       availableThemebooks = otherscapeThemebooks[themeType] || [];
    }
 
-   const text = t('actions.createWith', { name: inputValue || '...' });
+   const text = t('CommandPalette.actions.createWith', { name: inputValue || '...' });
 
    return (
-      <Command.Group heading={t('groups.chooseThemebook')}>
+      <Command.Group heading={t('CommandPalette.groups.chooseThemebook')}>
          <Command.Item value={text} onSelect={() => onSelect(inputValue)} className={commonItemClass}>
             <CornerDownLeft className="mr-2 h-4 w-4" />
             <span>{text}</span>
@@ -274,7 +272,7 @@ const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, onSelect
 // --- Step 4: Input Text ---
 interface CreateCard_InputPageProps { inputValue: string; onSelect: () => void; }
 const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputPageProps) => {
-   const t = useTranslations('CommandPalette');
+   const { t } = useTranslation();
    const text = t('actions.createWith', { name: inputValue || '...' });
 
    return (
@@ -288,8 +286,8 @@ const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputPageProp
 // --- Step 5: Input Number (Power & Weakness Tags qty.) ---
 interface CreateCard_NumberInputPageProps { inputValue: string; labelKey: 'actions.setPowerTags' | 'actions.setWeaknessTags'; onSelect: () => void; }
 const CreateCard_NumberInputPage = ({ inputValue, labelKey, onSelect }: CreateCard_NumberInputPageProps) => {
-   const t = useTranslations('CommandPalette');
-   const text = t(labelKey, { count: inputValue || '0' });
+   const { t } = useTranslation();
+   const text = t(labelKey, { count: Number(inputValue) || 0 });
    return (
       <Command.Item value={text} onSelect={onSelect} className={commonItemClass}>
          <CornerDownLeft className="mr-2 h-4 w-4" />
@@ -306,14 +304,14 @@ interface CreateTracker_TypePageProps {
    onSelect: (type: 'STATUS' | 'STORY_TAG') => void;
 }
 const CreateTracker_TypePage = ({ onSelect }: CreateTracker_TypePageProps) => {
-   const t = useTranslations('CommandPalette');
+   const { t } = useTranslation();
    return (
-      <Command.Group heading={t('groups.creation')}>
-         <Command.Item value={t('commands.trackerTypeStatus')} onSelect={() => onSelect('STATUS')} className={commonItemClass}>
-            <CheckSquare className="mr-2 h-4 w-4" />{t('commands.trackerTypeStatus')}
+      <Command.Group heading={t('CommandPalette.groups.creation')}>
+         <Command.Item value={t('CommandPalette.commands.trackerTypeStatus')} onSelect={() => onSelect('STATUS')} className={commonItemClass}>
+            <CheckSquare className="mr-2 h-4 w-4" />{t('CommandPalette.commands.trackerTypeStatus')}
          </Command.Item>
-         <Command.Item value={t('commands.trackerTypeStoryTag')} onSelect={() => onSelect('STORY_TAG')} className={commonItemClass}>
-            <ListTodo className="mr-2 h-4 w-4" />{t('commands.trackerTypeStoryTag')}
+         <Command.Item value={t('CommandPalette.commands.trackerTypeStoryTag')} onSelect={() => onSelect('STORY_TAG')} className={commonItemClass}>
+            <ListTodo className="mr-2 h-4 w-4" />{t('CommandPalette.commands.trackerTypeStoryTag')}
          </Command.Item>
       </Command.Group>
    );
@@ -325,7 +323,7 @@ interface CreateTracker_NamePageProps {
     onSelect: () => void;
 }
 const CreateTracker_NamePage = ({ inputValue, onSelect }: CreateTracker_NamePageProps) => {
-   const t = useTranslations('CommandPalette');
+   const { t } = useTranslation();
    const text = t('actions.createWith', { name: inputValue || '...' });
    return (
       <Command.Item value={text} onSelect={onSelect} className={commonItemClass}>
@@ -341,12 +339,6 @@ const CreateTracker_NamePage = ({ inputValue, onSelect }: CreateTracker_NamePage
 //      ##          FULL COMMAND PALETTE          ##
 //      \#========================================#/
 
-type PlaceholderKey = `placeholder_${
-  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 
-  | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 
-  | 21 | 22 | 23 | 24 | 25
-}`;
-
 interface CommandPaletteProps {
    commands: CommandAction[];
 };
@@ -359,8 +351,8 @@ const commandVariants: Variants = {
 
 
 export function CommandPalette({ commands }: CommandPaletteProps) {
-   const t = useTranslations('CommandPalette');
-   const tNotify = useTranslations('Notifications');
+   const { t } = useTranslation();
+   const { t: tNotify } = useTranslation();
    const { addCard, addStatus, addStoryTag } = useCharacterActions();
    const character = useCharacterStore((state) => state.character);
    const currentGame = character?.game;
@@ -370,7 +362,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    const [inputValue, setInputValue] = useState('');
    const [cardOptions, setCardOptions] = useState<Partial<CreateCardOptions>>({});
    const [trackerType, setTrackerType] = useState<'STATUS' | 'STORY_TAG' | null>(null);
-   const [placeholder, setPlaceholder] = useState(t('placeholder_1'));
+   const [placeholder, setPlaceholder] = useState(t('CommandPalette.placeholder_1'));
 
    const paletteRef = useRef<HTMLDivElement>(null);
    const inputRef = useRef<HTMLInputElement>(null);
@@ -387,6 +379,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
    useEffect(() => {
       if (!isOpen) {
+         // Reset command palette state when closed
+         // eslint-disable-next-line react-hooks/set-state-in-effect
          setPages(['root']);
          setInputValue('');
          setCardOptions({});
@@ -399,22 +393,26 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    useEffect(() => {
       if (isOpen) {
          let newPlaceholder = '';
+         const randomIndex = Math.floor(Math.random() * 25) + 1;
+
          switch(activePage) {
-            case 'renameCharacter': newPlaceholder = t('placeholders.renameCharacter'); break;
+            case 'renameCharacter': newPlaceholder = t('CommandPalette.placeholders.renameCharacter'); break;
 
-            case 'createCard_ThemeType': newPlaceholder = t('placeholders.themeType'); break;
-            case 'createCard_Themebook': newPlaceholder = t('placeholders.themebook'); break;
-            case 'createCard_MainTag': newPlaceholder = t('placeholders.mainTagName'); break;
-            case 'createCard_PowerTags': newPlaceholder = t('placeholders.powerTags'); break;
-            case 'createCard_WeaknessTags': newPlaceholder = t('placeholders.weaknessTags'); break;
+            case 'createCard_ThemeType': newPlaceholder = t('CommandPalette.placeholders.themeType'); break;
+            case 'createCard_Themebook': newPlaceholder = t('CommandPalette.placeholders.themebook'); break;
+            case 'createCard_MainTag': newPlaceholder = t('CommandPalette.placeholders.mainTagName'); break;
+            case 'createCard_PowerTags': newPlaceholder = t('CommandPalette.placeholders.powerTags'); break;
+            case 'createCard_WeaknessTags': newPlaceholder = t('CommandPalette.placeholders.weaknessTags'); break;
 
-            case 'createTracker_Type': newPlaceholder = t('placeholders.trackerType'); break;
-            case 'createTracker_Name': newPlaceholder = t('placeholders.trackerName'); break;
-            
+            case 'createTracker_Type': newPlaceholder = t('CommandPalette.placeholders.trackerType'); break;
+            case 'createTracker_Name': newPlaceholder = t('CommandPalette.placeholders.trackerName'); break;
+
             default:
-               const randomIndex = Math.floor(Math.random() * 25) + 1;
-               newPlaceholder = t(`placeholder_${randomIndex}` as PlaceholderKey);
+               newPlaceholder = t(`CommandPalette.placeholder_${randomIndex}`);
          }
+
+         // Update placeholder based on active page
+         // eslint-disable-next-line react-hooks/set-state-in-effect
          setPlaceholder(newPlaceholder);
          inputRef.current?.focus();
       }
@@ -516,10 +514,10 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                      }
                   }}
                   className={cn(
-                     '[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground',
+                     '**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground',
                      '[&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5',
-                     '[&_[cmdk-input]]:h-12',
-                     '[&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3',
+                     '**:[[cmdk-input]]:h-12',
+                     '**:[[cmdk-item]]:px-2 **:[[cmdk-item]]:py-3',
                      '[&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5'
                   )}
                >
@@ -527,7 +525,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                      ref={inputRef}
                      value={inputValue}
                      onValueChange={setInputValue}
-                     placeholder={activePage === 'renameCharacter' ? t('placeholders.renameCharacter') : placeholder}
+                     placeholder={activePage === 'renameCharacter' ? t('CommandPalette.placeholders.renameCharacter') : placeholder}
                      className={cn(
                         "h-12 w-full border-b bg-transparent pl-4 pr-4 text-foreground",
                         "placeholder:text-muted-foreground",
@@ -535,8 +533,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         "disabled:cursor-not-allowed disabled:opacity-50"
                      )}
                   />
-                  <Command.List className="max-h-[300px] overflow-y-auto overflow-x-hidden p-2 bg-card rounded-b-lg">
-                     <Command.Empty className="py-6 text-center text-sm">{t('empty')}</Command.Empty>
+                  <Command.List className="max-h-75 overflow-y-auto overflow-x-hidden p-2 bg-card rounded-b-lg">
+                     <Command.Empty className="py-6 text-center text-sm">{t('CommandPalette.empty')}</Command.Empty>
                      {activePage === 'root' && (<RootPage commandGroups={commandGroups} onSelectCommand={onSelectCommand} />)}
                      {activePage === 'renameCharacter' && (<RenameCharacterPage inputValue={inputValue} />)}
                      {activePage === 'setThemePalette' && (<SetThemePalettePage />)}
@@ -556,7 +554,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                                  powerTagsCount: 2,
                                  weaknessTagsCount: 1
                               });
-                              toast.success(tNotify('card.created'));
+                              toast.success(tNotify('Notifications.card.created'));
                               setCommandPaletteOpen(false);
                            } else {
                               setCardOptions({ cardType: type });
@@ -612,7 +610,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         <CreateCard_NumberInputPage inputValue={inputValue} labelKey='actions.setWeaknessTags' onSelect={() => {
                            const finalOptions = { ...cardOptions, weaknessTagsCount: Number(inputValue) } as CreateCardOptions;
                            addCard(finalOptions);
-                           toast.success(tNotify('card.created'));
+                           toast.success(tNotify('Notifications.card.created'));
                            setCommandPaletteOpen(false);
                         }} />
                      )}
@@ -634,7 +632,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         <CreateTracker_NamePage inputValue={inputValue} onSelect={() => {
                            if (trackerType === 'STATUS') addStatus(inputValue);
                            if (trackerType === 'STORY_TAG') addStoryTag(inputValue);
-                           toast.success(tNotify('tracker.created'));
+                           toast.success(tNotify('Notifications.tracker.created'));
                            setCommandPaletteOpen(false);
                         }} />
                      )}

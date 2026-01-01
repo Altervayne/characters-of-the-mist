@@ -2,11 +2,14 @@
 import cuid from 'cuid';
 
 // -- Types Imports --
-import { Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
-import { GameSystem } from '../types/drawer';
+import type { Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
+import type { GameSystem } from '../types/drawer';
 
-
-
+/**
+ * Creates a fresh character sheet for the specified game system.
+ * Initializes with appropriate default cards - Hero Card for Legends, Character Card for City/Otherscape.
+ * Empty trackers to start, ready for you to build your character!
+ */
 export function createNewCharacter(name: string, game: GameSystem): Character {
    const baseCharacter: Omit<Character, 'cards' | 'game'> = {
       id: cuid(),

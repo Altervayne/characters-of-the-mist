@@ -1,15 +1,6 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
-
-// -- Other Library Imports --
-import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import React, { useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -29,15 +20,19 @@ import { CardSectionHeader } from '@/components/molecules/card-section-header';
 import { TagItem } from '@/components/molecules/tag-item';
 import { PipTracker } from '@/components/molecules/pip-tracker';
 import { BlandTagItem } from '@/components/molecules/bland-tag-item';
-import { ToolbarHandle } from '@/components/molecules/toolbar-handle';
+import { CardFlipWrapper } from '@/components/molecules/card-flip-wrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, LegendsFellowshipDetails, LegendsThemeDetails } from '@/lib/types/character';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { Card as CardData, CardViewMode, LegendsFellowshipDetails, LegendsThemeDetails } from '@/lib/types/character';
 
 
 
@@ -62,13 +57,14 @@ const getCardTypeClass = (type: string) => {
 
 
 
-export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
-      const t = useTranslations('ThemeCard');
+export const LegendsThemeCard = React.memo(
+   React.forwardRef<HTMLDivElement, ThemeCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+      const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
 
-      const [isHovered, setIsHovered] = useState(false);
+      const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
       const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
       const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
@@ -120,47 +116,26 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
       // ###########################
 
       // --- Main Tag ---
-      const [localMainTagName, setLocalMainTagName] = useState(details.mainTag.name);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (details.mainTag.name !== localMainTagName) {
-               actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: localMainTagName }});
-            }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localMainTagName, details, card.id, actions]);
-
-      useEffect(() => {
-         setLocalMainTagName(details.mainTag.name);
-      }, [details.mainTag.name]);
-
+      const [localMainTagName, setLocalMainTagName] = useInputDebouncer(
+         details.mainTag.name,
+         (value) => actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: value }})
+      );
 
       // --- Quest Text ---
-      const [localQuest, setLocalQuest] = useState(details.quest);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (details.quest !== localQuest) {
-               actions.updateCardDetails(card.id, { ...details, quest: localQuest });
-            }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localQuest, details, card.id, actions]);
-
-      useEffect(() => {
-         setLocalQuest(details.quest);
-      }, [details.quest]);
+      const [localQuest, setLocalQuest] = useInputDebouncer(
+         details.quest,
+         (value) => actions.updateCardDetails(card.id, { ...details, quest: value })
+      );
 
 
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
                {card.cardType === 'CHARACTER_THEME' ? (
@@ -173,12 +148,12 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                   <CardHeaderMolecule title={"Fellowship"} />
                )}
                <div className="px-2 text-xs font-semibold text-center">
-                  <span>{t('power')}</span> • <span className="text-destructive/50">{t('weakness')}</span>
+                  <span>{t('ThemeCard.power')}</span> • <span className="text-destructive/50">{t('ThemeCard.weakness')}</span>
                </div>
             </CardHeader>
             
-            <CardContent className="flex-grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-1 py-2.5 flex-shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
+            <CardContent className="grow flex flex-col pt-2 px-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-1 py-2.5 shrink-0 flex justify-between items-center gap-2 border-y border-card-accent/30">
                   <div className="w-6">
                      {!isEditing && (
                         <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={() => handleDetailChange('mainTag', { ...details.mainTag, isActive: !details.mainTag.isActive })}>
@@ -188,14 +163,14 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                   </div>
                   {isEditing ? (
                      <Input 
-                        className="text-xl font-bold text-center flex-grow border-0 shadow-none"
-                        placeholder={t('placeholderName')}
+                        className="text-xl font-bold text-center grow border-0 shadow-none"
+                        placeholder={t('ThemeCard.placeholderName')}
                         value={localMainTagName}
                         onChange={(e) => setLocalMainTagName(e.target.value)}
                      />
                   ) : (
                      <h2 className={cn("text-xl font-bold", details.mainTag.isScratched ? 'line-through opacity-50' : details.mainTag.isActive && 'underline')}>
-                        {details.mainTag.name || `[${t('noName')}]`}
+                        {details.mainTag.name || `[${t('ThemeCard.noName')}]`}
                      </h2>
                   )}
                   <div className="w-6">
@@ -206,32 +181,32 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                      )}
                   </div>
                </div>
-               <div className="flex flex-col flex-grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+               <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
                   {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
-                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
+                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Power Tag</Button>}
                   
                   {details.weaknessTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />)}
-                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border-1 border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
+                  {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>Add Weakness Tag</Button>}
                </div>
             </CardContent>
 
             {!isDrawerPreview &&
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
-                  <CardSectionHeader title={`${t('questTitle')}`}></CardSectionHeader>
-                  <div className="w-full flex-grow overflow-y-auto overscroll-contain" ref={questScrollRef}>
+                  <CardSectionHeader title={`${t('ThemeCard.questTitle')}`}></CardSectionHeader>
+                  <div className="w-full grow overflow-y-auto overscroll-contain" ref={questScrollRef}>
                      {isEditing ? (
                         <Textarea 
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none" 
-                           placeholder={t('questPlaceholder')} 
+                           placeholder={t('ThemeCard.questPlaceholder')} 
                            value={localQuest || ''} 
                            onChange={(e) => setLocalQuest(e.target.value)} 
                         />
                      ) : (
-                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{details.quest || `[${t('noQuest')}]`}</p>
+                        <p className="p-2 text-xs text-center whitespace-pre-wrap">{details.quest || `[${t('ThemeCard.noQuest')}]`}</p>
                      )}
                   </div>
                   
-                  <div className="flex justify-around items-center py-2 px-2 flex-shrink-0 w-[100%] border-t border-card-accent/30">
+                  <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-card-accent/30">
                      <PipTracker label="abandon" value={details.abandon} onUpdate={(val) => handleDetailChange('abandon', val)} />
                      <PipTracker label="improve" value={details.improve} onUpdate={(val) => handleDetailChange('improve', val)} />
                      <PipTracker label="milestone" value={details.milestone} onUpdate={(val) => handleDetailChange('milestone', val)} />
@@ -243,11 +218,11 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             {card.cardType === 'CHARACTER_THEME' ? (
                <CardHeaderMolecule title={(details as LegendsThemeDetails).themebook} type={(details as LegendsThemeDetails).themeType} />
@@ -255,10 +230,10 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                <CardHeaderMolecule title={card.title} />
             )}
             
-            <CardSectionHeader title={t('improvements')} />
+            <CardSectionHeader title={t('ThemeCard.improvements')} />
 
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow overflow-y-auto space-y-0 p-0 overscroll-contain" ref={improvementsScrollRef}>
                   {details.improvements.map((imp, index) => (
                      <BlandTagItem 
                         key={imp.id}
@@ -271,8 +246,8 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {t('addImprovement')}
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'improvements')}>
+                           <PlusCircle className="h-4 w-4 mr-2" /> {t('ThemeCard.addImprovement')}
                         </Button>
                      </div>
                   )}
@@ -283,85 +258,29 @@ export const LegendsThemeCard = React.forwardRef<HTMLDivElement, ThemeCardProps>
 
 
 
-      if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
-         return (
-            <motion.div
-               ref={ref}
-               onHoverStart={() => setIsHovered(true)}
-               onHoverEnd={() => setIsHovered(false)}
-               className="relative"
-            >
-               <ToolbarHandle 
-                  isEditing={isEditing}
-                  isHovered={isHovered}
-                  onDelete={() => actions.deleteCard(card.id)}
-                  dragAttributes={dragAttributes}
-                  dragListeners={dragListeners}
-                  cardTheme={cardTypeClass}
-                  onEditCard={onEditCard}
-                  onExport={onExport}
-                  onCycleViewMode={handleCycleViewMode}
-                  cardViewMode={card.viewMode}
-               />
-               <div className="flex gap-1 items-start">
-                  {CardFront}
-                  {CardBack}
-               </div>
-            </motion.div>
-         );
-      }
-
-
-
       return (
-         <motion.div
+         <CardFlipWrapper
             ref={ref}
-            onHoverStart={() => setIsHovered(true)}
-            onHoverEnd={() => setIsHovered(false)}
-            className="relative"
-         >
-            <motion.div
-               className="w-full h-full"
-               style={{ transformStyle: 'preserve-3d' }}
-               initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
-               animate={{ rotateY: card.isFlipped ? 180 : 0 }}
-               transition={{ duration: 0.5, ease: 'easeInOut' }}
-            >
-
-               {!isDrawerPreview && 
-                  <ToolbarHandle 
-                     isEditing={isEditing}
-                     isHovered={isHovered}
-                     onDelete={() => actions.deleteCard(card.id)}
-                     onFlip={() => actions.flipCard(card.id)}
-                     dragAttributes={dragAttributes}
-                     dragListeners={dragListeners}
-                     cardTheme={cardTypeClass}
-                     onEditCard={onEditCard}
-                     onExport={onExport}
-                     onCycleViewMode={handleCycleViewMode}
-                     cardViewMode={card.viewMode}
-                  />
-               }
-
-               {/* ============================================
-                                 CARD FRONT
-                  ============================================ */}
-               <div style={{ backfaceVisibility: 'hidden' }}>
-                  {CardFront}
-               </div>
-               
-               {/* ============================================
-                                 CARD BACK
-                  ============================================ */}
-               <div className="absolute top-0 left-0 w-full h-full" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                  {CardBack}
-               </div>
-               
-            </motion.div>
-         </motion.div>
+            effectiveViewMode={effectiveViewMode}
+            isDrawerPreview={isDrawerPreview ?? false}
+            isSnapshot={isSnapshot}
+            card={card}
+            isHovered={isHovered}
+            hoverHandlers={hoverHandlers}
+            isEditing={isEditing}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            cardTheme={cardTypeClass}
+            onExport={onExport}
+            onCycleViewMode={handleCycleViewMode}
+            onFlip={() => actions.flipCard(card.id)}
+            onDelete={() => actions.deleteCard(card.id)}
+            onEditCard={card.cardType === 'GROUP_THEME' ? undefined : onEditCard}
+            cardFront={CardFront}
+            cardBack={CardBack}
+         />
       );
-   }
+   })
 );
 
 LegendsThemeCard.displayName = 'ThemeCard';

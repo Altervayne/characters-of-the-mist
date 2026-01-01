@@ -43,3 +43,6 @@ next-env.d.ts
 
 # other
 MIGRATION_PLAN.md
+
+# build
+/dist/

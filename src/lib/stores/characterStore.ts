@@ -1,22 +1,23 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
 import { temporal } from 'zundo';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import cuid from 'cuid';
 
 // -- Utils Imports --
 import { createNewCharacter } from '../utils/character';
 import { deepReId } from '../utils/drawer';
 import { harmonizeData } from '../harmonization';
+import { createDebouncedStorage } from '../utils/debouncedStorage';
 import { STORE_VERSION } from '../config';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
-import { GeneralItemType, GameSystem } from '../types/drawer';
-import { CreateCardOptions } from '../types/creation';
+import type { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
+import type { GeneralItemType, GameSystem } from '../types/drawer';
+import type { CreateCardOptions } from '../types/creation';
 
 
 
@@ -1110,10 +1111,10 @@ export const useCharacterStore = create<CharacterState>()(
          }),
          {
             name: 'characters-of-the-mist_character-storage',
-            storage: createJSONStorage(() => localStorage),
+            storage: createDebouncedStorage(300), // 300ms debounce to reduce localStorage writes
             partialize: (state) => ({ character: state.character }),
             version: STORE_VERSION,
-            migrate: (persistedState, version) => {
+            migrate: (persistedState, _version) => {
                const state = persistedState as Pick<CharacterState, 'character'>;
 
                if (state.character) {

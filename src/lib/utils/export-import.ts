@@ -1,5 +1,5 @@
-import { Card, Tracker, Character } from '@/lib/types/character';
-import { Drawer, Folder, GameSystem, GeneralItemType } from '../types/drawer';
+import type { Card, Tracker, Character } from '@/lib/types/character';
+import type { Drawer, Folder, GameSystem, GeneralItemType } from '../types/drawer';
 import { APP_VERSION } from '../config';
 
 export type ExportableItemType = GeneralItemType
@@ -12,8 +12,11 @@ export interface ExportFile {
    content: ExportableContent;
 };
 
-
-
+/**
+ * Generates a nicely formatted filename for exported items.
+ * Format: [Name]_[GameAbbrev]_[Type]_[Date].cotm
+ * Example: "MyHero_LitM_Character_2025-01-15.cotm"
+ */
 export function generateExportFilename(game: GameSystem, type: ExportableItemType, customHandle?: string): string {
    const date = new Date().toISOString().slice(0, 10);
    let textType: string | undefined = undefined
@@ -77,8 +80,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
    return `${prefix}_${date}`;
 };
 
-
-
+/**
+ * Exports an item to a .cotm file and triggers the browser download.
+ * Wraps the content in an ExportFile structure with metadata and version info.
+ */
 export function exportToFile(item: ExportableContent, type: ExportableItemType, game: GameSystem, fileName: string) {
    const exportData: ExportFile = {
       fileType: type,
@@ -101,11 +106,19 @@ export function exportToFile(item: ExportableContent, type: ExportableItemType, 
    URL.revokeObjectURL(url);
 };
 
+/**
+ * Quick helper to export a full character sheet.
+ * Generates the filename automatically from the character's name and game.
+ */
 export function exportCharacterSheet(character: Character) {
    const fileName = generateExportFilename(character.game, 'FULL_CHARACTER_SHEET', character.name);
    exportToFile(character, 'FULL_CHARACTER_SHEET', character.game, fileName);
 };
 
+/**
+ * Exports the entire drawer - all your characters, folders, and components in one file.
+ * Perfect for backups or transferring your whole collection to another device.
+ */
 export function exportDrawer(drawer: Drawer) {
    const today = new Date();
    const dd = String(today.getDate()).padStart(2, '0');
@@ -118,8 +131,11 @@ export function exportDrawer(drawer: Drawer) {
    exportToFile(drawer, 'FULL_DRAWER', 'NEUTRAL', drawerFileName);
 };
 
-
-
+/**
+ * Imports a .cotm file and parses it into an ExportFile structure.
+ * Returns a promise that resolves with the parsed data, or rejects if the file is invalid.
+ * Validates the file format to make sure it's actually a CotM export.
+ */
 export function importFromFile(file: File): Promise<ExportFile> {
    return new Promise((resolve, reject) => {
       const reader = new FileReader();

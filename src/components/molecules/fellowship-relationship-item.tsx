@@ -1,10 +1,5 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Input } from '@/components/ui/input';
@@ -18,9 +13,10 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { FellowshipRelationship } from '@/lib/types/character';
+import type { FellowshipRelationship } from '@/lib/types/character';
 
 
 
@@ -29,13 +25,13 @@ interface FellowshipRelationshipItemProps {
    relationship: FellowshipRelationship;
    isEditing: boolean;
    index: number;
-   translationNamespace?: string;
+   translationNamespace?: 'HeroCard' | 'OtherscapeCharacterCard';
 }
 
 
 
 export function FellowshipRelationshipItem({ cardId, relationship, isEditing, index, translationNamespace = 'HeroCard' }: FellowshipRelationshipItemProps) {
-   const t = useTranslations(translationNamespace);
+   const { t } = useTranslation();
    const { updateRelationship, removeRelationship } = useCharacterActions();
 
    const isEvenRow = index % 2 === 0;
@@ -48,37 +44,16 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
    // ###########################
 
    // --- Companion Name ---
-   const [localCompanionName, setLocalCompanionName] = useState(relationship.companionName);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (relationship.companionName !== localCompanionName) {
-            updateRelationship(cardId, relationship.id, { companionName: localCompanionName });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localCompanionName, relationship, cardId, updateRelationship]);
-
-   useEffect(() => {
-      setLocalCompanionName(relationship.companionName);
-   }, [relationship.companionName]);
-
+   const [localCompanionName, setLocalCompanionName] = useInputDebouncer(
+      relationship.companionName,
+      (value) => updateRelationship(cardId, relationship.id, { companionName: value })
+   );
 
    // --- Relationship Tag ---
-   const [localRelationshipTag, setLocalRelationshipTag] = useState(relationship.relationshipTag);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (relationship.relationshipTag !== localRelationshipTag) {
-            updateRelationship(cardId, relationship.id, { relationshipTag: localRelationshipTag });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localRelationshipTag, relationship, cardId, updateRelationship]);
-
-   useEffect(() => {
-      setLocalRelationshipTag(relationship.relationshipTag);
-   }, [relationship.relationshipTag]);
+   const [localRelationshipTag, setLocalRelationshipTag] = useInputDebouncer(
+      relationship.relationshipTag,
+      (value) => updateRelationship(cardId, relationship.id, { relationshipTag: value })
+   );
 
 
 
@@ -91,10 +66,10 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
                value={localCompanionName}
                onChange={(e) => setLocalCompanionName(e.target.value)}
                className="h-7 flex-1 border-dashed"
-               placeholder={t('companionPlaceholder')}
+               placeholder={t(`${translationNamespace}.companionPlaceholder`)}
             />
          ) : (
-            <span className="flex-1 font-semibold text-center">{relationship.companionName ? relationship.companionName : `[${t('relationshipCompanionNoName')}]`}</span>
+            <span className="flex-1 font-semibold text-center">{relationship.companionName ? relationship.companionName : `[${t(`${translationNamespace}.relationshipCompanionNoName`)}]`}</span>
          )}
 
          {isEditing ? (
@@ -102,10 +77,10 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
                value={localRelationshipTag}
                onChange={(e) => setLocalRelationshipTag(e.target.value)}
                className="h-7 flex-1 border-dashed italic"
-               placeholder={t('relationshipPlaceholder')}
+               placeholder={t(`${translationNamespace}.relationshipPlaceholder`)}
             />
          ) : (
-            <span className="flex-1 italic text-muted-foreground text-center">&quot;{relationship.relationshipTag ? relationship.relationshipTag : `[${t('relationshipRelationNoName')}]`}&quot;</span>
+            <span className="flex-1 italic text-muted-foreground text-center">&quot;{relationship.relationshipTag ? relationship.relationshipTag : `[${t(`${translationNamespace}.relationshipRelationNoName`)}]`}&quot;</span>
          )}
 
          {isEditing && (

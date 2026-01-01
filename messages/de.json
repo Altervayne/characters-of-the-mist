@@ -198,6 +198,8 @@
       "description": "Hier finden Sie allgemeine einstellbare Einstellungen für die App, wie das Farbschema oder den Hell- und Dunkelmodus.",
 
       "language": "Sprache",
+      "selectLanguagePlaceholder": "Sprache wählen",
+      "selectThemePlaceholder": "Design wählen",
 
       "accentColor": "Themen Palette",
       "appearance": "Themen Modi",
@@ -364,10 +366,10 @@
       },
 
       "actions": {
-         "renameTo": "Ubenennen: \"{name}\"",
-         "createWith": "Erstellen als: \"{name}\"",
-         "setPowerTags": "Stärkemerkmale setzen auf: {count}",
-         "setWeaknessTags": "Schwächemerkemale setzen auf: {count}"
+         "renameTo": "Ubenennen: \"{{name}}\"",
+         "createWith": "Erstellen als: \"{{name}}\"",
+         "setPowerTags": "Stärkemerkmale setzen auf: {{count}}",
+         "setWeaknessTags": "Schwächemerkemale setzen auf: {{count}}"
       },
 
       "themes": {
@@ -526,8 +528,8 @@
 
 
    "CardRenderer": {
-      "themeCardPlaceholder": "Themenkarte: {title}",
-      "listCardPlaceholder": "Kartenliste: {title}"
+      "themeCardPlaceholder": "Themenkarte: {{title}}",
+      "listCardPlaceholder": "Kartenliste: {{title}}"
    },
    "ThemeCard": {
       "fellowshipTitle": "Gefolgschaftsthema",

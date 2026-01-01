@@ -1,15 +1,10 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -27,9 +22,13 @@ import { ToolbarHandle } from './toolbar-handle';
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 
-// -- Type Imports --
-import { StoryTagTracker } from '@/lib/types/character';
+// -- Other Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+
+// -- Type Imports --
+import type { StoryTagTracker } from '@/lib/types/character';
 
 
 
@@ -45,9 +44,9 @@ interface StoryTagTrackerCardProps {
 
 
 export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview, dragAttributes, dragListeners, onExport }: StoryTagTrackerCardProps) {
-   const t = useTranslations('Trackers');
+   const { t: t } = useTranslation();
    const { updateStoryTag, removeStoryTag, upgradeStoryTagToTheme } = useCharacterActions();
-   const [isHovered, setIsHovered] = useState(false);
+   const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
@@ -65,27 +64,16 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
    // ###   STORY TAG NAME INPUT DEBOUNCER   ###
    // ##########################################
 
-   const [localName, setLocalName] = useState(tracker.name);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (tracker.name !== localName) {
-            updateStoryTag(tracker.id, { name: localName });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localName, tracker.id, tracker.name, updateStoryTag]);
-
-   useEffect(() => {
-      setLocalName(tracker.name);
-   }, [tracker.name]);
+   const [localName, setLocalName] = useInputDebouncer(
+      tracker.name,
+      (value) => updateStoryTag(tracker.id, { name: value })
+   );
 
 
 
    return (
       <motion.div
-         onHoverStart={() => !isDrawerPreview && setIsHovered(true)}
-         onHoverEnd={() => !isDrawerPreview && setIsHovered(false)}
+         {...hoverHandlers}
          className="relative"
       >
          {!isDrawerPreview && (
@@ -105,7 +93,7 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
 
          <div className={cn(
             isHovered ? "z-1" : "z-0",
-            "relative flex items-center justify-between h-[55px] w-[220px] p-2 rounded-lg border-2",
+            "relative flex items-center justify-between h-13.75 w-55 p-2 rounded-lg border-2",
             {"pointer-events-none shadow-none border-2 border-border": isDrawerPreview},
             cardTheme, "border-card-border",
             tracker.isWeakness 
@@ -114,12 +102,12 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
          )}>
             {isEffectivelyEditing ? (
                <>
-                  <div className="flex-grow p-1">
+                  <div className="grow p-1">
                      <Input
                         value={localName}
                         onChange={(e) => setLocalName(e.target.value)}
                         className="h-8 text-card-paper-fg font-semibold border-dashed bg-transparent placeholder-card-paper-fg"
-                        placeholder={t('storyTagPlaceholder')}
+                        placeholder={t('Trackers.storyTagPlaceholder')}
                      />
                   </div>
                   <Button
@@ -133,9 +121,9 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
                </>
             ) : (
                <>
-                  <div className="flex-grow p-1">
+                  <div className="grow p-1">
                      <span className={cn("text-card-paper-fg font-semibold", tracker.isScratched && 'line-through opacity-50')}>
-                        {tracker.name ? tracker.name : `[${t('storyTagNoName')}]`}
+                        {tracker.name ? tracker.name : `[${t('Trackers.storyTagNoName')}]`}
                      </span>
                   </div>
                   <Button 

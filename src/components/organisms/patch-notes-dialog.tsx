@@ -1,10 +1,6 @@
-'use client';
-
 // -- React Imports --
 import { useEffect, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -35,7 +31,7 @@ interface PatchNotesDialogProps {
 
 
 export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps) {
-   const t = useTranslations('PatchNotesDialog');
+   const { t: t } = useTranslation();
    const [currentIndex, setCurrentIndex] = useState(0);
 
    const initialPatchNotesVersion = useAppGeneralStateStore((state) => state.initialPatchNotesVersion);
@@ -79,17 +75,17 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
          <DialogContent className="max-w-xl">
             <DialogHeader>
-               <DialogTitle>{t('title')}</DialogTitle>
+               <DialogTitle>{t('PatchNotesDialog.title')}</DialogTitle>
                <div className="flex items-center justify-between pt-2">
-                  <DialogDescription>{t('description')}</DialogDescription>
+                  <DialogDescription>{t('PatchNotesDialog.description')}</DialogDescription>
                   <Select value={selectedNote?.version || ''} onValueChange={handleVersionSelect}>
-                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder={t('selectVersion')} />
+                     <SelectTrigger className="w-45">
+                        <SelectValue placeholder={t('PatchNotesDialog.selectVersion')} />
                      </SelectTrigger>
                      <SelectContent>
                         {patchNotes.map(note => (
                            <SelectItem key={note.version} value={note.version}>
-                              {t('versionLabel')} {note.version}
+                              {t('PatchNotesDialog.versionLabel')} {note.version}
                            </SelectItem>
                         ))}
                      </SelectContent>
@@ -102,7 +98,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
                disabled={currentIndex === totalNotes - 1}
                aria-label="Previous patch note"
                className={cn(
-                  "absolute left-[-3.5rem] top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
+                  "absolute -left-14 top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
                )}
             >
                <ChevronLeft className="w-8 h-8"/>
@@ -117,7 +113,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
                disabled={currentIndex === 0}
                aria-label="Next patch note"
                className={cn(
-                  "absolute right-[-3.5rem] top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
+                  "absolute -right-14 top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
                )}
             >
                <ChevronRight className="w-8 h-8"/>
@@ -125,9 +121,9 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
 
             <DialogFooter className="items-end mt-4 sm:justify-between">
                <div className="text-sm text-muted-foreground">
-                  {t('pageCounterLabel')} {`${totalNotes - currentIndex}/${totalNotes}`}
+                  {t('PatchNotesDialog.pageCounterLabel')} {`${totalNotes - currentIndex}/${totalNotes}`}
                </div>
-               <Button onClick={() => onOpenChange(false)} className="cursor-pointer">{t('close')}</Button>
+               <Button onClick={() => onOpenChange(false)} className="cursor-pointer">{t('PatchNotesDialog.close')}</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>

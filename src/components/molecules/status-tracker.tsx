@@ -1,15 +1,10 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -26,10 +21,12 @@ import { ToolbarHandle } from './toolbar-handle';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { StatusTracker } from '@/lib/types/character';
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import type { StatusTracker } from '@/lib/types/character';
 
 
 
@@ -45,9 +42,9 @@ interface StatusTrackerCardProps {
 
 
 export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, dragAttributes, dragListeners, onExport }: StatusTrackerCardProps) {
-   const t = useTranslations('Trackers');
+   const { t: t } = useTranslation();
    const { updateStatus, removeStatus } = useCharacterActions();
-   const [isHovered, setIsHovered] = useState(false);
+   const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
@@ -73,27 +70,16 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
    // ###   STATUS NAME INPUT DEBOUNCER   ###
    // #######################################
 
-   const [localName, setLocalName] = useState(tracker.name);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (tracker.name !== localName) {
-            updateStatus(tracker.id, { name: localName });
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localName, tracker.id, tracker.name, updateStatus]);
-
-   useEffect(() => {
-      setLocalName(tracker.name);
-   }, [tracker.name]);
+   const [localName, setLocalName] = useInputDebouncer(
+      tracker.name,
+      (value) => updateStatus(tracker.id, { name: value })
+   );
 
 
    
    return (
       <motion.div
-         onHoverStart={() => !isDrawerPreview && setIsHovered(true)}
-         onHoverEnd={() => !isDrawerPreview && setIsHovered(false)}
+         {...hoverHandlers}
          className="relative"
       >
          {!isDrawerPreview && (
@@ -110,7 +96,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
 
          <div className={cn(
             isHovered ? "z-1" : "z-0",
-            "relative z-0 flex flex-col h-[100px] w-[220px] border-2 rounded-lg overflow-hidden",
+            "relative z-0 flex flex-col h-25 w-55 border-2 rounded-lg overflow-hidden",
             {"pointer-events-none shadow-none border-2 border-border": isDrawerPreview},
             cardTheme,
             "border-card-border bg-card-paper-bg text-card-paper-fg",
@@ -120,23 +106,23 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
                "flex items-center border-b",
                "text-card-header-fg bg-card-header-bg"
             )}>
-               <div className="flex-grow p-1">
+               <div className="grow p-1">
                   {isEffectivelyEditing ? (
                      <Input
                         value={localName}
                         onChange={(e) => setLocalName(e.target.value)}
                         className="h-8 font-semibold border-dashed border-card-accent bg-card-paper-bg text-card-paper-fg placeholder-card-paper-fg"
-                        placeholder={t('statusPlaceholder')}
+                        placeholder={t('Trackers.statusPlaceholder')}
                      />
                   ) : (
-                     <p className="text-base font-semibold px-2">{tracker.name ? tracker.name : `[${t('statusNoName')}]`}</p>
+                     <p className="text-base font-semibold px-2">{tracker.name ? tracker.name : `[${t('Trackers.statusNoName')}]`}</p>
                   )}
                </div>
                {isEffectivelyEditing && (
                   <Button
                      variant="ghost"
                      size="icon"
-                     className="h-8 w-8 mr-1 text-destructive bg-card-paper-bg flex-shrink-0 cursor-pointer"
+                     className="h-8 w-8 mr-1 text-destructive bg-card-paper-bg shrink-0 cursor-pointer"
                      onClick={() => removeStatus(tracker.id)}
                   >
                      <Trash2 className="h-5 w-5" />
@@ -145,7 +131,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
             </div>
 
             {/* Tiers Section */}
-            <div className="flex flex-grow">
+            <div className="flex grow">
                {tracker.tiers.map((isActive, index) => (
                   <div 
                      key={index} 

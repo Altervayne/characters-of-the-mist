@@ -1,13 +1,8 @@
-'use client';
-
 // -- React Imports --
-import React from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
-import { motion, Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 
 // -- Icon Imports --
@@ -17,8 +12,9 @@ import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import { Card as CardData, Tracker } from '@/lib/types/character';
-import { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { Variants } from 'framer-motion';
+import type { Card as CardData, Tracker } from '@/lib/types/character';
+import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 
 
 const overlayVariants: Variants = {
@@ -41,7 +37,7 @@ interface CharacterLoadDropZoneProps {
 
 
 export function CharacterLoadDropZone({ activeDragItem }: CharacterLoadDropZoneProps) {
-   const t = useTranslations('CharacterSheetPage');
+   const { t: t } = useTranslation();
 
    const isCharacterLoadDragActive =
       activeDragItem && 'content' in activeDragItem && activeDragItem.type === 'FULL_CHARACTER_SHEET';
@@ -69,7 +65,7 @@ export function CharacterLoadDropZone({ activeDragItem }: CharacterLoadDropZoneP
                )}
             >
                <Upload className="mx-auto h-12 w-12" />
-               <p className="mt-2 font-semibold">{t('dropToLoadCharacter')}</p>
+               <p className="mt-2 font-semibold">{t('CharacterSheetPage.dropToLoadCharacter')}</p>
             </div>
          )}
       </motion.div>

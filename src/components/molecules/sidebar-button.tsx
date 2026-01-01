@@ -1,5 +1,3 @@
-'use client';
-
 // -- React Imports --
 import React from 'react';
 
@@ -7,7 +5,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 // -- Basic UI Imports --
-import { IconButton, IconButtonProps } from '@/components/ui/icon-button';
+import { IconButton } from '@/components/ui/icon-button';
+import type { IconButtonProps } from '@/components/ui/icon-button';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -38,7 +37,7 @@ export function SidebarButton({ isCollapsed, Icon, children, ...props }: Sidebar
 
          <Icon
          className={cn(
-            "flex-shrink-0 transition-all",
+            "shrink-0 transition-all",
             isCollapsed ? "h-5 w-5" : "h-4 w-4"
          )}
          />

@@ -1,10 +1,6 @@
-'use client';
-
 // -- React Imports --
-import React, { useState, useMemo, useEffect } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -25,9 +21,9 @@ import { cityThemeTypes, cityThemebooks } from '@/lib/data/city-data';
 import { otherscapeThemeTypes, otherscapeThemebooks } from '@/lib/data/otherscape-data';
 
 // -- Type Imports --
-import { Card as CardData, LegendsThemeDetails, CityThemeDetails, OtherscapeThemeDetails } from '@/lib/types/character';
-import { CreateCardOptions, ThemeTypeUnion } from '@/lib/types/creation';
-import { GameSystem } from '@/lib/types/drawer';
+import type { Card as CardData, LegendsThemeDetails, CityThemeDetails, OtherscapeThemeDetails } from '@/lib/types/character';
+import type { CreateCardOptions, ThemeTypeUnion } from '@/lib/types/creation';
+import type { GameSystem } from '@/lib/types/drawer';
 
 
 type CardTypeSelection = 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME';
@@ -45,9 +41,9 @@ interface CreateCardDialogProps {
 
 
 export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardData, modal = true, game }: CreateCardDialogProps) {
-   const t = useTranslations('CreateCardDialog');
-   const tTypes = useTranslations('ThemeTypes');
-   const tTheme = useTranslations();
+   const { t: t } = useTranslation();
+   const { t: tTypes } = useTranslation();
+   const { t: tTheme } = useTranslation();
 
    const [cardType, setCardType] = useState<'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME' | ''>('');
    const [themeType, setThemeType] = useState<ThemeTypeUnion>(
@@ -82,7 +78,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
          const selected = availableThemebooks.find(book => book.value.toLowerCase() === themebook.toLowerCase());
          return selected ? tTheme(selected.key as string) : themebook;
       }
-      return t('selectThemebookPlaceholder');
+      return t('CreateCardDialog.selectThemebookPlaceholder');
    }, [themebook, availableThemebooks, tTheme, t]);
 
    useEffect(() => {
@@ -119,7 +115,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
    const handleConfirm = () => {
       if (cardType) {
          onConfirm(
-            { cardType, themebook: themebook.trim(), themeType, powerTagsCount, weaknessTagsCount, wildcardSlots },
+            { cardType, themebook: themebook?.trim(), themeType, powerTagsCount, weaknessTagsCount, wildcardSlots },
             mode === 'edit' ? cardData?.id : undefined
          );
          onOpenChange(false);
@@ -147,9 +143,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
 
    const isConfirmDisabled = !cardType ||
       (cardType === 'CHARACTER_THEME' && !themebook.trim()) ||
-      (cardType === 'CHARACTER_THEME' && !themeType) ||
-      (cardType === 'GROUP_THEME' && game === 'LEGENDS' && !themebook.trim()) ||
-      (cardType === 'GROUP_THEME' && game === 'LEGENDS' && !themeType);
+      (cardType === 'CHARACTER_THEME' && !themeType);
 
 
 
@@ -157,23 +151,23 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
       <Dialog open={isOpen} onOpenChange={onOpenChange} modal={modal}>
          <DialogContent data-tour="creation-dialog">
             <DialogHeader>
-               <DialogTitle>{mode === 'create' ? t('title') : t('editTitle')}</DialogTitle>
-               <DialogDescription>{mode === 'create' ? t('description') : t('editDescription')}</DialogDescription>
+               <DialogTitle>{mode === 'create' ? t('CreateCardDialog.title') : t('CreateCardDialog.editTitle')}</DialogTitle>
+               <DialogDescription>{mode === 'create' ? t('CreateCardDialog.description') : t('CreateCardDialog.editDescription')}</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-6">
                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="card-type" className="text-left">{t('cardTypeLabel')}</Label>
+                  <Label htmlFor="card-type" className="text-left">{t('CreateCardDialog.cardTypeLabel')}</Label>
                   <Select value={cardType} onValueChange={(value: CardTypeSelection) => setCardType(value)} disabled={mode === 'edit'}>
                      <SelectTrigger id="card-type" className="col-span-3 hover:bg-muted border-primary">
-                        <SelectValue placeholder={t('selectPlaceholder')} />
+                        <SelectValue placeholder={t('CreateCardDialog.selectPlaceholder')} />
                      </SelectTrigger>
                      <SelectContent>
-                        <SelectItem value="CHARACTER_THEME">{game === 'LEGENDS' ? t('themeCard') : game === 'OTHERSCAPE' ? t('otherscapeThemeCard') : t('riftThemeCard')}</SelectItem>
-                        {game === 'LEGENDS' && <SelectItem value="GROUP_THEME">{t('fellowshipCard')}</SelectItem>}
-                        {game === 'CITY_OF_MIST' && <SelectItem value="GROUP_THEME">{t('crewCard')}</SelectItem>}
-                        {game === 'OTHERSCAPE' && <SelectItem value="GROUP_THEME">{t('otherscapeCrewCard')}</SelectItem>}
-                        {game === 'OTHERSCAPE' && <SelectItem value="LOADOUT_THEME">{t('otherscapeLoadoutCard')}</SelectItem>}
+                        <SelectItem value="CHARACTER_THEME">{game === 'LEGENDS' ? t('CreateCardDialog.themeCard') : game === 'OTHERSCAPE' ? t('CreateCardDialog.otherscapeThemeCard') : t('CreateCardDialog.riftThemeCard')}</SelectItem>
+                        {game === 'LEGENDS' && <SelectItem value="GROUP_THEME">{t('CreateCardDialog.fellowshipCard')}</SelectItem>}
+                        {game === 'CITY_OF_MIST' && <SelectItem value="GROUP_THEME">{t('CreateCardDialog.crewCard')}</SelectItem>}
+                        {game === 'OTHERSCAPE' && <SelectItem value="GROUP_THEME">{t('CreateCardDialog.otherscapeCrewCard')}</SelectItem>}
+                        {game === 'OTHERSCAPE' && <SelectItem value="LOADOUT_THEME">{t('CreateCardDialog.otherscapeLoadoutCard')}</SelectItem>}
                      </SelectContent>
                   </Select>
                </div>
@@ -181,10 +175,10 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                {cardType === 'CHARACTER_THEME' && (
                   <>
                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="theme-type" className="text-left">{t('themeTypeLabel')}</Label>
+                        <Label htmlFor="theme-type" className="text-left">{t('CreateCardDialog.themeTypeLabel')}</Label>
                         <Select value={themeType} onValueChange={handleThemeTypeChange}>
                            <SelectTrigger id="theme-type" className="col-span-3 hover:bg-muted border-primary">
-                              <SelectValue placeholder={t('selectThemeTypePlaceholder')} />
+                              <SelectValue placeholder={t('CreateCardDialog.selectThemeTypePlaceholder')} />
                            </SelectTrigger>
                            <SelectContent>
                               {themeTypes.map(type => <SelectItem key={type} value={type}>{tTypes(type)}</SelectItem>)}
@@ -193,7 +187,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                      </div>
 
                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="themebook" className="text-left">{t('themebookLabel')}</Label>
+                        <Label htmlFor="themebook" className="text-left">{t('CreateCardDialog.themebookLabel')}</Label>
                         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                            <PopoverTrigger asChild>
                               <Button
@@ -207,15 +201,15 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                            </PopoverTrigger>
-                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-[var(--radix-popover-trigger-width)] p-0">
+                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-(--radix-popover-trigger-width) p-0">
                               <Command>
                                  <CommandInput
-                                    placeholder={t('searchThemebookPlaceholder')}
+                                    placeholder={t('CreateCardDialog.searchThemebookPlaceholder')}
                                     value={themebook}
                                     onValueChange={setThemebook}
                                  />
                                  <CommandList>
-                                    <CommandEmpty>{t('noThemebookFound')}</CommandEmpty>
+                                    <CommandEmpty>{t('CreateCardDialog.noThemebookFound')}</CommandEmpty>
                                     <CommandGroup onWheel={(e) => e.stopPropagation()}>
                                        {availableThemebooks.map((book) => (
                                           <CommandItem
@@ -245,86 +239,21 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                )}
 
 
-               {(cardType === 'GROUP_THEME' && game === 'LEGENDS') && (
-                  <>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="theme-type" className="text-left">{t('themeTypeLabel')}</Label>
-                        <Select value={themeType} onValueChange={handleThemeTypeChange}>
-                           <SelectTrigger id="theme-type" className="col-span-3 hover:bg-muted border-primary">
-                              <SelectValue placeholder={t('selectThemeTypePlaceholder')} />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {themeTypes.map(type => <SelectItem key={type} value={type}>{tTypes(type)}</SelectItem>)}
-                           </SelectContent>
-                        </Select>
-                     </div>
-
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="themebook" className="text-left">{t('themebookLabel')}</Label>
-                        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                           <PopoverTrigger asChild>
-                              <Button
-                                 variant="outline"
-                                 role="combobox"
-                                 aria-expanded={popoverOpen}
-                                 className="col-span-3 justify-between"
-                                 disabled={!themeType}
-                              >
-                                 {selectedThemebookDisplay}
-                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                           </PopoverTrigger>
-                           <PopoverContent className="w-[--radix-popover-trigger-width] max-w-[var(--radix-popover-trigger-width)] p-0">
-                              <Command>
-                                 <CommandInput
-                                    placeholder={t('searchThemebookPlaceholder')}
-                                    value={themebook}
-                                    onValueChange={setThemebook}
-                                 />
-                                 <CommandList>
-                                    <CommandEmpty>{t('noThemebookFound')}</CommandEmpty>
-                                    <CommandGroup onWheel={(e) => e.stopPropagation()}>
-                                       {availableThemebooks.map((book) => (
-                                          <CommandItem
-                                             key={book.value}
-                                             value={book.value}
-                                             onSelect={(currentValue) => {
-                                                setThemebook(currentValue);
-                                                setPopoverOpen(false);
-                                             }}
-                                          >
-                                             <Check
-                                                className={cn(
-                                                   "mr-2 h-4 w-4",
-                                                   themebook.toLowerCase() === book.value.toLowerCase() ? "opacity-100" : "opacity-0"
-                                                )}
-                                             />
-                                                {tTheme(book.key as string)}
-                                          </CommandItem>
-                                       ))}
-                                    </CommandGroup>
-                                 </CommandList>
-                              </Command>
-                           </PopoverContent>
-                        </Popover>
-                     </div>
-                  </>
-               )}
 
                {
                   mode === 'create' && <>
-                                          <span className="mt-6 font-bold">{t("startingTagsLabel")}</span>
+                                          <span className="mt-6 font-bold">{t("CreateCardDialog.startingTagsLabel")}</span>
                                           <div className="grid grid-cols-3 items-center gap-4">
-                                             <Label htmlFor="power-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('gearTagCountLabel') : t('powerTagCountLabel')}</Label>
+                                             <Label htmlFor="power-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('CreateCardDialog.gearTagCountLabel') : t('CreateCardDialog.powerTagCountLabel')}</Label>
                                              <Input id="power-tags" type="number" value={powerTagsCount} onChange={e => setPowerTagsCount(Number(e.target.value))} className="col-span-2" />
                                           </div>
                                           <div className="grid grid-cols-3 items-center gap-4">
-                                             <Label htmlFor="weakness-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('flawTagCountLabel') : t('weaknessTagCountLabel')}</Label>
+                                             <Label htmlFor="weakness-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('CreateCardDialog.flawTagCountLabel') : t('CreateCardDialog.weaknessTagCountLabel')}</Label>
                                              <Input id="weakness-tags" type="number" value={weaknessTagsCount} onChange={e => setWeaknessTagsCount(Number(e.target.value))} className="col-span-2" />
                                           </div>
                                           {cardType === 'LOADOUT_THEME' && (
                                              <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label htmlFor="wildcard-slots" className="text-right">{t('wildcardSlotsLabel')}</Label>
+                                                <Label htmlFor="wildcard-slots" className="text-right">{t('CreateCardDialog.wildcardSlotsLabel')}</Label>
                                                 <Input id="wildcard-slots" type="number" value={wildcardSlots} onChange={e => setWildcardSlots(Number(e.target.value))} className="col-span-2" />
                                              </div>
                                           )}
@@ -334,7 +263,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
 
             <DialogFooter>
                <Button className={cn("cursor-pointer")} onClick={handleConfirm} disabled={isConfirmDisabled}>
-                  {mode === 'create' ? t('createButton') : t('updateButton')}
+                  {mode === 'create' ? t('CreateCardDialog.createButton') : t('CreateCardDialog.updateButton')}
                </Button>
             </DialogFooter>
          </DialogContent>

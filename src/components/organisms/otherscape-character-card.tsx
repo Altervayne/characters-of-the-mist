@@ -1,15 +1,6 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
-
-// -- Other Library Imports --
-import { motion } from 'framer-motion';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import React, { useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -25,38 +16,45 @@ import { cn } from '@/lib/utils';
 // -- Component Imports --
 import { CardHeaderMolecule } from '../molecules/card-header';
 import { CardSectionHeader } from '@/components/molecules/card-section-header';
-import { ToolbarHandle } from '../molecules/toolbar-handle';
 import { BlandTagItem } from '../molecules/bland-tag-item';
 import { FellowshipRelationshipItem } from '@/components/molecules/fellowship-relationship-item';
+import { CardFlipWrapper } from '../molecules/card-flip-wrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { Card as CardData, CardViewMode, OtherscapeCharacterDetails } from '@/lib/types/character';
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { Card as CardData, CardViewMode, OtherscapeCharacterDetails } from '@/lib/types/character';
+
+
 
 interface OtherscapeCharacterCardProps {
-  card: CardData;
-  isEditing?: boolean;
-  isSnapshot?: boolean;
-  isDrawerPreview?: boolean;
-  dragAttributes?: DraggableAttributes;
-  dragListeners?: SyntheticListenerMap;
-  onExport?: () => void;
+   card: CardData;
+   isEditing?: boolean;
+   isSnapshot?: boolean;
+   isDrawerPreview?: boolean;
+   dragAttributes?: DraggableAttributes;
+   dragListeners?: SyntheticListenerMap;
+   onExport?: () => void;
 }
 
 
 
-const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
-   ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
-      const t = useTranslations('OtherscapeCharacterCard');
-      const tSpecials = useTranslations('OtherscapeCharacterCard.Specials');
+const OtherscapeCharacterCardContent = React.memo(
+   React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
+      const { t: t } = useTranslation();
+      const { t: tSpecials } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as OtherscapeCharacterDetails;
 
-      const [isHovered, setIsHovered] = useState(false);
+      const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
 
       const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
       const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
@@ -66,10 +64,6 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
       useManualScroll(relationshipsScrollRef);
       useManualScroll(specialsScrollRef);
-
-      const handleDetailChange = (field: keyof OtherscapeCharacterDetails, value: OtherscapeCharacterDetails[keyof OtherscapeCharacterDetails]) => {
-         actions.updateCardDetails(card.id, { ...details, [field]: value });
-      };
 
       const handleCycleViewMode = () => {
          let nextMode: CardViewMode | null = null;
@@ -95,51 +89,41 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
       // ###   CHARACTER NAME INPUT DEBOUNCER   ###
       // ##########################################
 
-      const [localCharName, setLocalCharName] = useState(details.characterName);
-
-      useEffect(() => {
-         const handler = setTimeout(() => {
-            if (details.characterName !== localCharName) {
-               actions.updateCharacterName(localCharName);
-            }
-         }, 500);
-         return () => clearTimeout(handler);
-      }, [localCharName, details.characterName, actions]);
-
-      useEffect(() => {
-         setLocalCharName(details.characterName);
-      }, [details.characterName]);
+      const [localCharName, setLocalCharName] = useInputDebouncer(
+         details.characterName,
+         (value) => actions.updateCharacterName(value)
+      );
 
 
 
       const CardFront = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-character-os",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeader className="p-0">
-               <CardHeaderMolecule title={t('title')}></CardHeaderMolecule>
+               <CardHeaderMolecule title={t('OtherscapeCharacterCard.title')}></CardHeaderMolecule>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="w-full text-center px-2 py-1 mb-1 flex-shrink-0">
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="w-full text-center px-2 py-1 mb-1 shrink-0">
                   {isEditing ? (
                      <Input
                         className="text-2xl font-bold text-center bg-transparent border-none shadow-none"
                         value={localCharName || ''}
                         onChange={(e) => setLocalCharName(e.target.value)}
-                        placeholder={t('characterNamePlaceholder')}
+                        placeholder={t('OtherscapeCharacterCard.characterNamePlaceholder')}
                      />
                   ) : (
-                     <h2 className="text-2xl font-bold">{details.characterName || `[${t('noName')}]`}</h2>
+                     <h2 className="text-2xl font-bold">{details.characterName || `[${t('OtherscapeCharacterCard.noName')}]`}</h2>
                   )}
                </div>
 
                {/* Essence Hexagonal Diagram Section */}
                <div className="border-b border-card-accent">
-                  <CardSectionHeader title={t('essence')} />
+                  <CardSectionHeader title={t('OtherscapeCharacterCard.essence')} />
                   <div className="p-2 flex flex-col items-center">
                      {/* Hexagonal Essence Diagram */}
                      <svg width="230" height="180" viewBox="-10 10 220 180" className="mb-2">
@@ -201,56 +185,56 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                         {/* Vertex Labels - Essence Names */}
                         {/* Top - Real (Self only) */}
                         <text x="100" y="24" textAnchor="middle" className="fill-current text-[9px] font-bold">
-                           {t('Essence.vertices.real')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.real')}
                         </text>
 
                         {/* Top-right - Spiritualist (Self + Mythos) */}
                         <text x="152" y="55" textAnchor="start" className="fill-current text-[8px] font-semibold">
-                           {t('Essence.vertices.spiritualist')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.spiritualist')}
                         </text>
 
                         {/* Bottom-right - Avatar/Conduit (Mythos only) */}
                         <text x="152" y="151" textAnchor="start" className="fill-current text-[8px] font-bold">
-                           {t('Essence.vertices.avatar')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.avatar')}
                         </text>
                         <text x="152" y="161" textAnchor="start" className="fill-current text-[8px] font-bold">
-                           {t('Essence.vertices.conduit')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.conduit')}
                         </text>
 
                         {/* Bottom - Transhuman (Mythos + Noise) */}
                         <text x="100" y="181" textAnchor="middle" className="fill-current text-[8px] font-semibold">
-                           {t('Essence.vertices.transhuman')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.transhuman')}
                         </text>
 
                         {/* Bottom-left - Singularity (Noise only) */}
                         <text x="48" y="151" textAnchor="end" className="fill-current text-[8px] font-bold">
-                           {t('Essence.vertices.singularity')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.singularity')}
                         </text>
 
                         {/* Top-left - Cyborg (Noise + Self) */}
                         <text x="48" y="55" textAnchor="end" className="fill-current text-[8px] font-semibold">
-                           {t('Essence.vertices.cyborg')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.cyborg')}
                         </text>
 
                         {/* Center - Nexus */}
                         <text x="105" y="108" textAnchor="start" className="fill-current text-[9px] font-bold">
-                           {t('Essence.vertices.nexus')}
+                           {t('OtherscapeCharacterCard.Essence.vertices.nexus')}
                         </text>
 
                         {/* Theme Type Labels inside triangular sections */}
                         {/* Self - top section */}
                         <text x="120" y="73" textAnchor="middle" className="fill-current text-[11px] font-bold opacity-80" style={{fill: 'hsl(338, 100%, 30%)'}}>
-                           {t('Essence.self')}
+                           {t('OtherscapeCharacterCard.Essence.self')}
                         </text>
 
                         {/* Mythos - bottom-right section */}
                         <text x="127" y="137" textAnchor="middle" className="fill-current text-[11px] font-bold opacity-80" style={{fill: 'hsl(268, 100%, 35%)'}}>
-                           {t('Essence.mythos')}
+                           {t('OtherscapeCharacterCard.Essence.mythos')}
                         </text>
 
                         {/* Noise - bottom-left section */}
                         <text x="65" y="105" textAnchor="middle" className="fill-current text-[11px] font-bold opacity-80" style={{fill: 'hsl(187, 79%, 25%)'}}>
-                           {t('Essence.noise')}
+                           {t('OtherscapeCharacterCard.Essence.noise')}
                         </text>
 
                         {/* Essence Position Point */}
@@ -335,43 +319,43 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
                         if (hasSelf && hasMythos && hasNoise) {
                            // Nexus - All types
-                           essenceName = t('Essence.vertices.nexus');
+                           essenceName = t('OtherscapeCharacterCard.Essence.vertices.nexus');
                            textColor = 'text-gray-600';
                            bgColor = 'bg-gray-600/20';
                            borderColor = 'border-gray-700';
                         } else if (hasSelf && !hasMythos && !hasNoise) {
                            // Real - Self only
-                           essenceName = t('Essence.vertices.real');
+                           essenceName = t('OtherscapeCharacterCard.Essence.vertices.real');
                            textColor = 'text-pink-800';
                            bgColor = 'bg-pink-600/20';
                            borderColor = 'border-pink-700';
                         } else if (!hasSelf && hasMythos && !hasNoise) {
                            // Avatar - Mythos only
-                           essenceName = `${t('Essence.vertices.avatar')} / ${t('Essence.vertices.conduit')}`;
+                           essenceName = `${t('OtherscapeCharacterCard.Essence.vertices.avatar')} / ${t('OtherscapeCharacterCard.Essence.vertices.conduit')}`;
                            textColor = 'text-purple-800';
                            bgColor = 'bg-purple-600/20';
                            borderColor = 'border-purple-700';
                         } else if (!hasSelf && !hasMythos && hasNoise) {
                            // Singularity - Noise only
-                           essenceName = t('Essence.vertices.singularity');
+                           essenceName = t('OtherscapeCharacterCard.Essence.vertices.singularity');
                            textColor = 'text-cyan-800';
                            bgColor = 'bg-cyan-600/20';
                            borderColor = 'border-cyan-700';
                         } else if (hasSelf && hasMythos && !hasNoise) {
                            // Spiritualist - Mythos and Self
-                           essenceName = t('Essence.vertices.spiritualist');
+                           essenceName = t('OtherscapeCharacterCard.Essence.vertices.spiritualist');
                            textColor = 'text-purple-800';
                            bgColor = 'bg-pink-600/20';
                            borderColor = 'border-pink-700';
                         } else if (hasMythos && hasNoise && !hasSelf) {
                            // Transhuman - Noise and Mythos 
-                           essenceName = t('Essence.vertices.transhuman');
+                           essenceName = t('OtherscapeCharacterCard.Essence.vertices.transhuman');
                            textColor = 'text-cyan-800';
                            bgColor = 'bg-purple-600/20';
                            borderColor = 'border-purple-700';
                         } else if (hasNoise && hasSelf && !hasMythos) {
                            // Cyborg - Self and Noise
-                           essenceName = t('Essence.vertices.cyborg');
+                           essenceName = t('OtherscapeCharacterCard.Essence.vertices.cyborg');
                            textColor = 'text-pink-800';
                            bgColor = 'bg-cyan-600/20';
                            borderColor = 'border-cyan-700';
@@ -389,9 +373,9 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                </div>
 
                {/* Crew Relationships Section */}
-               <div className="flex flex-col flex-grow overflow-hidden min-h-0">
-                  <CardSectionHeader title={t('relationships')} />
-                  <div className="flex flex-col flex-grow overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
+               <div className="flex flex-col grow overflow-hidden min-h-0">
+                  <CardSectionHeader title={t('OtherscapeCharacterCard.relationships')} />
+                  <div className="flex flex-col grow overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
                      {details.crewRelationships.map((relationship, index) => (
                         <FellowshipRelationshipItem
                            key={relationship.id}
@@ -404,8 +388,8 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                      ))}
                      {isEditing && (
                         <div className="p-2">
-                           <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={handleAddRelationship}>
-                              <PlusCircle className="h-4 w-4 mr-2" /> {t('addRelationship')}
+                           <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={handleAddRelationship}>
+                              <PlusCircle className="h-4 w-4 mr-2" /> {t('OtherscapeCharacterCard.addRelationship')}
                            </Button>
                         </div>
                      )}
@@ -417,16 +401,16 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
       const CardBack = (
          <Card className={cn(
-            "w-[250px] h-[600px] flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-character-os",
-            {"h-[120px] shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
+            {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
-            <CardHeaderMolecule title={t('title')} />
+            <CardHeaderMolecule title={t('OtherscapeCharacterCard.title')} />
             <CardSectionHeader title={`${tSpecials('title')}`}></CardSectionHeader>
-            <CardContent className="flex-grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="flex-grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
+            <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
+               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
                   {details.specials.map((tag, index) => (
                      <BlandTagItem
                         key={tag.id}
@@ -439,7 +423,7 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border-1 border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'specials')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'specials')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {tSpecials('addSpecial')}
                         </Button>
                      </div>
@@ -451,85 +435,38 @@ const OtherscapeCharacterCardContent = React.forwardRef<HTMLDivElement, Othersca
 
 
 
-      if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
-         return (
-            <motion.div
-               ref={ref}
-               onHoverStart={() => setIsHovered(true)}
-               onHoverEnd={() => setIsHovered(false)}
-               className="relative"
-            >
-               <ToolbarHandle
-                  isEditing={isEditing}
-                  isHovered={isHovered}
-                  dragAttributes={dragAttributes}
-                  dragListeners={dragListeners}
-                  onExport={onExport}
-                  onCycleViewMode={handleCycleViewMode}
-                  cardViewMode={card.viewMode}
-                  cardTheme="card-type-character-os"
-               />
-               <div className="flex gap-1 items-start">
-                  {CardFront}
-                  {CardBack}
-               </div>
-            </motion.div>
-         );
-      }
-
-
-
       return (
-         <motion.div
+         <CardFlipWrapper
             ref={ref}
-            onHoverStart={() => setIsHovered(true)}
-            onHoverEnd={() => setIsHovered(false)}
-            className="relative"
-         >
-            <motion.div
-               className="w-full h-full"
-               style={{ transformStyle: 'preserve-3d' }}
-               initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
-               animate={{ rotateY: card.isFlipped ? 180 : 0 }}
-               transition={{ duration: 0.5, ease: 'easeInOut' }}
-            >
-
-               {!isDrawerPreview &&
-                  <ToolbarHandle
-                     isEditing={isEditing}
-                     isHovered={isHovered}
-                     onFlip={() => actions.flipCard(card.id)}
-                     dragAttributes={dragAttributes}
-                     dragListeners={dragListeners}
-                     onExport={onExport}
-                     onCycleViewMode={handleCycleViewMode}
-                     cardViewMode={card.viewMode}
-                     cardTheme="card-type-character-os"
-                  />
-               }
-
-               {/* Card Front */}
-               <div style={{ backfaceVisibility: 'hidden' }}>
-                  {CardFront}
-               </div>
-
-               {/* Card Back */}
-               <div className="absolute top-0 left-0 w-full h-full" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                  {CardBack}
-               </div>
-            </motion.div>
-         </motion.div>
+            effectiveViewMode={effectiveViewMode}
+            isDrawerPreview={isDrawerPreview ?? false}
+            isSnapshot={isSnapshot}
+            card={card}
+            isHovered={isHovered}
+            hoverHandlers={hoverHandlers}
+            isEditing={isEditing}
+            dragAttributes={dragAttributes}
+            dragListeners={dragListeners}
+            cardTheme="card-type-character-os"
+            onExport={onExport}
+            onCycleViewMode={handleCycleViewMode}
+            onFlip={() => actions.flipCard(card.id)}
+            cardFront={CardFront}
+            cardBack={CardBack}
+         />
       );
-   }
+   })
 );
 OtherscapeCharacterCardContent.displayName = 'OtherscapeCharacterCardContent';
 
-export const OtherscapeCharacterCard = React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
-  (props, ref) => {
-    if (props.card.details.game !== 'OTHERSCAPE') {
-      return null;
-    }
-    return <OtherscapeCharacterCardContent {...props} ref={ref} />;
-  }
+export const OtherscapeCharacterCard = React.memo(
+   React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
+      (props, ref) => {
+         if (props.card.details.game !== 'OTHERSCAPE') {
+            return null;
+         }
+         return <OtherscapeCharacterCardContent {...props} ref={ref} />;
+      }
+   )
 );
 OtherscapeCharacterCard.displayName = 'OtherscapeCharacterCard';

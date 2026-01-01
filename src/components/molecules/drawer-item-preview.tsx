@@ -1,10 +1,5 @@
-'use client';
-
 // -- React Imports --
-import React from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { Folder, GripVertical } from 'lucide-react';
@@ -19,10 +14,10 @@ import { OtherscapeCharacterCard } from '@/components/organisms/otherscape-chara
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
 import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
 import { CharacterSheetPreview } from '@/components/molecules/character-sheet-preview';
+import { StoryThemeTrackerCard } from '../organisms/story-theme-tracker';
 
 // -- Type Imports --
-import { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
-import { StoryThemeTrackerCard } from '../organisms/story-theme-tracker';
+import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 
 
 
@@ -35,9 +30,9 @@ export function FolderPreview({ folder }: { folder: FolderType }) {
             className="flex h-8 items-center gap-2 truncate "
          >
             <GripVertical
-               className="h-5 w-5 flex-shrink-0 text-accent-foreground cursor-grab"
+               className="h-5 w-5 shrink-0 text-accent-foreground cursor-grab"
             />
-            <Folder className="h-6 w-6 flex-shrink-0 text-accent-foreground"/>
+            <Folder className="h-6 w-6 shrink-0 text-accent-foreground"/>
             <span className="truncate font-medium text-sm">{folder.name}</span>
          </div>
       </div>
@@ -45,7 +40,7 @@ export function FolderPreview({ folder }: { folder: FolderType }) {
 }
 
 export function DrawerItemPreview({ item }: { item: DrawerItem }) {
-   const t = useTranslations('Drawer.Types');
+   const { t } = useTranslation();
 
    const renderSnapshot = () => {
       const { content, type, game } = item;
@@ -136,7 +131,7 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
       }
 
       return (
-         <div className="w-[250px] h-[100px] flex items-center justify-center bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
+         <div className="w-62.5 h-25 flex items-center justify-center bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
                <p className="text-xs">{t('unavailablePreview')}</p>
          </div>
       );
@@ -148,14 +143,14 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
             {item.name}
          </p>
 
-         <div className="w-full h-[120px] my-4 flex items-center justify-center bg-transparent pointer-events-none rounded-md overflow-hidden">
+         <div className="w-full h-30 my-4 flex items-center justify-center bg-transparent pointer-events-none rounded-md overflow-hidden">
             <div>
                {renderSnapshot()}
             </div>
          </div>
 
          <p className="w-full text-center font-semibold truncate text-sm mb-2 px-1">
-            <span>{t(item.game)}</span> • <span>{t(`${item.game}_${item.type}`)}</span>
+            <span>{t(`Drawer.Types.${item.game}`)}</span> • <span>{t(`Drawer.Types.${item.game}_${item.type}`)}</span>
          </p>
       </div>
    );

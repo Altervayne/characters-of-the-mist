@@ -1,10 +1,5 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Input } from '@/components/ui/input';
@@ -18,9 +13,10 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { BlandTag } from '@/lib/types/character';
+import type { BlandTag } from '@/lib/types/character';
 
 
 
@@ -35,7 +31,7 @@ interface BlandTagItemProps {
 
 
 export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandTagItemProps) {
-   const t = useTranslations(listName);
+   const { t } = useTranslation();
    const { updateBlandTag, removeBlandTag } = useCharacterActions();
 
    const isEvenRow = index % 2 === 0;
@@ -44,21 +40,10 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
    // ###   INPUT DEBOUNCER   ###
    // ###########################
 
-   const [localName, setLocalName] = useState(tag.name);
-
-   useEffect(() => {
-     const handler = setTimeout(() => {
-       if (tag.name !== localName) {
-         updateBlandTag(cardId, listName, tag.id, localName);
-       }
-     }, 500);
-
-     return () => clearTimeout(handler);
-   }, [localName, cardId, listName, tag.id, tag.name, updateBlandTag]);
-
-   useEffect(() => {
-     setLocalName(tag.name);
-   }, [tag.name]);
+   const [localName, setLocalName] = useInputDebouncer(
+      tag.name,
+      (value) => updateBlandTag(cardId, listName, tag.id, value)
+   );
 
 
 
@@ -73,7 +58,7 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
                   value={localName}
                   onChange={(e) => setLocalName(e.target.value)}
                   className="h-7 flex-1 bg-transparent text-center border-none shadow-none"
-                  placeholder={t('placeholder')}
+                  placeholder={t(`${listName}.placeholder`)}
                />
                <Button
                   variant="ghost"
@@ -85,7 +70,7 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
                </Button>
             </>
          ) : (
-            <span className="w-full text-center">{tag.name ? tag.name : `[${t('noName')}]`}</span>
+            <span className="w-full text-center">{tag.name ? tag.name : `[${t(`${listName}.noName`)}]`}</span>
          )}
       </div>
    );

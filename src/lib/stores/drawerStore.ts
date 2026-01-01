@@ -1,18 +1,19 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import cuid from 'cuid';
 
 // -- Utils Imports --
 import { addFolderRecursively, addItemRecursively, deepReId, deleteFolderRecursively, deleteItemRecursively, findAndRemoveFolder, findAndRemoveItem, mergeIntoFolderRecursively, renameFolderRecursively, renameItemRecursively, reorderFoldersRecursively, reorderItemsRecursively, reorderList } from '../utils/drawer';
+import { createDebouncedStorage } from '../utils/debouncedStorage';
 import { STORE_VERSION } from '../config';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import { Drawer, Folder, DrawerItem, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
+import type { Drawer, Folder, DrawerItem, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
 import { harmonizeData } from '../harmonization';
 
 
@@ -341,10 +342,10 @@ export const useDrawerStore = create<DrawerState>()(
          }),
          {
             name: 'characters-of-the-mist_drawer-storage',
-            storage: createJSONStorage(() => localStorage),
+            storage: createDebouncedStorage(300), // 300ms debounce to reduce localStorage writes
             partialize: (state) => ({ drawer: state.drawer }),
             version: STORE_VERSION,
-            migrate: (persistedState, version) => {
+            migrate: (persistedState, _version) => {
                const state = persistedState as Pick<DrawerState, 'drawer'>;
 
                if (state.drawer) {
@@ -352,7 +353,7 @@ export const useDrawerStore = create<DrawerState>()(
                   state.drawer = harmonizeData(state.drawer, 'FULL_DRAWER');
                   console.log("Drawer data harmonization complete.");
                }
-               
+
                return state;
             },
          }

@@ -1,12 +1,7 @@
-'use client';
-
 // -- React Imports --
-import React, { useState } from 'react';
-
-// -- Next Imports --
+import { useState } from 'react';
 import { useTheme } from 'next-themes';
-import { useLocale, useTranslations } from 'next-intl';
-import { usePathname, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -56,7 +51,7 @@ interface ConfirmationDialogProps {
 }
 
 function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description, confirmationText, confirmButtonText }: ConfirmationDialogProps) {
-   const t = useTranslations('SettingsDialog');
+   const { t } = useTranslation();
    const [input, setInput] = useState("");
 
    const handleOpenChange = (isOpen: boolean) => {
@@ -71,13 +66,13 @@ function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description,
          <AlertDialogContent className="border-2 border-dashed border-destructive">
             <AlertDialogHeader>
                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
+                  <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
                   <AlertDialogTitle>{title}</AlertDialogTitle>
                </div>
                <AlertDialogDescription>
                   {description}
                   <p className="mt-2 text-foreground">
-                     {t('dangerZone.resetDialog.confirmationPrompt')} <strong className="text-destructive"></strong>
+                     {t('SettingsDialog.dangerZone.resetDialog.confirmationPrompt')} <strong className="text-destructive"></strong>
                   </p>
                   <p className="w-full mt-1 text-center text-sm font-bold text-destructive">{confirmationText}</p>
                </AlertDialogDescription>
@@ -89,7 +84,7 @@ function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description,
                className="border-foreground/50"
             />
             <AlertDialogFooter>
-               <AlertDialogCancel className="cursor-pointer">{t('dangerZone.resetDialog.cancel')}</AlertDialogCancel>
+               <AlertDialogCancel className="cursor-pointer">{t('SettingsDialog.dangerZone.resetDialog.cancel')}</AlertDialogCancel>
                <AlertDialogAction
                   onClick={onConfirm}
                   disabled={input !== confirmationText}
@@ -118,16 +113,13 @@ interface SettingsDialogProps {
 
 
 export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDialogProps) {
-   const t = useTranslations('SettingsDialog');
-   const tNotifications = useTranslations('Notifications')
-   const locale = useLocale();
-   const router = useRouter();
-   const pathname = usePathname();
+   const { t, i18n } = useTranslation();
+   const locale = i18n.language?.split('-')[0] || 'en';
 
    const { resolvedTheme, setTheme: setMode } = useTheme(); 
    
    const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable } = useAppSettingsStore();
-   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setLocale } = useAppSettingsActions();
+   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable } = useAppSettingsActions();
 
    const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
@@ -140,20 +132,17 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
       useDrawerStore.persist.clearStorage();
       useAppSettingsStore.persist.clearStorage();
       setTimeout(() => window.location.reload(), 500);
-      toast.success(tNotifications('general.appReset'));
+      toast.success(t('Notifications.general.appReset'));
    };
 
    const handleDeleteDrawer = () => {
       useDrawerStore.persist.clearStorage();
       setTimeout(() => window.location.reload(), 500);
-      toast.success(tNotifications('drawer.deleted'));
+      toast.success(t('Notifications.drawer.deleted'));
    }
 
    const handleLocaleChange = (newLocale: string) => {
-      setLocale(newLocale);
-      const segments = pathname.split('/');
-      segments[1] = newLocale;
-      router.replace(segments.join('/'));
+      i18n.changeLanguage(newLocale);
    };
 
    
@@ -164,19 +153,19 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
             <DialogContent>
 
                <DialogHeader>
-                  <DialogTitle>{t('title')}</DialogTitle>
-                  <DialogDescription>{t('description')}</DialogDescription>
+                  <DialogTitle>{t('SettingsDialog.title')}</DialogTitle>
+                  <DialogDescription>{t('SettingsDialog.description')}</DialogDescription>
                </DialogHeader>
 
 
                <div className="grid gap-6 py-4">
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label htmlFor="language-select" className="text-left">
-                        {t('language')}
+                        {t('SettingsDialog.language')}
                      </Label>
                      <Select value={locale} onValueChange={handleLocaleChange}>
                         <SelectTrigger id="language-select" className="col-span-2 cursor-pointer">
-                           <SelectValue placeholder="Select a language" />
+                           <SelectValue placeholder={t('SettingsDialog.selectLanguagePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                            {locales.map((loc) => (
@@ -189,15 +178,15 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
-                     <Label htmlFor="theme-select" className="text-left">{t('accentColor')}</Label>
+                     <Label htmlFor="theme-select" className="text-left">{t('SettingsDialog.accentColor')}</Label>
                      <Select value={colorTheme} onValueChange={setColorTheme}>
                         <SelectTrigger id="theme-select" className="col-span-2 cursor-pointer">
-                           <SelectValue placeholder="Select a theme" />
+                           <SelectValue placeholder={t('SettingsDialog.selectThemePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                            {colorThemeOptions.map(themeName => (
                               <SelectItem key={themeName} value={themeName} className="cursor-pointer">
-                                 {themeName.replace('theme-', '').charAt(0).toUpperCase() + themeName.slice(7)}
+                                 {themeName === 'theme-city-of-mist' ? "City of Mist" : themeName.replace('theme-', '').charAt(0).toUpperCase() + themeName.slice(7)}
                               </SelectItem>
                            ))}
                         </SelectContent>
@@ -205,90 +194,90 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
-                     <Label className="text-left">{t('appearance')}</Label>
+                     <Label className="text-left">{t('SettingsDialog.appearance')}</Label>
                      <div className="col-span-2 flex items-center gap-2">
                         <Button
                            variant={resolvedTheme === 'light' ? 'default' : 'outline'}
                            onClick={() => setMode('light')}
-                           title={t('light')}
+                           title={t('SettingsDialog.light')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Sun className="mr-2 h-4 w-4 flex-shrink-0" />
-                           <span className="truncate">{t('light')}</span>
+                           <Sun className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.light')}</span>
                         </Button>
                         <Button
                            variant={resolvedTheme === 'dark' ? 'default' : 'outline'}
                            onClick={() => setMode('dark')}
-                           title={t('dark')}
+                           title={t('SettingsDialog.dark')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Moon className="mr-2 h-4 w-4 flex-shrink-0" />
-                           <span className="truncate">{t('dark')}</span>
+                           <Moon className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.dark')}</span>
                         </Button>
                      </div>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
-                     <Label className="text-left">{t('cardView.title')}</Label>
+                     <Label className="text-left">{t('SettingsDialog.cardView.title')}</Label>
                      <div className="col-span-2 flex items-center space-x-2">
                         <Button
                            variant={!isSideBySideView ? 'default' : 'outline'}
                            onClick={() => setSideBySideView(false)}
-                           title={t('cardView.flipping')}
+                           title={t('SettingsDialog.cardView.flipping')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <FlipHorizontal className="mr-2 h-4 w-4 flex-shrink-0" />
-                           <span className="truncate">{t('cardView.flipping')}</span>
+                           <FlipHorizontal className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.cardView.flipping')}</span>
                         </Button>
                         <Button
                            variant={isSideBySideView ? 'default' : 'outline'}
                            onClick={() => setSideBySideView(true)}
-                           title={t('cardView.sideBySide')}
+                           title={t('SettingsDialog.cardView.sideBySide')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <BookOpen className="mr-2 h-4 w-4 flex-shrink-0" />
-                           <span className="truncate">{t('cardView.sideBySide')}</span>
+                           <BookOpen className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.cardView.sideBySide')}</span>
                         </Button>
                      </div>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
-                     <Label className="text-left">{t('trackerEdit.title')}</Label>
+                     <Label className="text-left">{t('SettingsDialog.trackerEdit.title')}</Label>
                      <div className="col-span-2 flex items-center space-x-2">
                         <Button
                            variant={!isTrackersAlwaysEditable ? 'default' : 'outline'}
                            onClick={() => setTrackersAlwaysEditable(false)}
-                           title={t('trackerEdit.unlocked')}
+                           title={t('SettingsDialog.trackerEdit.unlocked')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <UnlockIcon className="mr-2 h-4 w-4 flex-shrink-0" />
-                           <span className="truncate">{t('trackerEdit.unlocked')}</span>
+                           <UnlockIcon className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.trackerEdit.unlocked')}</span>
                         </Button>
                         <Button
                            variant={isTrackersAlwaysEditable ? 'default' : 'outline'}
                            onClick={() => setTrackersAlwaysEditable(true)}
-                           title={t('trackerEdit.locked')}
+                           title={t('SettingsDialog.trackerEdit.locked')}
                            className="flex-1 min-w-0 cursor-pointer"
                         >
-                           <Lock className="mr-2 h-4 w-4 flex-shrink-0" />
-                           <span className="truncate">{t('trackerEdit.locked')}</span>
+                           <Lock className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.trackerEdit.locked')}</span>
                         </Button>
                      </div>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
-                     <Label className="text-left">{t('migration.label')}</Label>
-                     <Button onClick={() => setIsMigrationDialogOpen(true)} title={t('migration.button')} className="col-span-2 cursor-pointer min-w-0">
-                        <DatabaseBackup className="mr-2 h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{t('migration.button')}</span>
+                     <Label className="text-left">{t('SettingsDialog.migration.label')}</Label>
+                     <Button onClick={() => setIsMigrationDialogOpen(true)} title={t('SettingsDialog.migration.button')} className="col-span-2 cursor-pointer min-w-0">
+                        <DatabaseBackup className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="truncate">{t('SettingsDialog.migration.button')}</span>
                      </Button>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
-                     <Label className="text-left">{t('tutorial')}</Label>
-                     <Button onClick={onStartTour} title={t('tutorialButton')} className="col-span-2 cursor-pointer min-w-0">
-                        <PlayCircle className="mr-2 h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{t('tutorialButton')}</span>
+                     <Label className="text-left">{t('SettingsDialog.tutorial')}</Label>
+                     <Button onClick={onStartTour} title={t('SettingsDialog.tutorialButton')} className="col-span-2 cursor-pointer min-w-0">
+                        <PlayCircle className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="truncate">{t('SettingsDialog.tutorialButton')}</span>
                      </Button>
                   </div>
                </div>
@@ -297,10 +286,10 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
                <div className="space-y-4 rounded-lg border-2 border-destructive bg-destructive/5 p-4">
                   <div className="flex items-center gap-4">
-                     <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
+                     <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
                      <div>
-                        <h3 className="font-semibold">{t('dangerZone.title')}</h3>
-                        <p className="text-sm text-muted-foreground">{t('dangerZone.description')}</p>
+                        <h3 className="font-semibold">{t('SettingsDialog.dangerZone.title')}</h3>
+                        <p className="text-sm text-muted-foreground">{t('SettingsDialog.dangerZone.description')}</p>
                      </div>
                   </div>
 
@@ -309,19 +298,19 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         variant="destructive"
                         className="cursor-pointer flex-1 min-w-0"
                         onClick={() => setIsDeleteDrawerDialogOpen(true)}
-                        title={t('dangerZone.deleteDrawerButton')}
+                        title={t('SettingsDialog.dangerZone.deleteDrawerButton')}
                      >
-                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{t('dangerZone.deleteDrawerButton')}</span>
+                        <Trash2 className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="truncate">{t('SettingsDialog.dangerZone.deleteDrawerButton')}</span>
                      </Button>
                      <Button
                         variant="destructive"
                         className="cursor-pointer flex-1 min-w-0"
                         onClick={() => setIsResetAppDialogOpen(true)}
-                        title={t('dangerZone.resetButton')}
+                        title={t('SettingsDialog.dangerZone.resetButton')}
                      >
-                        <OctagonMinus className="mr-2 h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{t('dangerZone.resetButton')}</span>
+                        <OctagonMinus className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="truncate">{t('SettingsDialog.dangerZone.resetButton')}</span>
                      </Button>
                   </div>
                </div>
@@ -339,20 +328,20 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
             open={isDeleteDrawerDialogOpen}
             onOpenChange={setIsDeleteDrawerDialogOpen}
             onConfirm={handleDeleteDrawer}
-            title={t('dangerZone.deleteDrawerDialog.title')}
-            description={t('dangerZone.deleteDrawerDialog.description')}
+            title={t('SettingsDialog.dangerZone.deleteDrawerDialog.title')}
+            description={t('SettingsDialog.dangerZone.deleteDrawerDialog.description')}
             confirmationText="DELETE DRAWER"
-            confirmButtonText={t('dangerZone.deleteDrawerDialog.confirm')}
+            confirmButtonText={t('SettingsDialog.dangerZone.deleteDrawerDialog.confirm')}
          />
 
          <ConfirmationDialog
             open={isResetAppDialogOpen}
             onOpenChange={setIsResetAppDialogOpen}
             onConfirm={handleAppReset}
-            title={t('dangerZone.resetDialog.title')}
-            description={t('dangerZone.resetDialog.description')}
+            title={t('SettingsDialog.dangerZone.resetDialog.title')}
+            description={t('SettingsDialog.dangerZone.resetDialog.description')}
             confirmationText="DELETE ALL MY APP DATA"
-            confirmButtonText={t('dangerZone.resetDialog.confirm')}
+            confirmButtonText={t('SettingsDialog.dangerZone.resetDialog.confirm')}
          />
       </>
    );

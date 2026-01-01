@@ -1,10 +1,5 @@
-'use client';
-
 // -- React Imports --
-import React, { useEffect, useState } from 'react';
-
-// -- Next Imports --
-import { useTranslations } from 'next-intl';
+import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
 import { Input } from '@/components/ui/input';
@@ -18,9 +13,10 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Type Imports --
-import { Tag } from '@/lib/types/character';
+import type { Tag } from '@/lib/types/character';
 
 
 
@@ -38,7 +34,7 @@ interface TagItemProps {
 
 
 export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear }: TagItemProps) {
-   const t = useTranslations('TagItem');
+   const { t: t } = useTranslation();
    const actions = useCharacterActions();
    const listName = tagType === 'power' ? 'powerTags' : 'weaknessTags';
 
@@ -52,22 +48,16 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
    // ###   TAG NAME INPUT DEBOUNCER   ###
    // ####################################
 
-   const [localName, setLocalName] = useState(tag.name);
-
-   useEffect(() => {
-      const handler = setTimeout(() => {
-         if (tag.name !== localName) {
+   const [localName, setLocalName] = useInputDebouncer(
+      tag.name,
+      (value) => {
          if (isTrackerTag && trackerId) {
-            actions.updateTagInStoryTheme(trackerId, listName, tag.id, { name: localName });
+            actions.updateTagInStoryTheme(trackerId, listName, tag.id, { name: value });
          } else if (cardId) {
-            actions.updateTag(cardId, listName, tag.id, { name: localName });
+            actions.updateTag(cardId, listName, tag.id, { name: value });
          }
-         }
-      }, 500);
-      return () => clearTimeout(handler);
-   }, [localName, tag.name, tag.id, listName, cardId, trackerId, isTrackerTag, actions]);
-
-   useEffect(() => { setLocalName(tag.name); }, [tag.name]);
+      }
+   );
 
 
 
@@ -114,11 +104,11 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
                value={localName}
                onChange={(e) => setLocalName(e.target.value)}
                className="mx-1 h-7 text-center text-sm border-0 shadow-none"
-               placeholder={t('placeholder')}
+               placeholder={t('TagItem.placeholder')}
             />
          ) : (
             <p className={cn('text-sm text-center py-1', tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline')}>
-               {tag.name || `[${t('noName')}]`}
+               {tag.name || `[${t('TagItem.noName')}]`}
             </p>
          )}
 
