@@ -14,7 +14,7 @@ Not as long awaited, but a big milestone for me and for any future adjustement o
 **PWA support**: Characters of the Mist can now be installed as a PWA on compatible browser. PWAs (Progressive Web Apps) are web application that behave almost like native applications. You can now have a shortcut for Characters of the Mist on your computer, it can run in its own window, and... it can work offline!
 
 ### 🔧 Changes
-Completely migrated Characters of the Mist to a front-end only framework to facilitate offline capabilities. This means there could be a few issues I missed. Don't hesitate to report them on the discord!
+Completely migrated Characters of the Mist to a new framework to facilitate offline capabilities. This means there could be a few issues I missed. Don't hesitate to report them on the discord!
 
 ### What's next ?
 The migration was quite intense, but it was worth it. I took that opportunity to refactor quite a lot of things and make the code easier to maintain. Since Otherscape and City of Mist are integrated, Offline works, and some of the requested features have been implemented, I will now seriously look into mobile compatibility.
