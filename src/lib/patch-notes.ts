@@ -8,7 +8,7 @@ export const patchNotes: PatchNote[] = [
       version: '1.2.0',
       content: `
 ### Another big one, back to back!
-Not as long awaited, but a big milestone for me and for any future adjustement or addition.
+Not as long awaited, but a big milestone for me and for any future adjustment or addition.
 
 ### ✨ **New !**
 **PWA support**: Characters of the Mist can now be installed as a PWA on compatible browser. PWAs (Progressive Web Apps) are web application that behave almost like native applications. You can now have a shortcut for Characters of the Mist on your computer, it can run in its own window, and... it can work offline!
