@@ -776,8 +776,8 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                         )}
                      </header>
 
-                     <div className="grow bg-popover overflow-y-auto space-y-1">
-                        <motion.div data-tour="drawer-folders" layout transition={{ duration: 0.1 }} className="flex flex-col w-full px-4 py-3 mb-3 border-b-2 border-border overflow-hidden">
+                     <div className="grow bg-popover overflow-y-auto flex flex-col">
+                        <motion.div data-tour="drawer-folders" layout transition={{ duration: 0.1 }} className="flex flex-col w-full px-4 py-3 border-b-2 border-border overflow-hidden shrink-0">
                            {currentFolderId && (
                               <motion.div
                                  layout
@@ -845,12 +845,12 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                            </motion.div>
                         </motion.div>
 
-                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="px-3 pb-3 flex-1">
+                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="px-3 py-3 flex-1 flex flex-col min-h-0">
                            <div
                               ref={setNodeRef}
                               className={cn(
-                                 "w-full h-full rounded-md transition-colors p-2",
-                                 { "bg-muted": isDragHovering }
+                                 "w-full h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
+                                 isDragHovering && "border-primary bg-primary/10"
                               )}
                            >
                               {currentItems.length > 0 ? (
