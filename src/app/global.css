@@ -473,14 +473,16 @@
    --card-popover-fg:   hsl(210 18% 15%);
 }
 .card-type-tracker-otherscape {
-   --card-header-bg:    hsl(190 70% 30%);
-   --card-header-fg:    hsl(0 0% 92%);
-   --card-paper-bg:     hsl(0 0% 92%);
-   --card-paper-fg:     hsl(253 48% 16%);
-   --card-accent:       hsl(76 100% 60%);
-   --card-border:       hsl(253 48% 16%);
-   --card-popover-bg:   hsl(0, 0%, 75%);
-   --card-popover-fg:   hsl(255, 48%, 11%);
+   --card-header-bg:       hsl(190 70% 30%);
+   --card-header-fg:       hsl(0 0% 92%);
+   --card-paper-bg:        hsl(0 0% 92%);
+   --card-paper-fg:        hsl(253 48% 16%);
+   --card-accent:          hsl(76 100% 60%);
+   --card-border:          hsl(253 48% 16%);
+   --card-popover-bg:      hsl(0, 0%, 75%);
+   --card-popover-fg:      hsl(255, 48%, 11%);
+   --card-destructive-bg:  hsl(76 100% 70%);
+   --card-destructive-fg:  hsl(225 23% 8%);
 }
 
 
