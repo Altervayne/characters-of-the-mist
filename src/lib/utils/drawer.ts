@@ -409,6 +409,35 @@ export function findItemFolder(folders: Folder[], itemId: string): Folder | null
 }
 
 /**
+ * Gets the display path for a drawer item as a human-readable string.
+ * Returns "Drawer Root" if item is at root level, otherwise returns the full folder path.
+ * Example: "[My Campaign]->[PCs]"
+ */
+export function getItemDisplayPath(folders: Folder[], rootItems: DrawerItem[], itemId: string): string {
+   // Check if item is at root level
+   const isAtRoot = rootItems.some(item => item.id === itemId);
+   if (isAtRoot) {
+      return 'Drawer Root';
+   }
+
+   // Find the folder containing the item
+   const parentFolder = findItemFolder(folders, itemId);
+   if (!parentFolder) {
+      return 'Drawer Root';
+   }
+
+   // Build the breadcrumb path to this folder
+   const breadcrumb = buildBreadcrumb(folders, parentFolder.id);
+
+   // Convert breadcrumb to path string with brackets around each folder name
+   if (breadcrumb.length === 0) {
+      return 'Drawer Root';
+   }
+
+   return breadcrumb.map(folder => `[${folder.name}]`).join('→');
+}
+
+/**
  * Adds a new item to the specified folder's items array.
  * Same recursive pattern as addFolderRecursively - finds the parent and adds the item.
  */

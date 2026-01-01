@@ -9,6 +9,7 @@
          "appReset": "Réinitialisation de l'application terminée. Actualisation..."
       },
       "character": {
+         "saved": "Personnage sauvegardé dans",
          "savedToDrawer": "Personnage en cours sauvegardé à la racine du Tiroir.",
          "exported": "Personnage en cours exporté vers les téléchargements.",
          "exportFailedNoChar": "Export échoué, aucun personnage trouvé.",

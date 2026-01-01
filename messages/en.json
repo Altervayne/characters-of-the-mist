@@ -9,6 +9,7 @@
          "appReset": "Application successfully reset. Reloading..."
       },
       "character": {
+         "saved": "Character saved to",
          "savedToDrawer": "Current character has been saved to Drawer root.",
          "exported": "Current character has been exported to downloads.",
          "exportFailedNoChar": "Export failed, No character found.",

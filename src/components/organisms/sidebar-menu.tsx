@@ -16,6 +16,7 @@ import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLef
 import { cn } from '@/lib/utils';
 import { exportCharacterSheet, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
+import { getItemDisplayPath } from '@/lib/utils/drawer';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/character-undo-redo-controls';
@@ -23,7 +24,7 @@ import { SidebarButton } from '../molecules/sidebar-button';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
-import { useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- Other Imports --
 import cuid from 'cuid';
@@ -57,6 +58,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const { t: tNotifications } = useTranslation();
 
    const character = useCharacterStore((state) => state.character);
+   const drawer = useDrawerStore((state) => state.drawer);
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, unloadCharacter } = useCharacterActions();
    const { updateItem, initiateItemDrop } = useDrawerActions();
 
@@ -72,7 +74,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
       if (character.drawerItemId) {
          updateItem(character.drawerItemId, character);
-         toast.success(tNotifications('Notifications.character.savedToDrawer'));
+         const itemPath = getItemDisplayPath(drawer.folders, drawer.rootItems, character.drawerItemId);
+         toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
       } else {
          handleSaveCharacterAsToDrawer();
       }

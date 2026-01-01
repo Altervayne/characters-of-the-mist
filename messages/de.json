@@ -7,6 +7,7 @@
          "appReset": "Anwendung erfolgreich zurückgesetzt. Läd erneut..."
       },
       "character": {
+         "saved": "Charakter gespeichert in",
          "savedToDrawer": "Der aktuelle Charakter wurde im Drawer gespeichert.",
          "exported": "Der aktuelle Charakter wurde in Downloads exportiert.",
          "exportFailedNoChar": "Der Export is fehlgeschlagen. Es wurde kein Charakter gefunden.",
