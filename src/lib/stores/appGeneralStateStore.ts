@@ -5,7 +5,7 @@ import { create } from 'zustand';
 
 type StoreName = 'character' | 'drawer';
 
-
+export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 
 interface AppGeneralState {
    // --- Undo/Redo Context ---
@@ -33,6 +33,9 @@ interface AppGeneralState {
 
    // --- Drawer ---
    isDrawerOpen: boolean;
+
+   // --- Mobile Drawer ---
+   mobileDrawerSnapPoint: MobileDrawerSnapPoint;
    
    actions: {
       // --- Undo/Redo Context ---
@@ -63,6 +66,9 @@ interface AppGeneralState {
       // --- Drawer ---
       setDrawerOpen: (isOpen: boolean) => void;
       toggleDrawer: () => void;
+
+      // --- Mobile Drawer ---
+      setMobileDrawerSnapPoint: (snapPoint: MobileDrawerSnapPoint) => void;
    };
 }
 
@@ -95,6 +101,9 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    // --- Drawer ---
    isDrawerOpen: false,
 
+   // --- Mobile Drawer ---
+   mobileDrawerSnapPoint: 'closed',
+
    actions: {
       // --- Undo/Redo Context ---
       setLastModifiedStore: (storeName) => set({ lastModifiedStore: storeName }),
@@ -124,6 +133,9 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       // --- Drawer ---
       setDrawerOpen: (isOpen) => set({ isDrawerOpen: isOpen }),
       toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
+
+      // --- Mobile Drawer ---
+      setMobileDrawerSnapPoint: (snapPoint) => set({ mobileDrawerSnapPoint: snapPoint }),
    },
 }));
 

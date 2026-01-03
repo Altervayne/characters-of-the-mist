@@ -41,6 +41,7 @@ interface OtherscapeThemeCardProps {
    isEditing?: boolean;
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
+   isMobile?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onEditCard?: () => void;
@@ -51,7 +52,7 @@ interface OtherscapeThemeCardProps {
 
 export const OtherscapeThemeCard = React.memo(
    React.forwardRef<HTMLDivElement, OtherscapeThemeCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
       const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as OtherscapeThemeDetails | OtherscapeCrewDetails | OtherscapeLoadoutDetails;
@@ -139,7 +140,8 @@ export const OtherscapeThemeCard = React.memo(
 
       const CardFront = (
          <Card className={cn(
-            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            isMobile ? "w-full h-full" : "w-62.5 h-150",
+            "flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,
@@ -338,7 +340,8 @@ export const OtherscapeThemeCard = React.memo(
 
       const CardBack = (
          <Card className={cn(
-            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            isMobile ? "w-full h-full" : "w-62.5 h-150",
+            "flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-border",
             "relative z-0",
             cardTypeClass,

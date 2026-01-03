@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 // -- Custom Hooks --
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+import { useDeviceType } from '@/hooks/useDeviceType';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -51,6 +52,7 @@ import { CharacterLoadDropZone } from '@/components/organisms/character-load-dro
 import { SettingsDialog } from '@/components/organisms/settings-dialog';
 import { InfoDialog } from '@/components/organisms/info-dialog';
 import MainMenu from '@/components/organisms/main-menu';
+import MobileCharacterSheetPage from '@/components/mobile/MobileCharacterSheetPage';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -111,6 +113,14 @@ CardRenderer.displayName = 'CardRenderer';
 
 
 export default function CharacterSheetPage() {
+   // --- Device Detection ---
+   const { isMobile } = useDeviceType();
+
+   // If mobile, render mobile-specific page
+   if (isMobile) {
+      return <MobileCharacterSheetPage />;
+   }
+
    // --- Localization ---
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();

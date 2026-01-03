@@ -266,6 +266,12 @@
          "locked": "Forcé"
       },
 
+      "mobileNavigation": {
+         "title": "Navigation Mobile",
+         "bottomTabs": "Onglets en Bas",
+         "fab": "Bouton Flottant"
+      },
+
       "tutorial": "Tutoriel de l'Appli.",
       "tutorialButton": "Lancer le Tutoriel",
 
@@ -878,5 +884,40 @@
 
       "Self": "Soi",
       "Noise": "Bruit"
+   },
+   "MobileCharacterSheet": {
+      "noCharacter": "Aucun Personnage Chargé",
+      "loadCharacterPrompt": "Chargez un personnage depuis le tiroir ou créez-en un nouveau pour commencer.",
+      "drawerHint": "Appuyez sur l'onglet Tiroir ci-dessous pour parcourir vos personnages sauvegardés.",
+      "trackersTab": "Trackers",
+      "cardsTab": "Cartes",
+      "statuses": "Statuts",
+      "storyTags": "Balises d'Histoire",
+      "storyThemes": "Thèmes d'Histoire"
+   },
+   "MobileCardCarousel": {
+      "noCards": "Aucune carte pour le moment"
+   },
+   "MobileBottomTabs": {
+      "sheet": "Fiche",
+      "drawer": "Tiroir",
+      "menu": "Menu",
+      "edit": "Modifier"
+   },
+   "MobileFAB": {
+      "edit": "Mode Édition",
+      "drawer": "Tiroir",
+      "menu": "Menu",
+      "open": "Ouvrir le menu",
+      "close": "Fermer"
+   },
+   "MobileMenu": {
+      "title": "Menu",
+      "description": "Accédez aux paramètres et actions de l'application",
+      "settings": "Paramètres",
+      "info": "À propos",
+      "save": "Sauvegarder le Personnage",
+      "export": "Exporter le Personnage",
+      "import": "Importer"
    }
 }

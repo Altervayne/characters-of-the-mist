@@ -266,6 +266,12 @@
          "locked": "Forced"
       },
 
+      "mobileNavigation": {
+         "title": "Mobile Navigation",
+         "bottomTabs": "Bottom Tabs",
+         "fab": "Floating Button"
+      },
+
       "tutorial": "App Tutorial",
       "tutorialButton": "Launch the Tutorial",
 
@@ -884,5 +890,40 @@
 
       "Self": "Self",
       "Noise": "Noise"
+   },
+   "MobileCharacterSheet": {
+      "noCharacter": "No Character Loaded",
+      "loadCharacterPrompt": "Load a character from the drawer or create a new one to get started.",
+      "drawerHint": "Tap the Drawer tab below to browse your saved characters.",
+      "trackersTab": "Trackers",
+      "cardsTab": "Cards",
+      "statuses": "Statuses",
+      "storyTags": "Story Tags",
+      "storyThemes": "Story Themes"
+   },
+   "MobileCardCarousel": {
+      "noCards": "No cards yet"
+   },
+   "MobileBottomTabs": {
+      "sheet": "Sheet",
+      "drawer": "Drawer",
+      "menu": "Menu",
+      "edit": "Edit"
+   },
+   "MobileFAB": {
+      "edit": "Edit Mode",
+      "drawer": "Drawer",
+      "menu": "Menu",
+      "open": "Open menu",
+      "close": "Close"
+   },
+   "MobileMenu": {
+      "title": "Menu",
+      "description": "Access app settings and actions",
+      "settings": "Settings",
+      "info": "About",
+      "save": "Save Character",
+      "export": "Export Character",
+      "import": "Import"
    }
 }

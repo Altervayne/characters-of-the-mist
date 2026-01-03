@@ -8,6 +8,8 @@ import type { GameSystem } from '../types/drawer';
 
 
 export type ThemeName = 'theme-neutral' | 'theme-legends' | 'theme-otherscape' | 'theme-city-of-mist';
+export type DeviceType = 'mobile' | 'desktop';
+export type MobileNavigationType = 'bottom-tabs' | 'fab';
 
 interface AppSettingsState {
    theme: ThemeName;
@@ -17,6 +19,8 @@ interface AppSettingsState {
    isTrackersAlwaysEditable: boolean;
    isSidebarCollapsed: boolean;
    contextualGame: GameSystem;
+   deviceTypeOverride?: DeviceType;
+   mobileNavigationType: MobileNavigationType;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -26,6 +30,8 @@ interface AppSettingsState {
       setSidebarCollapsed: (isCollapsed: boolean) => void;
       toggleSidebarCollapsed: () => void;
       setContextualGame: (game: GameSystem) => void;
+      setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
+      setMobileNavigationType: (navType: MobileNavigationType) => void;
    };
 }
 
@@ -41,6 +47,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
          contextualGame: 'LEGENDS',
+         deviceTypeOverride: undefined,
+         mobileNavigationType: 'bottom-tabs',
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -49,7 +57,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setTrackersAlwaysEditable: (isEditable) => set({ isTrackersAlwaysEditable: isEditable }),
             setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
-            setContextualGame: (game) => set({ contextualGame: game })
+            setContextualGame: (game) => set({ contextualGame: game }),
+            setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
+            setMobileNavigationType: (navType) => set({ mobileNavigationType: navType })
          },
       }),
       {
@@ -62,7 +72,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             lastVisitedVersion: state.lastVisitedVersion,
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
-            contextualGame: state.contextualGame
+            contextualGame: state.contextualGame,
+            deviceTypeOverride: state.deviceTypeOverride,
+            mobileNavigationType: state.mobileNavigationType
          }),
       }
    )

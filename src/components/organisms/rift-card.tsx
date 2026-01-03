@@ -39,6 +39,7 @@ interface RiftCardProps {
    isEditing?: boolean;
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
+   isMobile?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onExport?: () => void;
@@ -112,7 +113,8 @@ const RiftCardContent = React.memo(
 
       const CardFront = (
          <Card className={cn(
-            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            props.isMobile ? "w-full h-full" : "w-62.5 h-150",
+            "flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-rift-com",
@@ -258,7 +260,8 @@ const RiftCardContent = React.memo(
 
       const CardBack = (
          <Card className={cn(
-            "w-62.5 h-150 flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
+            props.isMobile ? "w-full h-full" : "w-62.5 h-150",
+            "flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
             "card-type-rift-com",

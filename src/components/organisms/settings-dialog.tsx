@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '../ui/input';
 
 // -- Icon Imports --
-import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon } from 'lucide-react';
+import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu } from 'lucide-react';
 
 // -- Component Imports --
 import { MigrationDialog } from './migration-dialog';
@@ -25,6 +25,7 @@ import { MigrationDialog } from './migration-dialog';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore } from '@/lib/stores/characterStore';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { useDeviceType } from '@/hooks/useDeviceType';
 
 
 
@@ -116,10 +117,11 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { t, i18n } = useTranslation();
    const locale = i18n.language?.split('-')[0] || 'en';
 
-   const { resolvedTheme, setTheme: setMode } = useTheme(); 
-   
-   const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable } = useAppSettingsStore();
-   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable } = useAppSettingsActions();
+   const { resolvedTheme, setTheme: setMode } = useTheme();
+   const { isMobile } = useDeviceType();
+
+   const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, mobileNavigationType } = useAppSettingsStore();
+   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileNavigationType } = useAppSettingsActions();
 
    const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
@@ -264,6 +266,33 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         </Button>
                      </div>
                   </div>
+
+                  {/* Mobile Navigation Setting - Only visible on mobile */}
+                  {isMobile && (
+                     <div className="grid grid-cols-3 items-center gap-4">
+                        <Label className="text-left">{t('SettingsDialog.mobileNavigation.title') || 'Mobile Navigation'}</Label>
+                        <div className="col-span-2 flex items-center space-x-2">
+                           <Button
+                              variant={mobileNavigationType === 'bottom-tabs' ? 'default' : 'outline'}
+                              onClick={() => setMobileNavigationType('bottom-tabs')}
+                              title={t('SettingsDialog.mobileNavigation.bottomTabs') || 'Bottom Tabs'}
+                              className="flex-1 min-w-0 cursor-pointer"
+                           >
+                              <Navigation className="mr-2 h-4 w-4 shrink-0" />
+                              <span className="truncate">{t('SettingsDialog.mobileNavigation.bottomTabs') || 'Tabs'}</span>
+                           </Button>
+                           <Button
+                              variant={mobileNavigationType === 'fab' ? 'default' : 'outline'}
+                              onClick={() => setMobileNavigationType('fab')}
+                              title={t('SettingsDialog.mobileNavigation.fab') || 'Floating Button'}
+                              className="flex-1 min-w-0 cursor-pointer"
+                           >
+                              <Menu className="mr-2 h-4 w-4 shrink-0" />
+                              <span className="truncate">{t('SettingsDialog.mobileNavigation.fab') || 'FAB'}</span>
+                           </Button>
+                        </div>
+                     </div>
+                  )}
 
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label className="text-left">{t('SettingsDialog.migration.label')}</Label>
