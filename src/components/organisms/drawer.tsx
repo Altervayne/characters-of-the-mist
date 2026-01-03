@@ -845,11 +845,11 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                            </motion.div>
                         </motion.div>
 
-                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="px-3 py-3 flex-1 flex flex-col min-h-0">
+                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="flex-1 px-3 py-3 flex flex-col">
                            <div
                               ref={setNodeRef}
                               className={cn(
-                                 "w-full h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
+                                 "w-full grow min-h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
                                  isDragHovering && "border-primary bg-primary/10"
                               )}
                            >
