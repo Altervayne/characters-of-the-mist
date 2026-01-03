@@ -5,6 +5,17 @@ export interface PatchNote {
 
 export const patchNotes: PatchNote[] = [
    {
+      version: '1.2.1',
+      content: `
+### 🔧 Changes
+The drop zone for items in the drawer has now been expanded to always take, at minimum, the full available height. It expands with items as they're added. No longer will you have to look for the drop zone before letting go of an item.
+\nThe drawer's drop zone will now also look much more vibrant and distinct from the background, instead of the very light color used before.
+
+### 🐛 Bugfixes
+Found and fixed a few missing localized strings across the app.
+`
+   },
+   {
       version: '1.2.0',
       content: `
 ### Another big one, back to back!

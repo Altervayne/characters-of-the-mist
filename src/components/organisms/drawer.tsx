@@ -493,7 +493,7 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
                   <Input ref={ref} id="item-name" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
                </form>
             ) : (
-               <p className="text-sm text-muted-foreground">{t(isFolder ? 'deleteFolderMessage' : 'deleteItemMessage', { name: (action.target && 'name' in action.target) ? action.target.name : '' })}</p>
+               <p className="text-sm text-muted-foreground">{t(isFolder ? 'Drawer.Actions.deleteFolderMessage' : 'Drawer.Actions.deleteItemMessage', { name: (action.target && 'name' in action.target) ? action.target.name : '' })}</p>
             )}
             <div className="flex justify-end gap-2 mt-4">
                <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('Drawer.Actions.cancel')}</Button>
