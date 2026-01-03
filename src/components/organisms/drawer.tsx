@@ -412,13 +412,13 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
       if (!initialName && action.type === 'add-item' && action.target && 'type' in action.target) {
          const itemType = (action.target as PendingDrawerItem).type;
          switch (itemType) {
-            case 'CHARACTER_CARD':        initialName = t('Drawer.defaultNames.characterCard'); break;
-            case 'FULL_CHARACTER_SHEET':  initialName = t('Drawer.defaultNames.fullSheet'); break;
-            case 'CHARACTER_THEME':       initialName = t('Drawer.defaultNames.characterTheme'); break;
-            case 'GROUP_THEME':           initialName = t('Drawer.defaultNames.groupTheme'); break;
-            case 'STATUS_TRACKER':        initialName = t('Drawer.defaultNames.statusTracker'); break;
-            case 'STORY_TAG_TRACKER':     initialName = t('Drawer.defaultNames.storyTagTracker'); break;
-            default:                      initialName = t('Drawer.defaultNames.defaultItem'); break;
+            case 'CHARACTER_CARD':        initialName = t('Drawer.Actions.defaultNames.characterCard'); break;
+            case 'FULL_CHARACTER_SHEET':  initialName = t('Drawer.Actions.defaultNames.fullSheet'); break;
+            case 'CHARACTER_THEME':       initialName = t('Drawer.Actions.defaultNames.characterTheme'); break;
+            case 'GROUP_THEME':           initialName = t('Drawer.Actions.defaultNames.groupTheme'); break;
+            case 'STATUS_TRACKER':        initialName = t('Drawer.Actions.defaultNames.statusTracker'); break;
+            case 'STORY_TAG_TRACKER':     initialName = t('Drawer.Actions.defaultNames.storyTagTracker'); break;
+            default:                      initialName = t('Drawer.Actions.defaultNames.defaultItem'); break;
          }
       }
 
