@@ -193,21 +193,10 @@ export default function MobileCharacterSheet() {
 					)}
 					placeholder={t('CharacterSheetPage.characterNamePlaceholder') || 'Character Name'}
 				/>
-				{/* Toolbelt trigger button (only for side-panel mode) */}
-				{mobileToolbeltMode === 'side-panel' && (
-					<IconButton
-						variant="ghost"
-						size="default"
-						onClick={() => setIsToolbeltOpen(true)}
-						aria-label="Open toolbelt"
-					>
-						<Wrench className="h-5 w-5" />
-					</IconButton>
-				)}
 			</header>
 
 			{/* Tab Navigation */}
-			<div className="flex border-b border-border bg-card">
+			<div className="flex items-center border-b border-border bg-card">
 				<button
 					onClick={() => setActiveTab('trackers')}
 					className={cn(
@@ -237,6 +226,21 @@ export default function MobileCharacterSheet() {
 						</span>
 					)}
 				</button>
+
+				{/* Toolbelt trigger button (only for side-panel mode) */}
+				{mobileToolbeltMode === 'side-panel' && (
+					<div className="px-2">
+						<IconButton
+							variant="ghost"
+							size="sm"
+							onClick={() => setIsToolbeltOpen(true)}
+							aria-label="Open actions"
+							className="h-8 w-8"
+						>
+							<Wrench className="h-4 w-4" />
+						</IconButton>
+					</div>
+				)}
 			</div>
 
 			{/* Tab Content */}
@@ -346,7 +350,7 @@ export default function MobileCharacterSheet() {
 					<>
 						{/* Scrollable Card Display Area */}
 						<div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
-							<div className="min-h-full flex items-start justify-center">
+							<div className="min-h-full flex items-center justify-center">
 								<MobileCardCarousel
 									cards={character.cards}
 									currentIndex={safeCardIndex}

@@ -41,6 +41,7 @@ interface HeroCardProps {
   isSnapshot?: boolean;
   isDrawerPreview?: boolean;
   isMobile?: boolean;
+  useVerticalStack?: boolean;
   dragAttributes?: DraggableAttributes;
   dragListeners?: SyntheticListenerMap;
   onExport?: () => void;
@@ -50,7 +51,7 @@ interface HeroCardProps {
 
 const HeroCardContent = React.memo(
    React.forwardRef<HTMLDivElement, HeroCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, dragAttributes, dragListeners, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tBackpack } = useTranslation();
       const actions = useCharacterActions();
@@ -104,7 +105,7 @@ const HeroCardContent = React.memo(
 
       const CardFront = (
          <Card className={cn(
-            props.isMobile ? "w-full h-full" : "w-62.5 h-150",
+            isMobile ? "w-full h-full" : "w-62.5 h-150",
             "flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
@@ -182,7 +183,7 @@ const HeroCardContent = React.memo(
 
       const CardBack = (
          <Card className={cn(
-            props.isMobile ? "w-full h-full" : "w-62.5 h-150",
+            isMobile ? "w-full h-full" : "w-62.5 h-150",
             "flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0",
             "bg-card-paper-bg text-card-paper-fg border-card-accent",
             "relative z-0",
@@ -223,6 +224,7 @@ const HeroCardContent = React.memo(
             effectiveViewMode={effectiveViewMode}
             isDrawerPreview={isDrawerPreview ?? false}
             isSnapshot={isSnapshot}
+            useVerticalStack={useVerticalStack}
             card={card}
             isHovered={isHovered}
             hoverHandlers={hoverHandlers}

@@ -1,4 +1,5 @@
 // -- React Imports --
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
@@ -12,6 +13,7 @@ import { AddCardButton } from '@/components/molecules/add-theme-card-button';
 
 // -- Store Imports --
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+import { useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Type Imports --
 import type { Card as CardData } from '@/lib/types/character';
@@ -24,13 +26,37 @@ interface MobileCardCarouselProps {
 export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCarouselProps) {
 	const { t } = useTranslation();
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
+	const { flipCard } = useCharacterActions();
+
+	// Swipe gesture detection for flipping cards
+	const touchStartX = useRef<number>(0);
+	const touchStartY = useRef<number>(0);
+
+	const handleTouchStart = (e: React.TouchEvent) => {
+		touchStartX.current = e.touches[0].clientX;
+		touchStartY.current = e.touches[0].clientY;
+	};
+
+	const handleTouchEnd = (e: React.TouchEvent, cardId: string) => {
+		const touchEndX = e.changedTouches[0].clientX;
+		const touchEndY = e.changedTouches[0].clientY;
+
+		const deltaX = touchEndX - touchStartX.current;
+		const deltaY = touchEndY - touchStartY.current;
+
+		if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+			if (deltaX !== 0) {
+				flipCard(cardId);
+			}
+		}
+	};
 
 	// Render individual card based on type
 	const renderCard = (card: CardData) => {
 		const commonProps = {
 			card,
 			isEditing,
-			isMobile: false, // Keep desktop sizing for proper card display
+			useVerticalStack: true,
 			onEditCard: () => {}, // TODO: Implement in later phase
 			onExport: () => {} // TODO: Implement in later phase
 		};
@@ -77,6 +103,14 @@ export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCa
 
 	const currentCard = cards[currentIndex];
 
-	// Just render the current card - navigation is handled by parent
-	return renderCard(currentCard);
+	// Wrap card with swipe gesture for flipping
+	return (
+		<div
+			onTouchStart={handleTouchStart}
+			onTouchEnd={(e) => handleTouchEnd(e, currentCard.id)}
+			className="h-full w-full flex items-center justify-center"
+		>
+			{renderCard(currentCard)}
+		</div>
+	);
 }

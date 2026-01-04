@@ -46,7 +46,7 @@ export default function ToolbeltFAB({
 
 						{/* Action Buttons */}
 						{actions.length > 0 && (
-							<div className="fixed bottom-24 right-4 flex flex-col-reverse gap-3 z-50">
+							<div className="fixed bottom-20 right-4 flex flex-col gap-3 z-50">
 								{actions.map((action, index) => {
 									const Icon = action.icon;
 									return (

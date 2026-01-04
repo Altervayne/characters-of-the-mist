@@ -40,6 +40,7 @@ interface CityThemeCardProps {
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
    isMobile?: boolean;
+   useVerticalStack?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onEditCard?: () => void;
@@ -50,7 +51,7 @@ interface CityThemeCardProps {
 
 export const CityThemeCard = React.memo(
    React.forwardRef<HTMLDivElement, CityThemeCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
       const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as CityThemeDetails | CityCrewDetails;
@@ -268,6 +269,7 @@ export const CityThemeCard = React.memo(
             effectiveViewMode={effectiveViewMode}
             isDrawerPreview={isDrawerPreview ?? false}
             isSnapshot={isSnapshot}
+            useVerticalStack={useVerticalStack}
             card={card}
             isHovered={isHovered}
             hoverHandlers={hoverHandlers}

@@ -93,8 +93,8 @@ export default function SelectableTracker({
 			{/* Tracker content with selection visual feedback */}
 			<div
 				className={cn(
-					"transition-all duration-200",
-					isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105",
+					"transition-all duration-200 rounded-lg",
+					isSelected && "border-2 border-dashed border-primary",
 					isPressing && "opacity-80"
 				)}
 			>

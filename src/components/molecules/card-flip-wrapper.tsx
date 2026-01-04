@@ -17,6 +17,8 @@ interface CardFlipWrapperProps {
   effectiveViewMode: 'FLIP' | 'SIDE_BY_SIDE';
   isDrawerPreview: boolean;
   isSnapshot?: boolean;
+  isMobile?: boolean;
+  useVerticalStack?: boolean;
   card: CardData;
 
   // Hover
@@ -65,7 +67,7 @@ interface CardFlipWrapperProps {
  * ```
  */
 export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperProps>(
-  ({ effectiveViewMode, isDrawerPreview, isSnapshot, card, isHovered, hoverHandlers,
+  ({ effectiveViewMode, isDrawerPreview, isSnapshot, isMobile, useVerticalStack, card, isHovered, hoverHandlers,
      isEditing, dragAttributes, dragListeners, cardTheme, onExport, onCycleViewMode,
      onFlip, onDelete, onEditCard, cardFront, cardBack }, ref) => {
 
@@ -84,7 +86,7 @@ export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperP
             cardViewMode={card.viewMode}
             cardTheme={cardTheme}
           />
-          <div className="flex gap-1 items-start">
+          <div className={useVerticalStack ? "flex flex-col gap-2" : "flex gap-1 items-start"}>
             {cardFront}
             {cardBack}
           </div>

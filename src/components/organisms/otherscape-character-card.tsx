@@ -40,6 +40,7 @@ interface OtherscapeCharacterCardProps {
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
    isMobile?: boolean;
+   useVerticalStack?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onExport?: () => void;
@@ -49,7 +50,7 @@ interface OtherscapeCharacterCardProps {
 
 const OtherscapeCharacterCardContent = React.memo(
    React.forwardRef<HTMLDivElement, OtherscapeCharacterCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile, dragAttributes, dragListeners, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tSpecials } = useTranslation();
       const actions = useCharacterActions();
@@ -444,6 +445,7 @@ const OtherscapeCharacterCardContent = React.memo(
             effectiveViewMode={effectiveViewMode}
             isDrawerPreview={isDrawerPreview ?? false}
             isSnapshot={isSnapshot}
+            useVerticalStack={useVerticalStack}
             card={card}
             isHovered={isHovered}
             hoverHandlers={hoverHandlers}
