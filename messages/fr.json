@@ -932,6 +932,9 @@
    "Toolbelt": {
       "title": "Actions",
       "noActions": "Aucune action disponible",
+      "itemSection": "Élément",
+      "globalSection": "Global",
+      "addCard": "Ajouter une Carte",
       "flipCard": "Retourner la Carte",
       "export": "Exporter",
       "sideBySideMode": "Côte à Côte",

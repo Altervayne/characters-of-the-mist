@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
@@ -53,7 +53,7 @@ export default function MobileCharacterSheet() {
 
 	// Character data
 	const character = useCharacterStore((state) => state.character);
-	const { updateCharacterName, addStatus, addStoryTag } = useCharacterActions();
+	const { updateCharacterName, addStatus, addStoryTag, flipCard } = useCharacterActions();
 
 	// Settings
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
@@ -78,6 +78,76 @@ export default function MobileCharacterSheet() {
 	const safeCardIndex = character && character.cards.length > 0
 		? Math.min(currentCardIndex, character.cards.length - 1)
 		: 0;
+
+	// Swipe gesture detection for card area (edge swipes for flip/toolbelt)
+	const cardSwipeStartX = useRef<number>(0);
+	const cardSwipeStartY = useRef<number>(0);
+
+	const handleCardAreaTouchStart = (e: React.TouchEvent) => {
+		cardSwipeStartX.current = e.touches[0].clientX;
+		cardSwipeStartY.current = e.touches[0].clientY;
+	};
+
+	// Swipe gesture detection for navigation bar (card navigation)
+	const navSwipeStartX = useRef<number>(0);
+	const navSwipeStartY = useRef<number>(0);
+
+	const handleNavBarTouchStart = (e: React.TouchEvent) => {
+		navSwipeStartX.current = e.touches[0].clientX;
+		navSwipeStartY.current = e.touches[0].clientY;
+	};
+
+	const handleNavBarTouchEnd = (e: React.TouchEvent) => {
+		if (!character || character.cards.length === 0) return;
+
+		const touchEndX = e.changedTouches[0].clientX;
+		const touchEndY = e.changedTouches[0].clientY;
+		const deltaX = touchEndX - navSwipeStartX.current;
+		const deltaY = touchEndY - navSwipeStartY.current;
+
+		// Only process horizontal swipes with 50px threshold
+		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 50) return;
+
+		// Swipe left = next card
+		if (deltaX < 0 && safeCardIndex < character.cards.length - 1) {
+			setCurrentCardIndex(i => i + 1);
+		}
+		// Swipe right = previous card
+		else if (deltaX > 0 && safeCardIndex > 0) {
+			setCurrentCardIndex(i => i - 1);
+		}
+	};
+
+	const handleCardAreaTouchEnd = (e: React.TouchEvent) => {
+		if (!character || character.cards.length === 0) return;
+
+		const touchEndX = e.changedTouches[0].clientX;
+		const touchEndY = e.changedTouches[0].clientY;
+		const deltaX = touchEndX - cardSwipeStartX.current;
+		const deltaY = touchEndY - cardSwipeStartY.current;
+
+		// Only process horizontal swipes
+		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 30) return;
+
+		const currentCard = character.cards[safeCardIndex];
+		const edgeThreshold = 50;
+		const swipeThreshold = 30;
+
+		// Left edge swipe (within 50px from left) → Flip card
+		if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
+			flipCard(currentCard.id);
+		}
+		// Right edge swipe (within 50px from right)
+		else if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
+			if (mobileToolbeltMode === 'side-panel' && !isToolbeltOpen) {
+				// Side-panel mode: Open toolbelt
+				setIsToolbeltOpen(true);
+			} else if (mobileToolbeltMode === 'fab') {
+				// FAB mode: Flip card
+				flipCard(currentCard.id);
+			}
+		}
+	};
 
 	// Build toolbelt context based on active tab and selection
 	const toolbeltContext: ToolbeltContext = useMemo(() => {
@@ -349,7 +419,11 @@ export default function MobileCharacterSheet() {
 				{activeTab === 'cards' && (
 					<>
 						{/* Scrollable Card Display Area */}
-						<div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+						<div
+							className="flex-1 overflow-y-auto overflow-x-hidden p-4"
+							onTouchStart={handleCardAreaTouchStart}
+							onTouchEnd={handleCardAreaTouchEnd}
+						>
 							<div className="min-h-full flex items-center justify-center">
 								<MobileCardCarousel
 									cards={character.cards}
@@ -360,33 +434,38 @@ export default function MobileCharacterSheet() {
 
 						{/* Navigation Bar - Always Visible at Bottom */}
 						{character.cards.length > 0 && (
-							<div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 bg-card border-t border-border">
+							<div
+								className="shrink-0 flex items-center justify-between gap-3 px-3 py-2 bg-card border-t border-border"
+								onTouchStart={handleNavBarTouchStart}
+								onTouchEnd={handleNavBarTouchEnd}
+							>
 								<IconButton
 									variant="outline"
-									size="default"
+									size="sm"
 									onClick={() => setCurrentCardIndex(i => Math.max(0, i - 1))}
 									disabled={safeCardIndex === 0}
 									aria-label="Previous card"
+									className="h-8 w-8"
 								>
-									<ChevronLeft className="h-5 w-5" />
+									<ChevronLeft className="h-4 w-4" />
 								</IconButton>
 
-								<div className="flex-1 flex flex-col items-center gap-1.5">
+								<div className="flex-1 flex flex-col items-center justify-center gap-1">
 									{/* Card Title */}
-									<span className="text-sm font-medium truncate max-w-full">
+									<span className="text-xs font-medium truncate max-w-full text-center">
 										{getCardTitle(character.cards[safeCardIndex])}
 									</span>
 
 									{/* Dot Indicators */}
-									<div className="flex items-center gap-1.5">
+									<div className="flex items-center gap-1">
 										{character.cards.map((_, index) => (
 											<button
 												key={index}
 												onClick={() => setCurrentCardIndex(index)}
 												className={cn(
-													"h-2 w-2 rounded-full transition-all",
+													"h-1.5 w-1.5 rounded-full transition-all",
 													index === safeCardIndex
-														? "bg-primary w-6"
+														? "bg-primary w-4"
 														: "bg-muted-foreground/30 hover:bg-muted-foreground/50"
 												)}
 												aria-label={`Go to card ${index + 1}`}
@@ -397,12 +476,13 @@ export default function MobileCharacterSheet() {
 
 								<IconButton
 									variant="outline"
-									size="default"
+									size="sm"
 									onClick={() => setCurrentCardIndex(i => Math.min(character.cards.length - 1, i + 1))}
 									disabled={safeCardIndex === character.cards.length - 1}
 									aria-label="Next card"
+									className="h-8 w-8"
 								>
-									<ChevronRight className="h-5 w-5" />
+									<ChevronRight className="h-4 w-4" />
 								</IconButton>
 							</div>
 						)}

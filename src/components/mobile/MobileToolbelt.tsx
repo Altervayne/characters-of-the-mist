@@ -21,8 +21,8 @@ export default function MobileToolbelt({
 	isOpen,
 	onOpenChange
 }: MobileToolbeltProps) {
-	// Build action list based on context
-	const actions = useToolbeltActions(context);
+	// Build action lists based on context
+	const { itemActions, globalActions } = useToolbeltActions(context);
 
 	// Render appropriate UI based on mode
 	if (mode === 'side-panel') {
@@ -30,7 +30,8 @@ export default function MobileToolbelt({
 			<ToolbeltSidePanel
 				isOpen={isOpen}
 				onOpenChange={onOpenChange}
-				actions={actions}
+				itemActions={itemActions}
+				globalActions={globalActions}
 			/>
 		);
 	}
@@ -40,7 +41,8 @@ export default function MobileToolbelt({
 		<ToolbeltFAB
 			isOpen={isOpen}
 			onOpenChange={onOpenChange}
-			actions={actions}
+			itemActions={itemActions}
+			globalActions={globalActions}
 		/>
 	);
 }

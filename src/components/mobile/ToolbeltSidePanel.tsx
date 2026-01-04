@@ -19,15 +19,19 @@ import type { ToolbeltAction } from '@/lib/types/toolbelt';
 interface ToolbeltSidePanelProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
-	actions: ToolbeltAction[];
+	itemActions: ToolbeltAction[];
+	globalActions: ToolbeltAction[];
 }
 
 export default function ToolbeltSidePanel({
 	isOpen,
 	onOpenChange,
-	actions
+	itemActions,
+	globalActions
 }: ToolbeltSidePanelProps) {
 	const { t } = useTranslation();
+	const hasItemActions = itemActions.length > 0;
+	const hasGlobalActions = globalActions.length > 0;
 
 	return (
 		<AnimatePresence>
@@ -67,35 +71,76 @@ export default function ToolbeltSidePanel({
 						</div>
 
 						{/* Actions List */}
-						<div className="flex-1 overflow-y-auto p-2">
-							{actions.length === 0 ? (
-								<div className="flex flex-col items-center justify-center h-full p-8 text-center">
+						<div className="flex flex-col justify-end flex-1 overflow-y-auto p-2">
+							{!hasItemActions && !hasGlobalActions ? (
+								<div className="flex flex-col items-center justify-center w-full h-full p-8 text-center">
 									<p className="text-muted-foreground">
 										{t('Toolbelt.noActions') || 'No actions available'}
 									</p>
 								</div>
 							) : (
-								<div className="space-y-1">
-									{actions.map((action) => {
-										const Icon = action.icon;
-										return (
-											<Button
-												key={action.id}
-												variant={action.variant === 'destructive' ? 'destructive' : 'ghost'}
-												onClick={() => {
-													action.onClick();
-													onOpenChange(false);
-												}}
-												className={cn(
-													"w-full justify-start h-12 text-base",
-													action.variant !== 'destructive' && "hover:bg-accent"
-												)}
-											>
-												<Icon className="h-5 w-5 mr-3" />
-												<span>{action.label}</span>
-											</Button>
-										);
-									})}
+								<div className="justify-end space-y-4">
+									{/* Item Actions Section */}
+									{hasItemActions && (
+										<div>
+											<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2">
+												{t('Toolbelt.itemSection') || 'Item'}
+											</h3>
+											<div className="space-y-1">
+												{itemActions.map((action) => {
+													const Icon = action.icon;
+													return (
+														<Button
+															key={action.id}
+															variant={action.variant === 'destructive' ? 'destructive' : 'ghost'}
+															onClick={() => {
+																action.onClick();
+																onOpenChange(false);
+															}}
+															className={cn(
+																"w-full justify-start h-12 text-base",
+																action.variant !== 'destructive' && "hover:bg-accent"
+															)}
+														>
+															<Icon className="h-5 w-5 mr-3" />
+															<span>{action.label}</span>
+														</Button>
+													);
+												})}
+											</div>
+										</div>
+									)}
+
+									{/* Global Actions Section */}
+									{hasGlobalActions && (
+										<div>
+											<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2">
+												{t('Toolbelt.globalSection') || 'Global'}
+											</h3>
+											<div className="space-y-1">
+												{globalActions.map((action) => {
+													const Icon = action.icon;
+													return (
+														<Button
+															key={action.id}
+															variant={action.variant === 'destructive' ? 'destructive' : 'ghost'}
+															onClick={() => {
+																action.onClick();
+																onOpenChange(false);
+															}}
+															className={cn(
+																"w-full justify-start h-12 text-base",
+																action.variant !== 'destructive' && "hover:bg-accent"
+															)}
+														>
+															<Icon className="h-5 w-5 mr-3" />
+															<span>{action.label}</span>
+														</Button>
+													);
+												})}
+											</div>
+										</div>
+									)}
 								</div>
 							)}
 						</div>

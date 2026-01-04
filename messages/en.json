@@ -938,6 +938,9 @@
    "Toolbelt": {
       "title": "Actions",
       "noActions": "No actions available",
+      "itemSection": "Item",
+      "globalSection": "Global",
+      "addCard": "Add Card",
       "flipCard": "Flip Card",
       "export": "Export",
       "sideBySideMode": "Side by Side",

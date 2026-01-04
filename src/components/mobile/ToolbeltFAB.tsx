@@ -19,15 +19,19 @@ import type { ToolbeltAction } from '@/lib/types/toolbelt';
 interface ToolbeltFABProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
-	actions: ToolbeltAction[];
+	itemActions: ToolbeltAction[];
+	globalActions: ToolbeltAction[];
 }
 
 export default function ToolbeltFAB({
 	isOpen,
 	onOpenChange,
-	actions
+	itemActions,
+	globalActions
 }: ToolbeltFABProps) {
 	const { t } = useTranslation();
+	// Combine all actions for FAB display (global first, then item)
+	const allActions = [...globalActions, ...itemActions];
 
 	return (
 		<>
@@ -45,9 +49,9 @@ export default function ToolbeltFAB({
 						/>
 
 						{/* Action Buttons */}
-						{actions.length > 0 && (
+						{allActions.length > 0 && (
 							<div className="fixed bottom-20 right-4 flex flex-col gap-3 z-50">
-								{actions.map((action, index) => {
+								{allActions.map((action, index) => {
 									const Icon = action.icon;
 									return (
 										<motion.div
@@ -109,9 +113,9 @@ export default function ToolbeltFAB({
 					onClick={() => onOpenChange(!isOpen)}
 					className={cn(
 						"h-14 w-14 shadow-2xl",
-						actions.length === 0 && "opacity-50 cursor-not-allowed"
+						allActions.length === 0 && "opacity-50 cursor-not-allowed"
 					)}
-					disabled={actions.length === 0}
+					disabled={allActions.length === 0}
 				>
 					<motion.div
 						animate={{ rotate: isOpen ? 45 : 0 }}

@@ -12,6 +12,11 @@ export interface ToolbeltAction {
 	show: boolean;
 }
 
+export interface ToolbeltActions {
+	itemActions: ToolbeltAction[];
+	globalActions: ToolbeltAction[];
+}
+
 export type ToolbeltContext =
 	| { type: 'card'; card: Card }
 	| { type: 'tracker'; tracker: StatusTracker | StoryTagTracker | StoryThemeTracker }
