@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
+import type { ToolbeltMode } from '../types/toolbelt';
 
 
 
@@ -21,6 +22,7 @@ interface AppSettingsState {
    contextualGame: GameSystem;
    deviceTypeOverride?: DeviceType;
    mobileNavigationType: MobileNavigationType;
+   mobileToolbeltMode: ToolbeltMode;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -32,6 +34,7 @@ interface AppSettingsState {
       setContextualGame: (game: GameSystem) => void;
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
       setMobileNavigationType: (navType: MobileNavigationType) => void;
+      setMobileToolbeltMode: (mode: ToolbeltMode) => void;
    };
 }
 
@@ -49,6 +52,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          contextualGame: 'LEGENDS',
          deviceTypeOverride: undefined,
          mobileNavigationType: 'bottom-tabs',
+         mobileToolbeltMode: 'side-panel',
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -59,7 +63,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
-            setMobileNavigationType: (navType) => set({ mobileNavigationType: navType })
+            setMobileNavigationType: (navType) => set({ mobileNavigationType: navType }),
+            setMobileToolbeltMode: (mode) => set({ mobileToolbeltMode: mode })
          },
       }),
       {
@@ -74,7 +79,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isSidebarCollapsed: state.isSidebarCollapsed,
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
-            mobileNavigationType: state.mobileNavigationType
+            mobileNavigationType: state.mobileNavigationType,
+            mobileToolbeltMode: state.mobileToolbeltMode
          }),
       }
    )

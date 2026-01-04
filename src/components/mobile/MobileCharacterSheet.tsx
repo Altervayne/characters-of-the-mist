@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
@@ -9,9 +9,11 @@ import { StoryThemeTrackerCard } from '@/components/organisms/story-theme-tracke
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import MobileCardCarousel from './MobileCardCarousel';
+import MobileToolbelt from './MobileToolbelt';
+import SelectableTracker from './SelectableTracker';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Wrench } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -24,6 +26,7 @@ import { cn } from '@/lib/utils';
 
 // -- Type Imports --
 import type { Card, CardDetails } from '@/lib/types/character';
+import type { ToolbeltContext } from '@/lib/types/toolbelt';
 
 
 
@@ -56,9 +59,14 @@ export default function MobileCharacterSheet() {
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 	const isTrackersAlwaysEditable = useAppSettingsStore((state) => state.isTrackersAlwaysEditable);
 	const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
+	const mobileToolbeltMode = useAppSettingsStore((state) => state.mobileToolbeltMode);
 
 	// Card navigation state
 	const [currentCardIndex, setCurrentCardIndex] = useState(0);
+
+	// Toolbelt state
+	const [isToolbeltOpen, setIsToolbeltOpen] = useState(false);
+	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
 
 	// Character name input with debouncing
 	const [localName, setLocalName] = useInputDebouncer(
@@ -70,6 +78,27 @@ export default function MobileCharacterSheet() {
 	const safeCardIndex = character && character.cards.length > 0
 		? Math.min(currentCardIndex, character.cards.length - 1)
 		: 0;
+
+	// Build toolbelt context based on active tab and selection
+	const toolbeltContext: ToolbeltContext = useMemo(() => {
+		if (activeTab === 'cards' && character && character.cards.length > 0) {
+			return { type: 'card', card: character.cards[safeCardIndex] };
+		}
+		if (activeTab === 'trackers' && selectedTrackerId && character) {
+			// Check statuses
+			const status = character.trackers.statuses.find(t => t.id === selectedTrackerId);
+			if (status) return { type: 'tracker', tracker: status };
+
+			// Check story tags
+			const storyTag = character.trackers.storyTags.find(t => t.id === selectedTrackerId);
+			if (storyTag) return { type: 'tracker', tracker: storyTag };
+
+			// Check story themes
+			const storyTheme = character.trackers.storyThemes.find(t => t.id === selectedTrackerId);
+			if (storyTheme) return { type: 'tracker', tracker: storyTheme };
+		}
+		return { type: 'none' };
+	}, [activeTab, character, safeCardIndex, selectedTrackerId]);
 
 	// Helper function to get card display name
 	const getCardTitle = (card: Card): string => {
@@ -152,18 +181,29 @@ export default function MobileCharacterSheet() {
 	return (
 		<div className="flex flex-col h-full">
 			{/* Character Name Header */}
-			<header className="p-4 bg-popover border-b border-border">
+			<header className="p-4 bg-popover border-b border-border flex items-center gap-3">
 				<input
 					type="text"
 					value={localName}
 					onChange={(e) => setLocalName(e.target.value)}
 					className={cn(
-						"w-full text-2xl font-bold bg-transparent outline-none transition-colors",
+						"flex-1 text-2xl font-bold bg-transparent outline-none transition-colors",
 						"placeholder:text-muted-foreground/50",
 						"focus:text-primary"
 					)}
 					placeholder={t('CharacterSheetPage.characterNamePlaceholder') || 'Character Name'}
 				/>
+				{/* Toolbelt trigger button (only for side-panel mode) */}
+				{mobileToolbeltMode === 'side-panel' && (
+					<IconButton
+						variant="ghost"
+						size="default"
+						onClick={() => setIsToolbeltOpen(true)}
+						aria-label="Open toolbelt"
+					>
+						<Wrench className="h-5 w-5" />
+					</IconButton>
+				)}
 			</header>
 
 			{/* Tab Navigation */}
@@ -202,83 +242,103 @@ export default function MobileCharacterSheet() {
 			{/* Tab Content */}
 			<div className="flex-1 flex flex-col overflow-hidden">
 				{activeTab === 'trackers' && (
-					<div className="h-full overflow-y-auto p-4 pb-6 space-y-6">
-						{/* Statuses Section */}
-						<section>
-							<h3 className="text-sm font-semibold text-muted-foreground mb-3">
-								{t('MobileCharacterSheet.statuses') || 'Statuses'}
-							</h3>
-							<div className="space-y-3">
-								{character.trackers.statuses.map((tracker) => (
-									<StatusTrackerCard
-										key={tracker.id}
-										tracker={tracker}
-										isEditing={areTrackersEditable}
-										onExport={() => {}}
-									/>
-								))}
-								{areTrackersEditable && (
-									<Button
-										variant="ghost"
-										onClick={() => addStatus()}
-										className={cn(
-											"w-full h-16 border-2 border-dashed border-primary/25",
-											"text-muted-foreground bg-primary/5",
-											"hover:text-foreground hover:border-foreground"
-										)}
-									>
-										+ {t('Trackers.addStatus') || 'Add Status'}
-									</Button>
-								)}
-							</div>
-						</section>
+					<div className="h-full overflow-y-auto p-4 pb-6">
+						<div className="max-w-7xl mx-auto space-y-6">
+							{/* Statuses Section */}
+							<section>
+								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+									{t('MobileCharacterSheet.statuses') || 'Statuses'}
+								</h3>
+								<div className="flex flex-wrap justify-center gap-3">
+									{character.trackers.statuses.map((tracker) => (
+										<SelectableTracker
+											key={tracker.id}
+											tracker={tracker}
+											isSelected={selectedTrackerId === tracker.id}
+											onSelect={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
+										>
+											<StatusTrackerCard
+												tracker={tracker}
+												isEditing={areTrackersEditable}
+												onExport={() => {}}
+											/>
+										</SelectableTracker>
+									))}
+									{areTrackersEditable && (
+										<Button
+											variant="ghost"
+											onClick={() => addStatus()}
+											className={cn(
+												"w-full h-16 border-2 border-dashed border-primary/25",
+												"text-muted-foreground bg-primary/5",
+												"hover:text-foreground hover:border-foreground"
+											)}
+										>
+											+ {t('Trackers.addStatus') || 'Add Status'}
+										</Button>
+									)}
+								</div>
+							</section>
 
-						{/* Story Tags Section */}
-						<section>
-							<h3 className="text-sm font-semibold text-muted-foreground mb-3">
-								{t('MobileCharacterSheet.storyTags') || 'Story Tags'}
-							</h3>
-							<div className="space-y-3">
-								{character.trackers.storyTags.map((tracker) => (
-									<StoryTagTrackerCard
-										key={tracker.id}
-										tracker={tracker}
-										isEditing={areTrackersEditable}
-										onExport={() => {}}
-									/>
-								))}
-								{areTrackersEditable && (
-									<Button
-										variant="ghost"
-										onClick={() => addStoryTag()}
-										className={cn(
-											"w-full h-16 border-2 border-dashed border-primary/25",
-											"text-muted-foreground bg-primary/5",
-											"hover:text-foreground hover:border-foreground"
-										)}
-									>
-										+ {t('Trackers.addStoryTag') || 'Add Story Tag'}
-									</Button>
-								)}
-							</div>
-						</section>
+							{/* Story Tags Section */}
+							<section>
+								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+									{t('MobileCharacterSheet.storyTags') || 'Story Tags'}
+								</h3>
+								<div className="flex flex-wrap justify-center gap-3">
+									{character.trackers.storyTags.map((tracker) => (
+										<SelectableTracker
+											key={tracker.id}
+											tracker={tracker}
+											isSelected={selectedTrackerId === tracker.id}
+											onSelect={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
+										>
+											<StoryTagTrackerCard
+												tracker={tracker}
+												isEditing={areTrackersEditable}
+												onExport={() => {}}
+											/>
+										</SelectableTracker>
+									))}
+									{areTrackersEditable && (
+										<Button
+											variant="ghost"
+											onClick={() => addStoryTag()}
+											className={cn(
+												"w-full h-16 border-2 border-dashed border-primary/25",
+												"text-muted-foreground bg-primary/5",
+												"hover:text-foreground hover:border-foreground"
+											)}
+										>
+											+ {t('Trackers.addStoryTag') || 'Add Story Tag'}
+										</Button>
+									)}
+								</div>
+							</section>
 
-						{/* Story Themes Section */}
-						<section>
-							<h3 className="text-sm font-semibold text-muted-foreground mb-3">
-								{t('MobileCharacterSheet.storyThemes') || 'Story Themes'}
-							</h3>
-							<div className="space-y-3">
-								{character.trackers.storyThemes.map((tracker) => (
-									<StoryThemeTrackerCard
-										key={tracker.id}
-										tracker={tracker}
-										isEditing={isEditing}
-										onExport={() => {}}
-									/>
-								))}
-							</div>
-						</section>
+							{/* Story Themes Section */}
+							<section>
+								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+									{t('MobileCharacterSheet.storyThemes') || 'Story Themes'}
+								</h3>
+								<div className="flex flex-wrap justify-center gap-3">
+									{character.trackers.storyThemes.map((tracker) => (
+										<SelectableTracker
+											key={tracker.id}
+											tracker={tracker}
+											isSelected={selectedTrackerId === tracker.id}
+											onSelect={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
+										>
+											<StoryThemeTrackerCard
+												tracker={tracker}
+												isEditing={isEditing}
+												onExport={() => {}}
+											/>
+										</SelectableTracker>
+									))}
+								</div>
+							</section>
+						</div>
 					</div>
 				)}
 
@@ -345,6 +405,14 @@ export default function MobileCharacterSheet() {
 					</>
 				)}
 			</div>
+
+			{/* Toolbelt */}
+			<MobileToolbelt
+				mode={mobileToolbeltMode}
+				context={toolbeltContext}
+				isOpen={isToolbeltOpen}
+				onOpenChange={setIsToolbeltOpen}
+			/>
 		</div>
 	);
 }

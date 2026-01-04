@@ -283,6 +283,12 @@
          "fab": "Floating Button"
       },
 
+      "toolbeltMode": {
+         "title": "Toolbelt Mode",
+         "sidePanel": "Side Panel",
+         "fab": "Floating Button"
+      },
+
       "tutorial": "App Tutorial",
       "tutorialButton": "Launch the Tutorial",
 
@@ -928,6 +934,20 @@
       "menu": "Menu",
       "open": "Open menu",
       "close": "Close"
+   },
+   "Toolbelt": {
+      "title": "Actions",
+      "noActions": "No actions available",
+      "flipCard": "Flip Card",
+      "export": "Export",
+      "sideBySideMode": "Side by Side",
+      "flipMode": "Flip Mode",
+      "editThemebook": "Edit Theme",
+      "delete": "Delete",
+      "makePositive": "Make Positive",
+      "makeNegative": "Make Negative",
+      "upgradeToTheme": "Upgrade to Theme",
+      "downgradeToTag": "Downgrade to Tag"
    },
    "MobileMenu": {
       "title": "Menu",

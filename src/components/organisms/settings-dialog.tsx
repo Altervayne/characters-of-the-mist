@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '../ui/input';
 
 // -- Icon Imports --
-import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu } from 'lucide-react';
+import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, PanelRightClose, Wrench } from 'lucide-react';
 
 // -- Component Imports --
 import { MigrationDialog } from './migration-dialog';
@@ -120,8 +120,8 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { resolvedTheme, setTheme: setMode } = useTheme();
    const { isMobile } = useDeviceType();
 
-   const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, mobileNavigationType } = useAppSettingsStore();
-   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileNavigationType } = useAppSettingsActions();
+   const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, mobileNavigationType, mobileToolbeltMode } = useAppSettingsStore();
+   const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileNavigationType, setMobileToolbeltMode } = useAppSettingsActions();
 
    const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
@@ -289,6 +289,33 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            >
                               <Menu className="mr-2 h-4 w-4 shrink-0" />
                               <span className="truncate">{t('SettingsDialog.mobileNavigation.fab') || 'FAB'}</span>
+                           </Button>
+                        </div>
+                     </div>
+                  )}
+
+                  {/* Toolbelt Mode Setting - Only visible on mobile */}
+                  {isMobile && (
+                     <div className="grid grid-cols-3 items-center gap-4">
+                        <Label className="text-left">{t('SettingsDialog.toolbeltMode.title') || 'Toolbelt Mode'}</Label>
+                        <div className="col-span-2 flex items-center space-x-2">
+                           <Button
+                              variant={mobileToolbeltMode === 'side-panel' ? 'default' : 'outline'}
+                              onClick={() => setMobileToolbeltMode('side-panel')}
+                              title={t('SettingsDialog.toolbeltMode.sidePanel') || 'Side Panel'}
+                              className="flex-1 min-w-0 cursor-pointer"
+                           >
+                              <PanelRightClose className="mr-2 h-4 w-4 shrink-0" />
+                              <span className="truncate">{t('SettingsDialog.toolbeltMode.sidePanel') || 'Panel'}</span>
+                           </Button>
+                           <Button
+                              variant={mobileToolbeltMode === 'fab' ? 'default' : 'outline'}
+                              onClick={() => setMobileToolbeltMode('fab')}
+                              title={t('SettingsDialog.toolbeltMode.fab') || 'Floating Button'}
+                              className="flex-1 min-w-0 cursor-pointer"
+                           >
+                              <Wrench className="mr-2 h-4 w-4 shrink-0" />
+                              <span className="truncate">{t('SettingsDialog.toolbeltMode.fab') || 'FAB'}</span>
                            </Button>
                         </div>
                      </div>

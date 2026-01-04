@@ -283,6 +283,12 @@
          "fab": "Bouton Flottant"
       },
 
+      "toolbeltMode": {
+         "title": "Mode Ceinture d'Outils",
+         "sidePanel": "Panneau Latéral",
+         "fab": "Bouton Flottant"
+      },
+
       "tutorial": "Tutoriel de l'Appli.",
       "tutorialButton": "Lancer le Tutoriel",
 
@@ -922,6 +928,20 @@
       "menu": "Menu",
       "open": "Ouvrir le menu",
       "close": "Fermer"
+   },
+   "Toolbelt": {
+      "title": "Actions",
+      "noActions": "Aucune action disponible",
+      "flipCard": "Retourner la Carte",
+      "export": "Exporter",
+      "sideBySideMode": "Côte à Côte",
+      "flipMode": "Mode Retourné",
+      "editThemebook": "Éditer le Thème",
+      "delete": "Supprimer",
+      "makePositive": "Rendre Positif",
+      "makeNegative": "Rendre Négatif",
+      "upgradeToTheme": "Promouvoir en Thème",
+      "downgradeToTag": "Rétrograder en Trait"
    },
    "MobileMenu": {
       "title": "Menu",
