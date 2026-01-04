@@ -192,8 +192,8 @@
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
 
          "OTHERSCAPE_FULL_CHARACTER_SHEET": "Fiche de Perso.",
-         "OTHERSCAPE_CHARACTER_CARD": "Carte de Personnage",
-         "OTHERSCAPE_CHARACTER_THEME": "Thème de Personnage",
+         "OTHERSCAPE_CHARACTER_CARD": "Carte de Mercenaire",
+         "OTHERSCAPE_CHARACTER_THEME": "Thème de Mercenaire",
          "OTHERSCAPE_GROUP_THEME": "Thème d'Équipe",
          "OTHERSCAPE_LOADOUT_THEME": "Thème d'Équipement",
          "OTHERSCAPE_STATUS_TRACKER": "Suivi de Statut",
@@ -203,6 +203,17 @@
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"
       }
+   },
+   "Cards": {
+      "heroCard": "Carte de Héros",
+      "riftCard": "Carte de Faille",
+      "mercCard": "Carte de Mercenaire",
+      "characterCard": "Carte de Perso.",
+      "fellowshipCard": "Compagnie",
+      "crewCard": "Bande",
+      "otherscapeCrewCard": "Équipe",
+      "otherscapeLoadoutCard": "Équipement",
+      "themeCard": "Thème"
    },
 
 
@@ -731,8 +742,8 @@
       }
    },
    "OtherscapeCharacterCard": {
-      "title": "Carte de Personnage",
-      "characterNamePlaceholder": "Nom du Personnage...",
+      "title": "Carte de Mercenaire",
+      "characterNamePlaceholder": "Nom du Mercenaire...",
       "noName": "SANS NOM",
       "essence": "Essence",
       "Essence": {
@@ -896,7 +907,8 @@
       "storyThemes": "Thèmes d'Histoire"
    },
    "MobileCardCarousel": {
-      "noCards": "Aucune carte pour le moment"
+      "noCards": "Aucune carte pour le moment",
+      "cardCounter": "Carte {{current}} sur {{total}}"
    },
    "MobileBottomTabs": {
       "sheet": "Fiche",

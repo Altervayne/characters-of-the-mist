@@ -7,7 +7,11 @@ import { StatusTrackerCard } from '@/components/molecules/status-tracker';
 import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
 import { StoryThemeTrackerCard } from '@/components/organisms/story-theme-tracker';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
 import MobileCardCarousel from './MobileCardCarousel';
+
+// -- Icon Imports --
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -18,7 +22,27 @@ import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
+// -- Type Imports --
+import type { Card, CardDetails } from '@/lib/types/character';
+
+
+
 type SheetTab = 'trackers' | 'cards';
+
+// Type guards for card details
+function hasCharacterName(details: CardDetails): details is { characterName: string } & CardDetails {
+	return 'characterName' in details;
+}
+
+function hasThemebook(details: CardDetails): details is { themebook: string } & CardDetails {
+	return 'themebook' in details;
+}
+
+function hasMainTag(details: CardDetails): details is { mainTag: { name: string } } & CardDetails {
+	return 'mainTag' in details && details.mainTag !== null;
+}
+
+
 
 export default function MobileCharacterSheet() {
 	const { t } = useTranslation();
@@ -33,18 +57,82 @@ export default function MobileCharacterSheet() {
 	const isTrackersAlwaysEditable = useAppSettingsStore((state) => state.isTrackersAlwaysEditable);
 	const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
+	// Card navigation state
+	const [currentCardIndex, setCurrentCardIndex] = useState(0);
+
 	// Character name input with debouncing
 	const [localName, setLocalName] = useInputDebouncer(
 		character?.name || '',
-		500,
-		(debouncedValue) => {
-			if (character && debouncedValue !== character.name) {
-				updateCharacterName(debouncedValue);
-			}
-		}
+		(value) => updateCharacterName(value)
 	);
 
-	// If no character loaded, show empty state
+	// Safe card index (clamp to valid range)
+	const safeCardIndex = character && character.cards.length > 0
+		? Math.min(currentCardIndex, character.cards.length - 1)
+		: 0;
+
+	// Helper function to get card display name
+	const getCardTitle = (card: Card): string => {
+		// Character cards: show character name
+		if (card.cardType === 'CHARACTER_CARD' && hasCharacterName(card.details)) {
+         switch (card.details.game) {
+            case 'LEGENDS':
+               return t('Cards.heroCard') || 'Hero Card';
+            case 'CITY_OF_MIST':
+               return t('Cards.riftCard') || 'Rift Card';
+            case 'OTHERSCAPE':
+               return t('Cards.mercCard') || 'Merc Card';
+            default:
+               return t('Cards.characterCard') || 'Character Card';
+         }
+		}
+
+		// Loadout cards: show main tag name
+		if (card.cardType === 'LOADOUT_THEME') {
+			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
+			return mainTag || t('Cards.otherscapeLoadoutCard') || 'Loadout';
+		}
+
+		if (card.cardType === 'GROUP_THEME') {
+			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
+
+			if (mainTag) {
+				switch (card.details.game) {
+					case 'LEGENDS':
+						return `${t('Cards.fellowshipCard') || 'Fellowship'} - ${mainTag}`;
+					case 'CITY_OF_MIST':
+						return `${t('Cards.crewCard') || 'Crew'} - ${mainTag}`;
+					case 'OTHERSCAPE':
+						return `${t('Cards.otherscapeCrewCard') || 'Crew'} - ${mainTag}`;
+					default:
+						return mainTag;
+				}
+			}
+			return t('Cards.fellowshipCard') || 'Group Theme';
+		}
+
+		// Theme cards: show "Themebook - Main Tag" or just themebook
+		if (card.cardType === 'CHARACTER_THEME') {
+			const themebook = hasThemebook(card.details) ? card.details.themebook : null;
+			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
+
+			if (themebook && mainTag) {
+				return `${themebook} - ${mainTag}`;
+			}
+			if (themebook) {
+				return themebook;
+			}
+			if (mainTag) {
+				return mainTag;
+			}
+		}
+
+		// Fallback to card type
+		return t('Cards.themeCard') || 'Card';
+	};
+
+
+
 	if (!character) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -112,9 +200,9 @@ export default function MobileCharacterSheet() {
 			</div>
 
 			{/* Tab Content */}
-			<div className="flex-1 overflow-hidden pb-20">
+			<div className="flex-1 flex flex-col overflow-hidden">
 				{activeTab === 'trackers' && (
-					<div className="h-full overflow-y-auto p-4 space-y-6">
+					<div className="h-full overflow-y-auto p-4 pb-6 space-y-6">
 						{/* Statuses Section */}
 						<section>
 							<h3 className="text-sm font-semibold text-muted-foreground mb-3">
@@ -195,7 +283,66 @@ export default function MobileCharacterSheet() {
 				)}
 
 				{activeTab === 'cards' && (
-					<MobileCardCarousel cards={character.cards} />
+					<>
+						{/* Scrollable Card Display Area */}
+						<div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+							<div className="min-h-full flex items-start justify-center">
+								<MobileCardCarousel
+									cards={character.cards}
+									currentIndex={safeCardIndex}
+								/>
+							</div>
+						</div>
+
+						{/* Navigation Bar - Always Visible at Bottom */}
+						{character.cards.length > 0 && (
+							<div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 bg-card border-t border-border">
+								<IconButton
+									variant="outline"
+									size="default"
+									onClick={() => setCurrentCardIndex(i => Math.max(0, i - 1))}
+									disabled={safeCardIndex === 0}
+									aria-label="Previous card"
+								>
+									<ChevronLeft className="h-5 w-5" />
+								</IconButton>
+
+								<div className="flex-1 flex flex-col items-center gap-1.5">
+									{/* Card Title */}
+									<span className="text-sm font-medium truncate max-w-full">
+										{getCardTitle(character.cards[safeCardIndex])}
+									</span>
+
+									{/* Dot Indicators */}
+									<div className="flex items-center gap-1.5">
+										{character.cards.map((_, index) => (
+											<button
+												key={index}
+												onClick={() => setCurrentCardIndex(index)}
+												className={cn(
+													"h-2 w-2 rounded-full transition-all",
+													index === safeCardIndex
+														? "bg-primary w-6"
+														: "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+												)}
+												aria-label={`Go to card ${index + 1}`}
+											/>
+										))}
+									</div>
+								</div>
+
+								<IconButton
+									variant="outline"
+									size="default"
+									onClick={() => setCurrentCardIndex(i => Math.min(character.cards.length - 1, i + 1))}
+									disabled={safeCardIndex === character.cards.length - 1}
+									aria-label="Next card"
+								>
+									<ChevronRight className="h-5 w-5" />
+								</IconButton>
+							</div>
+						)}
+					</>
 				)}
 			</div>
 		</div>

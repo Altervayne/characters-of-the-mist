@@ -192,8 +192,8 @@
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Story Theme Tracker",
 
          "OTHERSCAPE_FULL_CHARACTER_SHEET": "Character Sheet",
-         "OTHERSCAPE_CHARACTER_CARD": "Character Card",
-         "OTHERSCAPE_CHARACTER_THEME": "Character Theme",
+         "OTHERSCAPE_CHARACTER_CARD": "Merc Card",
+         "OTHERSCAPE_CHARACTER_THEME": "Merc Theme",
          "OTHERSCAPE_GROUP_THEME": "Crew Theme",
          "OTHERSCAPE_LOADOUT_THEME": "Loadout Theme",
          "OTHERSCAPE_STATUS_TRACKER": "Status Tracker",
@@ -203,6 +203,17 @@
          "cards": "Card(s)",
          "trackers": "Tracker(s)"
       }
+   },
+   "Cards": {
+      "heroCard": "Hero Card",
+      "riftCard": "Rift Card",
+      "mercCard": "Merc Card",
+      "characterCard": "Character Card",
+      "fellowshipCard": "Fellowship",
+      "crewCard": "Crew",
+      "otherscapeCrewCard": "Crew",
+      "otherscapeLoadoutCard": "Loadout",
+      "themeCard": "Theme"
    },
 
 
@@ -221,7 +232,7 @@
       "riftThemeCard": "Rift Theme",
       "fellowshipCard": "Fellowship Theme",
       "crewCard": "Crew Theme",
-      "otherscapeThemeCard": "Character Theme",
+      "otherscapeThemeCard": "Merc Theme",
       "otherscapeCrewCard": "Crew Theme",
       "otherscapeLoadoutCard": "Loadout Theme",
 
@@ -737,8 +748,8 @@
       }
    },
    "OtherscapeCharacterCard": {
-      "title": "Character Card",
-      "characterNamePlaceholder": "Character Name...",
+      "title": "Merc Card",
+      "characterNamePlaceholder": "Merc Name...",
       "noName": "NO CHARACTER NAME",
       "essence": "Essence",
       "Essence": {
@@ -902,7 +913,8 @@
       "storyThemes": "Story Themes"
    },
    "MobileCardCarousel": {
-      "noCards": "No cards yet"
+      "noCards": "No cards yet",
+      "cardCounter": "Card {{current}} of {{total}}"
    },
    "MobileBottomTabs": {
       "sheet": "Sheet",

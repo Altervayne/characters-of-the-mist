@@ -31,7 +31,7 @@ export default function MobileCharacterSheetPage() {
 	return (
 		<div className="h-screen w-screen overflow-hidden flex flex-col">
 			{/* Main Content */}
-			<div className={mobileNavigationType === 'bottom-tabs' ? 'flex-1 pb-16' : 'flex-1'}>
+			<div className="flex-1 overflow-hidden">
 				{activeTab === 'sheet' && <MobileCharacterSheet />}
 				{activeTab === 'drawer' && (
 					<div className="h-full flex items-center justify-center p-8 text-center">
