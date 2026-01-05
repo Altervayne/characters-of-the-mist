@@ -113,7 +113,7 @@ function ErrorFallback({ error, resetError }: { error: Error; resetError?: () =>
    return (
       <>
          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background">
-            <Card className="max-w-2xl w-full border-destructive/50">
+            <Card className="max-w-2xl w-full max-h-full border-destructive/50">
             <CardHeader>
                <div className="flex items-center gap-3">
                   <AlertTriangle className="h-8 w-8 text-destructive shrink-0" />

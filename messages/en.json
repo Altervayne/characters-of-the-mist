@@ -931,6 +931,7 @@
    "MobileFAB": {
       "edit": "Edit Mode",
       "drawer": "Drawer",
+      "sheet": "Sheet",
       "menu": "Menu",
       "open": "Open menu",
       "close": "Close"
@@ -940,7 +941,14 @@
       "noActions": "No actions available",
       "itemSection": "Item",
       "globalSection": "Global",
+      "undo": "Undo",
+      "redo": "Redo",
+      "editMode": "Edit Mode",
+      "playMode": "Play Mode",
       "addCard": "Add Card",
+      "addStatus": "Add Status",
+      "addStoryTag": "Add Story Tag",
+      "addStoryTheme": "Add Story Theme",
       "flipCard": "Flip Card",
       "export": "Export",
       "sideBySideMode": "Side by Side",

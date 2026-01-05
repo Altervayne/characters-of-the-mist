@@ -4,13 +4,11 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
-import type { ToolbeltMode } from '../types/toolbelt';
 
 
 
 export type ThemeName = 'theme-neutral' | 'theme-legends' | 'theme-otherscape' | 'theme-city-of-mist';
 export type DeviceType = 'mobile' | 'desktop';
-export type MobileNavigationType = 'bottom-tabs' | 'fab';
 
 interface AppSettingsState {
    theme: ThemeName;
@@ -21,8 +19,7 @@ interface AppSettingsState {
    isSidebarCollapsed: boolean;
    contextualGame: GameSystem;
    deviceTypeOverride?: DeviceType;
-   mobileNavigationType: MobileNavigationType;
-   mobileToolbeltMode: ToolbeltMode;
+   isMobileFABMode: boolean;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -33,8 +30,7 @@ interface AppSettingsState {
       toggleSidebarCollapsed: () => void;
       setContextualGame: (game: GameSystem) => void;
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
-      setMobileNavigationType: (navType: MobileNavigationType) => void;
-      setMobileToolbeltMode: (mode: ToolbeltMode) => void;
+      setMobileFABMode: (enabled: boolean) => void;
    };
 }
 
@@ -51,8 +47,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          isSidebarCollapsed: false,
          contextualGame: 'LEGENDS',
          deviceTypeOverride: undefined,
-         mobileNavigationType: 'bottom-tabs',
-         mobileToolbeltMode: 'side-panel',
+         isMobileFABMode: false,
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -63,8 +58,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
-            setMobileNavigationType: (navType) => set({ mobileNavigationType: navType }),
-            setMobileToolbeltMode: (mode) => set({ mobileToolbeltMode: mode })
+            setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled })
          },
       }),
       {
@@ -79,8 +73,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isSidebarCollapsed: state.isSidebarCollapsed,
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
-            mobileNavigationType: state.mobileNavigationType,
-            mobileToolbeltMode: state.mobileToolbeltMode
+            isMobileFABMode: state.isMobileFABMode
          }),
       }
    )

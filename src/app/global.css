@@ -614,3 +614,13 @@ input[data-tour="character-name-input"] {
 main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-input"]) {
    flex-shrink: 0 !important;
 }
+
+/* Hide scrollbar utility for mobile toolbelt */
+.scrollbar-hide {
+   -ms-overflow-style: none;  /* IE and Edge */
+   scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+   display: none;  /* Chrome, Safari and Opera */
+}

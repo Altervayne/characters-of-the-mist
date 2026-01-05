@@ -13,11 +13,17 @@ import {
 	ThumbsDown,
 	SplitSquareVertical,
 	Edit3,
-	PlusCircle
+	PlusCircle,
+	Undo2,
+	Redo2,
+	Heart,
+	Tag,
+	Sparkles,
+	Edit as EditIcon
 } from 'lucide-react';
 
 // -- Store Imports --
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 
 // -- Utils Imports --
@@ -31,7 +37,7 @@ import type { Card, CardViewMode } from '@/lib/types/character';
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards'): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		flipCard,
@@ -42,18 +48,52 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 		removeStoryTheme,
 		updateStoryTag,
 		upgradeStoryTagToTheme,
-		downgradeStoryThemeToTag
+		downgradeStoryThemeToTag,
+		addStatus,
+		addStoryTag
 	} = useCharacterActions();
 
-	const { setCardDialogOpen, setCardToEdit } = useAppGeneralStateStore((state) => state.actions);
+	const { setCardDialogOpen, setCardToEdit, toggleIsEditing } = useAppGeneralStateStore((state) => state.actions);
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 
 	return useMemo(() => {
 		const itemActions: ToolbeltAction[] = [];
 		const globalActions: ToolbeltAction[] = [];
 
-		// Global actions (always available when editing)
-		if (isEditing) {
+		// Get undo/redo state
+		const { undo, redo, pastStates, futureStates } = useCharacterStore.temporal.getState();
+		const canUndo = (pastStates?.length ?? 0) > 1;
+		const canRedo = (futureStates?.length ?? 0) > 0;
+
+		// === TOP PRIORITY: Undo/Redo (always visible, grayed when disabled) ===
+		globalActions.push({
+			id: 'undo',
+			label: t('Toolbelt.undo') || 'Undo',
+			icon: Undo2,
+			onClick: () => canUndo && undo(),
+			show: true
+		});
+
+		globalActions.push({
+			id: 'redo',
+			label: t('Toolbelt.redo') || 'Redo',
+			icon: Redo2,
+			onClick: () => canRedo && redo(),
+			show: true
+		});
+
+		// === Edit Mode Toggle (in FAB mode) ===
+		globalActions.push({
+			id: 'toggle-edit-mode',
+			label: isEditing ? (t('Toolbelt.playMode') || 'Play Mode') : (t('Toolbelt.editMode') || 'Edit Mode'),
+			icon: EditIcon,
+			onClick: () => toggleIsEditing(),
+			show: true
+		});
+
+		// === BOTTOM: Context-aware Add buttons ===
+		// Add Card (only on cards tab)
+		if (activeTab === 'cards') {
 			globalActions.push({
 				id: 'add-card',
 				label: t('Toolbelt.addCard') || 'Add Card',
@@ -62,6 +102,33 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 					setCardToEdit(null);
 					setCardDialogOpen(true);
 				},
+				show: true
+			});
+		}
+
+		// Add trackers (only on trackers tab)
+		if (activeTab === 'trackers') {
+			globalActions.push({
+				id: 'add-status',
+				label: t('Toolbelt.addStatus') || 'Add Status',
+				icon: Heart,
+				onClick: () => addStatus(),
+				show: true
+			});
+
+			globalActions.push({
+				id: 'add-story-tag',
+				label: t('Toolbelt.addStoryTag') || 'Add Story Tag',
+				icon: Tag,
+				onClick: () => addStoryTag(),
+				show: true
+			});
+
+			globalActions.push({
+				id: 'add-story-theme',
+				label: t('Toolbelt.addStoryTheme') || 'Add Story Theme',
+				icon: Sparkles,
+				onClick: () => addStoryTag(), // Story themes start as tags and get upgraded
 				show: true
 			});
 		}
@@ -77,6 +144,18 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 		// Card actions
 		if (context.type === 'card') {
 			const card = context.card;
+
+			// === ORDER: Delete > Flip/ViewMode/Export > Edit ===
+
+			// Delete action (top of item actions)
+			itemActions.push({
+				id: 'delete-card',
+				label: t('Toolbelt.delete') || 'Delete',
+				icon: Trash2,
+				variant: 'destructive',
+				onClick: () => deleteCard(card.id),
+				show: true
+			});
 
 			// Flip card action
 			itemActions.push({
@@ -102,20 +181,6 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 				show: true
 			});
 
-			// Edit themebook/type action (only for CHARACTER_THEME cards when editing)
-			if (card.cardType === 'CHARACTER_THEME' && isEditing) {
-				itemActions.push({
-					id: 'edit-themebook',
-					label: t('Toolbelt.editThemebook') || 'Edit Theme',
-					icon: Edit3,
-					onClick: () => {
-						setCardToEdit(card);
-						setCardDialogOpen(true);
-					},
-					show: true
-				});
-			}
-
 			// Export action
 			itemActions.push({
 				id: 'export-card',
@@ -132,14 +197,16 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 				show: true
 			});
 
-			// Delete action (only when editing)
-			if (isEditing) {
+			// Edit themebook/type action (only for CHARACTER_THEME cards, at bottom)
+			if (card.cardType === 'CHARACTER_THEME') {
 				itemActions.push({
-					id: 'delete-card',
-					label: t('Toolbelt.delete') || 'Delete',
-					icon: Trash2,
-					variant: 'destructive',
-					onClick: () => deleteCard(card.id),
+					id: 'edit-themebook',
+					label: t('Toolbelt.editThemebook') || 'Edit Theme',
+					icon: Edit3,
+					onClick: () => {
+						setCardToEdit(card);
+						setCardDialogOpen(true);
+					},
 					show: true
 				});
 			}
@@ -156,6 +223,17 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 
 			// Status tracker actions
 			if (tracker.trackerType === 'STATUS') {
+				// Delete first
+				itemActions.push({
+					id: 'delete-status',
+					label: t('Toolbelt.delete') || 'Delete',
+					icon: Trash2,
+					variant: 'destructive',
+					onClick: () => removeStatus(tracker.id),
+					show: true
+				});
+
+				// Export last
 				itemActions.push({
 					id: 'export-status',
 					label: t('Toolbelt.export') || 'Export',
@@ -170,21 +248,20 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 					},
 					show: true
 				});
-
-				if (isEditing) {
-					itemActions.push({
-						id: 'delete-status',
-						label: t('Toolbelt.delete') || 'Delete',
-						icon: Trash2,
-						variant: 'destructive',
-						onClick: () => removeStatus(tracker.id),
-						show: true
-					});
-				}
 			}
 
 			// Story tag tracker actions
 			if (tracker.trackerType === 'STORY_TAG') {
+				// Delete first
+				itemActions.push({
+					id: 'delete-story-tag',
+					label: t('Toolbelt.delete') || 'Delete',
+					icon: Trash2,
+					variant: 'destructive',
+					onClick: () => removeStoryTag(tracker.id),
+					show: true
+				});
+
 				// Toggle positive/negative
 				const isWeakness = tracker.isWeakness ?? false;
 				itemActions.push({
@@ -198,17 +275,15 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 				});
 
 				// Upgrade to theme
-				if (isEditing) {
-					itemActions.push({
-						id: 'upgrade-to-theme',
-						label: t('Toolbelt.upgradeToTheme') || 'Upgrade to Theme',
-						icon: TrendingUp,
-						onClick: () => upgradeStoryTagToTheme(tracker.id),
-						show: true
-					});
-				}
+				itemActions.push({
+					id: 'upgrade-to-theme',
+					label: t('Toolbelt.upgradeToTheme') || 'Upgrade to Theme',
+					icon: TrendingUp,
+					onClick: () => upgradeStoryTagToTheme(tracker.id),
+					show: true
+				});
 
-				// Export
+				// Export last
 				itemActions.push({
 					id: 'export-story-tag',
 					label: t('Toolbelt.export') || 'Export',
@@ -223,34 +298,30 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 					},
 					show: true
 				});
-
-				// Delete
-				if (isEditing) {
-					itemActions.push({
-						id: 'delete-story-tag',
-						label: t('Toolbelt.delete') || 'Delete',
-						icon: Trash2,
-						variant: 'destructive',
-						onClick: () => removeStoryTag(tracker.id),
-						show: true
-					});
-				}
 			}
 
 			// Story theme tracker actions
 			if (tracker.trackerType === 'STORY_THEME') {
-				// Downgrade to tag
-				if (isEditing) {
-					itemActions.push({
-						id: 'downgrade-to-tag',
-						label: t('Toolbelt.downgradeToTag') || 'Downgrade to Tag',
-						icon: TrendingDown,
-						onClick: () => downgradeStoryThemeToTag(tracker.id),
-						show: true
-					});
-				}
+				// Delete first
+				itemActions.push({
+					id: 'delete-story-theme',
+					label: t('Toolbelt.delete') || 'Delete',
+					icon: Trash2,
+					variant: 'destructive',
+					onClick: () => removeStoryTheme(tracker.id),
+					show: true
+				});
 
-				// Export
+				// Downgrade to tag
+				itemActions.push({
+					id: 'downgrade-to-tag',
+					label: t('Toolbelt.downgradeToTag') || 'Downgrade to Tag',
+					icon: TrendingDown,
+					onClick: () => downgradeStoryThemeToTag(tracker.id),
+					show: true
+				});
+
+				// Export last
 				itemActions.push({
 					id: 'export-story-theme',
 					label: t('Toolbelt.export') || 'Export',
@@ -265,18 +336,6 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 					},
 					show: true
 				});
-
-				// Delete
-				if (isEditing) {
-					itemActions.push({
-						id: 'delete-story-theme',
-						label: t('Toolbelt.delete') || 'Delete',
-						icon: Trash2,
-						variant: 'destructive',
-						onClick: () => removeStoryTheme(tracker.id),
-						show: true
-					});
-				}
 			}
 
 			return {
@@ -291,6 +350,7 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 		};
 	}, [
 		context,
+		activeTab,
 		t,
 		isEditing,
 		flipCard,
@@ -302,7 +362,10 @@ export function useToolbeltActions(context: ToolbeltContext): ToolbeltActions {
 		updateStoryTag,
 		upgradeStoryTagToTheme,
 		downgradeStoryThemeToTag,
+		addStatus,
+		addStoryTag,
 		setCardDialogOpen,
-		setCardToEdit
+		setCardToEdit,
+		toggleIsEditing
 	]);
 }

@@ -47,9 +47,32 @@ function hasMainTag(details: CardDetails): details is { mainTag: { name: string 
 
 
 
-export default function MobileCharacterSheet() {
+interface MobileCharacterSheetProps {
+	activeTab?: SheetTab;
+	onTabChange?: (tab: SheetTab) => void;
+	isToolbeltOpen?: boolean;
+	onToolbeltOpenChange?: (isOpen: boolean) => void;
+	isMenuFABExpanded?: boolean;
+}
+
+export default function MobileCharacterSheet({
+	activeTab: controlledActiveTab,
+	onTabChange: controlledOnTabChange,
+	isToolbeltOpen: controlledIsToolbeltOpen,
+	onToolbeltOpenChange: controlledOnToolbeltOpenChange,
+	isMenuFABExpanded
+}: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
-	const [activeTab, setActiveTab] = useState<SheetTab>('trackers');
+	const [internalActiveTab, setInternalActiveTab] = useState<SheetTab>('trackers');
+
+	// Use controlled or uncontrolled state for activeTab
+	const activeTab = controlledActiveTab ?? internalActiveTab;
+	const setActiveTab = controlledOnTabChange ?? setInternalActiveTab;
+
+	// Use controlled or uncontrolled state for toolbelt
+	const [internalIsToolbeltOpen, setInternalIsToolbeltOpen] = useState(false);
+	const isToolbeltOpen = controlledIsToolbeltOpen ?? internalIsToolbeltOpen;
+	const setIsToolbeltOpen = controlledOnToolbeltOpenChange ?? setInternalIsToolbeltOpen;
 
 	// Character data
 	const character = useCharacterStore((state) => state.character);
@@ -59,13 +82,12 @@ export default function MobileCharacterSheet() {
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 	const isTrackersAlwaysEditable = useAppSettingsStore((state) => state.isTrackersAlwaysEditable);
 	const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
-	const mobileToolbeltMode = useAppSettingsStore((state) => state.mobileToolbeltMode);
+	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 
 	// Card navigation state
 	const [currentCardIndex, setCurrentCardIndex] = useState(0);
 
-	// Toolbelt state
-	const [isToolbeltOpen, setIsToolbeltOpen] = useState(false);
+	// Toolbelt context state
 	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
 
 	// Character name input with debouncing
@@ -139,11 +161,11 @@ export default function MobileCharacterSheet() {
 		}
 		// Right edge swipe (within 50px from right)
 		else if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-			if (mobileToolbeltMode === 'side-panel' && !isToolbeltOpen) {
-				// Side-panel mode: Open toolbelt
+			if (!isMobileFABMode && !isToolbeltOpen) {
+				// Bottom tabs mode (with side-panel toolbelt): Open toolbelt
 				setIsToolbeltOpen(true);
-			} else if (mobileToolbeltMode === 'fab') {
-				// FAB mode: Flip card
+			} else if (isMobileFABMode) {
+				// FAB mode: Flip card (toolbelt is accessible via FAB)
 				flipCard(currentCard.id);
 			}
 		}
@@ -297,8 +319,8 @@ export default function MobileCharacterSheet() {
 					)}
 				</button>
 
-				{/* Toolbelt trigger button (only for side-panel mode) */}
-				{mobileToolbeltMode === 'side-panel' && (
+				{/* Toolbelt trigger button (only for bottom tabs mode with side-panel) */}
+				{!isMobileFABMode && (
 					<div className="px-2">
 						<IconButton
 							variant="ghost"
@@ -492,10 +514,12 @@ export default function MobileCharacterSheet() {
 
 			{/* Toolbelt */}
 			<MobileToolbelt
-				mode={mobileToolbeltMode}
+				mode={isMobileFABMode ? 'fab' : 'side-panel'}
 				context={toolbeltContext}
 				isOpen={isToolbeltOpen}
 				onOpenChange={setIsToolbeltOpen}
+				activeTab={activeTab}
+				isMenuFABExpanded={isMenuFABExpanded}
 			/>
 		</div>
 	);

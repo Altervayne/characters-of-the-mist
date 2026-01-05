@@ -5,41 +5,57 @@ import { useTranslation } from 'react-i18next';
 // -- Other Library Imports --
 import { motion, AnimatePresence } from 'framer-motion';
 
-// -- Icon Imports --
-import { Plus, X, Edit, FolderOpen, Save, Settings } from 'lucide-react';
+// -- Component Imports --
+import { IconButton } from '@/components/ui/icon-button';
 
-// -- Store Imports --
-import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-import { useCharacterStore } from '@/lib/stores/characterStore';
+// -- Icon Imports --
+import { Menu, X, FolderOpen, Home, Settings } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
+type TabId = 'sheet' | 'drawer' | 'menu';
+type SheetTab = 'trackers' | 'cards';
+
 interface MobileFABProps {
+	activeTab: TabId;
+	onTabChange: (tab: TabId) => void;
 	onOpenDrawer: () => void;
 	onOpenMenu: () => void;
+	sheetActiveTab?: SheetTab;
+	isToolbeltOpen?: boolean;
+	onIsExpandedChange?: (isExpanded: boolean) => void;
 }
 
-export default function MobileFAB({ onOpenDrawer, onOpenMenu }: MobileFABProps) {
+export default function MobileFAB({
+	activeTab,
+	onTabChange,
+	onOpenDrawer,
+	onOpenMenu,
+	sheetActiveTab,
+	isToolbeltOpen,
+	onIsExpandedChange
+}: MobileFABProps) {
 	const { t } = useTranslation();
 	const [isExpanded, setIsExpanded] = useState(false);
-	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
-	const { toggleIsEditing } = useAppGeneralStateActions();
-	const character = useCharacterStore((state) => state.character);
 
-	const toggleExpanded = () => setIsExpanded(!isExpanded);
+	const toggleExpanded = () => {
+		const newValue = !isExpanded;
+		setIsExpanded(newValue);
+		onIsExpandedChange?.(newValue);
+	};
 
 	const actions = [
 		{
-			id: 'edit',
-			label: t('MobileFAB.edit') || 'Edit Mode',
-			icon: Edit,
+			id: 'sheet',
+			label: t('MobileFAB.sheet') || 'Sheet',
+			icon: Home,
 			onClick: () => {
-				toggleIsEditing();
+				onTabChange('sheet');
 				setIsExpanded(false);
 			},
-			show: !!character,
-			active: isEditing,
+			show: true,
+			active: activeTab === 'sheet',
 		},
 		{
 			id: 'drawer',
@@ -50,6 +66,7 @@ export default function MobileFAB({ onOpenDrawer, onOpenMenu }: MobileFABProps) 
 				setIsExpanded(false);
 			},
 			show: true,
+			active: activeTab === 'drawer',
 		},
 		{
 			id: 'menu',
@@ -60,6 +77,7 @@ export default function MobileFAB({ onOpenDrawer, onOpenMenu }: MobileFABProps) 
 				setIsExpanded(false);
 			},
 			show: true,
+			active: activeTab === 'menu',
 		},
 	].filter(action => action.show);
 
@@ -80,7 +98,7 @@ export default function MobileFAB({ onOpenDrawer, onOpenMenu }: MobileFABProps) 
 			</AnimatePresence>
 
 			{/* Action Buttons */}
-			<div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3">
+			<div className="fixed bottom-20 left-4 z-50 flex flex-col-reverse items-start gap-3">
 				<AnimatePresence>
 					{isExpanded && actions.map((action, index) => {
 						const Icon = action.icon;
@@ -112,43 +130,39 @@ export default function MobileFAB({ onOpenDrawer, onOpenMenu }: MobileFABProps) 
 				</AnimatePresence>
 			</div>
 
-			{/* Primary FAB */}
-			<motion.button
-				onClick={toggleExpanded}
-				className={cn(
-					"fixed bottom-4 right-4 z-50",
-					"w-14 h-14 rounded-full shadow-lg",
-					"flex items-center justify-center",
-					"bg-primary text-primary-foreground",
-					"active:scale-95 transition-transform"
-				)}
-				whileTap={{ scale: 0.9 }}
-				aria-label={isExpanded ? t('MobileFAB.close') || 'Close' : t('MobileFAB.open') || 'Open menu'}
-			>
-				<AnimatePresence mode="wait">
-					{isExpanded ? (
-						<motion.div
-							key="close"
-							initial={{ rotate: -90, opacity: 0 }}
-							animate={{ rotate: 0, opacity: 1 }}
-							exit={{ rotate: 90, opacity: 0 }}
-							transition={{ duration: 0.15 }}
-						>
-							<X className="h-6 w-6" />
-						</motion.div>
-					) : (
-						<motion.div
-							key="open"
-							initial={{ rotate: -90, opacity: 0 }}
-							animate={{ rotate: 0, opacity: 1 }}
-							exit={{ rotate: 90, opacity: 0 }}
-							transition={{ duration: 0.15 }}
-						>
-							<Plus className="h-6 w-6" />
-						</motion.div>
+			{/* Primary FAB - Hide when toolbelt is open */}
+			{!isToolbeltOpen && (
+				<motion.div
+					className={cn(
+						"fixed z-50",
+						isExpanded
+							? "bottom-4 left-4"
+							: activeTab === 'sheet' && sheetActiveTab === 'cards'
+								? "bottom-14 left-2"
+								: "bottom-4 left-4"
 					)}
-				</AnimatePresence>
-			</motion.button>
+					whileTap={{ scale: 0.95 }}
+				>
+					<IconButton
+						variant="default"
+						size="lg"
+						onClick={toggleExpanded}
+						className="h-10 w-10 shadow-2xl"
+						aria-label={isExpanded ? t('MobileFAB.close') || 'Close' : t('MobileFAB.open') || 'Open menu'}
+					>
+						<motion.div
+							animate={{ rotate: isExpanded ? 45 : 0 }}
+							transition={{ duration: 0.2 }}
+						>
+							{isExpanded ? (
+								<X className="h-6 w-6" />
+							) : (
+								<Menu className="h-6 w-6" />
+							)}
+						</motion.div>
+					</IconButton>
+				</motion.div>
+			)}
 		</>
 	);
 }

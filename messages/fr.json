@@ -925,6 +925,7 @@
    "MobileFAB": {
       "edit": "Mode Édition",
       "drawer": "Tiroir",
+      "sheet": "Fiche",
       "menu": "Menu",
       "open": "Ouvrir le menu",
       "close": "Fermer"
@@ -934,7 +935,14 @@
       "noActions": "Aucune action disponible",
       "itemSection": "Élément",
       "globalSection": "Global",
+      "undo": "Annuler",
+      "redo": "Refaire",
+      "editMode": "Mode Édition",
+      "playMode": "Mode Jeu",
       "addCard": "Ajouter une Carte",
+      "addStatus": "Ajouter un Statut",
+      "addStoryTag": "Ajouter un Trait Narratif",
+      "addStoryTheme": "Ajouter un Thème Narratif",
       "flipCard": "Retourner la Carte",
       "export": "Exporter",
       "sideBySideMode": "Côte à Côte",

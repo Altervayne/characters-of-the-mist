@@ -8,21 +8,27 @@ import { useToolbeltActions } from '@/hooks/useToolbeltActions';
 // -- Type Imports --
 import type { ToolbeltMode, ToolbeltContext } from '@/lib/types/toolbelt';
 
+type SheetTab = 'trackers' | 'cards';
+
 interface MobileToolbeltProps {
 	mode: ToolbeltMode;
 	context: ToolbeltContext;
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
+	activeTab?: SheetTab;
+	isMenuFABExpanded?: boolean;
 }
 
 export default function MobileToolbelt({
 	mode,
 	context,
 	isOpen,
-	onOpenChange
+	onOpenChange,
+	activeTab,
+	isMenuFABExpanded
 }: MobileToolbeltProps) {
-	// Build action lists based on context
-	const { itemActions, globalActions } = useToolbeltActions(context);
+	// Build action lists based on context and active tab
+	const { itemActions, globalActions } = useToolbeltActions(context, activeTab);
 
 	// Render appropriate UI based on mode
 	if (mode === 'side-panel') {
@@ -43,6 +49,8 @@ export default function MobileToolbelt({
 			onOpenChange={onOpenChange}
 			itemActions={itemActions}
 			globalActions={globalActions}
+			activeTab={activeTab}
+			isMenuFABExpanded={isMenuFABExpanded}
 		/>
 	);
 }
