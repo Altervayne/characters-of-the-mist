@@ -23,6 +23,7 @@ export default function MobileCharacterSheetPage() {
 	const [sheetActiveTab, setSheetActiveTab] = useState<'trackers' | 'cards'>('trackers');
 	const [isMenuFABExpanded, setIsMenuFABExpanded] = useState(false);
 	const [isToolbeltOpen, setIsToolbeltOpen] = useState(false);
+	const [isReorderingCards, setIsReorderingCards] = useState(false);
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 
 	// Dialog states
@@ -55,6 +56,7 @@ export default function MobileCharacterSheetPage() {
 						isToolbeltOpen={isToolbeltOpen}
 						onToolbeltOpenChange={setIsToolbeltOpen}
 						isMenuFABExpanded={isMenuFABExpanded}
+                  onReorderingCardsChange={setIsReorderingCards}
 					/>
 				)}
 				{activeTab === 'drawer' && (
@@ -65,19 +67,21 @@ export default function MobileCharacterSheetPage() {
 				{activeTab === 'menu' && <MobileMenu />}
 			</div>
 
-			{/* Navigation */}
-			{!isMobileFABMode ? (
-				<MobileBottomTabs activeTab={activeTab} onTabChange={setActiveTab} />
-			) : (
-				<MobileFAB
-					activeTab={activeTab}
-					onTabChange={setActiveTab}
-					onOpenDrawer={handleOpenDrawer}
-					onOpenMenu={handleOpenMenu}
-					sheetActiveTab={activeTab === 'sheet' ? sheetActiveTab : undefined}
-					isToolbeltOpen={isToolbeltOpen}
-					onIsExpandedChange={setIsMenuFABExpanded}
-				/>
+			{/* Navigation - Hidden when reordering cards */}
+			{!isReorderingCards && (
+				!isMobileFABMode ? (
+					<MobileBottomTabs activeTab={activeTab} onTabChange={setActiveTab} />
+				) : (
+					<MobileFAB
+						activeTab={activeTab}
+						onTabChange={setActiveTab}
+						onOpenDrawer={handleOpenDrawer}
+						onOpenMenu={handleOpenMenu}
+						sheetActiveTab={activeTab === 'sheet' ? sheetActiveTab : undefined}
+						isToolbeltOpen={isToolbeltOpen}
+						onIsExpandedChange={setIsMenuFABExpanded}
+					/>
+				)
 			)}
 
 			{/* Dialogs */}

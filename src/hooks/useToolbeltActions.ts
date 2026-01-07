@@ -19,7 +19,8 @@ import {
 	Heart,
 	Tag,
 	Sparkles,
-	Edit as EditIcon
+	Edit as EditIcon,
+	ArrowUpDown
 } from 'lucide-react';
 
 // -- Store Imports --
@@ -37,7 +38,7 @@ import type { Card, CardViewMode } from '@/lib/types/character';
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards'): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		flipCard,
@@ -94,6 +95,17 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		// === BOTTOM: Context-aware Add buttons ===
 		// Add Card (only on cards tab)
 		if (activeTab === 'cards') {
+			// Reorder Cards action
+			if (onEnterCardReorderMode) {
+				globalActions.push({
+					id: 'reorder-cards',
+					label: t('Toolbelt.reorderCards') || 'Reorder Cards',
+					icon: ArrowUpDown,
+					onClick: onEnterCardReorderMode,
+					show: true
+				});
+			}
+
 			globalActions.push({
 				id: 'add-card',
 				label: t('Toolbelt.addCard') || 'Add Card',
@@ -366,6 +378,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		addStoryTag,
 		setCardDialogOpen,
 		setCardToEdit,
-		toggleIsEditing
+		toggleIsEditing,
+		onEnterCardReorderMode
 	]);
 }

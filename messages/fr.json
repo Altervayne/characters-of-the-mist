@@ -821,6 +821,7 @@
    "Trackers": {
       "addStatus": "Ajouter un Statut",
       "addStoryTag": "Ajouter un Trait Narratif",
+      "addStoryTheme": "Ajouter un Thèeme Narratif",
       "statusPlaceholder": "Votre statut...",
       "statusNoName": "SANS NOM",
       "storyTagPlaceholder": "Votre Trait Narratif...",
@@ -910,7 +911,8 @@
       "cardsTab": "Cartes",
       "statuses": "Statuts",
       "storyTags": "Balises d'Histoire",
-      "storyThemes": "Thèmes d'Histoire"
+      "storyThemes": "Thèmes d'Histoire",
+      "reorderCards": "Réorganiser les Cartes"
    },
    "MobileCardCarousel": {
       "noCards": "Aucune carte pour le moment",
@@ -943,6 +945,7 @@
       "addStatus": "Ajouter un Statut",
       "addStoryTag": "Ajouter un Trait Narratif",
       "addStoryTheme": "Ajouter un Thème Narratif",
+      "reorderCards": "Réorganiser les Cartes",
       "flipCard": "Retourner la Carte",
       "export": "Exporter",
       "sideBySideMode": "Côte à Côte",

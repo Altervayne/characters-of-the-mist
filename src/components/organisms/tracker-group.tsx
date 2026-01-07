@@ -16,19 +16,12 @@ import { PlusCircle } from 'lucide-react';
  * Props for the TrackerGroup component
  */
 interface TrackerGroupProps<T> {
-   /** Section title displayed at the top */
    title: string;
-   /** Text for the add button */
    addButtonText: string;
-   /** Array of tracker items to display */
    trackers: T[];
-   /** Array of tracker IDs for sortable context */
    trackerIds: string[];
-   /** Callback when add button is clicked */
    onAddTracker: () => void;
-   /** Render function for each tracker item */
    renderTracker: (tracker: T) => React.ReactNode;
-   /** Whether to show the add button */
    showAddButton: boolean;
 }
 

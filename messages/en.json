@@ -827,6 +827,7 @@
    "Trackers": {
       "addStatus": "Add Status",
       "addStoryTag": "Add Story Tag",
+      "addStoryTheme": "Add Story Theme",
       "statusPlaceholder": "Fill your status...",
       "statusNoName": "NO STATUS",
       "storyTagPlaceholder": "Fill your story tag...",
@@ -916,7 +917,8 @@
       "cardsTab": "Cards",
       "statuses": "Statuses",
       "storyTags": "Story Tags",
-      "storyThemes": "Story Themes"
+      "storyThemes": "Story Themes",
+      "reorderCards": "Reorder Cards"
    },
    "MobileCardCarousel": {
       "noCards": "No cards yet",
@@ -949,6 +951,7 @@
       "addStatus": "Add Status",
       "addStoryTag": "Add Story Tag",
       "addStoryTheme": "Add Story Theme",
+      "reorderCards": "Reorder Cards",
       "flipCard": "Flip Card",
       "export": "Export",
       "sideBySideMode": "Side by Side",

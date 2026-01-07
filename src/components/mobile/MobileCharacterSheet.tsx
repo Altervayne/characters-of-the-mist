@@ -1,6 +1,7 @@
 // -- React Imports --
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 
 // -- Component Imports --
 import { StatusTrackerCard } from '@/components/molecules/status-tracker';
@@ -11,9 +12,15 @@ import { IconButton } from '@/components/ui/icon-button';
 import MobileCardCarousel from './MobileCardCarousel';
 import MobileToolbelt from './MobileToolbelt';
 import SelectableTracker from './SelectableTracker';
+import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
+import { CityThemeCard } from '@/components/organisms/city-theme-card';
+import { OtherscapeThemeCard } from '@/components/organisms/otherscape-theme-card';
+import { HeroCard } from '@/components/organisms/hero-card';
+import { RiftCard } from '@/components/organisms/rift-card';
+import { OtherscapeCharacterCard } from '@/components/organisms/otherscape-character-card';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Wrench } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PlusCircle, Wrench, Check, SquareDashed } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -53,6 +60,7 @@ interface MobileCharacterSheetProps {
 	isToolbeltOpen?: boolean;
 	onToolbeltOpenChange?: (isOpen: boolean) => void;
 	isMenuFABExpanded?: boolean;
+	onReorderingCardsChange?: (isReordering: boolean) => void;
 }
 
 export default function MobileCharacterSheet({
@@ -60,7 +68,8 @@ export default function MobileCharacterSheet({
 	onTabChange: controlledOnTabChange,
 	isToolbeltOpen: controlledIsToolbeltOpen,
 	onToolbeltOpenChange: controlledOnToolbeltOpenChange,
-	isMenuFABExpanded
+	isMenuFABExpanded,
+	onReorderingCardsChange
 }: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
 	const [internalActiveTab, setInternalActiveTab] = useState<SheetTab>('trackers');
@@ -76,7 +85,7 @@ export default function MobileCharacterSheet({
 
 	// Character data
 	const character = useCharacterStore((state) => state.character);
-	const { updateCharacterName, addStatus, addStoryTag, flipCard } = useCharacterActions();
+	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard, reorderStatuses, reorderStoryTags, reorderStoryThemes, reorderCards } = useCharacterActions();
 
 	// Settings
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
@@ -86,9 +95,16 @@ export default function MobileCharacterSheet({
 
 	// Card navigation state
 	const [currentCardIndex, setCurrentCardIndex] = useState(0);
+	const [isReorderingCards, setIsReorderingCards] = useState(false);
+
+	// Notify parent when reordering state changes
+	useEffect(() => {
+		onReorderingCardsChange?.(isReorderingCards);
+	}, [isReorderingCards, onReorderingCardsChange]);
 
 	// Toolbelt context state
 	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
+	const [isReorderingTracker, setIsReorderingTracker] = useState(false);
 
 	// Character name input with debouncing
 	const [localName, setLocalName] = useInputDebouncer(
@@ -126,6 +142,12 @@ export default function MobileCharacterSheet({
 		const touchEndY = e.changedTouches[0].clientY;
 		const deltaX = touchEndX - navSwipeStartX.current;
 		const deltaY = touchEndY - navSwipeStartY.current;
+
+		// Check for vertical swipe up (negative deltaY) to enter reorder mode
+		if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY < -50) {
+			setIsReorderingCards(true);
+			return;
+		}
 
 		// Only process horizontal swipes with 50px threshold
 		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 50) return;
@@ -169,6 +191,106 @@ export default function MobileCharacterSheet({
 				flipCard(currentCard.id);
 			}
 		}
+	};
+
+	// Helper functions for tracker reordering
+	const moveTrackerUp = () => {
+		if (!selectedTrackerId || !character || isReorderingTracker) return;
+
+		setIsReorderingTracker(true);
+
+		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
+		if (statusIndex > 0) {
+			reorderStatuses(statusIndex, statusIndex - 1);
+			setTimeout(() => setIsReorderingTracker(false), 100);
+			return;
+		}
+
+		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
+		if (tagIndex > 0) {
+			reorderStoryTags(tagIndex, tagIndex - 1);
+			setTimeout(() => setIsReorderingTracker(false), 100);
+			return;
+		}
+
+		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
+		if (themeIndex > 0) {
+			reorderStoryThemes(themeIndex, themeIndex - 1);
+			setTimeout(() => setIsReorderingTracker(false), 100);
+		} else {
+			setIsReorderingTracker(false);
+		}
+	};
+
+	const moveTrackerDown = () => {
+		if (!selectedTrackerId || !character || isReorderingTracker) return;
+
+		setIsReorderingTracker(true);
+
+		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
+		if (statusIndex !== -1 && statusIndex < character.trackers.statuses.length - 1) {
+			reorderStatuses(statusIndex, statusIndex + 1);
+			setTimeout(() => setIsReorderingTracker(false), 100);
+			return;
+		}
+
+		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
+		if (tagIndex !== -1 && tagIndex < character.trackers.storyTags.length - 1) {
+			reorderStoryTags(tagIndex, tagIndex + 1);
+			setTimeout(() => setIsReorderingTracker(false), 100);
+			return;
+		}
+
+		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
+		if (themeIndex !== -1 && themeIndex < character.trackers.storyThemes.length - 1) {
+			reorderStoryThemes(themeIndex, themeIndex + 1);
+			setTimeout(() => setIsReorderingTracker(false), 100);
+		} else {
+			setIsReorderingTracker(false);
+		}
+	};
+
+	const canMoveTrackerUp = useMemo(() => {
+		if (!selectedTrackerId || !character) return false;
+
+		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
+		if (statusIndex > 0) return true;
+
+		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
+		if (tagIndex > 0) return true;
+
+		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
+		return themeIndex > 0;
+	}, [selectedTrackerId, character]);
+
+	const canMoveTrackerDown = useMemo(() => {
+		if (!selectedTrackerId || !character) return false;
+
+		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
+		if (statusIndex !== -1 && statusIndex < character.trackers.statuses.length - 1) return true;
+
+		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
+		if (tagIndex !== -1 && tagIndex < character.trackers.storyTags.length - 1) return true;
+
+		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
+		return themeIndex !== -1 && themeIndex < character.trackers.storyThemes.length - 1;
+	}, [selectedTrackerId, character]);
+
+	// Helper functions for card reordering
+	const [isReorderingCard, setIsReorderingCard] = useState(false);
+
+	const moveCardUp = (cardIndex: number) => {
+		if (cardIndex <= 0 || !character || isReorderingCard) return;
+		setIsReorderingCard(true);
+		reorderCards(cardIndex, cardIndex - 1);
+		setTimeout(() => setIsReorderingCard(false), 100);
+	};
+
+	const moveCardDown = (cardIndex: number) => {
+		if (!character || cardIndex >= character.cards.length - 1 || isReorderingCard) return;
+		setIsReorderingCard(true);
+		reorderCards(cardIndex, cardIndex + 1);
+		setTimeout(() => setIsReorderingCard(false), 100);
 	};
 
 	// Build toolbelt context based on active tab and selection
@@ -252,6 +374,42 @@ export default function MobileCharacterSheet({
 		return t('Cards.themeCard') || 'Card';
 	};
 
+	// Helper function to render card preview (like in Drawer)
+	// Force SIDE_BY_SIDE mode for previews to prevent flip animations
+	const renderCardPreview = (card: Card) => {
+		const game = card.details.game;
+		const previewCard = { ...card, viewMode: 'SIDE_BY_SIDE' as const };
+
+		if (game === 'LEGENDS') {
+			if (card.cardType === 'CHARACTER_CARD') {
+				return <HeroCard card={previewCard} isDrawerPreview />;
+			}
+			if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME') {
+				return <LegendsThemeCard card={previewCard} isDrawerPreview />;
+			}
+		}
+
+		if (game === 'CITY_OF_MIST') {
+			if (card.cardType === 'CHARACTER_CARD') {
+				return <RiftCard card={previewCard} isDrawerPreview />;
+			}
+			if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') {
+				return <CityThemeCard card={previewCard} isDrawerPreview />;
+			}
+		}
+
+		if (game === 'OTHERSCAPE') {
+			if (card.cardType === 'CHARACTER_CARD') {
+				return <OtherscapeCharacterCard card={previewCard} isDrawerPreview />;
+			}
+			if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME') {
+				return <OtherscapeThemeCard card={previewCard} isDrawerPreview />;
+			}
+		}
+
+		return null;
+	};
+
 
 
 	if (!character) {
@@ -287,7 +445,8 @@ export default function MobileCharacterSheet({
 				/>
 			</header>
 
-			{/* Tab Navigation */}
+			{/* Tab Navigation - Hidden when reordering cards */}
+			{!isReorderingCards && (
 			<div className="flex items-center border-b border-border bg-card">
 				<button
 					onClick={() => setActiveTab('trackers')}
@@ -334,13 +493,15 @@ export default function MobileCharacterSheet({
 					</div>
 				)}
 			</div>
+			)}
 
 			{/* Tab Content */}
 			<div className="flex-1 flex flex-col overflow-hidden">
 				{activeTab === 'trackers' && (
-					<div className="h-full overflow-y-auto p-4 pb-6">
+					<div className="h-full overflow-y-auto p-4 pb-32">
 						<div className="max-w-7xl mx-auto space-y-6">
 							{/* Statuses Section */}
+							{(character.trackers.statuses.length > 0 || areTrackersEditable) && (
 							<section>
 								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
 									{t('MobileCharacterSheet.statuses') || 'Statuses'}
@@ -365,18 +526,22 @@ export default function MobileCharacterSheet({
 											variant="ghost"
 											onClick={() => addStatus()}
 											className={cn(
-												"w-full h-16 border-2 border-dashed border-primary/25",
+												"w-55 h-25 border-2 border-dashed border-primary/25",
 												"text-muted-foreground bg-primary/5",
-												"hover:text-foreground hover:border-foreground"
+												"hover:text-foreground hover:border-foreground",
+												"flex items-center justify-center gap-2"
 											)}
 										>
-											+ {t('Trackers.addStatus') || 'Add Status'}
+											<PlusCircle className="mr-2 h-4 w-4" />
+                                 {t('Trackers.addStatus')}
 										</Button>
 									)}
 								</div>
 							</section>
+							)}
 
 							{/* Story Tags Section */}
+							{(character.trackers.storyTags.length > 0 || areTrackersEditable) && (
 							<section>
 								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
 									{t('MobileCharacterSheet.storyTags') || 'Story Tags'}
@@ -401,18 +566,22 @@ export default function MobileCharacterSheet({
 											variant="ghost"
 											onClick={() => addStoryTag()}
 											className={cn(
-												"w-full h-16 border-2 border-dashed border-primary/25",
+												"w-55 min-h-13.75 py-2 border-2 border-dashed border-primary/25",
 												"text-muted-foreground bg-primary/5",
-												"hover:text-foreground hover:border-foreground"
+												"hover:text-foreground hover:border-foreground",
+												"flex items-center justify-center gap-2"
 											)}
 										>
-											+ {t('Trackers.addStoryTag') || 'Add Story Tag'}
+											<PlusCircle className="mr-2 h-4 w-4" />
+                                 {t('Trackers.addStoryTag')}
 										</Button>
 									)}
 								</div>
 							</section>
+							)}
 
 							{/* Story Themes Section */}
+							{(character.trackers.storyThemes.length > 0 || areTrackersEditable) && (
 							<section>
 								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
 									{t('MobileCharacterSheet.storyThemes') || 'Story Themes'}
@@ -432,30 +601,96 @@ export default function MobileCharacterSheet({
 											/>
 										</SelectableTracker>
 									))}
+									{areTrackersEditable && (
+										<Button
+											variant="ghost"
+											onClick={() => addStoryTheme()}
+											className={cn(
+												"w-62.5 h-55 border-2 border-dashed border-primary/25",
+												"text-muted-foreground bg-primary/5",
+												"hover:text-foreground hover:border-foreground",
+												"flex items-center justify-center gap-2"
+											)}
+										>
+											<PlusCircle className="mr-2 h-4 w-4" />
+                                 {t('Trackers.addStoryTheme')}
+										</Button>
+									)}
 								</div>
 							</section>
+							)}
 						</div>
 					</div>
 				)}
 
 				{activeTab === 'cards' && (
 					<>
-						{/* Scrollable Card Display Area */}
-						<div
-							className="flex-1 overflow-y-auto overflow-x-hidden p-4"
-							onTouchStart={handleCardAreaTouchStart}
-							onTouchEnd={handleCardAreaTouchEnd}
-						>
-							<div className="min-h-full flex items-center justify-center">
-								<MobileCardCarousel
-									cards={character.cards}
-									currentIndex={safeCardIndex}
-								/>
-							</div>
-						</div>
+						{/* Card Reorder View or Normal Card Display */}
+						{isReorderingCards ? (
+							<div className="flex-1 overflow-y-auto p-4 pb-32">
+								<div className="max-w-2xl mx-auto space-y-4">
+									{/* Header */}
+									<div className="flex items-center justify-center mb-4 sticky top-0 bg-background z-10 pb-2">
+										<h2 className="text-lg font-semibold">{t('MobileCharacterSheet.reorderCards') || 'Reorder Cards'}</h2>
+									</div>
 
-						{/* Navigation Bar - Always Visible at Bottom */}
-						{character.cards.length > 0 && (
+									{/* Card list with reorder controls */}
+									{character.cards.map((card, index) => (
+										<motion.div
+											key={card.id}
+											layout
+											initial={{ opacity: 0, scale: 0.95 }}
+											animate={{ opacity: 1, scale: 1 }}
+											exit={{ opacity: 0, scale: 0.95 }}
+											className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
+										>
+											{/* Card preview */}
+											<div className="flex-1 min-w-0 pointer-events-none">
+												{renderCardPreview(card)}
+											</div>
+
+											{/* Reorder buttons */}
+											<div className="flex flex-col gap-1 shrink-0">
+												<IconButton
+													variant="outline"
+													size="lg"
+													onClick={() => moveCardUp(index)}
+													disabled={index === 0 || isReorderingCard}
+													className="h-10 w-10"
+												>
+													<ChevronUp className="h-6 w-6" />
+												</IconButton>
+												<IconButton
+													variant="outline"
+													size="lg"
+													onClick={() => moveCardDown(index)}
+													disabled={index === character.cards.length - 1 || isReorderingCard}
+													className="h-10 w-10"
+												>
+													<ChevronDown className="h-6 w-6" />
+												</IconButton>
+											</div>
+										</motion.div>
+									))}
+								</div>
+							</div>
+						) : (
+							<div
+								className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32"
+								onTouchStart={handleCardAreaTouchStart}
+								onTouchEnd={handleCardAreaTouchEnd}
+							>
+								<div className="min-h-full flex items-center justify-center">
+									<MobileCardCarousel
+										cards={character.cards}
+										currentIndex={safeCardIndex}
+									/>
+								</div>
+							</div>
+						)}
+
+						{/* Navigation Bar - Only visible in normal card view */}
+						{!isReorderingCards && character.cards.length > 0 && (
 							<div
 								className="shrink-0 flex items-center justify-between gap-3 px-3 py-2 bg-card border-t border-border"
 								onTouchStart={handleNavBarTouchStart}
@@ -512,15 +747,68 @@ export default function MobileCharacterSheet({
 				)}
 			</div>
 
-			{/* Toolbelt */}
-			<MobileToolbelt
-				mode={isMobileFABMode ? 'fab' : 'side-panel'}
-				context={toolbeltContext}
-				isOpen={isToolbeltOpen}
-				onOpenChange={setIsToolbeltOpen}
-				activeTab={activeTab}
-				isMenuFABExpanded={isMenuFABExpanded}
-			/>
+			{/* Toolbelt - Hidden when reordering cards */}
+			{!isReorderingCards && (
+				<MobileToolbelt
+					mode={isMobileFABMode ? 'fab' : 'side-panel'}
+					context={toolbeltContext}
+					isOpen={isToolbeltOpen}
+					onOpenChange={setIsToolbeltOpen}
+					activeTab={activeTab}
+					isMenuFABExpanded={isMenuFABExpanded}
+					onEnterCardReorderMode={() => {
+						setIsReorderingCards(true);
+						setIsToolbeltOpen(false); // Close toolbelt when entering reorder mode
+					}}
+				/>
+			)}
+
+			{/* Tracker Reorder Buttons - Only visible when tracker selected */}
+			{selectedTrackerId && activeTab === 'trackers' && !isReorderingCards && (
+				<div className="fixed right-4 bottom-32 z-25 flex flex-col gap-2">
+               <IconButton
+						variant="default"
+						size="lg"
+						onClick={() => setSelectedTrackerId(null)}
+						className="h-10 w-10 shadow-2xl"
+					>
+						<SquareDashed className="h-6 w-6" />
+					</IconButton>
+					<IconButton
+						variant="default"
+						size="lg"
+						onClick={moveTrackerUp}
+						disabled={!canMoveTrackerUp}
+						className="h-10 w-10 shadow-2xl"
+					>
+						<ChevronUp className="h-6 w-6" />
+					</IconButton>
+					<IconButton
+						variant="default"
+						size="lg"
+						onClick={moveTrackerDown}
+						disabled={!canMoveTrackerDown}
+						className="h-10 w-10 shadow-2xl"
+					>
+						<ChevronDown className="h-6 w-6" />
+					</IconButton>
+				</div>
+			)}
+
+			{/* Card Reorder Done Button - Checkmark FAB */}
+			{isReorderingCards && (
+				<div className="fixed right-4 bottom-4 z-50">
+					<IconButton
+						variant="default"
+						size="lg"
+						onClick={() => setIsReorderingCards(false)}
+						className="h-10 w-10 shadow-2xl"
+						aria-label={t('Common.done') || 'Done'}
+					>
+						<Check className="h-6 w-6" />
+					</IconButton>
+				</div>
+			)}
 		</div>
 	);
 }
