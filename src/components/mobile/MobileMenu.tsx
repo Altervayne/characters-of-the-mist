@@ -2,13 +2,12 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Settings, Info, FileDown, FileUp, Save } from 'lucide-react';
+import { Settings, Info, FileDown, FileUp, Save, FileText } from 'lucide-react';
 
 // -- Component Imports --
 import { Button } from '@/components/ui/button';
 
 // -- Store Imports --
-import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useCharacterStore } from '@/lib/stores/characterStore';
 
 // -- Utils Imports --
@@ -16,11 +15,12 @@ import { cn } from '@/lib/utils';
 
 interface MobileMenuProps {
 	onOpenSettings: () => void;
+	onOpenAbout: () => void;
+	onOpenPatchNotes: () => void;
 }
 
-export default function MobileMenu({ onOpenSettings }: MobileMenuProps) {
+export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
-	const { setInfoOpen } = useAppGeneralStateActions();
 	const character = useCharacterStore((state) => state.character);
 
 	const menuItems = [
@@ -32,10 +32,17 @@ export default function MobileMenu({ onOpenSettings }: MobileMenuProps) {
 			show: true,
 		},
 		{
-			id: 'info',
+			id: 'about',
 			label: t('MobileMenu.info') || 'About',
 			icon: Info,
-			onClick: () => setInfoOpen(true),
+			onClick: onOpenAbout,
+			show: true,
+		},
+		{
+			id: 'patchNotes',
+			label: t('MobileMenu.patchNotes') || 'Patch Notes',
+			icon: FileText,
+			onClick: onOpenPatchNotes,
 			show: true,
 		},
 		{

@@ -10,14 +10,15 @@ import MobileBottomTabs from './MobileBottomTabs';
 import MobileFAB from './MobileFAB';
 import MobileMenu from './MobileMenu';
 import MobileSettings from './MobileSettings';
-import { InfoDialog } from '@/components/organisms/info-dialog';
+import MobileAbout from './MobileAbout';
+import MobilePatchNotes from './MobilePatchNotes';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
-type TabId = 'sheet' | 'drawer' | 'menu' | 'settings';
+type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'about' | 'patchNotes';
 type SheetTab = 'trackers' | 'cards';
+type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
 interface HistoryState {
 	tab: TabId;
@@ -35,11 +36,6 @@ export default function MobileCharacterSheetPage() {
 
 	// Track if we're handling a popstate event to avoid pushing duplicate history
 	const isNavigatingBack = useRef(false);
-
-	// Dialog states
-	const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
-	const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
-	const { setSettingsOpen, setInfoOpen } = useAppGeneralStateActions();
 
 	// Helper function to push current state to history
 	const pushHistoryState = (state: HistoryState) => {
@@ -140,9 +136,14 @@ export default function MobileCharacterSheetPage() {
 
 	const handleOpenSettings = () => {
 		navigateToTab('settings');
-		if (isSettingsOpen) {
-			setSettingsOpen(false); // Close the dialog state if it was open
-		}
+	};
+
+	const handleOpenAbout = () => {
+		navigateToTab('about');
+	};
+
+	const handleOpenPatchNotes = () => {
+		navigateToTab('patchNotes');
 	};
 
 	return (
@@ -165,22 +166,34 @@ export default function MobileCharacterSheetPage() {
 						<p className="text-muted-foreground">DRAWER PLACEHOLDER</p>
 					</div>
 				)}
-				{activeTab === 'menu' && <MobileMenu onOpenSettings={handleOpenSettings} />}
+				{activeTab === 'menu' && (
+					<MobileMenu
+						onOpenSettings={handleOpenSettings}
+						onOpenAbout={handleOpenAbout}
+						onOpenPatchNotes={handleOpenPatchNotes}
+					/>
+				)}
 				{activeTab === 'settings' && (
 					<MobileSettings
 						onStartTour={handleStartTour}
 						onBack={() => navigateToTab('menu')}
 					/>
 				)}
+				{activeTab === 'about' && (
+					<MobileAbout onBack={() => navigateToTab('menu')} />
+				)}
+				{activeTab === 'patchNotes' && (
+					<MobilePatchNotes onBack={() => navigateToTab('menu')} />
+				)}
 			</div>
 
-			{/* Navigation - Hidden when reordering cards or in settings */}
-			{!isReorderingCards && activeTab !== 'settings' && (
+			{/* Navigation - Hidden when reordering cards or in settings/about/patchNotes */}
+			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'about' && activeTab !== 'patchNotes' && (
 				!isMobileFABMode ? (
-					<MobileBottomTabs activeTab={activeTab} onTabChange={navigateToTab} />
+					<MobileBottomTabs activeTab={activeTab as NavigationTabId} onTabChange={navigateToTab} />
 				) : (
 					<MobileFAB
-						activeTab={activeTab}
+						activeTab={activeTab as NavigationTabId}
 						onTabChange={navigateToTab}
 						onOpenDrawer={handleOpenDrawer}
 						onOpenMenu={handleOpenMenu}
@@ -191,11 +204,6 @@ export default function MobileCharacterSheetPage() {
 				)
 			)}
 
-			{/* Dialogs */}
-			<InfoDialog
-				isOpen={isInfoOpen}
-				onOpenChange={setInfoOpen}
-			/>
 		</div>
 	);
 }

@@ -328,7 +328,7 @@
       }
    },
    "InfoDialog": {
-      "title": "À Propos de Characters of the Mist",
+      "title": "À Propos",
       "description": "Informations, crédits, et licence pour l'application.",
       "close": "Fermer",
       "tabs": {
@@ -347,7 +347,7 @@
       "kofi_alt": "Soutenez-moi sur Ko-fi"
    },
    "PatchNotesDialog": {
-      "title": "Characters of the Mist - Patch Notes",
+      "title": "Patch Notes",
       "description": "Vous trouverez ici les dernières patch notes. Celles-ci ne sont pas traduites.",
 
       "versionLabel": "Version",
@@ -968,6 +968,7 @@
       "description": "Accédez aux paramètres et actions de l'application",
       "settings": "Paramètres",
       "info": "À propos",
+      "patchNotes": "Patch Notes",
       "save": "Sauvegarder le Personnage",
       "export": "Exporter le Personnage",
       "import": "Importer"

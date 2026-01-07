@@ -328,7 +328,7 @@
       }
    },
    "InfoDialog": {
-      "title": "About Characters of the Mist",
+      "title": "About",
       "description": "Information, credits, and licensing for this application.",
       "close": "Close",
       "tabs": {
@@ -347,7 +347,7 @@
       "kofi_alt": "Support me on Ko-fi"
    },
    "PatchNotesDialog": {
-      "title": "Characters of the Mist - Patch Notes",
+      "title": "Patch Notes",
       "description": "You will see the patch notes for the latest versions in this window.",
 
       "versionLabel": "Version",
@@ -974,6 +974,7 @@
       "description": "Access app settings and actions",
       "settings": "Settings",
       "info": "About",
+      "patchNotes": "Patch Notes",
       "save": "Save Character",
       "export": "Export Character",
       "import": "Import"

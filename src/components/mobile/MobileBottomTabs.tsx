@@ -1,9 +1,8 @@
 // -- React Imports --
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Home, FolderOpen, MoreHorizontal, Edit, Save } from 'lucide-react';
+import { Home, FolderOpen, MoreHorizontal, Edit } from 'lucide-react';
 
 // -- Store Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
