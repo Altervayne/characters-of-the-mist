@@ -933,12 +933,12 @@
       "close": "Fermer"
    },
    "Toolbelt": {
-      "title": "Actions",
+      "title": "Ceinture à outils",
       "noActions": "Aucune action disponible",
       "itemSection": "Élément",
       "globalSection": "Global",
       "undo": "Annuler",
-      "redo": "Refaire",
+      "redo": "Rétablir",
       "editMode": "Mode Édition",
       "playMode": "Mode Jeu",
       "addCard": "Ajouter une Carte",
@@ -954,7 +954,7 @@
       "delete": "Supprimer",
       "makePositive": "Rendre Positif",
       "makeNegative": "Rendre Négatif",
-      "upgradeToTheme": "Évoluer en Thème Narratif",
+      "upgradeToTheme": "Promouvoir en Thème Narratif",
       "downgradeToTag": "Rétrograder en Trait"
    },
    "MobileMenu": {

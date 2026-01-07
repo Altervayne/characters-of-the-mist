@@ -193,6 +193,37 @@ export default function MobileCharacterSheet({
 		}
 	};
 
+	// Swipe gesture detection for trackers area (edge swipe for toolbelt)
+	const trackersSwipeStartX = useRef<number>(0);
+	const trackersSwipeStartY = useRef<number>(0);
+
+	const handleTrackersAreaTouchStart = (e: React.TouchEvent) => {
+		trackersSwipeStartX.current = e.touches[0].clientX;
+		trackersSwipeStartY.current = e.touches[0].clientY;
+	};
+
+	const handleTrackersAreaTouchEnd = (e: React.TouchEvent) => {
+		if (!character) return;
+
+		const touchEndX = e.changedTouches[0].clientX;
+		const touchEndY = e.changedTouches[0].clientY;
+		const deltaX = touchEndX - trackersSwipeStartX.current;
+		const deltaY = touchEndY - trackersSwipeStartY.current;
+
+		// Only process horizontal swipes
+		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 30) return;
+
+		const edgeThreshold = 50;
+		const swipeThreshold = 30;
+
+		// Right edge swipe (within 50px from right) → Open toolbelt (only in side-panel mode)
+		if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
+			if (!isMobileFABMode && !isToolbeltOpen) {
+				setIsToolbeltOpen(true);
+			}
+		}
+	};
+
 	// Helper functions for tracker reordering
 	const moveTrackerUp = () => {
 		if (!selectedTrackerId || !character || isReorderingTracker) return;
@@ -498,7 +529,11 @@ export default function MobileCharacterSheet({
 			{/* Tab Content */}
 			<div className="flex-1 flex flex-col overflow-hidden">
 				{activeTab === 'trackers' && (
-					<div className="h-full overflow-y-auto p-4 pb-32">
+					<div
+						className="h-full overflow-y-auto p-4 pb-32"
+						onTouchStart={handleTrackersAreaTouchStart}
+						onTouchEnd={handleTrackersAreaTouchEnd}
+					>
 						<div className="max-w-7xl mx-auto space-y-6">
 							{/* Statuses Section */}
 							{(character.trackers.statuses.length > 0 || areTrackersEditable) && (
@@ -642,10 +677,21 @@ export default function MobileCharacterSheet({
 											initial={{ opacity: 0, scale: 0.95 }}
 											animate={{ opacity: 1, scale: 1 }}
 											exit={{ opacity: 0, scale: 0.95 }}
+											transition={{
+												layout: { duration: 0.3, ease: 'easeInOut' },
+												opacity: { duration: 0.2 },
+												scale: { duration: 0.2 }
+											}}
 											className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
 										>
-											{/* Card preview */}
-											<div className="flex-1 min-w-0 pointer-events-none">
+											{/* Card preview - clickable to navigate and close reorder mode */}
+											<div
+												className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+												onClick={() => {
+													setCurrentCardIndex(index);
+													setIsReorderingCards(false);
+												}}
+											>
 												{renderCardPreview(card)}
 											</div>
 
@@ -758,7 +804,7 @@ export default function MobileCharacterSheet({
 					isMenuFABExpanded={isMenuFABExpanded}
 					onEnterCardReorderMode={() => {
 						setIsReorderingCards(true);
-						setIsToolbeltOpen(false); // Close toolbelt when entering reorder mode
+						setIsToolbeltOpen(false);
 					}}
 				/>
 			)}
@@ -795,7 +841,7 @@ export default function MobileCharacterSheet({
 				</div>
 			)}
 
-			{/* Card Reorder Done Button - Checkmark FAB */}
+			{/* Card Reorder Done Button */}
 			{isReorderingCards && (
 				<div className="fixed right-4 bottom-4 z-50">
 					<IconButton

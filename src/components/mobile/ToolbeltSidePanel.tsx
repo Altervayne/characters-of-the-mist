@@ -58,7 +58,7 @@ export default function ToolbeltSidePanel({
 						{/* Header */}
 						<div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
 							<h2 className="text-lg font-semibold">
-								{t('Toolbelt.title') || 'Actions'}
+								{t('Toolbelt.title')}
 							</h2>
 							<Button
 								variant="ghost"
