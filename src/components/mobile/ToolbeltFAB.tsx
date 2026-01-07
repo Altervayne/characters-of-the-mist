@@ -112,7 +112,7 @@ export default function ToolbeltFAB({
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.2 }}
 							className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-							onClick={() => onOpenChange(false)}
+							onClick={() => onOpenChange(!isOpen)}
 						/>
 
 						{/* Scrollable Action Buttons with Thumb-Zone Scaling */}
@@ -123,6 +123,7 @@ export default function ToolbeltFAB({
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}
 								onScroll={handleScroll}
+                        onClick={() => onOpenChange(!isOpen)}
 								className="fixed top-0 right-4 z-50 h-[calc(100vh-5rem)] w-64 overflow-y-auto overflow-x-visible scrollbar-hide perspective-1000"
 								style={{
                            paddingTop: `${THUMB_ZONE_Y}px`,
@@ -166,7 +167,8 @@ export default function ToolbeltFAB({
 													>
 														{/* Action button */}
 														<button
-															onClick={() => {
+															onClick={(e) => {
+                                                e.stopPropagation()
 																action.onClick();
 																onOpenChange(false);
 															}}
@@ -202,12 +204,12 @@ export default function ToolbeltFAB({
 			{!isMenuFABExpanded && (
 				<motion.div
 					className={cn(
-						"fixed z-50",
+						"fixed z-51",
 						isOpen
 							? "bottom-4 right-4"
 							: activeTab === 'cards'
-								? "bottom-14 right-2"
-								: "bottom-4 right-4"
+								? "bottom-26 right-2"
+								: "bottom-16 right-4"
 					)}
 					whileTap={{ scale: 0.95 }}
 				>

@@ -98,7 +98,7 @@ export default function MobileFAB({
 			</AnimatePresence>
 
 			{/* Action Buttons */}
-			<div className="fixed bottom-20 left-4 z-50 flex flex-col-reverse items-start gap-3">
+			<div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3">
 				<AnimatePresence>
 					{isExpanded && actions.map((action, index) => {
 						const Icon = action.icon;
@@ -136,10 +136,10 @@ export default function MobileFAB({
 					className={cn(
 						"fixed z-50",
 						isExpanded
-							? "bottom-4 left-4"
+							? "bottom-4 right-4"
 							: activeTab === 'sheet' && sheetActiveTab === 'cards'
-								? "bottom-14 left-2"
-								: "bottom-4 left-4"
+								? "bottom-14 right-2"
+								: "bottom-4 right-4"
 					)}
 					whileTap={{ scale: 0.95 }}
 				>
