@@ -52,7 +52,7 @@ export default function MobileFAB({
 			icon: Home,
 			onClick: () => {
 				onTabChange('sheet');
-				setIsExpanded(false);
+				toggleExpanded();
 			},
 			show: true,
 			active: activeTab === 'sheet',
@@ -63,7 +63,7 @@ export default function MobileFAB({
 			icon: FolderOpen,
 			onClick: () => {
 				onOpenDrawer();
-				setIsExpanded(false);
+				toggleExpanded();
 			},
 			show: true,
 			active: activeTab === 'drawer',
@@ -74,7 +74,7 @@ export default function MobileFAB({
 			icon: Settings,
 			onClick: () => {
 				onOpenMenu();
-				setIsExpanded(false);
+				toggleExpanded();
 			},
 			show: true,
 			active: activeTab === 'menu',
@@ -92,7 +92,7 @@ export default function MobileFAB({
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.2 }}
 						className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
-						onClick={() => setIsExpanded(false)}
+						onClick={toggleExpanded}
 					/>
 				)}
 			</AnimatePresence>
@@ -151,7 +151,7 @@ export default function MobileFAB({
 						aria-label={isExpanded ? t('MobileFAB.close') || 'Close' : t('MobileFAB.open') || 'Open menu'}
 					>
 						<motion.div
-							animate={{ rotate: isExpanded ? 45 : 0 }}
+							animate={{ rotate: isExpanded ? 90 : 0 }}
 							transition={{ duration: 0.2 }}
 						>
 							{isExpanded ? (
