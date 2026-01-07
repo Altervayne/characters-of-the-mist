@@ -14,9 +14,13 @@ import { useCharacterStore } from '@/lib/stores/characterStore';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
-export default function MobileMenu() {
+interface MobileMenuProps {
+	onOpenSettings: () => void;
+}
+
+export default function MobileMenu({ onOpenSettings }: MobileMenuProps) {
 	const { t } = useTranslation();
-	const { setSettingsOpen, setInfoOpen } = useAppGeneralStateActions();
+	const { setInfoOpen } = useAppGeneralStateActions();
 	const character = useCharacterStore((state) => state.character);
 
 	const menuItems = [
@@ -24,7 +28,7 @@ export default function MobileMenu() {
 			id: 'settings',
 			label: t('MobileMenu.settings') || 'Settings',
 			icon: Settings,
-			onClick: () => setSettingsOpen(true),
+			onClick: onOpenSettings,
 			show: true,
 		},
 		{

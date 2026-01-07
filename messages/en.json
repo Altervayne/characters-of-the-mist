@@ -277,6 +277,12 @@
          "locked": "Forced"
       },
 
+      "mobileFABMode": {
+         "title": "Mobile UI Mode",
+         "bottomTabs": "Bottom Tabs",
+         "fab": "Floating Buttons"
+      },
+
       "mobileNavigation": {
          "title": "Mobile Navigation",
          "bottomTabs": "Bottom Tabs",

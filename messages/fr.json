@@ -277,6 +277,12 @@
          "locked": "Forcé"
       },
 
+      "mobileFABMode": {
+         "title": "Mode Interface Mobile",
+         "bottomTabs": "Onglets en Bas",
+         "fab": "Boutons Flottants"
+      },
+
       "mobileNavigation": {
          "title": "Navigation Mobile",
          "bottomTabs": "Onglets en Bas",

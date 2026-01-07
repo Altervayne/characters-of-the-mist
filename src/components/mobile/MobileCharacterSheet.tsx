@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
@@ -60,6 +60,7 @@ interface MobileCharacterSheetProps {
 	isToolbeltOpen?: boolean;
 	onToolbeltOpenChange?: (isOpen: boolean) => void;
 	isMenuFABExpanded?: boolean;
+	isReorderingCards?: boolean;
 	onReorderingCardsChange?: (isReordering: boolean) => void;
 }
 
@@ -69,7 +70,8 @@ export default function MobileCharacterSheet({
 	isToolbeltOpen: controlledIsToolbeltOpen,
 	onToolbeltOpenChange: controlledOnToolbeltOpenChange,
 	isMenuFABExpanded,
-	onReorderingCardsChange
+	isReorderingCards: controlledIsReorderingCards,
+	onReorderingCardsChange: controlledOnReorderingCardsChange
 }: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
 	const [internalActiveTab, setInternalActiveTab] = useState<SheetTab>('trackers');
@@ -83,6 +85,11 @@ export default function MobileCharacterSheet({
 	const isToolbeltOpen = controlledIsToolbeltOpen ?? internalIsToolbeltOpen;
 	const setIsToolbeltOpen = controlledOnToolbeltOpenChange ?? setInternalIsToolbeltOpen;
 
+	// Use controlled or uncontrolled state for reordering
+	const [internalIsReorderingCards, setInternalIsReorderingCards] = useState(false);
+	const isReorderingCards = controlledIsReorderingCards ?? internalIsReorderingCards;
+	const setIsReorderingCards = controlledOnReorderingCardsChange ?? setInternalIsReorderingCards;
+
 	// Character data
 	const character = useCharacterStore((state) => state.character);
 	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard, reorderStatuses, reorderStoryTags, reorderStoryThemes, reorderCards } = useCharacterActions();
@@ -95,12 +102,6 @@ export default function MobileCharacterSheet({
 
 	// Card navigation state
 	const [currentCardIndex, setCurrentCardIndex] = useState(0);
-	const [isReorderingCards, setIsReorderingCards] = useState(false);
-
-	// Notify parent when reordering state changes
-	useEffect(() => {
-		onReorderingCardsChange?.(isReorderingCards);
-	}, [isReorderingCards, onReorderingCardsChange]);
 
 	// Toolbelt context state
 	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
@@ -677,11 +678,6 @@ export default function MobileCharacterSheet({
 											initial={{ opacity: 0, scale: 0.95 }}
 											animate={{ opacity: 1, scale: 1 }}
 											exit={{ opacity: 0, scale: 0.95 }}
-											transition={{
-												layout: { duration: 0.3, ease: 'easeInOut' },
-												opacity: { duration: 0.2 },
-												scale: { duration: 0.2 }
-											}}
 											className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
 										>
 											{/* Card preview - clickable to navigate and close reorder mode */}
