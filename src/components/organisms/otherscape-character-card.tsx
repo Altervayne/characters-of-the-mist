@@ -408,7 +408,7 @@ const OtherscapeCharacterCardContent = React.memo(
             {"h-30 shadow-none pointer-events-none border-2 border-card-border": isDrawerPreview}
          )}>
             <CardHeaderMolecule title={t('OtherscapeCharacterCard.title')} />
-            <CardSectionHeader title={`${tSpecials('title')}`}></CardSectionHeader>
+            <CardSectionHeader title={`${tSpecials('OtherscapeCharacterCard.Specials.title')}`}></CardSectionHeader>
             <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
                   {details.specials.map((tag, index) => (
@@ -424,7 +424,7 @@ const OtherscapeCharacterCardContent = React.memo(
                   {isEditing && (
                      <div className="p-2 w-full">
                         <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'specials')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {tSpecials('addSpecial')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {tSpecials('OtherscapeCharacterCard.Specials.addSpecial')}
                         </Button>
                      </div>
                   )}
