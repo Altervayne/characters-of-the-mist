@@ -977,6 +977,7 @@
       "patchNotes": "Patch Notes",
       "save": "Save Character",
       "export": "Export Character",
-      "import": "Import"
+      "import": "Import",
+      "unload": "Unload Character"
    }
 }

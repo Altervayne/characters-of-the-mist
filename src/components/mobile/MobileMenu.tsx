@@ -2,10 +2,10 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Settings, Info, FileDown, FileUp, Save, FileText } from 'lucide-react';
+import { Settings, Info, FileDown, FileUp, Save, FileText, LogOut } from 'lucide-react';
 
 // -- Store Imports --
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -22,6 +22,9 @@ interface MobileMenuProps {
 export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
+	const { unloadCharacter } = useCharacterActions();
+
+
 
 	const menuItems = [
 		{
@@ -30,6 +33,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			icon: Settings,
 			onClick: onOpenSettings,
 			show: true,
+         destructive: false,
 		},
 		{
 			id: 'about',
@@ -37,6 +41,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			icon: Info,
 			onClick: onOpenAbout,
 			show: true,
+         destructive: false,
 		},
 		{
 			id: 'patchNotes',
@@ -44,6 +49,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			icon: FileText,
 			onClick: onOpenPatchNotes,
 			show: true,
+         destructive: false,
 		},
 		{
 			id: 'save',
@@ -53,6 +59,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				// TODO: Implement save in Phase 6
 			},
 			show: !!character,
+         destructive: false,
 		},
 		{
 			id: 'export',
@@ -62,6 +69,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				// TODO: Implement export in Phase 6
 			},
 			show: !!character,
+         destructive: false,
 		},
 		{
 			id: 'import',
@@ -71,8 +79,19 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				// TODO: Implement import in Phase 6
 			},
 			show: true,
+         destructive: false,
+		},
+		{
+			id: 'unload',
+			label: t('MobileMenu.unload') || 'Unload Character',
+			icon: LogOut,
+			onClick: unloadCharacter,
+			show: !!character,
+         destructive: true,
 		},
 	].filter(item => item.show);
+
+
 
 	return (
 		<div className="h-full w-full flex flex-col p-6 gap-4">
@@ -93,7 +112,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 							className={cn(
                         "inline-flex px-4 items-center justify-center gap-2 whitespace-nowrap rounded-md transition-all disabled:pointer-events-none disabled:opacity-50 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
 								"w-68 max-w-full h-12 justify-start text-left",
-								"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+								item.destructive ? "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60" : "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
                         "hover:bg-primary/10 transition-colors"
 							)}
 						>

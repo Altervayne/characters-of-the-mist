@@ -12,9 +12,11 @@ import MobileMenu from './MobileMenu';
 import MobileSettings from './MobileSettings';
 import MobileAbout from './MobileAbout';
 import MobilePatchNotes from './MobilePatchNotes';
+import MobileMainMenu from './MobileMainMenu';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useCharacterStore } from '@/lib/stores/characterStore';
 
 type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'about' | 'patchNotes';
 type SheetTab = 'trackers' | 'cards';
@@ -33,6 +35,7 @@ export default function MobileCharacterSheetPage() {
 	const [isToolbeltOpen, setIsToolbeltOpen] = useState(false);
 	const [isReorderingCards, setIsReorderingCards] = useState(false);
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
+	const character = useCharacterStore((state) => state.character);
 
 	// Track if we're handling a popstate event to avoid pushing duplicate history
 	const isNavigatingBack = useRef(false);
@@ -145,6 +148,15 @@ export default function MobileCharacterSheetPage() {
 	const handleOpenPatchNotes = () => {
 		navigateToTab('patchNotes');
 	};
+
+	// If no character is loaded, show the main menu
+	if (!character) {
+		return (
+			<div className="h-screen w-screen overflow-hidden">
+				<MobileMainMenu onOpenDrawer={handleOpenDrawer} />
+			</div>
+		);
+	}
 
 	return (
 		<div className="h-screen w-screen overflow-hidden flex flex-col">

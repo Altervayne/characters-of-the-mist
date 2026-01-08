@@ -969,8 +969,9 @@
       "settings": "Paramètres",
       "info": "À propos",
       "patchNotes": "Patch Notes",
-      "save": "Sauvegarder le Personnage",
-      "export": "Exporter le Personnage",
-      "import": "Importer"
+      "save": "Sauvegarder le Perso.",
+      "export": "Exporter le Perso.",
+      "import": "Importer",
+      "unload": "Décharger le Perso."
    }
 }
