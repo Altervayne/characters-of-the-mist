@@ -76,16 +76,16 @@ export default function MobileCharacterSheet({
 	const { t } = useTranslation();
 	const [internalActiveTab, setInternalActiveTab] = useState<SheetTab>('trackers');
 
-	// Use controlled or uncontrolled state for activeTab
+	// ActiveTab
 	const activeTab = controlledActiveTab ?? internalActiveTab;
 	const setActiveTab = controlledOnTabChange ?? setInternalActiveTab;
 
-	// Use controlled or uncontrolled state for toolbelt
+	// Toolbelt
 	const [internalIsToolbeltOpen, setInternalIsToolbeltOpen] = useState(false);
 	const isToolbeltOpen = controlledIsToolbeltOpen ?? internalIsToolbeltOpen;
 	const setIsToolbeltOpen = controlledOnToolbeltOpenChange ?? setInternalIsToolbeltOpen;
 
-	// Use controlled or uncontrolled state for reordering
+	// Reordering
 	const [internalIsReorderingCards, setInternalIsReorderingCards] = useState(false);
 	const isReorderingCards = controlledIsReorderingCards ?? internalIsReorderingCards;
 	const setIsReorderingCards = controlledOnReorderingCardsChange ?? setInternalIsReorderingCards;
@@ -443,7 +443,7 @@ export default function MobileCharacterSheet({
 	};
 
    
-   
+
 	// Helper function to render card preview (like in Drawer)
 	// Force SIDE_BY_SIDE mode and front face for previews
 	const renderCardPreview = (card: Card) => {
@@ -517,67 +517,67 @@ export default function MobileCharacterSheet({
 
 			{/* Tab Navigation - Hidden when reordering cards */}
 			{!isReorderingCards && (
-			<div className="flex items-center border-b border-border bg-card">
-				{/* Toolbelt trigger button (left side for left-handed) */}
-				{!isMobileFABMode && isLeftHanded && (
-					<div className="px-2">
-						<IconButton
-							variant="ghost"
-							size="sm"
-							onClick={() => setIsToolbeltOpen(true)}
-							aria-label="Open actions"
-							className="h-8 w-8"
-						>
-							<Wrench className="h-4 w-4" />
-						</IconButton>
-					</div>
-				)}
+            <div className="flex items-center border-b border-border bg-card">
+               {/* Toolbelt trigger button (left side for left-handed) */}
+               {!isMobileFABMode && isLeftHanded && (
+                  <div className="px-2">
+                     <IconButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsToolbeltOpen(true)}
+                        aria-label="Open actions"
+                        className="h-8 w-8"
+                     >
+                        <Wrench className="h-4 w-4" />
+                     </IconButton>
+                  </div>
+               )}
 
-				<button
-					onClick={() => setActiveTab('trackers')}
-					className={cn(
-						"flex-1 px-4 py-3 text-sm font-medium transition-colors",
-						"border-b-2",
-						activeTab === 'trackers'
-							? "border-primary text-primary bg-primary/5"
-							: "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-					)}
-				>
-					{t('MobileCharacterSheet.trackersTab') || 'Trackers'}
-				</button>
-				<button
-					onClick={() => setActiveTab('cards')}
-					className={cn(
-						"flex-1 px-4 py-3 text-sm font-medium transition-colors",
-						"border-b-2",
-						activeTab === 'cards'
-							? "border-primary text-primary bg-primary/5"
-							: "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-					)}
-				>
-					{t('MobileCharacterSheet.cardsTab') || 'Cards'}
-					{character.cards.length > 0 && (
-						<span className="ml-2 text-xs text-muted-foreground">
-							({character.cards.length})
-						</span>
-					)}
-				</button>
+               <button
+                  onClick={() => setActiveTab('trackers')}
+                  className={cn(
+                     "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                     "border-b-2",
+                     activeTab === 'trackers'
+                        ? "border-primary text-primary bg-primary/5"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+               >
+                  {t('MobileCharacterSheet.trackersTab') || 'Trackers'}
+               </button>
+               <button
+                  onClick={() => setActiveTab('cards')}
+                  className={cn(
+                     "flex-1 px-4 py-3 text-sm font-medium transition-colors",
+                     "border-b-2",
+                     activeTab === 'cards'
+                        ? "border-primary text-primary bg-primary/5"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+               >
+                  {t('MobileCharacterSheet.cardsTab') || 'Cards'}
+                  {character.cards.length > 0 && (
+                     <span className="ml-2 text-xs text-muted-foreground">
+                        ({character.cards.length})
+                     </span>
+                  )}
+               </button>
 
-				{/* Toolbelt trigger button (right side for right-handed) */}
-				{!isMobileFABMode && !isLeftHanded && (
-					<div className="px-2">
-						<IconButton
-							variant="ghost"
-							size="sm"
-							onClick={() => setIsToolbeltOpen(true)}
-							aria-label="Open actions"
-							className="h-8 w-8"
-						>
-							<Wrench className="h-4 w-4" />
-						</IconButton>
-					</div>
-				)}
-			</div>
+               {/* Toolbelt trigger button (right side for right-handed) */}
+               {!isMobileFABMode && !isLeftHanded && (
+                  <div className="px-2">
+                     <IconButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsToolbeltOpen(true)}
+                        aria-label="Open actions"
+                        className="h-8 w-8"
+                     >
+                        <Wrench className="h-4 w-4" />
+                     </IconButton>
+                  </div>
+               )}
+            </div>
 			)}
 
 			{/* Tab Content */}
@@ -842,6 +842,8 @@ export default function MobileCharacterSheet({
 				)}
 			</div>
 
+
+
 			{/* Toolbelt - Hidden when reordering cards */}
 			{!isReorderingCards && (
 				<MobileToolbelt
@@ -857,6 +859,8 @@ export default function MobileCharacterSheet({
 					}}
 				/>
 			)}
+
+
 
 			{/* Tracker Reorder Buttons - Only visible when tracker selected */}
 			{selectedTrackerId && activeTab === 'trackers' && !isReorderingCards && (
@@ -890,9 +894,14 @@ export default function MobileCharacterSheet({
 				</div>
 			)}
 
+
+
 			{/* Card Reorder Done Button */}
 			{isReorderingCards && (
-				<div className="fixed right-4 bottom-4 z-50">
+				<div className={cn(
+               "fixed bottom-4 z-50",
+               isLeftHanded ? "left-4" : "right-4"
+            )}>
 					<IconButton
 						variant="default"
 						size="lg"
