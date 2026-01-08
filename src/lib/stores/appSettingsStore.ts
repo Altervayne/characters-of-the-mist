@@ -9,6 +9,7 @@ import type { GameSystem } from '../types/drawer';
 
 export type ThemeName = 'theme-neutral' | 'theme-legends' | 'theme-otherscape' | 'theme-city-of-mist';
 export type DeviceType = 'mobile' | 'desktop';
+export type MobileHandedness = 'left' | 'right';
 
 interface AppSettingsState {
    theme: ThemeName;
@@ -20,6 +21,7 @@ interface AppSettingsState {
    contextualGame: GameSystem;
    deviceTypeOverride?: DeviceType;
    isMobileFABMode: boolean;
+   mobileHandedness: MobileHandedness;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -31,6 +33,7 @@ interface AppSettingsState {
       setContextualGame: (game: GameSystem) => void;
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
       setMobileFABMode: (enabled: boolean) => void;
+      setMobileHandedness: (handedness: MobileHandedness) => void;
    };
 }
 
@@ -48,6 +51,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          contextualGame: 'LEGENDS',
          deviceTypeOverride: undefined,
          isMobileFABMode: false,
+         mobileHandedness: 'right',
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -58,7 +62,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
-            setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled })
+            setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled }),
+            setMobileHandedness: (handedness) => set({ mobileHandedness: handedness })
          },
       }),
       {
@@ -73,7 +78,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isSidebarCollapsed: state.isSidebarCollapsed,
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
-            isMobileFABMode: state.isMobileFABMode
+            isMobileFABMode: state.isMobileFABMode,
+            mobileHandedness: state.mobileHandedness
          }),
       }
    )

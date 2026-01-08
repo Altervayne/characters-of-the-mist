@@ -99,6 +99,8 @@ export default function MobileCharacterSheet({
 	const isTrackersAlwaysEditable = useAppSettingsStore((state) => state.isTrackersAlwaysEditable);
 	const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
+	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
+	const isLeftHanded = mobileHandedness === 'left';
 
 	// Card navigation state
 	const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -178,18 +180,36 @@ export default function MobileCharacterSheet({
 		const edgeThreshold = 50;
 		const swipeThreshold = 30;
 
-		// Left edge swipe (within 50px from left) → Flip card
-		if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-			flipCard(currentCard.id);
-		}
-		// Right edge swipe (within 50px from right)
-		else if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-			if (!isMobileFABMode && !isToolbeltOpen) {
-				// Bottom tabs mode (with side-panel toolbelt): Open toolbelt
-				setIsToolbeltOpen(true);
-			} else if (isMobileFABMode) {
-				// FAB mode: Flip card (toolbelt is accessible via FAB)
+		// Edge swipe behavior depends on handedness setting
+		if (isLeftHanded) {
+			// Left-handed mode: Right edge = flip, Left edge = toolbelt
+			if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
+				// Right edge swipe → Flip card
 				flipCard(currentCard.id);
+			}
+			else if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
+				// Left edge swipe → Open toolbelt (side-panel mode only)
+				if (!isMobileFABMode && !isToolbeltOpen) {
+					setIsToolbeltOpen(true);
+				} else if (isMobileFABMode) {
+					// FAB mode: Flip card (toolbelt is accessible via FAB)
+					flipCard(currentCard.id);
+				}
+			}
+		} else {
+			// Right-handed mode (default): Left edge = flip, Right edge = toolbelt
+			if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
+				// Left edge swipe → Flip card
+				flipCard(currentCard.id);
+			}
+			else if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
+				// Right edge swipe → Open toolbelt (side-panel mode only)
+				if (!isMobileFABMode && !isToolbeltOpen) {
+					setIsToolbeltOpen(true);
+				} else if (isMobileFABMode) {
+					// FAB mode: Flip card (toolbelt is accessible via FAB)
+					flipCard(currentCard.id);
+				}
 			}
 		}
 	};
@@ -217,10 +237,20 @@ export default function MobileCharacterSheet({
 		const edgeThreshold = 50;
 		const swipeThreshold = 30;
 
-		// Right edge swipe (within 50px from right) → Open toolbelt (only in side-panel mode)
-		if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-			if (!isMobileFABMode && !isToolbeltOpen) {
-				setIsToolbeltOpen(true);
+		// Edge swipe behavior depends on handedness setting (only in side-panel mode)
+		if (isLeftHanded) {
+			// Left-handed mode: Left edge → Open toolbelt
+			if (trackersSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
+				if (!isMobileFABMode && !isToolbeltOpen) {
+					setIsToolbeltOpen(true);
+				}
+			}
+		} else {
+			// Right-handed mode: Right edge → Open toolbelt
+			if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
+				if (!isMobileFABMode && !isToolbeltOpen) {
+					setIsToolbeltOpen(true);
+				}
 			}
 		}
 	};
@@ -308,6 +338,8 @@ export default function MobileCharacterSheet({
 		return themeIndex !== -1 && themeIndex < character.trackers.storyThemes.length - 1;
 	}, [selectedTrackerId, character]);
 
+
+
 	// Helper functions for card reordering
 	const [isReorderingCard, setIsReorderingCard] = useState(false);
 
@@ -324,6 +356,8 @@ export default function MobileCharacterSheet({
 		reorderCards(cardIndex, cardIndex + 1);
 		setTimeout(() => setIsReorderingCard(false), 100);
 	};
+
+
 
 	// Build toolbelt context based on active tab and selection
 	const toolbeltContext: ToolbeltContext = useMemo(() => {
@@ -345,6 +379,8 @@ export default function MobileCharacterSheet({
 		}
 		return { type: 'none' };
 	}, [activeTab, character, safeCardIndex, selectedTrackerId]);
+
+
 
 	// Helper function to get card display name
 	const getCardTitle = (card: Card): string => {
@@ -406,11 +442,13 @@ export default function MobileCharacterSheet({
 		return t('Cards.themeCard') || 'Card';
 	};
 
+   
+   
 	// Helper function to render card preview (like in Drawer)
-	// Force SIDE_BY_SIDE mode for previews to prevent flip animations
+	// Force SIDE_BY_SIDE mode and front face for previews
 	const renderCardPreview = (card: Card) => {
 		const game = card.details.game;
-		const previewCard = { ...card, viewMode: 'SIDE_BY_SIDE' as const };
+		const previewCard = { ...card, viewMode: 'SIDE_BY_SIDE' as const, isFlipped: false };
 
 		if (game === 'LEGENDS') {
 			if (card.cardType === 'CHARACTER_CARD') {
@@ -480,6 +518,21 @@ export default function MobileCharacterSheet({
 			{/* Tab Navigation - Hidden when reordering cards */}
 			{!isReorderingCards && (
 			<div className="flex items-center border-b border-border bg-card">
+				{/* Toolbelt trigger button (left side for left-handed) */}
+				{!isMobileFABMode && isLeftHanded && (
+					<div className="px-2">
+						<IconButton
+							variant="ghost"
+							size="sm"
+							onClick={() => setIsToolbeltOpen(true)}
+							aria-label="Open actions"
+							className="h-8 w-8"
+						>
+							<Wrench className="h-4 w-4" />
+						</IconButton>
+					</div>
+				)}
+
 				<button
 					onClick={() => setActiveTab('trackers')}
 					className={cn(
@@ -510,8 +563,8 @@ export default function MobileCharacterSheet({
 					)}
 				</button>
 
-				{/* Toolbelt trigger button (only for bottom tabs mode with side-panel) */}
-				{!isMobileFABMode && (
+				{/* Toolbelt trigger button (right side for right-handed) */}
+				{!isMobileFABMode && !isLeftHanded && (
 					<div className="px-2">
 						<IconButton
 							variant="ghost"

@@ -10,6 +10,9 @@ import { X } from 'lucide-react';
 // -- Animation Imports --
 import { motion, AnimatePresence } from 'framer-motion';
 
+// -- Store Imports --
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
@@ -30,6 +33,8 @@ export default function ToolbeltSidePanel({
 	globalActions
 }: ToolbeltSidePanelProps) {
 	const { t } = useTranslation();
+	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
+	const isLeft = mobileHandedness === 'left';
 	const hasItemActions = itemActions.length > 0;
 	const hasGlobalActions = globalActions.length > 0;
 
@@ -49,11 +54,15 @@ export default function ToolbeltSidePanel({
 
 					{/* Side Panel */}
 					<motion.div
-						initial={{ x: '100%' }}
+						initial={{ x: isLeft ? '-100%' : '100%' }}
 						animate={{ x: 0 }}
-						exit={{ x: '100%' }}
+						exit={{ x: isLeft ? '-100%' : '100%' }}
 						transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-						className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-card border-l border-border shadow-2xl z-50 flex flex-col"
+						className={cn(
+							"fixed top-0 bottom-0 w-80 max-w-[85vw] bg-card shadow-2xl z-50 flex flex-col",
+							isLeft ? "left-0 border-r" : "right-0 border-l",
+							"border-border"
+						)}
 					>
 						{/* Header */}
 						<div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">

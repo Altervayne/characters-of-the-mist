@@ -10,6 +10,9 @@ import { Wrench, X } from 'lucide-react';
 // -- Animation Imports --
 import { motion, AnimatePresence } from 'framer-motion';
 
+// -- Store Imports --
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
@@ -52,6 +55,8 @@ export default function ToolbeltFAB({
 	activeTab,
 	isMenuFABExpanded
 }: ToolbeltFABProps) {
+	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
+	const isLeft = mobileHandedness === 'left';
 	const allActions = [...globalActions, ...itemActions];
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [scrollY, setScrollY] = useState(0);
@@ -124,7 +129,10 @@ export default function ToolbeltFAB({
 								exit={{ opacity: 0 }}
 								onScroll={handleScroll}
                         onClick={() => onOpenChange(!isOpen)}
-								className="fixed top-0 right-4 z-50 h-[calc(100vh-5rem)] w-64 overflow-y-auto overflow-x-visible scrollbar-hide perspective-1000"
+								className={cn(
+									"fixed top-0 z-50 h-[calc(100vh-5rem)] w-64 overflow-y-auto overflow-x-visible scrollbar-hide perspective-1000",
+									isLeft ? "left-4" : "right-4"
+								)}
 								style={{
                            paddingTop: `${THUMB_ZONE_Y}px`,
                            paddingBottom: `${(windowHeight - FAB_HEIGHT_OFFSET) - THUMB_ZONE_Y - ITEM_HEIGHT}px`,
@@ -132,7 +140,10 @@ export default function ToolbeltFAB({
                            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 40px), transparent 100%)'
                         }}
 							>
-								<div className="flex flex-col">
+								<div className={cn(
+									"flex flex-col w-full",
+									isLeft ? "items-start" : "items-end"
+								)}>
 									{allActions.map((action, index) => {
 										const Icon = action.icon;
 										const { scale } = getItemTransform(index);
@@ -157,38 +168,41 @@ export default function ToolbeltFAB({
 													}}
 													className="h-full"
 												>
-													<div
-														className="flex flex-row-reverse items-center gap-3 justify-start h-full"
+													<button
+														className={cn(
+															"flex items-center gap-3 h-full",
+															isLeft ? "justify-start flex-row" : "justify-end flex-row-reverse"
+														)}
+                                          onClick={(e) => {
+                                             e.stopPropagation()
+                                             action.onClick();
+                                             onOpenChange(false);
+                                          }}
 														style={{
 															transform: `scale(${scale})`,
-															transformOrigin: 'right center',
+															transformOrigin: isLeft ? 'left center' : 'right center',
 															willChange: 'transform'
 														}}
 													>
 														{/* Action button */}
-														<button
-															onClick={(e) => {
-                                                e.stopPropagation()
-																action.onClick();
-																onOpenChange(false);
-															}}
+														<div
 															className={cn(
-																"inline-flex items-center justify-center rounded-md h-11 w-11 shadow-lg",
+																"inline-flex items-center justify-center rounded-md h-11 w-11 shadow-lg shrink-0",
 																action.variant === 'destructive'
 																	? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
 																	: 'bg-primary text-primary-foreground hover:bg-primary/90'
 															)}
 														>
 															<Icon className="h-5 w-5" />
-														</button>
+														</div>
 
 														{/* Action label */}
-														<div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+														<div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg shrink-0">
 															<span className="text-sm font-medium whitespace-nowrap">
 																{action.label}
 															</span>
 														</div>
-													</div>
+													</button>
 												</motion.div>
 											</div>
 										);
@@ -206,10 +220,10 @@ export default function ToolbeltFAB({
 					className={cn(
 						"fixed z-51",
 						isOpen
-							? "bottom-4 right-4"
+							? isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
 							: activeTab === 'cards'
-								? "bottom-26 right-2"
-								: "bottom-16 right-4"
+								? isLeft ? "bottom-26 left-2" : "bottom-26 right-2"
+								: isLeft ? "bottom-16 left-4" : "bottom-16 right-4"
 					)}
 					whileTap={{ scale: 0.95 }}
 				>

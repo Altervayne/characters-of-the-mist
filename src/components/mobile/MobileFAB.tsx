@@ -11,6 +11,9 @@ import { IconButton } from '@/components/ui/icon-button';
 // -- Icon Imports --
 import { Menu, X, FolderOpen, Home, Settings } from 'lucide-react';
 
+// -- Store Imports --
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
@@ -38,6 +41,8 @@ export default function MobileFAB({
 }: MobileFABProps) {
 	const { t } = useTranslation();
 	const [isExpanded, setIsExpanded] = useState(false);
+	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
+	const isLeft = mobileHandedness === 'left';
 
 	const toggleExpanded = () => {
 		const newValue = !isExpanded;
@@ -98,7 +103,10 @@ export default function MobileFAB({
 			</AnimatePresence>
 
 			{/* Action Buttons */}
-			<div className="fixed bottom-20 right-4 z-50 flex flex-col-reverse items-end gap-3">
+			<div className={cn(
+				"fixed bottom-20 z-50 flex flex-col-reverse gap-3",
+				isLeft ? "left-4 items-start" : "right-4 items-end"
+			)}>
 				<AnimatePresence>
 					{isExpanded && actions.map((action, index) => {
 						const Icon = action.icon;
@@ -136,10 +144,10 @@ export default function MobileFAB({
 					className={cn(
 						"fixed z-50",
 						isExpanded
-							? "bottom-4 right-4"
+							? isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
 							: activeTab === 'sheet' && sheetActiveTab === 'cards'
-								? "bottom-14 right-2"
-								: "bottom-4 right-4"
+								? isLeft ? "bottom-14 left-2" : "bottom-14 right-2"
+								: isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
 					)}
 					whileTap={{ scale: 0.95 }}
 				>

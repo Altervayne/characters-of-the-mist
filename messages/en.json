@@ -289,6 +289,12 @@
          "fab": "Floating Button"
       },
 
+      "mobileHandedness": {
+         "title": "Mobile UI Side",
+         "left": "Left",
+         "right": "Right"
+      },
+
       "toolbeltMode": {
          "title": "Toolbelt Mode",
          "sidePanel": "Side Panel",

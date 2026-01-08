@@ -29,7 +29,9 @@ import {
 	Navigation,
 	Menu,
 	ChevronRight,
-	ChevronLeft
+	ChevronLeft,
+	MoveLeft,
+	MoveRight
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -118,8 +120,8 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 
 	const { resolvedTheme, setTheme: setMode } = useTheme();
 
-	const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode } = useAppSettingsStore();
-	const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode } = useAppSettingsActions();
+	const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness } = useAppSettingsStore();
+	const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness } = useAppSettingsActions();
 
 	const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
@@ -297,6 +299,29 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 							>
 								<Menu className="mr-2 h-5 w-5 shrink-0" />
 								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.fab') || 'FABs'}</span>
+							</Button>
+						</div>
+					</div>
+
+					{/* Mobile Handedness */}
+					<div className="space-y-2">
+						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileHandedness.title') || 'Button Position'}</Label>
+						<div className="grid grid-cols-2 gap-3">
+							<Button
+								variant={mobileHandedness === 'left' ? 'default' : 'outline'}
+								onClick={() => setMobileHandedness('left')}
+								className="h-auto min-h-12 text-base whitespace-normal py-3"
+							>
+								<MoveLeft className="mr-2 h-5 w-5 shrink-0" />
+								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.left') || 'Left'}</span>
+							</Button>
+							<Button
+								variant={mobileHandedness === 'right' ? 'default' : 'outline'}
+								onClick={() => setMobileHandedness('right')}
+								className="h-auto min-h-12 text-base whitespace-normal py-3"
+							>
+								<MoveRight className="mr-2 h-5 w-5 shrink-0" />
+								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.right') || 'Right'}</span>
 							</Button>
 						</div>
 					</div>
