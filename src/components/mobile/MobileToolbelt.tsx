@@ -18,6 +18,7 @@ interface MobileToolbeltProps {
 	activeTab?: SheetTab;
 	isMenuFABExpanded?: boolean;
 	onEnterCardReorderMode?: () => void;
+	onOpenAddCard?: () => void;
 }
 
 export default function MobileToolbelt({
@@ -27,10 +28,11 @@ export default function MobileToolbelt({
 	onOpenChange,
 	activeTab,
 	isMenuFABExpanded,
-	onEnterCardReorderMode
+	onEnterCardReorderMode,
+	onOpenAddCard
 }: MobileToolbeltProps) {
 	// Build action lists based on context and active tab
-	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode);
+	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode, onOpenAddCard);
 
 	// Render appropriate UI based on mode
 	if (mode === 'side-panel') {

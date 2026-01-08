@@ -13,12 +13,17 @@ import MobileSettings from './MobileSettings';
 import MobileAbout from './MobileAbout';
 import MobilePatchNotes from './MobilePatchNotes';
 import MobileMainMenu from './MobileMainMenu';
+import MobileAddCard from './MobileAddCard';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 
-type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'about' | 'patchNotes';
+// -- Type Imports --
+import type { CreateCardOptions } from '@/lib/types/creation';
+import type { Card } from '@/lib/types/character';
+
+type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'about' | 'patchNotes' | 'addCard';
 type SheetTab = 'trackers' | 'cards';
 type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
@@ -36,6 +41,10 @@ export default function MobileCharacterSheetPage() {
 	const [isReorderingCards, setIsReorderingCards] = useState(false);
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 	const character = useCharacterStore((state) => state.character);
+
+	// Card creation state
+	const { addCard } = useCharacterActions();
+	const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
 
 	// Track if we're handling a popstate event to avoid pushing duplicate history
 	const isNavigatingBack = useRef(false);
@@ -149,6 +158,18 @@ export default function MobileCharacterSheetPage() {
 		navigateToTab('patchNotes');
 	};
 
+	const handleOpenAddCard = () => {
+		setCardToEdit(null);
+		navigateToTab('addCard');
+	};
+
+	const handleConfirmCard = (options: CreateCardOptions) => {
+		addCard(options);
+		setCardToEdit(null);
+		navigateToTab('sheet');
+		navigateToSheetTab('cards');
+	};
+
 	// If no character is loaded, show the main menu
 	if (!character) {
 		return (
@@ -171,6 +192,7 @@ export default function MobileCharacterSheetPage() {
 						isMenuFABExpanded={isMenuFABExpanded}
 						isReorderingCards={isReorderingCards}
 						onReorderingCardsChange={setReorderingWithHistory}
+						onOpenAddCard={handleOpenAddCard}
 					/>
 				)}
 				{activeTab === 'drawer' && (
@@ -197,10 +219,19 @@ export default function MobileCharacterSheetPage() {
 				{activeTab === 'patchNotes' && (
 					<MobilePatchNotes onBack={() => navigateToTab('menu')} />
 				)}
+				{activeTab === 'addCard' && (
+					<MobileAddCard
+						onBack={() => navigateToTab('sheet')}
+						onConfirm={handleConfirmCard}
+						mode={cardToEdit ? 'edit' : 'create'}
+						cardData={cardToEdit ?? undefined}
+						game={character.game}
+					/>
+				)}
 			</div>
 
-			{/* Navigation - Hidden when reordering cards or in settings/about/patchNotes */}
-			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'about' && activeTab !== 'patchNotes' && (
+			{/* Navigation - Hidden when reordering cards or in settings/about/patchNotes/addCard */}
+			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'about' && activeTab !== 'patchNotes' && activeTab !== 'addCard' && (
 				!isMobileFABMode ? (
 					<MobileBottomTabs activeTab={activeTab as NavigationTabId} onTabChange={navigateToTab} />
 				) : (

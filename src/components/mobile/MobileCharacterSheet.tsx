@@ -62,6 +62,7 @@ interface MobileCharacterSheetProps {
 	isMenuFABExpanded?: boolean;
 	isReorderingCards?: boolean;
 	onReorderingCardsChange?: (isReordering: boolean) => void;
+	onOpenAddCard?: () => void;
 }
 
 export default function MobileCharacterSheet({
@@ -71,7 +72,8 @@ export default function MobileCharacterSheet({
 	onToolbeltOpenChange: controlledOnToolbeltOpenChange,
 	isMenuFABExpanded,
 	isReorderingCards: controlledIsReorderingCards,
-	onReorderingCardsChange: controlledOnReorderingCardsChange
+	onReorderingCardsChange: controlledOnReorderingCardsChange,
+	onOpenAddCard
 }: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
 	const [internalActiveTab, setInternalActiveTab] = useState<SheetTab>('trackers');
@@ -857,6 +859,7 @@ export default function MobileCharacterSheet({
 						setIsReorderingCards(true);
 						setIsToolbeltOpen(false);
 					}}
+					onOpenAddCard={onOpenAddCard}
 				/>
 			)}
 

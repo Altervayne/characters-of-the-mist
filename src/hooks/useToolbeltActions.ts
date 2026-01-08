@@ -32,13 +32,13 @@ import { exportToFile } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
-import type { Card, CardViewMode } from '@/lib/types/character';
+import type { CardViewMode } from '@/lib/types/character';
 
 /**
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		flipCard,
@@ -54,8 +54,15 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		addStoryTag
 	} = useCharacterActions();
 
-	const { setCardDialogOpen, setCardToEdit, toggleIsEditing } = useAppGeneralStateStore((state) => state.actions);
+	const { toggleIsEditing, setCardDialogOpen } = useAppGeneralStateStore((state) => state.actions);
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
+
+	// Desktop manages cardToEdit locally in CharacterSheetPage, not in the store
+	// This is a no-op placeholder for desktop compatibility
+	const setCardToEdit = (_card: any) => {
+		// Desktop CharacterSheetPage handles this locally
+		// Mobile uses onOpenAddCard callback instead
+	};
 
 	return useMemo(() => {
 		const itemActions: ToolbeltAction[] = [];
@@ -111,8 +118,13 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				label: t('Toolbelt.addCard') || 'Add Card',
 				icon: PlusCircle,
 				onClick: () => {
-					setCardToEdit(null);
-					setCardDialogOpen(true);
+					if (onOpenAddCard) {
+						onOpenAddCard();
+					} else {
+						// Fallback to desktop dialog for desktop mode
+						setCardToEdit(null);
+						setCardDialogOpen(true);
+					}
 				},
 				show: true
 			});
@@ -159,15 +171,17 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 			// === ORDER: Delete > Flip/ViewMode/Export > Edit ===
 
-			// Delete action (top of item actions)
-			itemActions.push({
-				id: 'delete-card',
-				label: t('Toolbelt.delete') || 'Delete',
-				icon: Trash2,
-				variant: 'destructive',
-				onClick: () => deleteCard(card.id),
-				show: true
-			});
+			// Delete action (top of item actions) - NOT allowed for CHARACTER_CARD
+			if (card.cardType !== 'CHARACTER_CARD') {
+				itemActions.push({
+					id: 'delete-card',
+					label: t('Toolbelt.delete') || 'Delete',
+					icon: Trash2,
+					variant: 'destructive',
+					onClick: () => deleteCard(card.id),
+					show: true
+				});
+			}
 
 			// Flip card action
 			itemActions.push({
@@ -379,6 +393,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		setCardDialogOpen,
 		setCardToEdit,
 		toggleIsEditing,
-		onEnterCardReorderMode
+		onEnterCardReorderMode,
+		onOpenAddCard
 	]);
 }
