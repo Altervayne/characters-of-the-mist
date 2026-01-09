@@ -112,15 +112,7 @@ CardRenderer.displayName = 'CardRenderer';
 
 
 
-export default function CharacterSheetPage() {
-   // --- Device Detection ---
-   const { isMobile } = useDeviceType();
-
-   // If mobile, render mobile-specific page
-   if (isMobile) {
-      return <MobileCharacterSheetPage />;
-   }
-
+function DesktopCharacterSheetPage() {
    // --- Localization ---
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();
@@ -956,4 +948,14 @@ export default function CharacterSheetPage() {
          </DragOverlay>
       </DndContext>
    );
+}
+
+export default function CharacterSheetPage() {
+   const { isMobile } = useDeviceType();
+
+   if (isMobile) {
+      return <MobileCharacterSheetPage />;
+   }
+
+   return <DesktopCharacterSheetPage />;
 }

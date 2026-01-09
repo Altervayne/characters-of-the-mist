@@ -586,7 +586,7 @@ export default function MobileCharacterSheet({
 			<div className="flex-1 flex flex-col overflow-hidden">
 				{activeTab === 'trackers' && (
 					<div
-						className="h-full overflow-y-auto p-4 pb-32"
+						className={cn("h-full overflow-y-auto p-4", isMobileFABMode && "pb-32")}
 						onTouchStart={handleTrackersAreaTouchStart}
 						onTouchEnd={handleTrackersAreaTouchEnd}
 					>
@@ -718,7 +718,7 @@ export default function MobileCharacterSheet({
 					<>
 						{/* Card Reorder View or Normal Card Display */}
 						{isReorderingCards ? (
-							<div className="flex-1 overflow-y-auto p-4 pb-32">
+							<div className={cn("flex-1 overflow-y-auto p-4", isMobileFABMode && "pb-32")}>
 								<div className="max-w-2xl mx-auto space-y-4">
 									{/* Header */}
 									<div className="flex items-center justify-center mb-4 sticky top-0 bg-background z-10 pb-2">
@@ -773,7 +773,7 @@ export default function MobileCharacterSheet({
 							</div>
 						) : (
 							<div
-								className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-32"
+								className={cn("flex-1 overflow-y-auto overflow-x-hidden p-4", isMobileFABMode && "pb-32")}
 								onTouchStart={handleCardAreaTouchStart}
 								onTouchEnd={handleCardAreaTouchEnd}
 							>
