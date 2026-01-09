@@ -184,32 +184,49 @@ export const useCharacterStore = create<CharacterState>()(
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
 
-                     const updatedCharacter = { ...state.character, name };
-
-                     updatedCharacter.cards = updatedCharacter.cards.map(card => {
-                        if (card.cardType === 'CHARACTER_CARD' && card.details.game === 'LEGENDS') {
-                           const details = card.details as LegendsHeroDetails;
-                           return {
-                              ...card,
-                              details: {
+                     // Update character name and sync to all character cards
+                     const updatedCards = state.character.cards.map(card => {
+                        // Update characterName on all character cards that have this field
+                        if (card.cardType === 'CHARACTER_CARD') {
+                           if (card.details.game === 'LEGENDS') {
+                              const details = card.details as LegendsHeroDetails;
+                              return {
+                                 ...card,
+                                 details: {
+                                       ...details,
+                                       characterName: name,
+                                 }
+                              };
+                           } else if (card.details.game === 'CITY_OF_MIST') {
+                              const details = card.details as CityRiftDetails;
+                              return {
+                                 ...card,
+                                 details: {
                                     ...details,
                                     characterName: name,
-                              }
-                           };
-                        } else if (card.details.game === 'CITY_OF_MIST') {
-                           const details = card.details as CityRiftDetails;
-                           return {
-                              ...card,
-                              details: {
-                                 ...details,
-                                 characterName: name,
-                              }
-                           };
+                                 }
+                              };
+                           } else if (card.details.game === 'OTHERSCAPE') {
+                              const details = card.details as OtherscapeCharacterDetails;
+                              return {
+                                 ...card,
+                                 details: {
+                                    ...details,
+                                    characterName: name,
+                                 }
+                              };
+                           }
                         }
                         return card;
                      });
 
-                     return { character: updatedCharacter };
+                     return {
+                        character: {
+                           ...state.character,
+                           name,
+                           cards: updatedCards
+                        }
+                     };
                   });
                },
                setGame: (game) => {
@@ -453,11 +470,33 @@ export const useCharacterStore = create<CharacterState>()(
                },
                updateCardDetails: (cardId, newDetails) => {
                   set(state => {
-                  useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                  return updateCardInState(state, cardId, card => ({
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+
+                     // Find the card being updated
+                     const card = state.character.cards.find(c => c.id === cardId);
+
+                     // Check if this is a character card and characterName is being updated
+                     const isCharacterCard = card && card.cardType === 'CHARACTER_CARD';
+                     const isUpdatingCharacterName = 'characterName' in newDetails && typeof newDetails.characterName === 'string';
+
+                     // Update the card details
+                     const updatedState = updateCardInState(state, cardId, card => ({
                         ...card,
                         details: { ...card.details, ...newDetails } as CardDetails
-                     }))
+                     }));
+
+                     // If updating character name on character card, sync it to Character.name
+                     if (isCharacterCard && isUpdatingCharacterName && updatedState.character) {
+                        return {
+                           character: {
+                              ...updatedState.character,
+                              name: newDetails.characterName as string
+                           }
+                        };
+                     }
+
+                     return updatedState;
                   });
                },
                reorderCards: (startIndex, endIndex) => {

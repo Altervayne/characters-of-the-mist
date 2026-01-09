@@ -13,6 +13,7 @@ The drop zone for items in the drawer has now been expanded to always take, at m
 
 ### 🐛 Bugfixes
 Found and fixed a few missing localized strings across the app.
+Fixed Character Name inputs in Character Card and Page Header not updating each other.
 `
    },
    {
