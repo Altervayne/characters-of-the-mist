@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -187,7 +187,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          return;
       }
 
-      setUnloadCountdown(UNLOAD_TIMER_SECONDS);
+      startTransition(() => {
+         setUnloadCountdown(UNLOAD_TIMER_SECONDS);
+      });
 
       const timer = setInterval(() => {
          setUnloadCountdown((prevCountdown) => {

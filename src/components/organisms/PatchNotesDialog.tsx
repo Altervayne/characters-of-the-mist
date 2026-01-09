@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -42,15 +42,17 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
 
    useEffect(() => {
       if (isOpen) {
-         if (initialPatchNotesVersion) {
-            const index = patchNotes.findIndex(note => note.version === initialPatchNotesVersion);
-            if (index !== -1) {
-               setCurrentIndex(index);
+         startTransition(() => {
+            if (initialPatchNotesVersion) {
+               const index = patchNotes.findIndex(note => note.version === initialPatchNotesVersion);
+               if (index !== -1) {
+                  setCurrentIndex(index);
+               }
+               setInitialPatchNotesVersion(null);
+            } else {
+               setCurrentIndex(0);
             }
-            setInitialPatchNotesVersion(null);
-         } else {
-            setCurrentIndex(0);
-         }
+         });
       }
    }, [isOpen]);
 

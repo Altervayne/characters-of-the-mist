@@ -17,7 +17,7 @@ interface SelectableTrackerProps {
 	children: ReactNode;
 }
 
-const LONG_PRESS_DURATION = 500; // ms
+const LONG_PRESS_DURATION = 500;
 
 export default function SelectableTracker({
 	tracker,
@@ -26,7 +26,7 @@ export default function SelectableTracker({
 	children
 }: SelectableTrackerProps) {
 	const [isPressing, setIsPressing] = useState(false);
-	const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
 	const handleTouchStart = (e: React.TouchEvent) => {

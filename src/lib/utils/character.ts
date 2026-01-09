@@ -24,7 +24,7 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
 
 
    switch (game) {
-      case 'CITY_OF_MIST':
+      case 'CITY_OF_MIST': {
          const riftCardId = cuid();
          return {
             ...baseCharacter,
@@ -48,8 +48,9 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
                },
             ],
          };
+      }
 
-      case 'OTHERSCAPE':
+      case 'OTHERSCAPE': {
          const characterCardId = cuid();
          return {
             ...baseCharacter,
@@ -75,9 +76,10 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
                },
             ],
          };
+      }
 
       case 'LEGENDS':
-      default:
+      default: {
          const heroCardId = cuid();
          return {
             ...baseCharacter,
@@ -100,5 +102,6 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
                },
             ],
          };
+      }
    }
 }

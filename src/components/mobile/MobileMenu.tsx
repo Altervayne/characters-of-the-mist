@@ -56,7 +56,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			label: t('MobileMenu.save') || 'Save Character',
 			icon: Save,
 			onClick: () => {
-				// TODO: Implement save in Phase 6
+				// TODO: Implement save
 			},
 			show: !!character,
          destructive: false,
@@ -66,7 +66,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			label: t('MobileMenu.export') || 'Export Character',
 			icon: FileDown,
 			onClick: () => {
-				// TODO: Implement export in Phase 6
+				// TODO: Implement export
 			},
 			show: !!character,
          destructive: false,
@@ -76,7 +76,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			label: t('MobileMenu.import') || 'Import',
 			icon: FileUp,
 			onClick: () => {
-				// TODO: Implement import in Phase 6
+				// TODO: Implement import
 			},
 			show: true,
          destructive: false,

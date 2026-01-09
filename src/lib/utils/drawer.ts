@@ -445,7 +445,7 @@ export function addItemRecursively(folders: Folder[], newItem: DrawerItem, paren
    let found = false;
 
    const updated = folders.map(folder => {
-      if (found) return folder; // Early exit
+      if (found) return folder;
 
       if (folder.id === parentFolderId) {
          found = true;

@@ -69,7 +69,7 @@ interface CardFlipWrapperProps {
  * ```
  */
 export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperProps>(
-  ({ effectiveViewMode, isDrawerPreview, isSnapshot, isMobile, useVerticalStack, card, isHovered, hoverHandlers,
+  ({ effectiveViewMode, isDrawerPreview, isSnapshot, useVerticalStack, card, isHovered, hoverHandlers,
      isEditing, dragAttributes, dragListeners, cardTheme, onExport, onCycleViewMode,
      onFlip, onDelete, onEditCard, cardFront, cardBack }, ref) => {
 

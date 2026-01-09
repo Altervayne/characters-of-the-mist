@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 
 // -- Other Library Imports --
 import { gt as isVersionGreaterThan } from 'semver';
@@ -69,33 +69,38 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
       const willShowWelcome = !hasVisited;
       const willShowPatchNotes = !willShowWelcome && isVersionGreaterThan(APP_VERSION, lastVisitedVersion);
 
-      setShouldShowWelcome(willShowWelcome);
-      setShouldShowPatchNotes(willShowPatchNotes);
+      startTransition(() => {
+         setShouldShowWelcome(willShowWelcome);
+         setShouldShowPatchNotes(willShowPatchNotes);
 
-      if (willShowLegacy) {
-         setCurrentDialog('legacy');
-      } else if (willShowWelcome) {
-         setCurrentDialog('welcome');
-      } else if (willShowPatchNotes) {
-         let firstUnreadIndex = 0;
-         
-         for (let i = patchNotes.length - 1; i >= 0; i--) {
-            if (isVersionGreaterThan(patchNotes[i].version, lastVisitedVersion)) {
-               firstUnreadIndex = i;
-               break;
+         if (willShowLegacy) {
+            setCurrentDialog('legacy');
+         } else if (willShowWelcome) {
+            setCurrentDialog('welcome');
+         } else if (willShowPatchNotes) {
+            let firstUnreadIndex = 0;
+
+            for (let i = patchNotes.length - 1; i >= 0; i--) {
+               if (isVersionGreaterThan(patchNotes[i].version, lastVisitedVersion)) {
+                  firstUnreadIndex = i;
+                  break;
+               }
             }
-         }
 
-         const firstUnreadVersion = patchNotes[firstUnreadIndex]?.version || patchNotes[0]?.version;
-         setInitialPatchNotesVersion(firstUnreadVersion);
-         setCurrentDialog('patchNotes');
-      } else {
-         setIsStartupFlow(false)
-         setCurrentDialog(null)
-      }
+            const firstUnreadVersion = patchNotes[firstUnreadIndex]?.version || patchNotes[0]?.version;
+            setInitialPatchNotesVersion(firstUnreadVersion);
+            setCurrentDialog('patchNotes');
+         } else {
+            setIsStartupFlow(false)
+            setCurrentDialog(null)
+         }
+      });
 
       appSettings.actions.setLastVisitedVersion(APP_VERSION);
-      setDidInit(true);
+
+      startTransition(() => {
+         setDidInit(true);
+      });
    }, [didInit]);
 
    useEffect(() => {

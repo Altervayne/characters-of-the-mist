@@ -145,8 +145,8 @@ export interface OtherscapeLoadoutDetails {
    game: 'OTHERSCAPE';
    attention: number;
    crack: number; // Loadout uses crack
-   mainTag: Tag; // Not displayed, but kept for structural consistency
-   powerTags: Tag[]; // Gear items (isActive = loaded, !isActive = unloaded)
+   mainTag: Tag; // Not displayed, but kept for consistency
+   powerTags: Tag[]; // Gear items (!isScratched = loaded, isScratched = unloaded)
    weaknessTags: Tag[]; // Flaws
    description: string | null;
    improvements: BlandTag[];

@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -83,32 +83,36 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
 
    useEffect(() => {
       if (isOpen && mode === 'edit' && cardData) {
-         if (game === 'LEGENDS') {
-            const details = cardData.details as LegendsThemeDetails;
-            setCardType(cardData.cardType as 'CHARACTER_THEME');
-            setThemeType(details.themeType);
-            setThemebook(details.themebook);
-            setPowerTagsCount(details.powerTags.length);
-            setWeaknessTagsCount(details.weaknessTags.length);
-         } else if (game === 'CITY_OF_MIST') {
-            const details = cardData.details as CityThemeDetails;
-            setCardType(cardData.cardType as 'CHARACTER_THEME');
-            setThemeType(details.themeType);
-            setThemebook(details.themebook);
-            setPowerTagsCount(details.powerTags.length);
-            setWeaknessTagsCount(details.weaknessTags.length);
-         } else if (game === 'OTHERSCAPE') {
-            const details = cardData.details as OtherscapeThemeDetails;
-            setCardType(cardData.cardType as 'CHARACTER_THEME');
-            setThemeType(details.themeType);
-            setThemebook(details.themebook);
-            setPowerTagsCount(details.powerTags.length);
-            setWeaknessTagsCount(details.weaknessTags.length);
-         }
+         startTransition(() => {
+            if (game === 'LEGENDS') {
+               const details = cardData.details as LegendsThemeDetails;
+               setCardType(cardData.cardType as 'CHARACTER_THEME');
+               setThemeType(details.themeType);
+               setThemebook(details.themebook);
+               setPowerTagsCount(details.powerTags.length);
+               setWeaknessTagsCount(details.weaknessTags.length);
+            } else if (game === 'CITY_OF_MIST') {
+               const details = cardData.details as CityThemeDetails;
+               setCardType(cardData.cardType as 'CHARACTER_THEME');
+               setThemeType(details.themeType);
+               setThemebook(details.themebook);
+               setPowerTagsCount(details.powerTags.length);
+               setWeaknessTagsCount(details.weaknessTags.length);
+            } else if (game === 'OTHERSCAPE') {
+               const details = cardData.details as OtherscapeThemeDetails;
+               setCardType(cardData.cardType as 'CHARACTER_THEME');
+               setThemeType(details.themeType);
+               setThemebook(details.themebook);
+               setPowerTagsCount(details.powerTags.length);
+               setWeaknessTagsCount(details.weaknessTags.length);
+            }
+         });
       } else {
-         setCardType('');
-         setThemeType(game === 'LEGENDS' ? 'Origin' : game === 'OTHERSCAPE' ? 'Mythos' : 'Mythos');
-         setThemebook('');
+         startTransition(() => {
+            setCardType('');
+            setThemeType(game === 'LEGENDS' ? 'Origin' : game === 'OTHERSCAPE' ? 'Mythos' : 'Mythos');
+            setThemebook('');
+         });
       }
    }, [isOpen, mode, cardData, game]);
 

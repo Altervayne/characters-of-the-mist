@@ -36,7 +36,7 @@ function hasTouchCapability(): boolean {
 	return (
 		'ontouchstart' in window ||
 		navigator.maxTouchPoints > 0 ||
-		// @ts-ignore - legacy property
+		// @ts-expect-error - msMaxTouchPoints is a legacy IE property not in TypeScript types
 		navigator.msMaxTouchPoints > 0
 	);
 }
@@ -49,11 +49,6 @@ function isMobileScreenWidth(): boolean {
 
 // Auto-detect device type
 function detectDeviceType(): DeviceType {
-	// Weight factors:
-	// - User agent: 40%
-	// - Touch capability: 30%
-	// - Screen width: 30%
-
 	const isUserAgentMobile = isMobileUserAgent();
 	const hasTouch = hasTouchCapability();
 	const isSmallScreen = isMobileScreenWidth();
@@ -76,13 +71,13 @@ export function useDeviceType(): UseDeviceTypeResult {
 
 	// Re-detect on window resize (debounced)
 	useEffect(() => {
-		let timeoutId: NodeJS.Timeout;
+		let timeoutId: ReturnType<typeof setTimeout>;
 
 		const handleResize = () => {
 			clearTimeout(timeoutId);
 			timeoutId = setTimeout(() => {
 				setDetectedDeviceType(detectDeviceType());
-			}, 200); // 200ms debounce
+			}, 200);
 		};
 
 		window.addEventListener('resize', handleResize);

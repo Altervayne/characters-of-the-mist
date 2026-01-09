@@ -74,8 +74,8 @@ interface CharacterState {
       unloadCharacter: () => void;
       setGame: (game: Character['game']) => void;
       updateCharacterName: (name: string) => void;
-      // --- Card Actions --- 
-      addCard: (options: CreateCardOptions) => void;
+      // --- Card Actions ---
+      addCard: (options: CreateCardOptions) => string;
       addImportedCard: (card: Card, index?: number) => void;
       deleteCard: (cardId: string) => void;
       updateCardDetails: (cardId: string, newDetails: Partial<CardDetails>) => void;
@@ -238,13 +238,14 @@ export const useCharacterStore = create<CharacterState>()(
                },
                // --- Card Actions ---
                addCard: (options) => {
+                  const newCardId = cuid();
                   set((state) => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     
+
                      let newCard: Card | null = null;
                      const baseCard = {
-                        id: cuid(),
+                        id: newCardId,
                         order: state.character.cards.length,
                         isFlipped: false,
                      };
@@ -275,7 +276,7 @@ export const useCharacterStore = create<CharacterState>()(
                               newCard = {
                                  ...baseCard,
                                  cardType: 'CHARACTER_THEME',
-                                 title: `${state.character.name}'s Theme Card - ${options.themebook + '/' || ''}${options.themeType}` || '',
+                                 title: `${state.character.name}'s Theme Card - ${options.themebook ? options.themebook + '/' : ''}${options.themeType}`,
                                  details: {
                                     game: 'LEGENDS',
                                     themebook: options.themebook || '',
@@ -297,7 +298,7 @@ export const useCharacterStore = create<CharacterState>()(
                            newCard = {
                               ...baseCard,
                               cardType: 'CHARACTER_THEME',
-                              title: `${state.character.name}'s Theme Card - ${options.themebook + '/' || ''}${options.themeType}` || '',
+                              title: `${state.character.name}'s Theme Card - ${options.themebook ? options.themebook + '/' : ''}${options.themeType}`,
                               details: {
                                  game: 'CITY_OF_MIST',
                                  themebook: options.themebook || '',
@@ -333,7 +334,7 @@ export const useCharacterStore = create<CharacterState>()(
                            newCard = {
                               ...baseCard,
                               cardType: 'CHARACTER_THEME',
-                              title: `${state.character.name}'s Theme Card - ${options.themebook + '/' || ''}${options.themeType}` || '',
+                              title: `${state.character.name}'s Theme Card - ${options.themebook ? options.themebook + '/' : ''}${options.themeType}`,
                               details: {
                                  game: 'OTHERSCAPE',
                                  themebook: options.themebook || '',
@@ -399,6 +400,7 @@ export const useCharacterStore = create<CharacterState>()(
                         },
                      };
                   });
+                  return newCardId;
                },
                addImportedCard: (card, index) => {
                   set((state) => {
@@ -1150,7 +1152,7 @@ export const useCharacterStore = create<CharacterState>()(
          }),
          {
             name: 'characters-of-the-mist_character-storage',
-            storage: createDebouncedStorage(300), // 300ms debounce to reduce localStorage writes
+            storage: createDebouncedStorage(300),
             partialize: (state) => ({ character: state.character }),
             version: STORE_VERSION,
             migrate: (persistedState, _version) => {

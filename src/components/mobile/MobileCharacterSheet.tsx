@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
@@ -63,6 +63,7 @@ interface MobileCharacterSheetProps {
 	isReorderingCards?: boolean;
 	onReorderingCardsChange?: (isReordering: boolean) => void;
 	onOpenAddCard?: () => void;
+	initialCardId?: string | null;
 }
 
 export default function MobileCharacterSheet({
@@ -73,7 +74,8 @@ export default function MobileCharacterSheet({
 	isMenuFABExpanded,
 	isReorderingCards: controlledIsReorderingCards,
 	onReorderingCardsChange: controlledOnReorderingCardsChange,
-	onOpenAddCard
+	onOpenAddCard,
+	initialCardId
 }: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
 	const [internalActiveTab, setInternalActiveTab] = useState<SheetTab>('trackers');
@@ -107,6 +109,18 @@ export default function MobileCharacterSheet({
 	// Card navigation state
 	const [currentCardIndex, setCurrentCardIndex] = useState(0);
 
+	// Navigate to a specific card when initialCardId changes
+	useEffect(() => {
+		if (initialCardId && character?.cards) {
+			const cardIndex = character.cards.findIndex(card => card.id === initialCardId);
+			if (cardIndex !== -1) {
+				startTransition(() => {
+					setCurrentCardIndex(cardIndex);
+				});
+			}
+		}
+	}, [initialCardId]);
+   
 	// Toolbelt context state
 	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
 	const [isReorderingTracker, setIsReorderingTracker] = useState(false);

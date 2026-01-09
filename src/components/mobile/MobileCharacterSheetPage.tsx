@@ -2,7 +2,7 @@
 // Main mobile page that orchestrates the mobile experience
 
 // -- React Imports --
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 
 // -- Component Imports --
 import MobileCharacterSheet from './MobileCharacterSheet';
@@ -45,9 +45,19 @@ export default function MobileCharacterSheetPage() {
 	// Card creation state
 	const { addCard } = useCharacterActions();
 	const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
+	const [newlyCreatedCardId, setNewlyCreatedCardId] = useState<string | null>(null);
 
 	// Track if we're handling a popstate event to avoid pushing duplicate history
 	const isNavigatingBack = useRef(false);
+
+	// Clear newly created card ID when navigating away from sheet tab
+	useEffect(() => {
+		if (activeTab !== 'sheet' || sheetActiveTab !== 'cards') {
+			startTransition(() => {
+				setNewlyCreatedCardId(null);
+			});
+		}
+	}, [activeTab, sheetActiveTab]);
 
 	// Helper function to push current state to history
 	const pushHistoryState = (state: HistoryState) => {
@@ -133,13 +143,13 @@ export default function MobileCharacterSheetPage() {
 	}, []);
 
 	const handleStartTour = () => {
-		// TODO: Implement tour for mobile if needed
+		// TODO: Implement tour for mobile
 		console.log('Tour not yet implemented for mobile');
 	};
 
 	const handleOpenDrawer = () => {
 		navigateToTab('drawer');
-		// TODO: Implement drawer opening in Phase 4
+		// TODO: Implement drawer opening
 	};
 
 	const handleOpenMenu = () => {
@@ -164,8 +174,9 @@ export default function MobileCharacterSheetPage() {
 	};
 
 	const handleConfirmCard = (options: CreateCardOptions) => {
-		addCard(options);
+		const cardId = addCard(options);
 		setCardToEdit(null);
+		setNewlyCreatedCardId(cardId);
 		navigateToTab('sheet');
 		navigateToSheetTab('cards');
 	};
@@ -193,6 +204,7 @@ export default function MobileCharacterSheetPage() {
 						isReorderingCards={isReorderingCards}
 						onReorderingCardsChange={setReorderingWithHistory}
 						onOpenAddCard={handleOpenAddCard}
+						initialCardId={newlyCreatedCardId}
 					/>
 				)}
 				{activeTab === 'drawer' && (

@@ -32,7 +32,7 @@ import { exportToFile } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
-import type { CardViewMode } from '@/lib/types/character';
+import type { Card, CardViewMode } from '@/lib/types/character';
 
 /**
  * Hook to build action lists for the Toolbelt based on the current context.
@@ -51,7 +51,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		upgradeStoryTagToTheme,
 		downgradeStoryThemeToTag,
 		addStatus,
-		addStoryTag
+		addStoryTag,
+      addStoryTheme
 	} = useCharacterActions();
 
 	const { toggleIsEditing, setCardDialogOpen } = useAppGeneralStateStore((state) => state.actions);
@@ -59,7 +60,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 	// Desktop manages cardToEdit locally in CharacterSheetPage, not in the store
 	// This is a no-op placeholder for desktop compatibility
-	const setCardToEdit = (_card: any) => {
+	const setCardToEdit = (_card: Card | null) => {
 		// Desktop CharacterSheetPage handles this locally
 		// Mobile uses onOpenAddCard callback instead
 	};
@@ -73,7 +74,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		const canUndo = (pastStates?.length ?? 0) > 1;
 		const canRedo = (futureStates?.length ?? 0) > 0;
 
-		// === TOP PRIORITY: Undo/Redo (always visible, grayed when disabled) ===
+		// --- Undo/Redo (always visible, grayed when disabled) ---
 		globalActions.push({
 			id: 'undo',
 			label: t('Toolbelt.undo') || 'Undo',
@@ -90,7 +91,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			show: true
 		});
 
-		// === Edit Mode Toggle (in FAB mode) ===
+		// --- Edit Mode Toggle (in FAB mode) ---
 		globalActions.push({
 			id: 'toggle-edit-mode',
 			label: isEditing ? (t('Toolbelt.playMode') || 'Play Mode') : (t('Toolbelt.editMode') || 'Edit Mode'),
@@ -99,7 +100,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			show: true
 		});
 
-		// === BOTTOM: Context-aware Add buttons ===
+		// --- Context-aware Add buttons ---
 		// Add Card (only on cards tab)
 		if (activeTab === 'cards') {
 			// Reorder Cards action
@@ -121,7 +122,6 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					if (onOpenAddCard) {
 						onOpenAddCard();
 					} else {
-						// Fallback to desktop dialog for desktop mode
 						setCardToEdit(null);
 						setCardDialogOpen(true);
 					}
@@ -152,7 +152,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				id: 'add-story-theme',
 				label: t('Toolbelt.addStoryTheme') || 'Add Story Theme',
 				icon: Sparkles,
-				onClick: () => addStoryTag(), // Story themes start as tags and get upgraded
+				onClick: () => addStoryTheme(),
 				show: true
 			});
 		}
@@ -169,9 +169,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		if (context.type === 'card') {
 			const card = context.card;
 
-			// === ORDER: Delete > Flip/ViewMode/Export > Edit ===
+			// --- Delete, Flip/ViewMode/Export, Edit ---
 
-			// Delete action (top of item actions) - NOT allowed for CHARACTER_CARD
+			// Delete action - NOT allowed for CHARACTER_CARD
 			if (card.cardType !== 'CHARACTER_CARD') {
 				itemActions.push({
 					id: 'delete-card',
@@ -223,7 +223,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				show: true
 			});
 
-			// Edit themebook/type action (only for CHARACTER_THEME cards, at bottom)
+			// Edit themebook/type action
 			if (card.cardType === 'CHARACTER_THEME') {
 				itemActions.push({
 					id: 'edit-themebook',
@@ -390,6 +390,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		downgradeStoryThemeToTag,
 		addStatus,
 		addStoryTag,
+      addStoryTheme,
 		setCardDialogOpen,
 		setCardToEdit,
 		toggleIsEditing,

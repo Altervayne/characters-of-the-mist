@@ -342,7 +342,7 @@ export const useDrawerStore = create<DrawerState>()(
          }),
          {
             name: 'characters-of-the-mist_drawer-storage',
-            storage: createDebouncedStorage(300), // 300ms debounce to reduce localStorage writes
+            storage: createDebouncedStorage(300),
             partialize: (state) => ({ drawer: state.drawer }),
             version: STORE_VERSION,
             migrate: (persistedState, _version) => {
