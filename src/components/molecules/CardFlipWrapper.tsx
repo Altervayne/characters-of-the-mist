@@ -7,7 +7,7 @@ import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Component Imports --
-import { ToolbarHandle } from './toolbar-handle';
+import { ToolbarHandle } from './ToolbarHandle';
 
 // -- Type Imports --
 import type { Card as CardData } from '@/lib/types/character';
@@ -42,6 +42,8 @@ interface CardFlipWrapperProps {
   cardFront: React.ReactNode;
   cardBack: React.ReactNode;
 }
+
+
 
 /**
  * Wrapper component that handles card flip and side-by-side view modes.

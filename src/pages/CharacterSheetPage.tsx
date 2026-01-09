@@ -27,31 +27,31 @@ import { findFolder } from '@/lib/utils/drawer';
 import { customCollisionDetection, mapItemToStorableInfo } from '@/lib/utils/dnd';
 import { exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
-import { DRAG_TYPES } from '@/lib/constants/drag-drop';
+import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- DnD Component Imports --
 import { Sortable, DragLayoutWrapper } from '@/components/dnd';
 
 // -- Component Imports --
-import { CommandPalette } from '@/components/organisms/command-palette';
-import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
-import { CityThemeCard } from '@/components/organisms/city-theme-card';
-import { OtherscapeThemeCard } from '@/components/organisms/otherscape-theme-card';
-import { HeroCard } from '@/components/organisms/hero-card';
-import { RiftCard } from '@/components/organisms/rift-card';
-import { OtherscapeCharacterCard } from '@/components/organisms/otherscape-character-card';
-import { StatusTrackerCard } from '@/components/molecules/status-tracker';
-import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
-import { StoryThemeTrackerCard } from '@/components/organisms/story-theme-tracker';
-import { AddCardButton } from '@/components/molecules/add-theme-card-button';
-import { CreateCardDialog } from '@/components/organisms/create-card-dialog';
-import { CompactItemEntry, Drawer } from '@/components/organisms/drawer';
-import { DrawerItemPreview, FolderPreview } from '@/components/molecules/drawer-item-preview';
-import { SidebarMenu } from '@/components/organisms/sidebar-menu';
-import { CharacterLoadDropZone } from '@/components/organisms/character-load-dropzone';
-import { SettingsDialog } from '@/components/organisms/settings-dialog';
-import { InfoDialog } from '@/components/organisms/info-dialog';
-import MainMenu from '@/components/organisms/main-menu';
+import { CommandPalette } from '@/components/organisms/CommandPalette';
+import { LegendsThemeCard } from '@/components/organisms/LegendsThemeCard';
+import { CityThemeCard } from '@/components/organisms/CityThemeCard';
+import { OtherscapeThemeCard } from '@/components/organisms/OtherscapeThemeCard';
+import { HeroCard } from '@/components/organisms/HeroCard';
+import { RiftCard } from '@/components/organisms/RiftCard';
+import { OtherscapeCharacterCard } from '@/components/organisms/OtherscapeCharacterCard';
+import { StatusTrackerCard } from '@/components/molecules/StatusTracker';
+import { StoryTagTrackerCard } from '@/components/molecules/StoryTagTracker';
+import { StoryThemeTrackerCard } from '@/components/organisms/StoryThemeTracker';
+import { AddCardButton } from '@/components/molecules/AddThemeCardButton';
+import { CreateCardDialog } from '@/components/organisms/CreateCardDialog';
+import { CompactItemEntry, Drawer } from '@/components/organisms/Drawer';
+import { DrawerItemPreview, FolderPreview } from '@/components/molecules/DrawerItemPreview';
+import { SidebarMenu } from '@/components/organisms/SidebarMenu';
+import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
+import { SettingsDialog } from '@/components/organisms/SettingsDialog';
+import { InfoDialog } from '@/components/organisms/InfoDialog';
+import MainMenu from '@/components/organisms/MainMenu';
 import MobileCharacterSheetPage from '@/components/mobile/MobileCharacterSheetPage';
 
 // -- Store and Hook Imports --

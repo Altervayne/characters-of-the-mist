@@ -19,7 +19,7 @@ import { Input } from '../ui/input';
 import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, PanelRightClose, Wrench } from 'lucide-react';
 
 // -- Component Imports --
-import { MigrationDialog } from './migration-dialog';
+import { MigrationDialog } from './MigrationDialog';
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';

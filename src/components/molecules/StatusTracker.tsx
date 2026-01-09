@@ -17,7 +17,7 @@ import { Check, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { ToolbarHandle } from './toolbar-handle';
+import { ToolbarHandle } from './ToolbarHandle';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';

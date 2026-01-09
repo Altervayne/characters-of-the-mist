@@ -1,9 +1,9 @@
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from '@/components/providers/theme-provider';
-import { ThemeClassManager } from '@/components/providers/theme-class-manager';
-import { AppStartManagerProvider } from '@/components/providers/app-start-manager';
-import { ErrorBoundary } from '@/components/error-boundary';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
+import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { router } from '@/router';
 import '@/app/global.css';
 

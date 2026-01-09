@@ -27,13 +27,13 @@ import { cn } from '@/lib/utils';
 import { buildBreadcrumb, buildFolderPathIds, getParentFromPath, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
 import { exportDrawer, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
-import { DRAG_TYPES } from '@/lib/constants/drag-drop';
+import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
-import { DrawerItemPreview } from '../molecules/drawer-item-preview';
-import { Breadcrumb } from '../molecules/breadcrumbs';
-import FolderDropZone from '../molecules/folder-drop-zone';
-import { DrawerUndoRedoControls } from '../molecules/drawer-undo-redo-controls';
+import { DrawerItemPreview } from '../molecules/DrawerItemPreview';
+import { Breadcrumb } from '../molecules/Breadcrumbs';
+import FolderDropZone from '../molecules/FolderDropZone';
+import { DrawerUndoRedoControls } from '../molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';

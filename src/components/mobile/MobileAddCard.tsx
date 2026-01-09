@@ -13,9 +13,9 @@ import { ChevronLeft, Check } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { legendsThemeTypes, legendsThemebooks } from '@/lib/data/legends-data';
-import { cityThemeTypes, cityThemebooks } from '@/lib/data/city-data';
-import { otherscapeThemeTypes, otherscapeThemebooks } from '@/lib/data/otherscape-data';
+import { legendsThemeTypes, legendsThemebooks } from '@/lib/data/legendsData';
+import { cityThemeTypes, cityThemebooks } from '@/lib/data/cityData';
+import { otherscapeThemeTypes, otherscapeThemebooks } from '@/lib/data/otherscapeData';
 
 // -- Type Imports --
 import type { Card as CardData, LegendsThemeDetails, CityThemeDetails, OtherscapeThemeDetails } from '@/lib/types/character';

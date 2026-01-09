@@ -19,8 +19,8 @@ import { harmonizeData } from '@/lib/harmonization';
 import { getItemDisplayPath } from '@/lib/utils/drawer';
 
 // -- Component Imports --
-import { CharacterUndoRedoControls } from '../molecules/character-undo-redo-controls';
-import { SidebarButton } from '../molecules/sidebar-button';
+import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
+import { SidebarButton } from '../molecules/SidebarButton';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';

@@ -7,7 +7,7 @@ import { ChevronLeft } from 'lucide-react';
 
 // -- Component Imports --
 import { IconButton } from '../ui/icon-button';
-import MarkdownContent from '../molecules/markdown-content';
+import MarkdownContent from '../molecules/MarkdownContent';
 
 interface MobileAboutProps {
 	onBack?: () => void;

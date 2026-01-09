@@ -4,20 +4,20 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 // -- Component Imports --
-import { StatusTrackerCard } from '@/components/molecules/status-tracker';
-import { StoryTagTrackerCard } from '@/components/molecules/story-tag-tracker';
-import { StoryThemeTrackerCard } from '@/components/organisms/story-theme-tracker';
+import { StatusTrackerCard } from '@/components/molecules/StatusTracker';
+import { StoryTagTrackerCard } from '@/components/molecules/StoryTagTracker';
+import { StoryThemeTrackerCard } from '@/components/organisms/StoryThemeTracker';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import MobileCardCarousel from './MobileCardCarousel';
 import MobileToolbelt from './MobileToolbelt';
 import SelectableTracker from './SelectableTracker';
-import { LegendsThemeCard } from '@/components/organisms/legends-theme-card';
-import { CityThemeCard } from '@/components/organisms/city-theme-card';
-import { OtherscapeThemeCard } from '@/components/organisms/otherscape-theme-card';
-import { HeroCard } from '@/components/organisms/hero-card';
-import { RiftCard } from '@/components/organisms/rift-card';
-import { OtherscapeCharacterCard } from '@/components/organisms/otherscape-character-card';
+import { LegendsThemeCard } from '@/components/organisms/LegendsThemeCard';
+import { CityThemeCard } from '@/components/organisms/CityThemeCard';
+import { OtherscapeThemeCard } from '@/components/organisms/OtherscapeThemeCard';
+import { HeroCard } from '@/components/organisms/HeroCard';
+import { RiftCard } from '@/components/organisms/RiftCard';
+import { OtherscapeCharacterCard } from '@/components/organisms/OtherscapeCharacterCard';
 
 // -- Icon Imports --
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PlusCircle, Wrench, Check, SquareDashed } from 'lucide-react';

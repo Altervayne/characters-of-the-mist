@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { patchNotes } from '@/lib/patch-notes';
 
 // -- Component Imports --
-import MarkdownContent from '../molecules/markdown-content';
+import MarkdownContent from '../molecules/MarkdownContent';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';

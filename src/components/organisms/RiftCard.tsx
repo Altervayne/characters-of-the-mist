@@ -14,11 +14,11 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { CardHeaderMolecule } from '../molecules/card-header';
-import { CardSectionHeader } from '@/components/molecules/card-section-header';
-import { PipTracker } from '@/components/molecules/pip-tracker';
-import { BlandTagItem } from '../molecules/bland-tag-item';
-import { CardFlipWrapper } from '../molecules/card-flip-wrapper';
+import { CardHeaderMolecule } from '../molecules/CardHeader';
+import { CardSectionHeader } from '@/components/molecules/CardSectionHeader';
+import { PipTracker } from '@/components/molecules/PipTracker';
+import { BlandTagItem } from '../molecules/BlandTagItem';
+import { CardFlipWrapper } from '../molecules/CardFlipWrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';

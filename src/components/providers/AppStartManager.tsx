@@ -9,10 +9,10 @@ import { APP_VERSION } from '@/lib/config';
 import { patchNotes } from '@/lib/patch-notes';
 
 // -- Component Imports --
-import { LocalStorageError } from '../molecules/local-storage-error';
-import { LegacyDataDialog } from '../organisms/legacy-data-dialog';
-import { PatchNotesDialog } from '@/components/organisms/patch-notes-dialog';
-import { WelcomeDialog } from '@/components/organisms/welcome-dialog';
+import { LocalStorageError } from '../molecules/LocalStorageError';
+import { LegacyDataDialog } from '../organisms/LegacyDataDialog';
+import { PatchNotesDialog } from '@/components/organisms/PatchNotesDialog';
+import { WelcomeDialog } from '@/components/organisms/WelcomeDialog';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';

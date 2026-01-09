@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 
 // -- Component Imports --
-import { MigrationDialog } from '../organisms/migration-dialog';
+import { MigrationDialog } from '../organisms/MigrationDialog';
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';

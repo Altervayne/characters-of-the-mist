@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // -- Component Imports --
-import MarkdownContent from '../molecules/markdown-content';
+import MarkdownContent from '../molecules/MarkdownContent';
 
 
 

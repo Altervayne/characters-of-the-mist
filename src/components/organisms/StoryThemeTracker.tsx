@@ -18,8 +18,8 @@ import { Circle, Disc2, Flame, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { ToolbarHandle } from '../molecules/toolbar-handle';
-import { TagItem } from '../molecules/tag-item';
+import { ToolbarHandle } from '../molecules/ToolbarHandle';
+import { TagItem } from '../molecules/TagItem';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
