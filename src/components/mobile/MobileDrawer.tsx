@@ -13,6 +13,7 @@ import MobileBreadcrumbs from './MobileBreadcrumbs';
 import MobileFolderItem from './MobileFolderItem';
 import MobileDrawerItem from './MobileDrawerItem';
 import MobileDrawerContextMenu from './MobileDrawerContextMenu';
+import MobileAddFolderSheet from './MobileAddFolderSheet';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 
@@ -54,6 +55,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 		name: string;
 	} | null>(null);
 	const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+	const [showAddFolderSheet, setShowAddFolderSheet] = useState(false);
 
    // Mobile Handedness
    const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
@@ -85,12 +87,12 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	};
 
 	const handleAddFolder = () => {
-		// Prompt for folder name
-		const folderName = prompt(t('Drawer.addFolder.prompt'));
-		if (folderName && folderName.trim()) {
-			addFolder(folderName.trim(), currentFolderId ?? undefined);
-			toast.success(t('Notifications.folder.created'));
-		}
+		setShowAddFolderSheet(true);
+	};
+
+	const handleAddFolderConfirm = (folderName: string) => {
+		addFolder(folderName, currentFolderId ?? undefined);
+		toast.success(t('Notifications.drawer.folderCreated'));
 	};
 
 	const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +112,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
 				case 'FOLDER':
 					addImportedFolder(importedData.content as import('@/lib/types/drawer').Folder, currentFolderId ?? undefined);
-					toast.success(t('Notifications.folder.imported'));
+					toast.success(t('Notifications.drawer.importSuccess'));
 					break;
 
 				default:
@@ -222,7 +224,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 						variant="outline"
 						size="default"
 						onClick={() => fileInputRef.current?.click()}
-						title={t('Drawer.import')}
+						title={t('Drawer.Actions.import')}
 						className="cursor-pointer"
 					>
 						<Download className="w-5 h-5" />
@@ -233,7 +235,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
                   variant="outline"
                   size="default"
                   onClick={() => setIsCompactView(!isCompactView)}
-                  title={isCompactView ? t('Drawer.richView') : t('Drawer.compactView')}
+                  title={isCompactView ? t('Drawer.toggleView') : t('Drawer.compactView')}
                   className="cursor-pointer"
                >
                   {isCompactView ? <Grid3x3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
@@ -252,6 +254,13 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 				target={contextMenuTarget}
 				position={contextMenuPosition}
 				onAddToCharacter={onAddToCharacter}
+			/>
+
+			{/* Add Folder Sheet */}
+			<MobileAddFolderSheet
+				isOpen={showAddFolderSheet}
+				onClose={() => setShowAddFolderSheet(false)}
+				onConfirm={handleAddFolderConfirm}
 			/>
 		</div>
 	);

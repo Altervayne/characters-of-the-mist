@@ -110,7 +110,7 @@ export default function MobileFolderPicker({
 					>
                   <div className="p-4 pb-3 border-b border-border shrink-0">
                      <h2 className="text-lg font-semibold">
-                        {t('Drawer.selectFolder')}
+                        {t('Drawer.Actions.selectFolder')}
                      </h2>
                   </div>
 
@@ -134,10 +134,10 @@ export default function MobileFolderPicker({
                                  {folder.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                 {folder.folders.length > 0 && `${folder.folders.length} subfolder${folder.folders.length !== 1 ? 's' : ''}`}
+                                 {folder.folders.length > 0 && t('Drawer.folderCount', { count: folder.folders.length })}
                                  {folder.folders.length > 0 && folder.items.length > 0 && ', '}
-                                 {folder.items.length > 0 && `${folder.items.length} item${folder.items.length !== 1 ? 's' : ''}`}
-                                 {folder.folders.length === 0 && folder.items.length === 0 && 'Empty'}
+                                 {folder.items.length > 0 && t('Drawer.itemCount', { count: folder.items.length })}
+                                 {folder.folders.length === 0 && folder.items.length === 0 && t('Drawer.empty')}
                               </p>
                            </div>
                         </button>
@@ -196,7 +196,7 @@ export default function MobileFolderPicker({
                      >
                         {pickerFolderId
                            ? t('Drawer.selectThisFolder')
-                           : t('Drawer.selectRoot')}
+                           : t('Drawer.Actions.selectRoot')}
                      </Button>
                   </div>
                </motion.div>

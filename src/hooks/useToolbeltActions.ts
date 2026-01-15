@@ -16,23 +16,30 @@ import {
 	PlusCircle,
 	Undo2,
 	Redo2,
-	Heart,
-	Tag,
-	Sparkles,
 	Edit as EditIcon,
-	ArrowUpDown
+	ArrowUpDown,
+	Save,
+   SaveAll,
+   CreditCard,
+   RectangleEllipsis,
+   WalletCards
 } from 'lucide-react';
+
+// -- Other Library Imports --
+import toast from 'react-hot-toast';
 
 // -- Store Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 
 // -- Utils Imports --
-import { exportToFile } from '@/lib/utils/export-import';
+import { exportToFile, exportCharacterSheet } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
 import type { CardViewMode } from '@/lib/types/character';
+
+
 
 /**
  * Hook to build action lists for the Toolbelt based on the current context.
@@ -93,6 +100,31 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			show: true
 		});
 
+		// --- Save Character actions ---
+		globalActions.push({
+			id: 'save-character',
+			label: t('Toolbelt.saveCharacter'),
+			icon: Save,
+			onClick: () => {
+				toast.success(t('Notifications.character.saved'));
+			},
+			show: true
+		});
+
+		globalActions.push({
+			id: 'save-character-as',
+			label: t('Toolbelt.saveCharacterAs'),
+			icon: SaveAll,
+			onClick: () => {
+				const character = useCharacterStore.getState().character;
+				if (character) {
+					exportCharacterSheet(character);
+					toast.success(t('Notifications.character.exported'));
+				}
+			},
+			show: true
+		});
+
 		// --- Context-aware Add buttons ---
 		// Add Card (only on cards tab)
 		if (activeTab === 'cards') {
@@ -127,7 +159,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			globalActions.push({
 				id: 'add-status',
 				label: t('Toolbelt.addStatus'),
-				icon: Heart,
+				icon: CreditCard,
 				onClick: () => addStatus(),
 				show: true
 			});
@@ -135,7 +167,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			globalActions.push({
 				id: 'add-story-tag',
 				label: t('Toolbelt.addStoryTag'),
-				icon: Tag,
+				icon: RectangleEllipsis,
 				onClick: () => addStoryTag(),
 				show: true
 			});
@@ -143,7 +175,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			globalActions.push({
 				id: 'add-story-theme',
 				label: t('Toolbelt.addStoryTheme'),
-				icon: Sparkles,
+				icon: WalletCards,
 				onClick: () => addStoryTheme(),
 				show: true
 			});

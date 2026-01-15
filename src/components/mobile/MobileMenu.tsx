@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { Settings, Info, FileDown, FileUp, Save, FileText, LogOut, FolderDown, FolderUp } from 'lucide-react';
+import { Settings, Info, FileDown, FileUp, Save, FileText, LogOut, FolderDown, FolderUp, SaveAll } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -16,7 +16,8 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/config';
-import { exportDrawer, importFromFile } from '@/lib/utils/export-import';
+import { exportDrawer, importFromFile, exportCharacterSheet } from '@/lib/utils/export-import';
+import { harmonizeData } from '@/lib/harmonization';
 
 
 
@@ -29,11 +30,37 @@ interface MobileMenuProps {
 export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
-	const { unloadCharacter } = useCharacterActions();
+	const { unloadCharacter, loadCharacter } = useCharacterActions();
 	const drawer = useDrawerStore((state) => state.drawer);
 	const { importFullDrawer } = useDrawerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const characterImportRef = useRef<HTMLInputElement>(null);
+
+	const handleCharacterImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const files = e.target.files;
+		if (!files || files.length === 0) return;
+
+		try {
+			const file = files[0];
+			const importedData = await importFromFile(file);
+
+			if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
+				const harmonized = harmonizeData(importedData.content, importedData.fileType);
+				loadCharacter(harmonized as import('@/lib/types/character').Character);
+				toast.success(t('Notifications.character.imported'));
+			} else {
+				toast.error(t('Notifications.character.importError'));
+			}
+
+			if (characterImportRef.current) {
+				characterImportRef.current.value = '';
+			}
+		} catch (error) {
+			console.error('Import error:', error);
+			toast.error(t('Notifications.general.importError'));
+		}
+	};
 
 	const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
@@ -89,29 +116,36 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			show: !!character,
 			destructive: false,
 		},
+      {
+			id: 'saveCharacterAs',
+			label: t('MobileMenu.saveCharacterAs'),
+			icon: SaveAll,
+			show: !!character,
+			destructive: false,
+		},
 		{
 			id: 'export',
 			label: t('MobileMenu.export'),
-			icon: FileDown,
+			icon: FileUp,
 			show: !!character,
 			destructive: false,
 		},
 		{
 			id: 'import',
 			label: t('MobileMenu.import'),
-			icon: FileUp,
+			icon: FileDown,
 			destructive: false,
 		},
 		{
 			id: 'exportDrawer',
 			label: t('Drawer.Actions.exportFull'),
-			icon: FolderDown,
+			icon: FolderUp,
 			destructive: false,
 		},
 		{
 			id: 'importDrawer',
 			label: t('Drawer.Actions.import'),
-			icon: FolderUp,
+			icon: FolderDown,
 			destructive: false,
 		},
 		{
@@ -137,13 +171,23 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				onOpenPatchNotes();
 				break;
 			case 'save':
-				// TODO: Implement save
+				// Characters auto-save, so just show confirmation
+				toast.success(t('Notifications.character.saved'));
 				break;
 			case 'export':
-				// TODO: Implement export
+				if (character) {
+					exportCharacterSheet(character);
+					toast.success(t('Notifications.character.exported'));
+				}
+				break;
+			case 'saveCharacterAs':
+				if (character) {
+					exportCharacterSheet(character);
+					toast.success(t('Notifications.character.exported'));
+				}
 				break;
 			case 'import':
-				// TODO: Implement import
+				characterImportRef.current?.click();
 				break;
 			case 'exportDrawer':
 				exportDrawer(drawer);
@@ -171,6 +215,15 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				className="hidden"
 			/>
 
+			{/* Hidden file input for character import */}
+			<input
+				ref={characterImportRef}
+				type="file"
+				accept=".cotm"
+				onChange={handleCharacterImport}
+				className="hidden"
+			/>
+
 			{/* Header - fixed at top */}
 			<div className="p-6 pb-2 shrink-0">
 				<h2 className="text-2xl font-bold mb-2">{t('MobileMenu.title')}</h2>
@@ -182,7 +235,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			{/* Scrollable menu items */}
 			<div className={cn(
 				"flex-1 overflow-y-auto px-6 py-4",
-				isMobileFABMode && "pb-32"
+				isMobileFABMode && "pb-10"
 			)}>
 				<div className="w-full flex flex-col items-center gap-3">
 					{menuItems.map((item) => {

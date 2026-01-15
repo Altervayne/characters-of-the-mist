@@ -142,7 +142,7 @@ export default function ToolbeltSidePanel({
 																action.variant !== 'destructive' && "hover:bg-accent"
 															)}
 														>
-															<Icon className="h-5 w-5 mr-3" />
+															<Icon className="h-6 w-6 mr-3" />
 															<span>{action.label}</span>
 														</Button>
 													);

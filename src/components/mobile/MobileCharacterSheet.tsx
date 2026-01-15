@@ -881,7 +881,10 @@ export default function MobileCharacterSheet({
 
 			{/* Tracker Reorder Buttons - Only visible when tracker selected */}
 			{selectedTrackerId && activeTab === 'trackers' && !isReorderingCards && (
-				<div className="fixed right-4 bottom-32 z-25 flex flex-col gap-2">
+				<div className={cn(
+					"fixed bottom-32 z-25 flex flex-col gap-2",
+					isLeftHanded ? "left-4" : "right-4"
+				)}>
                <IconButton
 						variant="default"
 						size="lg"

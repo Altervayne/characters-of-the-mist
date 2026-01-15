@@ -3,6 +3,7 @@
 
 // -- React Imports --
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { Home, ChevronRight } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function MobileBreadcrumbs({
 	currentFolderId,
 	onNavigate
 }: MobileBreadcrumbsProps) {
+	const { t } = useTranslation();
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	// Auto-scroll to show current location when it changes
@@ -58,7 +60,7 @@ export default function MobileBreadcrumbs({
 				)}
 			>
 				<Home className="w-4 h-4" />
-				<span>Home</span>
+				<span>{t('Drawer.root')}</span>
 			</button>
 
 			{/* Folder path crumbs */}

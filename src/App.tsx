@@ -5,14 +5,17 @@ import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { router } from '@/router';
+import { useDeviceType } from '@/hooks/useDeviceType';
 import '@/app/global.css';
 
 function AppContent() {
+  const { isMobile } = useDeviceType();
+
   return (
     <>
       <RouterProvider router={router} />
       <Toaster
-        position="bottom-center"
+        position={isMobile ? 'top-center' : 'bottom-center'}
         toastOptions={{
           className: 'bg-card text-card-foreground border rounded-md shadow-lg',
           style: {

@@ -121,14 +121,27 @@
       "title": "Tiroir",
       "toggleView": "Change la vue des Objets du tiroir entre prévisualisation riche et liste simple",
 
+      "root": "Racine",
+      "empty": "Vide",
+
+      "folderCount_one": "{{count}} dossier",
+      "folderCount_other": "{{count}} dossiers",
+      "itemCount_one": "{{count}} élément",
+      "itemCount_other": "{{count}} éléments",
+
       "emptyFolder": "Ce Dossier est vide. Il est temps de le remplir !",
       "addFolder": "Créer un Dossier",
+      "folderNamePlaceholder": "Nom du dossier...",
 
       "dropToImport": "Déposez vos fichiers ici pour les importer dans votre Tiroir",
 
       "Actions": {
          "addFolderTitle": "Créer un nouveau Dossier",
          "createFolder": "Créer le Dossier",
+
+         "selectFolder": "Sélectionner une destination",
+         "selectThisFolder": "Déposer ici",
+         "selectRoot": "Déposer à la Racine",
 
          "nameItemTitle": "Quel nom voulez-vous attribuer à cet Objet ?",
 
@@ -288,6 +301,12 @@
          "title": "Navigation Mobile",
          "bottomTabs": "Onglets en Bas",
          "fab": "Bouton Flottant"
+      },
+
+      "mobileHandedness": {
+         "title": "Côté de l'interface Mobile",
+         "left": "Gauche",
+         "right": "Droite"
       },
 
       "toolbeltMode": {
@@ -917,8 +936,8 @@
       "trackersTab": "Trackers",
       "cardsTab": "Cartes",
       "statuses": "Statuts",
-      "storyTags": "Balises d'Histoire",
-      "storyThemes": "Thèmes d'Histoire",
+      "storyTags": "Traits Narratifs",
+      "storyThemes": "Thèmes Narratifs",
       "reorderCards": "Réorganiser les Cartes"
    },
    "MobileCardCarousel": {
@@ -948,6 +967,8 @@
       "redo": "Rétablir",
       "editMode": "Mode Édition",
       "playMode": "Mode Jeu",
+      "saveCharacter": "Enregistrer le Perso.",
+      "saveCharacterAs": "Enregistrer sous... ",
       "addCard": "Ajouter une Carte",
       "addStatus": "Ajouter un Statut",
       "addStoryTag": "Ajouter un Trait Narratif",
@@ -970,7 +991,8 @@
       "settings": "Paramètres",
       "info": "À propos",
       "patchNotes": "Patch Notes",
-      "save": "Sauvegarder le Perso.",
+      "save": "Enregistrer le Perso.",
+      "saveCharacterAs": "Enregistrer sous... ",
       "export": "Exporter le Perso.",
       "import": "Importer",
       "unload": "Décharger le Perso."

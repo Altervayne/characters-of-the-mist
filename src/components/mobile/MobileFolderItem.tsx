@@ -3,6 +3,7 @@
 
 // -- React Imports --
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { Folder } from 'lucide-react';
@@ -26,6 +27,7 @@ export default function MobileFolderItem({
 	onNavigate,
 	onLongPress
 }: MobileFolderItemProps) {
+	const { t } = useTranslation();
 	const [isPressing, setIsPressing] = useState(false);
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const touchStartPos = useRef<{ x: number; y: number } | null>(null);
@@ -107,10 +109,10 @@ export default function MobileFolderItem({
 					{folder.name}
 				</p>
 				<p className="text-xs text-muted-foreground">
-					{totalSubfolders > 0 && `${totalSubfolders} folder${totalSubfolders !== 1 ? 's' : ''}`}
+					{totalSubfolders > 0 && t('Drawer.folderCount', { count: totalSubfolders })}
 					{totalSubfolders > 0 && totalItems > 0 && ', '}
-					{totalItems > 0 && `${totalItems} item${totalItems !== 1 ? 's' : ''}`}
-					{totalSubfolders === 0 && totalItems === 0 && 'Empty'}
+					{totalItems > 0 && t('Drawer.itemCount', { count: totalItems })}
+					{totalSubfolders === 0 && totalItems === 0 && t('Drawer.empty')}
 				</p>
 			</div>
 		</div>

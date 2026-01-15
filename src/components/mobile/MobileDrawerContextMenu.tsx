@@ -84,7 +84,7 @@ export default function MobileDrawerContextMenu({
 		if (newName.trim()) {
 			if (isFolder) {
 				renameFolder(target.id, newName.trim());
-				toast.success(t('Notifications.folder.renamed'));
+				toast.success(t('Notifications.drawer.folderRenamed'));
 			} else {
 				renameItem(target.id, newName.trim());
 				toast.success(t('Notifications.general.renamed'));
@@ -103,7 +103,7 @@ export default function MobileDrawerContextMenu({
 		if (isFolder) {
 			// Prevent moving folder into itself or its children
 			moveFolder(target.id, destinationFolderId ?? undefined);
-			toast.success(t('Notifications.folder.moved'));
+			toast.success(t('Notifications.drawer.folderMoved'));
 		} else {
 			moveItem(target.id, destinationFolderId ?? undefined);
 			toast.success(t('Notifications.general.moved'));
@@ -116,7 +116,7 @@ export default function MobileDrawerContextMenu({
 		try {
 			if (isFolder && folder) {
 				exportToFile(folder, 'FOLDER', 'NEUTRAL', `${folder.name}.cotm`);
-				toast.success(t('Notifications.folder.exported'));
+				toast.success(t('Notifications.drawer.exported'));
 			} else if (item) {
 				exportToFile(item.content, item.type, item.game, `${item.name}.cotm`);
 				toast.success(t('Notifications.general.exported'));
@@ -135,7 +135,7 @@ export default function MobileDrawerContextMenu({
 	const confirmDelete = () => {
 		if (isFolder) {
 			deleteFolder(target.id);
-			toast.success(t('Notifications.folder.deleted'));
+			toast.success(t('Notifications.drawer.folderDeleted'));
 		} else {
 			deleteItem(target.id);
 			toast.success(t('Notifications.general.deleted'));

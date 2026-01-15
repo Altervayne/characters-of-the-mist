@@ -121,14 +121,27 @@
       "title": "Drawer",
       "toggleView": "Toggle view mode between rich preview and list entry for Drawer Items",
 
+      "root": "Root",
+      "empty": "Empty",
+
+      "folderCount_one": "{{count}} folder",
+      "folderCount_other": "{{count}} folders",
+      "itemCount_one": "{{count}} item",
+      "itemCount_other": "{{count}} items",
+
       "emptyFolder": "This Folder is empty. Time to fill it!",
       "addFolder": "Add Folder",
+      "folderNamePlaceholder": "Folder name...",
 
       "dropToImport": "Drop file here to import it to your Drawer",
 
       "Actions": {
          "addFolderTitle": "Create a new Folder",
          "createFolder": "Create Folder",
+
+         "selectFolder": "Select a destination",
+         "selectThisFolder": "Move here",
+         "selectRoot": "Move to Root",
 
          "nameItemTitle": "What would you like to name this Item?",
 
@@ -960,6 +973,8 @@
       "redo": "Redo",
       "editMode": "Edit Mode",
       "playMode": "Play Mode",
+      "saveCharacter": "Save Character",
+      "saveCharacterAs": "Save Character as...",
       "addCard": "Add Card",
       "addStatus": "Add Status",
       "addStoryTag": "Add Story Tag",
