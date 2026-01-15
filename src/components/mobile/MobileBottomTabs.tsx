@@ -27,17 +27,17 @@ export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBotto
 	const tabs = [
 		{
 			id: 'sheet' as TabId,
-			label: t('MobileBottomTabs.sheet') || 'Sheet',
+			label: t('MobileBottomTabs.sheet'),
 			icon: Home,
 		},
 		{
 			id: 'drawer' as TabId,
-			label: t('MobileBottomTabs.drawer') || 'Drawer',
+			label: t('MobileBottomTabs.drawer'),
 			icon: FolderOpen,
 		},
 		{
 			id: 'menu' as TabId,
-			label: t('MobileBottomTabs.menu') || 'Menu',
+			label: t('MobileBottomTabs.menu'),
 			icon: MoreHorizontal,
 		},
 	];
@@ -79,11 +79,11 @@ export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBotto
 								? "text-primary"
 								: "text-muted-foreground hover:text-foreground"
 						)}
-						aria-label={t('MobileBottomTabs.edit') || 'Edit'}
+						aria-label={t('MobileBottomTabs.edit')}
 					>
 						<Edit className="h-6 w-6 mb-1" />
 						<span className="text-xs font-medium">
-							{t('MobileBottomTabs.edit') || 'Edit'}
+							{t('MobileBottomTabs.edit')}
 						</span>
 					</button>
 				)}

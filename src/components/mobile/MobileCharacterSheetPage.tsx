@@ -14,6 +14,7 @@ import MobileAbout from './MobileAbout';
 import MobilePatchNotes from './MobilePatchNotes';
 import MobileMainMenu from './MobileMainMenu';
 import MobileAddCard from './MobileAddCard';
+import MobileDrawer from './MobileDrawer';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -43,7 +44,7 @@ export default function MobileCharacterSheetPage() {
 	const character = useCharacterStore((state) => state.character);
 
 	// Card creation state
-	const { addCard } = useCharacterActions();
+	const { addCard, addImportedCard, addImportedTracker } = useCharacterActions();
 	const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
 	const [newlyCreatedCardId, setNewlyCreatedCardId] = useState<string | null>(null);
 
@@ -181,6 +182,18 @@ export default function MobileCharacterSheetPage() {
 		navigateToSheetTab('cards');
 	};
 
+	const handleAddDrawerItemToCharacter = (item: import('@/lib/types/drawer').DrawerItem) => {
+		// Determine if it's a card or tracker based on item type
+		const cardTypes = ['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME'];
+		const trackerTypes = ['STATUS_TRACKER', 'STORY_TAG_TRACKER', 'STORY_THEME_TRACKER'];
+
+		if (cardTypes.includes(item.type)) {
+			addImportedCard(item.content as Card);
+		} else if (trackerTypes.includes(item.type)) {
+			addImportedTracker(item.content as import('@/lib/types/character').Tracker);
+		}
+	};
+
 	// If no character is loaded, show the main menu
 	if (!character) {
 		return (
@@ -208,9 +221,7 @@ export default function MobileCharacterSheetPage() {
 					/>
 				)}
 				{activeTab === 'drawer' && (
-					<div className="h-full flex items-center justify-center p-8 text-center">
-						<p className="text-muted-foreground">DRAWER PLACEHOLDER</p>
-					</div>
+					<MobileDrawer onAddToCharacter={handleAddDrawerItemToCharacter} />
 				)}
 				{activeTab === 'menu' && (
 					<MobileMenu

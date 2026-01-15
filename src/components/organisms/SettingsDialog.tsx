@@ -270,25 +270,25 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                   {/* Mobile FAB Mode Setting - Only visible on mobile */}
                   {isMobile && (
                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label className="text-left">{t('SettingsDialog.mobileFABMode.title') || 'Mobile UI Mode'}</Label>
+                        <Label className="text-left">{t('SettingsDialog.mobileFABMode.title')}</Label>
                         <div className="col-span-2 flex items-center space-x-2">
                            <Button
                               variant={!isMobileFABMode ? 'default' : 'outline'}
                               onClick={() => setMobileFABMode(false)}
-                              title={t('SettingsDialog.mobileFABMode.bottomTabs') || 'Bottom Tabs'}
+                              title={t('SettingsDialog.mobileFABMode.bottomTabs')}
                               className="flex-1 min-w-0 cursor-pointer"
                            >
                               <Navigation className="mr-2 h-4 w-4 shrink-0" />
-                              <span className="truncate">{t('SettingsDialog.mobileFABMode.bottomTabs') || 'Tabs'}</span>
+                              <span className="truncate">{t('SettingsDialog.mobileFABMode.bottomTabs')}</span>
                            </Button>
                            <Button
                               variant={isMobileFABMode ? 'default' : 'outline'}
                               onClick={() => setMobileFABMode(true)}
-                              title={t('SettingsDialog.mobileFABMode.fab') || 'Floating Buttons'}
+                              title={t('SettingsDialog.mobileFABMode.fab')}
                               className="flex-1 min-w-0 cursor-pointer"
                            >
                               <Menu className="mr-2 h-4 w-4 shrink-0" />
-                              <span className="truncate">{t('SettingsDialog.mobileFABMode.fab') || 'FABs'}</span>
+                              <span className="truncate">{t('SettingsDialog.mobileFABMode.fab')}</span>
                            </Button>
                         </div>
                      </div>

@@ -282,7 +282,7 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 
 					{/* Mobile UI Mode */}
 					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileFABMode.title') || 'Mobile UI Mode'}</Label>
+						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileFABMode.title')}</Label>
 						<div className="grid grid-cols-2 gap-3">
 							<Button
 								variant={!isMobileFABMode ? 'default' : 'outline'}
@@ -290,7 +290,7 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
 								<Navigation className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.bottomTabs') || 'Tabs'}</span>
+								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.bottomTabs')}</span>
 							</Button>
 							<Button
 								variant={isMobileFABMode ? 'default' : 'outline'}
@@ -298,14 +298,14 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
 								<Menu className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.fab') || 'FABs'}</span>
+								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.fab')}</span>
 							</Button>
 						</div>
 					</div>
 
 					{/* Mobile Handedness */}
 					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileHandedness.title') || 'Button Position'}</Label>
+						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileHandedness.title')}</Label>
 						<div className="grid grid-cols-2 gap-3">
 							<Button
 								variant={mobileHandedness === 'left' ? 'default' : 'outline'}
@@ -313,7 +313,7 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
 								<MoveLeft className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.left') || 'Left'}</span>
+								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.left')}</span>
 							</Button>
 							<Button
 								variant={mobileHandedness === 'right' ? 'default' : 'outline'}
@@ -321,7 +321,7 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
 								<MoveRight className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.right') || 'Right'}</span>
+								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.right')}</span>
 							</Button>
 						</div>
 					</div>

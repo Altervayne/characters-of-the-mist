@@ -53,7 +53,7 @@ export default function MobileFAB({
 	const actions = [
 		{
 			id: 'sheet',
-			label: t('MobileFAB.sheet') || 'Sheet',
+			label: t('MobileFAB.sheet'),
 			icon: Home,
 			onClick: () => {
 				onTabChange('sheet');
@@ -64,7 +64,7 @@ export default function MobileFAB({
 		},
 		{
 			id: 'drawer',
-			label: t('MobileFAB.drawer') || 'Drawer',
+			label: t('MobileFAB.drawer'),
 			icon: FolderOpen,
 			onClick: () => {
 				onOpenDrawer();
@@ -75,7 +75,7 @@ export default function MobileFAB({
 		},
 		{
 			id: 'menu',
-			label: t('MobileFAB.menu') || 'Menu',
+			label: t('MobileFAB.menu'),
 			icon: Settings,
 			onClick: () => {
 				onOpenMenu();
@@ -156,7 +156,7 @@ export default function MobileFAB({
 						size="lg"
 						onClick={toggleExpanded}
 						className="h-10 w-10 shadow-2xl"
-						aria-label={isExpanded ? t('MobileFAB.close') || 'Close' : t('MobileFAB.open') || 'Open menu'}
+						aria-label={isExpanded ? t('MobileFAB.close') : t('MobileFAB.open')}
 					>
 						<motion.div
 							animate={{ rotate: isExpanded ? 90 : 0 }}

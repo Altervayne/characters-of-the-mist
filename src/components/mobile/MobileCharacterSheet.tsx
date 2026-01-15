@@ -404,20 +404,20 @@ export default function MobileCharacterSheet({
 		if (card.cardType === 'CHARACTER_CARD' && hasCharacterName(card.details)) {
          switch (card.details.game) {
             case 'LEGENDS':
-               return t('Cards.heroCard') || 'Hero Card';
+               return t('Cards.heroCard');
             case 'CITY_OF_MIST':
-               return t('Cards.riftCard') || 'Rift Card';
+               return t('Cards.riftCard');
             case 'OTHERSCAPE':
-               return t('Cards.mercCard') || 'Merc Card';
+               return t('Cards.mercCard');
             default:
-               return t('Cards.characterCard') || 'Character Card';
+               return t('Cards.characterCard');
          }
 		}
 
 		// Loadout cards: show main tag name
 		if (card.cardType === 'LOADOUT_THEME') {
 			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
-			return mainTag || t('Cards.otherscapeLoadoutCard') || 'Loadout';
+			return mainTag || t('Cards.otherscapeLoadoutCard');
 		}
 
 		if (card.cardType === 'GROUP_THEME') {
@@ -426,16 +426,16 @@ export default function MobileCharacterSheet({
 			if (mainTag) {
 				switch (card.details.game) {
 					case 'LEGENDS':
-						return `${t('Cards.fellowshipCard') || 'Fellowship'} - ${mainTag}`;
+						return `${t('Cards.fellowshipCard')} - ${mainTag}`;
 					case 'CITY_OF_MIST':
-						return `${t('Cards.crewCard') || 'Crew'} - ${mainTag}`;
+						return `${t('Cards.crewCard')} - ${mainTag}`;
 					case 'OTHERSCAPE':
-						return `${t('Cards.otherscapeCrewCard') || 'Crew'} - ${mainTag}`;
+						return `${t('Cards.otherscapeCrewCard')} - ${mainTag}`;
 					default:
 						return mainTag;
 				}
 			}
-			return t('Cards.fellowshipCard') || 'Group Theme';
+			return t('Cards.fellowshipCard');
 		}
 
 		// Theme cards: show "Themebook - Main Tag" or just themebook
@@ -455,7 +455,7 @@ export default function MobileCharacterSheet({
 		}
 
 		// Fallback to card type
-		return t('Cards.themeCard') || 'Card';
+		return t('Cards.themeCard');
 	};
 
    
@@ -502,13 +502,13 @@ export default function MobileCharacterSheet({
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-8 text-center">
 				<h2 className="text-xl font-bold mb-4">
-					{t('MobileCharacterSheet.noCharacter') || 'No Character Loaded'}
+					{t('MobileCharacterSheet.noCharacter')}
 				</h2>
 				<p className="text-muted-foreground mb-6">
-					{t('MobileCharacterSheet.loadCharacterPrompt') || 'Load a character from the drawer or create a new one to get started.'}
+					{t('MobileCharacterSheet.loadCharacterPrompt')}
 				</p>
 				<p className="text-sm text-muted-foreground">
-					{t('MobileCharacterSheet.drawerHint') || 'Tap the Drawer tab below to browse your saved characters.'}
+					{t('MobileCharacterSheet.drawerHint')}
 				</p>
 			</div>
 		);
@@ -527,7 +527,7 @@ export default function MobileCharacterSheet({
 						"placeholder:text-muted-foreground/50",
 						"focus:text-primary"
 					)}
-					placeholder={t('CharacterSheetPage.characterNamePlaceholder') || 'Character Name'}
+					placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
 				/>
 			</header>
 
@@ -559,7 +559,7 @@ export default function MobileCharacterSheet({
                         : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                >
-                  {t('MobileCharacterSheet.trackersTab') || 'Trackers'}
+                  {t('MobileCharacterSheet.trackersTab')}
                </button>
                <button
                   onClick={() => setActiveTab('cards')}
@@ -571,7 +571,7 @@ export default function MobileCharacterSheet({
                         : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                >
-                  {t('MobileCharacterSheet.cardsTab') || 'Cards'}
+                  {t('MobileCharacterSheet.cardsTab')}
                   {character.cards.length > 0 && (
                      <span className="ml-2 text-xs text-muted-foreground">
                         ({character.cards.length})
@@ -609,7 +609,7 @@ export default function MobileCharacterSheet({
 							{(character.trackers.statuses.length > 0 || areTrackersEditable) && (
 							<section>
 								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
-									{t('MobileCharacterSheet.statuses') || 'Statuses'}
+									{t('MobileCharacterSheet.statuses')}
 								</h3>
 								<div className="flex flex-wrap justify-center gap-3">
 									{character.trackers.statuses.map((tracker) => (
@@ -649,7 +649,7 @@ export default function MobileCharacterSheet({
 							{(character.trackers.storyTags.length > 0 || areTrackersEditable) && (
 							<section>
 								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
-									{t('MobileCharacterSheet.storyTags') || 'Story Tags'}
+									{t('MobileCharacterSheet.storyTags')}
 								</h3>
 								<div className="flex flex-wrap justify-center gap-3">
 									{character.trackers.storyTags.map((tracker) => (
@@ -689,7 +689,7 @@ export default function MobileCharacterSheet({
 							{(character.trackers.storyThemes.length > 0 || areTrackersEditable) && (
 							<section>
 								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
-									{t('MobileCharacterSheet.storyThemes') || 'Story Themes'}
+									{t('MobileCharacterSheet.storyThemes')}
 								</h3>
 								<div className="flex flex-wrap justify-center gap-3">
 									{character.trackers.storyThemes.map((tracker) => (
@@ -736,7 +736,7 @@ export default function MobileCharacterSheet({
 								<div className="max-w-2xl mx-auto space-y-4">
 									{/* Header */}
 									<div className="flex items-center justify-center mb-4 sticky top-0 bg-background z-10 pb-2">
-										<h2 className="text-lg font-semibold">{t('MobileCharacterSheet.reorderCards') || 'Reorder Cards'}</h2>
+										<h2 className="text-lg font-semibold">{t('MobileCharacterSheet.reorderCards')}</h2>
 									</div>
 
 									{/* Card list with reorder controls */}
@@ -924,7 +924,7 @@ export default function MobileCharacterSheet({
 						size="lg"
 						onClick={() => setIsReorderingCards(false)}
 						className="h-10 w-10 shadow-2xl"
-						aria-label={t('Common.done') || 'Done'}
+						aria-label={t('Common.done')}
 					>
 						<Check className="h-6 w-6" />
 					</IconButton>

@@ -68,7 +68,7 @@ export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCa
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-8 text-center">
 				<p className="text-lg text-muted-foreground mb-6">
-					{t('MobileCardCarousel.noCards') || 'No cards yet'}
+					{t('MobileCardCarousel.noCards')}
 				</p>
 				{isEditing && <AddCardButton onClick={() => {}} />}
 			</div>

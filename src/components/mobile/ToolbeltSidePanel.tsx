@@ -84,7 +84,7 @@ export default function ToolbeltSidePanel({
 							{!hasItemActions && !hasGlobalActions ? (
 								<div className="flex flex-col items-center justify-center w-full h-full p-8 text-center">
 									<p className="text-muted-foreground">
-										{t('Toolbelt.noActions') || 'No actions available'}
+										{t('Toolbelt.noActions')}
 									</p>
 								</div>
 							) : (
@@ -93,7 +93,7 @@ export default function ToolbeltSidePanel({
 									{hasItemActions && (
 										<div>
 											<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2">
-												{t('Toolbelt.itemSection') || 'Item'}
+												{t('Toolbelt.itemSection')}
 											</h3>
 											<div className="space-y-1">
 												{itemActions.map((action) => {
@@ -124,7 +124,7 @@ export default function ToolbeltSidePanel({
 									{hasGlobalActions && (
 										<div>
 											<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2">
-												{t('Toolbelt.globalSection') || 'Global'}
+												{t('Toolbelt.globalSection')}
 											</h3>
 											<div className="space-y-1">
 												{globalActions.map((action) => {

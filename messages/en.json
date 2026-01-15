@@ -156,6 +156,7 @@
          "exportFull": "Export your entire Drawer",
          "import": "Import a file into the current Folder",
          "cancel": "Cancel",
+         "confirm": "Confirm",
 
          "defaultNames": {
             "characterCard": "Character Card",

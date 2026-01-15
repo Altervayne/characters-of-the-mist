@@ -32,7 +32,7 @@ import { exportToFile } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
-import type { Card, CardViewMode } from '@/lib/types/character';
+import type { CardViewMode } from '@/lib/types/character';
 
 /**
  * Hook to build action lists for the Toolbelt based on the current context.
@@ -58,13 +58,6 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 	const { toggleIsEditing, setCardDialogOpen } = useAppGeneralStateStore((state) => state.actions);
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 
-	// Desktop manages cardToEdit locally in CharacterSheetPage, not in the store
-	// This is a no-op placeholder for desktop compatibility
-	const setCardToEdit = (_card: Card | null) => {
-		// Desktop CharacterSheetPage handles this locally
-		// Mobile uses onOpenAddCard callback instead
-	};
-
 	return useMemo(() => {
 		const itemActions: ToolbeltAction[] = [];
 		const globalActions: ToolbeltAction[] = [];
@@ -77,7 +70,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		// --- Undo/Redo (always visible, grayed when disabled) ---
 		globalActions.push({
 			id: 'undo',
-			label: t('Toolbelt.undo') || 'Undo',
+			label: t('Toolbelt.undo'),
 			icon: Undo2,
 			onClick: () => canUndo && undo(),
 			show: true
@@ -85,7 +78,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 		globalActions.push({
 			id: 'redo',
-			label: t('Toolbelt.redo') || 'Redo',
+			label: t('Toolbelt.redo'),
 			icon: Redo2,
 			onClick: () => canRedo && redo(),
 			show: true
@@ -94,7 +87,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		// --- Edit Mode Toggle (in FAB mode) ---
 		globalActions.push({
 			id: 'toggle-edit-mode',
-			label: isEditing ? (t('Toolbelt.playMode') || 'Play Mode') : (t('Toolbelt.editMode') || 'Edit Mode'),
+			label: isEditing ? (t('Toolbelt.playMode')) : (t('Toolbelt.editMode')),
 			icon: EditIcon,
 			onClick: () => toggleIsEditing(),
 			show: true
@@ -107,7 +100,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			if (onEnterCardReorderMode) {
 				globalActions.push({
 					id: 'reorder-cards',
-					label: t('Toolbelt.reorderCards') || 'Reorder Cards',
+					label: t('Toolbelt.reorderCards'),
 					icon: ArrowUpDown,
 					onClick: onEnterCardReorderMode,
 					show: true
@@ -116,13 +109,12 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 			globalActions.push({
 				id: 'add-card',
-				label: t('Toolbelt.addCard') || 'Add Card',
+				label: t('Toolbelt.addCard'),
 				icon: PlusCircle,
 				onClick: () => {
 					if (onOpenAddCard) {
 						onOpenAddCard();
 					} else {
-						setCardToEdit(null);
 						setCardDialogOpen(true);
 					}
 				},
@@ -134,7 +126,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		if (activeTab === 'trackers') {
 			globalActions.push({
 				id: 'add-status',
-				label: t('Toolbelt.addStatus') || 'Add Status',
+				label: t('Toolbelt.addStatus'),
 				icon: Heart,
 				onClick: () => addStatus(),
 				show: true
@@ -142,7 +134,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 			globalActions.push({
 				id: 'add-story-tag',
-				label: t('Toolbelt.addStoryTag') || 'Add Story Tag',
+				label: t('Toolbelt.addStoryTag'),
 				icon: Tag,
 				onClick: () => addStoryTag(),
 				show: true
@@ -150,7 +142,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 			globalActions.push({
 				id: 'add-story-theme',
-				label: t('Toolbelt.addStoryTheme') || 'Add Story Theme',
+				label: t('Toolbelt.addStoryTheme'),
 				icon: Sparkles,
 				onClick: () => addStoryTheme(),
 				show: true
@@ -175,7 +167,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			if (card.cardType !== 'CHARACTER_CARD') {
 				itemActions.push({
 					id: 'delete-card',
-					label: t('Toolbelt.delete') || 'Delete',
+					label: t('Toolbelt.delete'),
 					icon: Trash2,
 					variant: 'destructive',
 					onClick: () => deleteCard(card.id),
@@ -186,7 +178,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			// Flip card action
 			itemActions.push({
 				id: 'flip-card',
-				label: t('Toolbelt.flipCard') || 'Flip Card',
+				label: t('Toolbelt.flipCard'),
 				icon: FlipVertical,
 				onClick: () => flipCard(card.id),
 				show: true
@@ -196,8 +188,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			const currentViewMode = card.viewMode;
 			const nextViewMode: CardViewMode = currentViewMode === 'FLIP' ? 'SIDE_BY_SIDE' : 'FLIP';
 			const viewModeLabel = nextViewMode === 'SIDE_BY_SIDE'
-				? (t('Toolbelt.sideBySideMode') || 'Side by Side')
-				: (t('Toolbelt.flipMode') || 'Flip Mode');
+				? (t('Toolbelt.sideBySideMode'))
+				: (t('Toolbelt.flipMode'));
 
 			itemActions.push({
 				id: 'toggle-view-mode',
@@ -210,7 +202,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			// Export action
 			itemActions.push({
 				id: 'export-card',
-				label: t('Toolbelt.export') || 'Export',
+				label: t('Toolbelt.export'),
 				icon: Download,
 				onClick: () => {
 					exportToFile(
@@ -227,10 +219,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			if (card.cardType === 'CHARACTER_THEME') {
 				itemActions.push({
 					id: 'edit-themebook',
-					label: t('Toolbelt.editThemebook') || 'Edit Theme',
+					label: t('Toolbelt.editThemebook'),
 					icon: Edit3,
 					onClick: () => {
-						setCardToEdit(card);
 						setCardDialogOpen(true);
 					},
 					show: true
@@ -252,7 +243,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Delete first
 				itemActions.push({
 					id: 'delete-status',
-					label: t('Toolbelt.delete') || 'Delete',
+					label: t('Toolbelt.delete'),
 					icon: Trash2,
 					variant: 'destructive',
 					onClick: () => removeStatus(tracker.id),
@@ -262,7 +253,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Export last
 				itemActions.push({
 					id: 'export-status',
-					label: t('Toolbelt.export') || 'Export',
+					label: t('Toolbelt.export'),
 					icon: Download,
 					onClick: () => {
 						exportToFile(
@@ -281,7 +272,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Delete first
 				itemActions.push({
 					id: 'delete-story-tag',
-					label: t('Toolbelt.delete') || 'Delete',
+					label: t('Toolbelt.delete'),
 					icon: Trash2,
 					variant: 'destructive',
 					onClick: () => removeStoryTag(tracker.id),
@@ -293,8 +284,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				itemActions.push({
 					id: 'toggle-story-tag-type',
 					label: isWeakness
-						? (t('Toolbelt.makePositive') || 'Make Positive')
-						: (t('Toolbelt.makeNegative') || 'Make Negative'),
+						? (t('Toolbelt.makePositive'))
+						: (t('Toolbelt.makeNegative')),
 					icon: isWeakness ? ThumbsUp : ThumbsDown,
 					onClick: () => updateStoryTag(tracker.id, { isWeakness: !isWeakness }),
 					show: true
@@ -303,7 +294,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Upgrade to theme
 				itemActions.push({
 					id: 'upgrade-to-theme',
-					label: t('Toolbelt.upgradeToTheme') || 'Upgrade to Theme',
+					label: t('Toolbelt.upgradeToTheme'),
 					icon: TrendingUp,
 					onClick: () => upgradeStoryTagToTheme(tracker.id),
 					show: true
@@ -312,7 +303,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Export last
 				itemActions.push({
 					id: 'export-story-tag',
-					label: t('Toolbelt.export') || 'Export',
+					label: t('Toolbelt.export'),
 					icon: Download,
 					onClick: () => {
 						exportToFile(
@@ -331,7 +322,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Delete first
 				itemActions.push({
 					id: 'delete-story-theme',
-					label: t('Toolbelt.delete') || 'Delete',
+					label: t('Toolbelt.delete'),
 					icon: Trash2,
 					variant: 'destructive',
 					onClick: () => removeStoryTheme(tracker.id),
@@ -341,7 +332,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Downgrade to tag
 				itemActions.push({
 					id: 'downgrade-to-tag',
-					label: t('Toolbelt.downgradeToTag') || 'Downgrade to Tag',
+					label: t('Toolbelt.downgradeToTag'),
 					icon: TrendingDown,
 					onClick: () => downgradeStoryThemeToTag(tracker.id),
 					show: true
@@ -350,7 +341,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				// Export last
 				itemActions.push({
 					id: 'export-story-theme',
-					label: t('Toolbelt.export') || 'Export',
+					label: t('Toolbelt.export'),
 					icon: Download,
 					onClick: () => {
 						exportToFile(
@@ -390,9 +381,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		downgradeStoryThemeToTag,
 		addStatus,
 		addStoryTag,
-      addStoryTheme,
+		addStoryTheme,
 		setCardDialogOpen,
-		setCardToEdit,
 		toggleIsEditing,
 		onEnterCardReorderMode,
 		onOpenAddCard

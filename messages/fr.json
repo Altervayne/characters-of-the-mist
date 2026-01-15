@@ -156,6 +156,7 @@
          "exportFull": "Exporter votre Tiroir entier",
          "import": "Importer un fichier dans le Dossier actif",
          "cancel": "Annuler",
+         "confirm": "Confirmer",
 
          "defaultNames": {
             "characterCard": "Carte de Perso.",
