@@ -32,7 +32,10 @@ import {
 	ChevronLeft,
 	MoveLeft,
 	MoveRight,
-	RotateCcw
+	RotateCcw,
+   Hand,
+   SquareMenu,
+   PanelsRightBottom
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -291,7 +294,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 								onClick={() => setMobileFABMode(false)}
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
-								<Navigation className="mr-2 h-5 w-5 shrink-0" />
+								<PanelsRightBottom className="mr-2 h-5 w-5 shrink-0" />
 								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.bottomTabs')}</span>
 							</Button>
 							<Button
@@ -299,7 +302,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 								onClick={() => setMobileFABMode(true)}
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
-								<Menu className="mr-2 h-5 w-5 shrink-0" />
+								<SquareMenu className="mr-2 h-5 w-5 shrink-0" />
 								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.fab')}</span>
 							</Button>
 						</div>
@@ -314,7 +317,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 								onClick={() => setMobileHandedness('left')}
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
-								<MoveLeft className="mr-2 h-5 w-5 shrink-0" />
+								<Hand className="w-8 h-8 -scale-x-100" />
 								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.left')}</span>
 							</Button>
 							<Button
@@ -322,7 +325,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 								onClick={() => setMobileHandedness('right')}
 								className="h-auto min-h-12 text-base whitespace-normal py-3"
 							>
-								<MoveRight className="mr-2 h-5 w-5 shrink-0" />
+								<Hand className="w-8 h-8" />
 								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.right')}</span>
 							</Button>
 						</div>
