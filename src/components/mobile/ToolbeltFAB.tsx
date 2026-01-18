@@ -231,6 +231,7 @@ export default function ToolbeltFAB({
 						variant="default"
 						size="lg"
 						onClick={() => onOpenChange(!isOpen)}
+						data-tutorial="toolbelt"
 						className={cn(
 							"h-10 w-10 shadow-2xl",
 							allActions.length === 0 && "opacity-50 cursor-not-allowed"

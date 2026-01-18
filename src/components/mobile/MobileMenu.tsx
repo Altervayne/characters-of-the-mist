@@ -205,7 +205,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 
 
 	return (
-		<div className="h-full w-full flex flex-col">
+		<div className="h-full w-full flex flex-col" data-tutorial="menu-content">
 			{/* Hidden file input for drawer import */}
 			<input
 				ref={fileInputRef}

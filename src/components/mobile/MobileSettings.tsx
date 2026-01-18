@@ -31,7 +31,8 @@ import {
 	ChevronRight,
 	ChevronLeft,
 	MoveLeft,
-	MoveRight
+	MoveRight,
+	RotateCcw
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -111,10 +112,11 @@ function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description,
 
 interface MobileSettingsProps {
 	onStartTour?: () => void;
+	onRestartOnboarding?: () => void;
 	onBack?: () => void;
 }
 
-export default function MobileSettings({ onStartTour, onBack }: MobileSettingsProps) {
+export default function MobileSettings({ onStartTour, onRestartOnboarding, onBack }: MobileSettingsProps) {
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.split('-')[0] || 'en';
 
@@ -351,6 +353,22 @@ export default function MobileSettings({ onStartTour, onBack }: MobileSettingsPr
 							>
 								<PlayCircle className="mr-3 h-5 w-5 shrink-0" />
 								<span className="flex-1 text-left">{t('SettingsDialog.tutorialButton')}</span>
+								<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+							</Button>
+						</div>
+					)}
+
+					{/* Restart Onboarding */}
+					{onRestartOnboarding && (
+						<div className="space-y-2">
+							<Label className="text-sm font-semibold">{t('SettingsDialog.onboarding')}</Label>
+							<Button
+								onClick={onRestartOnboarding}
+								variant="outline"
+								className="w-full h-12 text-base justify-start"
+							>
+								<RotateCcw className="mr-3 h-5 w-5 shrink-0" />
+								<span className="flex-1 text-left">{t('SettingsDialog.onboardingButton')}</span>
 								<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
 							</Button>
 						</div>

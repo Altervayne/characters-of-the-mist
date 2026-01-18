@@ -43,7 +43,7 @@ export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBotto
 	];
 
 	return (
-		<div className="shrink-0 bg-card border-t border-border safe-area-bottom">
+		<div className="shrink-0 bg-card border-t border-border safe-area-bottom" data-tutorial="bottom-tabs">
 			<div className="flex items-center justify-around h-16">
 				{tabs.map((tab) => {
 					const Icon = tab.icon;
@@ -53,6 +53,7 @@ export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBotto
 						<button
 							key={tab.id}
 							onClick={() => onTabChange(tab.id)}
+							data-tutorial={`${tab.id}-tab`}
 							className={cn(
 								"flex flex-col items-center justify-center flex-1 h-full transition-colors",
 								"active:bg-muted/50",

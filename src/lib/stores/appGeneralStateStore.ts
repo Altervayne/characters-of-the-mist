@@ -24,6 +24,8 @@ interface AppGeneralState {
    isCardDialogOpen: boolean;
    isWelcomeDialogOpen: boolean;
    isLegacyDataDialogOpen: boolean;
+   isMobileOnboardingOpen: boolean;
+   isMobileTutorialOpen: boolean;
 
    // --- App Tour ---
    isTourOpen: boolean;
@@ -55,6 +57,8 @@ interface AppGeneralState {
       setCardDialogOpen: (isOpen: boolean) => void;
       setWelcomeDialogOpen: (isOpen: boolean) => void;
       setLegacyDataDialogOpen: (isOpen: boolean) => void;
+      setMobileOnboardingOpen: (isOpen: boolean) => void;
+      setMobileTutorialOpen: (isOpen: boolean) => void;
 
       // --- App Tour ---
       setTourOpen: (isOpen: boolean) => void;
@@ -91,6 +95,8 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    isCardDialogOpen: false,
    isWelcomeDialogOpen: false,
    isLegacyDataDialogOpen: false,
+   isMobileOnboardingOpen: false,
+   isMobileTutorialOpen: false,
 
    // --- App Tour ---
    isTourOpen: false,
@@ -122,6 +128,8 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setCardDialogOpen: (isOpen) => set({ isCardDialogOpen: isOpen }),
       setWelcomeDialogOpen: (isOpen) => set({ isWelcomeDialogOpen: isOpen }),
       setLegacyDataDialogOpen: (isOpen) => set({ isLegacyDataDialogOpen: isOpen }),
+      setMobileOnboardingOpen: (isOpen) => set({ isMobileOnboardingOpen: isOpen }),
+      setMobileTutorialOpen: (isOpen) => set({ isMobileTutorialOpen: isOpen }),
 
       // --- App Tour ---
       setTourOpen: (isOpen) => set({ isTourOpen: isOpen }),

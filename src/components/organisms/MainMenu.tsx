@@ -185,6 +185,7 @@ const MainMenu: React.FC = () => {
          >
             {/* Header */}
             <div className="flex flex-col items-center gap-6 text-center">
+               {/* Characters of the Mist Logo */}
                <motion.div
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}

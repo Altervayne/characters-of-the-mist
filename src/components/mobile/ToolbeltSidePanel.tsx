@@ -58,6 +58,7 @@ export default function ToolbeltSidePanel({
 						animate={{ x: 0 }}
 						exit={{ x: isLeft ? '-100%' : '100%' }}
 						transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+						data-tutorial="toolbelt"
 						className={cn(
 							"fixed top-0 bottom-0 w-80 max-w-[85vw] bg-card shadow-2xl z-50 flex flex-col",
 							isLeft ? "left-0 border-r" : "right-0 border-l",

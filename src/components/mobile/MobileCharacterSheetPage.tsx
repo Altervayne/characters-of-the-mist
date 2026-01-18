@@ -15,10 +15,12 @@ import MobilePatchNotes from './MobilePatchNotes';
 import MobileMainMenu from './MobileMainMenu';
 import MobileAddCard from './MobileAddCard';
 import MobileDrawer from './MobileDrawer';
+import MobileTutorial from './tutorial/MobileTutorial';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { CreateCardOptions } from '@/lib/types/creation';
@@ -42,6 +44,8 @@ export default function MobileCharacterSheetPage() {
 	const [isReorderingCards, setIsReorderingCards] = useState(false);
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 	const character = useCharacterStore((state) => state.character);
+	const isMobileTutorialOpen = useAppGeneralStateStore((state) => state.isMobileTutorialOpen);
+	const { setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
 
 	// Card creation state
 	const { addCard, addImportedCard, addImportedTracker } = useCharacterActions();
@@ -144,8 +148,13 @@ export default function MobileCharacterSheetPage() {
 	}, []);
 
 	const handleStartTour = () => {
-		// TODO: Implement tour for mobile
-		console.log('Tour not yet implemented for mobile');
+		navigateToTab('sheet');
+		setMobileTutorialOpen(true);
+	};
+
+	const handleRestartOnboarding = () => {
+		navigateToTab('menu');
+		setMobileOnboardingOpen(true);
 	};
 
 	const handleOpenDrawer = () => {
@@ -233,6 +242,7 @@ export default function MobileCharacterSheetPage() {
 				{activeTab === 'settings' && (
 					<MobileSettings
 						onStartTour={handleStartTour}
+						onRestartOnboarding={handleRestartOnboarding}
 						onBack={() => navigateToTab('menu')}
 					/>
 				)}
@@ -265,11 +275,25 @@ export default function MobileCharacterSheetPage() {
 						onOpenMenu={handleOpenMenu}
 						sheetActiveTab={activeTab === 'sheet' ? sheetActiveTab : undefined}
 						isToolbeltOpen={isToolbeltOpen}
+						isExpanded={isMenuFABExpanded}
 						onIsExpandedChange={setIsMenuFABExpanded}
 					/>
 				)
 			)}
 
+			{/* Mobile Tutorial */}
+			<MobileTutorial
+				isOpen={isMobileTutorialOpen}
+				onComplete={() => setMobileTutorialOpen(false)}
+				actions={{
+					navigateToTab,
+					setSheetTab: setSheetActiveTab,
+					openSettings: handleOpenSettings,
+					closeSettings: () => navigateToTab('menu'),
+					expandFAB: () => setIsMenuFABExpanded(true),
+					collapseFAB: () => setIsMenuFABExpanded(false),
+				}}
+			/>
 		</div>
 	);
 }

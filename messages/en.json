@@ -318,6 +318,9 @@
       "tutorial": "App Tutorial",
       "tutorialButton": "Launch the Tutorial",
 
+      "onboarding": "Initial Setup",
+      "onboardingButton": "Restart Onboarding",
+
       "migration": {
          "label": "Migrate data",
          "button": "Migrate legacy character files"
@@ -660,10 +663,6 @@
 
 
 
-   "CardRenderer": {
-      "themeCardPlaceholder": "Theme Card: {{title}}",
-      "listCardPlaceholder": "List Card: {{title}}"
-   },
    "ThemeCard": {
       "fellowshipTitle": "Fellowship Theme",
       "crewThemeTitle": "Crew Theme",
@@ -935,6 +934,9 @@
       "Self": "Self",
       "Noise": "Noise"
    },
+
+
+
    "MobileCharacterSheet": {
       "noCharacter": "No Character Loaded",
       "loadCharacterPrompt": "Load a character from the drawer or create a new one to get started.",
@@ -998,8 +1000,128 @@
       "info": "About",
       "patchNotes": "Patch Notes",
       "save": "Save Character",
+      "saveCharacterAs": "Save Character as...",
       "export": "Export Character",
-      "import": "Import",
+      "import": "Import an Item",
       "unload": "Unload Character"
+   },
+   "MobileOnboarding": {
+      "welcome": {
+         "title": "Welcome to Characters of the Mist",
+         "description": "Let's set up your preferences to get you started. You can always get back to this screen from the Settings",
+         "getStarted": "Get Started"
+      },
+      "language": {
+         "title": "Choose Your Language",
+         "description": "Select your preferred language"
+      },
+      "appearance": {
+         "title": "Customize Appearance",
+         "description": "Choose your theme and color palette",
+         "mode": "Display Mode",
+         "palette": "Color Palette"
+      },
+      "interface": {
+         "title": "Interface Preferences",
+         "description": "Optimize the interface for your comfort",
+         "handedness": "Which hand do you use?",
+         "handednessHint": "Controls will be positioned for easier thumb access",
+         "leftHanded": "Left Hand",
+         "rightHanded": "Right Hand",
+         "navigation": "Interface Style",
+         "navigationHint": "Choose how you interact with the app",
+         "bottomTabs": "Tabs & Panels",
+         "floatingButton": "Floating Buttons"
+      },
+      "ready": {
+         "title": "You're All Set!",
+         "description": "Your preferences have been saved",
+         "startApp": "Start Characters of the Mist",
+         "takeTour": "Start the Tutorial",
+         "tutorialReminder": "You can restart the tutorial anytime from Settings"
+      },
+      "navigation": {
+         "back": "Back",
+         "next": "Next",
+         "skip": "Skip"
+      }
+   },
+   "MobileTutorial": {
+      "intro": {
+         "title": "Welcome to Characters of the Mist!",
+         "description": "This short tour will show you around the app and help you get your bearings."
+      },
+      "navigation": {
+         "title": "Navigation",
+         "tabs": {
+            "description": "You can use these tabs to switch between the different sections of the app. You can also toggle Edit/Play mode from here."
+         },
+         "fab": {
+            "description": "You can open the navigation menu with this button."
+         }
+      },
+      "menu": {
+         "title": "Menu",
+         "description": "Let's now take a look at the Menu."
+      },
+      "sheet": {
+         "title": "Character Sheet",
+         "description": "You can press this option to enter the Character Sheet."
+      },
+      "trackers": {
+         "title": "Trackers",
+         "description": "This section is where your Character Sheet's trackers live. You can find a list of Status Trackers, Story Tag Trackers and Story Theme Trackers here."
+      },
+      "trackerSelection": {
+         "title": "Selecting & Reordering",
+         "description": "Long-press any tracker to select it. Once selected, you can use the buttons that appear to reorder your trackers up or down."
+      },
+      "toolbelt": {
+         "title": "Toolbelt",
+         "sidePanel": {
+            "description": "You can tap the wrench icon at the top, or swipe from your preferred side of the screen (based on your handedness setting) to open up the Toolbelt. It contains actions you can perform on your character."
+         },
+         "fab": {
+            "description": "You can tap here to open the list of available actions while on the Character Sheet."
+         }
+      },
+      "cards": {
+         "title": "Your Cards",
+         "description": "You can switch to the Theme Cards section by pressing this tab."
+      },
+      "cardNavigation": {
+         "title": "Card Navigation",
+         "description": "This is the Theme Cards navigation bar. You can use the arrows or swipe left & right on the bar to navigate between your cards. You can also swipe up from the bar to open the card list, where you can select which card to navigate to, and reorder them."
+      },
+      "drawer": {
+         "title": "Your Drawer",
+         "description": "Let's now take a look at the Drawer."
+      },
+      "drawerContent": {
+         "title": "Drawer Contents",
+         "description": "Characters of the Mist lets you store and organize characters, cards and trackers here."
+      },
+      "drawerInteractions": {
+         "title": "Interacting with Items",
+         "description": "Tap a folder to open it. Long-press any folder or item to see more options like renaming, moving, exporting, or deleting."
+      },
+      "drawerToolbar": {
+         "title": "Drawer Actions",
+         "description": "You can create new folders, import items from files, or change the view mode from here."
+      },
+      "menuActions": {
+         "title": "Menu Actions",
+         "description": "You can access the app's patch notes, About section, or settings from here. You can also save, export or import files, characters and items from here."
+      },
+      "complete": {
+         "title": "The tour is over!",
+         "description": "Explore Characters of the Mist and don't hesitate to send feedback on the Tools of the Mist discord server!"
+      },
+      "controls": {
+         "next": "Next",
+         "back": "Back",
+         "skip": "Skip Tutorial",
+         "done": "Done"
+      }
    }
 }

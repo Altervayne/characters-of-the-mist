@@ -27,6 +27,7 @@ interface MobileFABProps {
 	onOpenMenu: () => void;
 	sheetActiveTab?: SheetTab;
 	isToolbeltOpen?: boolean;
+	isExpanded?: boolean;
 	onIsExpandedChange?: (isExpanded: boolean) => void;
 }
 
@@ -37,16 +38,20 @@ export default function MobileFAB({
 	onOpenMenu,
 	sheetActiveTab,
 	isToolbeltOpen,
+	isExpanded: controlledIsExpanded,
 	onIsExpandedChange
 }: MobileFABProps) {
 	const { t } = useTranslation();
-	const [isExpanded, setIsExpanded] = useState(false);
+	const [internalIsExpanded, setInternalIsExpanded] = useState(false);
+
+	// Use controlled state if provided, otherwise use internal state
+	const isExpanded = controlledIsExpanded ?? internalIsExpanded;
 	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
 	const isLeft = mobileHandedness === 'left';
 
 	const toggleExpanded = () => {
 		const newValue = !isExpanded;
-		setIsExpanded(newValue);
+		setInternalIsExpanded(newValue);
 		onIsExpandedChange?.(newValue);
 	};
 
@@ -113,6 +118,7 @@ export default function MobileFAB({
 						return (
 							<motion.button
 								key={action.id}
+								data-tutorial={`fab-${action.id}`}
 								initial={{ opacity: 0, scale: 0, y: 20 }}
 								animate={{ opacity: 1, scale: 1, y: 0 }}
 								exit={{ opacity: 0, scale: 0, y: 20 }}
@@ -150,6 +156,7 @@ export default function MobileFAB({
 								: isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
 					)}
 					whileTap={{ scale: 0.95 }}
+					data-tutorial="mobile-fab"
 				>
 					<IconButton
 						variant="default"

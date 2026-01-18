@@ -13,15 +13,17 @@ import { LocalStorageError } from '../molecules/LocalStorageError';
 import { LegacyDataDialog } from '../organisms/LegacyDataDialog';
 import { PatchNotesDialog } from '@/components/organisms/PatchNotesDialog';
 import { WelcomeDialog } from '@/components/organisms/WelcomeDialog';
+import MobileOnboarding from '@/components/mobile/onboarding/MobileOnboarding';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
+import { useDeviceType } from '@/hooks/useDeviceType';
 
 
 
-type DialogStep = 'legacy' | 'welcome' | 'patchNotes' | null;
+type DialogStep = 'legacy' | 'welcome' | 'mobileOnboarding' | 'patchNotes' | null;
 
 const WELCOME_KEY = 'characters-of-the-mist_has-visited';
 const LEGACY_STORAGE_KEY = 'characterData';
@@ -46,10 +48,13 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const [shouldShowPatchNotes, setShouldShowPatchNotes] = useState(false);
    const [didInit, setDidInit] = useState(false);
 
+   const { isMobile } = useDeviceType();
+
    const isLegacyDataDialogOpen = useAppGeneralStateStore((state) => state.isLegacyDataDialogOpen);
    const isWelcomeDialogOpen = useAppGeneralStateStore((state) => state.isWelcomeDialogOpen);
    const isPatchNotesOpen = useAppGeneralStateStore((state) => state.isPatchNotesOpen);
-   const { setLegacyDataDialogOpen, setWelcomeDialogOpen, setPatchNotesOpen, setInitialPatchNotesVersion, setSettingsOpen, setDrawerOpen } = useAppGeneralStateActions();
+   const isMobileOnboardingOpen = useAppGeneralStateStore((state) => state.isMobileOnboardingOpen);
+   const { setLegacyDataDialogOpen, setWelcomeDialogOpen, setPatchNotesOpen, setInitialPatchNotesVersion, setSettingsOpen, setDrawerOpen, setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
    const { setSidebarCollapsed } = useAppSettingsActions();
    const { startTour } = useAppTourDriver();
 
@@ -76,7 +81,8 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
          if (willShowLegacy) {
             setCurrentDialog('legacy');
          } else if (willShowWelcome) {
-            setCurrentDialog('welcome');
+            // Show mobile onboarding on mobile, desktop welcome dialog otherwise
+            setCurrentDialog(isMobile ? 'mobileOnboarding' : 'welcome');
          } else if (willShowPatchNotes) {
             let firstUnreadIndex = 0;
 
@@ -112,6 +118,10 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
             setLegacyDataDialogOpen(false);
             setWelcomeDialogOpen(true);
             break;
+         case 'mobileOnboarding':
+            setLegacyDataDialogOpen(false);
+            setMobileOnboardingOpen(true);
+            break;
          case 'patchNotes':
             setLegacyDataDialogOpen(false);
             setPatchNotesOpen(true);
@@ -125,20 +135,21 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
    // --- Dialog closing handler ---
    const handleDialogClose = () => {
-      if (currentDialog === 'welcome') {
+      if (currentDialog === 'welcome' || currentDialog === 'mobileOnboarding') {
          localStorage.setItem(WELCOME_KEY, 'true');
       }
 
       if (!isStartupFlow) {
          if (isLegacyDataDialogOpen) setLegacyDataDialogOpen(false);
          if (isWelcomeDialogOpen) setWelcomeDialogOpen(false);
+         if (isMobileOnboardingOpen) setMobileOnboardingOpen(false);
          if (isPatchNotesOpen) setPatchNotesOpen(false);
          setCurrentDialog(null);
          return;
       }
 
       if (currentDialog === 'legacy' && shouldShowWelcome) {
-         setCurrentDialog('welcome');
+         setCurrentDialog(isMobile ? 'mobileOnboarding' : 'welcome');
          setShouldShowWelcome(false);
          return;
       }
@@ -152,9 +163,27 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
       if (currentDialog === 'welcome') {
          setWelcomeDialogOpen(false);
          setIsStartupFlow(false);
+      } else if (currentDialog === 'mobileOnboarding') {
+         setMobileOnboardingOpen(false);
+         setIsStartupFlow(false);
       } else if (currentDialog === 'patchNotes') {
          setPatchNotesOpen(false);
          setIsStartupFlow(false);
+      }
+   };
+
+   // --- Mobile onboarding completion handler ---
+   const handleMobileOnboardingComplete = (startTutorial: boolean) => {
+      localStorage.setItem(WELCOME_KEY, 'true');
+      setMobileOnboardingOpen(false);
+      setIsStartupFlow(false);
+      setCurrentDialog(null);
+
+      if (startTutorial) {
+         // Small delay to allow onboarding to close before starting tutorial
+         setTimeout(() => {
+            setMobileTutorialOpen(true);
+         }, 300);
       }
    };
 
@@ -199,11 +228,15 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
             onStartTutorial={handleStartTour}
             onShowPatchNotes={handleOpenPatchNotesFromWelcome}
          />
-         <PatchNotesDialog 
-            isOpen={isPatchNotesOpen} 
+         <PatchNotesDialog
+            isOpen={isPatchNotesOpen}
             onOpenChange={(open) => {
                if (!open) handleDialogClose();
-            }} 
+            }}
+         />
+         <MobileOnboarding
+            isOpen={isMobileOnboardingOpen}
+            onComplete={handleMobileOnboardingComplete}
          />
       </>
    );
