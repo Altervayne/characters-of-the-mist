@@ -178,7 +178,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 					</p>
 				</div>
 
-				<div className="flex-1 px-6 space-y-6">
+				<div className="flex-1 px-6 pb-6 space-y-6">
 					{/* Language */}
 					<div className="space-y-2">
 						<Label className="text-sm font-semibold">{t('SettingsDialog.language')}</Label>
@@ -364,7 +364,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 							<Label className="text-sm font-semibold">{t('SettingsDialog.onboarding')}</Label>
 							<Button
 								onClick={onRestartOnboarding}
-								variant="outline"
+								variant="default"
 								className="w-full h-12 text-base justify-start"
 							>
 								<RotateCcw className="mr-3 h-5 w-5 shrink-0" />
