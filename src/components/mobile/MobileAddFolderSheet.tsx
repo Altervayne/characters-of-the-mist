@@ -31,6 +31,7 @@ export default function MobileAddFolderSheet({
 	// Reset folder name when sheet opens
 	useEffect(() => {
 		if (isOpen) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setFolderName('');
 		}
 	}, [isOpen]);
