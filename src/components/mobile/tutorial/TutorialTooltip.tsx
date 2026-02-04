@@ -1,6 +1,3 @@
-// Tutorial Tooltip
-// Positioned tooltip that explains each tutorial step
-
 // -- React Imports --
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

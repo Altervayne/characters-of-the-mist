@@ -1,6 +1,3 @@
-// Mobile Drawer Context Menu Component
-// Bottom sheet with actions for folders and items
-
 // -- React Imports --
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

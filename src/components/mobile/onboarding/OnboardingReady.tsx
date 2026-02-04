@@ -1,6 +1,3 @@
-// Onboarding Ready Step
-// Final step with completion and tutorial offer
-
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 

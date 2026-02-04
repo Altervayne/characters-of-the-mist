@@ -1,6 +1,3 @@
-// Mobile Folder Picker Component
-// Full-screen bottom sheet for selecting destination folder when moving items/folders
-
 // -- React Imports --
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

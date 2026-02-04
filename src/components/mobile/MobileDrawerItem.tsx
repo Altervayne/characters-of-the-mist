@@ -1,6 +1,3 @@
-// Mobile Drawer Item Component
-// Displays drawer items in compact or rich view with long-press support
-
 // -- React Imports --
 import { useState, useRef } from 'react';
 

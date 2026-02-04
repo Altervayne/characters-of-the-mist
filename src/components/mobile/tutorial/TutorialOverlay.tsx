@@ -1,6 +1,3 @@
-// Tutorial Overlay
-// Creates a dark backdrop with a transparent spotlight around the target element
-
 // -- React Imports --
 import { useEffect, useState } from 'react';
 

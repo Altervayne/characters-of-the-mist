@@ -1,6 +1,3 @@
-// Mobile Breadcrumbs Component
-// Horizontal scrolling breadcrumb trail for folder navigation
-
 // -- React Imports --
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

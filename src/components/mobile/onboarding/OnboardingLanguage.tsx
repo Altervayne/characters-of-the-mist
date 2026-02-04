@@ -1,6 +1,3 @@
-// Onboarding Language Step
-// Language selection with large tappable cards
-
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 

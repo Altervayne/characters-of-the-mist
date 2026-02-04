@@ -1,6 +1,3 @@
-// Mobile Onboarding Wizard
-// Multi-step wizard for first-time mobile users to set preferences
-
 // -- React Imports --
 import { useState } from 'react';
 

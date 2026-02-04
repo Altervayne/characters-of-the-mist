@@ -1,6 +1,3 @@
-// Mobile Tutorial
-// Main controller component for the mobile tutorial experience
-
 // -- React Imports --
 import { useState, useEffect, useCallback } from 'react';
 

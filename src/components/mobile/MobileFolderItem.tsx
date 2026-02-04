@@ -1,6 +1,3 @@
-// Mobile Folder Item Component
-// Displays a folder with tap to navigate and long-press for context menu
-
 // -- React Imports --
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';

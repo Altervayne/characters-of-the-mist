@@ -1,6 +1,3 @@
-// Mobile Add Folder Sheet Component
-// Bottom sheet for creating a new folder with custom name input
-
 // -- React Imports --
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

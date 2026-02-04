@@ -1,6 +1,3 @@
-// Onboarding Interface Step
-// Handedness and navigation style preferences
-
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 

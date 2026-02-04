@@ -1,6 +1,3 @@
-// Mobile Drawer Component
-// Main drawer interface for mobile with folder navigation and item management
-
 // -- React Imports --
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';

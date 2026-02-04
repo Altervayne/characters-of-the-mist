@@ -1,6 +1,3 @@
-// Mobile Character Sheet Page
-// Main mobile page that orchestrates the mobile experience
-
 // -- React Imports --
 import { useState, useEffect, useRef, startTransition } from 'react';
 

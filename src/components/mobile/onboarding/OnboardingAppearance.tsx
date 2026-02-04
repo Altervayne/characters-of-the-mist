@@ -1,6 +1,3 @@
-// Onboarding Appearance Step
-// Theme mode and color palette selection
-
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 

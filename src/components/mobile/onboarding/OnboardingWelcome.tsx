@@ -1,6 +1,3 @@
-// Onboarding Welcome Step
-// First step with app introduction
-
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 
