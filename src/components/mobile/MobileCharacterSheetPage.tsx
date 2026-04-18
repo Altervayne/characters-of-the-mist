@@ -1,6 +1,10 @@
 // -- React Imports --
 import { useState, useEffect, useRef, startTransition } from 'react';
 
+// -- Library Imports --
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+
 // -- Component Imports --
 import MobileCharacterSheet from './MobileCharacterSheet';
 import MobileBottomTabs from './MobileBottomTabs';
@@ -45,6 +49,7 @@ export default function MobileCharacterSheetPage() {
 	const { setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
 
 	// Card creation state
+	const { t: tNotifications } = useTranslation();
 	const { addCard, addImportedCard, addImportedTracker } = useCharacterActions();
 	const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
 	const [newlyCreatedCardId, setNewlyCreatedCardId] = useState<string | null>(null);
@@ -189,7 +194,11 @@ export default function MobileCharacterSheetPage() {
 	};
 
 	const handleAddDrawerItemToCharacter = (item: import('@/lib/types/drawer').DrawerItem) => {
-		// Determine if it's a card or tracker based on item type
+		if (item.game !== character?.game) {
+			toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
+			return;
+		}
+
 		const cardTypes = ['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME'];
 		const trackerTypes = ['STATUS_TRACKER', 'STORY_TAG_TRACKER', 'STORY_THEME_TRACKER'];
 

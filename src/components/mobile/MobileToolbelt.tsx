@@ -7,6 +7,7 @@ import { useToolbeltActions } from '@/hooks/useToolbeltActions';
 
 // -- Type Imports --
 import type { ToolbeltMode, ToolbeltContext } from '@/lib/types/toolbelt';
+import type { Card, Tracker } from '@/lib/types/character';
 
 type SheetTab = 'trackers' | 'cards';
 
@@ -19,6 +20,7 @@ interface MobileToolbeltProps {
 	isMenuFABExpanded?: boolean;
 	onEnterCardReorderMode?: () => void;
 	onOpenAddCard?: () => void;
+	onSaveToDrawer?: (item: Card | Tracker) => void;
 }
 
 export default function MobileToolbelt({
@@ -29,10 +31,11 @@ export default function MobileToolbelt({
 	activeTab,
 	isMenuFABExpanded,
 	onEnterCardReorderMode,
-	onOpenAddCard
+	onOpenAddCard,
+	onSaveToDrawer
 }: MobileToolbeltProps) {
 	// Build action lists based on context and active tab
-	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode, onOpenAddCard);
+	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode, onOpenAddCard, onSaveToDrawer);
 
 	// Render appropriate UI based on mode
 	if (mode === 'side-panel') {

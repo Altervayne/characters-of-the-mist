@@ -123,6 +123,7 @@
 
       "root": "Root",
       "empty": "Empty",
+      "emptyDrawer": "Your Drawer is completely empty!",
 
       "folderCount_one": "{{count}} folder",
       "folderCount_other": "{{count}} folders",
@@ -138,6 +139,8 @@
       "Actions": {
          "addFolderTitle": "Create a new Folder",
          "createFolder": "Create Folder",
+
+         "addToCharacter": "Add to current Character",
 
          "selectFolder": "Select a destination",
          "selectThisFolder": "Move here",
@@ -991,7 +994,13 @@
       "makePositive": "Make Positive",
       "makeNegative": "Make Negative",
       "upgradeToTheme": "Evolve into Story Theme",
-      "downgradeToTag": "Downgrade to Tag"
+      "downgradeToTag": "Downgrade to Tag",
+      "saveToDrawer": "Save to Drawer"
+   },
+   "MobileSaveToDrawerSheet": {
+      "title": "Save to Drawer",
+      "placeholder": "Item name...",
+      "confirm": "Save"
    },
    "MobileMenu": {
       "title": "Menu",

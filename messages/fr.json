@@ -123,6 +123,7 @@
 
       "root": "Racine",
       "empty": "Vide",
+      "emptyDrawer": "Votre Tiroir est complètement vide !",
 
       "folderCount_one": "{{count}} dossier",
       "folderCount_other": "{{count}} dossiers",
@@ -138,6 +139,8 @@
       "Actions": {
          "addFolderTitle": "Créer un nouveau Dossier",
          "createFolder": "Créer le Dossier",
+
+         "addToCharacter": "Ajouter à la Fiche active",
 
          "selectFolder": "Sélectionner une destination",
          "selectThisFolder": "Déposer ici",
@@ -985,7 +988,13 @@
       "makePositive": "Rendre Positif",
       "makeNegative": "Rendre Négatif",
       "upgradeToTheme": "Promouvoir en Thème Narratif",
-      "downgradeToTag": "Rétrograder en Trait"
+      "downgradeToTag": "Rétrograder en Trait",
+      "saveToDrawer": "Sauver dans le Tiroir"
+   },
+   "MobileSaveToDrawerSheet": {
+      "title": "Sauver dans le Tiroir",
+      "placeholder": "Nom de l'élément...",
+      "confirm": "Sauver"
    },
    "MobileMenu": {
       "title": "Menu",

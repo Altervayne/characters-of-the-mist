@@ -188,7 +188,7 @@ export default function MobileDrawerContextMenu({
                      onClick={handleAddToCharacter}
                   >
                      <PlusCircle className="w-4 h-4 mr-3" />
-                     {t('Drawer.addToCharacter')}
+                     {t('Drawer.Actions.addToCharacter')}
                   </Button>
                )}
 

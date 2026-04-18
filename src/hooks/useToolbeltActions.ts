@@ -22,7 +22,8 @@ import {
    SaveAll,
    CreditCard,
    RectangleEllipsis,
-   WalletCards
+   WalletCards,
+   FolderInput
 } from 'lucide-react';
 
 // -- Other Library Imports --
@@ -37,7 +38,7 @@ import { exportToFile, exportCharacterSheet } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
-import type { CardViewMode } from '@/lib/types/character';
+import type { CardViewMode, Card, Tracker } from '@/lib/types/character';
 
 
 
@@ -45,7 +46,7 @@ import type { CardViewMode } from '@/lib/types/character';
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		flipCard,
@@ -247,6 +248,15 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				show: true
 			});
 
+			// Save to Drawer action
+			itemActions.push({
+				id: 'save-card-to-drawer',
+				label: t('Toolbelt.saveToDrawer'),
+				icon: FolderInput,
+				onClick: () => onSaveToDrawer?.(card),
+				show: !!onSaveToDrawer
+			});
+
 			// Edit themebook/type action
 			if (card.cardType === 'CHARACTER_THEME') {
 				itemActions.push({
@@ -296,6 +306,14 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 						);
 					},
 					show: true
+				});
+
+				itemActions.push({
+					id: 'save-status-to-drawer',
+					label: t('Toolbelt.saveToDrawer'),
+					icon: FolderInput,
+					onClick: () => onSaveToDrawer?.(tracker),
+					show: !!onSaveToDrawer
 				});
 			}
 
@@ -347,6 +365,14 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					},
 					show: true
 				});
+
+				itemActions.push({
+					id: 'save-story-tag-to-drawer',
+					label: t('Toolbelt.saveToDrawer'),
+					icon: FolderInput,
+					onClick: () => onSaveToDrawer?.(tracker),
+					show: !!onSaveToDrawer
+				});
 			}
 
 			// Story theme tracker actions
@@ -384,6 +410,14 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 						);
 					},
 					show: true
+				});
+
+				itemActions.push({
+					id: 'save-story-theme-to-drawer',
+					label: t('Toolbelt.saveToDrawer'),
+					icon: FolderInput,
+					onClick: () => onSaveToDrawer?.(tracker),
+					show: !!onSaveToDrawer
 				});
 			}
 

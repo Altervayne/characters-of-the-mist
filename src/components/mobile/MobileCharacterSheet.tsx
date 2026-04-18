@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import MobileCardCarousel from './MobileCardCarousel';
 import MobileToolbelt from './MobileToolbelt';
+import MobileSaveToDrawerSheet from './MobileSaveToDrawerSheet';
 import SelectableTracker from './SelectableTracker';
 import { LegendsThemeCard } from '@/components/organisms/LegendsThemeCard';
 import { CityThemeCard } from '@/components/organisms/CityThemeCard';
@@ -22,17 +23,22 @@ import { OtherscapeCharacterCard } from '@/components/organisms/OtherscapeCharac
 // -- Icon Imports --
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PlusCircle, Wrench, Check, SquareDashed } from 'lucide-react';
 
+// -- Other Library Imports --
+import toast from 'react-hot-toast';
+
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 
 // -- Type Imports --
-import type { Card, CardDetails } from '@/lib/types/character';
+import type { Card, CardDetails, Tracker } from '@/lib/types/character';
 import type { ToolbeltContext } from '@/lib/types/toolbelt';
 
 
@@ -97,6 +103,7 @@ export default function MobileCharacterSheet({
 	// Character data
 	const character = useCharacterStore((state) => state.character);
 	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard, reorderStatuses, reorderStoryTags, reorderStoryThemes, reorderCards } = useCharacterActions();
+	const { addItem: addDrawerItem } = useDrawerActions();
 
 	// Settings
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
@@ -124,6 +131,11 @@ export default function MobileCharacterSheet({
 	// Toolbelt context state
 	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
 	const [isReorderingTracker, setIsReorderingTracker] = useState(false);
+
+	// Save to Drawer sheet state
+	const [isSaveToDrawerOpen, setIsSaveToDrawerOpen] = useState(false);
+	const [saveToDrawerItem, setSaveToDrawerItem] = useState<Card | Tracker | null>(null);
+	const [saveToDrawerDefaultName, setSaveToDrawerDefaultName] = useState('');
 
 	// Character name input with debouncing
 	const [localName, setLocalName] = useInputDebouncer(
@@ -375,6 +387,25 @@ export default function MobileCharacterSheet({
 
 
 
+	// Save to Drawer handlers
+	const handleSaveToDrawer = (item: Card | Tracker) => {
+		const defaultName = 'cardType' in item ? getCardTitle(item) : item.name;
+		setSaveToDrawerItem(item);
+		setSaveToDrawerDefaultName(defaultName);
+		setIsSaveToDrawerOpen(true);
+	};
+
+	const handleConfirmSaveToDrawer = (name: string) => {
+		if (!saveToDrawerItem) return;
+		const storableInfo = mapItemToStorableInfo(saveToDrawerItem);
+		if (!storableInfo) return;
+		const [type, game] = storableInfo;
+		const contentCopy = JSON.parse(JSON.stringify(saveToDrawerItem));
+		if ('isFlipped' in contentCopy) contentCopy.isFlipped = false;
+		addDrawerItem(name, game, type, contentCopy);
+		toast.success(t('Notifications.drawer.itemCreated'));
+	};
+
 	// Build toolbelt context based on active tab and selection
 	const toolbeltContext: ToolbeltContext = useMemo(() => {
 		if (activeTab === 'cards' && character && character.cards.length > 0) {
@@ -515,6 +546,7 @@ export default function MobileCharacterSheet({
 	}
 
 	return (
+		<>
 		<div className="flex flex-col h-full">
 			{/* Character Name Header */}
 			<header className="p-4 bg-popover border-b border-border flex items-center gap-3">
@@ -879,6 +911,7 @@ export default function MobileCharacterSheet({
 						setIsToolbeltOpen(false);
 					}}
 					onOpenAddCard={onOpenAddCard}
+					onSaveToDrawer={handleSaveToDrawer}
 				/>
 			)}
 
@@ -939,5 +972,14 @@ export default function MobileCharacterSheet({
 				</div>
 			)}
 		</div>
+
+		{/* Save to Drawer Sheet */}
+		<MobileSaveToDrawerSheet
+			isOpen={isSaveToDrawerOpen}
+			onClose={() => setIsSaveToDrawerOpen(false)}
+			onConfirm={handleConfirmSaveToDrawer}
+			defaultName={saveToDrawerDefaultName}
+		/>
+		</>
 	);
 }
