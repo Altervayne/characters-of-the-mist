@@ -64,7 +64,7 @@ const getGameBadgeVariant = (game: string) => {
 const getGameDisplayName = (game: string) => {
 	switch (game) {
 		case 'LEGENDS':
-			return 'Legends';
+			return 'Legend';
 		case 'CITY_OF_MIST':
 			return 'City';
 		case 'OTHERSCAPE':

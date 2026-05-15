@@ -55,7 +55,7 @@ export type Tracker = StatusTracker | StoryTagTracker | StoryThemeTracker;
 // *###############################*
 
 
-// --- LEGENDS IN THE MIST ---
+// --- LEGEND IN THE MIST ---
 
 export type LegendsThemeType = 'Origin' | 'Adventure' | 'Greatness';
 

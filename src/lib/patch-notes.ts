@@ -5,6 +5,23 @@ export interface PatchNote {
 
 export const patchNotes: PatchNote[] = [
    {
+      version: '1.3.0',
+      content: `
+### ✨ The Mobile Update!
+As per requested, Mobile compatibility is here! Characters of the Mist can now be opened on a mobile device with a specially made mobile UI!
+Please keep in mind I am absolutely not used to mobile UIs. I tried my best to make something intuitive and pleasant to use, but feeback is always welcome.
+There may be unexpected bugs, I didn't get the opportunity to test this on a lot of screen sizes. Don't hesitate to hit up the Tools of the Mist discord !
+
+### 🔧 Changes
+
+### 🐛 Bugfixes
+
+### Other fixes
+As reported, it's LEGEND in the Mist, and not LEGENDS in the Mist. Sorry about that! The text has been adjusted across the app.
+
+`
+   },
+   {
       version: '1.2.1',
       content: `
 ### 🔧 Changes
@@ -55,7 +72,7 @@ This is THE long awaited update.
 ### 🔧 Changes
 * Characters now have persistence in the Drawer. There are now two buttons to save, "Save Character" and "Save Character As...". The "Save As" feature prompts you for a new file name within the drawer, while the "Save" overwrites the original drawer file.
 * As requested, the Drawer now has a button in its header to close it.
-* Adjusted Legends in the Mist Light mode color palette for a more "Wood and Stone" feel.
+* Adjusted Legend in the Mist Light mode color palette for a more "Wood and Stone" feel.
 
 ### So what's next ?
 As always, please do not hesitate to send feature requests and bug reports on the Tools of the Mist server, even if I work slowly due to lack of time, I read them, and I try my best to implement them!

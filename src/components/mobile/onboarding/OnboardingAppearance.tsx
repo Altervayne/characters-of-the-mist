@@ -26,9 +26,9 @@ interface OnboardingAppearanceProps {
 
 const COLOR_PALETTES = [
 	{ id: 'theme-neutral', name: 'Neutral', color: '#71717a' },
-	{ id: 'theme-legends', name: 'Legends', color: '#b45309' },
-	{ id: 'theme-city-of-mist', name: 'City of Mist', color: '#0891b2' },
-	{ id: 'theme-otherscape', name: 'Otherscape', color: '#7c3aed' },
+	{ id: 'theme-legends', name: 'Legend', color: '#b45309' },
+	{ id: 'theme-city-of-mist', name: 'City of Mist', color: '#7c3aed' },
+	{ id: 'theme-otherscape', name: 'Otherscape', color: '#0891b2' },
 ];
 
 export default function OnboardingAppearance({ onNext, onBack, onSkip }: OnboardingAppearanceProps) {

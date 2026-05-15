@@ -110,7 +110,7 @@ interface CharacterState {
       addTagToStoryTheme: (trackerId: string, listName: 'powerTags' | 'weaknessTags') => void;
       updateTagInStoryTheme: (trackerId: string, listName: 'mainTag' | 'powerTags' | 'weaknessTags', tagId: string, updatedTag: Partial<Tag>) => void;
       removeTagFromStoryTheme: (trackerId: string, listName: 'powerTags' | 'weaknessTags', tagId: string) => void;
-      // --- Legends in the Mist ### Fellowship Relationship Actions --- 
+      // --- Legend in the Mist ### Fellowship Relationship Actions --- 
       addRelationship: (cardId: string) => void;
       updateRelationship: (cardId: string, relationshipId: string, updates: Partial<FellowshipRelationship>) => void;
       removeRelationship: (cardId: string, relationshipId: string) => void;
@@ -1002,7 +1002,7 @@ export const useCharacterStore = create<CharacterState>()(
                      }
                   });
                },
-               // --- Legends in the Mist ### Fellowship Relationship Actions --- 
+               // --- Legend in the Mist ### Fellowship Relationship Actions --- 
                addRelationship: (cardId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');

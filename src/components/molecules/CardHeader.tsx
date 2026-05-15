@@ -65,7 +65,7 @@ const ThemeTypeIcon = ({ type, game }: { type: string; game?: string }) => {
          );
       }
    }
-   // Legends in the Mist theme icons (Lucide)
+   // Legend in the Mist theme icons (Lucide)
    else {
       switch (type) {
          case 'Origin':

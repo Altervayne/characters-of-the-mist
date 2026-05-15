@@ -168,7 +168,7 @@ const CreateCard_TypePage = ({ currentGame, onSelect }: CreateCard_TypePageProps
    );
 };
 
-// --- Step 2a: Legends Theme Type ---
+// --- Step 2a: Legend Theme Type ---
 interface CreateCard_LegendsThemeTypePageProps { onSelect: (type: LegendsThemeTypes) => void; }
 const CreateCard_LegendsThemeTypePage = ({ onSelect }: CreateCard_LegendsThemeTypePageProps) => {
       const { t } = useTranslation();

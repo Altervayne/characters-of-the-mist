@@ -150,7 +150,7 @@
       "Types": {
          "unavailablePreview": "Für diesen Eintrag ist die Vorschau nicht verfügbar.",
 
-         "LEGENDS": "Legends in the Mist",
+         "LEGENDS": "Legend in the Mist",
          "OTHERSCAPE": "Otherscape",
          "CITY": "City of Mist",
 
@@ -264,7 +264,7 @@
       "content": {
          "about": "#### Was ist Characters of the Mist?\n\nCharacters of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.\n\n---\n\n#### Was kann dieses Tool tun?\n\nDieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:\n\n* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.\n\n* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.\n\n* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.\n\n* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.\n\n* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.\n\n* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.\n\n---\n\n#### Kann dieses Tool als VTT verwendet werden?\n\nAktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.\n\n---\n\n#### Kann ich ein Problem mit der App melden?\n\nSie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
          "license": "#### Unter welcher Lizenz steht dieser Code?\n\nDiese App steht unter der [Creative Commons 4.0 BY-NC-SA Lizenz](http://creativecommons.org/licenses/by-nc-sa/4.0/).\n\nDas bedeutet, dass Sie das Material kopieren, weiterverbreiten, remixen, transformieren und darauf aufbauen dürfen. Sie müssen jedoch angemessene Anerkennung geben, einen Link zur Lizenz bereitstellen, angeben, ob Änderungen vorgenommen wurden, den Code nicht für kommerzielle Zwecke verwenden und Ihre Beiträge unter derselben Lizenz verteilen.",
-         "credits": "#### Credits & Attributions\n\nVielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legends in the Mist.",
+         "credits": "#### Credits & Attributions\n\nVielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legend in the Mist.",
          "localization": "#### Localization\n\nVielen Dank an alle, die dazu beigetragen haben, dass Characters of the Mist in anderen Sprachen als Englisch verfügbar ist!",
          "support": "Gefällt Ihnen diese Anwendung? Bitte ziehen Sie in Betracht, mich zu unterstützen!"
       },
@@ -375,7 +375,7 @@
 
       "themes": {
          "theme-neutral": "Neutral",
-         "theme-legends": "Legends in the Mist"
+         "theme-legends": "Legend in the Mist"
       },
 
       "empty": "Es wurden keine Kommandos gefudnen.",
