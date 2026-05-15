@@ -219,7 +219,7 @@ export default function MobileCharacterSheetPage() {
 	}
 
 	return (
-		<div className="h-screen w-screen overflow-hidden flex flex-col">
+		<div className="overflow-hidden flex flex-col" style={{ height: '100dvh', width: '100dvw' }}>
 			{/* Main Content */}
 			<div className="flex-1 overflow-hidden">
 				{activeTab === 'sheet' && (
