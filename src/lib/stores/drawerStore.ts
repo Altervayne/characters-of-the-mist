@@ -32,6 +32,7 @@ export interface PendingDrawerItem {
 export interface DrawerState {
    drawer: Drawer;
    pendingItem: PendingDrawerItem | null;
+   drawerCurrentFolderId: string | null;
    actions: {
       // --- Drawer Actions ---
       importFullDrawer: (newDrawer: Drawer, parentFolderId?: string) => void;
@@ -53,15 +54,18 @@ export interface DrawerState {
       // --- Drop Actions ---
       initiateItemDrop: (itemInfo: PendingDrawerItem) => void;
       clearPendingItemDrop: () => void;
+      // --- Navigation ---
+      setDrawerCurrentFolderId: (id: string | null) => void;
    };
 }
 
-const initialState: Pick<DrawerState, 'drawer' | 'pendingItem'> = {
+const initialState: Pick<DrawerState, 'drawer' | 'pendingItem' | 'drawerCurrentFolderId'> = {
    drawer: {
       folders: [],
       rootItems: [],
    },
    pendingItem: null,
+   drawerCurrentFolderId: null,
 };
 
 
@@ -337,6 +341,9 @@ export const useDrawerStore = create<DrawerState>()(
                },
                clearPendingItemDrop: () => {
                   set({ pendingItem: null });
+               },
+               setDrawerCurrentFolderId: (id) => {
+                  set({ drawerCurrentFolderId: id });
                },
             },
          }),

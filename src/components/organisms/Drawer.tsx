@@ -520,9 +520,14 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
    const {  importFullDrawer,
             addFolder, addImportedFolder, renameFolder, deleteFolder, moveFolder,
             addItem, addImportedItem, renameItem, deleteItem, moveItem,
-            clearPendingItemDrop } = useDrawerActions();
+            clearPendingItemDrop, setDrawerCurrentFolderId } = useDrawerActions();
 
    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+
+   const navigateToFolder = (id: string | null) => {
+      setCurrentFolderId(id);
+      setDrawerCurrentFolderId(id);
+   };
    const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 
    // Cache folder path as chain of IDs: ['rootId', 'childId', 'currentId']
@@ -768,10 +773,10 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
 
                         {breadcrumbPath.length > 0 && (
                            <div className="flex items-center gap-2 mt-2">
-                              <div onClick={() => setCurrentFolderId(null)} className="rounded p-1 hover:bg-muted cursor-pointer shrink-0" role="button" aria-label="Back to root">
+                              <div onClick={() => navigateToFolder(null)} className="rounded p-1 hover:bg-muted cursor-pointer shrink-0" role="button" aria-label="Back to root">
                                  <ArrowUpToLine className="h-4 w-4" />
                               </div>
-                              <Breadcrumb path={breadcrumbPath} onNavigate={setCurrentFolderId} />
+                              <Breadcrumb path={breadcrumbPath} onNavigate={navigateToFolder} />
                            </div>
                         )}
                      </header>
@@ -783,7 +788,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                  layout
                                  transition={{ duration: 0.1 }}
                                  ref={backButtonRef}
-                                 onClick={() => setCurrentFolderId(parentFolderId)}
+                                 onClick={() => navigateToFolder(parentFolderId)}
                                  className={cn(
                                     'flex h-10 items-center gap-2 p-2 bg-card rounded hover:bg-muted cursor-pointer mb-2 transition-colors',
                                     { 'bg-muted': isOverBackButton && activeDragId }
@@ -819,7 +824,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                              folder={folder}
                                              parentFolderId={currentFolderId}
                                              isOver={!!activeDragId && overDragId === folder.id && activeDragId !== folder.id}
-                                             onNavigate={setCurrentFolderId}
+                                             onNavigate={navigateToFolder}
                                              onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
                                              onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}
                                              onMove={() => setActiveAction({ id: cuid(), type: 'move-folder', target: folder })}

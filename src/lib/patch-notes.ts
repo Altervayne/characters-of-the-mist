@@ -13,8 +13,10 @@ Please keep in mind I am absolutely not used to mobile UIs. I tried my best to m
 There may be unexpected bugs, I didn't get the opportunity to test this on a lot of screen sizes. Don't hesitate to hit up the Tools of the Mist discord !
 
 ### 🔧 Changes
+* "Unload Character" button is now at the bottom of the sidebar, and is called "Return to Menu". The effect is the same, it will completely unload your character from memory. Make sure you saved your character to the drawer beforehand! Hopefully this makes it less ambiguous.
 
 ### 🐛 Bugfixes
+* "Save Character As" now properly saves to currently open Drawer folder instead of root.
 
 ### Other fixes
 As reported, it's LEGEND in the Mist, and not LEGENDS in the Mist. Sorry about that! The text has been adjusted across the app.

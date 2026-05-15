@@ -30,7 +30,7 @@ interface MobileMenuProps {
 export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
-	const { unloadCharacter, loadCharacter } = useCharacterActions();
+	const { returnToMenu, loadCharacter } = useCharacterActions();
 	const drawer = useDrawerStore((state) => state.drawer);
 	const { importFullDrawer } = useDrawerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
@@ -197,7 +197,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				fileInputRef.current?.click();
 				break;
 			case 'unload':
-				unloadCharacter();
+				returnToMenu();
 				break;
 		}
 	};

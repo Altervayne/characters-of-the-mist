@@ -71,7 +71,7 @@ interface CharacterState {
       createCharacter: (game: GameSystem) => void;
       loadCharacter: (character: Character, drawerItemId?: string) => void;
       resetCharacter: () => void;
-      unloadCharacter: () => void;
+      returnToMenu: () => void;
       setGame: (game: Character['game']) => void;
       updateCharacterName: (name: string) => void;
       // --- Card Actions ---
@@ -172,7 +172,7 @@ export const useCharacterStore = create<CharacterState>()(
                      return { character: newCharacter };
                   });
                },
-               unloadCharacter: () => {
+               returnToMenu: () => {
                   set(() => {
                      useCharacterStore.temporal.getState().clear();
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');

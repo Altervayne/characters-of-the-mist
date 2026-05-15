@@ -102,11 +102,11 @@
          "resetConfirmCancelButton": "Cancel",
          "resetConfirmButton": "Reset the Character",
 
-         "unloadCharacter": "Unload Character",
-         "unloadConfirmTitle": "Are you sure you want to unload your character?",
-         "unloadConfirmDescription": "This action is extremely destructive. Your active character will be deleted and the history erased. You will not be able to undo this, make sure you either saved your character to the drawer or exported it.",
+         "returnToMenu": "Return to Menu",
+         "unloadConfirmTitle": "Are you sure you want to return to the menu?",
+         "unloadConfirmDescription": "This action is extremely destructive. Your active character will be unloaded and the history erased. You will not be able to undo this, make sure you either saved your character to the drawer or exported it.",
          "unloadConfirmCancelButton": "Cancel",
-         "unloadConfirmButton": "Unload the Character",
+         "unloadConfirmButton": "Return to Menu",
 
          "settings": "Settings",
          "info": "App Info",

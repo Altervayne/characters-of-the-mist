@@ -59,7 +59,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
    const character = useCharacterStore((state) => state.character);
    const drawer = useDrawerStore((state) => state.drawer);
-   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, unloadCharacter } = useCharacterActions();
+   const drawerCurrentFolderId = useDrawerStore((state) => state.drawerCurrentFolderId);
+   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, returnToMenu } = useCharacterActions();
    const { updateItem, initiateItemDrop } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +93,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
       loadCharacter(character, newItemId);
       
-      // Give the store a tick to update
+      // Giving the store a tick to update
       setTimeout(() => {
          const storeChar = useCharacterStore.getState().character;
          console.log('[SaveAs...] 3. After loadCharacter, store has drawerItemId?', storeChar?.drawerItemId);
@@ -107,7 +108,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          type: 'FULL_CHARACTER_SHEET',
          content: characterWithDrawerId,
          defaultName: character.name,
-         presetId: newItemId
+         presetId: newItemId,
+         parentFolderId: drawerCurrentFolderId ?? undefined,
       });
       
       console.log('[SaveAs...] 4. Pending item presetId:', newItemId);
@@ -205,7 +207,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    }, [isUnloadDialogOpen]);
 
    const handleUnloadCharacter = () => {
-      unloadCharacter();
+      returnToMenu();
       toast.success(tNotifications('Notifications.character.unloaded'));
    };
 
@@ -285,9 +287,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                         <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
                            {t('CharacterSheetPage.SidebarMenu.resetCharacter')}
                         </SidebarButton>
-                        <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
-                           {t('CharacterSheetPage.SidebarMenu.unloadCharacter')}
-                        </SidebarButton>
                      </motion.section>
                   </>
                }
@@ -321,6 +320,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   </SidebarButton>
                   <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
                      {t('CharacterSheetPage.SidebarMenu.patchNotes')}
+                  </SidebarButton>
+                  <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
+                     {t('CharacterSheetPage.SidebarMenu.returnToMenu')}
                   </SidebarButton>
                </motion.section>
             </div>

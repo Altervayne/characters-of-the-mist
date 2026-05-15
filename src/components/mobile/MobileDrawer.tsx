@@ -40,7 +40,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
 	// Drawer state
 	const drawer = useDrawerStore((state) => state.drawer);
-	const { addFolder, addImportedItem, addImportedFolder, importFullDrawer } = useDrawerActions();
+	const { addFolder, addImportedItem, addImportedFolder, importFullDrawer, setDrawerCurrentFolderId } = useDrawerActions();
 
 	// UI state
 	const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -69,6 +69,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	// Handlers
 	const handleNavigate = (folderId: string | null) => {
 		setCurrentFolderId(folderId);
+		setDrawerCurrentFolderId(folderId);
 	};
 
 	const handleFolderLongPress = (folderId: string, folderName: string, position: { x: number; y: number }) => {
