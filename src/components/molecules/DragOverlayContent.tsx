@@ -6,7 +6,7 @@ import { CardRenderer } from '@/components/organisms/cards/CardRenderer';
 import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker';
 import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTracker';
 import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
-import { CompactItemEntry } from '@/components/organisms/drawer/Drawer';
+import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerCompactItemEntry';
 import { DrawerItemPreview, FolderPreview } from '@/components/organisms/drawer/DrawerItemPreview';
 
 // -- Type Imports --
@@ -43,7 +43,7 @@ export function DragOverlayContent({ activeDragItem, isEditing, isCompactDrawer 
             <StoryThemeTrackerCard tracker={activeDragItem} isEditing={isEditing} />
          ) : 'game' in activeDragItem ? (
             isCompactDrawer ? (
-               <CompactItemEntry item={activeDragItem as DrawerItem} isPreview={true} />
+               <DrawerCompactItemEntry item={activeDragItem as DrawerItem} isPreview={true} />
             ) : (
                <DrawerItemPreview item={activeDragItem as DrawerItem} />
             )

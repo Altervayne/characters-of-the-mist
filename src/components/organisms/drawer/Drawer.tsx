@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -8,34 +8,27 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import cuid from 'cuid';
 
-// -- DnD Component Imports --
-import { Sortable, DragStaticWrapper, DragLayoutWrapper } from '@/components/dnd';
-
 // -- Basic UI Imports --
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
-import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, ArrowUpToLine, Move, GripVertical, Download, Upload, LayoutGrid, Rows, PanelRightClose } from 'lucide-react';
+import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Rows, PanelRightClose } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { buildBreadcrumb, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
-import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
-import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
-import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
+import { DrawerFolderEntry } from '@/components/molecules/drawer/DrawerFolderEntry';
+import { DrawerItemEntry } from '@/components/molecules/drawer/DrawerItemEntry';
+import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerCompactItemEntry';
+import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
-import { useDrawerStore } from '@/lib/stores/drawerStore';
 import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
 import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
@@ -44,17 +37,9 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
-import type { ActiveAction } from '@/hooks/drawer/useDrawerActionState';
-import type { PendingDrawerItem } from '@/lib/stores/drawerStore';
-import type { Folder as FolderType, DrawerItem } from '@/lib/types/drawer';
 
 
 
-interface ModificationWindowProps {
-   action: ActiveAction;
-   onClose: () => void;
-   onConfirm: (value?: string) => void;
-};
 
 
 
@@ -78,387 +63,6 @@ const contentVariants: Variants = {
 
 
 
-function FolderEntry({ folder, parentFolderId, isOver, onNavigate, onRename, onDelete, onMove }: { folder: FolderType, parentFolderId: string | null, isOver: boolean, onNavigate: (id: string) => void, onRename: () => void, onDelete: () => void, onMove: () => void }) {
-   const { t } = useTranslation();
-
-   const handleExport = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
-      exportToFile(folder, 'FOLDER', 'NEUTRAL', fileName);
-   };
-
-   return (
-      <Sortable
-         id={folder.id}
-         data={{
-            type: DRAG_TYPES.DRAWER_FOLDER,
-            item: folder,
-            parentFolderId,
-            isDrawer: true
-         }}
-      >
-         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <div onClick={() => onNavigate(folder.id)}>
-               <DragStaticWrapper isBeingDragged={isBeingDragged}>
-                  <div
-                     className={cn(
-                        "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
-                        {
-                           "bg-muted": isOver,
-                        }
-                     )}
-                  >
-                     <div
-                        className="flex h-8 items-center gap-2 truncate"
-                        onClick={() => onNavigate(folder.id)}
-                     >
-                        <GripVertical
-                           className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab"
-                           {...dragAttributes}
-                           {...dragListeners}
-                        />
-                        <Folder className="h-6 w-6 shrink-0 text-muted-foreground"/>
-                        <span className="truncate hover:text-wrap font-medium text-sm">{folder.name}</span>
-                     </div>
-
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreHorizontal className="h-4 w-4" />
-                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }} className="cursor-pointer">
-                              <Pencil className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.rename')}</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(); }} className="cursor-pointer">
-                              <Move className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.move')}</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
-                              <Upload className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.export')}</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive cursor-pointer">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.delete')}</span>
-                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                  </div>
-               </DragStaticWrapper>
-            </div>
-         )}
-      </Sortable>
-   );
-};
-
-function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item: DrawerItem, parentFolderId: string | null, onRename: () => void, onDelete: () => void, onMove: () => void }) {
-   const { t } = useTranslation();
-
-   const handleExport = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const { content, type, game, name } = item;
-
-      const handle = deriveExportHandle(content, name);
-
-      const fileName = generateExportFilename(game, type, handle);
-      exportToFile(content, type, game, fileName);
-   };
-
-   return (
-      <Sortable
-         id={item.id}
-         data={{
-            type: DRAG_TYPES.DRAWER_ITEM,
-            item: item,
-            parentFolderId,
-            isDrawer: true
-         }}
-      >
-         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <DragLayoutWrapper isBeingDragged={isBeingDragged}>
-               <div className="relative group/item data-[state=open]:bg-muted">
-                  <div {...dragAttributes} {...dragListeners} className="cursor-grab">
-                     <DrawerItemPreview item={item} />
-                  </div>
-                  <div className="absolute top-1 right-1 z-10">
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer">
-                              <MoreHorizontal className="h-4 w-4" />
-                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                           <DropdownMenuItem onClick={onRename} className="cursor-pointer">
-                              <Pencil className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.rename')}</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={onMove} className="cursor-pointer">
-                              <Move className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.move')}</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={handleExport} className="cursor-pointer">
-                              <Upload className="mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.export')}</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={onDelete} className="bg-destructive text-destructive-foreground cursor-pointer">
-                              <Trash2 className="text-destructive-foreground mr-2 h-4 w-4" />
-                              <span>{t('Drawer.Actions.delete')}</span>
-                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                  </div>
-               </div>
-            </DragLayoutWrapper>
-         )}
-      </Sortable>
-   );
-};
-
-
-
-export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
-   const { t } = useTranslation();
-
-   const handleExport = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const { content, type, game, name } = item;
-
-      const handle = deriveExportHandle(content, name);
-
-      const fileName = generateExportFilename(game, type, handle);
-      exportToFile(content, type, game, fileName);
-   };
-
-   return (
-      <Sortable
-         id={item.id}
-         data={{ type: DRAG_TYPES.DRAWER_ITEM, item, parentFolderId: parentFolderId ?? null, isDrawer: true }}
-         disabled={isPreview}
-      >
-         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <DragLayoutWrapper isBeingDragged={isBeingDragged}>
-               <div
-                  className={cn(
-                     "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
-                     { "border-2 border-border bg-muted/50": isPreview }
-                  )}
-               >
-                  <div className="flex h-8 items-center gap-2 truncate">
-                     <GripVertical className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab" {...dragAttributes} {...dragListeners} />
-                     {getItemTypeIcon(item.type)}
-                     <span className="truncate hover:text-wrap font-medium text-sm">{item.name}</span>
-                  </div>
-                  {!isPreview &&
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreHorizontal className="h-4 w-4" />
-                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                           <DropdownMenuItem onClick={onRename} className="cursor-pointer"><Pencil className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.rename')}</span></DropdownMenuItem>
-                           <DropdownMenuItem onClick={onMove} className="cursor-pointer"><Move className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.move')}</span></DropdownMenuItem>
-                           <DropdownMenuItem onClick={handleExport} className="cursor-pointer"><Upload className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.export')}</span></DropdownMenuItem>
-                           <DropdownMenuItem onClick={onDelete} className="text-destructive cursor-pointer"><Trash2 className="mr-2 h-4 w-4" /><span>{t('Drawer.Actions.delete')}</span></DropdownMenuItem>
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                  }
-               </div>
-            </DragLayoutWrapper>
-         )}
-      </Sortable>
-   );
-}
-
-
-
-
-function MoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveAction, onConfirm: (destinationId?: string) => void, onClose: () => void }) {
-   const { t } = useTranslation();
-   const { folders: allFolders } = useDrawerStore((state) => state.drawer);
-   const [currentNavFolderId, setCurrentNavFolderId] = useState<string | null>(null);
-
-   const itemToMove = (action.target && 'id' in action.target) ? action.target : null;
-
-   const currentView = useMemo(() => {
-      if (!currentNavFolderId) return { folders: allFolders, parent: null };
-      const folder = findFolderMemoized(allFolders, currentNavFolderId);
-      return { folders: folder?.folders ?? [], parent: findParentFolderMemoized(allFolders, currentNavFolderId) };
-   }, [currentNavFolderId, allFolders]);
-
-   const breadcrumbPath = useMemo(() => buildBreadcrumb(allFolders, currentNavFolderId), [allFolders, currentNavFolderId]);
-
-   const parentOfItemToMove = useMemo(() => {
-      return itemToMove ? findParentFolderMemoized(allFolders, itemToMove.id) : null;
-   }, [allFolders, itemToMove]);
-
-   return (
-      <div className="flex flex-col h-150">
-         <header className="p-4 border-y">
-            <div className="flex justify-between items-center mb-2">
-               <div>
-                  <h3 className="font-semibold">{(action.type == 'move-folder') && t('Drawer.Actions.moveFolderTitle')}{(action.type == 'move-item') && t('Drawer.Actions.moveItemTitle')}</h3>
-                  <p className="text-sm text-muted-foreground">{`${t('Drawer.Actions.moveVerb')}:  ${itemToMove?.name ?? t('Drawer.movingUnknown')}`}</p>
-               </div>
-               {currentNavFolderId && (
-                  <div onClick={() => setCurrentNavFolderId(null)} className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-muted cursor-pointer shrink-0" role="button" aria-label="Back to root">
-                        <ArrowUpToLine className="h-5 w-5" />
-                  </div>
-               )}
-            </div>
-
-            <div className="mt-2 flex items-center gap-2">
-               <Breadcrumb path={breadcrumbPath} onNavigate={setCurrentNavFolderId} />
-            </div>
-         </header>
-
-         <div className="grow overflow-y-auto p-2">
-            
-            {currentNavFolderId && (
-               <div onClick={() => setCurrentNavFolderId(currentView.parent?.id ?? null)} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
-                  <ArrowLeft className="h-6 w-6" /> <span>{t('Drawer.Actions.moveUp')}</span>
-               </div>
-            )}
-            {currentView.folders.map(folder => {
-               if (action.type === 'move-folder' && folder.id === itemToMove?.id) {
-                  return null;
-               }
-               return (
-                  <div 
-                     key={folder.id} 
-                     onClick={() => setCurrentNavFolderId(folder.id)}
-                     className="flex px-2 h-10 items-center gap-2 truncate rounded hover:bg-muted"
-                  >
-                     <Folder className="h-6 w-6 shrink-0 text-muted-foreground"/>
-                     <span className="truncate font-medium text-sm">{folder.name}</span>
-                  </div>
-               );
-            })}
-         </div>
-
-         <footer className="p-4 border-t flex gap-2 justify-end">
-            <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('Drawer.Actions.cancel')}</Button>
-            <Button 
-               onClick={() => onConfirm(currentNavFolderId ?? undefined)}
-               disabled={(parentOfItemToMove?.id ?? null) === currentNavFolderId}
-            >
-               {t('Drawer.Actions.moveHere')}
-            </Button>
-         </footer>
-      </div>
-   );
-}
-
-const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindowProps>(
-   function ModificationWindow({ action, onClose, onConfirm }, ref) {
-      const { t } = useTranslation();
-
-      const handleSubmit = (e: React.FormEvent) => {
-         e.preventDefault();
-         onConfirm(inputValue);
-      };
-
-
-      let initialName = (action.target && 'defaultName' in action.target) ? action.target.defaultName : action.target?.name ?? '';
-      if (!initialName && action.type === 'add-item' && action.target && 'type' in action.target) {
-         const itemType = (action.target as PendingDrawerItem).type;
-         switch (itemType) {
-            case 'CHARACTER_CARD':        initialName = t('Drawer.Actions.defaultNames.characterCard'); break;
-            case 'FULL_CHARACTER_SHEET':  initialName = t('Drawer.Actions.defaultNames.fullSheet'); break;
-            case 'CHARACTER_THEME':       initialName = t('Drawer.Actions.defaultNames.characterTheme'); break;
-            case 'GROUP_THEME':           initialName = t('Drawer.Actions.defaultNames.groupTheme'); break;
-            case 'STATUS_TRACKER':        initialName = t('Drawer.Actions.defaultNames.statusTracker'); break;
-            case 'STORY_TAG_TRACKER':     initialName = t('Drawer.Actions.defaultNames.storyTagTracker'); break;
-            default:                      initialName = t('Drawer.Actions.defaultNames.defaultItem'); break;
-         }
-      }
-
-      const [inputValue, setInputValue] = useState(initialName);
-
-      const isFolder = action.type.includes('folder');
-      let title = '';
-      let confirmText = '';
-      let isDelete = false;
-
-      switch (action.type) {
-         case 'add-folder':
-            title = t('Drawer.Actions.addFolderTitle');
-            confirmText = t('Drawer.Actions.createFolder');
-            break;
-
-         case 'add-item':
-            title = t('Drawer.Actions.nameItemTitle');
-            confirmText = t('Drawer.Actions.saveChanges');
-            break;
-
-         case 'rename-folder':
-            title = t('Drawer.Actions.renameFolderTitle');
-            confirmText = t('Drawer.Actions.saveChanges');
-            break;
-
-         case 'rename-item':
-            title = t('Drawer.Actions.renameItemTitle');
-            confirmText = t('Drawer.Actions.saveChanges');
-            break;
-
-         case 'delete-folder':
-            title = t('Drawer.Actions.deleteFolderTitle');
-            confirmText = t('Drawer.Actions.confirmDelete');
-            isDelete = true;
-            break;
-
-         case 'delete-item':
-            title = t('Drawer.Actions.deleteItemTitle');
-            confirmText = t('Drawer.Actions.confirmDelete');
-            isDelete = true;
-            break;
-      }
-
-
-
-      if (action.type === 'move-item' || action.type === 'move-folder') {
-         return (
-            <div className="bg-background">
-               <MoveItemNavigator 
-                  action={action} 
-                  onConfirm={(destinationId) => onConfirm(destinationId)} 
-                  onClose={onClose} 
-               />
-            </div>
-         );
-      }
-
-
-      
-      return (
-         <div className="bg-background border-t p-4">
-            <div className="flex justify-between items-center mb-4">
-               <h3 className="font-semibold">{title}</h3>
-               <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={onClose}>
-                  <X className="h-4 w-4" />
-               </Button>
-            </div>
-            {!isDelete ? (
-               <form onSubmit={handleSubmit}>
-                  <Label htmlFor="item-name" className="sr-only">Name</Label>
-                  <Input ref={ref} id="item-name" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
-               </form>
-            ) : (
-               <p className="text-sm text-muted-foreground">{t(isFolder ? 'Drawer.Actions.deleteFolderMessage' : 'Drawer.Actions.deleteItemMessage', { name: (action.target && 'name' in action.target) ? action.target.name : '' })}</p>
-            )}
-            <div className="flex justify-end gap-2 mt-4">
-               <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('Drawer.Actions.cancel')}</Button>
-               <Button variant={isDelete ? 'destructive' : 'default'} onClick={() => onConfirm(inputValue)} className="cursor-pointer">
-                  {confirmText}
-               </Button>
-            </div>
-         </div>
-      );
-   }
-)
 
 
 
@@ -604,7 +208,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                                 }}
                                              />
                                           )}
-                                          <FolderEntry
+                                          <DrawerFolderEntry
                                              key={folder.id}
                                              folder={folder}
                                              parentFolderId={currentFolderId}
@@ -656,8 +260,8 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                           };
 
                                           return isCompactDrawer
-                                             ? <CompactItemEntry key={item.id} {...commonProps} />
-                                             : <ItemEntry key={item.id} {...commonProps} />;
+                                             ? <DrawerCompactItemEntry key={item.id} {...commonProps} />
+                                             : <DrawerItemEntry key={item.id} {...commonProps} />;
                                        })}
                                     </SortableContext>
                                  </div>
@@ -717,7 +321,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                         className="absolute inset-0 z-10 flex flex-col justify-end"
                      >
                         <div className="relative z-20">
-                           <ModificationWindow
+                           <DrawerModificationWindow
                               ref={inputRef}
                               action={activeAction}
                               onClose={handleCloseModificationWindow}
