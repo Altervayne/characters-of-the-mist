@@ -1,4 +1,4 @@
-import type { Card, Tracker, Character } from '@/lib/types/character';
+import type { Card, Tracker, Character, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
 import type { Drawer, Folder, GameSystem, GeneralItemType } from '../types/drawer';
 import { APP_VERSION } from '../config';
 
@@ -79,6 +79,26 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
 
    return `${prefix}_${date}`;
 };
+
+/**
+ * Derives the human-readable handle (filename prefix) for an exported item.
+ *
+ * Theme/fellowship cards use their main tag's name; character cards use the
+ * character's name. Everything else (loadout cards, trackers, folders, drawers)
+ * uses the supplied fallback - typically the item's display name or title.
+ */
+export function deriveExportHandle(content: ExportableContent, fallback?: string): string | undefined {
+   if ('cardType' in content) {
+      const card = content as Card;
+      if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') {
+         return (card.details as LegendsThemeDetails).mainTag.name;
+      }
+      if (card.cardType === 'CHARACTER_CARD') {
+         return (card.details as LegendsHeroDetails).characterName;
+      }
+   }
+   return fallback;
+}
 
 /**
  * Exports an item to a .cotm file and triggers the browser download.

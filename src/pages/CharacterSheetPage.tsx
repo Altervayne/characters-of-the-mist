@@ -1,19 +1,22 @@
 // -- React Imports --
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Custom Hooks --
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 import { useDeviceType } from '@/hooks/useDeviceType';
+import { useCharacterSheetDnD } from '@/hooks/character-sheet/useCharacterSheetDnD';
+import { useCharacterSheetFileImport } from '@/hooks/character-sheet/useCharacterSheetFileImport';
+import { useCharacterSheetExport } from '@/hooks/character-sheet/useCharacterSheetExport';
+import { useCharacterSheetUndoRedo } from '@/hooks/character-sheet/useCharacterSheetUndoRedo';
+import { useCardDialogState } from '@/hooks/character-sheet/useCardDialogState';
 
 // -- Other Library Imports --
-import toast from 'react-hot-toast';
-import { DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent, DragOverEvent, DraggableAttributes } from '@dnd-kit/core';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDropzone } from 'react-dropzone';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -23,10 +26,7 @@ import { Download, PlusCircle } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { findFolder } from '@/lib/utils/drawer';
-import { customCollisionDetection, mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
-import { harmonizeData } from '@/lib/harmonization';
+import { customCollisionDetection } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- DnD Component Imports --
@@ -56,16 +56,14 @@ import MobileCharacterSheetPage from '@/components/mobile/MobileCharacterSheetPa
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
-import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 
 // -- Type Imports --
-import type { Character, Card as CardData, Tracker, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
+import type { Card as CardData } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
-import type { CreateCardOptions } from '@/lib/types/creation';
 
 
 
@@ -115,15 +113,11 @@ CardRenderer.displayName = 'CardRenderer';
 function DesktopCharacterSheetPage() {
    // --- Localization ---
    const { t: t } = useTranslation();
-   const { t: tNotifications } = useTranslation();
    const { t: tTrackers } = useTranslation();
 
    // --- Data Stores ---
    const character = useCharacterStore((state) => state.character);
-   const { loadCharacter, addCard, updateCardDetails, reorderCards, updateCharacterName, addStatus, addStoryTag,
-            reorderStatuses, reorderStoryTags, reorderStoryThemes, addImportedCard, addImportedTracker } = useCharacterActions();
-   const drawer = useDrawerStore((state) => state.drawer);
-   const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems } = useDrawerActions();
+   const { updateCharacterName, addStatus, addStoryTag } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
 
    // --- General App Stores ---
@@ -135,14 +129,29 @@ function DesktopCharacterSheetPage() {
    const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const isTourOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const { setDrawerOpen, setIsEditing, setSettingsOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
-   const { setSidebarCollapsed, toggleSidebarCollapsed, setContextualGame } = useAppSettingsActions();
+   const { setSidebarCollapsed, toggleSidebarCollapsed } = useAppSettingsActions();
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
-   // --- Utility & Library States ---
-   const [isOverDrawer, setIsOverDrawer] = useState(false);
-   const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
-   const [overDragId, setOverDragId] = useState<string | null>(null);
+   // --- Drag and Drop ---
+   const {
+      activeDragItem,
+      overDragId,
+      isOverDrawer,
+      setTrackersDropRef,
+      isOverTrackers,
+      setCardsDropRef,
+      isOverCards,
+      setMainDropRef,
+      isOverMain,
+      statusIds,
+      storyTagIds,
+      storyThemeIds,
+      cardIds,
+      handleDragStart,
+      handleDragOver,
+      handleDragEnd,
+   } = useCharacterSheetDnD();
 
    
 
@@ -150,435 +159,25 @@ function DesktopCharacterSheetPage() {
    // ###   CARD CREATION DIALOG HANDLERS   ###
    // #########################################
 
-   const isCardDialogOpen = useAppGeneralStateStore((state) => state.isCardDialogOpen);
-   const { setCardDialogOpen } = useAppGeneralStateActions();
-   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-   const [cardToEdit, setCardToEdit] = useState<CardData | null>(null);
-
-   const handleEditCard = (card: CardData) => {
-      setDialogMode('edit');
-      setCardToEdit(card);
-      setCardDialogOpen(true);
-   };
-
-   const handleAddCardClick = () => {
-      setDialogMode('create');
-      setCardToEdit(null);
-      setCardDialogOpen(true);
-   };
-
-   const handleDialogConfirm = (options: CreateCardOptions, cardId?: string) => {
-      if (dialogMode === 'edit' && cardId) {
-         updateCardDetails(cardId, { themebook: options.themebook, themeType: options.themeType });
-         toast.success(tNotifications('Notifications.card.updated'));
-      } else {
-         addCard(options);
-         toast.success(tNotifications('Notifications.card.created'));
-      }
-   };
+   const {
+      isCardDialogOpen,
+      setCardDialogOpen,
+      dialogMode,
+      cardToEdit,
+      handleEditCard,
+      handleAddCardClick,
+      handleDialogConfirm,
+   } = useCardDialogState();
 
 
 
-   // #################################
-   // ###   PAGE STARTUP HANDLERS   ###
-   // #################################
-
-   useEffect(() => {
-      const settingsStorageKey = 'characters-of-the-mist_app-settings';
-      const settingsInStorage = localStorage.getItem(settingsStorageKey);
-
-      if (!settingsInStorage) {
-         console.log('App settings not found in storage. Initializing defaults.');
-         useAppSettingsStore.setState(useAppSettingsStore.getState());
-      }
-   }, []);
-
-
-
-   // ########################################
+// ########################################
    // ###   IMPORT/EXPORT LOGIC HANDLERS   ###
    // ########################################
 
-   const handleExportComponent = (item: CardData | Tracker) => {
-      const storableInfo = mapItemToStorableInfo(item);
-      
-      if (!storableInfo) {
-         toast.error(tNotifications('Notifications.general.invalidExportType'));
-         return;
-      }
-      
-      const [itemType, gameSystem] = storableInfo;
-      let handle: string | undefined = 'title' in item ? item.title : item.name;
-      if ('cardType' in item) {
-         if (item.cardType === 'CHARACTER_THEME' || item.cardType === 'GROUP_THEME') {
-            handle = (item.details as LegendsThemeDetails).mainTag.name;
-         } else if (item.cardType === 'CHARACTER_CARD') {
-            handle = (item.details as LegendsHeroDetails).characterName;
-         }
-      }
+   const { handleExportComponent } = useCharacterSheetExport();
 
-      const fileName = generateExportFilename(gameSystem, itemType, handle);
-      exportToFile(item, itemType, gameSystem, fileName);
-      toast.success(tNotifications('Notifications.general.exportSuccess'));
-   };
-
-   const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (!file) return;
-
-      try {
-         const importedData = await importFromFile(file);
-         const migratedContent = harmonizeData(importedData.content, importedData.fileType);
-         const { fileType, game } = importedData;
-
-         // --- Full character sheet ---
-         if (fileType === 'FULL_CHARACTER_SHEET') {
-            const characterData = migratedContent as Character;
-            loadCharacter(characterData);
-            setContextualGame(characterData.game);
-            toast.success(tNotifications('Notifications.character.imported'));
-            return;
-         }
-
-         // --- Individual components require a character to be loaded ---
-         if (!character) {
-            toast.error(tNotifications('Notifications.general.importFailedNoCharacter'));
-            return;
-         }
-
-         // --- Compatibility check for individual components ---
-         if (game !== character.game) {
-            toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
-            return;
-         }
-
-         const isCardType = fileType === 'CHARACTER_CARD' || fileType === 'CHARACTER_THEME' || fileType === 'GROUP_THEME' || fileType === 'LOADOUT_THEME';
-         const isTrackerType = fileType === 'STATUS_TRACKER' || fileType === 'STORY_TAG_TRACKER' || fileType === 'STORY_THEME_TRACKER';
-
-         if (isCardType) {
-            addImportedCard(migratedContent as CardData);
-            toast.success(tNotifications('Notifications.character.componentImported'));
-         } else if (isTrackerType) {
-            addImportedTracker(migratedContent as Tracker);
-            toast.success(tNotifications('Notifications.character.componentImported'));
-         } else {
-            toast.error(tNotifications('Notifications.general.importFailed'));
-         }
-
-      } catch (error) {
-         console.error("Failed to import file:", error);
-         toast.error(tNotifications('Notifications.general.importFailed'));
-      }
-   }, [character, loadCharacter, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
-
-   const { getRootProps, isDragActive: isFileDragActive } = useDropzone({
-      onDrop: onFileDrop,
-      noClick: true,
-      noKeyboard: true,
-      accept: { 'application/json': ['.cotm', '.json'] },
-   });
-
-
-
-   // ###############################
-   // ###   DRAG LOGIC HANDLERS   ###
-   // ###############################
-
-   const { isOver: isOverTrackers, setNodeRef: setTrackersDropRef } = useDroppable({
-      id: 'tracker-drop-zone',
-      data: { type: 'tracker-drop-zone' }
-   });
-   const { isOver: isOverCards, setNodeRef: setCardsDropRef } = useDroppable({
-      id: 'card-drop-zone',
-      data: { type: 'card-drop-zone' }
-   });
-   const { isOver: isOverMain, setNodeRef: setMainDropRef } = useDroppable({
-      id: 'character-sheet-main-drop-zone',
-      data: { type: 'character-sheet-main-drop-zone' }
-   });
-
-   // Memoize SortableContext arrays to prevent unnecessary re-renders
-   const statusIds = useMemo(
-      () => character?.trackers.statuses.map(t => t.id) || [],
-      [character?.trackers.statuses]
-   );
-   const storyTagIds = useMemo(
-      () => character?.trackers.storyTags.map(t => t.id) || [],
-      [character?.trackers.storyTags]
-   );
-   const storyThemeIds = useMemo(
-      () => character?.trackers.storyThemes.map(t => t.id) || [],
-      [character?.trackers.storyThemes]
-   );
-   const cardIds = useMemo(
-      () => character?.cards.map(c => c.id) || [],
-      [character?.cards]
-   );
-
-   const handleDragStart = useCallback((event: DragStartEvent) => {
-      const { active } = event;
-
-      if (active.data.current?.isDrawer) {
-         setActiveDragItem(active.data.current.item as DrawerItem | FolderType);
-         return;
-      }
-
-      const allSheetItems = [...(character?.cards || []), ...(character?.trackers.statuses || []), ...(character?.trackers.storyTags || []), ...(character?.trackers.storyThemes || [])];
-      const item = allSheetItems.find(i => i.id === active.id);
-      if (item) {
-         setActiveDragItem(item);
-      }
-   }, [character?.cards, character?.trackers]);
-
-   const handleDragOver = useCallback((event: DragOverEvent) => {
-      const { active, over } = event;
-
-      setOverDragId(over ? over.id.toString() : null);
-
-      let isHoveringDrawer = false;
-      if (over) {
-        const activeType = active.data.current?.type as string;
-        const overId = over.id.toString();
-        const overIsDrawerComponent = over.data.current?.isDrawer || overId.startsWith('drawer-drop-zone-');
-
-         if (activeType?.startsWith('sheet-') && overIsDrawerComponent) {
-            isHoveringDrawer = true;
-         }
-      }
-
-      setIsOverDrawer(isHoveringDrawer);
-   }, []);
-
-   /**
-    * Handle reordering cards on the character sheet
-    */
-   const handleSheetCardReorder = useCallback((activeId: string, overId: string) => {
-      if (!character) return;
-      const oldIndex = character.cards.findIndex(item => item.id === activeId);
-      const newIndex = character.cards.findIndex(item => item.id === overId);
-      if (oldIndex !== -1 && newIndex !== -1) {
-         reorderCards(oldIndex, newIndex);
-      }
-   }, [character, reorderCards]);
-
-   /**
-    * Handle reordering trackers on the character sheet
-    */
-   const handleSheetTrackerReorder = useCallback((
-      active: DragStartEvent['active'],
-      over: NonNullable<DragOverEvent['over']>
-   ) => {
-      if (!character) return;
-
-      const activeTracker = active.data.current?.item as Tracker;
-      const overTracker = over.data.current?.item as Tracker;
-
-      if (!activeTracker?.trackerType || !overTracker?.trackerType) return;
-      if (activeTracker.trackerType !== overTracker.trackerType) return;
-
-      const activeId = active.id as string;
-      const overId = over.id as string;
-
-      if (activeTracker.trackerType === 'STATUS') {
-         const oldIndex = character.trackers.statuses.findIndex(item => item.id === activeId);
-         const newIndex = character.trackers.statuses.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && newIndex !== -1) reorderStatuses(oldIndex, newIndex);
-      } else if (activeTracker.trackerType === 'STORY_TAG') {
-         const oldIndex = character.trackers.storyTags.findIndex(item => item.id === activeId);
-         const newIndex = character.trackers.storyTags.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && newIndex !== -1) reorderStoryTags(oldIndex, newIndex);
-      } else if (activeTracker.trackerType === 'STORY_THEME') {
-         const oldIndex = character.trackers.storyThemes.findIndex(item => item.id === activeId);
-         const newIndex = character.trackers.storyThemes.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && newIndex !== -1) reorderStoryThemes(oldIndex, newIndex);
-      }
-   }, [character, reorderStatuses, reorderStoryTags, reorderStoryThemes]);
-
-   /**
-    * Handle dropping sheet items (cards/trackers) back into the drawer
-    */
-   const handleSheetToDrawerDrop = useCallback((
-      overIdStr: string,
-      overType: string,
-      over: NonNullable<DragOverEvent['over']>
-   ) => {
-      if (!activeDragItem) return;
-
-      let destinationFolderId: string | undefined = undefined;
-
-      if (overType === 'drawer-folder') {
-         destinationFolderId = overIdStr;
-      } else if (overIdStr.startsWith('drawer-drop-zone-')) {
-         const parsedId = overIdStr.replace('drawer-drop-zone-', '');
-         destinationFolderId = parsedId === 'root' ? undefined : parsedId;
-      } else if (overType === 'drawer-back-button') {
-         destinationFolderId = over.data.current?.destinationId ?? undefined;
-      }
-
-      const storableInfo = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
-      if (!storableInfo) return;
-      const [generalType, gameSystem] = storableInfo;
-
-      const itemContentCopy = JSON.parse(JSON.stringify(activeDragItem));
-      if ('isFlipped' in itemContentCopy) itemContentCopy.isFlipped = false;
-
-      const defaultName = 'title' in activeDragItem ? activeDragItem.title :
-                     'name' in activeDragItem ? activeDragItem.name : 'New Item';
-
-      initiateItemDrop({
-         game: gameSystem,
-         type: generalType,
-         content: itemContentCopy,
-         parentFolderId: destinationFolderId,
-         defaultName
-      });
-   }, [activeDragItem, initiateItemDrop]);
-
-   const handleDragEnd = useCallback((event: DragEndEvent) => {
-      const { active, over } = event;
-
-      setActiveDragItem(null);
-      setIsOverDrawer(false);
-      setOverDragId(null);
-
-      if (!over || active.id === over.id) {
-         return;
-      }
-
-      const activeType = active.data.current?.type as string;
-      const overType = over.data.current?.type as string;
-      const overIdStr = over.id.toString();
-
-      // ##############################################
-      // ###   BRANCH 1: Dragging FROM the Drawer   ###
-      // ##############################################
-      if (activeType === 'drawer-item' || activeType === 'drawer-folder') {
-
-         // --- SCENARIO 1.1: Dropping a full character onto the play area ---
-         if (overIdStr === 'main-character-drop-zone') {
-            const draggedItem = active.data.current?.item as DrawerItem;
-            if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
-               const characterData = draggedItem.content as Character;
-               loadCharacter(characterData, draggedItem.id);
-               setContextualGame(characterData.game);
-            }
-            return;
-         }
-         
-         // --- SCENARIO 1.2: Dropping INSIDE the drawer ---
-         if (overType?.startsWith('drawer-') || overIdStr.startsWith('drawer-')) {
-            const activeIsFolder = activeType === 'drawer-folder';
-            const activeIsItem = activeType === 'drawer-item';
-            const parentFolderId = active.data.current?.parentFolderId ?? null;
-            const folderData = parentFolderId ? findFolder(drawer.folders, parentFolderId) : null;
-            const itemsInScope = parentFolderId ? folderData?.items : drawer.rootItems;
-            const foldersInScope = parentFolderId ? folderData?.folders : drawer.folders;
-
-            if (!itemsInScope || !foldersInScope) return;
-            
-            if (overIdStr.startsWith('drawer-back-button-')) {
-               const draggedId = active.id.toString();
-               const destinationId = over.data.current?.destinationId;
-               if (activeIsFolder) moveFolder(draggedId, destinationId);
-               if (activeIsItem) moveItem(draggedId, destinationId);
-               return;
-            }
-            if (overType === 'drawer-drop-zone' && activeIsFolder) {
-               const oldIndex = foldersInScope.findIndex(folder => folder.id === active.id);
-               if (oldIndex === -1) return;
-               const { targetId } = over.data.current as { targetId: string; };
-               let newIndex = (targetId === 'last') 
-                  ? foldersInScope.length - 1 
-                  : foldersInScope.findIndex(folder => folder.id === targetId);
-               if (newIndex === -1) return;
-               if (oldIndex < newIndex) newIndex--;
-               if (oldIndex === newIndex) return;
-               reorderFolders(parentFolderId, oldIndex, newIndex);
-               return;
-            }
-            if (overType === 'drawer-folder') {
-               if (active.id === over.id) return;
-               const draggedId = active.id.toString();
-               const destinationFolderId = overIdStr;
-               if (activeIsFolder) moveFolder(draggedId, destinationFolderId);
-               if (activeIsItem) moveItem(draggedId, destinationFolderId);
-               return;
-            }
-            if (overType === 'drawer-item' && activeIsItem) {
-               if (active.data.current?.parentFolderId !== over.data.current?.parentFolderId) return;
-               const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
-               const newIndex = itemsInScope.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) reorderItems(parentFolderId, oldIndex, newIndex);
-               return;
-            }
-         }
-
-         // --- SCENARIO 1.3: Dropping ONTO the character sheet ---
-         // (Requires a character to be loaded)
-         if (!character) return;
-
-         const isOverSheet = overIdStr === 'character-sheet-main-drop-zone' ||
-                              overIdStr === 'tracker-drop-zone' ||
-                              overIdStr === 'card-drop-zone' ||
-                              overType === 'sheet-card' ||
-                              overType === 'sheet-tracker';
-
-         if (isOverSheet) {
-            if (activeType !== 'drawer-item') return;
-
-            const draggedItem = active.data.current?.item as DrawerItem;
-            if (!draggedItem || draggedItem.game !== character.game) return;
-
-            const isTrackerType = draggedItem.type === 'STATUS_TRACKER' || draggedItem.type === 'STORY_TAG_TRACKER' || draggedItem.type === 'STORY_THEME_TRACKER';
-            const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME';
-
-            if (isTrackerType) {
-               addImportedTracker(draggedItem.content as Tracker);
-               toast.success(tNotifications('Notifications.character.componentImported'));
-            } else if (isCardType) {
-               addImportedCard(draggedItem.content as CardData);
-               toast.success(tNotifications('Notifications.character.componentImported'));
-            }
-            return;
-         }
-      }
-
-      // #############################################
-      // ###   BRANCH 2: Dragging FROM the Sheet   ###
-      // #############################################
-      if (activeType?.startsWith('sheet-')) {
-
-         // --- SCENARIO 2.1: Dropping ONTO the drawer ---
-         if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
-            handleSheetToDrawerDrop(overIdStr, overType, over);
-            return;
-         }
-
-         // --- SCENARIO 2.2: Reordering ON the sheet ---
-         if (overType?.startsWith('sheet-') && character) {
-            if (activeType === DRAG_TYPES.SHEET_CARD && overType === DRAG_TYPES.SHEET_CARD) {
-               handleSheetCardReorder(active.id as string, over.id as string);
-            } else if (activeType === DRAG_TYPES.SHEET_TRACKER) {
-               handleSheetTrackerReorder(active, over);
-            }
-         }
-      }
-   }, [
-      character,
-      drawer,
-      moveFolder,
-      reorderFolders,
-      moveItem,
-      reorderItems,
-      handleSheetCardReorder,
-      handleSheetTrackerReorder,
-      handleSheetToDrawerDrop,
-      loadCharacter,
-      setContextualGame,
-      addImportedTracker,
-      addImportedCard,
-      tNotifications,
-   ]);
+   const { getRootProps, isDragActive: isFileDragActive } = useCharacterSheetFileImport();
 
 
 
@@ -597,39 +196,7 @@ function DesktopCharacterSheetPage() {
    // ###   UNDO/REDO SHORTCUT   ###
    // ##############################
 
-   const lastModifiedStore = useAppGeneralStateStore((state) => state.lastModifiedStore);
-   
-   useEffect(() => {
-      const handleKeyDown = (event: KeyboardEvent) => {
-         const { undo: undoCharacter, redo: redoCharacter, pastStates: pastStatesCharacter, futureStates: futureStatesCharacter } = useCharacterStore.temporal.getState();
-         const { undo: undoDrawer, redo: redoDrawer, pastStates: pastStatesDrawer, futureStates: futureStatesDrawer } = useDrawerStore.temporal.getState();
-
-         const isUndo = (event.ctrlKey || event.metaKey) && event.key === 'z';
-         const isRedo = (event.ctrlKey || event.metaKey) && event.key === 'y';
-
-         const characterCanUndo = pastStatesCharacter.length > 1
-         const characterCanRedo = futureStatesCharacter.length > 0
-         const drawerCanUndo = pastStatesDrawer.length > 1
-         const drawerCanRedo = futureStatesDrawer.length > 0
-
-         if (!isUndo && !isRedo) return;
-
-         event.preventDefault();
-
-         if (lastModifiedStore === 'drawer' && isDrawerOpen) {
-            if (isUndo && drawerCanUndo) undoDrawer();
-            if (isRedo && drawerCanRedo) redoDrawer();
-         } else {
-            if (isUndo && characterCanUndo) undoCharacter();
-            if (isRedo && characterCanRedo) redoCharacter();
-         }
-      };
-
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-         window.removeEventListener('keydown', handleKeyDown);
-      };
-   }, [lastModifiedStore, isDrawerOpen]);
+   useCharacterSheetUndoRedo(isDrawerOpen);
 
 
 
