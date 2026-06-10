@@ -17,7 +17,7 @@ import { Trash2, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { ToolbarHandle } from './ToolbarHandle';
+import { ToolbarHandle } from '@/components/molecules/ToolbarHandle';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';

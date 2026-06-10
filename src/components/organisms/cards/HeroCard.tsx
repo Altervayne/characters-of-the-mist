@@ -16,12 +16,12 @@ import { PlusCircle, Users, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { CardHeaderMolecule } from '../molecules/CardHeader';
-import { CardSectionHeader } from '@/components/molecules/CardSectionHeader';
+import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
+import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { PipTracker } from '@/components/molecules/PipTracker';
 import { FellowshipRelationshipItem } from '@/components/molecules/FellowshipRelationshipItem';
-import { BlandTagItem } from '../molecules/BlandTagItem';
-import { CardFlipWrapper } from '../molecules/CardFlipWrapper';
+import { BlandTagItem } from '@/components/molecules/BlandTagItem';
+import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -29,9 +29,10 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+import { useCardViewMode } from '@/hooks/useCardViewMode';
 
 // -- Type Imports --
-import type { Card as CardData, CardViewMode, LegendsHeroDetails } from '@/lib/types/character';
+import type { Card as CardData, LegendsHeroDetails } from '@/lib/types/character';
 
 
 
@@ -76,19 +77,7 @@ const HeroCardContent = React.memo(
          actions.updateCardDetails(card.id, { ...details, [field]: value });
       };
 
-
-
-      const handleCycleViewMode = () => {
-         let nextMode: CardViewMode | null = null;
-         if (card.viewMode === 'SIDE_BY_SIDE') {
-            nextMode = 'FLIP';
-         } else if (card.viewMode === 'FLIP') {
-            nextMode = null;
-         } else {
-            nextMode = 'SIDE_BY_SIDE';
-         }
-         actions.updateCardViewMode(card.id, nextMode);
-      };
+      const { handleCycleViewMode } = useCardViewMode(card);
 
 
 

@@ -15,12 +15,12 @@ import { Flame, Circle, PlusCircle, Disc2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { CardHeaderMolecule } from '../molecules/CardHeader';
-import { CardSectionHeader } from '@/components/molecules/CardSectionHeader';
+import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
+import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { TagItem } from '@/components/molecules/TagItem';
 import { PipTracker } from '@/components/molecules/PipTracker';
 import { BlandTagItem } from '@/components/molecules/BlandTagItem';
-import { CardFlipWrapper } from '@/components/molecules/CardFlipWrapper';
+import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 
 // -- Store and Hook Imports --
 import type { DraggableAttributes } from '@dnd-kit/core';
@@ -30,9 +30,10 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+import { useCardViewMode } from '@/hooks/useCardViewMode';
 
 // -- Type Imports --
-import type { Card as CardData, CardViewMode, CityThemeDetails, CityCrewDetails, Tag, BlandTag } from '@/lib/types/character';
+import type { Card as CardData, CityThemeDetails, CityCrewDetails, Tag, BlandTag } from '@/lib/types/character';
 
 interface CityThemeCardProps {
    card: CardData;
@@ -88,19 +89,7 @@ export const CityThemeCard = React.memo(
          actions.updateCardDetails(card.id, { ...details, [field]: value });
       };
 
-
-
-      const handleCycleViewMode = () => {
-         let nextMode: CardViewMode | null = null;
-         if (card.viewMode === 'SIDE_BY_SIDE') {
-            nextMode = 'FLIP';
-         } else if (card.viewMode === 'FLIP') {
-            nextMode = null;
-         } else {
-            nextMode = 'SIDE_BY_SIDE';
-         }
-         actions.updateCardViewMode(card.id, nextMode);
-      };
+      const { handleCycleViewMode } = useCardViewMode(card);
 
 
 

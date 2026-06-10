@@ -39,7 +39,10 @@ export function useInputDebouncer<T>(
     return () => clearTimeout(handler);
   }, [localValue, externalValue, onUpdate, delay]);
 
-  // Sync external changes back to local state
+  // Sync external changes (e.g., undo/redo) back into local state. This also
+  // short-circuits any pending debounce: once localValue equals externalValue,
+  // the first effect's guard (externalValue !== localValue) will be false on
+  // the next timer fire, preventing a stale write-back to the store.
   useEffect(() => {
     setLocalValue(externalValue);
   }, [externalValue]);

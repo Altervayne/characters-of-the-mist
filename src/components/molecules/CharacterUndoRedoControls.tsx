@@ -14,13 +14,15 @@ import { Undo, Redo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import useCharacterTemporalStore from '@/hooks/useCharacterTemporalStore';
 
 
 
 export function CharacterUndoRedoControls({ isCollapsed }: { isCollapsed: boolean }) {
    const { t: t } = useTranslation();
-   const { undo, redo, pastStates, futureStates } = useCharacterStore.temporal.getState();
+   const { undo, redo, pastStates, futureStates } = useCharacterTemporalStore(
+      (state) => state,
+   );
 
    const canUndo = pastStates?.length > 1;
    const canRedo = futureStates?.length > 0;

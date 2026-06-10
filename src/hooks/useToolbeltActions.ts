@@ -28,13 +28,19 @@ import {
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
+import cuid from 'cuid';
 
 // -- Store Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
+import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+
+// -- Hook Imports --
+import useCharacterTemporalStore from '@/hooks/useCharacterTemporalStore';
 
 // -- Utils Imports --
 import { exportToFile, exportCharacterSheet } from '@/lib/utils/export-import';
+import { getItemDisplayPath } from '@/lib/utils/drawer';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
@@ -49,6 +55,7 @@ import type { CardViewMode, Card, Tracker } from '@/lib/types/character';
 export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
+		loadCharacter,
 		flipCard,
 		deleteCard,
 		updateCardViewMode,
@@ -63,17 +70,20 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
       addStoryTheme
 	} = useCharacterActions();
 
-	const { toggleIsEditing, setCardDialogOpen } = useAppGeneralStateStore((state) => state.actions);
+	const { toggleIsEditing, setCardDialogOpen, setDrawerOpen } = useAppGeneralStateStore((state) => state.actions);
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
+
+	const { updateItem, initiateItemDrop } = useDrawerActions();
+
+	const { undo, redo, pastStates, futureStates } = useCharacterTemporalStore(
+		(state) => state,
+	);
+	const canUndo = (pastStates?.length ?? 0) > 1;
+	const canRedo = (futureStates?.length ?? 0) > 0;
 
 	return useMemo(() => {
 		const itemActions: ToolbeltAction[] = [];
 		const globalActions: ToolbeltAction[] = [];
-
-		// Get undo/redo state
-		const { undo, redo, pastStates, futureStates } = useCharacterStore.temporal.getState();
-		const canUndo = (pastStates?.length ?? 0) > 1;
-		const canRedo = (futureStates?.length ?? 0) > 0;
 
 		// --- Undo/Redo (always visible, grayed when disabled) ---
 		globalActions.push({
@@ -107,7 +117,29 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: t('Toolbelt.saveCharacter'),
 			icon: Save,
 			onClick: () => {
-				toast.success(t('Notifications.character.saved'));
+				const character = useCharacterStore.getState().character;
+				if (!character) return;
+
+				if (character.drawerItemId) {
+					const { drawer } = useDrawerStore.getState();
+					updateItem(character.drawerItemId, character);
+					const itemPath = getItemDisplayPath(drawer.folders, drawer.rootItems, character.drawerItemId);
+					toast.success(`${t('Notifications.character.saved')} ${itemPath}`);
+				} else {
+					const newItemId = cuid();
+					const characterWithDrawerId = { ...character, drawerItemId: newItemId };
+					loadCharacter(character, newItemId);
+					setDrawerOpen(true);
+					const { drawerCurrentFolderId } = useDrawerStore.getState();
+					initiateItemDrop({
+						game: character.game,
+						type: 'FULL_CHARACTER_SHEET',
+						content: characterWithDrawerId,
+						defaultName: character.name,
+						presetId: newItemId,
+						parentFolderId: drawerCurrentFolderId ?? undefined,
+					});
+				}
 			},
 			show: true
 		});
@@ -436,6 +468,11 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		activeTab,
 		t,
 		isEditing,
+		canUndo,
+		canRedo,
+		undo,
+		redo,
+		loadCharacter,
 		flipCard,
 		deleteCard,
 		updateCardViewMode,
@@ -450,7 +487,11 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		addStoryTheme,
 		setCardDialogOpen,
 		toggleIsEditing,
+		updateItem,
+		initiateItemDrop,
+		setDrawerOpen,
 		onEnterCardReorderMode,
-		onOpenAddCard
+		onOpenAddCard,
+		onSaveToDrawer,
 	]);
 }

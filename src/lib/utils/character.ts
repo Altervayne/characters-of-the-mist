@@ -6,6 +6,14 @@ import type { Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacte
 import type { GameSystem } from '../types/drawer';
 
 /**
+ * Converts a card theme type string into a CSS class name.
+ * Example: "Mythos" → "card-type-mythos", "Self & Noise" → "card-type-self-&-noise"
+ */
+export function getCardTypeClass(type: string): string {
+   return `card-type-${type.toLowerCase().replace(/\s+/g, '-')}`;
+}
+
+/**
  * Creates a fresh character sheet for the specified game system.
  * Initializes with appropriate default cards - Hero Card for Legend, Character Card for City/Otherscape.
  * Empty trackers to start, ready for you to build your character!

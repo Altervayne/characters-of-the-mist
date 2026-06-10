@@ -91,15 +91,6 @@ export function getParentFromPath(path: string[]): string | null {
    return path.length > 1 ? path[path.length - 2] : null;
 };
 
-/**
- * Navigates up N levels in the folder path.
- * O(1) operation using cached path.
- */
-export function navigateUpPath(path: string[], levels: number = 1): string | null {
-   const targetIndex = path.length - 1 - levels;
-   return targetIndex >= 0 ? path[targetIndex] : null;
-};
-
 
 
 // --- Folders Recursive Helpers ---
@@ -126,23 +117,6 @@ export function findParentFolder(folders: Folder[], childId: string): Folder | n
       if (folder.folders.some(f => f.id === childId)) return folder;
       const found = findParentFolder(folder.folders, childId);
       if (found) return found;
-   }
-   return null;
-};
-
-/**
- * Another recursive folder finder - basically the same as findFolder.
- * Kept for backwards compatibility, but you should probably just use findFolder.
- */
-export function findFolderById(folders: Folder[], folderId: string): Folder | null {
-   for (const folder of folders) {
-      if (folder.id === folderId) {
-         return folder;
-      }
-      const foundInSubfolder = findFolderById(folder.folders, folderId);
-      if (foundInSubfolder) {
-         return foundInSubfolder;
-      }
    }
    return null;
 };

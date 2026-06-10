@@ -13,14 +13,15 @@ import { Flame, Circle, PlusCircle, Disc2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getCardTypeClass } from '@/lib/utils/character';
 
 // -- Component Imports --
-import { CardHeaderMolecule } from '../molecules/CardHeader';
-import { CardSectionHeader } from '@/components/molecules/CardSectionHeader';
+import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
+import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { TagItem } from '@/components/molecules/TagItem';
 import { PipTracker } from '@/components/molecules/PipTracker';
 import { BlandTagItem } from '@/components/molecules/BlandTagItem';
-import { CardFlipWrapper } from '@/components/molecules/CardFlipWrapper';
+import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -28,11 +29,12 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useManualScroll } from '@/hooks/useManualScroll';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+import { useCardViewMode } from '@/hooks/useCardViewMode';
 
 // -- Type Imports --
 import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import type { Card as CardData, CardViewMode, LegendsFellowshipDetails, LegendsThemeDetails } from '@/lib/types/character';
+import type { Card as CardData, LegendsFellowshipDetails, LegendsThemeDetails } from '@/lib/types/character';
 
 
 
@@ -50,12 +52,6 @@ interface ThemeCardProps {
    onEditCard?: () => void;
    onExport?: () => void;
 }
-
-
-
-const getCardTypeClass = (type: string) => {
-   return `card-type-${type.toLowerCase().replace(/\s+/g, '-')}`;
-};
 
 
 
@@ -97,19 +93,7 @@ export const LegendsThemeCard = React.memo(
          actions.updateCardDetails(card.id, { ...details, [field]: value });
       };
 
-
-
-      const handleCycleViewMode = () => {
-         let nextMode: CardViewMode | null = null;
-         if (card.viewMode === 'SIDE_BY_SIDE') {
-            nextMode = 'FLIP';
-         } else if (card.viewMode === 'FLIP') {
-            nextMode = null;
-         } else {
-            nextMode = 'SIDE_BY_SIDE';
-         }
-         actions.updateCardViewMode(card.id, nextMode);
-      };
+      const { handleCycleViewMode } = useCardViewMode(card);
 
 
 

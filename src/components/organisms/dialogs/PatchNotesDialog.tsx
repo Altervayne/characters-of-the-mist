@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { IconButton } from '../ui/icon-button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IconButton } from '@/components/ui/icon-button';
 
 // -- Icon Imports --
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { patchNotes } from '@/lib/patch-notes';
 
 // -- Component Imports --
-import MarkdownContent from '../molecules/MarkdownContent';
+import MarkdownContent from '@/components/molecules/MarkdownContent';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';

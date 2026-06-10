@@ -5,7 +5,7 @@ import { useState, useRef } from 'react';
 import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText } from 'lucide-react';
 
 // -- Component Imports --
-import { DrawerItemPreview } from '@/components/molecules/DrawerItemPreview';
+import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
 import { Badge } from '@/components/ui/badge';
 
 // -- Utils Imports --

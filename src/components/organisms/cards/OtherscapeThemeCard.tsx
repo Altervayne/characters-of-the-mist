@@ -15,12 +15,12 @@ import { Flame, Circle, PlusCircle, Disc2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { CardHeaderMolecule } from '../molecules/CardHeader';
-import { CardSectionHeader } from '@/components/molecules/CardSectionHeader';
+import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
+import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { TagItem } from '@/components/molecules/TagItem';
 import { PipTracker } from '@/components/molecules/PipTracker';
 import { BlandTagItem } from '@/components/molecules/BlandTagItem';
-import { CardFlipWrapper } from '@/components/molecules/CardFlipWrapper';
+import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';

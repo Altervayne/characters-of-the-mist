@@ -5,16 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { Folder, GripVertical } from 'lucide-react';
 
 // -- Component Imports --
-import { LegendsThemeCard } from '@/components/organisms/LegendsThemeCard';
-import { CityThemeCard } from '@/components/organisms/CityThemeCard';
-import { OtherscapeThemeCard } from '@/components/organisms/OtherscapeThemeCard';
-import { HeroCard } from '@/components/organisms/HeroCard';
-import { RiftCard } from '@/components/organisms/RiftCard';
-import { OtherscapeCharacterCard } from '@/components/organisms/OtherscapeCharacterCard';
-import { StatusTrackerCard } from '@/components/molecules/StatusTracker';
-import { StoryTagTrackerCard } from '@/components/molecules/StoryTagTracker';
+import { LegendsThemeCard } from '@/components/organisms/cards/LegendsThemeCard';
+import { CityThemeCard } from '@/components/organisms/cards/CityThemeCard';
+import { OtherscapeThemeCard } from '@/components/organisms/cards/OtherscapeThemeCard';
+import { HeroCard } from '@/components/organisms/cards/HeroCard';
+import { RiftCard } from '@/components/organisms/cards/RiftCard';
+import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
+import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker';
+import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTracker';
 import { CharacterSheetPreview } from '@/components/molecules/CharacterSheetPreview';
-import { StoryThemeTrackerCard } from '../organisms/StoryThemeTracker';
+import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
 
 // -- Type Imports --
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';

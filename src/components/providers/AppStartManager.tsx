@@ -10,9 +10,9 @@ import { patchNotes } from '@/lib/patch-notes';
 
 // -- Component Imports --
 import { LocalStorageError } from '../molecules/LocalStorageError';
-import { LegacyDataDialog } from '../organisms/LegacyDataDialog';
-import { PatchNotesDialog } from '@/components/organisms/PatchNotesDialog';
-import { WelcomeDialog } from '@/components/organisms/WelcomeDialog';
+import { LegacyDataDialog } from '@/components/organisms/dialogs/LegacyDataDialog';
+import { PatchNotesDialog } from '@/components/organisms/dialogs/PatchNotesDialog';
+import { WelcomeDialog } from '@/components/organisms/dialogs/WelcomeDialog';
 import MobileOnboarding from '@/components/mobile/onboarding/MobileOnboarding';
 
 // -- Store and Hook Imports --

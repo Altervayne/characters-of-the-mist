@@ -7,7 +7,7 @@ import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 // -- Component Imports --
-import { ToolbarHandle } from './ToolbarHandle';
+import { ToolbarHandle } from '@/components/molecules/ToolbarHandle';
 
 // -- Type Imports --
 import type { Card as CardData } from '@/lib/types/character';

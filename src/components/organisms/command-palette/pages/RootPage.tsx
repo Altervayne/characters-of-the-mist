@@ -1,0 +1,40 @@
+// -- Other Library Imports --
+import { Command } from 'cmdk';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
+// -- Local Imports --
+import { commonItemClass } from '../constants';
+
+// -- Type Imports --
+import type { CommandAction } from '@/hooks/useCommandPaletteActions';
+
+
+
+interface RootPageProps {
+   commandGroups: Record<string, CommandAction[]>;
+   onSelectCommand: (command: CommandAction) => void;
+};
+
+export const RootPage = ({ commandGroups, onSelectCommand }: RootPageProps) => {
+   return (
+      <>
+         {Object.entries(commandGroups).map(([groupName, groupCommands], index) => (
+            <Command.Group key={groupName} heading={groupName} className={cn("text-xs", index !== 0 && "mt-4")}>
+               {groupCommands.map((command) => (
+                  <Command.Item
+                     key={command.id}
+                     onSelect={() => onSelectCommand(command)}
+                     value={command.label}
+                     className={commonItemClass}
+                  >
+                     <command.icon className="mr-2 h-4 w-4" />
+                     <span>{command.label}</span>
+                  </Command.Item>
+               ))}
+            </Command.Group>
+         ))}
+      </>
+   );
+};

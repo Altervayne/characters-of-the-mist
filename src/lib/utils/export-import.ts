@@ -120,14 +120,7 @@ export function exportCharacterSheet(character: Character) {
  * Perfect for backups or transferring your whole collection to another device.
  */
 export function exportDrawer(drawer: Drawer) {
-   const today = new Date();
-   const dd = String(today.getDate()).padStart(2, '0');
-   const mm = String(today.getMonth() + 1).padStart(2, '0');
-   const yyyy = today.getFullYear();
-
-   const todayString = mm + '-' + dd + '-' + yyyy;
-   const drawerFileName = 'Characters of the Mist - Full Drawer - ' + todayString
-
+   const drawerFileName = generateExportFilename('NEUTRAL', 'FULL_DRAWER', 'Full Drawer');
    exportToFile(drawer, 'FULL_DRAWER', 'NEUTRAL', drawerFileName);
 };
 

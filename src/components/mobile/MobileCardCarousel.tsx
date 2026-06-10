@@ -2,12 +2,12 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
-import { LegendsThemeCard } from '@/components/organisms/LegendsThemeCard';
-import { CityThemeCard } from '@/components/organisms/CityThemeCard';
-import { OtherscapeThemeCard } from '@/components/organisms/OtherscapeThemeCard';
-import { HeroCard } from '@/components/organisms/HeroCard';
-import { RiftCard } from '@/components/organisms/RiftCard';
-import { OtherscapeCharacterCard } from '@/components/organisms/OtherscapeCharacterCard';
+import { LegendsThemeCard } from '@/components/organisms/cards/LegendsThemeCard';
+import { CityThemeCard } from '@/components/organisms/cards/CityThemeCard';
+import { OtherscapeThemeCard } from '@/components/organisms/cards/OtherscapeThemeCard';
+import { HeroCard } from '@/components/organisms/cards/HeroCard';
+import { RiftCard } from '@/components/organisms/cards/RiftCard';
+import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
 import { AddCardButton } from '@/components/molecules/AddThemeCardButton';
 
 // -- Store Imports --

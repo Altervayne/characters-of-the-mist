@@ -67,6 +67,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const currentGame = character?.game;
    const showCreationCommands = currentGame && currentGame !== 'NEUTRAL';
 
+   // Each label starts with "PREFIX | " so users can narrow results by typing
+   // the prefix in the command palette. Groups: APP_ (general), STNG_ (settings),
+   // EXPT_ (export), CHAR_ (character), NEW_ (creation).
    const staticCommands: CommandAction[] = [
 
       // #########################

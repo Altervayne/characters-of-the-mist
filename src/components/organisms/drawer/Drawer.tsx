@@ -14,26 +14,27 @@ import toast from 'react-hot-toast';
 import { Sortable, DragStaticWrapper, DragLayoutWrapper } from '@/components/dnd';
 
 // -- Basic UI Imports --
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
-import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, ArrowUpToLine, Move, GripVertical, Download, Upload, LayoutGrid, Rows, FileText, FileUser, IdCard, RectangleEllipsis, CreditCard, FileHeart, WalletCards, PanelRightClose } from 'lucide-react';
+import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, ArrowUpToLine, Move, GripVertical, Download, Upload, LayoutGrid, Rows, PanelRightClose } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { buildBreadcrumb, buildFolderPathIds, getParentFromPath, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
+import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
 import { exportDrawer, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
-import { DrawerItemPreview } from '../molecules/DrawerItemPreview';
-import { Breadcrumb } from '../molecules/Breadcrumbs';
-import FolderDropZone from '../molecules/FolderDropZone';
-import { DrawerUndoRedoControls } from '../molecules/DrawerUndoRedoControls';
+import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
+import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
+import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
+import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
@@ -43,7 +44,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
 import type { PendingDrawerItem } from '@/lib/stores/drawerStore';
-import type { Folder as FolderType, DrawerItem, DrawerItemContent, Drawer as DrawerType, GeneralItemType } from '@/lib/types/drawer';
+import type { Folder as FolderType, DrawerItem, DrawerItemContent, Drawer as DrawerType } from '@/lib/types/drawer';
 import type { LegendsHeroDetails, LegendsThemeDetails, Card as CardData } from '@/lib/types/character';
 
 
@@ -234,27 +235,6 @@ function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item:
 };
 
 
-
-const getItemTypeIcon = (type: GeneralItemType) => {
-   switch (type) {
-      case 'CHARACTER_CARD':
-         return <FileUser className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      case 'FULL_CHARACTER_SHEET':
-         return <IdCard className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      case 'CHARACTER_THEME':
-         return <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      case 'GROUP_THEME':
-         return <FileHeart className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      case 'STATUS_TRACKER':
-         return <CreditCard className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      case 'STORY_TAG_TRACKER':
-         return <RectangleEllipsis className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      case 'STORY_THEME_TRACKER':
-         return <WalletCards className="h-5 w-5 shrink-0 text-muted-foreground" />;
-      default:
-         return <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />;
-   }
-};
 
 export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
    const { t } = useTranslation();
