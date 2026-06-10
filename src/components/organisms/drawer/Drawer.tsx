@@ -1,14 +1,12 @@
 // -- React Imports --
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { AnimatePresence, motion } from 'framer-motion';
-import { useDropzone } from 'react-dropzone';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import cuid from 'cuid';
-import toast from 'react-hot-toast';
 
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper, DragLayoutWrapper } from '@/components/dnd';
@@ -24,10 +22,10 @@ import { Folder, Plus, ArrowLeft, Inbox, MoreHorizontal, Pencil, Trash2, X, Arro
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { buildBreadcrumb, buildFolderPathIds, getParentFromPath, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
+import { buildBreadcrumb, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
 import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
-import { exportDrawer, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
+import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
@@ -37,26 +35,20 @@ import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
-import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
+import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
+import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
+import type { ActiveAction } from '@/hooks/drawer/useDrawerActionState';
 import type { PendingDrawerItem } from '@/lib/stores/drawerStore';
-import type { Folder as FolderType, DrawerItem, DrawerItemContent, Drawer as DrawerType } from '@/lib/types/drawer';
-import type { LegendsHeroDetails, LegendsThemeDetails, Card as CardData } from '@/lib/types/character';
+import type { Folder as FolderType, DrawerItem } from '@/lib/types/drawer';
 
 
-
-type ActionType = 'add-folder' | 'rename-folder' | 'delete-folder' | 'add-item' | 'rename-item' | 'delete-item' | 'move-item' | 'move-folder';
-
-interface ActiveAction {
-   id: string;
-   type: ActionType;
-   target?: FolderType | DrawerItem | PendingDrawerItem;
-   parentId?: string | null;
-}
 
 interface ModificationWindowProps {
    action: ActiveAction;
@@ -169,16 +161,7 @@ function ItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item:
       e.stopPropagation();
       const { content, type, game, name } = item;
 
-      let handle: string | undefined = name;
-      if ('cardType' in content) {
-         const cardContent = content as CardData;
-
-         if (type === 'CHARACTER_THEME' || type === 'GROUP_THEME') {
-            handle = (cardContent.details as LegendsThemeDetails).mainTag.name;
-         } else if (type === 'CHARACTER_CARD') {
-            handle = (cardContent.details as LegendsHeroDetails).characterName;
-         }
-      }
+      const handle = deriveExportHandle(content, name);
 
       const fileName = generateExportFilename(game, type, handle);
       exportToFile(content, type, game, fileName);
@@ -243,16 +226,7 @@ export function CompactItemEntry({ item, parentFolderId, onRename, onDelete, onM
       e.stopPropagation();
       const { content, type, game, name } = item;
 
-      let handle: string | undefined = name;
-      if ('cardType' in content) {
-         const cardContent = content as CardData;
-
-         if (type === 'CHARACTER_THEME' || type === 'GROUP_THEME') {
-            handle = (cardContent.details as LegendsThemeDetails).mainTag.name;
-         } else if (type === 'CHARACTER_CARD') {
-            handle = (cardContent.details as LegendsHeroDetails).characterName;
-         }
-      }
+      const handle = deriveExportHandle(content, name);
 
       const fileName = generateExportFilename(game, type, handle);
       exportToFile(content, type, game, fileName);
@@ -491,47 +465,33 @@ const ModificationWindow = React.forwardRef<HTMLInputElement, ModificationWindow
 export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHovering : boolean, activeDragId: string | null, overDragId: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
-   const { t: tNotifications } = useTranslation();
 
-   const folders = useDrawerStore((state) => state.drawer.folders);
-   const rootItems = useDrawerStore((state) => state.drawer.rootItems);
-   const pendingItem = useDrawerStore((state) => state.pendingItem);
-   
-   const {  importFullDrawer,
-            addFolder, addImportedFolder, renameFolder, deleteFolder, moveFolder,
-            addItem, addImportedItem, renameItem, deleteItem, moveItem,
-            clearPendingItemDrop, setDrawerCurrentFolderId } = useDrawerActions();
+   const {
+      currentFolderId,
+      navigateToFolder,
+      currentItems,
+      currentFolders,
+      parentFolderId,
+      breadcrumbPath,
+   } = useDrawerNavigation();
 
-   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+   const {
+      activeAction,
+      setActiveAction,
+      inputRef,
+      handleAddFolder,
+      handleConfirmAction,
+      handleCloseModificationWindow,
+      handleAnimationComplete,
+   } = useDrawerActionState(currentFolderId);
 
-   const navigateToFolder = (id: string | null) => {
-      setCurrentFolderId(id);
-      setDrawerCurrentFolderId(id);
-   };
-   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
-
-   // Cache folder path as chain of IDs: ['rootId', 'childId', 'currentId']
-   // Provides O(1) access to parent folder ID
-   const currentFolderPath = useMemo(() => buildFolderPathIds(folders, currentFolderId), [folders, currentFolderId]);
-
-   useEffect(() => {
-      if (pendingItem) {
-         // eslint-disable-next-line react-hooks/set-state-in-effect
-         setActiveAction({
-            id: cuid(),
-            type: 'add-item',
-            target: pendingItem,
-         });
-      }
-    }, [pendingItem]);
-
-   const handleAnimationComplete = () => {
-      if (activeAction) {
-         setTimeout(() => {
-            inputRef.current?.focus();
-         }, 0);
-      }
-   };
+   const {
+      getRootProps,
+      isDragActive,
+      handleFileSelected,
+      handleExportDrawer,
+      formRef,
+   } = useDrawerFileImport(currentFolderId);
 
 
 
@@ -540,102 +500,6 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
    const { setDrawerOpen } = useAppGeneralStateActions();
 
 
-
-   const { currentItems, currentFolders, parentFolderId } = useMemo(() => {
-      if (!currentFolderId) {
-         return { currentItems: rootItems, currentFolders: folders, parentFolderId: null };
-      }
-      const folder = findFolderMemoized(folders, currentFolderId);
-      if (folder) {
-         // O(1) parent lookup using cached path instead of O(n) tree traversal
-         const parentId = getParentFromPath(currentFolderPath);
-         return { currentItems: folder.items, currentFolders: folder.folders, parentFolderId: parentId };
-      }
-      return { currentItems: rootItems, currentFolders: folders, parentFolderId: null };
-   }, [currentFolderId, folders, rootItems, currentFolderPath]);
-
-   const breadcrumbPath = useMemo(() => buildBreadcrumb(folders, currentFolderId), [folders, currentFolderId]);
-
-   const handleAddFolder = () => {
-      setActiveAction({ id: cuid(), type: 'add-folder', parentId: currentFolderId });
-   };
-
-   const handleConfirmAction = (value?: string) => {
-      if (!activeAction) return;
-      const target = activeAction.target;
-
-
-      switch (activeAction.type) {
-         case 'add-folder':
-            if (value) {
-               addFolder(value, activeAction.parentId ?? undefined);
-               toast.success(tNotifications('Notifications.drawer.folderCreated'));
-            }   
-            break;
-
-         case 'rename-folder':
-            if (target && 'items' in target && value) {
-               renameFolder(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.folderRenamed'));
-            }
-            break;
-
-         case 'delete-folder':
-            if (target && 'items' in target) {
-               deleteFolder(target.id);
-               toast.success(tNotifications('Notifications.drawer.folderDeleted'));
-            }
-            break;
-
-         case 'move-folder':
-            if (target && 'items' in target) {
-               moveFolder(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.folderMoved'));
-            }   
-            break;
-
-
-
-         case 'rename-item':
-            if (target && 'id' in target && 'content' in target && value) {
-               renameItem(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.itemRenamed'));
-            }
-            break;
-
-         case 'delete-item':
-            if (target && 'id' in target && 'content' in target) {
-               deleteItem(target.id);
-               toast.success(tNotifications('Notifications.drawer.itemDeleted'));
-            }
-            break;
-
-         case 'add-item':
-            if (value && target && 'defaultName' in target) {
-               const { game, type, content, parentFolderId } = target;
-               addItem(value, game, type, content, parentFolderId);
-               toast.success(tNotifications('Notifications.drawer.itemCreated'));
-            }
-            clearPendingItemDrop();
-            break;
-
-         case 'move-item':
-            if (target && 'id' in target && 'content' in target) {
-               moveItem(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.itemMoved'));
-            }   
-            break;
-      }
-
-      setActiveAction(null);
-   };
-
-   const handleCloseModificationWindow = () => {
-      if (activeAction?.type === 'add-item') {
-         clearPendingItemDrop();
-      }
-      setActiveAction(null);
-   };
 
    const folderIds = useMemo(() => currentFolders.map(f => f.id), [currentFolders]);
    const activeFolderIndex = useMemo(() => {
@@ -657,65 +521,6 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
 
 
 
-   const processFile = useCallback(async (file?: File) => {
-      if (!file) return;
-
-      try {
-         const importedData = await importFromFile(file);
-
-         switch (importedData.fileType) {
-            case 'FULL_DRAWER':
-               importFullDrawer(importedData.content as DrawerType);
-               break;
-
-            case 'FOLDER':
-               addImportedFolder(importedData.content as FolderType, currentFolderId ?? undefined);
-               break;
-            
-            default:
-               addImportedItem(importedData.content as DrawerItemContent, importedData.fileType, importedData.game, currentFolderId ?? undefined);
-               break;
-         }
-
-         toast.success(tNotifications('Notifications.drawer.importSuccess'));
-         
-      } catch (error) {
-         toast.error(tNotifications('Notifications.general.importFailed'));
-         console.error("Failed to import file:", error);
-      }
-   }, [currentFolderId, addImportedFolder, addImportedItem, importFullDrawer, tNotifications]);
-
-   const onDrop = useCallback((acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-         processFile(acceptedFiles[0]);
-      }
-   }, [processFile]);
-
-   const { getRootProps, isDragActive } = useDropzone({
-      onDrop,
-      noClick: true,
-      noKeyboard: true,
-      accept: {
-         'application/json': ['.cotm', '.json'],
-      },
-   });
-
-
-
-   const inputRef = useRef<HTMLInputElement>(null);
-   const formRef = useRef<HTMLFormElement>(null);
-
-   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      processFile(file);
-      formRef.current?.reset();
-   };
-
-   const handleExportDrawer = () => {
-      const drawerState = useDrawerStore.getState().drawer;
-      exportDrawer(drawerState);
-      toast.success(tNotifications('Notifications.drawer.exported'));
-   };
 
 
 
