@@ -24,18 +24,22 @@ import type { Folder as FolderType, DrawerItemContent, Drawer as DrawerType } fr
  * current drawer, while a folder or item is imported into the currently open
  * folder. Exposes react-dropzone root props for the drag-and-drop zone, a change
  * handler for the hidden file input (which it resets via `formRef` after a pick),
- * and a full-drawer export handler.
+ * and a full-drawer export handler. Owns `fileInputRef` (bound to the hidden file
+ * input and triggered by the import button) so the file-picker ref is dedicated
+ * to the import flow and never shared with the modification-window input.
  *
  * @param currentFolderId - The currently open folder, used as the import
  *   destination for imported folders and items.
  * @returns The dropzone root props and active-drag flag, the file-input change
- *   and drawer-export handlers, and the form ref bound to the hidden import form.
+ *   and drawer-export handlers, and the form/file-input refs bound to the hidden
+ *   import form and its file input.
  */
 export function useDrawerFileImport(currentFolderId: string | null) {
    const { t: tNotifications } = useTranslation();
    const { importFullDrawer, addImportedFolder, addImportedItem } = useDrawerActions();
 
    const formRef = useRef<HTMLFormElement>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
 
    const processFile = useCallback(async (file?: File) => {
       if (!file) return;
@@ -92,5 +96,5 @@ export function useDrawerFileImport(currentFolderId: string | null) {
       toast.success(tNotifications('Notifications.drawer.exported'));
    };
 
-   return { getRootProps, isDragActive, handleFileSelected, handleExportDrawer, formRef };
+   return { getRootProps, isDragActive, handleFileSelected, handleExportDrawer, formRef, fileInputRef };
 }

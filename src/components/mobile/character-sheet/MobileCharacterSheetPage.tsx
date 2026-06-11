@@ -6,17 +6,17 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
-import MobileCharacterSheet from './MobileCharacterSheet';
-import MobileBottomTabs from './MobileBottomTabs';
-import MobileFAB from './MobileFAB';
-import MobileMenu from './MobileMenu';
-import MobileSettings from './MobileSettings';
-import MobileAbout from './MobileAbout';
-import MobilePatchNotes from './MobilePatchNotes';
-import MobileMainMenu from './MobileMainMenu';
-import MobileAddCard from './MobileAddCard';
-import MobileDrawer from './MobileDrawer';
-import MobileTutorial from './tutorial/MobileTutorial';
+import MobileCharacterSheet from '@/components/mobile/character-sheet/MobileCharacterSheet';
+import MobileBottomTabs from '@/components/mobile/menu/MobileBottomTabs';
+import MobileFAB from '@/components/mobile/menu/MobileFAB';
+import MobileMenu from '@/components/mobile/menu/MobileMenu';
+import MobileSettings from '@/components/mobile/menu/MobileSettings';
+import MobileAbout from '@/components/mobile/menu/MobileAbout';
+import MobilePatchNotes from '@/components/mobile/menu/MobilePatchNotes';
+import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
+import MobileAddCard from '@/components/mobile/menu/MobileAddCard';
+import MobileDrawer from '@/components/mobile/drawer/MobileDrawer';
+import MobileTutorial from '@/components/mobile/tutorial/MobileTutorial';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';

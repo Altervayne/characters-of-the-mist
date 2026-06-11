@@ -39,10 +39,6 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import type { Variants } from 'framer-motion';
 
 
-
-
-
-
 const drawerVariants: Variants = {
    initial: {
       width: 0,
@@ -60,10 +56,6 @@ const contentVariants: Variants = {
   animate: { opacity: 1, transition: { delay: 0.1, duration: 0.2 } },
   exit: { opacity: 0, transition: { duration: 0.1 } },
 };
-
-
-
-
 
 
 export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHovering : boolean, activeDragId: string | null, overDragId: string | null; }) {
@@ -95,14 +87,13 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
       handleFileSelected,
       handleExportDrawer,
       formRef,
+      fileInputRef,
    } = useDrawerFileImport(currentFolderId);
-
 
 
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
    const { toggleCompactDrawer } = useAppSettingsActions();
    const { setDrawerOpen } = useAppGeneralStateActions();
-
 
 
    const folderIds = useMemo(() => currentFolders.map(f => f.id), [currentFolders]);
@@ -122,10 +113,6 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
       },
       disabled: !currentFolderId,
    });
-
-
-
-
 
 
    return (
@@ -279,7 +266,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                         <form ref={formRef} className="hidden">
                            <input
                               type="file"
-                              ref={inputRef}
+                              ref={fileInputRef}
                               onChange={handleFileSelected}
                               accept=".cotm,application/json"
                            />
@@ -288,7 +275,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                            data-tour="drawer-import"
                            variant="default"
                            className="w-full cursor-pointer"
-                           onClick={() => inputRef.current?.click()}
+                           onClick={() => fileInputRef.current?.click()}
                         >
                            <Download className="mr-2 h-4 w-4" />
                            {tActions('Drawer.Actions.import')}
@@ -304,7 +291,6 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                         </Button>
                      </div>
                </motion.div>
-
 
 
                {activeAction && <div className="absolute inset-0 bg-black/40" />}

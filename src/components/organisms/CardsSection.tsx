@@ -1,4 +1,5 @@
 // -- Other Library Imports --
+import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Utils Imports --
@@ -23,16 +24,15 @@ interface CardsSectionProps {
    onExport: (item: CardData) => void;
    onEditCard: (card: CardData) => void;
    onAddCard: () => void;
-   cardsDropRef: (element: HTMLElement | null) => void;
-   isOverCards: boolean;
    cardIds: string[];
 }
 
 /**
  * The character sheet's cards region: a SortableContext of the character's cards
- * (each rendered via CardRenderer) plus the add-card button. Purely
- * presentational - the drag state, the memoized card id array, and all handlers
- * arrive from the page.
+ * (each rendered via CardRenderer) plus the add-card button. Presentational apart
+ * from registering its own `card-drop-zone` droppable (which must happen inside
+ * the DndContext subtree); the memoized card id array and all handlers arrive
+ * from the page.
  */
 export function CardsSection({
    character,
@@ -40,10 +40,13 @@ export function CardsSection({
    onExport,
    onEditCard,
    onAddCard,
-   cardsDropRef,
-   isOverCards,
    cardIds,
 }: CardsSectionProps) {
+   const { setNodeRef: cardsDropRef, isOver: isOverCards } = useDroppable({
+      id: 'card-drop-zone',
+      data: { type: 'card-drop-zone' }
+   });
+
    return (
       <div
          data-tour="cards-section"

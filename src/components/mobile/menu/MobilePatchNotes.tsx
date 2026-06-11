@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // -- Component Imports --
-import { IconButton } from '../ui/icon-button';
-import MarkdownContent from '../molecules/MarkdownContent';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { IconButton } from '@/components/ui/icon-button';
+import MarkdownContent from '@/components/molecules/MarkdownContent';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // -- Utils Imports --
 import { patchNotes } from '@/lib/patch-notes';

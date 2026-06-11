@@ -5,12 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Folder, GripVertical } from 'lucide-react';
 
 // -- Component Imports --
-import { LegendsThemeCard } from '@/components/organisms/cards/LegendsThemeCard';
-import { CityThemeCard } from '@/components/organisms/cards/CityThemeCard';
-import { OtherscapeThemeCard } from '@/components/organisms/cards/OtherscapeThemeCard';
-import { HeroCard } from '@/components/organisms/cards/HeroCard';
-import { RiftCard } from '@/components/organisms/cards/RiftCard';
-import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
+import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
 import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker';
 import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTracker';
 import { CharacterSheetPreview } from '@/components/molecules/CharacterSheetPreview';
@@ -45,71 +40,15 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
    const renderSnapshot = () => {
       const { content, type, game } = item;
 
-      if (game === 'LEGENDS') {
+      // Only Legends, City, and Otherscape items have previews; the card mapping
+      // is delegated to resolveCardComponent, while trackers and full sheets are
+      // game-independent. Anything outside these games falls through to the
+      // unavailable-preview placeholder below.
+      if (game === 'LEGENDS' || game === 'CITY_OF_MIST' || game === 'OTHERSCAPE') {
          if ('cardType' in content) {
-            switch (type) {
-            case 'CHARACTER_THEME':
-            case 'GROUP_THEME':
-               return <LegendsThemeCard card={content} isDrawerPreview />;
-            case 'CHARACTER_CARD':
-               return <HeroCard card={content} isDrawerPreview />;
-            }
-         }
-
-         if ('trackerType' in content) {
-            if (content.trackerType === 'STATUS') {
-               return <StatusTrackerCard tracker={content} isDrawerPreview />;
-            }
-            if (content.trackerType === 'STORY_TAG') {
-               return <StoryTagTrackerCard tracker={content} isDrawerPreview />;
-            }
-            if (content.trackerType === 'STORY_THEME') {
-               return <StoryThemeTrackerCard tracker={content} isDrawerPreview />;
-            }
-         }
-
-         if (type === 'FULL_CHARACTER_SHEET') {
-            return <CharacterSheetPreview item={item} />;
-         }
-      }
-
-      if (game === 'CITY_OF_MIST') {
-         if ('cardType' in content) {
-            switch (type) {
-            case 'CHARACTER_THEME':
-            case 'GROUP_THEME':
-               return <CityThemeCard card={content} isDrawerPreview />;
-            case 'CHARACTER_CARD':
-               return <RiftCard card={content} isDrawerPreview />;
-            }
-         }
-
-         if ('trackerType' in content) {
-            if (content.trackerType === 'STATUS') {
-               return <StatusTrackerCard tracker={content} isDrawerPreview />;
-            }
-            if (content.trackerType === 'STORY_TAG') {
-               return <StoryTagTrackerCard tracker={content} isDrawerPreview />;
-            }
-            if (content.trackerType === 'STORY_THEME') {
-               return <StoryThemeTrackerCard tracker={content} isDrawerPreview />;
-            }
-         }
-
-         if (type === 'FULL_CHARACTER_SHEET') {
-            return <CharacterSheetPreview item={item} />;
-         }
-      }
-
-      if (game === 'OTHERSCAPE') {
-         if ('cardType' in content) {
-            switch (type) {
-            case 'CHARACTER_THEME':
-            case 'GROUP_THEME':
-            case 'LOADOUT_THEME':
-               return <OtherscapeThemeCard card={content} isDrawerPreview />;
-            case 'CHARACTER_CARD':
-               return <OtherscapeCharacterCard card={content} isDrawerPreview />;
+            const Component = resolveCardComponent(type, game);
+            if (Component) {
+               return <Component card={content} isDrawerPreview />;
             }
          }
 

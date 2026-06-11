@@ -9,10 +9,10 @@ import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTra
 import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
-import MobileCardCarousel from './MobileCardCarousel';
-import MobileToolbelt from './MobileToolbelt';
-import MobileSaveToDrawerSheet from './MobileSaveToDrawerSheet';
-import SelectableTracker from './SelectableTracker';
+import MobileCardCarousel from '@/components/mobile/character-sheet/MobileCardCarousel';
+import MobileToolbelt from '@/components/mobile/toolbelt/MobileToolbelt';
+import MobileSaveToDrawerSheet from '@/components/mobile/character-sheet/MobileSaveToDrawerSheet';
+import SelectableTracker from '@/components/mobile/character-sheet/SelectableTracker';
 import { LegendsThemeCard } from '@/components/organisms/cards/LegendsThemeCard';
 import { CityThemeCard } from '@/components/organisms/cards/CityThemeCard';
 import { OtherscapeThemeCard } from '@/components/organisms/cards/OtherscapeThemeCard';

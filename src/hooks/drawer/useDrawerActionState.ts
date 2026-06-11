@@ -39,8 +39,7 @@ export interface ActiveAction {
  * `handleConfirmAction` is the single CRUD-dispatch switch for every action type
  * (add/rename/delete/move for both folders and items). `handleAnimationComplete`
  * focuses the modification-window input after its slide-up animation; the exposed
- * `inputRef` is bound to that input (and, as a pre-existing quirk, also to the
- * file-import input in the shell).
+ * `inputRef` is bound only to that input.
  *
  * @param currentFolderId - The currently open folder, used as the parent for new
  *   folders created via `handleAddFolder`.

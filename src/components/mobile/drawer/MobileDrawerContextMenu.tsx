@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // -- Component Imports --
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import MobileFolderPicker from './MobileFolderPicker';
+import MobileFolderPicker from '@/components/mobile/drawer/MobileFolderPicker';
 
 // -- Icon Imports --
 import {

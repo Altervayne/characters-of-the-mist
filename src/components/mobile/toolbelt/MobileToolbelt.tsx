@@ -1,6 +1,6 @@
 // -- Component Imports --
-import ToolbeltSidePanel from './ToolbeltSidePanel';
-import ToolbeltFAB from './ToolbeltFAB';
+import ToolbeltSidePanel from '@/components/mobile/toolbelt/ToolbeltSidePanel';
+import ToolbeltFAB from '@/components/mobile/toolbelt/ToolbeltFAB';
 
 // -- Hook Imports --
 import { useToolbeltActions } from '@/hooks/useToolbeltActions';

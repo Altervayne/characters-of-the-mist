@@ -2,6 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
+import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Basic UI Imports --
@@ -34,8 +35,6 @@ interface TrackersSectionProps {
    onExport: (item: Tracker) => void;
    onAddStatus: () => void;
    onAddStoryTag: () => void;
-   trackersDropRef: (element: HTMLElement | null) => void;
-   isOverTrackers: boolean;
    statusIds: string[];
    storyTagIds: string[];
    storyThemeIds: string[];
@@ -43,9 +42,9 @@ interface TrackersSectionProps {
 
 /**
  * The character sheet's trackers region: statuses, story tags, and story themes,
- * each in its own SortableContext. Purely presentational - the drag state, the
- * memoized id arrays, and all handlers arrive from the page (which sources them
- * from the DnD and character-sheet hooks).
+ * each in its own SortableContext. Presentational apart from registering its own
+ * `tracker-drop-zone` droppable (which must happen inside the DndContext subtree);
+ * the memoized id arrays and all handlers arrive from the page.
  */
 export function TrackersSection({
    character,
@@ -54,13 +53,16 @@ export function TrackersSection({
    onExport,
    onAddStatus,
    onAddStoryTag,
-   trackersDropRef,
-   isOverTrackers,
    statusIds,
    storyTagIds,
    storyThemeIds,
 }: TrackersSectionProps) {
    const { t: tTrackers } = useTranslation();
+
+   const { setNodeRef: trackersDropRef, isOver: isOverTrackers } = useDroppable({
+      id: 'tracker-drop-zone',
+      data: { type: 'tracker-drop-zone' }
+   });
 
    return (
       <div

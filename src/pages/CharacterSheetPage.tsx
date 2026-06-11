@@ -15,13 +15,13 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { AnimatePresence } from 'framer-motion';
 
 // -- Utils Imports --
-import { cn } from '@/lib/utils';
 import { customCollisionDetection } from '@/lib/utils/dnd';
 
 // -- Component Imports --
 import { CommandPalette } from '@/components/organisms/command-palette/CommandPalette';
 import { TrackersSection } from '@/components/organisms/TrackersSection';
 import { CardsSection } from '@/components/organisms/CardsSection';
+import { SheetMainDropZone } from '@/components/organisms/SheetMainDropZone';
 import { CharacterNameHeader } from '@/components/molecules/CharacterNameHeader';
 import { FileDragOverlay } from '@/components/molecules/FileDragOverlay';
 import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
@@ -32,7 +32,7 @@ import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropz
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
-import MobileCharacterSheetPage from '@/components/mobile/MobileCharacterSheetPage';
+import MobileCharacterSheetPage from '@/components/mobile/character-sheet/MobileCharacterSheetPage';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -68,12 +68,6 @@ function DesktopCharacterSheetPage() {
       activeDragItem,
       overDragId,
       isOverDrawer,
-      setTrackersDropRef,
-      isOverTrackers,
-      setCardsDropRef,
-      isOverCards,
-      setMainDropRef,
-      isOverMain,
       statusIds,
       storyTagIds,
       storyThemeIds,
@@ -83,7 +77,6 @@ function DesktopCharacterSheetPage() {
       handleDragEnd,
    } = useCharacterSheetDnD();
 
-   
 
    // #########################################
    // ###   CARD CREATION DIALOG HANDLERS   ###
@@ -100,7 +93,6 @@ function DesktopCharacterSheetPage() {
    } = useCardDialogState();
 
 
-
 // ########################################
    // ###   IMPORT/EXPORT LOGIC HANDLERS   ###
    // ########################################
@@ -108,7 +100,6 @@ function DesktopCharacterSheetPage() {
    const { handleExportComponent } = useCharacterSheetExport();
 
    const { getRootProps, isDragActive: isFileDragActive } = useCharacterSheetFileImport();
-
 
 
    // ##########################################
@@ -121,13 +112,11 @@ function DesktopCharacterSheetPage() {
    );
 
 
-
    // ##############################
    // ###   UNDO/REDO SHORTCUT   ###
    // ##############################
 
    useCharacterSheetUndoRedo(isDrawerOpen);
-
 
 
    // ###########################
@@ -139,7 +128,6 @@ function DesktopCharacterSheetPage() {
       onToggleDrawer: () => setDrawerOpen(!isDrawerOpen),
       onOpenSettings: () => setSettingsOpen(true),
    });
-
 
 
    // ############################
@@ -154,7 +142,6 @@ function DesktopCharacterSheetPage() {
       setDrawerOpen(false);
       startTour();
    };
-
 
 
    return (
@@ -175,7 +162,7 @@ function DesktopCharacterSheetPage() {
 
             {/* Character Sheet Area */}
             <div {...getRootProps()} className="relative w-full h-full flex-1 flex flex-col">
-               
+
                { character ? (
                   <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
                      <CharacterNameHeader
@@ -185,10 +172,7 @@ function DesktopCharacterSheetPage() {
                      />
 
                      <div className="flex-1 p-4 md:p-8">
-                        <div ref={setMainDropRef} className={cn(
-                           "flex flex-col items-center gap-8 min-h-full",
-                           {"bg-muted/30 rounded-lg border-2 border-primary border-dashed": isOverMain}
-                        )}>
+                        <SheetMainDropZone>
                            <TrackersSection
                               character={character}
                               isEditing={isEditing}
@@ -196,8 +180,6 @@ function DesktopCharacterSheetPage() {
                               onExport={handleExportComponent}
                               onAddStatus={addStatus}
                               onAddStoryTag={addStoryTag}
-                              trackersDropRef={setTrackersDropRef}
-                              isOverTrackers={isOverTrackers}
                               statusIds={statusIds}
                               storyTagIds={storyTagIds}
                               storyThemeIds={storyThemeIds}
@@ -209,17 +191,14 @@ function DesktopCharacterSheetPage() {
                               onExport={handleExportComponent}
                               onEditCard={handleEditCard}
                               onAddCard={handleAddCardClick}
-                              cardsDropRef={setCardsDropRef}
-                              isOverCards={isOverCards}
                               cardIds={cardIds}
                            />
-                        </div>
+                        </SheetMainDropZone>
                      </div>
                   </main>
                )           : (
                   <MainMenu />
                )}
-
 
 
                {/* Character from Drawer Drop Zone */}
@@ -228,7 +207,7 @@ function DesktopCharacterSheetPage() {
                {/* File Drop Zone */}
                <FileDragOverlay isDragActive={isFileDragActive} />
             </div>
-            
+
             {/* Drawer */}
             <AnimatePresence>
                {isDrawerOpen &&

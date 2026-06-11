@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft } from 'lucide-react';
 
 // -- Component Imports --
-import { IconButton } from '../ui/icon-button';
-import MarkdownContent from '../molecules/MarkdownContent';
+import { IconButton } from '@/components/ui/icon-button';
+import MarkdownContent from '@/components/molecules/MarkdownContent';
 
 interface MobileAboutProps {
 	onBack?: () => void;

@@ -6,11 +6,11 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Component Imports --
-import MobileBreadcrumbs from './MobileBreadcrumbs';
-import MobileFolderItem from './MobileFolderItem';
-import MobileDrawerItem from './MobileDrawerItem';
-import MobileDrawerContextMenu from './MobileDrawerContextMenu';
-import MobileAddFolderSheet from './MobileAddFolderSheet';
+import MobileBreadcrumbs from '@/components/mobile/drawer/MobileBreadcrumbs';
+import MobileFolderItem from '@/components/mobile/drawer/MobileFolderItem';
+import MobileDrawerItem from '@/components/mobile/drawer/MobileDrawerItem';
+import MobileDrawerContextMenu from '@/components/mobile/drawer/MobileDrawerContextMenu';
+import MobileAddFolderSheet from '@/components/mobile/drawer/MobileAddFolderSheet';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 

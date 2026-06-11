@@ -43,7 +43,7 @@ import { useCharacterStore } from '@/lib/stores/characterStore';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- Utils Imports --
-import { IconButton } from '../ui/icon-button';
+import { IconButton } from '@/components/ui/icon-button';
 
 const locales = [
 	{ code: 'en', name: 'English' },

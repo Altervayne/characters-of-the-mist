@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
-import { useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 
 // -- Utils Imports --
@@ -26,18 +25,24 @@ import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 /**
  * Owns the entire character-sheet drag-and-drop subsystem.
  *
- * Encapsulates the active drag item and hover state, the three sheet drop zones
- * (trackers, cards, and the main play area), the memoized SortableContext id
- * arrays, and the full set of @dnd-kit event handlers. `handleDragEnd` routes
+ * Encapsulates the active drag item and hover state, the memoized SortableContext
+ * id arrays, and the full set of @dnd-kit event handlers. `handleDragEnd` routes
  * every supported drop - drawer-to-sheet character loads and component imports,
  * sheet-to-drawer saves, in-drawer moves and reorders, and on-sheet reordering -
  * by inspecting the drag source and target and dispatching directly to the
  * character and drawer store actions. The page only forwards `handleDragStart`,
- * `handleDragOver`, and `handleDragEnd` to its `DndContext` and wires the
- * returned refs, id arrays, and drag state into its JSX.
+ * `handleDragOver`, and `handleDragEnd` to its `DndContext` and wires the returned
+ * id arrays and drag state into its JSX.
  *
- * @returns The drag state, drop-zone refs and hover flags, memoized id arrays,
- *   and the `DndContext` event handlers.
+ * The three sheet drop zones (trackers, cards, main play area) are intentionally
+ * NOT registered here: `useDroppable` only resolves against a `DndContext` when
+ * it is called inside that context's subtree, and this hook runs in the page body
+ * that renders the `DndContext` (so it is above it, not within). The zones
+ * therefore self-register inside their descendant components (`TrackersSection`,
+ * `CardsSection`, `SheetMainDropZone`).
+ *
+ * @returns The drag state, memoized id arrays, and the `DndContext` event
+ *   handlers.
  */
 export function useCharacterSheetDnD() {
    const { t: tNotifications } = useTranslation();
@@ -53,19 +58,6 @@ export function useCharacterSheetDnD() {
    const [isOverDrawer, setIsOverDrawer] = useState(false);
    const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
    const [overDragId, setOverDragId] = useState<string | null>(null);
-
-   const { isOver: isOverTrackers, setNodeRef: setTrackersDropRef } = useDroppable({
-      id: 'tracker-drop-zone',
-      data: { type: 'tracker-drop-zone' }
-   });
-   const { isOver: isOverCards, setNodeRef: setCardsDropRef } = useDroppable({
-      id: 'card-drop-zone',
-      data: { type: 'card-drop-zone' }
-   });
-   const { isOver: isOverMain, setNodeRef: setMainDropRef } = useDroppable({
-      id: 'character-sheet-main-drop-zone',
-      data: { type: 'character-sheet-main-drop-zone' }
-   });
 
    // Memoize SortableContext arrays to prevent unnecessary re-renders
    const statusIds = useMemo(
@@ -354,12 +346,6 @@ export function useCharacterSheetDnD() {
       activeDragItem,
       overDragId,
       isOverDrawer,
-      setTrackersDropRef,
-      isOverTrackers,
-      setCardsDropRef,
-      isOverCards,
-      setMainDropRef,
-      isOverMain,
       statusIds,
       storyTagIds,
       storyThemeIds,
