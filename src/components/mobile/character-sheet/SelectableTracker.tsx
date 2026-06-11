@@ -1,8 +1,11 @@
 // -- React Imports --
-import { useState, useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 // -- Icon Imports --
 import { Check } from 'lucide-react';
+
+// -- Hook Imports --
+import { useLongPress } from '@/hooks/mobile/useLongPress';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -17,79 +20,18 @@ interface SelectableTrackerProps {
 	children: ReactNode;
 }
 
-const LONG_PRESS_DURATION = 500;
-
 export default function SelectableTracker({
 	tracker,
 	isSelected,
 	onSelect,
 	children
 }: SelectableTrackerProps) {
-	const [isPressing, setIsPressing] = useState(false);
-	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-
-	const handleTouchStart = (e: React.TouchEvent) => {
-		const touch = e.touches[0];
-		touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-		setIsPressing(true);
-
-		// Start long-press timer
-		longPressTimer.current = setTimeout(() => {
-			// Trigger haptic feedback if available
-			if ('vibrate' in navigator) {
-				navigator.vibrate(50);
-			}
-
-			// Toggle selection
-			onSelect(tracker.id);
-			setIsPressing(false);
-		}, LONG_PRESS_DURATION);
-	};
-
-	const handleTouchMove = (e: React.TouchEvent) => {
-		// If finger moves too far, cancel the long-press
-		if (touchStartPos.current && longPressTimer.current) {
-			const touch = e.touches[0];
-			const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
-			const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-			// Cancel if moved more than 10px
-			if (deltaX > 10 || deltaY > 10) {
-				clearTimeout(longPressTimer.current);
-				longPressTimer.current = null;
-				setIsPressing(false);
-			}
-		}
-	};
-
-	const handleTouchEnd = () => {
-		// Cancel long-press if touch ends before timer completes
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-			longPressTimer.current = null;
-		}
-		setIsPressing(false);
-		touchStartPos.current = null;
-	};
-
-	const handleTouchCancel = () => {
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-			longPressTimer.current = null;
-		}
-		setIsPressing(false);
-		touchStartPos.current = null;
-	};
+	const { isPressing, handlers } = useLongPress({
+		onLongPress: () => onSelect(tracker.id),
+	});
 
 	return (
-		<div
-			className="relative"
-			onTouchStart={handleTouchStart}
-			onTouchMove={handleTouchMove}
-			onTouchEnd={handleTouchEnd}
-			onTouchCancel={handleTouchCancel}
-		>
+		<div className="relative" {...handlers}>
 			{/* Tracker content with selection visual feedback */}
 			<div
 				className={cn(

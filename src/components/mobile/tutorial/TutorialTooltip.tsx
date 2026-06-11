@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // -- Component Imports --
 import { Button } from '@/components/ui/button';
+
+// -- Hook Imports --
+import { useWindowSize } from '@/hooks/mobile/useWindowSize';
 
 // -- Icon Imports --
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -38,20 +41,7 @@ export default function TutorialTooltip({
 	isVisible,
 }: TutorialTooltipProps) {
 	const { t } = useTranslation();
-	// Initialize with actual window size to avoid flash of incorrect position
-	const [windowSize, setWindowSize] = useState(() => ({
-		width: typeof window !== 'undefined' ? window.innerWidth : 0,
-		height: typeof window !== 'undefined' ? window.innerHeight : 0,
-	}));
-
-	useEffect(() => {
-		const updateSize = () => {
-			setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-		};
-		updateSize();
-		window.addEventListener('resize', updateSize);
-		return () => window.removeEventListener('resize', updateSize);
-	}, []);
+	const windowSize = useWindowSize();
 
 	// Don't render until we have valid window dimensions
 	if (windowSize.width === 0 || windowSize.height === 0) {

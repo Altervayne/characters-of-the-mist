@@ -13,6 +13,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
+// -- Hook Imports --
+import { useWindowHeight } from '@/hooks/mobile/useWindowHeight';
+
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
@@ -30,19 +33,6 @@ interface ToolbeltFABProps {
 	globalActions: ToolbeltAction[];
 	activeTab?: SheetTab;
 	isMenuFABExpanded?: boolean;
-}
-
-
-
-function useWindowHeight() {
-   const [height, setHeight] = useState(0);
-   useLayoutEffect(() => {
-      const update = () => setHeight(window.innerHeight);
-      update();
-      window.addEventListener('resize', update);
-      return () => window.removeEventListener('resize', update);
-   }, []);
-   return height;
 }
 
 

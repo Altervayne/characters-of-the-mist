@@ -1,9 +1,11 @@
-// -- React Imports --
-import { useState, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-
 // -- Icon Imports --
 import { Folder } from 'lucide-react';
+
+// -- Component Imports --
+import { FolderCountLabel } from '@/components/mobile/shared/FolderCountLabel';
+
+// -- Hook Imports --
+import { useLongPress } from '@/hooks/mobile/useLongPress';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -24,61 +26,10 @@ export default function MobileFolderItem({
 	onNavigate,
 	onLongPress
 }: MobileFolderItemProps) {
-	const { t } = useTranslation();
-	const [isPressing, setIsPressing] = useState(false);
-	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-
-	const handleTouchStart = (e: React.TouchEvent) => {
-		const touch = e.touches[0];
-		touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-		setIsPressing(true);
-
-		longPressTimer.current = setTimeout(() => {
-			if (touchStartPos.current) {
-				onLongPress(folder.id, folder.name, touchStartPos.current);
-			}
-			setIsPressing(false);
-		}, 500); // 500ms for long press
-	};
-
-	const handleTouchMove = (e: React.TouchEvent) => {
-		if (!touchStartPos.current) return;
-
-		const touch = e.touches[0];
-		const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
-		const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-		// Cancel long-press if user moves finger too much
-		if (deltaX > 10 || deltaY > 10) {
-			if (longPressTimer.current) {
-				clearTimeout(longPressTimer.current);
-			}
-			setIsPressing(false);
-		}
-	};
-
-	const handleTouchEnd = () => {
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-		}
-
-		// If still pressing (not long-press), it's a tap
-		if (isPressing) {
-			onNavigate(folder.id);
-		}
-
-		setIsPressing(false);
-		touchStartPos.current = null;
-	};
-
-	const handleTouchCancel = () => {
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-		}
-		setIsPressing(false);
-		touchStartPos.current = null;
-	};
+	const { isPressing, handlers } = useLongPress({
+		onLongPress: (position) => onLongPress(folder.id, folder.name, position),
+		onTap: () => onNavigate(folder.id),
+	});
 
 	// Calculate total items in folder (including nested)
 	const totalItems = folder.items.length;
@@ -86,10 +37,7 @@ export default function MobileFolderItem({
 
 	return (
 		<div
-			onTouchStart={handleTouchStart}
-			onTouchMove={handleTouchMove}
-			onTouchEnd={handleTouchEnd}
-			onTouchCancel={handleTouchCancel}
+			{...handlers}
 			className={cn(
 				"flex items-center gap-3 p-3 rounded-lg border border-border bg-card transition-all",
 				"active:scale-[0.98] cursor-pointer",
@@ -105,12 +53,7 @@ export default function MobileFolderItem({
 				<p className="font-medium text-foreground truncate">
 					{folder.name}
 				</p>
-				<p className="text-xs text-muted-foreground">
-					{totalSubfolders > 0 && t('Drawer.folderCount', { count: totalSubfolders })}
-					{totalSubfolders > 0 && totalItems > 0 && ', '}
-					{totalItems > 0 && t('Drawer.itemCount', { count: totalItems })}
-					{totalSubfolders === 0 && totalItems === 0 && t('Drawer.empty')}
-				</p>
+				<FolderCountLabel folders={totalSubfolders} items={totalItems} />
 			</div>
 		</div>
 	);

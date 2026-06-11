@@ -1,12 +1,12 @@
-// -- React Imports --
-import { useState, useRef } from 'react';
-
 // -- Icon Imports --
 import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText } from 'lucide-react';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
 import { Badge } from '@/components/ui/badge';
+
+// -- Hook Imports --
+import { useLongPress } from '@/hooks/mobile/useLongPress';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -79,55 +79,9 @@ export default function MobileDrawerItem({
 	isCompact,
 	onLongPress
 }: MobileDrawerItemProps) {
-	const [isPressing, setIsPressing] = useState(false);
-	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const touchStartPos = useRef<{ x: number; y: number } | null>(null);
-
-	const handleTouchStart = (e: React.TouchEvent) => {
-		const touch = e.touches[0];
-		touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-		setIsPressing(true);
-
-		longPressTimer.current = setTimeout(() => {
-			if (touchStartPos.current) {
-				onLongPress(item.id, item.name, touchStartPos.current);
-			}
-			setIsPressing(false);
-		}, 500); // 500ms for long press
-	};
-
-	const handleTouchMove = (e: React.TouchEvent) => {
-		if (!touchStartPos.current) return;
-
-		const touch = e.touches[0];
-		const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
-		const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
-
-		// Cancel long-press if user moves finger too much
-		if (deltaX > 10 || deltaY > 10) {
-			if (longPressTimer.current) {
-				clearTimeout(longPressTimer.current);
-			}
-			setIsPressing(false);
-		}
-	};
-
-	const handleTouchEnd = () => {
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-		}
-
-		setIsPressing(false);
-		touchStartPos.current = null;
-	};
-
-	const handleTouchCancel = () => {
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-		}
-		setIsPressing(false);
-		touchStartPos.current = null;
-	};
+	const { isPressing, handlers } = useLongPress({
+		onLongPress: (position) => onLongPress(item.id, item.name, position),
+	});
 
 	const Icon = getItemIcon(item.type);
 
@@ -135,10 +89,7 @@ export default function MobileDrawerItem({
 	if (isCompact) {
 		return (
 			<div
-				onTouchStart={handleTouchStart}
-				onTouchMove={handleTouchMove}
-				onTouchEnd={handleTouchEnd}
-				onTouchCancel={handleTouchCancel}
+				{...handlers}
 				className={cn(
 					"flex items-center gap-3 p-3 rounded-lg border border-border bg-card transition-all",
 					"active:scale-[0.98] cursor-pointer",
@@ -167,10 +118,7 @@ export default function MobileDrawerItem({
 	// Rich view: Full card/tracker preview
 	return (
 		<div
-			onTouchStart={handleTouchStart}
-			onTouchMove={handleTouchMove}
-			onTouchEnd={handleTouchEnd}
-			onTouchCancel={handleTouchCancel}
+			{...handlers}
 			className={cn(
 				"rounded-lg border border-border bg-card transition-all overflow-hidden",
 				"active:scale-[0.98] cursor-pointer",

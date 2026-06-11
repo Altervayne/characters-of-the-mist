@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // -- Component Imports --
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import MobileFolderPicker from '@/components/mobile/drawer/MobileFolderPicker';
+import { MobileBottomSheet } from '@/components/mobile/shared/MobileBottomSheet';
 
 // -- Icon Imports --
 import {
@@ -235,30 +235,13 @@ export default function MobileDrawerContextMenu({
          </div>
 
          {/* Rename Bottom Sheet */}
-         <AnimatePresence>
-            {showRenameDialog && (
-               <>
-                  {/* Backdrop */}
-                  <motion.div
-                     initial={{ opacity: 0 }}
-                     animate={{ opacity: 1 }}
-                     exit={{ opacity: 0 }}
-                     transition={{ duration: 0.2 }}
-                     className="fixed inset-0 bg-black/50 z-60"
-                     onClick={() => {
-                        setShowRenameDialog(false);
-                        setTimeout(onClose, 300);
-                     }}
-                  />
-
-                  {/* Bottom Sheet */}
-                  <motion.div
-                     initial={{ y: '100%' }}
-                     animate={{ y: 0 }}
-                     exit={{ y: '100%' }}
-                     transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                     className="fixed border-t border-border bottom-0 left-0 right-0 z-60 bg-background rounded-t-2xl shadow-2xl"
-                  >
+         <MobileBottomSheet
+            isOpen={showRenameDialog}
+            onClose={() => {
+               setShowRenameDialog(false);
+               setTimeout(onClose, 300);
+            }}
+         >
                   <div className="p-4 pb-3 border-b border-border">
                      <h2 className="text-lg font-semibold">
                         {isFolder
@@ -301,10 +284,7 @@ export default function MobileDrawerContextMenu({
                         </Button>
                      </div>
                   </div>
-               </motion.div>
-            </>
-         )}
-         </AnimatePresence>
+         </MobileBottomSheet>
 
          {/* Folder Picker for Move */}
          <MobileFolderPicker
@@ -318,30 +298,13 @@ export default function MobileDrawerContextMenu({
          />
 
          {/* Delete Confirmation Bottom Sheet */}
-         <AnimatePresence>
-            {showDeleteConfirm && (
-               <>
-                  {/* Backdrop */}
-                  <motion.div
-                     initial={{ opacity: 0 }}
-                     animate={{ opacity: 1 }}
-                     exit={{ opacity: 0 }}
-                     transition={{ duration: 0.2 }}
-                     className="fixed inset-0 bg-black/50 z-60"
-                     onClick={() => {
-                        setShowDeleteConfirm(false);
-                        setTimeout(onClose, 300);
-                     }}
-                  />
-
-                  {/* Bottom Sheet */}
-                  <motion.div
-                     initial={{ y: '100%' }}
-                     animate={{ y: 0 }}
-                     exit={{ y: '100%' }}
-                     transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                     className="fixed border-t border-border bottom-0 left-0 right-0 z-60 bg-background rounded-t-2xl shadow-2xl"
-                  >
+         <MobileBottomSheet
+            isOpen={showDeleteConfirm}
+            onClose={() => {
+               setShowDeleteConfirm(false);
+               setTimeout(onClose, 300);
+            }}
+         >
                      <div className="p-4 pb-3 border-b border-border">
                         <h2 className="text-lg font-semibold">
                            {isFolder
@@ -376,10 +339,7 @@ export default function MobileDrawerContextMenu({
                            </Button>
                         </div>
                      </div>
-                  </motion.div>
-               </>
-            )}
-         </AnimatePresence>
+         </MobileBottomSheet>
 		</>
 	);
 }

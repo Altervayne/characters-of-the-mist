@@ -13,12 +13,7 @@ import MobileCardCarousel from '@/components/mobile/character-sheet/MobileCardCa
 import MobileToolbelt from '@/components/mobile/toolbelt/MobileToolbelt';
 import MobileSaveToDrawerSheet from '@/components/mobile/character-sheet/MobileSaveToDrawerSheet';
 import SelectableTracker from '@/components/mobile/character-sheet/SelectableTracker';
-import { LegendsThemeCard } from '@/components/organisms/cards/LegendsThemeCard';
-import { CityThemeCard } from '@/components/organisms/cards/CityThemeCard';
-import { OtherscapeThemeCard } from '@/components/organisms/cards/OtherscapeThemeCard';
-import { HeroCard } from '@/components/organisms/cards/HeroCard';
-import { RiftCard } from '@/components/organisms/cards/RiftCard';
-import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
+import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
 
 // -- Icon Imports --
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PlusCircle, Wrench, Check, SquareDashed } from 'lucide-react';
@@ -494,37 +489,11 @@ export default function MobileCharacterSheet({
 	// Helper function to render card preview (like in Drawer)
 	// Force SIDE_BY_SIDE mode and front face for previews
 	const renderCardPreview = (card: Card) => {
-		const game = card.details.game;
+		const Component = resolveCardComponent(card.cardType, card.details.game);
+		if (!Component) return null;
+
 		const previewCard = { ...card, viewMode: 'SIDE_BY_SIDE' as const, isFlipped: false };
-
-		if (game === 'LEGENDS') {
-			if (card.cardType === 'CHARACTER_CARD') {
-				return <HeroCard card={previewCard} isDrawerPreview />;
-			}
-			if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME') {
-				return <LegendsThemeCard card={previewCard} isDrawerPreview />;
-			}
-		}
-
-		if (game === 'CITY_OF_MIST') {
-			if (card.cardType === 'CHARACTER_CARD') {
-				return <RiftCard card={previewCard} isDrawerPreview />;
-			}
-			if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME') {
-				return <CityThemeCard card={previewCard} isDrawerPreview />;
-			}
-		}
-
-		if (game === 'OTHERSCAPE') {
-			if (card.cardType === 'CHARACTER_CARD') {
-				return <OtherscapeCharacterCard card={previewCard} isDrawerPreview />;
-			}
-			if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME') {
-				return <OtherscapeThemeCard card={previewCard} isDrawerPreview />;
-			}
-		}
-
-		return null;
+		return <Component card={previewCard} isDrawerPreview />;
 	};
 
 

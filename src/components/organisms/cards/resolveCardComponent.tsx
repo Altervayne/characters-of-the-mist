@@ -27,6 +27,11 @@ export interface CardComponentProps {
    isEditing?: boolean;
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
+   // Mobile-relevant optional props accepted by the card organisms: `isMobile`
+   // flags mobile rendering tweaks, `useVerticalStack` stacks card sections
+   // vertically for narrow viewports (used by the mobile card carousel).
+   isMobile?: boolean;
+   useVerticalStack?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onEditCard?: () => void;

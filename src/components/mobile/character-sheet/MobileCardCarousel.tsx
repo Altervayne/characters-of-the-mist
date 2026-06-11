@@ -2,12 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
-import { LegendsThemeCard } from '@/components/organisms/cards/LegendsThemeCard';
-import { CityThemeCard } from '@/components/organisms/cards/CityThemeCard';
-import { OtherscapeThemeCard } from '@/components/organisms/cards/OtherscapeThemeCard';
-import { HeroCard } from '@/components/organisms/cards/HeroCard';
-import { RiftCard } from '@/components/organisms/cards/RiftCard';
-import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
+import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
 import { AddCardButton } from '@/components/molecules/AddThemeCardButton';
 
 // -- Store Imports --
@@ -27,6 +22,7 @@ export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCa
 
 	// Render individual card based on type
 	const renderCard = (card: CardData) => {
+		const Component = resolveCardComponent(card.cardType, card.details.game);
 		const commonProps = {
 			card,
 			isEditing,
@@ -35,32 +31,17 @@ export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCa
 			onExport: () => {} // TODO: Implement in later phase
 		};
 
-		if (card.cardType === 'CHARACTER_THEME' || card.cardType === 'GROUP_THEME' || card.cardType === 'LOADOUT_THEME') {
-			if (card.details.game === 'LEGENDS') {
-				return <LegendsThemeCard {...commonProps} />;
-			} else if (card.details.game === 'CITY_OF_MIST') {
-				return <CityThemeCard {...commonProps} />;
-			} else if (card.details.game === 'OTHERSCAPE') {
-				return <OtherscapeThemeCard {...commonProps} />;
-			}
-		}
-		if (card.cardType === 'CHARACTER_CARD') {
-			if (card.details.game === 'LEGENDS') {
-				return <HeroCard {...commonProps} />;
-			} else if (card.details.game === 'CITY_OF_MIST') {
-				return <RiftCard {...commonProps} />;
-			} else if (card.details.game === 'OTHERSCAPE') {
-				return <OtherscapeCharacterCard {...commonProps} />;
-			}
+		if (!Component) {
+			return (
+				<div className="flex items-center justify-center h-full w-full bg-card border-2 border-border rounded-lg p-8">
+					<p className="text-center text-muted-foreground">
+						{`NO RENDER AVAILABLE FOR THIS TYPE: ${card.details.game} ${card.cardType}`}
+					</p>
+				</div>
+			);
 		}
 
-		return (
-			<div className="flex items-center justify-center h-full w-full bg-card border-2 border-border rounded-lg p-8">
-				<p className="text-center text-muted-foreground">
-					{`NO RENDER AVAILABLE FOR THIS TYPE: ${card.details.game} ${card.cardType}`}
-				</p>
-			</div>
-		);
+		return <Component {...commonProps} />;
 	};
 
 	// Empty state
