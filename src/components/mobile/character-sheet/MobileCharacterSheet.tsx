@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo, useRef, useEffect, startTransition } from 'react';
+import { useState, useMemo, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
@@ -18,19 +18,18 @@ import { resolveCardComponent } from '@/components/organisms/cards/resolveCardCo
 // -- Icon Imports --
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PlusCircle, Wrench, Check, SquareDashed } from 'lucide-react';
 
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
-
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+import { useMobileTrackerReorder } from '@/hooks/mobile/useMobileTrackerReorder';
+import { useMobileCardReorder } from '@/hooks/mobile/useMobileCardReorder';
+import { useMobileSaveToDrawer } from '@/hooks/mobile/useMobileSaveToDrawer';
+import { useMobileCardSheetGestures } from '@/hooks/mobile/useMobileCardSheetGestures';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 
 // -- Type Imports --
 import type { Card, CardDetails, Tracker } from '@/lib/types/character';
@@ -97,8 +96,7 @@ export default function MobileCharacterSheet({
 
 	// Character data
 	const character = useCharacterStore((state) => state.character);
-	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard, reorderStatuses, reorderStoryTags, reorderStoryThemes, reorderCards } = useCharacterActions();
-	const { addItem: addDrawerItem } = useDrawerActions();
+	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard } = useCharacterActions();
 
 	// Settings
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
@@ -125,12 +123,9 @@ export default function MobileCharacterSheet({
    
 	// Toolbelt context state
 	const [selectedTrackerId, setSelectedTrackerId] = useState<string | null>(null);
-	const [isReorderingTracker, setIsReorderingTracker] = useState(false);
 
-	// Save to Drawer sheet state
-	const [isSaveToDrawerOpen, setIsSaveToDrawerOpen] = useState(false);
-	const [saveToDrawerItem, setSaveToDrawerItem] = useState<Card | Tracker | null>(null);
-	const [saveToDrawerDefaultName, setSaveToDrawerDefaultName] = useState('');
+	// Save to Drawer sheet state (mobile hook)
+	const { isSaveToDrawerOpen, setIsSaveToDrawerOpen, saveToDrawerDefaultName, openSaveToDrawer, handleConfirmSaveToDrawer } = useMobileSaveToDrawer();
 
 	// Character name input with debouncing
 	const [localName, setLocalName] = useInputDebouncer(
@@ -143,262 +138,33 @@ export default function MobileCharacterSheet({
 		? Math.min(currentCardIndex, character.cards.length - 1)
 		: 0;
 
-	// Swipe gesture detection for card area (edge swipes for flip/toolbelt)
-	const cardSwipeStartX = useRef<number>(0);
-	const cardSwipeStartY = useRef<number>(0);
+	// Card-sheet touch gestures (mobile hook)
+	const { cardAreaHandlers, navBarHandlers, trackersAreaHandlers } = useMobileCardSheetGestures({
+		character,
+		safeCardIndex,
+		isLeftHanded,
+		isMobileFABMode,
+		isToolbeltOpen,
+		flipCard,
+		setCurrentCardIndex,
+		setIsReorderingCards,
+		setIsToolbeltOpen,
+	});
 
-	const handleCardAreaTouchStart = (e: React.TouchEvent) => {
-		cardSwipeStartX.current = e.touches[0].clientX;
-		cardSwipeStartY.current = e.touches[0].clientY;
-	};
-
-	// Swipe gesture detection for navigation bar (card navigation)
-	const navSwipeStartX = useRef<number>(0);
-	const navSwipeStartY = useRef<number>(0);
-
-	const handleNavBarTouchStart = (e: React.TouchEvent) => {
-		navSwipeStartX.current = e.touches[0].clientX;
-		navSwipeStartY.current = e.touches[0].clientY;
-	};
-
-	const handleNavBarTouchEnd = (e: React.TouchEvent) => {
-		if (!character || character.cards.length === 0) return;
-
-		const touchEndX = e.changedTouches[0].clientX;
-		const touchEndY = e.changedTouches[0].clientY;
-		const deltaX = touchEndX - navSwipeStartX.current;
-		const deltaY = touchEndY - navSwipeStartY.current;
-
-		// Check for vertical swipe up (negative deltaY) to enter reorder mode
-		if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY < -50) {
-			setIsReorderingCards(true);
-			return;
-		}
-
-		// Only process horizontal swipes with 50px threshold
-		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 50) return;
-
-		// Swipe left = next card
-		if (deltaX < 0 && safeCardIndex < character.cards.length - 1) {
-			setCurrentCardIndex(i => i + 1);
-		}
-		// Swipe right = previous card
-		else if (deltaX > 0 && safeCardIndex > 0) {
-			setCurrentCardIndex(i => i - 1);
-		}
-	};
-
-	const handleCardAreaTouchEnd = (e: React.TouchEvent) => {
-		if (!character || character.cards.length === 0) return;
-
-		const touchEndX = e.changedTouches[0].clientX;
-		const touchEndY = e.changedTouches[0].clientY;
-		const deltaX = touchEndX - cardSwipeStartX.current;
-		const deltaY = touchEndY - cardSwipeStartY.current;
-
-		// Only process horizontal swipes
-		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 30) return;
-
-		const currentCard = character.cards[safeCardIndex];
-		const edgeThreshold = 50;
-		const swipeThreshold = 30;
-
-		// Edge swipe behavior depends on handedness setting
-		if (isLeftHanded) {
-			// Left-handed mode: Right edge = flip, Left edge = toolbelt
-			if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-				// Right edge swipe → Flip card
-				flipCard(currentCard.id);
-			}
-			else if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-				// Left edge swipe → Open toolbelt (side-panel mode only)
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				} else if (isMobileFABMode) {
-					// FAB mode: Flip card (toolbelt is accessible via FAB)
-					flipCard(currentCard.id);
-				}
-			}
-		} else {
-			// Right-handed mode (default): Left edge = flip, Right edge = toolbelt
-			if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-				// Left edge swipe → Flip card
-				flipCard(currentCard.id);
-			}
-			else if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-				// Right edge swipe → Open toolbelt (side-panel mode only)
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				} else if (isMobileFABMode) {
-					// FAB mode: Flip card (toolbelt is accessible via FAB)
-					flipCard(currentCard.id);
-				}
-			}
-		}
-	};
-
-	// Swipe gesture detection for trackers area (edge swipe for toolbelt)
-	const trackersSwipeStartX = useRef<number>(0);
-	const trackersSwipeStartY = useRef<number>(0);
-
-	const handleTrackersAreaTouchStart = (e: React.TouchEvent) => {
-		trackersSwipeStartX.current = e.touches[0].clientX;
-		trackersSwipeStartY.current = e.touches[0].clientY;
-	};
-
-	const handleTrackersAreaTouchEnd = (e: React.TouchEvent) => {
-		if (!character) return;
-
-		const touchEndX = e.changedTouches[0].clientX;
-		const touchEndY = e.changedTouches[0].clientY;
-		const deltaX = touchEndX - trackersSwipeStartX.current;
-		const deltaY = touchEndY - trackersSwipeStartY.current;
-
-		// Only process horizontal swipes
-		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 30) return;
-
-		const edgeThreshold = 50;
-		const swipeThreshold = 30;
-
-		// Edge swipe behavior depends on handedness setting (only in side-panel mode)
-		if (isLeftHanded) {
-			// Left-handed mode: Left edge → Open toolbelt
-			if (trackersSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				}
-			}
-		} else {
-			// Right-handed mode: Right edge → Open toolbelt
-			if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				}
-			}
-		}
-	};
-
-	// Helper functions for tracker reordering
-	const moveTrackerUp = () => {
-		if (!selectedTrackerId || !character || isReorderingTracker) return;
-
-		setIsReorderingTracker(true);
-
-		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
-		if (statusIndex > 0) {
-			reorderStatuses(statusIndex, statusIndex - 1);
-			setTimeout(() => setIsReorderingTracker(false), 100);
-			return;
-		}
-
-		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
-		if (tagIndex > 0) {
-			reorderStoryTags(tagIndex, tagIndex - 1);
-			setTimeout(() => setIsReorderingTracker(false), 100);
-			return;
-		}
-
-		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
-		if (themeIndex > 0) {
-			reorderStoryThemes(themeIndex, themeIndex - 1);
-			setTimeout(() => setIsReorderingTracker(false), 100);
-		} else {
-			setIsReorderingTracker(false);
-		}
-	};
-
-	const moveTrackerDown = () => {
-		if (!selectedTrackerId || !character || isReorderingTracker) return;
-
-		setIsReorderingTracker(true);
-
-		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
-		if (statusIndex !== -1 && statusIndex < character.trackers.statuses.length - 1) {
-			reorderStatuses(statusIndex, statusIndex + 1);
-			setTimeout(() => setIsReorderingTracker(false), 100);
-			return;
-		}
-
-		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
-		if (tagIndex !== -1 && tagIndex < character.trackers.storyTags.length - 1) {
-			reorderStoryTags(tagIndex, tagIndex + 1);
-			setTimeout(() => setIsReorderingTracker(false), 100);
-			return;
-		}
-
-		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
-		if (themeIndex !== -1 && themeIndex < character.trackers.storyThemes.length - 1) {
-			reorderStoryThemes(themeIndex, themeIndex + 1);
-			setTimeout(() => setIsReorderingTracker(false), 100);
-		} else {
-			setIsReorderingTracker(false);
-		}
-	};
-
-	const canMoveTrackerUp = useMemo(() => {
-		if (!selectedTrackerId || !character) return false;
-
-		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
-		if (statusIndex > 0) return true;
-
-		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
-		if (tagIndex > 0) return true;
-
-		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
-		return themeIndex > 0;
-	}, [selectedTrackerId, character]);
-
-	const canMoveTrackerDown = useMemo(() => {
-		if (!selectedTrackerId || !character) return false;
-
-		const statusIndex = character.trackers.statuses.findIndex(t => t.id === selectedTrackerId);
-		if (statusIndex !== -1 && statusIndex < character.trackers.statuses.length - 1) return true;
-
-		const tagIndex = character.trackers.storyTags.findIndex(t => t.id === selectedTrackerId);
-		if (tagIndex !== -1 && tagIndex < character.trackers.storyTags.length - 1) return true;
-
-		const themeIndex = character.trackers.storyThemes.findIndex(t => t.id === selectedTrackerId);
-		return themeIndex !== -1 && themeIndex < character.trackers.storyThemes.length - 1;
-	}, [selectedTrackerId, character]);
+	// Tracker reordering (mobile hook)
+	const { moveTrackerUp, moveTrackerDown, canMoveTrackerUp, canMoveTrackerDown } = useMobileTrackerReorder(selectedTrackerId, character);
 
 
 
-	// Helper functions for card reordering
-	const [isReorderingCard, setIsReorderingCard] = useState(false);
-
-	const moveCardUp = (cardIndex: number) => {
-		if (cardIndex <= 0 || !character || isReorderingCard) return;
-		setIsReorderingCard(true);
-		reorderCards(cardIndex, cardIndex - 1);
-		setTimeout(() => setIsReorderingCard(false), 100);
-	};
-
-	const moveCardDown = (cardIndex: number) => {
-		if (!character || cardIndex >= character.cards.length - 1 || isReorderingCard) return;
-		setIsReorderingCard(true);
-		reorderCards(cardIndex, cardIndex + 1);
-		setTimeout(() => setIsReorderingCard(false), 100);
-	};
+	// Card reordering (mobile hook)
+	const { isReorderingCard, moveCardUp, moveCardDown } = useMobileCardReorder(character);
 
 
 
 	// Save to Drawer handlers
 	const handleSaveToDrawer = (item: Card | Tracker) => {
 		const defaultName = 'cardType' in item ? getCardTitle(item) : item.name;
-		setSaveToDrawerItem(item);
-		setSaveToDrawerDefaultName(defaultName);
-		setIsSaveToDrawerOpen(true);
-	};
-
-	const handleConfirmSaveToDrawer = (name: string) => {
-		if (!saveToDrawerItem) return;
-		const storableInfo = mapItemToStorableInfo(saveToDrawerItem);
-		if (!storableInfo) return;
-		const [type, game] = storableInfo;
-		const contentCopy = JSON.parse(JSON.stringify(saveToDrawerItem));
-		if ('isFlipped' in contentCopy) contentCopy.isFlipped = false;
-		addDrawerItem(name, game, type, contentCopy);
-		toast.success(t('Notifications.drawer.itemCreated'));
+		openSaveToDrawer(item, defaultName);
 	};
 
 	// Build toolbelt context based on active tab and selection
@@ -605,8 +371,7 @@ export default function MobileCharacterSheet({
 					<div
 						className={cn("h-full overflow-y-auto p-4", isMobileFABMode && "pb-32")}
 						data-tutorial="trackers-section"
-						onTouchStart={handleTrackersAreaTouchStart}
-						onTouchEnd={handleTrackersAreaTouchEnd}
+						{...trackersAreaHandlers}
 					>
 						<div className="max-w-7xl mx-auto space-y-6">
 							{/* Statuses Section */}
@@ -793,8 +558,7 @@ export default function MobileCharacterSheet({
 							<div
 								className={cn("flex-1 overflow-y-auto overflow-x-hidden p-4", isMobileFABMode && "pb-32")}
 								data-tutorial="card-carousel"
-								onTouchStart={handleCardAreaTouchStart}
-								onTouchEnd={handleCardAreaTouchEnd}
+								{...cardAreaHandlers}
 							>
 								<div className="min-h-full flex items-center justify-center">
 									<MobileCardCarousel
@@ -809,8 +573,7 @@ export default function MobileCharacterSheet({
 						{!isReorderingCards && character.cards.length > 0 && (
 							<div
 								className="shrink-0 flex items-center justify-between gap-3 px-3 py-2 bg-card border-t border-border"
-								onTouchStart={handleNavBarTouchStart}
-								onTouchEnd={handleNavBarTouchEnd}
+								{...navBarHandlers}
 								data-tutorial="card-navigation-bar"
 							>
 								<IconButton
