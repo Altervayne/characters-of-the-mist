@@ -5,6 +5,7 @@
          "importFailedNoCharacter": "Cannot import component: No character loaded. Please create a character first.",
          "importFailedWrongGame": "Cannot import component: Game system mismatch. This component is for a different game system.",
          "exportSuccess": "File exported.",
+         "exportError": "Export failed.",
          "invalidExportType": "This object cannot be exported.",
          "appReset": "Application successfully reset. Reloading..."
       },
@@ -30,11 +31,14 @@
          "itemRenamed": "Item renamed.",
          "itemDeleted": "Item deleted.",
          "itemMoved": "Item moved.",
+         "itemExported": "Item exported.",
          "folderCreated": "Folder created in Drawer.",
          "folderRenamed": "Folder renamed.",
          "folderDeleted": "Folder deleted.",
          "folderMoved": "Folder moved.",
+         "folderExported": "Folder exported.",
          "importSuccess": "File successfully imported to Drawer.",
+         "importedAsFolder": "Drawer imported as a folder at the drawer root.",
          "exported": "Drawer successfully exported.",
          "deleted": "Drawer successfully deleted."
       },
@@ -133,6 +137,7 @@
       "emptyFolder": "This Folder is empty. Time to fill it!",
       "addFolder": "Add Folder",
       "folderNamePlaceholder": "Folder name...",
+      "importedDrawerDefaultName": "Imported Drawer",
 
       "dropToImport": "Drop file here to import it to your Drawer",
 

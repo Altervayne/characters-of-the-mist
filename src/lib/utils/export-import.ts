@@ -101,6 +101,34 @@ export function deriveExportHandle(content: ExportableContent, fallback?: string
 }
 
 /**
+ * Derives the folder name for a full-drawer import from the picked file's name.
+ *
+ * Reduces the name to a basename (guarding against any path prefix) and strips a
+ * trailing extension (`.cotm`/`.json`, or defensively any `.ext`), then trims.
+ * When the cleaned result is empty/unusable, returns `${fallbackName} - ${date}`
+ * using the project's `YYYY-MM-DD` date convention (matching
+ * `generateExportFilename`). The `fallbackName` is passed in already-localized by
+ * the caller, so this helper never calls `t()` - the same pattern as
+ * `generateExportFilename` taking a pre-derived handle.
+ *
+ * @param fileName - The imported file's name (e.g. "MyDrawer.cotm").
+ * @param fallbackName - Localized default base name, used when the filename is unusable.
+ * @returns The cleaned folder name, or the dated fallback.
+ */
+export function deriveDrawerFolderName(fileName: string, fallbackName: string): string {
+   const baseName = fileName.split(/[/\\]/).pop() ?? '';
+   const withoutExtension = baseName.replace(/\.[^.]+$/, '');
+   const cleaned = withoutExtension.trim();
+
+   if (cleaned) {
+      return cleaned;
+   }
+
+   const date = new Date().toISOString().slice(0, 10);
+   return `${fallbackName} - ${date}`;
+}
+
+/**
  * Exports an item to a .cotm file and triggers the browser download.
  * Wraps the content in an ExportFile structure with metadata and version info.
  */

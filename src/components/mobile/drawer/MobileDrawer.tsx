@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -18,16 +18,18 @@ import { IconButton } from '@/components/ui/icon-button';
 import { FolderPlus, List, Grid3x3, Download } from 'lucide-react';
 
 // -- Store Imports --
-import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
+// -- Hook Imports --
+import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
+import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
+
 // -- Utils Imports --
-import { findFolder } from '@/lib/utils/drawer';
-import { importFromFile } from '@/lib/utils/export-import';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import type { DrawerItem, DrawerItemContent } from '@/lib/types/drawer';
+import type { DrawerItem } from '@/lib/types/drawer';
 
 
 
@@ -39,11 +41,15 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	const { t } = useTranslation();
 
 	// Drawer state
-	const drawer = useDrawerStore((state) => state.drawer);
-	const { addFolder, addImportedItem, addImportedFolder, importFullDrawer, setDrawerCurrentFolderId } = useDrawerActions();
+	const { addFolder } = useDrawerActions();
+
+	// Folder navigation (current folder, contents, breadcrumb) via the shared hook
+	const { currentFolderId, navigateToFolder, currentItems, currentFolders, breadcrumbPath } = useDrawerNavigation();
+
+	// File import via the shared hook (button-triggered file-input path only; no drag zone)
+	const { handleFileSelected, fileInputRef, formRef } = useDrawerFileImport(currentFolderId);
 
 	// UI state
-	const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 	const [isCompactView, setIsCompactView] = useState(true);
 	const [showContextMenu, setShowContextMenu] = useState(false);
 	const [contextMenuTarget, setContextMenuTarget] = useState<{
@@ -58,20 +64,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
    const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
    const isLeftHanded = (mobileHandedness === 'left')
 
-	// File import ref
-	const fileInputRef = useRef<HTMLInputElement>(null);
-
-	// Get current folder contents
-	const currentFolder = currentFolderId ? findFolder(drawer.folders, currentFolderId) : null;
-	const folders = currentFolder?.folders ?? drawer.folders;
-	const items = currentFolder?.items ?? drawer.rootItems;
-
 	// Handlers
-	const handleNavigate = (folderId: string | null) => {
-		setCurrentFolderId(folderId);
-		setDrawerCurrentFolderId(folderId);
-	};
-
 	const handleFolderLongPress = (folderId: string, folderName: string, position: { x: number; y: number }) => {
 		setContextMenuTarget({ type: 'folder', id: folderId, name: folderName });
 		setContextMenuPosition(position);
@@ -93,49 +86,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 		toast.success(t('Notifications.drawer.folderCreated'));
 	};
 
-	const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = e.target.files;
-		if (!files || files.length === 0) return;
-
-		try {
-			const file = files[0];
-			const importedData = await importFromFile(file);
-
-			// Route based on fileType
-			switch (importedData.fileType) {
-				case 'FULL_DRAWER':
-					importFullDrawer(importedData.content as import('@/lib/types/drawer').Drawer, currentFolderId ?? undefined);
-					toast.success(t('Notifications.drawer.imported'));
-					break;
-
-				case 'FOLDER':
-					addImportedFolder(importedData.content as import('@/lib/types/drawer').Folder, currentFolderId ?? undefined);
-					toast.success(t('Notifications.drawer.importSuccess'));
-					break;
-
-				default:
-					// Individual item (card or tracker)
-					addImportedItem(
-						importedData.content as DrawerItemContent,
-						importedData.fileType,
-						importedData.game,
-						currentFolderId ?? undefined
-					);
-					toast.success(t('Notifications.general.imported'));
-					break;
-			}
-
-			// Reset file input
-			if (fileInputRef.current) {
-				fileInputRef.current.value = '';
-			}
-		} catch (error) {
-			console.error('Import error:', error);
-			toast.error(t('Notifications.general.importError'));
-		}
-	};
-
-	const hasContent = folders.length > 0 || items.length > 0;
+	const hasContent = currentFolders.length > 0 || currentItems.length > 0;
 
 	return (
 		<div className="h-full flex flex-col bg-background" data-tutorial="drawer-content">
@@ -154,22 +105,22 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 				)}
 
 				{/* Folders */}
-				{folders.map((folder) => (
+				{currentFolders.map((folder) => (
 					<MobileFolderItem
 						key={folder.id}
 						folder={folder}
-						onNavigate={handleNavigate}
+						onNavigate={navigateToFolder}
 						onLongPress={handleFolderLongPress}
 					/>
 				))}
 
 				{/* Separator if both folders and items exist */}
-				{folders.length > 0 && items.length > 0 && (
+				{currentFolders.length > 0 && currentItems.length > 0 && (
 					<div className="border-t border-border my-4" />
 				)}
 
 				{/* Items */}
-				{items.map((item) => (
+				{currentItems.map((item) => (
 					<MobileDrawerItem
 						key={item.id}
 						item={item}
@@ -182,9 +133,8 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 			{/* Breadcrumbs navigation at bottom */}
 			<div className="border-t border-border">
             <MobileBreadcrumbs
-               folders={drawer.folders}
-               currentFolderId={currentFolderId}
-               onNavigate={handleNavigate}
+               breadcrumbPath={breadcrumbPath}
+               onNavigate={navigateToFolder}
 			   />
          </div>
 
@@ -212,13 +162,14 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 					</Button>
 
                {/* Import */}
-					<input
-						ref={fileInputRef}
-						type="file"
-						accept=".cotm"
-						onChange={handleFileImport}
-						className="hidden"
-					/>
+					<form ref={formRef} className="hidden">
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept=".cotm,.json"
+							onChange={handleFileSelected}
+						/>
+					</form>
 					<IconButton
 						variant="outline"
 						size="default"

@@ -26,7 +26,7 @@ import { useCharacterStore } from '@/lib/stores/characterStore';
 
 // -- Utils Imports --
 import { findFolder, findAndRemoveItem } from '@/lib/utils/drawer';
-import { exportToFile } from '@/lib/utils/export-import';
+import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { DrawerItem } from '@/lib/types/drawer';
@@ -84,7 +84,7 @@ export default function MobileDrawerContextMenu({
 				toast.success(t('Notifications.drawer.folderRenamed'));
 			} else {
 				renameItem(target.id, newName.trim());
-				toast.success(t('Notifications.general.renamed'));
+				toast.success(t('Notifications.drawer.itemRenamed'));
 			}
 		}
 		// Delay closing to allow exit animation
@@ -103,7 +103,7 @@ export default function MobileDrawerContextMenu({
 			toast.success(t('Notifications.drawer.folderMoved'));
 		} else {
 			moveItem(target.id, destinationFolderId ?? undefined);
-			toast.success(t('Notifications.general.moved'));
+			toast.success(t('Notifications.drawer.itemMoved'));
 		}
 		setShowFolderPicker(false);
 		onClose();
@@ -112,11 +112,15 @@ export default function MobileDrawerContextMenu({
 	const handleExport = () => {
 		try {
 			if (isFolder && folder) {
-				exportToFile(folder, 'FOLDER', 'NEUTRAL', `${folder.name}.cotm`);
-				toast.success(t('Notifications.drawer.exported'));
+				const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
+				exportToFile(folder, 'FOLDER', 'NEUTRAL', fileName);
+				toast.success(t('Notifications.drawer.folderExported'));
 			} else if (item) {
-				exportToFile(item.content, item.type, item.game, `${item.name}.cotm`);
-				toast.success(t('Notifications.general.exported'));
+				const { content, type, game, name } = item;
+				const handle = deriveExportHandle(content, name);
+				const fileName = generateExportFilename(game, type, handle);
+				exportToFile(content, type, game, fileName);
+				toast.success(t('Notifications.drawer.itemExported'));
 			}
 		} catch (error) {
 			console.error('Export error:', error);
@@ -135,7 +139,7 @@ export default function MobileDrawerContextMenu({
 			toast.success(t('Notifications.drawer.folderDeleted'));
 		} else {
 			deleteItem(target.id);
-			toast.success(t('Notifications.general.deleted'));
+			toast.success(t('Notifications.drawer.itemDeleted'));
 		}
 		// Delay closing to allow exit animation
 		setShowDeleteConfirm(false);

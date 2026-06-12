@@ -5,6 +5,7 @@
          "importFailedNoCharacter": "Impossible d'importer le composant : Aucun personnage chargé. Veuillez créer un personnage d'abord.",
          "importFailedWrongGame": "Impossible d'importer le composant : Incompatibilité de système de jeu. Ce composant est pour un système de jeu différent.",
          "exportSuccess": "Fichier exporté.",
+         "exportError": "Échec de l'exportation.",
          "invalidExportType": "Cet objet ne peut pas être exporté.",
          "appReset": "Réinitialisation de l'application terminée. Actualisation..."
       },
@@ -30,11 +31,14 @@
          "itemRenamed": "Objet renommé.",
          "itemDeleted": "Objet supprimé.",
          "itemMoved": "Objet déplacé.",
+         "itemExported": "Objet exporté.",
          "folderCreated": "Dossier créé dans le Tiroir.",
          "folderRenamed": "Dossier renommé.",
          "folderDeleted": "Dossier supprimé.",
          "folderMoved": "Dossier déplacé.",
+         "folderExported": "Dossier exporté.",
          "importSuccess": "Fichier importé dans le tiroir avec succès.",
+         "importedAsFolder": "Tiroir importé comme nouveau dossier à la racine.",
          "exported": "Tiroir exporté avec succès.",
          "deleted": "Tiroir supprimé avec succès."
       },
@@ -133,6 +137,7 @@
       "emptyFolder": "Ce Dossier est vide. Il est temps de le remplir !",
       "addFolder": "Créer un Dossier",
       "folderNamePlaceholder": "Nom du dossier...",
+      "importedDrawerDefaultName": "Tiroir Importé",
 
       "dropToImport": "Déposez vos fichiers ici pour les importer dans votre Tiroir",
 

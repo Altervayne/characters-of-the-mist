@@ -5,7 +5,7 @@ import { temporal } from 'zundo';
 import cuid from 'cuid';
 
 // -- Utils Imports --
-import { addFolderRecursively, addItemRecursively, deepReId, deleteFolderRecursively, deleteItemRecursively, findAndRemoveFolder, findAndRemoveItem, mergeIntoFolderRecursively, renameFolderRecursively, renameItemRecursively, reorderFoldersRecursively, reorderItemsRecursively, reorderList } from '../utils/drawer';
+import { addFolderRecursively, addItemRecursively, deepReId, deleteFolderRecursively, deleteItemRecursively, findAndRemoveFolder, findAndRemoveItem, renameFolderRecursively, renameItemRecursively, reorderFoldersRecursively, reorderItemsRecursively, reorderList } from '../utils/drawer';
 import { createDebouncedStorage } from '../utils/debouncedStorage';
 import { STORE_VERSION } from '../config';
 
@@ -35,7 +35,7 @@ export interface DrawerState {
    drawerCurrentFolderId: string | null;
    actions: {
       // --- Drawer Actions ---
-      importFullDrawer: (newDrawer: Drawer, parentFolderId?: string) => void;
+      importDrawerAsFolder: (newDrawer: Drawer, folderName: string) => void;
       // --- Folder Actions ---
       addFolder: (name: string, parentFolderId?: string) => void;
       addImportedFolder: (folder: Folder, parentFolderId?: string) => void;
@@ -77,30 +77,17 @@ export const useDrawerStore = create<DrawerState>()(
             ...initialState,
             actions: {
                // --- Drawer Actions ---
-               importFullDrawer: (newDrawer, parentFolderId) => {
+               importDrawerAsFolder: (newDrawer, folderName) => {
                   set(state => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
-                     const reIddDrawer = deepReId(newDrawer);
-
-                     if (!parentFolderId) {
-                        const mergedFolders = [...state.drawer.folders, ...reIddDrawer.folders];
-                        const mergedRootItems = [...state.drawer.rootItems, ...reIddDrawer.rootItems];
-                        return {
-                           drawer: {
-                              ...state.drawer,
-                              folders: mergedFolders,
-                              rootItems: mergedRootItems,
-                           }
-                        };
-                     } else {
-                        const updatedFolders = mergeIntoFolderRecursively(
-                           state.drawer.folders,
-                           parentFolderId,
-                           reIddDrawer.folders,
-                           reIddDrawer.rootItems
-                        );
-                        return { drawer: { ...state.drawer, folders: updatedFolders } };
-                     }
+                     const reIdded = deepReId(newDrawer);
+                     const newFolder: Folder = {
+                        id: cuid(),
+                        name: folderName,
+                        items: reIdded.rootItems,
+                        folders: reIdded.folders,
+                     };
+                     return { drawer: { ...state.drawer, folders: [...state.drawer.folders, newFolder] } };
                   });
                },
                // --- Folder Actions ---

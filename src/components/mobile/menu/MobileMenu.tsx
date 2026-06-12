@@ -16,7 +16,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/config';
-import { exportDrawer, importFromFile, exportCharacterSheet } from '@/lib/utils/export-import';
+import { deriveDrawerFolderName, exportDrawer, importFromFile, exportCharacterSheet } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
 
 
@@ -32,7 +32,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 	const character = useCharacterStore((state) => state.character);
 	const { returnToMenu, loadCharacter } = useCharacterActions();
 	const drawer = useDrawerStore((state) => state.drawer);
-	const { importFullDrawer } = useDrawerActions();
+	const { importDrawerAsFolder } = useDrawerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const characterImportRef = useRef<HTMLInputElement>(null);
@@ -58,7 +58,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			}
 		} catch (error) {
 			console.error('Import error:', error);
-			toast.error(t('Notifications.general.importError'));
+			toast.error(t('Notifications.general.importFailed'));
 		}
 	};
 
@@ -71,10 +71,10 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			const importedData = await importFromFile(file);
 
 			if (importedData.fileType === 'FULL_DRAWER') {
-				importFullDrawer(importedData.content as import('@/lib/types/drawer').Drawer, undefined);
-				toast.success(t('Notifications.drawer.imported'));
+				importDrawerAsFolder(importedData.content as import('@/lib/types/drawer').Drawer, deriveDrawerFolderName(file.name, t('Drawer.importedDrawerDefaultName')));
+				toast.success(t('Notifications.drawer.importedAsFolder'));
 			} else {
-				toast.error(t('Notifications.drawer.importError'));
+				toast.error(t('Notifications.general.importFailed'));
 			}
 
 			// Reset file input
@@ -83,7 +83,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			}
 		} catch (error) {
 			console.error('Import error:', error);
-			toast.error(t('Notifications.general.importError'));
+			toast.error(t('Notifications.general.importFailed'));
 		}
 	};
 

@@ -7,7 +7,7 @@ import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 
 // -- Utils Imports --
-import { exportDrawer, importFromFile } from '@/lib/utils/export-import';
+import { deriveDrawerFolderName, exportDrawer, importFromFile } from '@/lib/utils/export-import';
 
 // -- Store Imports --
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
@@ -36,7 +36,7 @@ import type { Folder as FolderType, DrawerItemContent, Drawer as DrawerType } fr
  */
 export function useDrawerFileImport(currentFolderId: string | null) {
    const { t: tNotifications } = useTranslation();
-   const { importFullDrawer, addImportedFolder, addImportedItem } = useDrawerActions();
+   const { importDrawerAsFolder, addImportedFolder, addImportedItem } = useDrawerActions();
 
    const formRef = useRef<HTMLFormElement>(null);
    const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,25 +49,29 @@ export function useDrawerFileImport(currentFolderId: string | null) {
 
          switch (importedData.fileType) {
             case 'FULL_DRAWER':
-               importFullDrawer(importedData.content as DrawerType);
+               importDrawerAsFolder(
+                  importedData.content as DrawerType,
+                  deriveDrawerFolderName(file.name, tNotifications('Drawer.importedDrawerDefaultName'))
+               );
+               toast.success(tNotifications('Notifications.drawer.importedAsFolder'));
                break;
 
             case 'FOLDER':
                addImportedFolder(importedData.content as FolderType, currentFolderId ?? undefined);
+               toast.success(tNotifications('Notifications.drawer.importSuccess'));
                break;
 
             default:
                addImportedItem(importedData.content as DrawerItemContent, importedData.fileType, importedData.game, currentFolderId ?? undefined);
+               toast.success(tNotifications('Notifications.drawer.importSuccess'));
                break;
          }
-
-         toast.success(tNotifications('Notifications.drawer.importSuccess'));
 
       } catch (error) {
          toast.error(tNotifications('Notifications.general.importFailed'));
          console.error("Failed to import file:", error);
       }
-   }, [currentFolderId, addImportedFolder, addImportedItem, importFullDrawer, tNotifications]);
+   }, [currentFolderId, addImportedFolder, addImportedItem, importDrawerAsFolder, tNotifications]);
 
    const onDrop = useCallback((acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {

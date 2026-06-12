@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { Home, ChevronRight } from 'lucide-react';
 
 // -- Utils Imports --
-import { buildBreadcrumb } from '@/lib/utils/drawer';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
@@ -15,18 +14,23 @@ import type { Folder } from '@/lib/types/drawer';
 
 
 interface MobileBreadcrumbsProps {
-	folders: Folder[];
-	currentFolderId: string | null;
+	breadcrumbPath: Folder[];
 	onNavigate: (folderId: string | null) => void;
 }
 
 export default function MobileBreadcrumbs({
-	folders,
-	currentFolderId,
+	breadcrumbPath,
 	onNavigate
 }: MobileBreadcrumbsProps) {
 	const { t } = useTranslation();
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+	// The deepest crumb is the current folder (null at root). Used for the Home
+	// crumb's active state and as the auto-scroll trigger - equivalent to the
+	// currentFolderId this component previously received directly.
+	const currentFolderId = breadcrumbPath.length > 0
+		? breadcrumbPath[breadcrumbPath.length - 1].id
+		: null;
 
 	// Auto-scroll to show current location when it changes
 	useEffect(() => {
@@ -34,11 +38,6 @@ export default function MobileBreadcrumbs({
 			scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
 		}
 	}, [currentFolderId]);
-
-	// Build breadcrumb path
-	const breadcrumbPath = currentFolderId
-		? buildBreadcrumb(folders, currentFolderId)
-		: [];
 
 	return (
 		<div
