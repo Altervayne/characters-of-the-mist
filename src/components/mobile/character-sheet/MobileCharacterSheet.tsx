@@ -1,22 +1,21 @@
 // -- React Imports --
 import { useState, useMemo, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 
 // -- Component Imports --
-import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker';
-import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTracker';
-import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
-import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
-import MobileCardCarousel from '@/components/mobile/character-sheet/MobileCardCarousel';
 import MobileToolbelt from '@/components/mobile/toolbelt/MobileToolbelt';
 import MobileSaveToDrawerSheet from '@/components/mobile/character-sheet/MobileSaveToDrawerSheet';
-import SelectableTracker from '@/components/mobile/character-sheet/SelectableTracker';
-import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
+import { MobileCharacterNameHeader } from '@/components/mobile/character-sheet/MobileCharacterNameHeader';
+import { MobileCharacterSheetTabBar } from '@/components/mobile/character-sheet/MobileCharacterSheetTabBar';
+import { MobileTrackersSection } from '@/components/mobile/character-sheet/MobileTrackersSection';
+import { MobileCardReorderView } from '@/components/mobile/character-sheet/MobileCardReorderView';
+import { MobileCardArea } from '@/components/mobile/character-sheet/MobileCardArea';
+import { MobileCardNavigationBar } from '@/components/mobile/character-sheet/MobileCardNavigationBar';
+import { MobileTrackerReorderControls } from '@/components/mobile/character-sheet/MobileTrackerReorderControls';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PlusCircle, Wrench, Check, SquareDashed } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -30,27 +29,15 @@ import { useMobileCardSheetGestures } from '@/hooks/mobile/useMobileCardSheetGes
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { deriveCardTitle } from '@/lib/utils/character';
 
 // -- Type Imports --
-import type { Card, CardDetails, Tracker } from '@/lib/types/character';
+import type { Card, Tracker } from '@/lib/types/character';
 import type { ToolbeltContext } from '@/lib/types/toolbelt';
 
 
 
 type SheetTab = 'trackers' | 'cards';
-
-// Type guards for card details
-function hasCharacterName(details: CardDetails): details is { characterName: string } & CardDetails {
-	return 'characterName' in details;
-}
-
-function hasThemebook(details: CardDetails): details is { themebook: string } & CardDetails {
-	return 'themebook' in details;
-}
-
-function hasMainTag(details: CardDetails): details is { mainTag: { name: string } } & CardDetails {
-	return 'mainTag' in details && details.mainTag !== null;
-}
 
 
 
@@ -163,7 +150,7 @@ export default function MobileCharacterSheet({
 
 	// Save to Drawer handlers
 	const handleSaveToDrawer = (item: Card | Tracker) => {
-		const defaultName = 'cardType' in item ? getCardTitle(item) : item.name;
+		const defaultName = 'cardType' in item ? deriveCardTitle(item, t) : item.name;
 		openSaveToDrawer(item, defaultName);
 	};
 
@@ -190,80 +177,6 @@ export default function MobileCharacterSheet({
 
 
 
-	// Helper function to get card display name
-	const getCardTitle = (card: Card): string => {
-		// Character cards: show character name
-		if (card.cardType === 'CHARACTER_CARD' && hasCharacterName(card.details)) {
-         switch (card.details.game) {
-            case 'LEGENDS':
-               return t('Cards.heroCard');
-            case 'CITY_OF_MIST':
-               return t('Cards.riftCard');
-            case 'OTHERSCAPE':
-               return t('Cards.mercCard');
-            default:
-               return t('Cards.characterCard');
-         }
-		}
-
-		// Loadout cards: show main tag name
-		if (card.cardType === 'LOADOUT_THEME') {
-			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
-			return mainTag || t('Cards.otherscapeLoadoutCard');
-		}
-
-		if (card.cardType === 'GROUP_THEME') {
-			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
-
-			if (mainTag) {
-				switch (card.details.game) {
-					case 'LEGENDS':
-						return `${t('Cards.fellowshipCard')} - ${mainTag}`;
-					case 'CITY_OF_MIST':
-						return `${t('Cards.crewCard')} - ${mainTag}`;
-					case 'OTHERSCAPE':
-						return `${t('Cards.otherscapeCrewCard')} - ${mainTag}`;
-					default:
-						return mainTag;
-				}
-			}
-			return t('Cards.fellowshipCard');
-		}
-
-		// Theme cards: show "Themebook - Main Tag" or just themebook
-		if (card.cardType === 'CHARACTER_THEME') {
-			const themebook = hasThemebook(card.details) ? card.details.themebook : null;
-			const mainTag = hasMainTag(card.details) ? card.details.mainTag.name : null;
-
-			if (themebook && mainTag) {
-				return `${themebook} - ${mainTag}`;
-			}
-			if (themebook) {
-				return themebook;
-			}
-			if (mainTag) {
-				return mainTag;
-			}
-		}
-
-		// Fallback to card type
-		return t('Cards.themeCard');
-	};
-
-   
-
-	// Helper function to render card preview (like in Drawer)
-	// Force SIDE_BY_SIDE mode and front face for previews
-	const renderCardPreview = (card: Card) => {
-		const Component = resolveCardComponent(card.cardType, card.details.game);
-		if (!Component) return null;
-
-		const previewCard = { ...card, viewMode: 'SIDE_BY_SIDE' as const, isFlipped: false };
-		return <Component card={previewCard} isDrawerPreview />;
-	};
-
-
-
 	if (!character) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -284,344 +197,75 @@ export default function MobileCharacterSheet({
 		<>
 		<div className="flex flex-col h-full">
 			{/* Character Name Header */}
-			<header className="p-4 bg-popover border-b border-border flex items-center gap-3">
-				<input
-					type="text"
-					value={localName}
-					onChange={(e) => setLocalName(e.target.value)}
-					className={cn(
-						"flex-1 text-2xl font-bold bg-transparent outline-none transition-colors",
-						"placeholder:text-muted-foreground/50",
-						"focus:text-primary"
-					)}
-					placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
-				/>
-			</header>
+			<MobileCharacterNameHeader
+				value={localName}
+				onChange={setLocalName}
+				placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
+			/>
 
 			{/* Tab Navigation - Hidden when reordering cards */}
 			{!isReorderingCards && (
-            <div className="flex items-center border-b border-border bg-card">
-               {/* Toolbelt trigger button (left side for left-handed) */}
-               {!isMobileFABMode && isLeftHanded && (
-                  <div className="px-2">
-                     <IconButton
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsToolbeltOpen(true)}
-                        aria-label="Open actions"
-                        className="h-8 w-8"
-                     >
-                        <Wrench className="h-4 w-4" />
-                     </IconButton>
-                  </div>
-               )}
-
-               <button
-                  onClick={() => setActiveTab('trackers')}
-                  data-tutorial="trackers-tab"
-                  className={cn(
-                     "flex-1 px-4 py-3 text-sm font-medium transition-colors",
-                     "border-b-2",
-                     activeTab === 'trackers'
-                        ? "border-primary text-primary bg-primary/5"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
-               >
-                  {t('MobileCharacterSheet.trackersTab')}
-               </button>
-               <button
-                  onClick={() => setActiveTab('cards')}
-                  data-tutorial="cards-tab"
-                  className={cn(
-                     "flex-1 px-4 py-3 text-sm font-medium transition-colors",
-                     "border-b-2",
-                     activeTab === 'cards'
-                        ? "border-primary text-primary bg-primary/5"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
-               >
-                  {t('MobileCharacterSheet.cardsTab')}
-                  {character.cards.length > 0 && (
-                     <span className="ml-2 text-xs text-muted-foreground">
-                        ({character.cards.length})
-                     </span>
-                  )}
-               </button>
-
-               {/* Toolbelt trigger button (right side for right-handed) */}
-               {!isMobileFABMode && !isLeftHanded && (
-                  <div className="px-2">
-                     <IconButton
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsToolbeltOpen(true)}
-                        aria-label="Open actions"
-                        className="h-8 w-8"
-                     >
-                        <Wrench className="h-4 w-4" />
-                     </IconButton>
-                  </div>
-               )}
-            </div>
+				<MobileCharacterSheetTabBar
+					activeTab={activeTab}
+					onTabChange={setActiveTab}
+					cardCount={character.cards.length}
+					isMobileFABMode={isMobileFABMode}
+					isLeftHanded={isLeftHanded}
+					onOpenToolbelt={() => setIsToolbeltOpen(true)}
+				/>
 			)}
 
 			{/* Tab Content */}
 			<div className="flex-1 flex flex-col overflow-hidden">
 				{activeTab === 'trackers' && (
-					<div
-						className={cn("h-full overflow-y-auto p-4", isMobileFABMode && "pb-32")}
-						data-tutorial="trackers-section"
-						{...trackersAreaHandlers}
-					>
-						<div className="max-w-7xl mx-auto space-y-6">
-							{/* Statuses Section */}
-							{(character.trackers.statuses.length > 0 || areTrackersEditable) && (
-							<section>
-								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
-									{t('MobileCharacterSheet.statuses')}
-								</h3>
-								<div className="flex flex-wrap justify-center gap-3">
-									{character.trackers.statuses.map((tracker) => (
-										<SelectableTracker
-											key={tracker.id}
-											tracker={tracker}
-											isSelected={selectedTrackerId === tracker.id}
-											onSelect={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
-										>
-											<StatusTrackerCard
-												tracker={tracker}
-												isEditing={areTrackersEditable}
-												onExport={() => {}}
-											/>
-										</SelectableTracker>
-									))}
-									{areTrackersEditable && (
-										<Button
-											variant="ghost"
-											onClick={() => addStatus()}
-											className={cn(
-												"w-55 h-25 border-2 border-dashed border-primary/25",
-												"text-muted-foreground bg-primary/5",
-												"hover:text-foreground hover:border-foreground",
-												"flex items-center justify-center gap-2"
-											)}
-										>
-											<PlusCircle className="mr-2 h-4 w-4" />
-                                 {t('Trackers.addStatus')}
-										</Button>
-									)}
-								</div>
-							</section>
-							)}
-
-							{/* Story Tags Section */}
-							{(character.trackers.storyTags.length > 0 || areTrackersEditable) && (
-							<section>
-								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
-									{t('MobileCharacterSheet.storyTags')}
-								</h3>
-								<div className="flex flex-wrap justify-center gap-3">
-									{character.trackers.storyTags.map((tracker) => (
-										<SelectableTracker
-											key={tracker.id}
-											tracker={tracker}
-											isSelected={selectedTrackerId === tracker.id}
-											onSelect={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
-										>
-											<StoryTagTrackerCard
-												tracker={tracker}
-												isEditing={areTrackersEditable}
-												onExport={() => {}}
-											/>
-										</SelectableTracker>
-									))}
-									{areTrackersEditable && (
-										<Button
-											variant="ghost"
-											onClick={() => addStoryTag()}
-											className={cn(
-												"w-55 min-h-13.75 py-2 border-2 border-dashed border-primary/25",
-												"text-muted-foreground bg-primary/5",
-												"hover:text-foreground hover:border-foreground",
-												"flex items-center justify-center gap-2"
-											)}
-										>
-											<PlusCircle className="mr-2 h-4 w-4" />
-                                 {t('Trackers.addStoryTag')}
-										</Button>
-									)}
-								</div>
-							</section>
-							)}
-
-							{/* Story Themes Section */}
-							{(character.trackers.storyThemes.length > 0 || areTrackersEditable) && (
-							<section>
-								<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
-									{t('MobileCharacterSheet.storyThemes')}
-								</h3>
-								<div className="flex flex-wrap justify-center gap-3">
-									{character.trackers.storyThemes.map((tracker) => (
-										<SelectableTracker
-											key={tracker.id}
-											tracker={tracker}
-											isSelected={selectedTrackerId === tracker.id}
-											onSelect={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
-										>
-											<StoryThemeTrackerCard
-												tracker={tracker}
-												isEditing={isEditing}
-												onExport={() => {}}
-											/>
-										</SelectableTracker>
-									))}
-									{areTrackersEditable && (
-										<Button
-											variant="ghost"
-											onClick={() => addStoryTheme()}
-											className={cn(
-												"w-62.5 h-55 border-2 border-dashed border-primary/25",
-												"text-muted-foreground bg-primary/5",
-												"hover:text-foreground hover:border-foreground",
-												"flex items-center justify-center gap-2"
-											)}
-										>
-											<PlusCircle className="mr-2 h-4 w-4" />
-                                 {t('Trackers.addStoryTheme')}
-										</Button>
-									)}
-								</div>
-							</section>
-							)}
-						</div>
-					</div>
+					<MobileTrackersSection
+						character={character}
+						areTrackersEditable={areTrackersEditable}
+						isEditing={isEditing}
+						isMobileFABMode={isMobileFABMode}
+						selectedTrackerId={selectedTrackerId}
+						onSelectTracker={(id) => setSelectedTrackerId(id === selectedTrackerId ? null : id)}
+						onAddStatus={() => addStatus()}
+						onAddStoryTag={() => addStoryTag()}
+						onAddStoryTheme={() => addStoryTheme()}
+						touchHandlers={trackersAreaHandlers}
+					/>
 				)}
 
 				{activeTab === 'cards' && (
 					<>
 						{/* Card Reorder View or Normal Card Display */}
 						{isReorderingCards ? (
-							<div className={cn("flex-1 overflow-y-auto p-4", isMobileFABMode && "pb-32")}>
-								<div className="max-w-2xl mx-auto space-y-4">
-									{/* Header */}
-									<div className="flex items-center justify-center mb-4 sticky top-0 bg-background z-10 pb-2">
-										<h2 className="text-lg font-semibold">{t('MobileCharacterSheet.reorderCards')}</h2>
-									</div>
-
-									{/* Card list with reorder controls */}
-									{character.cards.map((card, index) => (
-										<motion.div
-											key={card.id}
-											layout
-											initial={{ opacity: 0, scale: 0.95 }}
-											animate={{ opacity: 1, scale: 1 }}
-											exit={{ opacity: 0, scale: 0.95 }}
-											className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
-										>
-											{/* Card preview - clickable to navigate and close reorder mode */}
-											<div
-												className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
-												onClick={() => {
-													setCurrentCardIndex(index);
-													setIsReorderingCards(false);
-												}}
-											>
-												{renderCardPreview(card)}
-											</div>
-
-											{/* Reorder buttons */}
-											<div className="flex flex-col gap-1 shrink-0">
-												<IconButton
-													variant="outline"
-													size="lg"
-													onClick={() => moveCardUp(index)}
-													disabled={index === 0 || isReorderingCard}
-													className="h-10 w-10"
-												>
-													<ChevronUp className="h-6 w-6" />
-												</IconButton>
-												<IconButton
-													variant="outline"
-													size="lg"
-													onClick={() => moveCardDown(index)}
-													disabled={index === character.cards.length - 1 || isReorderingCard}
-													className="h-10 w-10"
-												>
-													<ChevronDown className="h-6 w-6" />
-												</IconButton>
-											</div>
-										</motion.div>
-									))}
-								</div>
-							</div>
+							<MobileCardReorderView
+								cards={character.cards}
+								isMobileFABMode={isMobileFABMode}
+								isReorderingCard={isReorderingCard}
+								onMoveCardUp={moveCardUp}
+								onMoveCardDown={moveCardDown}
+								onSelectCard={(index) => {
+									setCurrentCardIndex(index);
+									setIsReorderingCards(false);
+								}}
+							/>
 						) : (
-							<div
-								className={cn("flex-1 overflow-y-auto overflow-x-hidden p-4", isMobileFABMode && "pb-32")}
-								data-tutorial="card-carousel"
-								{...cardAreaHandlers}
-							>
-								<div className="min-h-full flex items-center justify-center">
-									<MobileCardCarousel
-										cards={character.cards}
-										currentIndex={safeCardIndex}
-									/>
-								</div>
-							</div>
+							<MobileCardArea
+								cards={character.cards}
+								currentIndex={safeCardIndex}
+								isMobileFABMode={isMobileFABMode}
+								touchHandlers={cardAreaHandlers}
+							/>
 						)}
 
 						{/* Navigation Bar - Only visible in normal card view */}
 						{!isReorderingCards && character.cards.length > 0 && (
-							<div
-								className="shrink-0 flex items-center justify-between gap-3 px-3 py-2 bg-card border-t border-border"
-								{...navBarHandlers}
-								data-tutorial="card-navigation-bar"
-							>
-								<IconButton
-									variant="outline"
-									size="sm"
-									onClick={() => setCurrentCardIndex(i => Math.max(0, i - 1))}
-									disabled={safeCardIndex === 0}
-									aria-label="Previous card"
-									className="h-8 w-8"
-								>
-									<ChevronLeft className="h-4 w-4" />
-								</IconButton>
-
-								<div className="flex-1 flex flex-col items-center justify-center gap-1">
-									{/* Card Title */}
-									<span className="text-xs font-medium truncate max-w-full text-center">
-										{getCardTitle(character.cards[safeCardIndex])}
-									</span>
-
-									{/* Dot Indicators */}
-									<div className="flex items-center gap-1">
-										{character.cards.map((_, index) => (
-											<button
-												key={index}
-												onClick={() => setCurrentCardIndex(index)}
-												className={cn(
-													"h-1.5 w-1.5 rounded-full transition-all",
-													index === safeCardIndex
-														? "bg-primary w-4"
-														: "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-												)}
-												aria-label={`Go to card ${index + 1}`}
-											/>
-										))}
-									</div>
-								</div>
-
-								<IconButton
-									variant="outline"
-									size="sm"
-									onClick={() => setCurrentCardIndex(i => Math.min(character.cards.length - 1, i + 1))}
-									disabled={safeCardIndex === character.cards.length - 1}
-									aria-label="Next card"
-									className="h-8 w-8"
-								>
-									<ChevronRight className="h-4 w-4" />
-								</IconButton>
-							</div>
+							<MobileCardNavigationBar
+								cards={character.cards}
+								safeCardIndex={safeCardIndex}
+								onPrevious={() => setCurrentCardIndex(i => Math.max(0, i - 1))}
+								onNext={() => setCurrentCardIndex(i => Math.min(character.cards.length - 1, i + 1))}
+								onSelectCard={(index) => setCurrentCardIndex(index)}
+								touchHandlers={navBarHandlers}
+							/>
 						)}
 					</>
 				)}
@@ -651,37 +295,14 @@ export default function MobileCharacterSheet({
 
 			{/* Tracker Reorder Buttons - Only visible when tracker selected */}
 			{selectedTrackerId && activeTab === 'trackers' && !isReorderingCards && (
-				<div className={cn(
-					"fixed bottom-32 z-25 flex flex-col gap-2",
-					isLeftHanded ? "left-4" : "right-4"
-				)}>
-               <IconButton
-						variant="default"
-						size="lg"
-						onClick={() => setSelectedTrackerId(null)}
-						className="h-10 w-10 shadow-2xl"
-					>
-						<SquareDashed className="h-6 w-6" />
-					</IconButton>
-					<IconButton
-						variant="default"
-						size="lg"
-						onClick={moveTrackerUp}
-						disabled={!canMoveTrackerUp}
-						className="h-10 w-10 shadow-2xl"
-					>
-						<ChevronUp className="h-6 w-6" />
-					</IconButton>
-					<IconButton
-						variant="default"
-						size="lg"
-						onClick={moveTrackerDown}
-						disabled={!canMoveTrackerDown}
-						className="h-10 w-10 shadow-2xl"
-					>
-						<ChevronDown className="h-6 w-6" />
-					</IconButton>
-				</div>
+				<MobileTrackerReorderControls
+					isLeftHanded={isLeftHanded}
+					onDeselect={() => setSelectedTrackerId(null)}
+					onMoveUp={moveTrackerUp}
+					onMoveDown={moveTrackerDown}
+					canMoveUp={canMoveTrackerUp}
+					canMoveDown={canMoveTrackerDown}
+				/>
 			)}
 
 
