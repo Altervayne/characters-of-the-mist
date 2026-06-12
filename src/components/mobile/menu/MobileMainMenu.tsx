@@ -6,12 +6,10 @@ import { motion } from 'framer-motion';
 
 // -- Component Imports --
 import { Button } from '@/components/ui/button';
+import { MobileMainMenuGameCard } from '@/components/mobile/menu/MobileMainMenuGameCard';
 
 // -- Icon Imports --
-import { ScrollText, Building2, Bot, Plus, FolderOpen, Feather } from 'lucide-react';
-
-// -- Utils Imports --
-import { cn } from '@/lib/utils';
+import { ScrollText, Building2, Bot, Plus, FolderOpen } from 'lucide-react';
 
 // -- Store and Hook Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -20,56 +18,6 @@ import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
 import type { GameSystem } from '@/lib/types/drawer';
-
-interface GameCardProps {
-	title: string;
-	subtitle: string;
-	icon: React.ReactNode;
-	isSelected: boolean;
-	onClick: () => void;
-	gradient: string;
-}
-
-const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSelected, onClick, gradient }) => {
-	return (
-		<motion.button
-			onClick={onClick}
-			className={cn(
-				"relative overflow-hidden rounded-xl p-5 w-full text-left transition-all",
-				"border-2 bg-card active:scale-[0.98]",
-				isSelected
-					? "border-primary shadow-lg ring-4 ring-primary/20"
-					: "border-border active:border-primary/50"
-			)}
-			whileTap={{ scale: 0.98 }}
-		>
-			<div className={cn(
-				"absolute inset-0 opacity-10 transition-opacity",
-				isSelected && "opacity-20",
-				gradient
-			)} />
-
-			<div className="relative z-10 flex items-center gap-4">
-				<div className="p-3 rounded-lg bg-background/50 backdrop-blur-sm shrink-0">
-					{icon}
-				</div>
-				<div className="flex-1 min-w-0">
-					<h3 className="text-lg font-bold text-foreground mb-0.5">{title}</h3>
-					<p className="text-sm text-muted-foreground line-clamp-1">{subtitle}</p>
-				</div>
-				{isSelected && (
-					<motion.div
-						initial={{ scale: 0, rotate: -180 }}
-						animate={{ scale: 1, rotate: 0 }}
-						className="p-1.5 rounded-full bg-primary text-primary-foreground shrink-0"
-					>
-						<Feather className="h-4 w-4" />
-					</motion.div>
-				)}
-			</div>
-		</motion.button>
-	);
-};
 
 interface MobileMainMenuProps {
 	onOpenDrawer: () => void;
@@ -155,7 +103,7 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ delay: 0.1 * (index + 1), duration: 0.3 }}
 						>
-							<GameCard
+							<MobileMainMenuGameCard
 								{...option}
 								isSelected={contextualGame === option.game}
 								onClick={() => handleGameSelect(option.game)}

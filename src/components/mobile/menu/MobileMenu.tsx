@@ -1,5 +1,4 @@
 // -- React Imports --
-import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -8,16 +7,21 @@ import toast from 'react-hot-toast';
 // -- Icon Imports --
 import { Settings, Info, FileDown, FileUp, Save, FileText, LogOut, FolderDown, FolderUp, SaveAll } from 'lucide-react';
 
+// -- Component Imports --
+import { MobileMenuItemButton } from '@/components/mobile/menu/MobileMenuItemButton';
+
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
-import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+
+// -- Hook Imports --
+import { useMobileMenuFileImport } from '@/hooks/mobile/useMobileMenuFileImport';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/config';
-import { deriveDrawerFolderName, exportDrawer, importFromFile, exportCharacterSheet } from '@/lib/utils/export-import';
-import { harmonizeData } from '@/lib/harmonization';
+import { exportDrawer, exportCharacterSheet } from '@/lib/utils/export-import';
 
 
 
@@ -30,62 +34,18 @@ interface MobileMenuProps {
 export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
-	const { returnToMenu, loadCharacter } = useCharacterActions();
+	const { returnToMenu } = useCharacterActions();
 	const drawer = useDrawerStore((state) => state.drawer);
-	const { importDrawerAsFolder } = useDrawerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const characterImportRef = useRef<HTMLInputElement>(null);
 
-	const handleCharacterImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = e.target.files;
-		if (!files || files.length === 0) return;
-
-		try {
-			const file = files[0];
-			const importedData = await importFromFile(file);
-
-			if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
-				const harmonized = harmonizeData(importedData.content, importedData.fileType);
-				loadCharacter(harmonized as import('@/lib/types/character').Character);
-				toast.success(t('Notifications.character.imported'));
-			} else {
-				toast.error(t('Notifications.character.importError'));
-			}
-
-			if (characterImportRef.current) {
-				characterImportRef.current.value = '';
-			}
-		} catch (error) {
-			console.error('Import error:', error);
-			toast.error(t('Notifications.general.importFailed'));
-		}
-	};
-
-	const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = e.target.files;
-		if (!files || files.length === 0) return;
-
-		try {
-			const file = files[0];
-			const importedData = await importFromFile(file);
-
-			if (importedData.fileType === 'FULL_DRAWER') {
-				importDrawerAsFolder(importedData.content as import('@/lib/types/drawer').Drawer, deriveDrawerFolderName(file.name, t('Drawer.importedDrawerDefaultName')));
-				toast.success(t('Notifications.drawer.importedAsFolder'));
-			} else {
-				toast.error(t('Notifications.general.importFailed'));
-			}
-
-			// Reset file input
-			if (fileInputRef.current) {
-				fileInputRef.current.value = '';
-			}
-		} catch (error) {
-			console.error('Import error:', error);
-			toast.error(t('Notifications.general.importFailed'));
-		}
-	};
+	const {
+		characterImportInputRef,
+		drawerImportInputRef,
+		handleCharacterImportFileSelected,
+		handleDrawerImportFileSelected,
+		triggerCharacterImport,
+		triggerDrawerImport,
+	} = useMobileMenuFileImport();
 
 
 
@@ -187,14 +147,14 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				}
 				break;
 			case 'import':
-				characterImportRef.current?.click();
+				triggerCharacterImport();
 				break;
 			case 'exportDrawer':
 				exportDrawer(drawer);
 				toast.success(t('Notifications.drawer.exported'));
 				break;
 			case 'importDrawer':
-				fileInputRef.current?.click();
+				triggerDrawerImport();
 				break;
 			case 'unload':
 				returnToMenu();
@@ -208,19 +168,19 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 		<div className="h-full w-full flex flex-col" data-tutorial="menu-content">
 			{/* Hidden file input for drawer import */}
 			<input
-				ref={fileInputRef}
+				ref={drawerImportInputRef}
 				type="file"
 				accept=".cotm"
-				onChange={handleFileImport}
+				onChange={handleDrawerImportFileSelected}
 				className="hidden"
 			/>
 
 			{/* Hidden file input for character import */}
 			<input
-				ref={characterImportRef}
+				ref={characterImportInputRef}
 				type="file"
 				accept=".cotm"
-				onChange={handleCharacterImport}
+				onChange={handleCharacterImportFileSelected}
 				className="hidden"
 			/>
 
@@ -238,24 +198,15 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				isMobileFABMode && "pb-10"
 			)}>
 				<div className="w-full flex flex-col items-center gap-3">
-					{menuItems.map((item) => {
-						const Icon = item.icon;
-						return (
-							<button
-								key={item.id}
-								onClick={() => handleMenuClick(item.id)}
-								className={cn(
-									"inline-flex px-4 items-center gap-2 rounded-md transition-all disabled:pointer-events-none disabled:opacity-50 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-									"w-68 max-w-full min-h-12 py-2 justify-start text-left",
-									item.destructive ? "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60" : "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
-									"hover:bg-primary/10 transition-colors"
-								)}
-							>
-								<Icon className="h-6 w-6 mr-4 shrink-0" />
-								<span className="text-md text-left">{item.label}</span>
-							</button>
-						);
-					})}
+					{menuItems.map((item) => (
+						<MobileMenuItemButton
+							key={item.id}
+							label={item.label}
+							icon={item.icon}
+							destructive={item.destructive}
+							onClick={() => handleMenuClick(item.id)}
+						/>
+					))}
 
 					{/* Version info at bottom of scroll area */}
 					<div className="text-xs text-center text-muted-foreground pt-4">
