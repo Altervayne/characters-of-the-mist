@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useMemo } from 'react';
+import { useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -42,11 +42,34 @@ export default function TutorialTooltip({
 }: TutorialTooltipProps) {
 	const { t } = useTranslation();
 	const windowSize = useWindowSize();
+	const [measuredHeight, setMeasuredHeight] = useState(220);
+	const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
-	// Don't render until we have valid window dimensions
-	if (windowSize.width === 0 || windowSize.height === 0) {
-		return null;
-	}
+	// Measure the tooltip's real rendered height via a callback ref, so measurement
+	// runs when the new tooltip element actually mounts. With AnimatePresence
+	// mode="wait" the incoming tooltip mounts only after the outgoing one finishes
+	// exiting, so a step-keyed effect would measure the stale (outgoing) element and
+	// position taller steps with the previous step's smaller height - clipping them
+	// off the bottom of the viewport. A ResizeObserver keeps the height in sync if
+	// the content reflows. Falls back to the 220 estimate only for the first frame.
+	const measureTooltipElement = useCallback((element: HTMLDivElement | null) => {
+		resizeObserverRef.current?.disconnect();
+		resizeObserverRef.current = null;
+
+		if (!element) return;
+
+		const measure = () => {
+			const height = element.offsetHeight;
+			if (height > 0) {
+				setMeasuredHeight(height);
+			}
+		};
+		measure();
+
+		const observer = new ResizeObserver(measure);
+		observer.observe(element);
+		resizeObserverRef.current = observer;
+	}, []);
 
 	// Calculate tooltip position based on target element and preference
 	const tooltipStyle = useMemo(() => {
@@ -54,7 +77,7 @@ export default function TutorialTooltip({
 		const viewHeight = windowSize.height || window.innerHeight;
 		const tooltipPadding = 16;
 		const tooltipWidth = Math.min(Math.max(viewWidth - tooltipPadding * 2, 200), 320);
-		const tooltipHeight = 220; // Approximate height for calculations
+		const tooltipHeight = measuredHeight;
 		const arrowOffset = 12;
 
 		// Center position for full-screen overlays (no target)
@@ -111,15 +134,22 @@ export default function TutorialTooltip({
 			top: `${top}px`,
 			width: `${tooltipWidth}px`,
 		};
-	}, [targetRect, step.position, windowSize]);
+	}, [targetRect, step.position, windowSize, measuredHeight]);
 
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === totalSteps - 1;
+
+	// Don't render until we have valid window dimensions. This guard sits after
+	// every hook so the hook order is stable across renders (rules of hooks).
+	if (windowSize.width === 0 || windowSize.height === 0) {
+		return null;
+	}
 
 	return (
 		<AnimatePresence mode="wait">
 			{isVisible && (
 				<motion.div
+					ref={measureTooltipElement}
 					key={`tooltip-step-${currentStep}`}
 					initial={{ opacity: 0, y: 10 }}
 					animate={{ opacity: 1, y: 0 }}

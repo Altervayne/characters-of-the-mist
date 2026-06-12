@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // -- Component Imports --
 import TutorialOverlay from './TutorialOverlay';
@@ -26,9 +26,25 @@ export default function MobileTutorial({ isOpen, onComplete, actions }: MobileTu
 
 	const isFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 
-	const steps = getMobileTutorialSteps(actions, isFABMode);
+	// Memoize so the steps array keeps a stable identity across this component's own
+	// re-renders (e.g. rect updates); it only rebuilds when the parent passes a new
+	// actions object or the mode changes.
+	const steps = useMemo(() => getMobileTutorialSteps(actions, isFABMode), [actions, isFABMode]);
 	const step = steps[currentStep];
 	const totalSteps = steps.length;
+
+	// Keep the latest steps reachable from the step-lifecycle effect without making
+	// them one of its dependencies (the actions object - and therefore the steps -
+	// is rebuilt whenever the parent re-renders).
+	const stepsRef = useRef(steps);
+	useEffect(() => {
+		stepsRef.current = steps;
+	});
+
+	// Index of the step whose onEnter has run (and whose onExit is still pending),
+	// so onEnter/onExit fire exactly once per step transition regardless of how
+	// often this component re-renders.
+	const enteredStepIndexRef = useRef<number | null>(null);
 
 	// Update target rect when step changes
 	const updateTargetRect = useCallback(() => {
@@ -38,11 +54,21 @@ export default function MobileTutorial({ isOpen, onComplete, actions }: MobileTu
 		}
 
 		const element = document.querySelector(step.selector);
-		if (element) {
-			setTargetRect(element.getBoundingClientRect());
-		} else {
+		if (!element) {
 			setTargetRect(null);
+			return;
 		}
+
+		// Body scroll is locked while the tour runs, so a target below the fold would
+		// be spotlighted off-screen. Scroll it into view within its scroll container
+		// first, then measure the settled position.
+		const rect = element.getBoundingClientRect();
+		const isOffScreen = rect.top < 0 || rect.bottom > window.innerHeight;
+		if (isOffScreen) {
+			element.scrollIntoView({ block: 'center' });
+		}
+
+		setTargetRect(element.getBoundingClientRect());
 	}, [step?.selector]);
 
 	// Initial setup when tutorial opens
@@ -60,22 +86,43 @@ export default function MobileTutorial({ isOpen, onComplete, actions }: MobileTu
 		}
 	}, [isOpen]);
 
-	// Run step entry action and update target when step changes
+	// Step lifecycle: run the leaving step's onExit and the entering step's onEnter
+	// exactly once per transition, then measure the target. Keyed on currentStep
+	// (not the step object) so re-renders - rect updates, the rebuilt actions object
+	// - never re-fire onEnter or re-push browser history.
 	useEffect(() => {
 		if (!isOpen || !isReady) return;
 
-		// Execute onEnter action for this step
-		if (step?.onEnter) {
-			step.onEnter();
+		const previousIndex = enteredStepIndexRef.current;
+		if (previousIndex !== currentStep) {
+			if (previousIndex !== null) {
+				stepsRef.current[previousIndex]?.onExit?.();
+			}
+			enteredStepIndexRef.current = currentStep;
+			stepsRef.current[currentStep]?.onEnter?.();
 		}
 
-		// Small delay to allow any navigation/state changes to complete
-		const timer = setTimeout(() => {
-			updateTargetRect();
-		}, 150);
+		// Measure after navigation/state settles (150ms), then again after open and
+		// scroll animations finish (e.g. the toolbelt side-panel slide).
+		const measureTimer = setTimeout(() => updateTargetRect(), 150);
+		const settleTimer = setTimeout(() => updateTargetRect(), 400);
+		return () => {
+			clearTimeout(measureTimer);
+			clearTimeout(settleTimer);
+		};
+	}, [currentStep, isOpen, isReady, updateTargetRect]);
 
-		return () => clearTimeout(timer);
-	}, [currentStep, isOpen, isReady, step, updateTargetRect]);
+	// When the tour closes, run the active step's onExit (e.g. close a toolbelt
+	// opened for its step) and reset so a re-open re-enters from the first step.
+	useEffect(() => {
+		if (isOpen) return;
+
+		const index = enteredStepIndexRef.current;
+		if (index !== null) {
+			stepsRef.current[index]?.onExit?.();
+			enteredStepIndexRef.current = null;
+		}
+	}, [isOpen]);
 
 	// Update rect on resize or scroll
 	useEffect(() => {

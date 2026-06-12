@@ -298,6 +298,8 @@ export default function MobileCharacterSheetPage() {
 					closeSettings: () => navigateToTab('menu'),
 					expandFAB: () => setIsMenuFABExpanded(true),
 					collapseFAB: () => setIsMenuFABExpanded(false),
+					openToolbelt: () => setIsToolbeltOpen(true),
+					closeToolbelt: () => setIsToolbeltOpen(false),
 				}}
 			/>
 		</div>

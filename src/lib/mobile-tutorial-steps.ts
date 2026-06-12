@@ -8,7 +8,7 @@ export interface TutorialStep {
 	descriptionKey: string;      // i18n translation key for description
 	position?: 'top' | 'bottom' | 'center'; // Tooltip position preference
 	onEnter?: () => void;        // Action to execute when entering step
-	waitForAction?: boolean;     // Wait for user action before allowing next
+	onExit?: () => void;         // Action to execute when leaving step (e.g. close an opened panel)
 	highlightPadding?: number;   // Extra padding around highlighted element
 }
 
@@ -19,6 +19,8 @@ export interface TutorialActions {
 	closeSettings: () => void;
 	expandFAB?: () => void;
 	collapseFAB?: () => void;
+	openToolbelt?: () => void;
+	closeToolbelt?: () => void;
 }
 
 export function getMobileTutorialSteps(actions: TutorialActions, isFABMode: boolean): TutorialStep[] {
@@ -96,6 +98,12 @@ function getNavbarModeSteps(actions: TutorialActions): TutorialStep[] {
 			onEnter: () => {
 				actions.navigateToTab('sheet');
 				actions.setSheetTab('trackers');
+				// In navbar mode the toolbelt lives in the side panel, which only
+				// mounts while open - open it so the spotlight has a target.
+				actions.openToolbelt?.();
+			},
+			onExit: () => {
+				actions.closeToolbelt?.();
 			},
 		},
 
