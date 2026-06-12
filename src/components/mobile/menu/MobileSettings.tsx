@@ -10,8 +10,6 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
 import {
@@ -36,6 +34,8 @@ import {
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
+import { MobileSettingsConfirmationDialog } from '@/components/mobile/menu/MobileSettingsConfirmationDialog';
+import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettingsToggleGroup';
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -50,64 +50,6 @@ const locales = [
 	{ code: 'fr', name: 'Français' },
 	{ code: 'de', name: 'Deutsch' },
 ];
-
-interface ConfirmationDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	onConfirm: () => void;
-	title: string;
-	description: string;
-	confirmationText: string;
-	confirmButtonText: string;
-}
-
-function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description, confirmationText, confirmButtonText }: ConfirmationDialogProps) {
-	const { t } = useTranslation();
-	const [input, setInput] = useState("");
-
-	const handleOpenChange = (isOpen: boolean) => {
-		onOpenChange(isOpen);
-		if (!isOpen) {
-			setInput("");
-		}
-	};
-
-	return (
-		<AlertDialog open={open} onOpenChange={handleOpenChange}>
-			<AlertDialogContent className="border-2 border-dashed border-destructive">
-				<AlertDialogHeader>
-					<div className="flex items-center gap-2">
-						<AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
-						<AlertDialogTitle>{title}</AlertDialogTitle>
-					</div>
-					<AlertDialogDescription>
-						{description}
-						<p className="mt-2 text-foreground">
-							{t('SettingsDialog.dangerZone.resetDialog.confirmationPrompt')}
-						</p>
-						<p className="w-full mt-1 text-center text-sm font-bold text-destructive">{confirmationText}</p>
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-				<Input
-					value={input}
-					onChange={(e) => setInput(e.target.value)}
-					placeholder={confirmationText}
-					className="border-foreground/50"
-				/>
-				<AlertDialogFooter>
-					<AlertDialogCancel className="cursor-pointer">{t('SettingsDialog.dangerZone.resetDialog.cancel')}</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={onConfirm}
-						disabled={input !== confirmationText}
-						className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
-					>
-						{confirmButtonText}
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
-	);
-}
 
 interface MobileSettingsProps {
 	onStartTour?: () => void;
@@ -213,119 +155,99 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 					</div>
 
 					{/* Appearance (Light/Dark) */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.appearance')}</Label>
-						<div className="grid grid-cols-2 gap-3">
-							<Button
-								variant={resolvedTheme === 'light' ? 'default' : 'outline'}
-								onClick={() => setMode('light')}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<Sun className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.light')}</span>
-							</Button>
-							<Button
-								variant={resolvedTheme === 'dark' ? 'default' : 'outline'}
-								onClick={() => setMode('dark')}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<Moon className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.dark')}</span>
-							</Button>
-						</div>
-					</div>
+					<MobileSettingsToggleGroup
+						label={t('SettingsDialog.appearance')}
+						options={[
+							{
+								icon: <Sun className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.light'),
+								isActive: resolvedTheme === 'light',
+								onSelect: () => setMode('light'),
+							},
+							{
+								icon: <Moon className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.dark'),
+								isActive: resolvedTheme === 'dark',
+								onSelect: () => setMode('dark'),
+							},
+						]}
+					/>
 
 					{/* Card View Mode */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.cardView.title')}</Label>
-						<div className="grid grid-cols-2 gap-3">
-							<Button
-								variant={!isSideBySideView ? 'default' : 'outline'}
-								onClick={() => setSideBySideView(false)}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<FlipHorizontal className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.cardView.flipping')}</span>
-							</Button>
-							<Button
-								variant={isSideBySideView ? 'default' : 'outline'}
-								onClick={() => setSideBySideView(true)}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<BookOpen className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.cardView.sideBySide')}</span>
-							</Button>
-						</div>
-					</div>
+					<MobileSettingsToggleGroup
+						label={t('SettingsDialog.cardView.title')}
+						options={[
+							{
+								icon: <FlipHorizontal className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.cardView.flipping'),
+								isActive: !isSideBySideView,
+								onSelect: () => setSideBySideView(false),
+							},
+							{
+								icon: <BookOpen className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.cardView.sideBySide'),
+								isActive: isSideBySideView,
+								onSelect: () => setSideBySideView(true),
+							},
+						]}
+					/>
 
 					{/* Tracker Editing Mode */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.trackerEdit.title')}</Label>
-						<div className="grid grid-cols-2 gap-3">
-							<Button
-								variant={!isTrackersAlwaysEditable ? 'default' : 'outline'}
-								onClick={() => setTrackersAlwaysEditable(false)}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<UnlockIcon className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.trackerEdit.unlocked')}</span>
-							</Button>
-							<Button
-								variant={isTrackersAlwaysEditable ? 'default' : 'outline'}
-								onClick={() => setTrackersAlwaysEditable(true)}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<Lock className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.trackerEdit.locked')}</span>
-							</Button>
-						</div>
-					</div>
+					<MobileSettingsToggleGroup
+						label={t('SettingsDialog.trackerEdit.title')}
+						options={[
+							{
+								icon: <UnlockIcon className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.trackerEdit.unlocked'),
+								isActive: !isTrackersAlwaysEditable,
+								onSelect: () => setTrackersAlwaysEditable(false),
+							},
+							{
+								icon: <Lock className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.trackerEdit.locked'),
+								isActive: isTrackersAlwaysEditable,
+								onSelect: () => setTrackersAlwaysEditable(true),
+							},
+						]}
+					/>
 
 					{/* Mobile UI Mode */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileFABMode.title')}</Label>
-						<div className="grid grid-cols-2 gap-3">
-							<Button
-								variant={!isMobileFABMode ? 'default' : 'outline'}
-								onClick={() => setMobileFABMode(false)}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<PanelsRightBottom className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.bottomTabs')}</span>
-							</Button>
-							<Button
-								variant={isMobileFABMode ? 'default' : 'outline'}
-								onClick={() => setMobileFABMode(true)}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<SquareMenu className="mr-2 h-5 w-5 shrink-0" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileFABMode.fab')}</span>
-							</Button>
-						</div>
-					</div>
+					<MobileSettingsToggleGroup
+						label={t('SettingsDialog.mobileFABMode.title')}
+						options={[
+							{
+								icon: <PanelsRightBottom className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.mobileFABMode.bottomTabs'),
+								isActive: !isMobileFABMode,
+								onSelect: () => setMobileFABMode(false),
+							},
+							{
+								icon: <SquareMenu className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.mobileFABMode.fab'),
+								isActive: isMobileFABMode,
+								onSelect: () => setMobileFABMode(true),
+							},
+						]}
+					/>
 
 					{/* Mobile Handedness */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.mobileHandedness.title')}</Label>
-						<div className="grid grid-cols-2 gap-3">
-							<Button
-								variant={mobileHandedness === 'left' ? 'default' : 'outline'}
-								onClick={() => setMobileHandedness('left')}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<Hand className="w-8 h-8 -scale-x-100" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.left')}</span>
-							</Button>
-							<Button
-								variant={mobileHandedness === 'right' ? 'default' : 'outline'}
-								onClick={() => setMobileHandedness('right')}
-								className="h-auto min-h-12 text-base whitespace-normal py-3"
-							>
-								<Hand className="w-8 h-8" />
-								<span className="text-center leading-tight">{t('SettingsDialog.mobileHandedness.right')}</span>
-							</Button>
-						</div>
-					</div>
+					<MobileSettingsToggleGroup
+						label={t('SettingsDialog.mobileHandedness.title')}
+						options={[
+							{
+								icon: <Hand className="w-8 h-8 -scale-x-100" />,
+								label: t('SettingsDialog.mobileHandedness.left'),
+								isActive: mobileHandedness === 'left',
+								onSelect: () => setMobileHandedness('left'),
+							},
+							{
+								icon: <Hand className="w-8 h-8" />,
+								label: t('SettingsDialog.mobileHandedness.right'),
+								isActive: mobileHandedness === 'right',
+								onSelect: () => setMobileHandedness('right'),
+							},
+						]}
+					/>
 
 					{/* Migration */}
 					<div className="space-y-2">
@@ -411,7 +333,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 				onOpenChange={setIsMigrationDialogOpen}
 			/>
 
-			<ConfirmationDialog
+			<MobileSettingsConfirmationDialog
 				open={isDeleteDrawerDialogOpen}
 				onOpenChange={setIsDeleteDrawerDialogOpen}
 				onConfirm={handleDeleteDrawer}
@@ -421,7 +343,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 				confirmButtonText={t('SettingsDialog.dangerZone.deleteDrawerDialog.confirm')}
 			/>
 
-			<ConfirmationDialog
+			<MobileSettingsConfirmationDialog
 				open={isResetAppDialogOpen}
 				onOpenChange={setIsResetAppDialogOpen}
 				onConfirm={handleAppReset}
