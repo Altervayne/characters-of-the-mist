@@ -8,13 +8,13 @@ import { useTranslation } from 'react-i18next';
 import SelectableTracker from '@/components/mobile/character-sheet/SelectableTracker';
 
 // -- DnD Component Imports --
-import { Sortable, DragLayoutWrapper } from '@/components/dnd';
+import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Icon Imports --
-import { GripVertical, CheckCircle2, Circle } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -38,26 +38,26 @@ interface MobileSortableTrackerProps {
  * A drag-sortable tracker chip for the mobile character sheet: a grip handle
  * paired with a {@link SelectableTracker} body.
  *
- * The body keeps its existing long-press-to-select-for-the-toolbelt gesture
- * untouched, while a dedicated ≥44px grip handle owns drag-to-reorder. Handle and
- * body are siblings (the long-press handlers live inside `SelectableTracker`), so
- * the @dnd-kit `TouchSensor` and the long-press timer never share an element:
- * dragging the handle never selects, and selecting never starts a drag. The
- * handle is rendered (and dragging enabled) only when `dragEnabled`, matching the
- * trackers' editable state; otherwise the chip behaves exactly as before. The
- * handle sits on the handedness-leading edge and is touch-action: none so an
- * intentional drag is not pre-empted by the trackers list's vertical scroll.
+ * Selection for the toolbelt is by long-press on the body (a familiar mobile
+ * pattern; the one-time long-press hint and the selected-state badge in
+ * {@link SelectableTracker} make it discoverable and show its state). A dedicated
+ * ≥44px grip handle owns drag-to-reorder. Handle and body are siblings (the
+ * long-press handlers live inside `SelectableTracker`), so the @dnd-kit
+ * `TouchSensor` and the long-press timer never share an element: dragging the
+ * handle never selects, and selecting never starts a drag. The handle is rendered
+ * (and dragging enabled) only when `dragEnabled`, matching the trackers' editable
+ * state; otherwise the chip is just the selectable body. The handle sits on the
+ * handedness-leading edge and is touch-action: none so an intentional drag is not
+ * pre-empted by the trackers list's vertical scroll.
  *
- * A dedicated ≥44px select button on the same handedness-leading side is the
- * always-present button fallback for the long-press-select gesture: tapping it
- * toggles this tracker as the toolbelt's selected tracker, so selection is
- * reachable without the long-press. Unlike the handle, it is shown regardless of
- * `dragEnabled` (selection works in any mode).
+ * No standalone select button is rendered - it was removed to reclaim the
+ * horizontal space it took beside each (already narrow) tracker card; selection
+ * relies on the long-press gesture instead.
  *
  * @param tracker - The tracker rendered in this chip (carries `trackerType` for group-scoped reorder).
- * @param isSelected - Whether this tracker is the toolbelt's selected tracker.
- * @param onSelect - Called with the tracker id on long-press or the select button (select/deselect toggle).
- * @param isLeftHanded - Mirrors the grip handle and select button to the left edge when true.
+ * @param isSelected - Whether this tracker is the toolbelt's selected tracker (drives the body's selection visual).
+ * @param onSelect - Called with the tracker id on long-press (select/deselect toggle).
+ * @param isLeftHanded - Places the grip handle on the handedness-leading edge: right for right-handed (default), left when true.
  * @param dragEnabled - Shows the handle and enables dragging when true.
  * @param children - The tracker card to render inside the selectable body.
  */
@@ -79,22 +79,8 @@ export default function MobileSortableTracker({
 			disabled={!dragEnabled}
 		>
 			{({ dragAttributes, dragListeners, isBeingDragged }) => (
-				<DragLayoutWrapper isBeingDragged={isBeingDragged}>
-					<div className={cn("flex items-center gap-1", isLeftHanded && "flex-row-reverse")}>
-						{/* Select button: always-present fallback for long-press-select */}
-						<button
-							type="button"
-							aria-label={t('MobileGestureHints.selectTracker', { defaultValue: 'Select tracker for actions' })}
-							aria-pressed={isSelected}
-							onClick={() => onSelect(tracker.id)}
-							className={cn(
-								"flex shrink-0 items-center justify-center h-11 w-11",
-								isSelected ? "text-primary" : "text-muted-foreground"
-							)}
-						>
-							{isSelected ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-						</button>
-
+				<DragStaticWrapper isBeingDragged={isBeingDragged}>
+					<div className={cn("flex items-center gap-1", !isLeftHanded && "flex-row-reverse")}>
 						{dragEnabled && (
 							// Keep a drag (which sweeps the finger across the trackers area) from
 							// being read as a trackers-area edge-swipe that opens the toolbelt:
@@ -126,7 +112,7 @@ export default function MobileSortableTracker({
 							{children}
 						</SelectableTracker>
 					</div>
-				</DragLayoutWrapper>
+				</DragStaticWrapper>
 			)}
 		</Sortable>
 	);

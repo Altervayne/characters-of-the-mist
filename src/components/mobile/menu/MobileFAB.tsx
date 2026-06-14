@@ -53,6 +53,9 @@ export default function MobileFAB({
 	// On the cards tab (collapsed), the FAB rides above the card navigation bar.
 	const isCardsFab = !isExpanded && activeTab === 'sheet' && sheetActiveTab === 'cards';
 
+	// On the drawer tab (collapsed), the FAB rides above the drawer's bottom toolbar.
+	const isDrawerFab = !isExpanded && activeTab === 'drawer';
+
 	const toggleExpanded = () => {
 		const newValue = !isExpanded;
 		setInternalIsExpanded(newValue);
@@ -155,12 +158,13 @@ export default function MobileFAB({
 			{!isToolbeltOpen && (
 				<motion.div
 					className={cn(
+						// Single resting inset on every tab. The card yields room for the FAB
+						// on the cards tab (see MobileCardArea's FAB_CLEARANCE_SHIFT) instead of
+						// the FAB hopping inward here, so it no longer shifts between tabs.
 						"fixed layer-panel",
-						isCardsFab
-							? isLeft ? "left-2" : "right-2"
-							: isLeft ? "left-4" : "right-4"
+						isLeft ? "left-4" : "right-4"
 					)}
-					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: isCardsFab }) }}
+					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: isCardsFab, clearsDrawerToolbar: isDrawerFab }) }}
 					whileTap={{ scale: 0.95 }}
 					data-tutorial="mobile-fab"
 				>

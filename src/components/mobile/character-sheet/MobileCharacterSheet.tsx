@@ -244,7 +244,7 @@ export default function MobileCharacterSheet({
 							<MobileCardArea
 								cards={character.cards}
 								currentIndex={safeCardIndex}
-								isMobileFABMode={isMobileFABMode}
+								isLeftHanded={isLeftHanded}
 								touchHandlers={cardAreaHandlers}
 								onOpenAddCard={onOpenAddCard}
 							/>
@@ -260,6 +260,7 @@ export default function MobileCharacterSheet({
 								onNext={() => setCurrentCardIndex(i => Math.min(character.cards.length - 1, i + 1))}
 								onSelectCard={(index) => setCurrentCardIndex(index)}
 								onFlip={() => { triggerHaptic(); flipCard(character.cards[safeCardIndex].id); }}
+								onReorder={() => { triggerHaptic(); setIsReorderingCards(true); }}
 								touchHandlers={navBarHandlers}
 							/>
 						)}
@@ -294,6 +295,7 @@ export default function MobileCharacterSheet({
 			{!isMobileFABMode && !isReorderingCards && !isToolbeltOpen && (
 				<MobileToolbeltTrigger
 					isLeftHanded={isLeftHanded}
+					isCardsTab={activeTab === 'cards'}
 					onOpen={() => handleToolbeltOpenChange(true)}
 				/>
 			)}

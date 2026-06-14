@@ -124,6 +124,8 @@
    "Drawer": {
       "title": "Tiroir",
       "toggleView": "Change la vue des Objets du tiroir entre prévisualisation riche et liste simple",
+      "close": "Fermer le tiroir",
+      "backToRoot": "Retour à la racine",
 
       "root": "Racine",
       "empty": "Vide",
@@ -317,6 +319,12 @@
          "right": "Droite"
       },
 
+      "gestureHints": {
+         "title": "Astuces gestuelles",
+         "shown": "Affichées",
+         "hidden": "Masquées"
+      },
+
       "toolbeltMode": {
          "title": "Mode Ceinture d'Outils",
          "sidePanel": "Panneau Latéral",
@@ -386,10 +394,14 @@
 
       "pageCounterLabel": "Page",
 
+      "previousNote": "Patch note précédente",
+      "nextNote": "Patch note suivante",
+
       "close": "Fermer"
    },
    "MigrationDialog": {
       "title": "Migrer des anciennes données de personnage",
+      "removeFile": "Retirer le fichier",
       "description": "Ici, vous pouvez migrer des données de personnage provenant de la version alpha de Characters in the Mist, vers la nouvelle version. Le Migrateur déposera les fichiers à jour à la racine de votre Tiroir.",
       "thankYou": "Si vous êtes ici, vous avez probablement utilisé la version alpha de Characters of the Mist. Je souhaite vous remercier personnellement d'utiliser mon application malgré ses nombreux défauts. Amicalement,",
 
@@ -1132,7 +1144,21 @@
          "done": "Terminé"
       }
    },
+   "MobileCardNavigationBar": {
+      "swipeHint": "Glissez pour naviguer",
+      "previousCard": "Carte précédente",
+      "nextCard": "Carte suivante",
+      "goToCard": "Aller à la carte {{number}}"
+   },
+   "MobileGestureHints": {
+      "trackerLongPress": "Astuce : appuyez longuement sur un tracker (ou utilisez son bouton de sélection) pour le sélectionner dans la ceinture à outils.",
+      "drawerLongPress": "Astuce : appuyez longuement sur un élément (ou touchez son bouton ⋯) pour plus d'options.",
+      "selectTracker": "Sélectionner le tracker pour les actions"
+   },
    "Common": {
-      "dragHandle": "Glisser pour réorganiser"
+      "dragHandle": "Glisser pour réorganiser",
+      "moreOptions": "Plus d'options",
+      "back": "Retour",
+      "name": "Nom"
    }
 }

@@ -7,7 +7,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
 
 // -- DnD Component Imports --
-import { Sortable, DragLayoutWrapper } from '@/components/dnd';
+import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
 // -- Icon Imports --
 import { GripVertical } from 'lucide-react';
@@ -21,6 +21,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getFloatingContentPadding } from '@/lib/utils/mobileFloating';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
@@ -72,10 +73,16 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, on
 	};
 
 	return (
-		<div className={cn("flex-1 overflow-y-auto p-4", isMobileFABMode && "pb-32")}>
-			<div className="max-w-2xl mx-auto space-y-4">
+		<div
+			className="flex-1 overflow-y-auto p-3"
+			// In FAB mode the floating "Done" button rests over this list at the base
+			// floating offset; derive the bottom clearance from the same system rather
+			// than a fixed pb-32 so the last card scrolls clear of it.
+			style={isMobileFABMode ? { paddingBottom: getFloatingContentPadding() } : undefined}
+		>
+			<div className="max-w-2xl mx-auto space-y-3">
 				{/* Header */}
-				<div className="flex items-center justify-center mb-4 sticky top-0 bg-background z-10 pb-2">
+				<div className="flex items-center justify-center mb-2 sticky top-0 bg-background z-10 pb-2">
 					<h2 className="text-lg font-semibold">{t('MobileCharacterSheet.reorderCards')}</h2>
 				</div>
 
@@ -85,7 +92,7 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, on
 						{cards.map((card, index) => (
 							<Sortable key={card.id} id={card.id} data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}>
 								{({ dragAttributes, dragListeners, isBeingDragged }) => (
-									<DragLayoutWrapper isBeingDragged={isBeingDragged}>
+									<DragStaticWrapper isBeingDragged={isBeingDragged}>
 										<div
 											className={cn(
 												"flex items-center gap-3 p-3 bg-card border border-border rounded-lg",
@@ -115,7 +122,7 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, on
 												<GripVertical className="h-6 w-6" />
 											</button>
 										</div>
-									</DragLayoutWrapper>
+									</DragStaticWrapper>
 								)}
 							</Sortable>
 						))}

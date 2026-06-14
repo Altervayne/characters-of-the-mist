@@ -45,7 +45,7 @@ export function PipTracker({ label, value, onUpdate, maxPips = 3, flexDir = "fle
                />
             ))}
          </div>
-         {label && <span className="text-xs font-semibold uppercase">{t(label)}</span>}
+         {label && <span className="text-xs font-semibold uppercase">{t(`PipTracker.${label}`)}</span>}
       </div>
    );
 }

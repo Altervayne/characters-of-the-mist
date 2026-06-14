@@ -26,6 +26,7 @@ import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSett
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getFloatingContentPadding } from '@/lib/utils/mobileFloating';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
@@ -79,7 +80,7 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 
 	useEffect(() => {
 		if (areGestureHintsEnabled && !hasSeenTrackerSelectHint) {
-			toast(t('MobileGestureHints.trackerLongPress', { defaultValue: 'Tip: press and hold a tracker (or use its select button) to select it for the toolbelt.' }));
+			toast(t('MobileGestureHints.trackerLongPress'));
 			setHasSeenTrackerSelectHint(true);
 		}
 	}, [areGestureHintsEnabled, hasSeenTrackerSelectHint, setHasSeenTrackerSelectHint, t]);
@@ -87,18 +88,23 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 	return (
 		<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 		<div
-			className={cn("h-full overflow-y-auto p-4", isMobileFABMode && "pb-32")}
+			className="h-full overflow-y-auto p-3"
+			// In FAB mode the resting FAB cluster (toolbelt FAB at stagger 1 is the
+			// tallest) floats over this scroll area; derive the bottom clearance from
+			// the same floating system instead of a fixed pb-32, so trackers always
+			// scroll clear of the FAB.
+			style={isMobileFABMode ? { paddingBottom: getFloatingContentPadding({ stagger: 1 }) } : undefined}
 			data-tutorial="trackers-section"
 			{...touchHandlers}
 		>
-			<div className="max-w-7xl mx-auto space-y-6">
+			<div className="max-w-7xl mx-auto space-y-4">
 				{/* Statuses Section */}
 				{(character.trackers.statuses.length > 0 || areTrackersEditable) && (
 				<section>
-					<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+					<h3 className="text-sm font-semibold text-muted-foreground mb-2 text-center">
 						{t('MobileCharacterSheet.statuses')}
 					</h3>
-					<div className="flex flex-wrap justify-center gap-3">
+					<div className="flex flex-wrap justify-center gap-2">
 						<SortableContext items={statusIds} strategy={rectSortingStrategy}>
 							{character.trackers.statuses.map((tracker) => (
 								<MobileSortableTracker
@@ -122,7 +128,10 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 								variant="ghost"
 								onClick={onAddStatus}
 								className={cn(
-									"w-55 h-25 border-2 border-dashed border-primary/25",
+									// Compact add affordance: a self-sizing ≥44px pill, not a full
+									// card-sized placeholder. `self-center` keeps the flex row from
+									// stretching it to the neighbouring tracker card's height.
+									"h-14 px-4 self-center border-2 border-dashed border-primary/25",
 									"text-muted-foreground bg-primary/5",
 									"hover:text-foreground hover:border-foreground",
 									"flex items-center justify-center gap-2"
@@ -139,10 +148,10 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 				{/* Story Tags Section */}
 				{(character.trackers.storyTags.length > 0 || areTrackersEditable) && (
 				<section>
-					<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+					<h3 className="text-sm font-semibold text-muted-foreground mb-2 text-center">
 						{t('MobileCharacterSheet.storyTags')}
 					</h3>
-					<div className="flex flex-wrap justify-center gap-3">
+					<div className="flex flex-wrap justify-center gap-2">
 						<SortableContext items={storyTagIds} strategy={rectSortingStrategy}>
 							{character.trackers.storyTags.map((tracker) => (
 								<MobileSortableTracker
@@ -166,7 +175,7 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 								variant="ghost"
 								onClick={onAddStoryTag}
 								className={cn(
-									"w-55 min-h-13.75 py-2 border-2 border-dashed border-primary/25",
+									"h-14 px-4 self-center border-2 border-dashed border-primary/25",
 									"text-muted-foreground bg-primary/5",
 									"hover:text-foreground hover:border-foreground",
 									"flex items-center justify-center gap-2"
@@ -183,10 +192,10 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 				{/* Story Themes Section */}
 				{(character.trackers.storyThemes.length > 0 || areTrackersEditable) && (
 				<section>
-					<h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+					<h3 className="text-sm font-semibold text-muted-foreground mb-2 text-center">
 						{t('MobileCharacterSheet.storyThemes')}
 					</h3>
-					<div className="flex flex-wrap justify-center gap-3">
+					<div className="flex flex-wrap justify-center gap-2">
 						<SortableContext items={storyThemeIds} strategy={rectSortingStrategy}>
 							{character.trackers.storyThemes.map((tracker) => (
 								<MobileSortableTracker
@@ -210,7 +219,7 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 								variant="ghost"
 								onClick={onAddStoryTheme}
 								className={cn(
-									"w-62.5 h-55 border-2 border-dashed border-primary/25",
+									"h-14 px-4 self-center border-2 border-dashed border-primary/25",
 									"text-muted-foreground bg-primary/5",
 									"hover:text-foreground hover:border-foreground",
 									"flex items-center justify-center gap-2"

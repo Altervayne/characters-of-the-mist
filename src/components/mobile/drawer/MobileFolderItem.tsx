@@ -52,7 +52,7 @@ interface MobileFolderItemProps {
  * @param folder - The folder to render.
  * @param onNavigate - Called with the folder id when the body is tapped.
  * @param onLongPress - Called with the folder id, name, and a screen position to anchor the context menu (long-press or overflow button).
- * @param isLeftHanded - Mirrors the grip handle to the left edge when true.
+ * @param isLeftHanded - Places the grip on the handedness-leading edge: right for right-handed (default), left when true.
  */
 export default function MobileFolderItem({
 	folder,
@@ -77,8 +77,13 @@ export default function MobileFolderItem({
 				<DragStaticWrapper isBeingDragged={isBeingDragged}>
 					<div
 						className={cn(
-							"flex items-center rounded-lg border border-border bg-card overflow-hidden",
-							isLeftHanded && "flex-row-reverse"
+							"flex items-center rounded-lg border border-border bg-card overflow-hidden transition-all",
+							// Controls sit on the handedness-leading edge: grip leads (right for
+							// right-handed, left for left-handed), overflow on the trailing edge.
+							!isLeftHanded && "flex-row-reverse",
+							// Press feedback lives on the whole row so grip, body, and overflow
+							// animate as one unit.
+							isPressing && "scale-[0.98] bg-muted"
 						)}
 					>
 						{/* Drag handle (≥44px touch target) */}
@@ -100,11 +105,9 @@ export default function MobileFolderItem({
 						<div
 							{...handlers}
 							className={cn(
-								"flex flex-1 min-w-0 items-center gap-3 p-3 transition-all",
-								"active:scale-[0.98] cursor-pointer",
-								isPressing && "bg-muted scale-[0.98]"
+								"flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11 transition-all",
+								"active:scale-[0.98] cursor-pointer"
 							)}
-							style={{ minHeight: '60px' }} // Ensure adequate touch target
 						>
 							<div className="shrink-0">
 								<Folder className="w-6 h-6 text-primary" />
@@ -121,7 +124,7 @@ export default function MobileFolderItem({
 						{/* Overflow button: always-present fallback for the long-press menu */}
 						<button
 							type="button"
-							aria-label={t('Common.moreOptions', { defaultValue: 'More options' })}
+							aria-label={t('Common.moreOptions')}
 							onClick={(event) => {
 								const rect = event.currentTarget.getBoundingClientRect();
 								onLongPress(folder.id, folder.name, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });

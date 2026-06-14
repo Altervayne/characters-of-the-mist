@@ -207,7 +207,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                            <File className="h-5 w-5 shrink-0" />
                            <span className="font-mono text-sm truncate" title={file.name}>{file.name}</span>
                            </div>
-                           <Button variant="ghost" size="icon" title="Remove file" onClick={() => handleRemoveFile(file)}>
+                           <Button variant="ghost" size="icon" title={t('MigrationDialog.removeFile')} onClick={() => handleRemoveFile(file)}>
                            <X className="h-4 w-4" />
                            </Button>
                         </div>

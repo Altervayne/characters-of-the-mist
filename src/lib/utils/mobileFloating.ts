@@ -3,12 +3,26 @@
 /** Bottom tab bar height, matching MobileBottomTabs' `h-16`. Present only in
  *  side-panel nav mode; FAB mode replaces the tab bar with the FAB itself. */
 const BOTTOM_NAV_HEIGHT_REM = 4;
-/** Extra clearance for the card navigation bar shown at the bottom of the cards tab. */
-const CARDS_NAV_BAR_REM = 2.5;
+/** Height of the card navigation bar shown at the bottom of the cards tab, so a
+ *  FAB on that tab rides above it instead of sinking into it. The bar (see
+ *  `MobileCardNavigationBar`) is `py-1.5` around a single row whose tallest cell is
+ *  the title/dots column - the card title, a 24px row of compact card-indicator
+ *  pills, and (when gesture tips are on) a swipe hint - about 4.25rem tall with the
+ *  hint. That value clears the bar with the base gap (~1rem) on top. Excludes the
+ *  safe-area inset, which {@link getFloatingBottom} adds separately. */
+const CARDS_NAV_BAR_REM = 4.25;
+/** Height of the drawer's in-flow bottom toolbar (its `py-2` padding plus a 44px
+ *  icon-button row = 60px). Lets a FAB on the drawer tab ride above the toolbar in
+ *  FAB mode. Excludes the safe-area inset, which {@link getFloatingBottom} adds
+ *  separately, so it is not double-counted against the toolbar's own `pb-safe`. */
+const DRAWER_TOOLBAR_HEIGHT_REM = 3.75;
 /** Gap from the bottom chrome (or the screen edge in FAB mode) up to the first cluster. */
 const FLOATING_BASE_GAP_REM = 1;
 /** Vertical separation between two floating clusters that share one screen edge. */
 const FLOATING_STAGGER_REM = 3;
+/** Height of a floating FAB; the primaries are `h-11` (44px). Used to extend a
+ *  scroll surface's bottom padding past the FAB's top edge. */
+const FAB_SIZE_REM = 2.75;
 
 
 
@@ -17,6 +31,8 @@ interface FloatingBottomConfig {
 	hasBottomNav?: boolean;
 	/** Add the card navigation bar's height to the offset (cards tab). */
 	clearsCardsNavBar?: boolean;
+	/** Add the drawer's bottom-toolbar height to the offset (drawer tab, FAB mode). */
+	clearsDrawerToolbar?: boolean;
 	/** This control's index in the stack of clusters sharing the edge (0 = nearest the edge). */
 	stagger?: number;
 	/** One-off additional clearance in rem (e.g. an expanded action list floating above its own FAB). */
@@ -29,8 +45,8 @@ interface FloatingBottomConfig {
  * whatever bottom chrome sits beneath it, and is staggered far enough from any
  * other cluster on the same edge that the two never overlap in any configuration.
  *
- * The offset is `bottom-nav height + card-nav-bar height + base gap +
- * stagger × stagger-step`, all in rem, plus `env(safe-area-inset-bottom)` (the
+ * The offset is `bottom-nav height + card-nav-bar height + drawer-toolbar height +
+ * base gap + stagger × stagger-step`, all in rem, plus `env(safe-area-inset-bottom)` (the
  * same inset Prompt 1's `pb-safe` utility applies, made non-zero by the
  * `viewport-fit=cover` viewport). Callers describe their situation declaratively
  * (which bottom chrome is present, and their stagger index) rather than hard-coding
@@ -48,15 +64,36 @@ interface FloatingBottomConfig {
 export function getFloatingBottom({
 	hasBottomNav = false,
 	clearsCardsNavBar = false,
+	clearsDrawerToolbar = false,
 	stagger = 0,
 	extraRem = 0,
 }: FloatingBottomConfig = {}): string {
 	const offsetRem =
 		(hasBottomNav ? BOTTOM_NAV_HEIGHT_REM : 0) +
 		(clearsCardsNavBar ? CARDS_NAV_BAR_REM : 0) +
+		(clearsDrawerToolbar ? DRAWER_TOOLBAR_HEIGHT_REM : 0) +
 		FLOATING_BASE_GAP_REM +
 		stagger * FLOATING_STAGGER_REM +
 		extraRem;
 
 	return `calc(${offsetRem}rem + env(safe-area-inset-bottom))`;
+}
+
+/**
+ * Computes the `padding-bottom` (a CSS `calc()` string) a scrollable mobile
+ * surface needs so its last item can scroll clear of a floating FAB cluster that
+ * rests over it, instead of hiding behind it.
+ *
+ * It is {@link getFloatingBottom} (the cluster's bottom offset, already including
+ * the base gap and `env(safe-area-inset-bottom)`) plus the FAB's own height, so the
+ * content scrolls to just above the FAB's top edge. Callers pass the same
+ * {@link FloatingBottomConfig} their surface's FAB uses, so the padding tracks the
+ * FAB through every configuration rather than a hard-coded `pb-*` magic value that
+ * drifts whenever the FAB moves (for example when the cards tab grew its nav bar).
+ *
+ * @param config - The same chrome/stagger description passed to the surface's FAB.
+ * @returns A `calc(...)` string suitable for an inline `style={{ paddingBottom }}`.
+ */
+export function getFloatingContentPadding(config: FloatingBottomConfig = {}): string {
+	return `calc(${getFloatingBottom(config)} + ${FAB_SIZE_REM}rem)`;
 }

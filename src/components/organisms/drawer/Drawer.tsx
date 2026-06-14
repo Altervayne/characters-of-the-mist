@@ -141,7 +141,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                               <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.toggleView')} data-tour="drawer-rich-view-toggle">
                                  {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
                               </div>
-                              <div onClick={() => setDrawerOpen(false)} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label="Close drawer">
+                              <div onClick={() => setDrawerOpen(false)} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.close')}>
                                  <PanelRightClose className="h-6 w-6" />
                               </div>
                            </div>
@@ -149,7 +149,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
 
                         {breadcrumbPath.length > 0 && (
                            <div className="flex items-center gap-2 mt-2">
-                              <div onClick={() => navigateToFolder(null)} className="rounded p-1 hover:bg-muted cursor-pointer shrink-0" role="button" aria-label="Back to root">
+                              <div onClick={() => navigateToFolder(null)} className="rounded p-1 hover:bg-muted cursor-pointer shrink-0" role="button" aria-label={t('Drawer.backToRoot')}>
                                  <ArrowUpToLine className="h-4 w-4" />
                               </div>
                               <Breadcrumb path={breadcrumbPath} onNavigate={navigateToFolder} />

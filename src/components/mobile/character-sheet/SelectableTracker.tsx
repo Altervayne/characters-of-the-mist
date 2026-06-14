@@ -32,11 +32,14 @@ export default function SelectableTracker({
 
 	return (
 		<div className="relative" {...handlers}>
-			{/* Tracker content with selection visual feedback */}
+			{/* Tracker content with selection visual feedback. The dashed border is
+			    always present but transparent by default, so selecting only fades its
+			    colour in (a smooth border-color transition) rather than animating the
+			    border width from 0 - which was choppy and shifted the layout by 2px. */}
 			<div
 				className={cn(
-					"transition-all duration-200 rounded-lg",
-					isSelected && "border-2 border-dashed border-primary",
+					"transition-all duration-200 rounded-lg border-2 border-dashed",
+					isSelected ? "border-primary" : "border-transparent",
 					isPressing && "opacity-80"
 				)}
 			>

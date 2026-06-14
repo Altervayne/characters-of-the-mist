@@ -98,7 +98,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
             <IconButton
                onClick={goToPrevious} 
                disabled={currentIndex === totalNotes - 1}
-               aria-label="Previous patch note"
+               aria-label={t('PatchNotesDialog.previousNote')}
                className={cn(
                   "absolute -left-14 top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
                )}
@@ -113,7 +113,7 @@ export function PatchNotesDialog({ isOpen, onOpenChange }: PatchNotesDialogProps
             <IconButton 
                onClick={goToNext} 
                disabled={currentIndex === 0}
-               aria-label="Next patch note"
+               aria-label={t('PatchNotesDialog.nextNote')}
                className={cn(
                   "absolute -right-14 top-1/2 -translate-y-1/2 h-10 w-10 transition-all duration-200 ease-in-out cursor-pointer",
                )}

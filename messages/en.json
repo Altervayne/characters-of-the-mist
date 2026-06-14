@@ -124,6 +124,8 @@
    "Drawer": {
       "title": "Drawer",
       "toggleView": "Toggle view mode between rich preview and list entry for Drawer Items",
+      "close": "Close drawer",
+      "backToRoot": "Back to root",
 
       "root": "Root",
       "empty": "Empty",
@@ -317,6 +319,12 @@
          "right": "Right"
       },
 
+      "gestureHints": {
+         "title": "Gesture tips",
+         "shown": "Shown",
+         "hidden": "Hidden"
+      },
+
       "toolbeltMode": {
          "title": "Toolbelt Mode",
          "sidePanel": "Side Panel",
@@ -386,10 +394,14 @@
 
       "pageCounterLabel": "Page",
 
+      "previousNote": "Previous patch note",
+      "nextNote": "Next patch note",
+
       "close": "Close"
    },
    "MigrationDialog": {
       "title": "Migrate legacy character data",
+      "removeFile": "Remove file",
       "description": "Here, you can migrate legacy character files from the alpha version of Characters of the Mist to the new, polished version. The Migrator will place the updated files at the root of your Drawer.",
       "thankYou": "If you are here, you most likely used the alpha version of Characters of the Mist. I would like to personally thank you for using my app, despite its many flaws. Much love,",
 
@@ -1138,7 +1150,21 @@
          "done": "Done"
       }
    },
+   "MobileCardNavigationBar": {
+      "swipeHint": "Swipe to navigate",
+      "previousCard": "Previous card",
+      "nextCard": "Next card",
+      "goToCard": "Go to card {{number}}"
+   },
+   "MobileGestureHints": {
+      "trackerLongPress": "Tip: press and hold a tracker (or use its select button) to select it for the toolbelt.",
+      "drawerLongPress": "Tip: press and hold an item (or tap its ⋯ button) for more options.",
+      "selectTracker": "Select tracker for actions"
+   },
    "Common": {
-      "dragHandle": "Drag to reorder"
+      "dragHandle": "Drag to reorder",
+      "moreOptions": "More options",
+      "back": "Back",
+      "name": "Name"
    }
 }

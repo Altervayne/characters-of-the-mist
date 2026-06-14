@@ -253,17 +253,17 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 
 					{/* Gesture Tips */}
 					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.gestureHints.title', { defaultValue: 'Gesture tips' })}
+						label={t('SettingsDialog.gestureHints.title')}
 						options={[
 							{
 								icon: <Eye className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.gestureHints.shown', { defaultValue: 'Shown' }),
+								label: t('SettingsDialog.gestureHints.shown'),
 								isActive: areGestureHintsEnabled,
 								onSelect: () => setGestureHintsEnabled(true),
 							},
 							{
 								icon: <EyeOff className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.gestureHints.hidden', { defaultValue: 'Hidden' }),
+								label: t('SettingsDialog.gestureHints.hidden'),
 								isActive: !areGestureHintsEnabled,
 								onSelect: () => setGestureHintsEnabled(false),
 							},

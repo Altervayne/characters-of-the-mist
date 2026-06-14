@@ -32,7 +32,7 @@ export function MobileCharacterSheetTabBar({ activeTab, onTabChange, cardCount }
 				onClick={() => onTabChange('trackers')}
 				data-tutorial="trackers-tab"
 				className={cn(
-					"flex-1 px-4 py-3 text-sm font-medium transition-colors",
+					"flex-1 px-3 py-3 text-sm font-medium transition-colors",
 					"border-b-2",
 					activeTab === 'trackers'
 						? "border-primary text-primary bg-primary/5"
@@ -45,7 +45,7 @@ export function MobileCharacterSheetTabBar({ activeTab, onTabChange, cardCount }
 				onClick={() => onTabChange('cards')}
 				data-tutorial="cards-tab"
 				className={cn(
-					"flex-1 px-4 py-3 text-sm font-medium transition-colors",
+					"flex-1 px-3 py-3 text-sm font-medium transition-colors",
 					"border-b-2",
 					activeTab === 'cards'
 						? "border-primary text-primary bg-primary/5"

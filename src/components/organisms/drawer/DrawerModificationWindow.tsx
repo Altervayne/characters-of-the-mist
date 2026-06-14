@@ -116,7 +116,7 @@ export const DrawerModificationWindow = React.forwardRef<HTMLInputElement, Drawe
             </div>
             {!isDelete ? (
                <form onSubmit={handleSubmit}>
-                  <Label htmlFor="item-name" className="sr-only">Name</Label>
+                  <Label htmlFor="item-name" className="sr-only">{t('Common.name')}</Label>
                   <Input ref={ref} id="item-name" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
                </form>
             ) : (

@@ -11,7 +11,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, ArrowUpDown } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -30,6 +30,7 @@ interface MobileCardNavigationBarProps {
 	onNext: () => void;
 	onSelectCard: (index: number) => void;
 	onFlip: () => void;
+	onReorder: () => void;
 	touchHandlers: { onTouchStart: (event: TouchEvent) => void; onTouchEnd: (event: TouchEvent) => void };
 }
 
@@ -43,18 +44,21 @@ interface MobileCardNavigationBarProps {
  * Touch targets follow the ≥44px guideline: the prev/next arrows are 44px, and
  * each ~6px dot keeps its small visual but sits inside an invisible 44px hit area
  * (the dot row wraps when a character has enough cards to overflow one line). The
- * flip control is placed on the handedness-leading side (left for left-handed,
- * right otherwise) so it stays thumb-reachable while the prev/next steppers remain
- * at the outer edges. Flip toggles the current card's face via the sheet's
- * `onFlip`; note that for a card whose effective view mode is side-by-side this is
- * a visual no-op (both faces already show), matching the prior edge-swipe-flip
- * semantics.
+ * flip and reorder controls are grouped on the handedness-leading side (left for
+ * left-handed, right otherwise) so they stay thumb-reachable while the prev/next
+ * steppers remain at the outer edges. Flip toggles the current card's face via the
+ * sheet's `onFlip`; note that for a card whose effective view mode is side-by-side
+ * this is a visual no-op (both faces already show), matching the prior
+ * edge-swipe-flip semantics. Reorder (`onReorder`) enters the card drag-reorder
+ * mode - the same action the toolbelt exposes, surfaced here as a discoverable
+ * front door - and is shown only when there is more than one card to reorder.
  */
-export function MobileCardNavigationBar({ cards, safeCardIndex, isLeftHanded, onPrevious, onNext, onSelectCard, onFlip, touchHandlers }: MobileCardNavigationBarProps) {
+export function MobileCardNavigationBar({ cards, safeCardIndex, isLeftHanded, onPrevious, onNext, onSelectCard, onFlip, onReorder, touchHandlers }: MobileCardNavigationBarProps) {
 	const { t } = useTranslation();
 	const areGestureHintsEnabled = useAppSettingsStore((state) => state.areGestureHintsEnabled);
 
-	// The explicit flip control, placed on the handedness-leading side.
+	// The explicit flip + reorder controls, grouped on the handedness-leading side
+	// so the two most-used card actions stay thumb-reachable next to the dot row.
 	const flipButton = (
 		<IconButton
 			variant="outline"
@@ -67,9 +71,30 @@ export function MobileCardNavigationBar({ cards, safeCardIndex, isLeftHanded, on
 		</IconButton>
 	);
 
+	// Reorder is also available in the toolbelt; this is its discoverable front
+	// door, shown only when there is more than one card to reorder.
+	const reorderButton = cards.length > 1 ? (
+		<IconButton
+			variant="outline"
+			size="sm"
+			onClick={onReorder}
+			aria-label={t('Toolbelt.reorderCards')}
+			className="h-11 w-11 shrink-0"
+		>
+			<ArrowUpDown className="h-5 w-5" />
+		</IconButton>
+	) : null;
+
+	const leadingControls = (
+		<>
+			{flipButton}
+			{reorderButton}
+		</>
+	);
+
 	return (
 		<div
-			className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-card border-t border-border"
+			className="shrink-0 flex items-center justify-between gap-2 px-3 py-1.5 bg-card border-t border-border"
 			{...touchHandlers}
 			data-tutorial="card-navigation-bar"
 		>
@@ -78,28 +103,31 @@ export function MobileCardNavigationBar({ cards, safeCardIndex, isLeftHanded, on
 				size="sm"
 				onClick={onPrevious}
 				disabled={safeCardIndex === 0}
-				aria-label="Previous card"
+				aria-label={t('MobileCardNavigationBar.previousCard')}
 				className="h-11 w-11 shrink-0"
 			>
 				<ChevronLeft className="h-5 w-5" />
 			</IconButton>
 
-			{isLeftHanded && flipButton}
+			{isLeftHanded && leadingControls}
 
-			<div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1">
+			<div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5">
 				{/* Card Title */}
 				<span className="text-xs font-medium truncate max-w-full text-center">
 					{deriveCardTitle(cards[safeCardIndex], t)}
 				</span>
 
-				{/* Dot Indicators - small dot visual inside a 44px hit area */}
+				{/* Dot Indicators - compact pills packed together and centred between the
+				    arrows. The hit area is deliberately smaller than the 44px guideline
+				    (the prev/next arrows remain the primary, full-size navigation) so the
+				    pills read as one tidy row rather than being spread across wide boxes. */}
 				<div className="flex flex-wrap items-center justify-center gap-0.5">
 					{cards.map((_, index) => (
 						<button
 							key={index}
 							onClick={() => onSelectCard(index)}
-							className="flex h-11 w-11 shrink-0 items-center justify-center"
-							aria-label={`Go to card ${index + 1}`}
+							className="flex h-6 w-4 shrink-0 items-center justify-center"
+							aria-label={t('MobileCardNavigationBar.goToCard', { number: index + 1 })}
 						>
 							<span
 								className={cn(
@@ -117,19 +145,19 @@ export function MobileCardNavigationBar({ cards, safeCardIndex, isLeftHanded, on
 				    when navigation is possible. Unobtrusive and non-interactive. */}
 				{areGestureHintsEnabled && cards.length > 1 && (
 					<span className="text-[10px] leading-none text-muted-foreground/70 pointer-events-none">
-						{t('MobileCardNavigationBar.swipeHint', { defaultValue: 'Swipe to navigate' })}
+						{t('MobileCardNavigationBar.swipeHint')}
 					</span>
 				)}
 			</div>
 
-			{!isLeftHanded && flipButton}
+			{!isLeftHanded && leadingControls}
 
 			<IconButton
 				variant="outline"
 				size="sm"
 				onClick={onNext}
 				disabled={safeCardIndex === cards.length - 1}
-				aria-label="Next card"
+				aria-label={t('MobileCardNavigationBar.nextCard')}
 				className="h-11 w-11 shrink-0"
 			>
 				<ChevronRight className="h-5 w-5" />

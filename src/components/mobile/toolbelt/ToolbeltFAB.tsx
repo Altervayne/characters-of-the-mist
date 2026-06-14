@@ -146,10 +146,14 @@ export default function ToolbeltFAB({
 								onScroll={handleScroll}
                         onPointerDown={handleRingPointerDown}
                         onClick={handleRingClick}
-								className={cn(
-									"fixed top-0 layer-panel h-[calc(100vh-5rem)] w-64 overflow-y-auto overflow-x-visible scrollbar-hide perspective-1000",
-									isLeft ? "left-4" : "right-4"
-								)}
+								// Full-width so labels are never clipped: an element with
+								// `overflow-y-auto` forces its `overflow-x` to compute to `auto`
+								// too (per spec), so the old `w-64` + `overflow-x-visible` clipped
+								// any label wider than 16rem. Spanning the viewport (with `px-4`
+								// edge insets) keeps vertical scroll and thumb-zone scaling intact
+								// while giving labels the whole width to extend into; the inner
+								// `items-start`/`items-end` still anchors the rows to the handed edge.
+								className="fixed inset-x-0 top-0 px-4 layer-panel h-[calc(100vh-5rem)] overflow-y-auto scrollbar-hide perspective-1000"
 								style={{
                            paddingTop: `${THUMB_ZONE_Y}px`,
                            paddingBottom: `${(windowHeight - FAB_HEIGHT_OFFSET) - THUMB_ZONE_Y - ITEM_HEIGHT}px`,
@@ -213,9 +217,13 @@ export default function ToolbeltFAB({
 															<Icon className="h-5 w-5" />
 														</div>
 
-														{/* Action label */}
-														<div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg shrink-0">
-															<span className="text-sm font-medium whitespace-nowrap">
+														{/* Action label. Capped to the width left after the icon,
+														    gap, and the container's edge insets (44px icon + 12px
+														    gap + 2x16px px-4 = 5.5rem) and allowed to wrap, so even a
+														    pathologically long label or translation stays within the
+														    viewport instead of clipping. */}
+														<div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg shrink-0 max-w-[calc(100vw-5.5rem)]">
+															<span className="text-sm font-medium">
 																{action.label}
 															</span>
 														</div>
@@ -234,10 +242,11 @@ export default function ToolbeltFAB({
 			{!isMenuFABExpanded && (
 				<motion.div
 					className={cn(
+						// Single resting inset on every tab; the card yields room for the FAB
+						// on the cards tab (see MobileCardArea's FAB_CLEARANCE_SHIFT) instead of
+						// the FAB hopping inward here.
 						"fixed layer-panel",
-						!isOpen && activeTab === 'cards'
-							? isLeft ? "left-2" : "right-2"
-							: isLeft ? "left-4" : "right-4"
+						isLeft ? "left-4" : "right-4"
 					)}
 					// Stagger 1 keeps the toolbelt FAB clear of the navigation FAB (stagger 0)
 					// in FAB mode; both ride above the card nav bar on the cards tab.

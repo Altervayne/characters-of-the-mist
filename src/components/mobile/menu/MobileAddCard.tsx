@@ -154,7 +154,7 @@ export default function MobileAddCard({ onBack, onConfirm, mode, cardData, game 
 					variant="ghost"
 					size="sm"
 					onClick={onBack}
-					aria-label="Back"
+					aria-label={t('Common.back')}
 					className="h-8 w-8"
 				>
 					<ChevronLeft className="h-5 w-5" />

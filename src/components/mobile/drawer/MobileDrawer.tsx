@@ -13,7 +13,6 @@ import MobileFolderItem from '@/components/mobile/drawer/MobileFolderItem';
 import MobileDrawerItem from '@/components/mobile/drawer/MobileDrawerItem';
 import MobileDrawerContextMenu from '@/components/mobile/drawer/MobileDrawerContextMenu';
 import MobileAddFolderSheet from '@/components/mobile/drawer/MobileAddFolderSheet';
-import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 
 // -- Icon Imports --
@@ -78,7 +77,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
    useEffect(() => {
       if (areGestureHintsEnabled && !hasSeenDrawerMenuHint) {
-         toast(t('MobileGestureHints.drawerLongPress', { defaultValue: 'Tip: press and hold an item (or tap its ⋯ button) for more options.' }));
+         toast(t('MobileGestureHints.drawerLongPress'));
          setHasSeenDrawerMenuHint(true);
       }
    }, [areGestureHintsEnabled, hasSeenDrawerMenuHint, setHasSeenDrawerMenuHint, t]);
@@ -124,7 +123,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 		<div className="h-full flex flex-col bg-background" data-tutorial="drawer-content">
 			{/* Content */}
 			<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-				<div className="flex-1 overflow-y-auto p-4 space-y-2">
+				<div className="flex-1 overflow-y-auto p-3 space-y-2">
 					{!hasContent && (
 						<div className="h-full flex items-center justify-center text-center p-8">
 							<div>
@@ -152,7 +151,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
 					{/* Separator if both folders and items exist */}
 					{currentFolders.length > 0 && currentItems.length > 0 && (
-						<div className="border-t border-border my-4" />
+						<div className="border-t border-border my-2" />
 					)}
 
 					{/* Items */}
@@ -182,7 +181,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 			<div
 				data-tutorial="drawer-toolbar"
 				className={cn(
-					"flex items-center justify-between px-4 py-4 border-t border-border bg-card pb-safe",
+					"flex items-center justify-between px-3 py-2 border-t border-border bg-card pb-safe",
 					isLeftHanded ? "flex-row-reverse" : ""
 				)}
 			>
@@ -190,16 +189,17 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
                "flex items-center gap-2",
                isLeftHanded ? "flex-row-reverse" : ""
             )}>
-					{/* Add Folder */}
-               <Button
+					{/* Add Folder (icon-only to keep the toolbar within a narrow viewport) */}
+               <IconButton
 						variant="outline"
-						size="default"
+						size="lg"
 						onClick={handleAddFolder}
+						aria-label={t('Drawer.addFolder')}
+						title={t('Drawer.addFolder')}
 						className="cursor-pointer"
 					>
-						<FolderPlus className="w-4 h-4 mr-2" />
-						{t('Drawer.addFolder')}
-					</Button>
+						<FolderPlus className="w-5 h-5" />
+					</IconButton>
 
                {/* Import */}
 					<form ref={formRef} className="hidden">
