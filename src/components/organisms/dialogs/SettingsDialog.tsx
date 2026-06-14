@@ -101,9 +101,9 @@ function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description,
 
 
 
-// ####################################
+// ################################
 // ###   MAIN SETTINGS DIALOG   ###
-// ####################################
+// ################################
 
 interface SettingsDialogProps {
    isOpen: boolean;

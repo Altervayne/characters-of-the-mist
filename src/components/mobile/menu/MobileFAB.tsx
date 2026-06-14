@@ -16,6 +16,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getFloatingBottom } from '@/lib/utils/mobileFloating';
 
 type TabId = 'sheet' | 'drawer' | 'menu';
 type SheetTab = 'trackers' | 'cards';
@@ -48,6 +49,9 @@ export default function MobileFAB({
 	const isExpanded = controlledIsExpanded ?? internalIsExpanded;
 	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
 	const isLeft = mobileHandedness === 'left';
+
+	// On the cards tab (collapsed), the FAB rides above the card navigation bar.
+	const isCardsFab = !isExpanded && activeTab === 'sheet' && sheetActiveTab === 'cards';
 
 	const toggleExpanded = () => {
 		const newValue = !isExpanded;
@@ -101,17 +105,20 @@ export default function MobileFAB({
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.2 }}
-						className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+						className="fixed inset-0 bg-background/80 backdrop-blur-sm layer-backdrop"
 						onClick={toggleExpanded}
 					/>
 				)}
 			</AnimatePresence>
 
 			{/* Action Buttons */}
-			<div className={cn(
-				"fixed bottom-20 z-50 flex flex-col-reverse gap-3",
-				isLeft ? "left-4 items-start" : "right-4 items-end"
-			)}>
+			<div
+				className={cn(
+					"fixed layer-panel flex flex-col-reverse gap-3",
+					isLeft ? "left-4 items-start" : "right-4 items-end"
+				)}
+				style={{ bottom: getFloatingBottom({ extraRem: 4 }) }}
+			>
 				<AnimatePresence>
 					{isExpanded && actions.map((action, index) => {
 						const Icon = action.icon;
@@ -148,13 +155,12 @@ export default function MobileFAB({
 			{!isToolbeltOpen && (
 				<motion.div
 					className={cn(
-						"fixed z-50",
-						isExpanded
-							? isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
-							: activeTab === 'sheet' && sheetActiveTab === 'cards'
-								? isLeft ? "bottom-14 left-2" : "bottom-14 right-2"
-								: isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
+						"fixed layer-panel",
+						isCardsFab
+							? isLeft ? "left-2" : "right-2"
+							: isLeft ? "left-4" : "right-4"
 					)}
+					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: isCardsFab }) }}
 					whileTap={{ scale: 0.95 }}
 					data-tutorial="mobile-fab"
 				>
@@ -162,7 +168,7 @@ export default function MobileFAB({
 						variant="default"
 						size="lg"
 						onClick={toggleExpanded}
-						className="h-10 w-10 shadow-2xl"
+						className="h-11 w-11 shadow-2xl"
 						aria-label={isExpanded ? t('MobileFAB.close') : t('MobileFAB.open')}
 					>
 						<motion.div

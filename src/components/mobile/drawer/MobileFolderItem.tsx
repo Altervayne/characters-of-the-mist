@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Folder, GripVertical, MoreVertical } from 'lucide-react';
+import { Folder, GripVertical, MoreHorizontal } from 'lucide-react';
 
 // -- Component Imports --
 import { FolderCountLabel } from '@/components/mobile/shared/FolderCountLabel';
@@ -128,7 +128,7 @@ export default function MobileFolderItem({
 							}}
 							className="flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground"
 						>
-							<MoreVertical className="w-5 h-5" />
+							<MoreHorizontal className="w-5 h-5" />
 						</button>
 					</div>
 				</DragStaticWrapper>

@@ -1,12 +1,6 @@
 // -- Library Imports --
 import { useTranslation } from 'react-i18next';
 
-// -- Component Imports --
-import { IconButton } from '@/components/ui/icon-button';
-
-// -- Icon Imports --
-import { Wrench } from 'lucide-react';
-
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
@@ -18,38 +12,22 @@ interface MobileCharacterSheetTabBarProps {
 	activeTab: SheetTab;
 	onTabChange: (tab: SheetTab) => void;
 	cardCount: number;
-	isMobileFABMode: boolean;
-	isLeftHanded: boolean;
-	onOpenToolbelt: () => void;
 }
 
 /**
  * The trackers/cards tab bar for the mobile character sheet. Renders the two tab
- * buttons (the cards tab showing a count badge) and, in side-panel mode, the
- * toolbelt trigger placed on the left for left-handed users and the right
- * otherwise. Purely presentational - active tab, counts, mode/handedness, and the
- * change/open callbacks all come from the sheet.
+ * buttons (the cards tab showing a count badge). Purely presentational - active
+ * tab, counts, and the change callback all come from the sheet.
+ *
+ * The toolbelt trigger no longer lives here: in side-panel mode it is a
+ * thumb-zone floating button ({@link MobileToolbeltTrigger}) instead of the old
+ * top-of-screen wrench, so this bar is now just the tab switcher.
  */
-export function MobileCharacterSheetTabBar({ activeTab, onTabChange, cardCount, isMobileFABMode, isLeftHanded, onOpenToolbelt }: MobileCharacterSheetTabBarProps) {
+export function MobileCharacterSheetTabBar({ activeTab, onTabChange, cardCount }: MobileCharacterSheetTabBarProps) {
 	const { t } = useTranslation();
 
 	return (
 		<div className="flex items-center border-b border-border bg-card">
-			{/* Toolbelt trigger button (left side for left-handed) */}
-			{!isMobileFABMode && isLeftHanded && (
-				<div className="px-2">
-					<IconButton
-						variant="ghost"
-						size="sm"
-						onClick={onOpenToolbelt}
-						aria-label="Open actions"
-						className="h-8 w-8"
-					>
-						<Wrench className="h-4 w-4" />
-					</IconButton>
-				</div>
-			)}
-
 			<button
 				onClick={() => onTabChange('trackers')}
 				data-tutorial="trackers-tab"
@@ -81,21 +59,6 @@ export function MobileCharacterSheetTabBar({ activeTab, onTabChange, cardCount, 
 					</span>
 				)}
 			</button>
-
-			{/* Toolbelt trigger button (right side for right-handed) */}
-			{!isMobileFABMode && !isLeftHanded && (
-				<div className="px-2">
-					<IconButton
-						variant="ghost"
-						size="sm"
-						onClick={onOpenToolbelt}
-						aria-label="Open actions"
-						className="h-8 w-8"
-					>
-						<Wrench className="h-4 w-4" />
-					</IconButton>
-				</div>
-			)}
 		</div>
 	);
 }

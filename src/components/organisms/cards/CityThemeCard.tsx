@@ -97,13 +97,17 @@ export const CityThemeCard = React.memo(
       // ###   INPUT DEBOUNCER   ###
       // ###########################
 
-      // --- Main Tag ---
+      // ==================
+      //  Main Tag
+      // ==================
       const [localMainTagName, setLocalMainTagName] = useInputDebouncer(
          details.mainTag.name,
          (value) => actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: value }})
       );
 
-      // --- Mystery/Identity Text ---
+      // ==================
+      //  Mystery/Identity Text
+      // ==================
       const mysteryOrIdentity = card.cardType === 'CHARACTER_THEME' ? (details as CityThemeDetails).mystery : (details as CityCrewDetails).identity;
       const [localMystery, setLocalMystery] = useInputDebouncer(
          mysteryOrIdentity,

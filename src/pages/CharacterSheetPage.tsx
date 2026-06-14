@@ -42,15 +42,21 @@ import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 
 function DesktopCharacterSheetPage() {
-   // --- Localization ---
+   // ==================
+   //  Localization
+   // ==================
    const { t: t } = useTranslation();
 
-   // --- Data Stores ---
+   // ==================
+   //  Data Stores
+   // ==================
    const character = useCharacterStore((state) => state.character);
    const { updateCharacterName, addStatus, addStoryTag } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
 
-   // --- General App Stores ---
+   // ==================
+   //  General App Stores
+   // ==================
    const isTrackersAlwaysEditable = useAppSettingsStore((state) => state.isTrackersAlwaysEditable)
    const isDrawerOpen = useAppGeneralStateStore((state) => state.isDrawerOpen);
    const isSidebarCollapsed = useAppSettingsStore((state) => state.isSidebarCollapsed);
@@ -63,7 +69,9 @@ function DesktopCharacterSheetPage() {
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
-   // --- Drag and Drop ---
+   // ==================
+   //  Drag and Drop
+   // ==================
    const {
       activeDragItem,
       overDragId,
@@ -93,7 +101,7 @@ function DesktopCharacterSheetPage() {
    } = useCardDialogState();
 
 
-// ########################################
+   // ########################################
    // ###   IMPORT/EXPORT LOGIC HANDLERS   ###
    // ########################################
 

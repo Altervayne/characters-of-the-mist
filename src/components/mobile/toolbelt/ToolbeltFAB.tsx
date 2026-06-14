@@ -18,6 +18,7 @@ import { useWindowHeight } from '@/hooks/mobile/useWindowHeight';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getFloatingBottom } from '@/lib/utils/mobileFloating';
 
 // -- Type Imports --
 import type { ToolbeltAction } from '@/lib/types/toolbelt';
@@ -53,6 +54,15 @@ export default function ToolbeltFAB({
 	const rafRef = useRef<number | null>(null);
    const windowHeight = useWindowHeight();
 
+	// Distinguish a deliberate tap on the ring's empty area (which closes the
+	// toolbelt) from a scroll gesture through the thumb-zone list (which must
+	// not). We remember where the pointer went down and whether the list scrolled
+	// during the interaction; a tap that scrolled or travelled beyond the slop is
+	// treated as scroll-intent and does not close.
+	const ringPointerDownYRef = useRef<number | null>(null);
+	const ringScrolledRef = useRef(false);
+	const RING_TAP_SLOP = 10;
+
 	const ITEM_HEIGHT = 60;
 	const BOTTOM_OFFSET = 175;
    const FAB_HEIGHT_OFFSET = 80;
@@ -74,6 +84,8 @@ export default function ToolbeltFAB({
 
 	const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
 		const newScrollY = e.currentTarget.scrollTop;
+		// Any scroll during the current touch marks it as scroll-intent.
+		ringScrolledRef.current = true;
 
 		if (rafRef.current !== null) {
 			cancelAnimationFrame(rafRef.current);
@@ -83,6 +95,21 @@ export default function ToolbeltFAB({
 			setScrollY(newScrollY);
 			rafRef.current = null;
 		});
+	};
+
+	const handleRingPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		ringPointerDownYRef.current = e.clientY;
+		ringScrolledRef.current = false;
+	};
+
+	const handleRingClick = (e: React.MouseEvent<HTMLDivElement>) => {
+		const travelled = ringPointerDownYRef.current === null
+			? 0
+			: Math.abs(e.clientY - ringPointerDownYRef.current);
+		// Ignore taps that scrolled the list or travelled past the slop; only a
+		// deliberate, stationary tap on the ring's empty area closes the toolbelt.
+		if (ringScrolledRef.current || travelled > RING_TAP_SLOP) return;
+		onOpenChange(false);
 	};
 
 	const getItemTransform = (index: number) => {
@@ -106,21 +133,21 @@ export default function ToolbeltFAB({
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.2 }}
-							className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+							className="fixed inset-0 bg-black/50 backdrop-blur-sm layer-backdrop"
 							onClick={() => onOpenChange(!isOpen)}
 						/>
 
-						{/* Scrollable Action Buttons with Thumb-Zone Scaling */}
-						{allActions.length > 0 && (
+						{/* Scrollable Action Buttons with Thumb-Zone Scaling (globalActions is always non-empty) */}
 							<motion.div
 								ref={scrollContainerRef}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}
 								onScroll={handleScroll}
-                        onClick={() => onOpenChange(!isOpen)}
+                        onPointerDown={handleRingPointerDown}
+                        onClick={handleRingClick}
 								className={cn(
-									"fixed top-0 z-50 h-[calc(100vh-5rem)] w-64 overflow-y-auto overflow-x-visible scrollbar-hide perspective-1000",
+									"fixed top-0 layer-panel h-[calc(100vh-5rem)] w-64 overflow-y-auto overflow-x-visible scrollbar-hide perspective-1000",
 									isLeft ? "left-4" : "right-4"
 								)}
 								style={{
@@ -199,7 +226,6 @@ export default function ToolbeltFAB({
 									})}
 								</div>
 							</motion.div>
-						)}
 					</>
 				)}
 			</AnimatePresence>
@@ -208,13 +234,14 @@ export default function ToolbeltFAB({
 			{!isMenuFABExpanded && (
 				<motion.div
 					className={cn(
-						"fixed z-51",
-						isOpen
-							? isLeft ? "bottom-4 left-4" : "bottom-4 right-4"
-							: activeTab === 'cards'
-								? isLeft ? "bottom-26 left-2" : "bottom-26 right-2"
-								: isLeft ? "bottom-16 left-4" : "bottom-16 right-4"
+						"fixed layer-panel",
+						!isOpen && activeTab === 'cards'
+							? isLeft ? "left-2" : "right-2"
+							: isLeft ? "left-4" : "right-4"
 					)}
+					// Stagger 1 keeps the toolbelt FAB clear of the navigation FAB (stagger 0)
+					// in FAB mode; both ride above the card nav bar on the cards tab.
+					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: !isOpen && activeTab === 'cards', stagger: isOpen ? 0 : 1 }) }}
 					whileTap={{ scale: 0.95 }}
 				>
 					<IconButton
@@ -222,11 +249,7 @@ export default function ToolbeltFAB({
 						size="lg"
 						onClick={() => onOpenChange(!isOpen)}
 						data-tutorial="toolbelt"
-						className={cn(
-							"h-10 w-10 shadow-2xl",
-							allActions.length === 0 && "opacity-50 cursor-not-allowed"
-						)}
-						disabled={allActions.length === 0}
+						className="h-11 w-11 shadow-2xl"
 					>
 						<motion.div
 							animate={{ rotate: isOpen ? 90 : 0 }}

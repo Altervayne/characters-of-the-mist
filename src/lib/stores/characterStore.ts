@@ -74,7 +74,7 @@ interface CharacterState {
       returnToMenu: () => void;
       setGame: (game: Character['game']) => void;
       updateCharacterName: (name: string) => void;
-      // --- Card Actions ---
+      // Card Actions
       addCard: (options: CreateCardOptions) => string;
       addImportedCard: (card: Card, index?: number) => void;
       deleteCard: (cardId: string) => void;
@@ -82,15 +82,15 @@ interface CharacterState {
       reorderCards: (startIndex: number, endIndex: number) => void;
       flipCard: (cardId: string) => void;
       updateCardViewMode: (cardId: string, viewMode: CardViewMode | null) => void;
-      // --- Tag Actions --- 
+      // Tag Actions
       addTag: (cardId: string, listName: TagListName) => void;
       updateTag: (cardId: string, listName: TagListName, tagId: string, updatedTag: Partial<Tag>) => void;
       removeTag: (cardId: string, listName: TagListName, tagId: string) => void;
-      // --- Bland Tag Actions (for Quintessences, Items and Improvements) --- 
+      // Bland Tag Actions (for Quintessences, Items and Improvements)
       addBlandTag: (cardId: string, listName: BlandTagListName) => void;
       updateBlandTag: (cardId: string, listName: BlandTagListName, tagId: string, name: string) => void;
       removeBlandTag: (cardId: string, listName: BlandTagListName, tagId: string) => void;
-      // --- Tracker Actions --- 
+      // Tracker Actions
       addStatus: (name?: string) => void;
       addStoryTag: (name?: string) => void;
       addStoryTheme: (name?: string) => void;
@@ -106,15 +106,15 @@ interface CharacterState {
       reorderStoryThemes: (oldIndex: number, newIndex: number) => void;
       upgradeStoryTagToTheme: (trackerId: string) => void;
       downgradeStoryThemeToTag: (trackerId: string) => void;
-      // --- Story Themes Tag Actions ---
+      // Story Themes Tag Actions
       addTagToStoryTheme: (trackerId: string, listName: 'powerTags' | 'weaknessTags') => void;
       updateTagInStoryTheme: (trackerId: string, listName: 'mainTag' | 'powerTags' | 'weaknessTags', tagId: string, updatedTag: Partial<Tag>) => void;
       removeTagFromStoryTheme: (trackerId: string, listName: 'powerTags' | 'weaknessTags', tagId: string) => void;
-      // --- Legend in the Mist ### Fellowship Relationship Actions --- 
+      // Legend in the Mist ### Fellowship Relationship Actions
       addRelationship: (cardId: string) => void;
       updateRelationship: (cardId: string, relationshipId: string, updates: Partial<FellowshipRelationship>) => void;
       removeRelationship: (cardId: string, relationshipId: string) => void;
-      // --- City of Mist ### Crew Actions --- 
+      // City of Mist ### Crew Actions
       addCrewMember: (cardId: string) => void;
       updateCrewMember: (cardId: string, crewId: string, updates: Partial<CrewMember>) => void;
       removeCrewMember: (cardId: string, crewId: string) => void;
@@ -146,7 +146,7 @@ export const useCharacterStore = create<CharacterState>()(
          (set) => ({
             ...initialState,
             actions: {
-               // --- Character Actions ---
+               // Character Actions
                createCharacter: (game) => {
                   set(() => {
                     const newCharacter = createNewCharacter("New Character", game);
@@ -236,7 +236,7 @@ export const useCharacterStore = create<CharacterState>()(
                      return { character: { ...state.character, game } };
                   });
                },
-               // --- Card Actions ---
+               // Card Actions
                addCard: (options) => {
                   const newCardId = cuid();
                   set((state) => {
@@ -530,7 +530,7 @@ export const useCharacterStore = create<CharacterState>()(
                      }));
                   });
                },
-               // --- Tag Actions ---
+               // Tag Actions
                addTag: (cardId, listName) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
@@ -591,7 +591,7 @@ export const useCharacterStore = create<CharacterState>()(
                      return card;
                   }));
                },
-               // --- Bland Tag Actions ---
+               // Bland Tag Actions
                addBlandTag: (cardId, listName) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
@@ -631,7 +631,7 @@ export const useCharacterStore = create<CharacterState>()(
                      return card;
                   }));
                },
-               // --- Tracker Actions ---
+               // Tracker Actions
                addStatus: (name) => {
                   set(state => {
                      if (!state.character) return {};
@@ -938,7 +938,7 @@ export const useCharacterStore = create<CharacterState>()(
                      };
                   });
                },
-               // --- Story Themes Tag Actions ---
+               // Story Themes Tag Actions
                addTagToStoryTheme: (trackerId, listName) => {
                   set(state => {
                      if (!state.character) return {};
@@ -1002,7 +1002,7 @@ export const useCharacterStore = create<CharacterState>()(
                      }
                   });
                },
-               // --- Legend in the Mist ### Fellowship Relationship Actions --- 
+               // Legend in the Mist ### Fellowship Relationship Actions
                addRelationship: (cardId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
@@ -1097,7 +1097,7 @@ export const useCharacterStore = create<CharacterState>()(
                      return card;
                   }));
                },
-               // --- City of Mist ### Crew Actions ---
+               // City of Mist ### Crew Actions
                addCrewMember: (cardId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');

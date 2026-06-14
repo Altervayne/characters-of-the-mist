@@ -49,7 +49,9 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
 
    let harmonizedData: unknown = data;
 
-   // --- STEP 1: Harmonize the current object based on its specific type ---
+   // ==================
+   //  STEP 1: Harmonize the current object based on its specific type
+   // ==================
    if (isVersionable(harmonizedData) || isCharacter(harmonizedData) || isDrawer(harmonizedData)) {
       let currentVersion = harmonizedData.version || '1.0.0';
 
@@ -76,7 +78,9 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
       }
    }
 
-   // --- STEP 2: Check for container properties and RECURSE ---
+   // ==================
+   //  STEP 2: Check for container properties and RECURSE
+   // ==================
    if (isDrawer(harmonizedData)) {
       harmonizedData.rootItems = harmonizedData.rootItems.map(item => harmonizeData(item, item.type));
       harmonizedData.folders = harmonizedData.folders.map(folder => harmonizeData(folder, 'FOLDER'));

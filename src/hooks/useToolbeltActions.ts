@@ -85,7 +85,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		const itemActions: ToolbeltAction[] = [];
 		const globalActions: ToolbeltAction[] = [];
 
-		// --- Undo/Redo (always visible, grayed when disabled) ---
+		// ==================
+		//  Undo/Redo (always visible, grayed when disabled)
+		// ==================
 		globalActions.push({
 			id: 'undo',
 			label: t('Toolbelt.undo'),
@@ -102,7 +104,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			show: true
 		});
 
-		// --- Edit Mode Toggle (in FAB mode) ---
+		// ==================
+		//  Edit Mode Toggle (in FAB mode)
+		// ==================
 		globalActions.push({
 			id: 'toggle-edit-mode',
 			label: isEditing ? (t('Toolbelt.playMode')) : (t('Toolbelt.editMode')),
@@ -111,7 +115,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			show: true
 		});
 
-		// --- Save Character actions ---
+		// ==================
+		//  Save Character actions
+		// ==================
 		globalActions.push({
 			id: 'save-character',
 			label: t('Toolbelt.saveCharacter'),
@@ -158,7 +164,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			show: true
 		});
 
-		// --- Context-aware Add buttons ---
+		// ==================
+		//  Context-aware Add buttons
+		// ==================
 		// Add Card (only on cards tab)
 		if (activeTab === 'cards') {
 			// Reorder Cards action
@@ -226,7 +234,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		if (context.type === 'card') {
 			const card = context.card;
 
-			// --- Delete, Flip/ViewMode/Export, Edit ---
+			// ==================
+			//  Delete, Flip/ViewMode/Export, Edit
+			// ==================
 
 			// Delete action - NOT allowed for CHARACTER_CARD
 			if (card.cardType !== 'CHARACTER_CARD') {

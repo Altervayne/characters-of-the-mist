@@ -110,13 +110,17 @@ export const OtherscapeThemeCard = React.memo(
       // ###   INPUT DEBOUNCER   ###
       // ###########################
 
-      // --- Main Tag ---
+      // ==================
+      //  Main Tag
+      // ==================
       const [localMainTagName, setLocalMainTagName] = useInputDebouncer(
          details.mainTag.name,
          (value) => actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: value }})
       );
 
-      // --- Mystery/Identity/Description Text ---
+      // ==================
+      //  Mystery/Identity/Description Text
+      // ==================
       const mysteryIdentityOrDescription =
          card.cardType === 'CHARACTER_THEME'
             ? (details as OtherscapeThemeDetails).mystery

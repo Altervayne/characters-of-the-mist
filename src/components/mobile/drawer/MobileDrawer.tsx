@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 
 // -- Icon Imports --
-import { FolderPlus, List, Grid3x3, Download } from 'lucide-react';
+import { FolderPlus, List, Grid3x3, Download, Undo2, Redo2 } from 'lucide-react';
 
 // -- Store Imports --
 import { useDrawerActions } from '@/lib/stores/drawerStore';
@@ -28,6 +28,7 @@ import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
 import { useMobileDragSensors } from '@/hooks/mobile/useMobileDragSensors';
 import { useMobileDrawerDragReorder } from '@/hooks/mobile/useMobileDrawerDragReorder';
+import useDrawerTemporalStore from '@/hooks/drawer/useDrawerTemporalStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -70,14 +71,14 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
    // One-time long-press hint: shown once when gesture tips are enabled, then
    // remembered so it never repeats. Gated on the setting (never shown when off).
-   // The overflow (⋮) button on each row is the always-present fallback.
+   // The overflow (⋯) button on each row is the always-present fallback.
    const areGestureHintsEnabled = useAppSettingsStore((state) => state.areGestureHintsEnabled);
    const hasSeenDrawerMenuHint = useAppSettingsStore((state) => state.hasSeenDrawerMenuHint);
    const { setHasSeenDrawerMenuHint } = useAppSettingsActions();
 
    useEffect(() => {
       if (areGestureHintsEnabled && !hasSeenDrawerMenuHint) {
-         toast(t('MobileGestureHints.drawerLongPress', { defaultValue: 'Tip: press and hold an item (or tap its ⋮ button) for more options.' }));
+         toast(t('MobileGestureHints.drawerLongPress', { defaultValue: 'Tip: press and hold an item (or tap its ⋯ button) for more options.' }));
          setHasSeenDrawerMenuHint(true);
       }
    }, [areGestureHintsEnabled, hasSeenDrawerMenuHint, setHasSeenDrawerMenuHint, t]);
@@ -87,6 +88,13 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
    const { handleDragEnd } = useMobileDrawerDragReorder(currentFolderId, currentFolders, currentItems);
    const folderIds = useMemo(() => currentFolders.map((folder) => folder.id), [currentFolders]);
    const itemIds = useMemo(() => currentItems.map((item) => item.id), [currentItems]);
+
+   // Undo/redo for drawer mutations (rename/move/delete/reorder/add), mirroring how
+   // the character sheet exposes undo/redo via the temporal store. Any past state
+   // means there is a mutation to undo; any future state means there is one to redo.
+   const { undo, redo, pastStates, futureStates } = useDrawerTemporalStore((state) => state);
+   const canUndo = (pastStates?.length ?? 0) > 0;
+   const canRedo = (futureStates?.length ?? 0) > 0;
 
 	// Handlers
 	const handleFolderLongPress = (folderId: string, folderName: string, position: { x: number; y: number }) => {
@@ -204,7 +212,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 					</form>
 					<IconButton
 						variant="outline"
-						size="default"
+						size="lg"
 						onClick={() => fileInputRef.current?.click()}
 						title={t('Drawer.Actions.import')}
 						className="cursor-pointer"
@@ -215,13 +223,42 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
                {/* View toggle */}
                <IconButton
                   variant="outline"
-                  size="default"
+                  size="lg"
                   onClick={() => setIsCompactView(!isCompactView)}
                   title={isCompactView ? t('Drawer.toggleView') : t('Drawer.compactView')}
                   className="cursor-pointer"
                >
                   {isCompactView ? <Grid3x3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
                </IconButton>
+				</div>
+
+				{/* Undo / Redo for drawer mutations (rename/move/delete/reorder/add) */}
+				<div className={cn(
+					"flex items-center gap-2",
+					isLeftHanded ? "flex-row-reverse" : ""
+				)}>
+					<IconButton
+						variant="outline"
+						size="lg"
+						onClick={() => undo()}
+						disabled={!canUndo}
+						title={t('Toolbelt.undo')}
+						aria-label={t('Toolbelt.undo')}
+						className="cursor-pointer"
+					>
+						<Undo2 className="w-5 h-5" />
+					</IconButton>
+					<IconButton
+						variant="outline"
+						size="lg"
+						onClick={() => redo()}
+						disabled={!canRedo}
+						title={t('Toolbelt.redo')}
+						aria-label={t('Toolbelt.redo')}
+						className="cursor-pointer"
+					>
+						<Redo2 className="w-5 h-5" />
+					</IconButton>
 				</div>
 			</div>
 

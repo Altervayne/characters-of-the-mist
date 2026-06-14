@@ -54,7 +54,9 @@ export function useCharacterSheetDnD() {
    const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems } = useDrawerActions();
    const { setContextualGame } = useAppSettingsActions();
 
-   // --- Utility & Library States ---
+   // ==================
+   //  Utility & Library States
+   // ==================
    const [isOverDrawer, setIsOverDrawer] = useState(false);
    const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
    const [overDragId, setOverDragId] = useState<string | null>(null);
@@ -216,7 +218,9 @@ export function useCharacterSheetDnD() {
       // ##############################################
       if (activeType === 'drawer-item' || activeType === 'drawer-folder') {
 
-         // --- SCENARIO 1.1: Dropping a full character onto the play area ---
+         // ==================
+         //  SCENARIO 1.1: Dropping a full character onto the play area
+         // ==================
          if (overIdStr === 'main-character-drop-zone') {
             const draggedItem = active.data.current?.item as DrawerItem;
             if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
@@ -227,7 +231,9 @@ export function useCharacterSheetDnD() {
             return;
          }
 
-         // --- SCENARIO 1.2: Dropping INSIDE the drawer ---
+         // ==================
+         //  SCENARIO 1.2: Dropping INSIDE the drawer
+         // ==================
          if (overType?.startsWith('drawer-') || overIdStr.startsWith('drawer-')) {
             const activeIsFolder = activeType === 'drawer-folder';
             const activeIsItem = activeType === 'drawer-item';
@@ -275,7 +281,9 @@ export function useCharacterSheetDnD() {
             }
          }
 
-         // --- SCENARIO 1.3: Dropping ONTO the character sheet ---
+         // ==================
+         //  SCENARIO 1.3: Dropping ONTO the character sheet
+         // ==================
          // (Requires a character to be loaded)
          if (!character) return;
 
@@ -310,13 +318,17 @@ export function useCharacterSheetDnD() {
       // #############################################
       if (activeType?.startsWith('sheet-')) {
 
-         // --- SCENARIO 2.1: Dropping ONTO the drawer ---
+         // ==================
+         //  SCENARIO 2.1: Dropping ONTO the drawer
+         // ==================
          if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
             handleSheetToDrawerDrop(overIdStr, overType, over);
             return;
          }
 
-         // --- SCENARIO 2.2: Reordering ON the sheet ---
+         // ==================
+         //  SCENARIO 2.2: Reordering ON the sheet
+         // ==================
          if (overType?.startsWith('sheet-') && character) {
             if (activeType === DRAG_TYPES.SHEET_CARD && overType === DRAG_TYPES.SHEET_CARD) {
                handleSheetCardReorder(active.id as string, over.id as string);

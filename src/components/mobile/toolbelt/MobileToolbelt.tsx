@@ -1,5 +1,5 @@
 // -- Component Imports --
-import ToolbeltSidePanel from '@/components/mobile/toolbelt/ToolbeltSidePanel';
+import ToolbeltBottomSheet from '@/components/mobile/toolbelt/ToolbeltBottomSheet';
 import ToolbeltFAB from '@/components/mobile/toolbelt/ToolbeltFAB';
 
 // -- Hook Imports --
@@ -37,10 +37,11 @@ export default function MobileToolbelt({
 	// Build action lists based on context and active tab
 	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode, onOpenAddCard, onSaveToDrawer);
 
-	// Render appropriate UI based on mode
+	// Render appropriate UI based on mode. In side-panel mode the actions are now
+	// presented as a compact bottom sheet (it no longer covers the selected item).
 	if (mode === 'side-panel') {
 		return (
-			<ToolbeltSidePanel
+			<ToolbeltBottomSheet
 				isOpen={isOpen}
 				onOpenChange={onOpenChange}
 				itemActions={itemActions}

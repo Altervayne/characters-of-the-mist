@@ -5,7 +5,9 @@ import type { Card, Tracker } from "../types/character";
 import type { SortingStrategy } from "@dnd-kit/sortable";
 
 
-// --- Utility functions ---
+// ==================
+//  Utility functions
+// ==================
 
 /**
  * Converts a character sheet card or tracker into drawer-compatible storage info.
@@ -36,7 +38,9 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
 
 
 
-// --- Custom DndToolkit sorting strategies and collision detection ---
+// ==================
+//  Custom DndToolkit sorting strategies and collision detection
+// ==================
 
 /**
  * Custom collision detection for drag-and-drop operations throughout the app.
@@ -48,7 +52,9 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    const activeDataType = args.active.data.current?.type as string;
    const draggedItemType = (activeData?.item as DrawerItem)?.type;
 
-   // --- If dragging a full character sheet ---
+   // ==================
+   //  If dragging a full character sheet
+   // ==================
    if (draggedItemType === 'FULL_CHARACTER_SHEET') {
       const filteredDroppables = args.droppableContainers.filter((container) => {
          const containerId = container.id.toString();
@@ -63,7 +69,9 @@ export const customCollisionDetection: CollisionDetection = (args) => {
       return pointerWithin({ ...args, droppableContainers: filteredDroppables });
    };
 
-   // --- If dragging a folder ---
+   // ==================
+   //  If dragging a folder
+   // ==================
    if (activeDataType === 'drawer-folder') {
       const filteredDroppables = args.droppableContainers.filter((container) => {
          const containerType = container.data.current?.type as string;
@@ -77,7 +85,9 @@ export const customCollisionDetection: CollisionDetection = (args) => {
       return pointerWithin({ ...args, droppableContainers: filteredDroppables });
    };
 
-   // --- If dragging a drawer item ---
+   // ==================
+   //  If dragging a drawer item
+   // ==================
    if (activeDataType === 'drawer-item') {
       const folderDroppables = args.droppableContainers.filter(
          (container) => container.data.current?.type === 'drawer-folder' || container.id.toString().startsWith('drawer-back-button-')
@@ -103,7 +113,9 @@ export const customCollisionDetection: CollisionDetection = (args) => {
       return closestCenter({ ...args, droppableContainers: itemDroppables });
    }
 
-   // --- If dragging from sheet (card or tracker) ---
+   // ==================
+   //  If dragging from sheet (card or tracker)
+   // ==================
    if (activeDataType === 'sheet-card' || activeDataType === 'sheet-tracker') {
       // First priority: drawer drop zones (current folder)
       const drawerZoneDroppables = args.droppableContainers.filter((container) => {

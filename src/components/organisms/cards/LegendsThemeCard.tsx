@@ -101,13 +101,17 @@ export const LegendsThemeCard = React.memo(
       // ###   INPUT DEBOUNCER   ###
       // ###########################
 
-      // --- Main Tag ---
+      // ==================
+      //  Main Tag
+      // ==================
       const [localMainTagName, setLocalMainTagName] = useInputDebouncer(
          details.mainTag.name,
          (value) => actions.updateCardDetails(card.id, { ...details, mainTag: { ...details.mainTag, name: value }})
       );
 
-      // --- Quest Text ---
+      // ==================
+      //  Quest Text
+      // ==================
       const [localQuest, setLocalQuest] = useInputDebouncer(
          details.quest,
          (value) => actions.updateCardDetails(card.id, { ...details, quest: value })

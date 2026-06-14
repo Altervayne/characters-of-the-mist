@@ -68,7 +68,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
 
 
-   // --- Click outside event listener ---
+   // ==================
+   //  Click outside event listener
+   // ==================
    useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
          if (paletteRef.current && !paletteRef.current.contains(event.target as Node)) {
@@ -83,7 +85,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
       };
    }, [isOpen, setCommandPaletteOpen]);
 
-   // --- Key presses event listener ---
+   // ==================
+   //  Key presses event listener
+   // ==================
    useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
          if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -107,7 +111,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
 
 
-   // --- Command Handling ---
+   // ==================
+   //  Command Handling
+   // ==================
    const onSelectCommand = (command: CommandAction) => {
       if (command.action) {
          command.action();
@@ -189,9 +195,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
 
 
-                     {/* ------------- */}
-                     {/* CARD CREATION */}
-                     {/* ------------- */}
+                     {/* ================== */}
+                     {/*  CARD CREATION */}
+                     {/* ================== */}
 
                      {activePage === 'createCard_Type' && (
                         <CreateCard_TypePage currentGame={currentGame} onSelect={(type) => {
@@ -265,9 +271,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
 
 
-                     {/* ---------------- */}
-                     {/* TRACKER CREATION */}
-                     {/* ---------------- */}
+                     {/* ================== */}
+                     {/*  TRACKER CREATION */}
+                     {/* ================== */}
 
                      {activePage === 'createTracker_Type' && (
                         <CreateTracker_TypePage onSelect={(type) => {

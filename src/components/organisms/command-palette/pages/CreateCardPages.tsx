@@ -23,7 +23,9 @@ import type { CityThemeType, OtherscapeThemeType } from '@/lib/types/character';
 
 
 
-// --- Step 1: Choose Type ---
+// ==================
+//  Step 1: Choose Type
+// ==================
 interface CreateCard_TypePageProps {
    currentGame?: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL';
    onSelect: (type: 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME') => void;
@@ -59,7 +61,9 @@ export const CreateCard_TypePage = ({ currentGame, onSelect }: CreateCard_TypePa
    );
 };
 
-// --- Step 2a: Legend Theme Type ---
+// ==================
+//  Step 2a: Legend Theme Type
+// ==================
 interface CreateCard_LegendsThemeTypePageProps { onSelect: (type: LegendsThemeTypes) => void; }
 export const CreateCard_LegendsThemeTypePage = ({ onSelect }: CreateCard_LegendsThemeTypePageProps) => {
       const { t } = useTranslation();
@@ -80,7 +84,9 @@ export const CreateCard_LegendsThemeTypePage = ({ onSelect }: CreateCard_Legends
       );
 };
 
-// --- Step 2b: City Theme Type ---
+// ==================
+//  Step 2b: City Theme Type
+// ==================
 interface CreateCard_CityThemeTypePageProps { onSelect: (type: CityThemeType) => void; }
 export const CreateCard_CityThemeTypePage = ({ onSelect }: CreateCard_CityThemeTypePageProps) => {
       const { t } = useTranslation();
@@ -101,7 +107,9 @@ export const CreateCard_CityThemeTypePage = ({ onSelect }: CreateCard_CityThemeT
       );
 };
 
-// --- Step 2c: Otherscape Theme Type ---
+// ==================
+//  Step 2c: Otherscape Theme Type
+// ==================
 interface CreateCard_OtherscapeThemeTypePageProps { onSelect: (type: OtherscapeThemeType) => void; }
 export const CreateCard_OtherscapeThemeTypePage = ({ onSelect }: CreateCard_OtherscapeThemeTypePageProps) => {
       const { t } = useTranslation();
@@ -122,7 +130,9 @@ export const CreateCard_OtherscapeThemeTypePage = ({ onSelect }: CreateCard_Othe
       );
 };
 
-// --- Step 3: Choose Themebook ---
+// ==================
+//  Step 3: Choose Themebook
+// ==================
 interface CreateCard_ThemebookPageProps {
     themeType: ThemeTypeUnion;
     inputValue: string;
@@ -160,7 +170,9 @@ export const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, o
    );
 };
 
-// --- Step 4: Input Text ---
+// ==================
+//  Step 4: Input Text
+// ==================
 interface CreateCard_InputPageProps { inputValue: string; onSelect: () => void; }
 export const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputPageProps) => {
    const { t } = useTranslation();
@@ -174,7 +186,9 @@ export const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputP
    );
 };
 
-// --- Step 5: Input Number (Power & Weakness Tags qty.) ---
+// ==================
+//  Step 5: Input Number (Power & Weakness Tags qty.)
+// ==================
 interface CreateCard_NumberInputPageProps { inputValue: string; labelKey: 'actions.setPowerTags' | 'actions.setWeaknessTags'; onSelect: () => void; }
 export const CreateCard_NumberInputPage = ({ inputValue, labelKey, onSelect }: CreateCard_NumberInputPageProps) => {
    const { t } = useTranslation();

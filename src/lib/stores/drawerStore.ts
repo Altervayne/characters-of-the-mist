@@ -34,16 +34,16 @@ export interface DrawerState {
    pendingItem: PendingDrawerItem | null;
    drawerCurrentFolderId: string | null;
    actions: {
-      // --- Drawer Actions ---
+      // Drawer Actions
       importDrawerAsFolder: (newDrawer: Drawer, folderName: string) => void;
-      // --- Folder Actions ---
+      // Folder Actions
       addFolder: (name: string, parentFolderId?: string) => void;
       addImportedFolder: (folder: Folder, parentFolderId?: string) => void;
       renameFolder: (folderId: string, newName: string) => void;
       deleteFolder: (folderId: string) => void;
       moveFolder: (folderId: string, destinationFolderId?: string) => void;
       reorderFolders: (parentFolderId: string | null, oldIndex: number, newIndex: number) => void;
-      // --- Item Actions ---
+      // Item Actions
       addItem: (name: string, game: GameSystem, type: GeneralItemType, content: DrawerItemContent, parentFolderId?: string) => void;
       addImportedItem: (itemContent: DrawerItemContent, itemType: GeneralItemType, game: GameSystem, parentFolderId?: string) => void;
       renameItem: (itemId: string, newName: string) => void;
@@ -51,10 +51,10 @@ export interface DrawerState {
       moveItem: (itemId: string, destinationFolderId?: string) => void;
       reorderItems: (parentFolderId: string | null, oldIndex: number, newIndex: number) => void;
       updateItem: (itemId: string, newContent: DrawerItemContent, newName?: string) => void;
-      // --- Drop Actions ---
+      // Drop Actions
       initiateItemDrop: (itemInfo: PendingDrawerItem) => void;
       clearPendingItemDrop: () => void;
-      // --- Navigation ---
+      // Navigation
       setDrawerCurrentFolderId: (id: string | null) => void;
    };
 }
@@ -76,7 +76,7 @@ export const useDrawerStore = create<DrawerState>()(
          (set) => ({
             ...initialState,
             actions: {
-               // --- Drawer Actions ---
+               // Drawer Actions
                importDrawerAsFolder: (newDrawer, folderName) => {
                   set(state => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
@@ -90,7 +90,7 @@ export const useDrawerStore = create<DrawerState>()(
                      return { drawer: { ...state.drawer, folders: [...state.drawer.folders, newFolder] } };
                   });
                },
-               // --- Folder Actions ---
+               // Folder Actions
                addFolder: (name, parentFolderId) => {
                   set(state => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
@@ -187,7 +187,7 @@ export const useDrawerStore = create<DrawerState>()(
                      return { drawer: { ...state.drawer, folders: reorderFoldersRecursively(state.drawer.folders, parentFolderId, oldIndex, newIndex) } };
                   });
                },
-               // --- Item Actions ---
+               // Item Actions
                addItem: (name, game, type, content, parentFolderId) => {
                   set(state => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
@@ -322,7 +322,7 @@ export const useDrawerStore = create<DrawerState>()(
                      };
                   });
                },
-               // --- Drop Actions ---
+               // Drop Actions
                initiateItemDrop: (itemInfo) => {
                   set({ pendingItem: itemInfo });
                },

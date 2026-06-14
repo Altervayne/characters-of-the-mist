@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 // -- Component Imports --
 import { IconButton } from '@/components/ui/icon-button';
 import MobileToolbelt from '@/components/mobile/toolbelt/MobileToolbelt';
+import MobileToolbeltTrigger from '@/components/mobile/toolbelt/MobileToolbeltTrigger';
 import MobileSaveToDrawerSheet from '@/components/mobile/character-sheet/MobileSaveToDrawerSheet';
 import { MobileCharacterNameHeader } from '@/components/mobile/character-sheet/MobileCharacterNameHeader';
 import { MobileCharacterSheetTabBar } from '@/components/mobile/character-sheet/MobileCharacterSheetTabBar';
@@ -28,6 +29,7 @@ import { useMobileCardSheetGestures } from '@/hooks/mobile/useMobileCardSheetGes
 import { cn } from '@/lib/utils';
 import { deriveCardTitle } from '@/lib/utils/character';
 import { triggerHaptic } from '@/lib/utils/haptics';
+import { getFloatingBottom } from '@/lib/utils/mobileFloating';
 
 // -- Type Imports --
 import type { Card, Tracker } from '@/lib/types/character';
@@ -204,9 +206,6 @@ export default function MobileCharacterSheet({
 					activeTab={activeTab}
 					onTabChange={setActiveTab}
 					cardCount={character.cards.length}
-					isMobileFABMode={isMobileFABMode}
-					isLeftHanded={isLeftHanded}
-					onOpenToolbelt={() => handleToolbeltOpenChange(true)}
 				/>
 			)}
 
@@ -291,17 +290,30 @@ export default function MobileCharacterSheet({
 
 
 
+			{/* Thumb-zone toolbelt trigger (side-panel mode only; hidden while open or reordering) */}
+			{!isMobileFABMode && !isReorderingCards && !isToolbeltOpen && (
+				<MobileToolbeltTrigger
+					isLeftHanded={isLeftHanded}
+					onOpen={() => handleToolbeltOpenChange(true)}
+				/>
+			)}
+
+
+
 			{/* Card Reorder Done Button */}
 			{isReorderingCards && (
-				<div className={cn(
-               "fixed bottom-4 z-50",
-               isLeftHanded ? "left-4" : "right-4"
-            )}>
+				<div
+					className={cn(
+						"fixed layer-floating",
+						isLeftHanded ? "left-4" : "right-4"
+					)}
+					style={{ bottom: getFloatingBottom() }}
+				>
 					<IconButton
 						variant="default"
 						size="lg"
 						onClick={() => setIsReorderingCards(false)}
-						className="h-10 w-10 shadow-2xl"
+						className="h-11 w-11 shadow-2xl"
 						aria-label={t('Common.done')}
 					>
 						<Check className="h-6 w-6" />

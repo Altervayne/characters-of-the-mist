@@ -20,7 +20,9 @@ import type { ThemeName } from '@/lib/stores/appSettingsStore';
 
 
 
-// ###### RENAME CHARACTER ######
+// ############################
+// ###   RENAME CHARACTER   ###
+// ############################
 interface RenameCharacterPageProps {
    inputValue: string;
 };
@@ -52,7 +54,9 @@ export const RenameCharacterPage = ({ inputValue }: RenameCharacterPageProps) =>
 
 
 
-// ###### SELECT THEME PALETTE ######
+// ################################
+// ###   SELECT THEME PALETTE   ###
+// ################################
 export const SetThemePalettePage = () => {
    const { t } = useTranslation();
    const { setTheme } = useAppSettingsActions();

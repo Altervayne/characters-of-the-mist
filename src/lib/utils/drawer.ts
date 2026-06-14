@@ -93,7 +93,9 @@ export function getParentFromPath(path: string[]): string | null {
 
 
 
-// --- Folders Recursive Helpers ---
+// ==================
+//  Folders Recursive Helpers
+// ==================
 
 /**
  * Recursively searches for a folder by ID through the entire folder tree.
@@ -123,7 +125,9 @@ export function findParentFolder(folders: Folder[], childId: string): Folder | n
 
 
 
-// --- Memoized Lookup Helpers ---
+// ==================
+//  Memoized Lookup Helpers
+// ==================
 const folderCacheMap = new WeakMap<Folder[], Map<string, Folder>>();
 const parentCacheMap = new WeakMap<Folder[], Map<string, Folder>>();
 
@@ -363,7 +367,9 @@ export function mergeIntoFolderRecursively(folders: Folder[], parentFolderId: st
 
 
 
-// --- Items Recursive Helpers ---
+// ==================
+//  Items Recursive Helpers
+// ==================
 
 /**
  * Finds which folder contains a specific item.

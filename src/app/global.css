@@ -631,3 +631,25 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
 @utility pb-safe {
    padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ###################################### */
+/* ###   MOBILE STACKING LADDER (C3)  ### */
+/* ###################################### */
+/* The single source of truth for how mobile floating/overlay controls stack,
+   low → high. (Bare `z-<n>` utilities do resolve in this Tailwind v4 setup, but
+   these named layers document the intended order and keep it consistent across
+   components.)
+     layer-content  (10): in-flow stickies / selection badges (local stacking; left as z-10)
+     layer-floating (30): resting floating controls that never have a backdrop
+                          (the side-panel toolbelt trigger, the card-reorder Done button)
+     layer-backdrop (40): tap-to-dismiss backdrops behind menus / FAB rings
+     layer-panel    (50): controls that sit above a backdrop - the FAB primaries,
+                          the FAB/menu action lists, and the drawer context menu
+     layer-overlay  (60): bottom sheets (the top app-modal layer)
+   The tutorial / onboarding overlays sit above everything (z-100+) and are left
+   as their own self-contained band. */
+@utility layer-content { z-index: 10; }
+@utility layer-floating { z-index: 30; }
+@utility layer-backdrop { z-index: 40; }
+@utility layer-panel { z-index: 50; }
+@utility layer-overlay { z-index: 60; }

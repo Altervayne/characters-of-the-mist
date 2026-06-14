@@ -47,7 +47,9 @@ export function useCharacterSheetFileImport() {
          const migratedContent = harmonizeData(importedData.content, importedData.fileType);
          const { fileType, game } = importedData;
 
-         // --- Full character sheet ---
+         // ==================
+         //  Full character sheet
+         // ==================
          if (fileType === 'FULL_CHARACTER_SHEET') {
             const characterData = migratedContent as Character;
             loadCharacter(characterData);
@@ -56,13 +58,17 @@ export function useCharacterSheetFileImport() {
             return;
          }
 
-         // --- Individual components require a character to be loaded ---
+         // ==================
+         //  Individual components require a character to be loaded
+         // ==================
          if (!character) {
             toast.error(tNotifications('Notifications.general.importFailedNoCharacter'));
             return;
          }
 
-         // --- Compatibility check for individual components ---
+         // ==================
+         //  Compatibility check for individual components
+         // ==================
          if (game !== character.game) {
             toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
             return;

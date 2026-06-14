@@ -60,7 +60,9 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
 
 
-   // --- Dialog queue generator and handler ---
+   // ==================
+   //  Dialog queue generator and handler
+   // ==================
    useEffect(() => {
       if (didInit) return;
       if (!isLocalStorageAvailable()) return;
@@ -133,7 +135,9 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
    
 
-   // --- Dialog closing handler ---
+   // ==================
+   //  Dialog closing handler
+   // ==================
    const handleDialogClose = () => {
       if (currentDialog === 'welcome' || currentDialog === 'mobileOnboarding') {
          localStorage.setItem(WELCOME_KEY, 'true');
@@ -172,7 +176,9 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
       }
    };
 
-   // --- Mobile onboarding completion handler ---
+   // ==================
+   //  Mobile onboarding completion handler
+   // ==================
    const handleMobileOnboardingComplete = (startTutorial: boolean) => {
       localStorage.setItem(WELCOME_KEY, 'true');
       setMobileOnboardingOpen(false);

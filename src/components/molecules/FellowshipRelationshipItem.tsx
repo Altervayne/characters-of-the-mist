@@ -43,13 +43,17 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
    // ###   INPUT DEBOUNCER   ###
    // ###########################
 
-   // --- Companion Name ---
+   // ==================
+   //  Companion Name
+   // ==================
    const [localCompanionName, setLocalCompanionName] = useInputDebouncer(
       relationship.companionName,
       (value) => updateRelationship(cardId, relationship.id, { companionName: value })
    );
 
-   // --- Relationship Tag ---
+   // ==================
+   //  Relationship Tag
+   // ==================
    const [localRelationshipTag, setLocalRelationshipTag] = useInputDebouncer(
       relationship.relationshipTag,
       (value) => updateRelationship(cardId, relationship.id, { relationshipTag: value })

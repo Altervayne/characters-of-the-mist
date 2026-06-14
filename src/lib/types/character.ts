@@ -3,9 +3,9 @@ import type { GameSystem, GeneralItemType } from "./common.ts";
 
 
 
-// *######################*
-// |###   BASE TYPES   ###|
-// *######################*
+// ######################
+// ###   BASE TYPES   ###
+// ######################
 
 export interface Tag {
    id: string;
@@ -50,12 +50,14 @@ export type Tracker = StatusTracker | StoryTagTracker | StoryThemeTracker;
 
 
 
-// *###############################*
-// |###   GAME-SPECIFIC TYPES   ###|
-// *###############################*
+// ###############################
+// ###   GAME-SPECIFIC TYPES   ###
+// ###############################
 
 
-// --- LEGEND IN THE MIST ---
+// ==================
+//  LEGEND IN THE MIST
+// ==================
 
 export type LegendsThemeType = 'Origin' | 'Adventure' | 'Greatness';
 
@@ -101,7 +103,9 @@ export interface LegendsHeroDetails {
 }
 
 
-// --- METRO: OTHERSCAPE ---
+// ==================
+//  METRO: OTHERSCAPE
+// ==================
 
 export type OtherscapeThemeType = 'Mythos' | 'Self' | 'Noise';
 
@@ -154,7 +158,9 @@ export interface OtherscapeLoadoutDetails {
 }
 
 
-// --- CITY OF MIST ---
+// ==================
+//  CITY OF MIST
+// ==================
 
 export type CityThemeType = 'Mythos' | 'Logos';
 
@@ -213,9 +219,9 @@ export type CardDetails =
    | CityCrewDetails
    | CityRiftDetails;
 
-// *##############################*
-// |###   GENERIC INTERFACES   ###|
-// *##############################*
+// ##############################
+// ###   GENERIC INTERFACES   ###
+// ##############################
 
 export type CardViewMode = 'FLIP' | 'SIDE_BY_SIDE';
 

@@ -201,11 +201,12 @@ export default function MobileDrawerContextMenu({
 	// Position the menu at the clamped coordinates once measured; before the
 	// layout effect runs, anchor at the raw finger position (size is unaffected
 	// by position, so the pre-clamp measurement is still accurate).
+	// The stacking level comes from the `layer-panel` class on the element; only
+	// positioning is set inline here.
 	const menuStyle: CSSProperties | undefined = position ? {
 		position: 'fixed',
 		left: `${menuPosition ? menuPosition.left : position.x}px`,
 		top: `${menuPosition ? menuPosition.top : position.y}px`,
-		zIndex: 50,
 	} : undefined;
 
 	if (!isOpen) return null;
@@ -214,7 +215,7 @@ export default function MobileDrawerContextMenu({
 		<>
          {/* Backdrop */}
          <div
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 bg-black/20 layer-backdrop"
             onClick={onClose}
          />
 
@@ -222,7 +223,7 @@ export default function MobileDrawerContextMenu({
          <div
             ref={menuRef}
             style={menuStyle}
-            className="bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-55 z-50"
+            className="bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-55 layer-panel"
          >
             <div className="p-2 border-b border-border bg-muted/50">
                <p className="text-sm font-medium truncate px-2">{target?.name}</p>

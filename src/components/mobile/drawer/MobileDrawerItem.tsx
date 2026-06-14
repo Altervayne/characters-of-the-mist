@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText, GripVertical, MoreVertical } from 'lucide-react';
+import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText, GripVertical, MoreHorizontal } from 'lucide-react';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
@@ -193,7 +193,7 @@ export default function MobileDrawerItem({
 							}}
 							className="flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground"
 						>
-							<MoreVertical className="w-5 h-5" />
+							<MoreHorizontal className="w-5 h-5" />
 						</button>
 					</div>
 				</DragStaticWrapper>

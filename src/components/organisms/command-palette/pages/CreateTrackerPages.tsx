@@ -12,7 +12,9 @@ import { commonItemClass } from '../constants';
 
 
 
-// --- Step 1: Choose Type ---
+// ==================
+//  Step 1: Choose Type
+// ==================
 interface CreateTracker_TypePageProps {
    onSelect: (type: 'STATUS' | 'STORY_TAG') => void;
 }
@@ -30,7 +32,9 @@ export const CreateTracker_TypePage = ({ onSelect }: CreateTracker_TypePageProps
    );
 };
 
-// --- Step 2: Enter Name ---
+// ==================
+//  Step 2: Enter Name
+// ==================
 interface CreateTracker_NamePageProps {
     inputValue: string;
     onSelect: () => void;

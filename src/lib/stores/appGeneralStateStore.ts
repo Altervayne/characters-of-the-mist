@@ -8,17 +8,17 @@ type StoreName = 'character' | 'drawer';
 export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 
 interface AppGeneralState {
-   // --- Undo/Redo Context ---
+   // Undo/Redo Context
    lastModifiedStore: StoreName | null;
 
-   // --- Command Palette ---
+   // Command Palette
    isCommandPaletteOpen: boolean;
 
-   // --- Patch Notes ---
+   // Patch Notes
    isPatchNotesOpen: boolean;
    initialPatchNotesVersion: string | null;
 
-   // --- Dialogs ---
+   // Dialogs
    isSettingsOpen: boolean;
    isInfoOpen: boolean;
    isCardDialogOpen: boolean;
@@ -27,31 +27,31 @@ interface AppGeneralState {
    isMobileOnboardingOpen: boolean;
    isMobileTutorialOpen: boolean;
 
-   // --- App Tour ---
+   // App Tour
    isTourOpen: boolean;
 
-   // --- Edit Mode ---
+   // Edit Mode
    isEditing: boolean;
 
-   // --- Drawer ---
+   // Drawer
    isDrawerOpen: boolean;
 
-   // --- Mobile Drawer ---
+   // Mobile Drawer
    mobileDrawerSnapPoint: MobileDrawerSnapPoint;
    
    actions: {
-      // --- Undo/Redo Context ---
+      // Undo/Redo Context
       setLastModifiedStore: (storeName: StoreName) => void;
 
-      // --- Command Palette ---
+      // Command Palette
       toggleCommandPalette: () => void;
       setCommandPaletteOpen: (isOpen: boolean) => void;
 
-      // --- Patch Notes ---
+      // Patch Notes
       setPatchNotesOpen: (isOpen: boolean) => void;
       setInitialPatchNotesVersion: (version: string | null) => void;
 
-      // --- Dialogs ---
+      // Dialogs
       setSettingsOpen: (isOpen: boolean) => void;
       setInfoOpen: (isOpen: boolean) => void;
       setCardDialogOpen: (isOpen: boolean) => void;
@@ -60,18 +60,18 @@ interface AppGeneralState {
       setMobileOnboardingOpen: (isOpen: boolean) => void;
       setMobileTutorialOpen: (isOpen: boolean) => void;
 
-      // --- App Tour ---
+      // App Tour
       setTourOpen: (isOpen: boolean) => void;
 
-      // --- Edit Mode ---
+      // Edit Mode
       setIsEditing: (isEditing: boolean) => void;
       toggleIsEditing: () => void;
 
-      // --- Drawer ---
+      // Drawer
       setDrawerOpen: (isOpen: boolean) => void;
       toggleDrawer: () => void;
 
-      // --- Mobile Drawer ---
+      // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint: MobileDrawerSnapPoint) => void;
    };
 }
@@ -79,17 +79,17 @@ interface AppGeneralState {
 
 
 export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
-   // --- Undo/Redo Context ---
+   // Undo/Redo Context
    lastModifiedStore: null,
 
-   // --- Command Palette ---
+   // Command Palette
    isCommandPaletteOpen: false,
 
-   // --- Patch Notes ---
+   // Patch Notes
    isPatchNotesOpen: false,
    initialPatchNotesVersion: null,
 
-   // --- Dialogs ---
+   // Dialogs
    isSettingsOpen: false,
    isInfoOpen: false,
    isCardDialogOpen: false,
@@ -98,31 +98,31 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    isMobileOnboardingOpen: false,
    isMobileTutorialOpen: false,
 
-   // --- App Tour ---
+   // App Tour
    isTourOpen: false,
 
-   // --- Edit Mode ---
+   // Edit Mode
    isEditing: false,
 
-   // --- Drawer ---
+   // Drawer
    isDrawerOpen: false,
 
-   // --- Mobile Drawer ---
+   // Mobile Drawer
    mobileDrawerSnapPoint: 'closed',
 
    actions: {
-      // --- Undo/Redo Context ---
+      // Undo/Redo Context
       setLastModifiedStore: (storeName) => set({ lastModifiedStore: storeName }),
 
-      // --- Command Palette ---
+      // Command Palette
       toggleCommandPalette: () => set((state) => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
       setCommandPaletteOpen: (isOpen) => set({ isCommandPaletteOpen: isOpen }),
 
-      // --- Patch Notes ---
+      // Patch Notes
       setPatchNotesOpen: (isOpen) => set({ isPatchNotesOpen: isOpen }),
       setInitialPatchNotesVersion: (version) => set({ initialPatchNotesVersion: version }),
 
-      // --- Dialogs ---
+      // Dialogs
       setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
       setInfoOpen: (isOpen) => set({ isInfoOpen: isOpen }),
       setCardDialogOpen: (isOpen) => set({ isCardDialogOpen: isOpen }),
@@ -131,18 +131,18 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setMobileOnboardingOpen: (isOpen) => set({ isMobileOnboardingOpen: isOpen }),
       setMobileTutorialOpen: (isOpen) => set({ isMobileTutorialOpen: isOpen }),
 
-      // --- App Tour ---
+      // App Tour
       setTourOpen: (isOpen) => set({ isTourOpen: isOpen }),
 
-      // --- Edit Mode ---
+      // Edit Mode
       setIsEditing: (isEditing) => set({ isEditing }),
       toggleIsEditing: () => set((state) => ({ isEditing: !state.isEditing })),
 
-      // --- Drawer ---
+      // Drawer
       setDrawerOpen: (isOpen) => set({ isDrawerOpen: isOpen }),
       toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
 
-      // --- Mobile Drawer ---
+      // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint) => set({ mobileDrawerSnapPoint: snapPoint }),
    },
 }));
