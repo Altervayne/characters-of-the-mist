@@ -12,6 +12,16 @@ As per requested, Mobile compatibility is here! Characters of the Mist can now b
 Please keep in mind I am absolutely not used to mobile UIs. I tried my best to make something intuitive and pleasant to use, but feeback is always welcome.
 There may be unexpected bugs, I didn't get the opportunity to test this on a lot of screen sizes. Don't hesitate to hit up the Tools of the Mist discord !
 
+**Here's what's in it:**
+* **Two navigation modes**: pick what feels best in Settings. Bottom tabs gives you a familiar Sheet / Drawer / Menu bar at the bottom. FAB mode replaces it with a single corner button that expands into the same options, leaving more room for content.
+* **Handedness setting**: also in Settings. Choose left or right, and every floating control (the navigation button, the toolbelt, the row grips, the card reorder button) mirrors itself to your thumb side.
+* **The Toolbelt**: a thumb-zone action ring summoned by a wrench button. It collects every contextual action: undo/redo, edit mode, save, add cards or trackers, and per-item actions once you select something (delete, flip, export, save to drawer...). The button closest to your thumb is slightly larger as you scroll, so the action you're aiming at is easier to hit.
+* **Cards on mobile**: swipe left or right anywhere on a card to flip between them. A navigation bar below has prev/next, flip and reorder buttons, plus dots to show where you are in the stack.
+* **Drag to reorder**: drag the grip handle on a drawer item or on a tracker (in edit mode) to move it. For cards, there's a dedicated reorder view (the reorder button in the card navigation bar, or in the Toolbelt) where each card gets a grip handle on the side.
+* **Long-press menus**: long-press a drawer item or folder to bring up rename / move / duplicate / delete (the overflow button on each row is always there as a fallback). Long-press a tracker on the sheet to "select" it, and the Toolbelt's actions will then target it specifically.
+* **Mobile drawer**: the full drawer with its own undo/redo, view-mode toggle, file import and folder organization, all sized for touch.
+* **Gesture tips and haptics**: little one-time hints show up the first time you can use a gesture (can be toggled off in Settings). On supported devices, short vibration cues confirm long-presses, mode changes and so on.
+
 ### 🔧 Changes
 * "Unload Character" button is now at the bottom of the sidebar, and is called "Return to Menu". The effect is the same, it will completely unload your character from memory. Make sure you saved your character to the drawer beforehand! Hopefully this makes it less ambiguous.
 
