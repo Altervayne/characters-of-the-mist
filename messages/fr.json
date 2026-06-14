@@ -1131,5 +1131,8 @@
          "skip": "Passer le Tutoriel",
          "done": "Terminé"
       }
+   },
+   "Common": {
+      "dragHandle": "Glisser pour réorganiser"
    }
 }

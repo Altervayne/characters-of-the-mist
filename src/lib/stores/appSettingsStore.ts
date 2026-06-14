@@ -22,6 +22,9 @@ interface AppSettingsState {
    deviceTypeOverride?: DeviceType;
    isMobileFABMode: boolean;
    mobileHandedness: MobileHandedness;
+   areGestureHintsEnabled: boolean;
+   hasSeenTrackerSelectHint: boolean;
+   hasSeenDrawerMenuHint: boolean;
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -34,6 +37,9 @@ interface AppSettingsState {
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
       setMobileFABMode: (enabled: boolean) => void;
       setMobileHandedness: (handedness: MobileHandedness) => void;
+      setGestureHintsEnabled: (enabled: boolean) => void;
+      setHasSeenTrackerSelectHint: (seen: boolean) => void;
+      setHasSeenDrawerMenuHint: (seen: boolean) => void;
    };
 }
 
@@ -52,6 +58,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          deviceTypeOverride: undefined,
          isMobileFABMode: false,
          mobileHandedness: 'right',
+         areGestureHintsEnabled: true,
+         hasSeenTrackerSelectHint: false,
+         hasSeenDrawerMenuHint: false,
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -63,7 +72,10 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
             setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled }),
-            setMobileHandedness: (handedness) => set({ mobileHandedness: handedness })
+            setMobileHandedness: (handedness) => set({ mobileHandedness: handedness }),
+            setGestureHintsEnabled: (enabled) => set({ areGestureHintsEnabled: enabled }),
+            setHasSeenTrackerSelectHint: (seen) => set({ hasSeenTrackerSelectHint: seen }),
+            setHasSeenDrawerMenuHint: (seen) => set({ hasSeenDrawerMenuHint: seen })
          },
       }),
       {
@@ -79,7 +91,10 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
             isMobileFABMode: state.isMobileFABMode,
-            mobileHandedness: state.mobileHandedness
+            mobileHandedness: state.mobileHandedness,
+            areGestureHintsEnabled: state.areGestureHintsEnabled,
+            hasSeenTrackerSelectHint: state.hasSeenTrackerSelectHint,
+            hasSeenDrawerMenuHint: state.hasSeenDrawerMenuHint
          }),
       }
    )

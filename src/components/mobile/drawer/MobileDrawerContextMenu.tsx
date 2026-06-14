@@ -1,5 +1,6 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -41,6 +42,27 @@ interface MobileDrawerContextMenuProps {
 	onAddToCharacter?: (item: DrawerItem) => void;
 }
 
+/**
+ * Reads the bottom safe-area inset (the home-indicator gutter) in CSS pixels.
+ *
+ * `env(safe-area-inset-bottom)` cannot be read directly from JavaScript, so this
+ * applies it to a throwaway off-screen element's padding and reads back the
+ * resolved computed length. Returns 0 on devices/browsers without an inset (or
+ * when the document does not set `viewport-fit=cover`).
+ *
+ * @returns The bottom safe-area inset in pixels (0 when none applies).
+ */
+function readSafeAreaInsetBottom(): number {
+	const probe = document.createElement('div');
+	probe.style.position = 'absolute';
+	probe.style.visibility = 'hidden';
+	probe.style.paddingBottom = 'env(safe-area-inset-bottom)';
+	document.body.appendChild(probe);
+	const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+	document.body.removeChild(probe);
+	return inset;
+}
+
 export default function MobileDrawerContextMenu({
 	isOpen,
 	onClose,
@@ -64,6 +86,26 @@ export default function MobileDrawerContextMenu({
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [showFolderPicker, setShowFolderPicker] = useState(false);
 	const [newName, setNewName] = useState('');
+
+	// Finger-anchored menu position, clamped to the menu's real rendered rect.
+	const menuRef = useRef<HTMLDivElement>(null);
+	const [menuPosition, setMenuPosition] = useState<{ left: number; top: number } | null>(null);
+
+	// Measure the rendered menu and clamp it on-screen. The menu is min-w-55 with
+	// variable height, so we read its actual rect rather than guessing a size.
+	// Runs before paint so the menu never flashes at an unclamped position.
+	useLayoutEffect(() => {
+		if (!isOpen || !position || !menuRef.current) {
+			return;
+		}
+		const rect = menuRef.current.getBoundingClientRect();
+		const safeAreaBottom = readSafeAreaInsetBottom();
+		const maxLeft = window.innerWidth - rect.width;
+		const maxTop = window.innerHeight - rect.height - safeAreaBottom;
+		const left = Math.max(0, Math.min(position.x, maxLeft));
+		const top = Math.max(0, Math.min(position.y, maxTop));
+		setMenuPosition({ left, top });
+	}, [isOpen, position]);
 
 	if (!target) return null;
 
@@ -156,11 +198,13 @@ export default function MobileDrawerContextMenu({
 	// Can only add items to character if a character is loaded
 	const canAddToCharacter = !isFolder && !!character && !!onAddToCharacter;
 
-	// Calculate menu position to keep it within viewport
-	const menuStyle = position ? {
-		position: 'fixed' as const,
-		left: `${Math.min(position.x, window.innerWidth - 250)}px`,
-		top: `${Math.min(position.y, window.innerHeight - 300)}px`,
+	// Position the menu at the clamped coordinates once measured; before the
+	// layout effect runs, anchor at the raw finger position (size is unaffected
+	// by position, so the pre-clamp measurement is still accurate).
+	const menuStyle: CSSProperties | undefined = position ? {
+		position: 'fixed',
+		left: `${menuPosition ? menuPosition.left : position.x}px`,
+		top: `${menuPosition ? menuPosition.top : position.y}px`,
 		zIndex: 50,
 	} : undefined;
 
@@ -176,6 +220,7 @@ export default function MobileDrawerContextMenu({
 
          {/* Floating Context Menu */}
          <div
+            ref={menuRef}
             style={menuStyle}
             className="bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-55 z-50"
          >

@@ -14,9 +14,10 @@ import type { Card as CardData } from '@/lib/types/character';
 interface MobileCardCarouselProps {
 	cards: CardData[];
 	currentIndex: number;
+	onOpenAddCard?: () => void;
 }
 
-export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCarouselProps) {
+export default function MobileCardCarousel({ cards, currentIndex, onOpenAddCard }: MobileCardCarouselProps) {
 	const { t } = useTranslation();
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 
@@ -51,7 +52,7 @@ export default function MobileCardCarousel({ cards, currentIndex }: MobileCardCa
 				<p className="text-lg text-muted-foreground mb-6">
 					{t('MobileCardCarousel.noCards')}
 				</p>
-				{isEditing && <AddCardButton onClick={() => {}} />}
+				{isEditing && onOpenAddCard && <AddCardButton onClick={onOpenAddCard} />}
 			</div>
 		);
 	}

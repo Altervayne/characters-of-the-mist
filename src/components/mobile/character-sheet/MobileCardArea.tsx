@@ -17,15 +17,16 @@ interface MobileCardAreaProps {
 	currentIndex: number;
 	isMobileFABMode: boolean;
 	touchHandlers: { onTouchStart: (event: TouchEvent) => void; onTouchEnd: (event: TouchEvent) => void };
+	onOpenAddCard?: () => void;
 }
 
 /**
  * The scrollable card display area of the mobile character sheet, wrapping the
- * card carousel and carrying the card-area swipe handlers (edge-swipe flip /
- * toolbelt) spread from the sheet's gesture hook. Purely presentational; the
- * `data-tutorial` anchor is preserved.
+ * card carousel and carrying the card-area swipe handlers (horizontal swipe on
+ * the card body navigates to the previous/next card) spread from the sheet's
+ * gesture hook. Purely presentational; the `data-tutorial` anchor is preserved.
  */
-export function MobileCardArea({ cards, currentIndex, isMobileFABMode, touchHandlers }: MobileCardAreaProps) {
+export function MobileCardArea({ cards, currentIndex, isMobileFABMode, touchHandlers, onOpenAddCard }: MobileCardAreaProps) {
 	return (
 		<div
 			className={cn("flex-1 overflow-y-auto overflow-x-hidden p-4", isMobileFABMode && "pb-32")}
@@ -36,6 +37,7 @@ export function MobileCardArea({ cards, currentIndex, isMobileFABMode, touchHand
 				<MobileCardCarousel
 					cards={cards}
 					currentIndex={currentIndex}
+					onOpenAddCard={onOpenAddCard}
 				/>
 			</div>
 		</div>

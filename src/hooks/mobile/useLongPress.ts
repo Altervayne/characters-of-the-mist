@@ -1,5 +1,8 @@
 import { useRef, useState, useCallback, type TouchEvent } from 'react';
 
+// -- Utils Imports --
+import { triggerHaptic } from '@/lib/utils/haptics';
+
 interface Position {
 	x: number;
 	y: number;
@@ -84,8 +87,8 @@ export function useLongPress({
 		setIsPressing(true);
 
 		timerRef.current = setTimeout(() => {
-			if (vibrate && 'vibrate' in navigator) {
-				navigator.vibrate(typeof vibrate === 'number' ? vibrate : 50);
+			if (vibrate) {
+				triggerHaptic(typeof vibrate === 'number' ? vibrate : 50);
 			}
 			isPressingRef.current = false;
 			onLongPress(startPositionRef.current ?? position);

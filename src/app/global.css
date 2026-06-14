@@ -624,3 +624,10 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
 .scrollbar-hide::-webkit-scrollbar {
    display: none;  /* Chrome, Safari and Opera */
 }
+
+/* Safe-area padding utility: clears the bottom home-indicator gutter on inset
+   devices. Resolves to 0 unless the document sets viewport-fit=cover. This is
+   the single canonical name for the safe-area bottom inset across the app. */
+@utility pb-safe {
+   padding-bottom: env(safe-area-inset-bottom);
+}

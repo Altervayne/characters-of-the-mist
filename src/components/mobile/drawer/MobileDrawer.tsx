@@ -1,9 +1,11 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Component Imports --
 import MobileBreadcrumbs from '@/components/mobile/drawer/MobileBreadcrumbs';
@@ -19,11 +21,13 @@ import { FolderPlus, List, Grid3x3, Download } from 'lucide-react';
 
 // -- Store Imports --
 import { useDrawerActions } from '@/lib/stores/drawerStore';
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Hook Imports --
 import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
+import { useMobileDragSensors } from '@/hooks/mobile/useMobileDragSensors';
+import { useMobileDrawerDragReorder } from '@/hooks/mobile/useMobileDrawerDragReorder';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -64,6 +68,26 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
    const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
    const isLeftHanded = (mobileHandedness === 'left')
 
+   // One-time long-press hint: shown once when gesture tips are enabled, then
+   // remembered so it never repeats. Gated on the setting (never shown when off).
+   // The overflow (⋮) button on each row is the always-present fallback.
+   const areGestureHintsEnabled = useAppSettingsStore((state) => state.areGestureHintsEnabled);
+   const hasSeenDrawerMenuHint = useAppSettingsStore((state) => state.hasSeenDrawerMenuHint);
+   const { setHasSeenDrawerMenuHint } = useAppSettingsActions();
+
+   useEffect(() => {
+      if (areGestureHintsEnabled && !hasSeenDrawerMenuHint) {
+         toast(t('MobileGestureHints.drawerLongPress', { defaultValue: 'Tip: press and hold an item (or tap its ⋮ button) for more options.' }));
+         setHasSeenDrawerMenuHint(true);
+      }
+   }, [areGestureHintsEnabled, hasSeenDrawerMenuHint, setHasSeenDrawerMenuHint, t]);
+
+   // Drag-to-reorder (folders and items within the current folder)
+   const sensors = useMobileDragSensors();
+   const { handleDragEnd } = useMobileDrawerDragReorder(currentFolderId, currentFolders, currentItems);
+   const folderIds = useMemo(() => currentFolders.map((folder) => folder.id), [currentFolders]);
+   const itemIds = useMemo(() => currentItems.map((item) => item.id), [currentItems]);
+
 	// Handlers
 	const handleFolderLongPress = (folderId: string, folderName: string, position: { x: number; y: number }) => {
 		setContextMenuTarget({ type: 'folder', id: folderId, name: folderName });
@@ -91,44 +115,52 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	return (
 		<div className="h-full flex flex-col bg-background" data-tutorial="drawer-content">
 			{/* Content */}
-			<div className="flex-1 overflow-y-auto p-4 space-y-2">
-				{!hasContent && (
-					<div className="h-full flex items-center justify-center text-center p-8">
-						<div>
-							<p className="text-muted-foreground mb-4">
-								{currentFolderId
-									? t('Drawer.emptyFolder')
-									: t('Drawer.emptyDrawer')}
-							</p>
+			<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+				<div className="flex-1 overflow-y-auto p-4 space-y-2">
+					{!hasContent && (
+						<div className="h-full flex items-center justify-center text-center p-8">
+							<div>
+								<p className="text-muted-foreground mb-4">
+									{currentFolderId
+										? t('Drawer.emptyFolder')
+										: t('Drawer.emptyDrawer')}
+								</p>
+							</div>
 						</div>
-					</div>
-				)}
+					)}
 
-				{/* Folders */}
-				{currentFolders.map((folder) => (
-					<MobileFolderItem
-						key={folder.id}
-						folder={folder}
-						onNavigate={navigateToFolder}
-						onLongPress={handleFolderLongPress}
-					/>
-				))}
+					{/* Folders */}
+					<SortableContext items={folderIds} strategy={verticalListSortingStrategy}>
+						{currentFolders.map((folder) => (
+							<MobileFolderItem
+								key={folder.id}
+								folder={folder}
+								onNavigate={navigateToFolder}
+								onLongPress={handleFolderLongPress}
+								isLeftHanded={isLeftHanded}
+							/>
+						))}
+					</SortableContext>
 
-				{/* Separator if both folders and items exist */}
-				{currentFolders.length > 0 && currentItems.length > 0 && (
-					<div className="border-t border-border my-4" />
-				)}
+					{/* Separator if both folders and items exist */}
+					{currentFolders.length > 0 && currentItems.length > 0 && (
+						<div className="border-t border-border my-4" />
+					)}
 
-				{/* Items */}
-				{currentItems.map((item) => (
-					<MobileDrawerItem
-						key={item.id}
-						item={item}
-						isCompact={isCompactView}
-						onLongPress={handleItemLongPress}
-					/>
-				))}
-			</div>
+					{/* Items */}
+					<SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+						{currentItems.map((item) => (
+							<MobileDrawerItem
+								key={item.id}
+								item={item}
+								isCompact={isCompactView}
+								onLongPress={handleItemLongPress}
+								isLeftHanded={isLeftHanded}
+							/>
+						))}
+					</SortableContext>
+				</div>
+			</DndContext>
 
 			{/* Breadcrumbs navigation at bottom */}
 			<div className="border-t border-border">
@@ -142,7 +174,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 			<div
 				data-tutorial="drawer-toolbar"
 				className={cn(
-					"flex items-center justify-between px-4 py-4 border-t border-border bg-card safe-area-inset-bottom",
+					"flex items-center justify-between px-4 py-4 border-t border-border bg-card pb-safe",
 					isLeftHanded ? "flex-row-reverse" : ""
 				)}
 			>

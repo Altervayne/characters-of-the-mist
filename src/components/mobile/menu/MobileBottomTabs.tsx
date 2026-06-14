@@ -43,7 +43,7 @@ export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBotto
 	];
 
 	return (
-		<div className="shrink-0 bg-card border-t border-border safe-area-bottom" data-tutorial="bottom-tabs">
+		<div className="shrink-0 bg-card border-t border-border pb-safe" data-tutorial="bottom-tabs">
 			<div className="flex items-center justify-around h-16">
 				{tabs.map((tab) => {
 					const Icon = tab.icon;

@@ -12,29 +12,36 @@ interface UseMobileCardSheetGesturesParameters {
 	isLeftHanded: boolean;
 	isMobileFABMode: boolean;
 	isToolbeltOpen: boolean;
-	flipCard: (cardId: string) => void;
 	setCurrentCardIndex: Dispatch<SetStateAction<number>>;
-	setIsReorderingCards: (value: boolean) => void;
 	setIsToolbeltOpen: (value: boolean) => void;
 }
+
+// A swipe must be clearly horizontal to count as card navigation: its horizontal
+// travel must dominate its vertical travel (G3), so a diagonal scroll of the
+// card area never steps the card. It must also clear a minimum distance.
+const NAVIGATE_HORIZONTAL_DOMINANCE = 1.5;
+const NAVIGATE_MIN_DISTANCE = 50;
 
 /**
  * Owns the mobile character sheet's three touch-swipe surfaces and returns the
  * touch handlers to spread onto each.
  *
- * - **Card area:** a horizontal edge-swipe flips the current card or opens the
- *   toolbelt, branching on handedness and FAB-vs-side-panel mode (in FAB mode the
- *   would-be toolbelt edge flips instead, since the toolbelt is reached via the FAB).
- * - **Nav bar:** a vertical swipe-up enters card-reorder mode; a horizontal swipe
- *   navigates to the previous/next card.
+ * - **Card area:** a horizontal swipe anywhere on the card body navigates to the
+ *   previous/next card (same logic as the nav bar). Card flip is now an explicit
+ *   nav-bar button, so the former edge-swipe-flip is retired; the former
+ *   side-panel edge-swipe-toolbelt is also retired here in favour of the tab-bar
+ *   toolbelt button, so the card body navigates uniformly with no edge zones.
+ * - **Nav bar:** a horizontal swipe navigates to the previous/next card. (Card
+ *   reorder is entered via the toolbelt's reorder action and performed by
+ *   drag-to-reorder, so the former swipe-up-to-reorder gesture is retired.)
  * - **Trackers area:** a horizontal edge-swipe opens the toolbelt (side-panel mode
  *   only), branching on handedness.
  *
- * The edge thresholds, the `window.innerWidth` reads, and every handedness /
- * FAB-mode / `isToolbeltOpen` branch are preserved exactly; only the card index,
- * reorder flag, toolbelt flag, and `flipCard` action are supplied by the caller
- * (the card index stays owned by the component, which the nav bar dots/buttons and
- * carousel also read).
+ * Both navigate-swipe surfaces share one rule (horizontal-dominance + minimum
+ * distance) via {@link navigateFromHorizontalSwipe}. The trackers area's edge
+ * thresholds, `window.innerWidth` read, and handedness / FAB-mode / `isToolbeltOpen`
+ * branches are preserved exactly; the card index stays owned by the component,
+ * which the nav bar dots/buttons and carousel also read.
  *
  * @returns Per-surface `{ onTouchStart, onTouchEnd }` objects to spread onto the
  *   card area, nav bar, and trackers area elements.
@@ -45,12 +52,28 @@ export function useMobileCardSheetGestures({
 	isLeftHanded,
 	isMobileFABMode,
 	isToolbeltOpen,
-	flipCard,
 	setCurrentCardIndex,
-	setIsReorderingCards,
 	setIsToolbeltOpen,
 }: UseMobileCardSheetGesturesParameters) {
-	// Swipe gesture detection for card area (edge swipes for flip/toolbelt)
+	// Shared prev/next navigation for the card-area and nav-bar swipes. Steps one
+	// card on a clearly-horizontal swipe (G3 dominance + minimum distance),
+	// clamped to the card-list bounds.
+	const navigateFromHorizontalSwipe = (deltaX: number, deltaY: number) => {
+		if (!character || character.cards.length === 0) return;
+
+		// Require horizontal dominance so diagonal/vertical scrolls do not navigate.
+		if (Math.abs(deltaX) < NAVIGATE_HORIZONTAL_DOMINANCE * Math.abs(deltaY)) return;
+		if (Math.abs(deltaX) < NAVIGATE_MIN_DISTANCE) return;
+
+		// Swipe left = next card; swipe right = previous card.
+		if (deltaX < 0 && safeCardIndex < character.cards.length - 1) {
+			setCurrentCardIndex(i => i + 1);
+		} else if (deltaX > 0 && safeCardIndex > 0) {
+			setCurrentCardIndex(i => i - 1);
+		}
+	};
+
+	// Swipe gesture detection for card area (horizontal swipe navigates prev/next)
 	const cardSwipeStartX = useRef<number>(0);
 	const cardSwipeStartY = useRef<number>(0);
 
@@ -69,79 +92,15 @@ export function useMobileCardSheetGestures({
 	};
 
 	const handleNavBarTouchEnd = (e: TouchEvent) => {
-		if (!character || character.cards.length === 0) return;
-
 		const touchEndX = e.changedTouches[0].clientX;
 		const touchEndY = e.changedTouches[0].clientY;
-		const deltaX = touchEndX - navSwipeStartX.current;
-		const deltaY = touchEndY - navSwipeStartY.current;
-
-		// Check for vertical swipe up (negative deltaY) to enter reorder mode
-		if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY < -50) {
-			setIsReorderingCards(true);
-			return;
-		}
-
-		// Only process horizontal swipes with 50px threshold
-		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 50) return;
-
-		// Swipe left = next card
-		if (deltaX < 0 && safeCardIndex < character.cards.length - 1) {
-			setCurrentCardIndex(i => i + 1);
-		}
-		// Swipe right = previous card
-		else if (deltaX > 0 && safeCardIndex > 0) {
-			setCurrentCardIndex(i => i - 1);
-		}
+		navigateFromHorizontalSwipe(touchEndX - navSwipeStartX.current, touchEndY - navSwipeStartY.current);
 	};
 
 	const handleCardAreaTouchEnd = (e: TouchEvent) => {
-		if (!character || character.cards.length === 0) return;
-
 		const touchEndX = e.changedTouches[0].clientX;
 		const touchEndY = e.changedTouches[0].clientY;
-		const deltaX = touchEndX - cardSwipeStartX.current;
-		const deltaY = touchEndY - cardSwipeStartY.current;
-
-		// Only process horizontal swipes
-		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 30) return;
-
-		const currentCard = character.cards[safeCardIndex];
-		const edgeThreshold = 50;
-		const swipeThreshold = 30;
-
-		// Edge swipe behavior depends on handedness setting
-		if (isLeftHanded) {
-			// Left-handed mode: Right edge = flip, Left edge = toolbelt
-			if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-				// Right edge swipe → Flip card
-				flipCard(currentCard.id);
-			}
-			else if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-				// Left edge swipe → Open toolbelt (side-panel mode only)
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				} else if (isMobileFABMode) {
-					// FAB mode: Flip card (toolbelt is accessible via FAB)
-					flipCard(currentCard.id);
-				}
-			}
-		} else {
-			// Right-handed mode (default): Left edge = flip, Right edge = toolbelt
-			if (cardSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-				// Left edge swipe → Flip card
-				flipCard(currentCard.id);
-			}
-			else if (cardSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-				// Right edge swipe → Open toolbelt (side-panel mode only)
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				} else if (isMobileFABMode) {
-					// FAB mode: Flip card (toolbelt is accessible via FAB)
-					flipCard(currentCard.id);
-				}
-			}
-		}
+		navigateFromHorizontalSwipe(touchEndX - cardSwipeStartX.current, touchEndY - cardSwipeStartY.current);
 	};
 
 	// Swipe gesture detection for trackers area (edge swipe for toolbelt)

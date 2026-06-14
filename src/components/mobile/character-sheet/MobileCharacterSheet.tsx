@@ -12,7 +12,6 @@ import { MobileTrackersSection } from '@/components/mobile/character-sheet/Mobil
 import { MobileCardReorderView } from '@/components/mobile/character-sheet/MobileCardReorderView';
 import { MobileCardArea } from '@/components/mobile/character-sheet/MobileCardArea';
 import { MobileCardNavigationBar } from '@/components/mobile/character-sheet/MobileCardNavigationBar';
-import { MobileTrackerReorderControls } from '@/components/mobile/character-sheet/MobileTrackerReorderControls';
 
 // -- Icon Imports --
 import { Check } from 'lucide-react';
@@ -22,14 +21,13 @@ import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterSt
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
-import { useMobileTrackerReorder } from '@/hooks/mobile/useMobileTrackerReorder';
-import { useMobileCardReorder } from '@/hooks/mobile/useMobileCardReorder';
 import { useMobileSaveToDrawer } from '@/hooks/mobile/useMobileSaveToDrawer';
 import { useMobileCardSheetGestures } from '@/hooks/mobile/useMobileCardSheetGestures';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { deriveCardTitle } from '@/lib/utils/character';
+import { triggerHaptic } from '@/lib/utils/haptics';
 
 // -- Type Imports --
 import type { Card, Tracker } from '@/lib/types/character';
@@ -75,6 +73,14 @@ export default function MobileCharacterSheet({
 	const [internalIsToolbeltOpen, setInternalIsToolbeltOpen] = useState(false);
 	const isToolbeltOpen = controlledIsToolbeltOpen ?? internalIsToolbeltOpen;
 	const setIsToolbeltOpen = controlledOnToolbeltOpenChange ?? setInternalIsToolbeltOpen;
+
+	// Toolbelt open/close that fires a haptic pulse on the open transition, so
+	// every toolbelt-open path (edge swipe, tab-bar button, FAB) gives coherent
+	// feedback. Closing is silent.
+	const handleToolbeltOpenChange = (open: boolean) => {
+		if (open && !isToolbeltOpen) triggerHaptic();
+		setIsToolbeltOpen(open);
+	};
 
 	// Reordering
 	const [internalIsReorderingCards, setInternalIsReorderingCards] = useState(false);
@@ -132,20 +138,9 @@ export default function MobileCharacterSheet({
 		isLeftHanded,
 		isMobileFABMode,
 		isToolbeltOpen,
-		flipCard,
 		setCurrentCardIndex,
-		setIsReorderingCards,
-		setIsToolbeltOpen,
+		setIsToolbeltOpen: handleToolbeltOpenChange,
 	});
-
-	// Tracker reordering (mobile hook)
-	const { moveTrackerUp, moveTrackerDown, canMoveTrackerUp, canMoveTrackerDown } = useMobileTrackerReorder(selectedTrackerId, character);
-
-
-
-	// Card reordering (mobile hook)
-	const { isReorderingCard, moveCardUp, moveCardDown } = useMobileCardReorder(character);
-
 
 
 	// Save to Drawer handlers
@@ -211,7 +206,7 @@ export default function MobileCharacterSheet({
 					cardCount={character.cards.length}
 					isMobileFABMode={isMobileFABMode}
 					isLeftHanded={isLeftHanded}
-					onOpenToolbelt={() => setIsToolbeltOpen(true)}
+					onOpenToolbelt={() => handleToolbeltOpenChange(true)}
 				/>
 			)}
 
@@ -228,6 +223,7 @@ export default function MobileCharacterSheet({
 						onAddStatus={() => addStatus()}
 						onAddStoryTag={() => addStoryTag()}
 						onAddStoryTheme={() => addStoryTheme()}
+						isLeftHanded={isLeftHanded}
 						touchHandlers={trackersAreaHandlers}
 					/>
 				)}
@@ -239,9 +235,7 @@ export default function MobileCharacterSheet({
 							<MobileCardReorderView
 								cards={character.cards}
 								isMobileFABMode={isMobileFABMode}
-								isReorderingCard={isReorderingCard}
-								onMoveCardUp={moveCardUp}
-								onMoveCardDown={moveCardDown}
+								isLeftHanded={isLeftHanded}
 								onSelectCard={(index) => {
 									setCurrentCardIndex(index);
 									setIsReorderingCards(false);
@@ -253,6 +247,7 @@ export default function MobileCharacterSheet({
 								currentIndex={safeCardIndex}
 								isMobileFABMode={isMobileFABMode}
 								touchHandlers={cardAreaHandlers}
+								onOpenAddCard={onOpenAddCard}
 							/>
 						)}
 
@@ -261,9 +256,11 @@ export default function MobileCharacterSheet({
 							<MobileCardNavigationBar
 								cards={character.cards}
 								safeCardIndex={safeCardIndex}
+								isLeftHanded={isLeftHanded}
 								onPrevious={() => setCurrentCardIndex(i => Math.max(0, i - 1))}
 								onNext={() => setCurrentCardIndex(i => Math.min(character.cards.length - 1, i + 1))}
 								onSelectCard={(index) => setCurrentCardIndex(index)}
+								onFlip={() => { triggerHaptic(); flipCard(character.cards[safeCardIndex].id); }}
 								touchHandlers={navBarHandlers}
 							/>
 						)}
@@ -279,29 +276,16 @@ export default function MobileCharacterSheet({
 					mode={isMobileFABMode ? 'fab' : 'side-panel'}
 					context={toolbeltContext}
 					isOpen={isToolbeltOpen}
-					onOpenChange={setIsToolbeltOpen}
+					onOpenChange={handleToolbeltOpenChange}
 					activeTab={activeTab}
 					isMenuFABExpanded={isMenuFABExpanded}
 					onEnterCardReorderMode={() => {
+						triggerHaptic();
 						setIsReorderingCards(true);
 						setIsToolbeltOpen(false);
 					}}
 					onOpenAddCard={onOpenAddCard}
 					onSaveToDrawer={handleSaveToDrawer}
-				/>
-			)}
-
-
-
-			{/* Tracker Reorder Buttons - Only visible when tracker selected */}
-			{selectedTrackerId && activeTab === 'trackers' && !isReorderingCards && (
-				<MobileTrackerReorderControls
-					isLeftHanded={isLeftHanded}
-					onDeselect={() => setSelectedTrackerId(null)}
-					onMoveUp={moveTrackerUp}
-					onMoveDown={moveTrackerDown}
-					canMoveUp={canMoveTrackerUp}
-					canMoveDown={canMoveTrackerDown}
 				/>
 			)}
 

@@ -29,7 +29,9 @@ import {
 	RotateCcw,
    Hand,
    SquareMenu,
-   PanelsRightBottom
+   PanelsRightBottom,
+   Eye,
+   EyeOff
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -63,8 +65,8 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 
 	const { resolvedTheme, setTheme: setMode } = useTheme();
 
-	const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness } = useAppSettingsStore();
-	const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness } = useAppSettingsActions();
+	const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
+	const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled } = useAppSettingsActions();
 
 	const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
@@ -245,6 +247,25 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 								label: t('SettingsDialog.mobileHandedness.right'),
 								isActive: mobileHandedness === 'right',
 								onSelect: () => setMobileHandedness('right'),
+							},
+						]}
+					/>
+
+					{/* Gesture Tips */}
+					<MobileSettingsToggleGroup
+						label={t('SettingsDialog.gestureHints.title', { defaultValue: 'Gesture tips' })}
+						options={[
+							{
+								icon: <Eye className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.gestureHints.shown', { defaultValue: 'Shown' }),
+								isActive: areGestureHintsEnabled,
+								onSelect: () => setGestureHintsEnabled(true),
+							},
+							{
+								icon: <EyeOff className="mr-2 h-5 w-5 shrink-0" />,
+								label: t('SettingsDialog.gestureHints.hidden', { defaultValue: 'Hidden' }),
+								isActive: !areGestureHintsEnabled,
+								onSelect: () => setGestureHintsEnabled(false),
 							},
 						]}
 					/>

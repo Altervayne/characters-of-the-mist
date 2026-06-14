@@ -1,16 +1,27 @@
 // -- Library Imports --
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Component Imports --
-import { IconButton } from '@/components/ui/icon-button';
 import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
 
+// -- DnD Component Imports --
+import { Sortable, DragLayoutWrapper } from '@/components/dnd';
+
 // -- Icon Imports --
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
+
+// -- Hook Imports --
+import { useMobileDragSensors } from '@/hooks/mobile/useMobileDragSensors';
+import { useMobileCardDragReorder } from '@/hooks/mobile/useMobileCardDragReorder';
+
+// -- Store Imports --
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
 import type { Card } from '@/lib/types/character';
@@ -20,22 +31,36 @@ import type { Card } from '@/lib/types/character';
 interface MobileCardReorderViewProps {
 	cards: Card[];
 	isMobileFABMode: boolean;
-	isReorderingCard: boolean;
-	onMoveCardUp: (index: number) => void;
-	onMoveCardDown: (index: number) => void;
+	isLeftHanded: boolean;
 	onSelectCard: (index: number) => void;
 }
 
 /**
- * The card-reorder view of the mobile character sheet: a vertical list of card
- * previews, each with up/down controls and clickable to jump to that card and
- * exit reorder mode. Purely presentational - the card list, mode flag, the
- * mid-move `isReorderingCard` guard, and the move/select callbacks come from the
- * sheet. The previews route through the shared `resolveCardComponent` (forced to
- * the front-facing side-by-side view), so no card-type/game routing lives here.
+ * The card-reorder view of the mobile character sheet: a vertical, drag-sortable
+ * list of card previews. Each row pairs a tappable preview (tap jumps to that
+ * card and exits reorder mode) with a dedicated ≥44px grip handle that owns
+ * drag-to-reorder, so tapping a preview never starts a drag and dragging the
+ * handle never selects. The handle sits on the handedness-leading edge (right by
+ * default, left when left-handed) and is touch-action: none so an intentional
+ * drag is not pre-empted by the list's vertical scroll; @dnd-kit auto-scrolls the
+ * surrounding scroll container while dragging near its edges.
+ *
+ * Reordering is wired through {@link useMobileCardDragReorder} (dispatching the
+ * `reorderCards` store action); the previews route through the shared
+ * `resolveCardComponent` (forced to the front-facing side-by-side view), so no
+ * card-type/game routing lives here. Entry into this view is owned by the
+ * toolbelt's reorder action; this component only renders the list.
+ *
+ * @param cards - The character's cards, in their displayed order.
+ * @param isMobileFABMode - Adds bottom padding so the FAB does not overlap the list.
+ * @param isLeftHanded - Mirrors each grip handle to the left edge when true.
+ * @param onSelectCard - Called with a card index when its preview is tapped.
  */
-export function MobileCardReorderView({ cards, isMobileFABMode, isReorderingCard, onMoveCardUp, onMoveCardDown, onSelectCard }: MobileCardReorderViewProps) {
+export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, onSelectCard }: MobileCardReorderViewProps) {
 	const { t } = useTranslation();
+	const areGestureHintsEnabled = useAppSettingsStore((state) => state.areGestureHintsEnabled);
+	const sensors = useMobileDragSensors();
+	const { cardIds, handleDragEnd } = useMobileCardDragReorder(cards);
 
 	// Force SIDE_BY_SIDE mode and front face for previews (like in the Drawer)
 	const renderCardPreview = (card: Card) => {
@@ -54,47 +79,48 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isReorderingCard
 					<h2 className="text-lg font-semibold">{t('MobileCharacterSheet.reorderCards')}</h2>
 				</div>
 
-				{/* Card list with reorder controls */}
-				{cards.map((card, index) => (
-					<motion.div
-						key={card.id}
-						layout
-						initial={{ opacity: 0, scale: 0.95 }}
-						animate={{ opacity: 1, scale: 1 }}
-						exit={{ opacity: 0, scale: 0.95 }}
-						className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
-					>
-						{/* Card preview - clickable to navigate and close reorder mode */}
-						<div
-							className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
-							onClick={() => onSelectCard(index)}
-						>
-							{renderCardPreview(card)}
-						</div>
+				{/* Drag-sortable card list */}
+				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+					<SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+						{cards.map((card, index) => (
+							<Sortable key={card.id} id={card.id} data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}>
+								{({ dragAttributes, dragListeners, isBeingDragged }) => (
+									<DragLayoutWrapper isBeingDragged={isBeingDragged}>
+										<div
+											className={cn(
+												"flex items-center gap-3 p-3 bg-card border border-border rounded-lg",
+												isLeftHanded && "flex-row-reverse"
+											)}
+										>
+											{/* Card preview - tap to navigate and close reorder mode */}
+											<div
+												className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+												onClick={() => onSelectCard(index)}
+											>
+												{renderCardPreview(card)}
+											</div>
 
-						{/* Reorder buttons */}
-						<div className="flex flex-col gap-1 shrink-0">
-							<IconButton
-								variant="outline"
-								size="lg"
-								onClick={() => onMoveCardUp(index)}
-								disabled={index === 0 || isReorderingCard}
-								className="h-10 w-10"
-							>
-								<ChevronUp className="h-6 w-6" />
-							</IconButton>
-							<IconButton
-								variant="outline"
-								size="lg"
-								onClick={() => onMoveCardDown(index)}
-								disabled={index === cards.length - 1 || isReorderingCard}
-								className="h-10 w-10"
-							>
-								<ChevronDown className="h-6 w-6" />
-							</IconButton>
-						</div>
-					</motion.div>
-				))}
+											{/* Drag handle (≥44px touch target) */}
+											<button
+												type="button"
+												aria-label={t('Common.dragHandle')}
+												className={cn(
+													"flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground touch-none cursor-grab active:cursor-grabbing",
+													// Drag affordance cue, gated on the gesture-tips setting.
+													areGestureHintsEnabled && "bg-muted/50 rounded-md"
+												)}
+												{...dragAttributes}
+												{...dragListeners}
+											>
+												<GripVertical className="h-6 w-6" />
+											</button>
+										</div>
+									</DragLayoutWrapper>
+								)}
+							</Sortable>
+						))}
+					</SortableContext>
+				</DndContext>
 			</div>
 		</div>
 	);
