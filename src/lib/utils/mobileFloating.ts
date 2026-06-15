@@ -11,11 +11,6 @@ const BOTTOM_NAV_HEIGHT_REM = 4;
  *  hint. That value clears the bar with the base gap (~1rem) on top. Excludes the
  *  safe-area inset, which {@link getFloatingBottom} adds separately. */
 const CARDS_NAV_BAR_REM = 4.25;
-/** Height of the drawer's in-flow bottom toolbar (its `py-2` padding plus a 44px
- *  icon-button row = 60px). Lets a FAB on the drawer tab ride above the toolbar in
- *  FAB mode. Excludes the safe-area inset, which {@link getFloatingBottom} adds
- *  separately, so it is not double-counted against the toolbar's own `pb-safe`. */
-const DRAWER_TOOLBAR_HEIGHT_REM = 3.75;
 /** Gap from the bottom chrome (or the screen edge in FAB mode) up to the first cluster. */
 const FLOATING_BASE_GAP_REM = 1;
 /** Vertical separation between two floating clusters that share one screen edge. */
@@ -31,8 +26,6 @@ interface FloatingBottomConfig {
 	hasBottomNav?: boolean;
 	/** Add the card navigation bar's height to the offset (cards tab). */
 	clearsCardsNavBar?: boolean;
-	/** Add the drawer's bottom-toolbar height to the offset (drawer tab, FAB mode). */
-	clearsDrawerToolbar?: boolean;
 	/** This control's index in the stack of clusters sharing the edge (0 = nearest the edge). */
 	stagger?: number;
 	/** One-off additional clearance in rem (e.g. an expanded action list floating above its own FAB). */
@@ -45,13 +38,18 @@ interface FloatingBottomConfig {
  * whatever bottom chrome sits beneath it, and is staggered far enough from any
  * other cluster on the same edge that the two never overlap in any configuration.
  *
- * The offset is `bottom-nav height + card-nav-bar height + drawer-toolbar height +
- * base gap + stagger × stagger-step`, all in rem, plus `env(safe-area-inset-bottom)` (the
- * same inset Prompt 1's `pb-safe` utility applies, made non-zero by the
- * `viewport-fit=cover` viewport). Callers describe their situation declaratively
- * (which bottom chrome is present, and their stagger index) rather than hard-coding
- * `bottom-*` values, so the whole floating layout stays consistent and
- * safe-area-aware from one place.
+ * The offset is `bottom-nav height + card-nav-bar height + base gap + stagger ×
+ * stagger-step`, all in rem, plus `env(safe-area-inset-bottom)` (the same inset
+ * the `pb-safe` utility applies, made non-zero by the `viewport-fit=cover`
+ * viewport). Callers describe their situation declaratively (which bottom chrome
+ * is present, and their stagger index) rather than hard-coding `bottom-*`
+ * values, so the whole floating layout stays consistent and safe-area-aware
+ * from one place.
+ *
+ * Note: the drawer tab does NOT lift the FAB above its in-flow toolbar; the
+ * drawer instead reserves a horizontal slot on its handedness-leading edge so
+ * the FAB at its base offset sits inside the toolbar's vertical band, with no
+ * button beneath it. The breadcrumbs (above the toolbar) are likewise clear.
  *
  * The two FAB-mode clusters that co-occupy an edge - the navigation FAB
  * (`stagger: 0`) and the toolbelt FAB (`stagger: 1`) - are kept apart by the
@@ -64,14 +62,12 @@ interface FloatingBottomConfig {
 export function getFloatingBottom({
 	hasBottomNav = false,
 	clearsCardsNavBar = false,
-	clearsDrawerToolbar = false,
 	stagger = 0,
 	extraRem = 0,
 }: FloatingBottomConfig = {}): string {
 	const offsetRem =
 		(hasBottomNav ? BOTTOM_NAV_HEIGHT_REM : 0) +
 		(clearsCardsNavBar ? CARDS_NAV_BAR_REM : 0) +
-		(clearsDrawerToolbar ? DRAWER_TOOLBAR_HEIGHT_REM : 0) +
 		FLOATING_BASE_GAP_REM +
 		stagger * FLOATING_STAGGER_REM +
 		extraRem;

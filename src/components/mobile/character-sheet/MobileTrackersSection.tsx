@@ -79,16 +79,24 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 	const { setHasSeenTrackerSelectHint } = useAppSettingsActions();
 
 	useEffect(() => {
-		if (areGestureHintsEnabled && !hasSeenTrackerSelectHint) {
-			toast(t('MobileGestureHints.trackerLongPress'));
-			setHasSeenTrackerSelectHint(true);
-		}
+		// StrictMode invokes effect setup twice synchronously; both invocations
+		// would see the same committed `hasSeenTrackerSelectHint = false` closure
+		// and toast twice. Re-read the store live, and set the flag before toasting
+		// so the second invoke's live read is already `true`.
+		if (!areGestureHintsEnabled) return;
+		if (useAppSettingsStore.getState().hasSeenTrackerSelectHint) return;
+		setHasSeenTrackerSelectHint(true);
+		toast(t('MobileGestureHints.trackerLongPress'));
 	}, [areGestureHintsEnabled, hasSeenTrackerSelectHint, setHasSeenTrackerSelectHint, t]);
 
 	return (
 		<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
 		<div
-			className="h-full overflow-y-auto p-3"
+			// `overflow-x-hidden` is the safeguard against horizontal drag runaway:
+			// the trackers grid is 2D (rectSortingStrategy), so an axis lock would
+			// break valid horizontal reorder moves; clipping the scroll container
+			// instead caps the visual blast radius without changing drag semantics.
+			className="h-full overflow-y-auto overflow-x-hidden p-3"
 			// In FAB mode the resting FAB cluster (toolbelt FAB at stagger 1 is the
 			// tallest) floats over this scroll area; derive the bottom clearance from
 			// the same floating system instead of a fixed pb-32, so trackers always

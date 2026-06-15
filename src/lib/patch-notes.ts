@@ -22,6 +22,9 @@ There may be unexpected bugs, I didn't get the opportunity to test this on a lot
 * **Mobile drawer**: the full drawer with its own undo/redo, view-mode toggle, file import and folder organization, all sized for touch.
 * **Gesture tips and haptics**: little one-time hints show up the first time you can use a gesture (can be toggled off in Settings). On supported devices, short vibration cues confirm long-presses, mode changes and so on.
 
+### ✨ Other new !
+* **Backpack, Specials and Nemesis tags are now proper tags**: the items in the Hero card's Backpack, the Otherscape character card's Specials, and the Rift card's Nemeses can now be activated and burned, just like power tags. Their state used to be flavour only; now it actually carries through.
+
 ### 🔧 Changes
 * "Unload Character" button is now at the bottom of the sidebar, and is called "Return to Menu". The effect is the same, it will completely unload your character from memory. Make sure you saved your character to the drawer beforehand! Hopefully this makes it less ambiguous.
 

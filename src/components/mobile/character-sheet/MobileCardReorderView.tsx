@@ -1,6 +1,7 @@
 // -- Library Imports --
 import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter } from '@dnd-kit/core';
+import type { Modifier } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Component Imports --
@@ -26,6 +27,17 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
 import type { Card } from '@/lib/types/character';
+
+
+
+/**
+ * Inline `@dnd-kit` modifier that locks dragging to the vertical axis - any
+ * horizontal pointer travel is dropped from the transform. Combined with
+ * `overflow-x: hidden` on the scroll container, this prevents the dragged card
+ * from drifting sideways and expanding the layout. Inlined rather than pulling
+ * in `@dnd-kit/modifiers` (not installed; do not add).
+ */
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({ ...transform, x: 0 });
 
 
 
@@ -74,7 +86,7 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, on
 
 	return (
 		<div
-			className="flex-1 overflow-y-auto p-3"
+			className="flex-1 overflow-y-auto overflow-x-hidden p-3"
 			// In FAB mode the floating "Done" button rests over this list at the base
 			// floating offset; derive the bottom clearance from the same system rather
 			// than a fixed pb-32 so the last card scrolls clear of it.
@@ -87,7 +99,7 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, on
 				</div>
 
 				{/* Drag-sortable card list */}
-				<DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+				<DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={handleDragEnd}>
 					<SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
 						{cards.map((card, index) => (
 							<Sortable key={card.id} id={card.id} data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}>

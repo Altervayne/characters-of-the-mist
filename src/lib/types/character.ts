@@ -99,7 +99,7 @@ export interface LegendsHeroDetails {
    fellowshipRelationships: FellowshipRelationship[];
    promise: number;
    quintessences: BlandTag[];
-   backpack: BlandTag[];
+   backpack: Tag[];
 }
 
 
@@ -118,7 +118,7 @@ export interface OtherscapeCharacterDetails {
       noise: number;  // Count of Noise themes
    };
    crewRelationships: FellowshipRelationship[]; // Same structure as Fellowship relationships: Name + Tag
-   specials: BlandTag[]; // Special attributes/abilities
+   specials: Tag[]; // Special attributes/abilities; activatable and burnable like power tags
 }
 
 export interface OtherscapeThemeDetails {
@@ -202,7 +202,7 @@ export interface CityRiftDetails {
    logos: string;
    crewMembers: CrewMember[];
    buildup: number;
-   nemeses: BlandTag[];
+   nemeses: Tag[]; // Activatable and burnable like power tags
 }
 
 

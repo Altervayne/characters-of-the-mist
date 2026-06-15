@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 // -- Component Imports --
 import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
-import { BlandTagItem } from '@/components/molecules/BlandTagItem';
+import { TagItem } from '@/components/molecules/TagItem';
 import { FellowshipRelationshipItem } from '@/components/molecules/FellowshipRelationshipItem';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 
@@ -407,18 +407,21 @@ const OtherscapeCharacterCardContent = React.memo(
             <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
                   {details.specials.map((tag, index) => (
-                     <BlandTagItem
+                     <TagItem
                         key={tag.id}
                         cardId={card.id}
                         tag={tag}
+                        tagType="power"
                         listName="specials"
+                        placeholderKey="OtherscapeCharacterCard.Specials.placeholder"
+                        noNameKey="OtherscapeCharacterCard.Specials.noName"
                         isEditing={isEditing}
                         index={index}
                      />
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'specials')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'specials')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {tSpecials('OtherscapeCharacterCard.Specials.addSpecial')}
                         </Button>
                      </div>

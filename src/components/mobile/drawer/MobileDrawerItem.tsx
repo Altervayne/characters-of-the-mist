@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText, GripVertical, MoreHorizontal } from 'lucide-react';
+import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText, MoreHorizontal } from 'lucide-react';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
@@ -10,12 +10,6 @@ import { Badge } from '@/components/ui/badge';
 
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper } from '@/components/dnd';
-
-// -- Hook Imports --
-import { useLongPress } from '@/hooks/mobile/useLongPress';
-
-// -- Store Imports --
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -86,24 +80,28 @@ const getGameDisplayName = (game: string) => {
 };
 
 /**
- * A drawer item row on mobile: a drag handle plus a long-pressable body, shown
- * either compact (icon + name + game badge) or rich (full preview).
+ * A drawer item row on mobile: a long-press-to-drag body and an inline
+ * context-menu button on the handedness-leading edge.
  *
- * The body keeps its {@link useLongPress} context-menu gesture, while the
- * dedicated ≥44px grip handle owns drag-to-reorder. Handle and body are siblings
- * (the long-press handlers are spread only on the body), so the @dnd-kit
- * `TouchSensor` and the long-press timer never share an element: dragging from
- * the handle never opens the menu, and a long-press on the body never starts a
- * drag. The handle sits on the handedness-leading edge and is touch-action: none
- * so an intentional drag is not pre-empted by the list's vertical scroll.
+ * The whole row body is the drag target - dnd-kit's `TouchSensor` is configured
+ * with the drawer's longer ~500ms delay (see `useMobileDragSensors`), so a
+ * deliberate press-and-hold picks the row up while a quick tap or a scroll
+ * fling falls through to the normal touch behaviour. There is no dedicated
+ * grip handle, reclaiming the horizontal space it used to occupy and letting
+ * names use the row's full width (wrapping over multiple lines if needed).
  *
- * A trailing overflow (⋮) button is the always-present button fallback for the
- * long-press context menu (it opens the same menu, anchored at the button).
+ * The `⋯` context-menu button sits as a real flex sibling on the trailing edge
+ * (opposite the name), inside the same card. Compact view aligns it vertically
+ * with the name; rich view aligns it to the top of the preview's column so it
+ * reads as the card's top-corner action without floating outside the row. Its
+ * side flips with handedness: right for right-handed (default), left when
+ * left-handed. Touch events on the button are stopped from propagating so a
+ * tap on it never also begins a drag on the body.
  *
  * @param item - The drawer item to render.
  * @param isCompact - Render the compact row when true, the rich preview otherwise.
- * @param onLongPress - Called with the item id, name, and a screen position to anchor the context menu (long-press or overflow button).
- * @param isLeftHanded - Places the grip on the handedness-leading edge: right for right-handed (default), left when true.
+ * @param onLongPress - Called with the item id, name, and a screen position to anchor the context menu (from the corner button).
+ * @param isLeftHanded - Places the menu button on the handedness-leading edge: right for right-handed (default), left when true.
  */
 export default function MobileDrawerItem({
 	item,
@@ -112,10 +110,6 @@ export default function MobileDrawerItem({
 	isLeftHanded,
 }: MobileDrawerItemProps) {
 	const { t } = useTranslation();
-	const areGestureHintsEnabled = useAppSettingsStore((state) => state.areGestureHintsEnabled);
-	const { isPressing, handlers } = useLongPress({
-		onLongPress: (position) => onLongPress(item.id, item.name, position),
-	});
 
 	const Icon = getItemIcon(item.type);
 
@@ -125,75 +119,63 @@ export default function MobileDrawerItem({
 				<DragStaticWrapper isBeingDragged={isBeingDragged}>
 					<div
 						className={cn(
-							"flex items-center rounded-lg border border-border bg-card overflow-hidden transition-all",
-							// Controls sit on the handedness-leading edge: grip leads (right for
-							// right-handed, left for left-handed), overflow on the trailing edge.
-							!isLeftHanded && "flex-row-reverse",
-							// Press feedback lives on the whole row so grip, body, and overflow
-							// animate as one unit.
-							isPressing && "scale-[0.98]",
-							isPressing && (isCompact ? "bg-muted" : "ring-2 ring-primary")
+							"flex rounded-lg border border-border bg-card overflow-hidden",
+							// Compact rows are short enough to keep the body and menu
+							// button on the same vertical centre. Rich rows are tall
+							// (full preview), so the menu button aligns to the top of
+							// its column to read as the card's top-corner action.
+							isCompact ? "items-center" : "items-start",
+							// Default DOM order: [body, menu]. Right-handed wants the
+							// menu on the right (trailing visually = right edge) which
+							// is the default flow; left-handed flips with `row-reverse`
+							// so the menu ends up on the left edge.
+							isLeftHanded && "flex-row-reverse"
 						)}
 					>
-						{/* Drag handle (≥44px touch target) */}
-						<button
-							type="button"
-							aria-label={t('Common.dragHandle')}
-							className={cn(
-								"flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground touch-none cursor-grab active:cursor-grabbing",
-								// Drag affordance cue, gated on the gesture-tips setting.
-								areGestureHintsEnabled && "bg-muted/50 rounded-md"
-							)}
+						{/* Body = drag target. Long-press (~500ms hold) arms a drag via
+						    the TouchSensor; a tap does nothing for items (folders use
+						    onTap to navigate, items have no tap action). */}
+						<div
 							{...dragAttributes}
 							{...dragListeners}
+							className="flex flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
 						>
-							<GripVertical className="w-5 h-5" />
-						</button>
+							{isCompact ? (
+								<div className="flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11">
+									<div className="shrink-0">
+										<Icon className="w-5 h-5 text-muted-foreground" />
+									</div>
 
-						{/* Body: long-press opens the context menu */}
-						{isCompact ? (
-							<div
-								{...handlers}
-								className={cn(
-									"flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11 transition-all",
-									"active:scale-[0.98] cursor-pointer"
-								)}
-							>
-								<div className="shrink-0">
-									<Icon className="w-5 h-5 text-muted-foreground" />
-								</div>
-
-								<div className="flex-1 min-w-0">
-									<p className="font-medium text-foreground truncate">
-										{item.name}
-									</p>
-									<div className="flex items-center gap-2 mt-1">
-										<Badge variant={getGameBadgeVariant(item.game)} className="text-xs">
-											{getGameDisplayName(item.game)}
-										</Badge>
+									<div className="flex-1 min-w-0">
+										<p className="font-medium text-foreground break-words">
+											{item.name}
+										</p>
+										<div className="flex items-center gap-2 mt-1">
+											<Badge variant={getGameBadgeVariant(item.game)} className="text-xs">
+												{getGameDisplayName(item.game)}
+											</Badge>
+										</div>
 									</div>
 								</div>
-							</div>
-						) : (
-							<div
-								{...handlers}
-								className={cn(
-									"flex-1 min-w-0 transition-all",
-									"active:scale-[0.98] cursor-pointer"
-								)}
-							>
-								<DrawerItemPreview item={item} />
-							</div>
-						)}
+							) : (
+								<div className="flex-1 min-w-0">
+									<DrawerItemPreview item={item} />
+								</div>
+							)}
+						</div>
 
-						{/* Overflow button: always-present fallback for the long-press menu */}
+						{/* Inline context-menu button. Stops touch events from bubbling so
+						    a tap on the button doesn't also begin a drag on the body. */}
 						<button
 							type="button"
 							aria-label={t('Common.moreOptions')}
 							onClick={(event) => {
+								event.stopPropagation();
 								const rect = event.currentTarget.getBoundingClientRect();
 								onLongPress(item.id, item.name, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
 							}}
+							onTouchStart={(event) => event.stopPropagation()}
+							onTouchEnd={(event) => event.stopPropagation()}
 							className="flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground"
 						>
 							<MoreHorizontal className="w-5 h-5" />

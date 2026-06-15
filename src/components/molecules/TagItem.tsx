@@ -29,14 +29,28 @@ interface TagItemProps {
    trackerId?: string;
    isTrackerTag?: boolean;
    isLoadoutGear?: boolean;
+   /**
+    * Optional override for the tag-list key this item targets in the store.
+    * Defaults to the list derived from `tagType` (powerTags / weaknessTags), and
+    * is used by the character-card tag lists (Hero backpack, Otherscape specials,
+    * Rift nemeses) that were upgraded from BlandTag to Tag in 1.3.0 - those need
+    * "power" styling and the activation / burn controls but write to a different
+    * list on the card details. Ignored when `isTrackerTag` is true (the tracker
+    * code paths only use powerTags / weaknessTags).
+    */
+   listName?: 'powerTags' | 'weaknessTags' | 'backpack' | 'specials' | 'nemeses';
+   /** Optional placeholder override for the editing input (defaults to TagItem.placeholder). */
+   placeholderKey?: string;
+   /** Optional "no name" fallback override (defaults to TagItem.noName). */
+   noNameKey?: string;
 }
 
 
 
-export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear }: TagItemProps) {
+export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear, listName: listNameOverride, placeholderKey, noNameKey }: TagItemProps) {
    const { t: t } = useTranslation();
    const actions = useCharacterActions();
-   const listName = tagType === 'power' ? 'powerTags' : 'weaknessTags';
+   const listName = listNameOverride ?? (tagType === 'power' ? 'powerTags' : 'weaknessTags');
 
    const isEvenRow = index % 2 === 0;
    const powerBg = isEvenRow ? 'bg-black/5' : 'bg-black/2';
@@ -48,10 +62,14 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
    // ###   TAG NAME INPUT DEBOUNCER   ###
    // ####################################
 
+   // Story-theme trackers only carry power / weakness tags - the character-card
+   // override list names (backpack / specials / nemeses) are not valid there.
+   const isTrackerListName = listName === 'powerTags' || listName === 'weaknessTags';
+
    const [localName, setLocalName] = useInputDebouncer(
       tag.name,
       (value) => {
-         if (isTrackerTag && trackerId) {
+         if (isTrackerTag && trackerId && isTrackerListName) {
             actions.updateTagInStoryTheme(trackerId, listName, tag.id, { name: value });
          } else if (cardId) {
             actions.updateTag(cardId, listName, tag.id, { name: value });
@@ -62,7 +80,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
 
 
    const handleUpdate = (updates: Partial<Tag>) => {
-      if (isTrackerTag && trackerId) {
+      if (isTrackerTag && trackerId && isTrackerListName) {
          actions.updateTagInStoryTheme(trackerId, listName, tag.id, updates);
       } else if (cardId) {
          actions.updateTag(cardId, listName, tag.id, updates);
@@ -70,7 +88,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
    };
 
    const handleRemove = () => {
-      if (isTrackerTag && trackerId) {
+      if (isTrackerTag && trackerId && isTrackerListName) {
          actions.removeTagFromStoryTheme(trackerId, listName, tag.id);
       } else if (cardId) {
          actions.removeTag(cardId, listName, tag.id);
@@ -104,11 +122,11 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
                value={localName}
                onChange={(e) => setLocalName(e.target.value)}
                className="mx-1 h-7 text-center text-sm border-0 shadow-none"
-               placeholder={t('TagItem.placeholder')}
+               placeholder={t(placeholderKey ?? 'TagItem.placeholder')}
             />
          ) : (
             <p className={cn('text-sm text-center py-1', tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline')}>
-               {tag.name || `[${t('TagItem.noName')}]`}
+               {tag.name || `[${t(noNameKey ?? 'TagItem.noName')}]`}
             </p>
          )}
 

@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { PipTracker } from '@/components/molecules/PipTracker';
-import { BlandTagItem } from '@/components/molecules/BlandTagItem';
+import { TagItem } from '@/components/molecules/TagItem';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 
 // -- Store and Hook Imports --
@@ -264,18 +264,21 @@ const RiftCardContent = React.memo(
             <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
                <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={nemesesScrollRef}>
                   {details.nemeses.map((tag, index) => (
-                     <BlandTagItem 
+                     <TagItem
                         key={tag.id}
                         cardId={card.id}
                         tag={tag}
+                        tagType="power"
                         listName="nemeses"
+                        placeholderKey="RiftCard.Nemesis.placeholder"
+                        noNameKey="RiftCard.Nemesis.noName"
                         isEditing={isEditing}
                         index={index}
                      />
                   ))}
                   {isEditing && (
                      <div className="p-2 w-full">
-                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addBlandTag(card.id, 'nemeses')}>
+                        <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'nemeses')}>
                            <PlusCircle className="h-4 w-4 mr-2" /> {tNemesis('addNemesis')}
                         </Button>
                      </div>

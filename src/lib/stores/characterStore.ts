@@ -21,11 +21,25 @@ import type { CreateCardOptions } from '../types/creation';
 
 
 
-type TagListName = 'powerTags' | 'weaknessTags' | 'items';
-type BlandTagListName = 'quintessences' | 'improvements' | 'backpack' | 'nemeses' | 'specials';
+// Power / weakness tag lists live on theme cards; backpack / specials / nemeses
+// are the per-character-card tag lists that gained activation + burn in 1.3.0.
+type TagListName = 'powerTags' | 'weaknessTags' | 'items' | 'backpack' | 'specials' | 'nemeses';
+// Tag lists that remain "bland" (no activation / burn): the experience-style
+// improvements on every theme card, and Hero quintessences.
+type BlandTagListName = 'quintessences' | 'improvements';
+
+type CharacterCardTagListName = 'backpack' | 'specials' | 'nemeses';
+const CHARACTER_CARD_TAG_LIST_NAMES: readonly CharacterCardTagListName[] = ['backpack', 'specials', 'nemeses'];
+const isCharacterCardTagListName = (listName: TagListName): listName is CharacterCardTagListName =>
+   (CHARACTER_CARD_TAG_LIST_NAMES as readonly string[]).includes(listName);
+
 type IndexableCardDetails = CardDetails & { [key in BlandTagListName]?: BlandTag[] };
 
 const hasBlandTagList = (details: CardDetails, listName: string): listName is BlandTagListName => {
+   return listName in details && Array.isArray((details as unknown as { [key: string]: unknown })[listName]);
+};
+
+const hasCharacterCardTagList = (details: CardDetails, listName: CharacterCardTagListName): boolean => {
    return listName in details && Array.isArray((details as unknown as { [key: string]: unknown })[listName]);
 };
 
@@ -86,7 +100,7 @@ interface CharacterState {
       addTag: (cardId: string, listName: TagListName) => void;
       updateTag: (cardId: string, listName: TagListName, tagId: string, updatedTag: Partial<Tag>) => void;
       removeTag: (cardId: string, listName: TagListName, tagId: string) => void;
-      // Bland Tag Actions (for Quintessences, Items and Improvements)
+      // Bland Tag Actions (for Quintessences and theme-card Improvements)
       addBlandTag: (cardId: string, listName: BlandTagListName) => void;
       updateBlandTag: (cardId: string, listName: BlandTagListName, tagId: string, name: string) => void;
       removeBlandTag: (cardId: string, listName: BlandTagListName, tagId: string) => void;
@@ -538,7 +552,7 @@ export const useCharacterStore = create<CharacterState>()(
                      const isLoadoutGear = card.cardType === 'LOADOUT_THEME' && listName === 'powerTags';
                      const newTag: Tag = { id: cuid(), name: '', isActive: false, isScratched: isLoadoutGear };
 
-                     if ('powerTags' in card.details) {
+                     if ('powerTags' in card.details && (listName === 'powerTags' || listName === 'weaknessTags')) {
                         const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
                         const updatedDetails = { ...details };
 
@@ -550,13 +564,22 @@ export const useCharacterStore = create<CharacterState>()(
 
                         return { ...card, details: updatedDetails };
                      }
+
+                     // Character-card tag lists (Hero backpack, Otherscape specials, Rift nemeses)
+                     // - upgraded from BlandTag in 1.3.0 so they share the Tag actions.
+                     if (isCharacterCardTagListName(listName) && hasCharacterCardTagList(card.details, listName)) {
+                        const details = card.details as CardDetails & { [k in CharacterCardTagListName]?: Tag[] };
+                        const currentList = details[listName] ?? [];
+                        return { ...card, details: { ...details, [listName]: [...currentList, newTag] } };
+                     }
+
                      return card;
                   }));
                },
                updateTag: (cardId, listName, tagId, updatedTag) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     if ('powerTags' in card.details) {
+                     if ('powerTags' in card.details && (listName === 'powerTags' || listName === 'weaknessTags')) {
                         const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
                         const updatedDetails = { ...details };
                         const updateList = (list: Tag[]) => list.map(tag => tag.id === tagId ? { ...tag, ...updatedTag } : tag);
@@ -569,13 +592,21 @@ export const useCharacterStore = create<CharacterState>()(
 
                         return { ...card, details: updatedDetails };
                      }
+
+                     if (isCharacterCardTagListName(listName) && hasCharacterCardTagList(card.details, listName)) {
+                        const details = card.details as CardDetails & { [k in CharacterCardTagListName]?: Tag[] };
+                        const currentList = details[listName] ?? [];
+                        const updatedList = currentList.map(tag => tag.id === tagId ? { ...tag, ...updatedTag } : tag);
+                        return { ...card, details: { ...details, [listName]: updatedList } };
+                     }
+
                      return card;
                   }));
                },
                removeTag: (cardId, listName, tagId) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     if ('powerTags' in card.details) {
+                     if ('powerTags' in card.details && (listName === 'powerTags' || listName === 'weaknessTags')) {
                         const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
                         const updatedDetails = { ...details };
                         const filterList = (list: Tag[]) => list.filter(tag => tag.id !== tagId);
@@ -588,10 +619,17 @@ export const useCharacterStore = create<CharacterState>()(
 
                         return { ...card, details: updatedDetails };
                      }
+
+                     if (isCharacterCardTagListName(listName) && hasCharacterCardTagList(card.details, listName)) {
+                        const details = card.details as CardDetails & { [k in CharacterCardTagListName]?: Tag[] };
+                        const currentList = details[listName] ?? [];
+                        return { ...card, details: { ...details, [listName]: currentList.filter(tag => tag.id !== tagId) } };
+                     }
+
                      return card;
                   }));
                },
-               // Bland Tag Actions
+               // Bland Tag Actions (no activation / burn)
                addBlandTag: (cardId, listName) => {
                   set(state => updateCardInState(state, cardId, card => {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');

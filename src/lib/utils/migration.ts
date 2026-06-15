@@ -171,7 +171,9 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
       fellowshipRelationships: [],
       promise: 0,
       quintessences: [],
-      backpack: legacyData.backpack.map(mapToBlandTag),
+      // Backpack gained activation + burn in 1.3.0, so it now stores full Tags.
+      // The legacy shape carries `isActive` / `isBurnt`, which map straight across.
+      backpack: legacyData.backpack.map(mapToTag),
    };
 
    const heroCard: Card = {
@@ -285,7 +287,10 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
       logos: legacyData.logos || '',
       crewMembers: [],
       buildup: legacyData.buildup || 0,
-      nemeses: legacyData.backpack?.map(mapToBlandTag) || [],
+      // Nemeses gained activation + burn in 1.3.0, so they now store full Tags.
+      // (Legacy CoM characters did not have a "nemeses" field of their own and
+      // landed their backpack into nemeses on import; the same mapping is kept.)
+      nemeses: legacyData.backpack?.map(mapToTag) || [],
    };
 
    const riftCard: Card = {

@@ -2,19 +2,13 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Folder, GripVertical, MoreHorizontal } from 'lucide-react';
+import { Folder, MoreHorizontal } from 'lucide-react';
 
 // -- Component Imports --
 import { FolderCountLabel } from '@/components/mobile/shared/FolderCountLabel';
 
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper } from '@/components/dnd';
-
-// -- Hook Imports --
-import { useLongPress } from '@/hooks/mobile/useLongPress';
-
-// -- Store Imports --
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -33,26 +27,30 @@ interface MobileFolderItemProps {
 }
 
 /**
- * A drawer folder row on mobile: a drag handle plus a tappable body.
+ * A drawer folder row on mobile: tap to navigate, long-press to drag, and an
+ * inline context-menu button on the handedness-leading edge.
  *
- * The body retains the established touch gestures via {@link useLongPress} -
- * tap navigates into the folder, long-press opens the context menu - while the
- * dedicated ≥44px grip handle owns drag-to-reorder. Because the handle and the
- * body are siblings (the long-press handlers are spread only on the body), the
- * @dnd-kit `TouchSensor` and the long-press timer never share an element, so
- * dragging from the handle never triggers navigation or the menu, and vice
- * versa. The handle sits on the handedness-leading edge (right by default, left
- * when left-handed) and is touch-action: none so an intentional drag is not
- * pre-empted by the list's vertical scroll.
+ * Mirrors the {@link MobileDrawerItem} arrangement so the drawer's two row
+ * types share one gesture model:
+ *   - **Tap**: navigates into the folder (only folders have this; items have no
+ *     tap action).
+ *   - **Long-press (~500ms hold)**: arms a drag via dnd-kit's `TouchSensor` -
+ *     the longer hold time is configured in `useMobileDragSensors` for the
+ *     drawer specifically, so a quick tap stays a tap and a scroll fling stays
+ *     a scroll, while a deliberate hold picks the row up.
+ *   - **`⋯` button** as a real flex sibling on the trailing edge of the row
+ *     (right for right-handed, left when left-handed): always-present fallback
+ *     for the context menu (rename / move / duplicate / delete), so the menu
+ *     is reachable without any gesture. Touch events on the button stop
+ *     propagating so a tap on it never also fires the folder's navigate.
  *
- * A trailing overflow (⋮) button is the always-present button fallback for the
- * long-press context menu (it opens the same menu, anchored at the button), so
- * the menu is reachable without the long-press gesture.
+ * There is no dedicated grip handle, freeing up the row width for the folder
+ * name (which can wrap over multiple lines if needed).
  *
  * @param folder - The folder to render.
  * @param onNavigate - Called with the folder id when the body is tapped.
- * @param onLongPress - Called with the folder id, name, and a screen position to anchor the context menu (long-press or overflow button).
- * @param isLeftHanded - Places the grip on the handedness-leading edge: right for right-handed (default), left when true.
+ * @param onLongPress - Called with the folder id, name, and a screen position to anchor the context menu (from the corner button).
+ * @param isLeftHanded - Places the menu button on the handedness-leading edge: right for right-handed (default), left when true.
  */
 export default function MobileFolderItem({
 	folder,
@@ -61,11 +59,6 @@ export default function MobileFolderItem({
 	isLeftHanded,
 }: MobileFolderItemProps) {
 	const { t } = useTranslation();
-	const areGestureHintsEnabled = useAppSettingsStore((state) => state.areGestureHintsEnabled);
-	const { isPressing, handlers } = useLongPress({
-		onLongPress: (position) => onLongPress(folder.id, folder.name, position),
-		onTap: () => onNavigate(folder.id),
-	});
 
 	// Calculate total items in folder (including nested)
 	const totalItems = folder.items.length;
@@ -77,58 +70,49 @@ export default function MobileFolderItem({
 				<DragStaticWrapper isBeingDragged={isBeingDragged}>
 					<div
 						className={cn(
-							"flex items-center rounded-lg border border-border bg-card overflow-hidden transition-all",
-							// Controls sit on the handedness-leading edge: grip leads (right for
-							// right-handed, left for left-handed), overflow on the trailing edge.
-							!isLeftHanded && "flex-row-reverse",
-							// Press feedback lives on the whole row so grip, body, and overflow
-							// animate as one unit.
-							isPressing && "scale-[0.98] bg-muted"
+							"flex items-center rounded-lg border border-border bg-card overflow-hidden",
+							isLeftHanded && "flex-row-reverse"
 						)}
 					>
-						{/* Drag handle (≥44px touch target) */}
-						<button
-							type="button"
-							aria-label={t('Common.dragHandle')}
-							className={cn(
-								"flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground touch-none cursor-grab active:cursor-grabbing",
-								// Drag affordance cue, gated on the gesture-tips setting.
-								areGestureHintsEnabled && "bg-muted/50 rounded-md"
-							)}
+						{/* Body = drag target + tap-to-navigate. The TouchSensor's
+						    activation delay differentiates a tap (fires `onClick`)
+						    from a held drag (preempts `onClick`); a scroll fling
+						    that moves past the tolerance during the delay falls
+						    through to vertical scroll. */}
+						<div
 							{...dragAttributes}
 							{...dragListeners}
+							onClick={() => onNavigate(folder.id)}
+							className="flex flex-1 min-w-0 cursor-pointer active:cursor-grabbing select-none"
 						>
-							<GripVertical className="w-5 h-5" />
-						</button>
+							<div className="flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11">
+								<div className="shrink-0">
+									<Folder className="w-6 h-6 text-primary" />
+								</div>
 
-						{/* Body: tap navigates, long-press opens the context menu */}
-						<div
-							{...handlers}
-							className={cn(
-								"flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11 transition-all",
-								"active:scale-[0.98] cursor-pointer"
-							)}
-						>
-							<div className="shrink-0">
-								<Folder className="w-6 h-6 text-primary" />
-							</div>
-
-							<div className="flex-1 min-w-0">
-								<p className="font-medium text-foreground truncate">
-									{folder.name}
-								</p>
-								<FolderCountLabel folders={totalSubfolders} items={totalItems} />
+								<div className="flex-1 min-w-0">
+									<p className="font-medium text-foreground break-words">
+										{folder.name}
+									</p>
+									<FolderCountLabel folders={totalSubfolders} items={totalItems} />
+								</div>
 							</div>
 						</div>
 
-						{/* Overflow button: always-present fallback for the long-press menu */}
+						{/* Inline context-menu button: sibling of the body, on the
+						    trailing edge of the row. Stops touch events from bubbling
+						    so a tap on the button doesn't also fire the folder's
+						    navigate-on-tap. */}
 						<button
 							type="button"
 							aria-label={t('Common.moreOptions')}
 							onClick={(event) => {
+								event.stopPropagation();
 								const rect = event.currentTarget.getBoundingClientRect();
 								onLongPress(folder.id, folder.name, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
 							}}
+							onTouchStart={(event) => event.stopPropagation()}
+							onTouchEnd={(event) => event.stopPropagation()}
 							className="flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground"
 						>
 							<MoreHorizontal className="w-5 h-5" />

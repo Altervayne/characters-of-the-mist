@@ -1152,7 +1152,7 @@
    },
    "MobileGestureHints": {
       "trackerLongPress": "Astuce : appuyez longuement sur un tracker (ou utilisez son bouton de sélection) pour le sélectionner dans la ceinture à outils.",
-      "drawerLongPress": "Astuce : appuyez longuement sur un élément (ou touchez son bouton ⋯) pour plus d'options.",
+      "drawerLongPress": "Astuce : appuyez longuement sur un élément pour le déplacer, ou touchez son bouton ⋯ pour plus d'options.",
       "selectTracker": "Sélectionner le tracker pour les actions"
    },
    "Common": {

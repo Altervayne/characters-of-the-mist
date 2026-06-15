@@ -53,8 +53,11 @@ export default function MobileFAB({
 	// On the cards tab (collapsed), the FAB rides above the card navigation bar.
 	const isCardsFab = !isExpanded && activeTab === 'sheet' && sheetActiveTab === 'cards';
 
-	// On the drawer tab (collapsed), the FAB rides above the drawer's bottom toolbar.
-	const isDrawerFab = !isExpanded && activeTab === 'drawer';
+	// On the drawer tab, the FAB sits at its base resting offset (no extra
+	// drawer-toolbar clearance) so it lands inside the toolbar's vertical band -
+	// the drawer reserves a horizontal slot on its handedness-leading edge so
+	// no toolbar button sits under it, and the FAB no longer overlaps the
+	// breadcrumbs above. Variable kept for symmetry with `isCardsFab` only.
 
 	const toggleExpanded = () => {
 		const newValue = !isExpanded;
@@ -164,7 +167,7 @@ export default function MobileFAB({
 						"fixed layer-panel",
 						isLeft ? "left-4" : "right-4"
 					)}
-					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: isCardsFab, clearsDrawerToolbar: isDrawerFab }) }}
+					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: isCardsFab }) }}
 					whileTap={{ scale: 0.95 }}
 					data-tutorial="mobile-fab"
 				>

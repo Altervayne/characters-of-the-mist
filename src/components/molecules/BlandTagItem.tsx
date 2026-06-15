@@ -23,7 +23,7 @@ import type { BlandTag } from '@/lib/types/character';
 interface BlandTagItemProps {
   cardId: string;
   tag: BlandTag;
-  listName: 'quintessences' | 'improvements' | 'backpack' | 'nemeses' | 'specials';
+  listName: 'quintessences' | 'improvements';
   isEditing: boolean;
   index: number;
 }

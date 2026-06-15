@@ -1,7 +1,7 @@
 import { APP_VERSION } from "./config";
 import { compare } from 'semver';
 import type { GeneralItemType, Drawer, DrawerItem, Folder } from './types/drawer';
-import type { Character } from './types/character';
+import type { Card, Character, Tag } from './types/character';
 
 
 
@@ -17,9 +17,55 @@ function isDrawerItem(data: unknown): data is DrawerItem {
 function isCharacter(data: unknown): data is Character {
   return !!data && typeof data === 'object' && 'cards' in data && 'trackers' in data;
 }
+function isCard(data: unknown): data is Card {
+  return !!data && typeof data === 'object' && 'cardType' in data && 'details' in data;
+}
 function isVersionable(data: unknown): data is { version?: string } {
     return !!data && typeof data === 'object' && 'version' in data;
 }
+
+
+
+/**
+ * Idempotently upgrades a legacy `BlandTag[]` shape ({ id, name }) to the full
+ * `Tag` shape ({ id, name, isActive, isScratched }). Used by the 1.3.0 migrator
+ * for the character-card tag lists (Hero backpack, Otherscape specials, Rift
+ * nemeses) that gained activation + burn. Safe to re-run on data that already
+ * has the new shape - existing booleans pass through unchanged.
+ */
+const upgradeBlandToTagList = (list: unknown): Tag[] => {
+   if (!Array.isArray(list)) return [];
+   return list.map((item) => {
+      const tag = (item ?? {}) as { id?: string; name?: string; isActive?: unknown; isScratched?: unknown };
+      return {
+         id: typeof tag.id === 'string' ? tag.id : '',
+         name: typeof tag.name === 'string' ? tag.name : '',
+         isActive: typeof tag.isActive === 'boolean' ? tag.isActive : false,
+         isScratched: typeof tag.isScratched === 'boolean' ? tag.isScratched : false,
+      };
+   });
+};
+
+/**
+ * 1.3.0 character-card tag-list upgrade: converts Hero backpack, Otherscape
+ * Character specials, and Rift nemeses from `BlandTag[]` to `Tag[]` so each
+ * entry can be activated and burned like a power tag. Idempotent.
+ */
+const upgradeCharacterCardTagLists = (card: Card): Card => {
+   if (card.cardType !== 'CHARACTER_CARD') return card;
+   const details = card.details as unknown as Record<string, unknown>;
+   const game = details.game;
+   if (game === 'LEGENDS' && Array.isArray(details.backpack)) {
+      return { ...card, details: { ...card.details, backpack: upgradeBlandToTagList(details.backpack) } as Card['details'] };
+   }
+   if (game === 'OTHERSCAPE' && Array.isArray(details.specials)) {
+      return { ...card, details: { ...card.details, specials: upgradeBlandToTagList(details.specials) } as Card['details'] };
+   }
+   if (game === 'CITY_OF_MIST' && Array.isArray(details.nemeses)) {
+      return { ...card, details: { ...card.details, nemeses: upgradeBlandToTagList(details.nemeses) } as Card['details'] };
+   }
+   return card;
+};
 
 
 
@@ -36,9 +82,27 @@ const MIGRATIONS: Record<string, Partial<Record<GeneralItemType, MigrationFuncti
          return data;
       },
    },
+   '1.3.0': {
+      // Loaded character sheets: walk each card and upgrade the relevant tag list.
+      FULL_CHARACTER_SHEET: (data: unknown): unknown => {
+         if (!isCharacter(data)) return data;
+         return { ...data, cards: data.cards.map(upgradeCharacterCardTagLists) };
+      },
+      // Standalone character cards saved in the drawer get the same upgrade.
+      // Cards do not carry their own `version` field, so the harmonizer enters
+      // this migration via the `hasRegisteredMigration` branch (defaulting to
+      // version '1.0.0'); the idempotent upgrade keeps re-runs safe.
+      CHARACTER_CARD: (data: unknown): unknown => {
+         if (!isCard(data)) return data;
+         return upgradeCharacterCardTagLists(data);
+      },
+   },
 };
 
 const MIGRATION_VERSIONS = Object.keys(MIGRATIONS).sort(compare);
+
+const hasRegisteredMigration = (dataType: GeneralItemType): boolean =>
+   MIGRATION_VERSIONS.some((version) => MIGRATIONS[version][dataType] !== undefined);
 
 
 
@@ -52,8 +116,13 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
    // ==================
    //  STEP 1: Harmonize the current object based on its specific type
    // ==================
-   if (isVersionable(harmonizedData) || isCharacter(harmonizedData) || isDrawer(harmonizedData)) {
-      let currentVersion = harmonizedData.version || '1.0.0';
+   // The extra `hasRegisteredMigration` branch is the catch-all for data that
+   // doesn't carry its own `version` field but is targeted by a migration (e.g.
+   // standalone Cards stored in the drawer). Such data defaults to '1.0.0' and
+   // re-runs its migrations on every load - migration functions for those types
+   // must therefore be idempotent.
+   if (isVersionable(harmonizedData) || isCharacter(harmonizedData) || isDrawer(harmonizedData) || hasRegisteredMigration(dataType)) {
+      let currentVersion = (isVersionable(harmonizedData) && harmonizedData.version) || '1.0.0';
 
       for (const targetVersion of MIGRATION_VERSIONS) {
          if (compare(targetVersion, currentVersion) > 0) {

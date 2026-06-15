@@ -1158,7 +1158,7 @@
    },
    "MobileGestureHints": {
       "trackerLongPress": "Tip: press and hold a tracker (or use its select button) to select it for the toolbelt.",
-      "drawerLongPress": "Tip: press and hold an item (or tap its ⋯ button) for more options.",
+      "drawerLongPress": "Tip: press and hold an item to drag it, or tap its ⋯ button for more options.",
       "selectTracker": "Select tracker for actions"
    },
    "Common": {
