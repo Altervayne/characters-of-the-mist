@@ -69,7 +69,7 @@ interface CardFlipWrapperProps {
  * ```
  */
 export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperProps>(
-  ({ effectiveViewMode, isDrawerPreview, isSnapshot, useVerticalStack, card, isHovered, hoverHandlers,
+  ({ effectiveViewMode, isDrawerPreview, useVerticalStack, card, isHovered, hoverHandlers,
      isEditing, dragAttributes, dragListeners, cardTheme, onExport, onCycleViewMode,
      onFlip, onDelete, onEditCard, cardFront, cardBack }, ref) => {
 
@@ -101,7 +101,12 @@ export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperP
         <motion.div
           className="w-full h-full"
           style={{ transformStyle: 'preserve-3d' }}
-          initial={isSnapshot ? { rotateY: card.isFlipped ? 180 : 0 } : { rotateY: 0 }}
+          // `initial` mirrors the current flip state so a card that mounts already
+          // flipped simply *renders* flipped instead of animating 0 -> 180 (the
+          // animation should only play on an actual flip toggle). Because `initial`
+          // equals the first `animate` value, framer-motion plays no mount
+          // animation; later changes to `card.isFlipped` still animate normally.
+          initial={{ rotateY: card.isFlipped ? 180 : 0 }}
           animate={{ rotateY: card.isFlipped ? 180 : 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         >

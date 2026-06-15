@@ -124,8 +124,13 @@
    "Drawer": {
       "title": "Drawer",
       "toggleView": "Toggle view mode between rich preview and list entry for Drawer Items",
+      "compactView": "Switch to the compact list view for Drawer Items",
       "close": "Close drawer",
       "backToRoot": "Back to root",
+      "namePlaceholder": "Name",
+      "noSubfolders": "No subfolders",
+      "selectThisFolder": "Select this folder",
+      "movingUnknown": "(unknown)",
 
       "root": "Root",
       "empty": "Empty",
@@ -1164,6 +1169,7 @@
    "Common": {
       "dragHandle": "Drag to reorder",
       "moreOptions": "More options",
+      "done": "Done",
       "back": "Back",
       "name": "Name"
    }

@@ -369,7 +369,7 @@ const OtherscapeCharacterCardContent = React.memo(
                {/* Crew Relationships Section */}
                <div className="flex flex-col grow overflow-hidden min-h-0">
                   <CardSectionHeader title={t('OtherscapeCharacterCard.relationships')} />
-                  <div className="flex flex-col grow overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
+                  <div className="flex flex-col grow overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={relationshipsScrollRef}>
                      {details.crewRelationships.map((relationship, index) => (
                         <FellowshipRelationshipItem
                            key={relationship.id}
@@ -405,7 +405,7 @@ const OtherscapeCharacterCardContent = React.memo(
             <CardHeaderMolecule title={t('OtherscapeCharacterCard.title')} />
             <CardSectionHeader title={`${tSpecials('OtherscapeCharacterCard.Specials.title')}`}></CardSectionHeader>
             <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={specialsScrollRef}>
+               <div className="grow space-y-0 overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={specialsScrollRef}>
                   {details.specials.map((tag, index) => (
                      <TagItem
                         key={tag.id}
@@ -413,8 +413,8 @@ const OtherscapeCharacterCardContent = React.memo(
                         tag={tag}
                         tagType="power"
                         listName="specials"
-                        placeholderKey="OtherscapeCharacterCard.Specials.placeholder"
-                        noNameKey="OtherscapeCharacterCard.Specials.noName"
+                        placeholderKey="specials.placeholder"
+                        noNameKey="specials.noName"
                         isEditing={isEditing}
                         index={index}
                      />

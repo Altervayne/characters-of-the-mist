@@ -124,8 +124,13 @@
    "Drawer": {
       "title": "Tiroir",
       "toggleView": "Change la vue des Objets du tiroir entre prévisualisation riche et liste simple",
+      "compactView": "Basculer vers le mode liste compacte pour les Objets du Tiroir",
       "close": "Fermer le tiroir",
       "backToRoot": "Retour à la racine",
+      "namePlaceholder": "Nom",
+      "noSubfolders": "Aucun sous-dossier",
+      "selectThisFolder": "Sélectionner ce dossier",
+      "movingUnknown": "(inconnu)",
 
       "root": "Racine",
       "empty": "Vide",
@@ -644,6 +649,12 @@
       "addCard_title": "Ajouter de Nouvelles Cartes",
       "addCard_content": "De plus, ce bouton est maintenant apparu dans votre liste de cartes, ce qui vous permet de créer une Carte.",
 
+      "openAddCard_title": "Ouvrir le Créateur de Carte",
+      "openAddCard_content": "Nous allons maintenant voir comment créer une nouvelle Carte.",
+
+      "creationDialog_title": "Création d'une Carte",
+      "creationDialog_content": "Ce menu vous permet de définir les propriétés de votre nouvelle Carte.",
+
       "menuDrawer_title": "Ouvrir/Fermer le Tiroir",
       "menuDrawer_content": "Ce bouton ouvre le Tiroir, où tous vos personnages, thèmes et objets sont stockés. Allons voir le Tiroir de plus près.",
 
@@ -1158,6 +1169,7 @@
    "Common": {
       "dragHandle": "Glisser pour réorganiser",
       "moreOptions": "Plus d'options",
+      "done": "Valider",
       "back": "Retour",
       "name": "Nom"
    }

@@ -31,7 +31,7 @@ export const RenameCharacterPage = ({ inputValue }: RenameCharacterPageProps) =>
    const { t: t } = useTranslation();
    const { updateCharacterName } = useCharacterActions();
    const { setCommandPaletteOpen } = useAppGeneralStateActions();
-   const text = t('actions.renameTo', { name: inputValue || '...' });
+   const text = t('CommandPalette.actions.renameTo', { name: inputValue || '...' });
 
    const handleSelect = () => {
       if (inputValue) {

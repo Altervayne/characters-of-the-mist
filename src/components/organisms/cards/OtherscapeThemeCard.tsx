@@ -207,7 +207,7 @@ export const OtherscapeThemeCard = React.memo(
                      </div>
 
                      {/* Tags section with more space */}
-                     <div className="flex flex-col grow overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+                     <div className="flex flex-col grow overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={tagsScrollRef}>
                         {/* Loaded Gear Section - gear that is NOT burned */}
                         <CardSectionHeader title={t('OtherscapeThemeCard.loadedGear')} />
                         {details.powerTags.filter(tag => !tag.isScratched).length > 0 ? (
@@ -268,7 +268,7 @@ export const OtherscapeThemeCard = React.memo(
                            )}
                         </div>
                      </div>
-                     <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+                     <div className="flex flex-col grow align-middle overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={tagsScrollRef}>
                         {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
                         {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('ThemeCard.addPowerTag')}</Button>}
 
@@ -292,7 +292,7 @@ export const OtherscapeThemeCard = React.memo(
                                  : t('OtherscapeThemeCard.itchTitle'))
                            : t('OtherscapeThemeCard.descriptionTitle')
                   }`}></CardSectionHeader>
-                  <div className="w-full grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
+                  <div className="w-full grow overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={mysteryScrollRef}>
                      {isEditing ? (
                         <Textarea
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"

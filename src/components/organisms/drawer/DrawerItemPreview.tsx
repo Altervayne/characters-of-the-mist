@@ -71,7 +71,7 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
 
       return (
          <div className="w-62.5 h-25 flex items-center justify-center bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
-               <p className="text-xs">{t('unavailablePreview')}</p>
+               <p className="text-xs">{t('Drawer.Types.unavailablePreview')}</p>
          </div>
       );
    };

@@ -100,7 +100,11 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
    return (
       <div
          className={cn(
-            'flex items-center justify-between px-1 py-0.5 w-full',
+            // `min-w-0` lets this row shrink to its container instead of growing
+            // to its content's intrinsic width (flex children default to
+            // `min-width: auto`, which on a row that includes text would let an
+            // unbroken word push the row wider than its parent card).
+            'flex items-center justify-between px-1 py-0.5 w-full min-w-0',
             tagType === 'power' ? powerBg : weaknessBg,
             tag.isScratched && 'opacity-50'
          )}
@@ -109,7 +113,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
             : { backgroundColor: 'color-mix(in srgb, var(--card-destructive-bg, transparent) 18%, transparent)' }
          ) : undefined}
       >
-         <div className="flex items-center justify-center w-6">
+         <div className="flex shrink-0 items-center justify-center w-6">
             {tagType === 'power' && !isEditing && (
                <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={() => handleUpdate({ isActive: !tag.isActive })}>
                   {tag.isActive ? <Disc2 className="h-5 w-5 text-card-paper" /> : <Circle className="h-4 w-4" />}
@@ -118,19 +122,29 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
          </div>
 
          {isEditing ? (
+            // `min-w-0` on the input wrapper / input itself keeps a long pending
+            // value from forcing the row wider than the card.
             <Input
                value={localName}
                onChange={(e) => setLocalName(e.target.value)}
-               className="mx-1 h-7 text-center text-sm border-0 shadow-none"
+               className="mx-1 h-7 flex-1 min-w-0 text-center text-sm border-0 shadow-none"
                placeholder={t(placeholderKey ?? 'TagItem.placeholder')}
             />
          ) : (
-            <p className={cn('text-sm text-center py-1', tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline')}>
+            // `flex-1 min-w-0` lets the text column shrink to the card width;
+            // `break-words` (plus `overflow-wrap-anywhere`) wraps long content -
+            // including a single unbroken string - rather than overflowing.
+            <p
+               className={cn(
+                  'flex-1 min-w-0 text-sm text-center py-1 break-words [overflow-wrap:anywhere]',
+                  tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline'
+               )}
+            >
                {tag.name || `[${t(noNameKey ?? 'TagItem.noName')}]`}
             </p>
          )}
 
-         <div className="flex items-center justify-center w-6">
+         <div className="flex shrink-0 items-center justify-center w-6">
             {isEditing ? (
                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive cursor-pointer" onClick={handleRemove}>
                   <Trash2 className="h-4 w-4" />

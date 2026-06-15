@@ -176,7 +176,7 @@ export const CreateCard_ThemebookPage = ({ themeType, inputValue, currentGame, o
 interface CreateCard_InputPageProps { inputValue: string; onSelect: () => void; }
 export const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputPageProps) => {
    const { t } = useTranslation();
-   const text = t('actions.createWith', { name: inputValue || '...' });
+   const text = t('CommandPalette.actions.createWith', { name: inputValue || '...' });
 
    return (
       <Command.Item value={text} onSelect={onSelect} className={commonItemClass}>
@@ -189,7 +189,7 @@ export const CreateCard_InputPage = ({ inputValue, onSelect }: CreateCard_InputP
 // ==================
 //  Step 5: Input Number (Power & Weakness Tags qty.)
 // ==================
-interface CreateCard_NumberInputPageProps { inputValue: string; labelKey: 'actions.setPowerTags' | 'actions.setWeaknessTags'; onSelect: () => void; }
+interface CreateCard_NumberInputPageProps { inputValue: string; labelKey: 'CommandPalette.actions.setPowerTags' | 'CommandPalette.actions.setWeaknessTags'; onSelect: () => void; }
 export const CreateCard_NumberInputPage = ({ inputValue, labelKey, onSelect }: CreateCard_NumberInputPageProps) => {
    const { t } = useTranslation();
    const text = t(labelKey, { count: Number(inputValue) || 0 });

@@ -122,7 +122,7 @@ const HeroCardContent = React.memo(
 
                <div className="flex flex-col h-[45%]">
                   <CardSectionHeader title={t('HeroCard.relationships')} icon={Users} />
-                  <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={relationshipsScrollRef}>
+                  <div className="flex flex-col grow align-middle overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={relationshipsScrollRef}>
                      <div className="flex bg-card-accent/15">
                         <p className="grow text-sm text-center py-1 border-b">{t('HeroCard.companion')}</p>
                         <p className="grow text-sm text-center py-1 border-b">{t('HeroCard.relationship')}</p>
@@ -183,7 +183,7 @@ const HeroCardContent = React.memo(
             <CardHeaderMolecule title={t('HeroCard.title')} />
             <CardSectionHeader title={`${tBackpack('backpack.title')}`}></CardSectionHeader>
             <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={backpackScrollRef}>
+               <div className="grow space-y-0 overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={backpackScrollRef}>
                   {details.backpack.map((tag, index) => (
                      <TagItem
                         key={tag.id}

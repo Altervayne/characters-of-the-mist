@@ -42,7 +42,12 @@ export default function MobileCardCarousel({ cards, currentIndex, onOpenAddCard 
 			);
 		}
 
-		return <Component {...commonProps} />;
+		// Key by card id so navigating between same-type cards remounts the card
+		// instead of reusing one instance. A reused instance would see its flip
+		// `animate` value change and replay the flip animation when moving onto an
+		// already-flipped card; remounting lets CardFlipWrapper's state-matching
+		// `initial` render it flipped with no animation.
+		return <Component key={card.id} {...commonProps} />;
 	};
 
 	// Empty state

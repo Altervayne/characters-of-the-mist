@@ -41,7 +41,7 @@ interface CreateTracker_NamePageProps {
 }
 export const CreateTracker_NamePage = ({ inputValue, onSelect }: CreateTracker_NamePageProps) => {
    const { t } = useTranslation();
-   const text = t('actions.createWith', { name: inputValue || '...' });
+   const text = t('CommandPalette.actions.createWith', { name: inputValue || '...' });
    return (
       <Command.Item value={text} onSelect={onSelect} className={commonItemClass}>
          <CornerDownLeft className="mr-2 h-4 w-4" />

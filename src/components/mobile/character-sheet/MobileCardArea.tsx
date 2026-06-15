@@ -18,21 +18,28 @@ interface MobileCardAreaProps {
 }
 
 /**
- * Horizontal nudge that shifts the centred card toward the handedness-trailing
- * side so it clears the corner FAB, letting the FAB keep a single resting
- * position on every tab (instead of the old cards-only horizontal shift).
+ * Extra inner padding on the centred card's handedness-leading side, used to
+ * nudge the card toward the trailing side so it clears the corner FAB (letting
+ * the FAB keep a single resting position on every tab).
  *
- * The card is a fixed `w-62.5` (250px) centred inside the area's `p-3` (12px)
- * padding, so each side margin is `calc(50vw - 137px)` ((100vw - 24px - 250px) / 2).
- * The FAB rests at `left-4`/`right-4` (16px) and is 44px wide, so it needs roughly a
- * 64px gutter (16 + 44 + ~4 gap) on the leading side. The shift is the shortfall
- * between that gutter and the natural margin - `calc(201px - 50vw)` (64 + 137 - 50vw)
- * - clamped so it never exceeds `calc(50vw - 145px)` (the natural margin minus an 8px
- * minimum), which keeps the card on-screen on very narrow viewports. It collapses to
- * 0 once the natural margin already exceeds the gutter (~402px+), leaving wide
- * screens untouched.
+ * This is a layout shift, NOT a `transform`. A `transform: translateX(...)`
+ * promotes the whole card subtree to a GPU layer and then draws it at the
+ * translate's offset; when that offset is a fractional device pixel (the value
+ * below is `13.5px` at 375px, and the device-pixel-ratio multiplies it) the
+ * rasterised card bitmap is resampled and the card looks blurry / "slightly
+ * scaled". Padding moves the box in normal layout with no rasterised layer, so
+ * the card text and borders stay crisp.
+ *
+ * Padding on one side of a `justify-center` flex container shifts the centred
+ * child by half the padding, so this is twice the desired shift. The shift
+ * itself is the shortfall between the FAB's ~64px leading gutter and the card's
+ * natural side margin - `calc(201px - 50vw)` - clamped so it never pushes the
+ * card past an 8px trailing minimum (`calc(50vw - 145px)`) and collapses to 0
+ * once the natural margin already clears the gutter (~402px+), leaving wide
+ * screens untouched. The card is a fixed `w-62.5` (250px) centred inside the
+ * area's `p-3` (12px), so each natural side margin is `calc(50vw - 137px)`.
  */
-const FAB_CLEARANCE_SHIFT = 'max(0px, min(calc(201px - 50vw), calc(50vw - 145px)))';
+const FAB_CLEARANCE_PADDING = 'calc(2 * max(0px, min(calc(201px - 50vw), calc(50vw - 145px))))';
 
 /**
  * The scrollable card display area of the mobile character sheet, wrapping the
@@ -40,19 +47,18 @@ const FAB_CLEARANCE_SHIFT = 'max(0px, min(calc(201px - 50vw), calc(50vw - 145px)
  * the card body navigates to the previous/next card) spread from the sheet's
  * gesture hook. The `data-tutorial` anchor is preserved.
  *
- * No FAB clearance *padding* is needed here: the displayed card is centred and
- * narrower than the viewport, and the card navigation bar below is an in-flow
- * sibling (which the FAB clears via {@link getFloatingBottom}'s card-nav-bar
- * allowance). The card is, however, nudged horizontally toward the trailing side
- * via {@link FAB_CLEARANCE_SHIFT} so the corner FAB clears the card's edge controls
- * without the FAB having to move - see that constant for the geometry.
+ * The displayed card is centred; it is nudged toward the handedness-trailing
+ * side via {@link FAB_CLEARANCE_PADDING} (a crisp, layout-based padding shift -
+ * see that constant) so the corner FAB clears the card's edge controls without
+ * the FAB having to move.
  *
  * @param isLeftHanded - The FAB rests on this (leading) side, so the card is shifted the other way: right when true, left otherwise.
  */
 export function MobileCardArea({ cards, currentIndex, isLeftHanded, touchHandlers, onOpenAddCard }: MobileCardAreaProps) {
-	const transform = isLeftHanded
-		? `translateX(${FAB_CLEARANCE_SHIFT})`
-		: `translateX(calc(-1 * ${FAB_CLEARANCE_SHIFT}))`;
+	// Pad the FAB side so the centred card shifts away from it (see constant).
+	const clearanceStyle = isLeftHanded
+		? { paddingLeft: FAB_CLEARANCE_PADDING }
+		: { paddingRight: FAB_CLEARANCE_PADDING };
 
 	return (
 		<div
@@ -60,7 +66,7 @@ export function MobileCardArea({ cards, currentIndex, isLeftHanded, touchHandler
 			data-tutorial="card-carousel"
 			{...touchHandlers}
 		>
-			<div className="min-h-full flex items-center justify-center" style={{ transform }}>
+			<div className="min-h-full flex items-center justify-center" style={clearanceStyle}>
 				<MobileCardCarousel
 					cards={cards}
 					currentIndex={currentIndex}

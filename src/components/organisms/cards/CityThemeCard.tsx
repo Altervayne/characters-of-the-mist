@@ -176,7 +176,7 @@ export const CityThemeCard = React.memo(
                      )}
                   </div>
                </div>
-               <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+               <div className="flex flex-col grow align-middle overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={tagsScrollRef}>
                   {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
                   {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('ThemeCard.addPowerTag')}</Button>}
 
@@ -188,7 +188,7 @@ export const CityThemeCard = React.memo(
             {!isDrawerPreview &&
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
                   <CardSectionHeader title={`${card.cardType === 'GROUP_THEME' ? t('ThemeCard.identityTitle') : ((details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.mysteryTitle') : t('ThemeCard.identityTitle'))}`}></CardSectionHeader>
-                  <div className="w-full grow overflow-y-auto overscroll-contain" ref={mysteryScrollRef}>
+                  <div className="w-full grow overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={mysteryScrollRef}>
                      {isEditing ? (
                         <Textarea
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none"
@@ -201,12 +201,17 @@ export const CityThemeCard = React.memo(
                      )}
                   </div>
 
+                  {/* Pass raw PipTracker label keys (Attention / Crack / Fade); PipTracker
+                      itself resolves `PipTracker.<label>`. Passing a pre-translated
+                      string here would double-translate (e.g. fr "Fissure" -> missing
+                      `PipTracker.Fissure` -> raw key), which is why these are the bare
+                      key suffixes, matching the other game cards. */}
                   <div className="flex justify-around items-center py-2 px-2 shrink-0 w-full border-t border-card-accent/30">
-                     <PipTracker label={t('ThemeCard.attention')} value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
+                     <PipTracker label="Attention" value={details.attention} onUpdate={(val) => handleDetailChange('attention', val)} />
                      {card.cardType === 'GROUP_THEME' ? (
-                        <PipTracker label={t('ThemeCard.crack')} value={(details as CityCrewDetails).crack} onUpdate={(val) => handleDetailChange('crack', val)} />
+                        <PipTracker label="Crack" value={(details as CityCrewDetails).crack} onUpdate={(val) => handleDetailChange('crack', val)} />
                      ) : (
-                        <PipTracker label={(details as CityThemeDetails).themeType === 'Mythos' ? t('ThemeCard.fade') : t('ThemeCard.crack')} value={(details as CityThemeDetails).fadeOrCrack} onUpdate={(val) => handleDetailChange('fadeOrCrack', val)} />
+                        <PipTracker label={(details as CityThemeDetails).themeType === 'Mythos' ? 'Fade' : 'Crack'} value={(details as CityThemeDetails).fadeOrCrack} onUpdate={(val) => handleDetailChange('fadeOrCrack', val)} />
                      )}
                   </div>
                </CardFooter>

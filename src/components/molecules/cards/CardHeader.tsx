@@ -89,7 +89,7 @@ const ThemeTypeIcon = ({ type, game }: { type: string; game?: string }) => {
                <div>{IconComponent}</div>
             </TooltipTrigger>
             <TooltipContent>
-               <p>{t(translationKey as string)}</p>
+               <p>{t(`ThemeTypes.${translationKey}`)}</p>
             </TooltipContent>
          </Tooltip>
       </TooltipProvider>

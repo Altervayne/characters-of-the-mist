@@ -57,7 +57,11 @@ export default function MobileFAB({
 	// drawer-toolbar clearance) so it lands inside the toolbar's vertical band -
 	// the drawer reserves a horizontal slot on its handedness-leading edge so
 	// no toolbar button sits under it, and the FAB no longer overlaps the
-	// breadcrumbs above. Variable kept for symmetry with `isCardsFab` only.
+	// breadcrumbs above. It also drops its floating shadow and matches the
+	// toolbar buttons' icon size there, reading as the bar's primary button
+	// rather than a FAB crammed into the row. Keyed on the tab alone (not the
+	// collapsed state) so the styling stays stable while the menu is expanded.
+	const isDrawerFab = activeTab === 'drawer';
 
 	const toggleExpanded = () => {
 		const newValue = !isExpanded;
@@ -161,13 +165,26 @@ export default function MobileFAB({
 			{!isToolbeltOpen && (
 				<motion.div
 					className={cn(
-						// Single resting inset on every tab. The card yields room for the FAB
-						// on the cards tab (see MobileCardArea's FAB_CLEARANCE_SHIFT) instead of
-						// the FAB hopping inward here, so it no longer shifts between tabs.
 						"fixed layer-panel",
-						isLeft ? "left-4" : "right-4"
+						// Cards/sheet tabs: float at the standard 16px corner inset (the
+						// card yields room via MobileCardArea's FAB_CLEARANCE_SHIFT).
+						// Drawer tab: use the toolbar's own 12px (px-3) edge inset so the
+						// FAB lines up with the action buttons' horizontal rhythm - with the
+						// 4rem slot the drawer reserves, this leaves an 8px (gap-2) gap to
+						// the adjacent button, exactly like a real toolbar button.
+						isDrawerFab
+							? (isLeft ? "left-3" : "right-3")
+							: (isLeft ? "left-4" : "right-4")
 					)}
-					style={{ bottom: getFloatingBottom({ clearsCardsNavBar: isCardsFab }) }}
+					// Drawer tab: sit on the toolbar buttons' baseline (the toolbar's
+					// `paddingBottom` of 0.5rem + safe area) so the FAB is vertically
+					// centred in the action-bar row instead of floating 0.5rem above it.
+					// Other tabs use the standard floating offset.
+					style={{
+						bottom: isDrawerFab
+							? 'calc(0.5rem + env(safe-area-inset-bottom))'
+							: getFloatingBottom({ clearsCardsNavBar: isCardsFab })
+					}}
 					whileTap={{ scale: 0.95 }}
 					data-tutorial="mobile-fab"
 				>
@@ -175,7 +192,13 @@ export default function MobileFAB({
 						variant="default"
 						size="lg"
 						onClick={toggleExpanded}
-						className="h-11 w-11 shadow-2xl"
+						// On the drawer tab the FAB is seated inside the bottom toolbar's
+						// row rather than floating in a corner, so it drops the floating
+						// drop-shadow and matches the toolbar buttons' 20px icon - it
+						// keeps its primary fill to stay recognizable as the nav control
+						// among the flat outline action buttons. Elsewhere it is a real
+						// floating FAB (shadow-2xl, 24px icon).
+						className={cn("h-11 w-11", isDrawerFab ? "shadow-none" : "shadow-2xl")}
 						aria-label={isExpanded ? t('MobileFAB.close') : t('MobileFAB.open')}
 					>
 						<motion.div
@@ -183,9 +206,9 @@ export default function MobileFAB({
 							transition={{ duration: 0.2 }}
 						>
 							{isExpanded ? (
-								<X className="h-6 w-6" />
+								<X className={cn(isDrawerFab ? "h-5 w-5" : "h-6 w-6")} />
 							) : (
-								<Menu className="h-6 w-6" />
+								<Menu className={cn(isDrawerFab ? "h-5 w-5" : "h-6 w-6")} />
 							)}
 						</motion.div>
 					</IconButton>

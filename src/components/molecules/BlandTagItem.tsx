@@ -49,7 +49,10 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
 
    return (
       <div className={cn(
-         "flex items-center gap-2 text-sm p-1",
+         // `min-w-0` keeps a long tag name from forcing the row wider than its
+         // parent card. Flex children otherwise default to `min-width: auto`
+         // which lets unbroken text grow the row past the card edge.
+         "flex items-center gap-2 text-sm p-1 w-full min-w-0",
          isEvenRow ? 'bg-black/5' : 'bg-transparent'
       )}>
          {isEditing ? (
@@ -57,20 +60,25 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
                <Input
                   value={localName}
                   onChange={(e) => setLocalName(e.target.value)}
-                  className="h-7 flex-1 bg-transparent text-center border-none shadow-none"
+                  className="h-7 flex-1 min-w-0 bg-transparent text-center border-none shadow-none"
                   placeholder={t(`${listName}.placeholder`)}
                />
                <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-destructive"
+                  className="h-7 w-7 shrink-0 text-destructive"
                   onClick={() => removeBlandTag(cardId, listName, tag.id)}
                >
                   <Trash2 className="h-4 w-4" />
                </Button>
             </>
          ) : (
-            <span className="w-full text-center">{tag.name ? tag.name : `[${t(`${listName}.noName`)}]`}</span>
+            // `block` so it can size and wrap; `min-w-0 break-words` plus
+            // `[overflow-wrap:anywhere]` makes even a single unbroken string
+            // wrap inside the row rather than pushing past the card edge.
+            <span className="block w-full min-w-0 text-center break-words [overflow-wrap:anywhere]">
+               {tag.name ? tag.name : `[${t(`${listName}.noName`)}]`}
+            </span>
          )}
       </div>
    );

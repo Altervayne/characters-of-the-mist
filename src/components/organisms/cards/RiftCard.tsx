@@ -176,7 +176,7 @@ const RiftCardContent = React.memo(
                      <p className="col-span-2 text-sm text-center py-1">{t('RiftCard.Crew.hurt')}</p>
                      {isEditing && <p className="col-span-2 text-sm text-center py-1"></p>}
                   </div>
-                  <div className="flex flex-col grow overflow-y-auto overscroll-contain p-2" ref={crewScrollRef}>
+                  <div className="flex flex-col grow overflow-y-auto overflow-x-hidden overscroll-contain min-w-0 p-2" ref={crewScrollRef}>
                      {details.crewMembers.map((member) => (
                         <div key={member.id} className={cn("mb-2 grid gap-1 items-center", isEditing ? "grid-cols-12" : "grid-cols-10")}>
                            <div className="col-span-6">
@@ -262,7 +262,7 @@ const RiftCardContent = React.memo(
             <CardHeaderMolecule title={t('RiftCard.title')} />
             <CardSectionHeader title={`${tNemesis('RiftCard.Nemesis.title')}`}></CardSectionHeader>
             <CardContent className="grow flex flex-col p-0 overflow-hidden min-h-0">
-               <div className="grow space-y-0 overflow-y-auto overscroll-contain" ref={nemesesScrollRef}>
+               <div className="grow space-y-0 overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={nemesesScrollRef}>
                   {details.nemeses.map((tag, index) => (
                      <TagItem
                         key={tag.id}
@@ -270,8 +270,8 @@ const RiftCardContent = React.memo(
                         tag={tag}
                         tagType="power"
                         listName="nemeses"
-                        placeholderKey="RiftCard.Nemesis.placeholder"
-                        noNameKey="RiftCard.Nemesis.noName"
+                        placeholderKey="nemeses.placeholder"
+                        noNameKey="nemeses.noName"
                         isEditing={isEditing}
                         index={index}
                      />
@@ -279,7 +279,7 @@ const RiftCardContent = React.memo(
                   {isEditing && (
                      <div className="p-2 w-full">
                         <Button variant="ghost" size="sm" className="w-full border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'nemeses')}>
-                           <PlusCircle className="h-4 w-4 mr-2" /> {tNemesis('addNemesis')}
+                           <PlusCircle className="h-4 w-4 mr-2" /> {tNemesis('RiftCard.Nemesis.addNemesis')}
                         </Button>
                      </div>
                   )}

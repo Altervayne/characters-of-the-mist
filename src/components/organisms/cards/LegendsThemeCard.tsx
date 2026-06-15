@@ -172,7 +172,7 @@ export const LegendsThemeCard = React.memo(
                      )}
                   </div>
                </div>
-               <div className="flex flex-col grow align-middle overflow-y-auto overscroll-contain" ref={tagsScrollRef}>
+               <div className="flex flex-col grow align-middle overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={tagsScrollRef}>
                   {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
                   {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('ThemeCard.addPowerTag')}</Button>}
                   
@@ -184,7 +184,7 @@ export const LegendsThemeCard = React.memo(
             {!isDrawerPreview &&
                <CardFooter className="p-0 flex flex-col min-h-[37%] max-h-[37%]">
                   <CardSectionHeader title={`${t('ThemeCard.questTitle')}`}></CardSectionHeader>
-                  <div className="w-full grow overflow-y-auto overscroll-contain" ref={questScrollRef}>
+                  <div className="w-full grow overflow-y-auto overflow-x-hidden overscroll-contain min-w-0" ref={questScrollRef}>
                      {isEditing ? (
                         <Textarea 
                            className="h-full p-0.5 text-xs text-center bg-card-paper-bg/10 border-card-accent/20 resize-none" 

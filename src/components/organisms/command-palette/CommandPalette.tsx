@@ -254,14 +254,14 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         }} />
                      )}
                      {activePage === 'createCard_PowerTags' && (
-                        <CreateCard_NumberInputPage inputValue={inputValue} labelKey='actions.setPowerTags' onSelect={() => {
+                        <CreateCard_NumberInputPage inputValue={inputValue} labelKey='CommandPalette.actions.setPowerTags' onSelect={() => {
                            setCardOptions(prev => ({ ...prev, powerTagsCount: Number(inputValue) }));
                            pushPage('createCard_WeaknessTags');
                            setInputValue('1');
                         }} />
                      )}
                      {activePage === 'createCard_WeaknessTags' && (
-                        <CreateCard_NumberInputPage inputValue={inputValue} labelKey='actions.setWeaknessTags' onSelect={() => {
+                        <CreateCard_NumberInputPage inputValue={inputValue} labelKey='CommandPalette.actions.setWeaknessTags' onSelect={() => {
                            const finalOptions = { ...cardOptions, weaknessTagsCount: Number(inputValue) } as CreateCardOptions;
                            addCard(finalOptions);
                            toast.success(tNotify('Notifications.card.created'));
