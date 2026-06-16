@@ -43,30 +43,34 @@ export default defineConfig({
         // Dark splash/status-bar tint so the cream app logo stays legible.
         theme_color: '#020817',
         background_color: '#020817',
+        // The icons are full-bleed dark tiles with the cream logo centred inside
+        // the maskable safe zone, so each doubles as an adaptive (`maskable`)
+        // icon - Android renders the logo on the brand tile instead of dropping
+        // a transparent icon onto a white plate.
         icons: [
           {
             src: 'icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any'
+            purpose: 'any maskable'
           },
           {
             src: 'icons/icon-256x256.png',
             sizes: '256x256',
             type: 'image/png',
-            purpose: 'any'
+            purpose: 'any maskable'
           },
           {
             src: 'icons/icon-384x384.png',
             sizes: '384x384',
             type: 'image/png',
-            purpose: 'any'
+            purpose: 'any maskable'
           },
           {
             src: 'icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any'
+            purpose: 'any maskable'
           }
         ]
       },
