@@ -84,16 +84,12 @@ export default function MobileAbout({ onBack }: MobileAboutProps) {
 					<div className="prose prose-sm max-w-none dark:prose-invert">
 						<MarkdownContent content={t('InfoDialog.content.license')} />
 						<a
-							rel="license"
-							href="http://creativecommons.org/licenses/by-nc-sa/4.0/"
-							className="inline-block my-4"
+							href="https://www.gnu.org/licenses/agpl-3.0.html"
+							target="_blank"
+							rel="license noopener noreferrer"
+							className="inline-block my-4 text-sm underline"
 						>
-							<img
-								alt="Creative Commons License"
-								width={88}
-								height={31}
-								src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"
-							/>
+							GNU Affero General Public License v3.0
 						</a>
 						<p className="text-xs text-muted-foreground">{t('InfoDialog.license_credit')}</p>
 					</div>
@@ -105,21 +101,6 @@ export default function MobileAbout({ onBack }: MobileAboutProps) {
 
 						<MarkdownContent content={t('InfoDialog.content.localization')} />
 						<MarkdownContent content={localizationContributors} />
-
-						<MarkdownContent content={t('InfoDialog.content.support')} />
-						<a
-							href="https://ko-fi.com/altervayne"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-block mt-4"
-						>
-							<img
-								alt={t('InfoDialog.kofi_alt')}
-								src="https://storage.ko-fi.com/cdn/brandasset/kofi_button_dark.png"
-								width={214}
-								height={40}
-							/>
-						</a>
 					</div>
 				)}
 			</div>
