@@ -62,7 +62,7 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 	];
 
 	return (
-		<div className="h-full flex flex-col overflow-y-auto bg-gradient-to-b from-background via-background to-muted/10">
+		<div className="h-full flex flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/10">
 			{/* Header */}
 			<div className="p-6 pb-4 text-center">
 				<motion.div
@@ -93,8 +93,11 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 				</motion.p>
 			</div>
 
-			{/* Game Selection */}
-			<div className="flex-1 px-6 pb-6 overflow-y-auto">
+			{/* Game Selection - scrolls within the fixed header/footer column. `min-h-0`
+			    lets this flex child shrink so it scrolls internally instead of pushing
+			    the footer off-screen; `pt-2` gives the selected card's ring (`ring-4`)
+			    room so its halo is not clipped at the top edge. */}
+			<div className="flex-1 min-h-0 px-6 pt-2 pb-6 overflow-y-auto">
 				<div className="space-y-3">
 					{gameOptions.map((option, index) => (
 						<motion.div

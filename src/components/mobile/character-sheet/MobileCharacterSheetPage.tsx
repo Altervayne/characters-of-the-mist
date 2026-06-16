@@ -212,7 +212,7 @@ export default function MobileCharacterSheetPage() {
 	// If no character is loaded, show the main menu
 	if (!character) {
 		return (
-			<div className="h-screen w-screen overflow-hidden">
+			<div className="overflow-hidden" style={{ height: '100dvh', width: '100dvw' }}>
 				<MobileMainMenu onOpenDrawer={handleOpenDrawer} />
 			</div>
 		);
