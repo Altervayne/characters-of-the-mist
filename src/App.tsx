@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import { router } from '@/router';
 import { useDeviceType } from '@/hooks/useDeviceType';
 import '@/app/global.css';
@@ -14,6 +15,7 @@ function AppContent() {
   return (
     <>
       <RouterProvider router={router} />
+      <PWAUpdatePrompt />
       <Toaster
         position={isMobile ? 'top-center' : 'bottom-center'}
         toastOptions={{

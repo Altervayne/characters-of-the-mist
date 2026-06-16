@@ -1,4 +1,10 @@
 {
+   "PWA": {
+      "updateAvailable": "[TO COMPLETE]",
+      "update": "[TO COMPLETE]",
+      "dismiss": "[TO COMPLETE]",
+      "offlineReady": "[TO COMPLETE]"
+   },
    "Notifications": {
       "general": {
          "importFailed": "Import du fichier échoué. Les données sont corrompues ou incorrectes.",

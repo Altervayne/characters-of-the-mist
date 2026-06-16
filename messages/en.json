@@ -1,4 +1,10 @@
 {
+   "PWA": {
+      "updateAvailable": "A new version is available.",
+      "update": "Update",
+      "dismiss": "Dismiss",
+      "offlineReady": "Ready to work offline."
+   },
    "Notifications": {
       "general": {
          "importFailed": "File import failed. The data may be incorrect or corrupted.",
