@@ -22,23 +22,26 @@ interface MobileAddCardThemebookOption {
 }
 
 interface MobileAddCardThemebookPickerProps {
-	searchQuery: string;
-	setSearchQuery: (value: string) => void;
 	filteredThemebooks: MobileAddCardThemebookOption[];
 	themeType: ThemeTypeUnion;
 	themebook: string;
+	onThemebookChange: (value: string) => void;
 	onSelect: (book: MobileAddCardThemebookOption) => void;
 }
 
 /**
- * The themebook picker for a CHARACTER_THEME: a search input plus a scrollable
- * list of the (already-filtered) themebooks, with a check mark and highlight on
- * the currently-selected one. Purely presentational - the parent owns the search
- * query and the selection and does the filtering; this renders the supplied
- * `filteredThemebooks` and reports a pick via `onSelect`. The list only shows once
- * a `themeType` is chosen, and the empty result shows a "not found" message.
+ * The themebook picker for a CHARACTER_THEME: a text input plus a scrollable list
+ * of the (already-filtered) themebooks, with a check mark and highlight on the
+ * currently-selected one. The input is the themebook field itself - typing sets a
+ * free-form (custom) themebook, while tapping a list entry fills in one of the
+ * built-in books. This mirrors the desktop dialog, where the same field doubles
+ * as search and value, so a custom name can be confirmed. Purely presentational:
+ * the parent owns the value and does the filtering; this renders the supplied
+ * `filteredThemebooks` and reports edits via `onThemebookChange` / `onSelect`. The
+ * list only shows once a `themeType` is chosen, and an empty result (e.g. a custom
+ * name) shows a "not found" message while the typed value remains usable.
  */
-export function MobileAddCardThemebookPicker({ searchQuery, setSearchQuery, filteredThemebooks, themeType, themebook, onSelect }: MobileAddCardThemebookPickerProps) {
+export function MobileAddCardThemebookPicker({ filteredThemebooks, themeType, themebook, onThemebookChange, onSelect }: MobileAddCardThemebookPickerProps) {
 	const { t } = useTranslation();
 	const { t: tTheme } = useTranslation();
 
@@ -46,12 +49,12 @@ export function MobileAddCardThemebookPicker({ searchQuery, setSearchQuery, filt
 		<div className="space-y-2">
 			<Label className="text-sm font-semibold">{t('CreateCardDialog.themebookLabel')}</Label>
 
-			{/* Search Input */}
+			{/* Themebook input - typing sets a custom name; the list below offers built-ins. */}
 			<Input
 				type="text"
 				placeholder={t('CreateCardDialog.searchThemebookPlaceholder')}
-				value={searchQuery}
-				onChange={(e) => setSearchQuery(e.target.value)}
+				value={themebook}
+				onChange={(e) => onThemebookChange(e.target.value)}
 				disabled={!themeType}
 				className="text-base"
 			/>

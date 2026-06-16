@@ -45,7 +45,6 @@ export default function MobileAddCard({ onBack, onConfirm, mode, cardData, game 
 	const [powerTagsCount, setPowerTagsCount] = useState(2);
 	const [weaknessTagsCount, setWeaknessTagsCount] = useState(1);
 	const [wildcardSlots, setWildcardSlots] = useState(0);
-	const [searchQuery, setSearchQuery] = useState('');
 
 	// Get the appropriate theme types based on game
 	const themeTypes = game === 'LEGENDS' ? legendsThemeTypes : game === 'OTHERSCAPE' ? otherscapeThemeTypes : cityThemeTypes;
@@ -63,16 +62,18 @@ export default function MobileAddCard({ onBack, onConfirm, mode, cardData, game 
 		return [];
 	}, [themeType, game]);
 
-	// Filter themebooks based on search query
+	// Filter the built-in themebooks against the current themebook text. The same
+	// field holds the (possibly custom) value, so a free-form name simply yields no
+	// matches while remaining usable.
 	const filteredThemebooks = useMemo(() => {
-		if (!searchQuery.trim()) return availableThemebooks;
+		const query = themebook.trim().toLowerCase();
+		if (!query) return availableThemebooks;
 
-		const query = searchQuery.toLowerCase();
 		return availableThemebooks.filter(book =>
 			tTheme(book.key as string).toLowerCase().includes(query) ||
 			book.value.toLowerCase().includes(query)
 		);
-	}, [availableThemebooks, searchQuery, tTheme]);
+	}, [availableThemebooks, themebook, tTheme]);
 
 
 	useEffect(() => {
@@ -125,19 +126,16 @@ export default function MobileAddCard({ onBack, onConfirm, mode, cardData, game 
 			if (value === 'Origin' || value === 'Adventure' || value === 'Greatness') {
 				setThemeType(value);
 				setThemebook('');
-				setSearchQuery('');
 			}
 		} else if (game === 'CITY_OF_MIST') {
 			if (value === 'Mythos' || value === 'Logos') {
 				setThemeType(value);
 				setThemebook('');
-				setSearchQuery('');
 			}
 		} else if (game === 'OTHERSCAPE') {
 			if (value === 'Mythos' || value === 'Self' || value === 'Noise') {
 				setThemeType(value);
 				setThemebook('');
-				setSearchQuery('');
 			}
 		}
 	};
@@ -187,15 +185,11 @@ export default function MobileAddCard({ onBack, onConfirm, mode, cardData, game 
 
 							{/* Themebook Selection */}
 							<MobileAddCardThemebookPicker
-								searchQuery={searchQuery}
-								setSearchQuery={setSearchQuery}
 								filteredThemebooks={filteredThemebooks}
 								themeType={themeType}
 								themebook={themebook}
-								onSelect={(book) => {
-									setThemebook(book.value);
-									setSearchQuery('');
-								}}
+								onThemebookChange={setThemebook}
+								onSelect={(book) => setThemebook(book.value)}
 							/>
 						</>
 					)}
