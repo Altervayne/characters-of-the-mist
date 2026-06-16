@@ -9,6 +9,7 @@ import OnboardingWelcome from './OnboardingWelcome';
 import OnboardingLanguage from './OnboardingLanguage';
 import OnboardingAppearance from './OnboardingAppearance';
 import OnboardingInterface from './OnboardingInterface';
+import OnboardingTips from './OnboardingTips';
 import OnboardingReady from './OnboardingReady';
 
 
@@ -18,9 +19,9 @@ interface MobileOnboardingProps {
 	onComplete: (startTutorial: boolean) => void;
 }
 
-type OnboardingStep = 'welcome' | 'language' | 'appearance' | 'interface' | 'ready';
+type OnboardingStep = 'welcome' | 'language' | 'appearance' | 'interface' | 'tips' | 'ready';
 
-const STEPS: OnboardingStep[] = ['welcome', 'language', 'appearance', 'interface', 'ready'];
+const STEPS: OnboardingStep[] = ['welcome', 'language', 'appearance', 'interface', 'tips', 'ready'];
 
 export default function MobileOnboarding({ isOpen, onComplete }: MobileOnboardingProps) {
 	const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
@@ -97,6 +98,14 @@ export default function MobileOnboarding({ isOpen, onComplete }: MobileOnboardin
 			case 'interface':
 				return (
 					<OnboardingInterface
+						onNext={handleNext}
+						onBack={handleBack}
+						onSkip={handleSkip}
+					/>
+				);
+			case 'tips':
+				return (
+					<OnboardingTips
 						onNext={handleNext}
 						onBack={handleBack}
 						onSkip={handleSkip}

@@ -272,7 +272,12 @@ export default function MobileCharacterSheetPage() {
 			{/* Navigation - Hidden when reordering cards or in settings/about/patchNotes/addCard */}
 			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'about' && activeTab !== 'patchNotes' && activeTab !== 'addCard' && (
 				!isMobileFABMode ? (
-					<MobileBottomTabs activeTab={activeTab as NavigationTabId} onTabChange={navigateToTab} />
+					<MobileBottomTabs
+						activeTab={activeTab as NavigationTabId}
+						onTabChange={navigateToTab}
+						isToolbeltOpen={isToolbeltOpen}
+						onToggleToolbelt={() => setIsToolbeltOpen((open) => !open)}
+					/>
 				) : (
 					<MobileFAB
 						activeTab={activeTab as NavigationTabId}

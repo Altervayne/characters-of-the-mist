@@ -19,9 +19,9 @@ interface MobileCharacterSheetTabBarProps {
  * buttons (the cards tab showing a count badge). Purely presentational - active
  * tab, counts, and the change callback all come from the sheet.
  *
- * The toolbelt trigger no longer lives here: in side-panel mode it is a
- * thumb-zone floating button ({@link MobileToolbeltTrigger}) instead of the old
- * top-of-screen wrench, so this bar is now just the tab switcher.
+ * The toolbelt trigger no longer lives here: in tabs-and-menus mode it is the
+ * dedicated Toolbelt button in the bottom navigation bar, so this bar is now
+ * just the tab switcher.
  */
 export function MobileCharacterSheetTabBar({ activeTab, onTabChange, cardCount }: MobileCharacterSheetTabBarProps) {
 	const { t } = useTranslation();

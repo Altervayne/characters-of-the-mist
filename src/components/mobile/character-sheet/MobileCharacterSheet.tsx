@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 // -- Component Imports --
 import { IconButton } from '@/components/ui/icon-button';
 import MobileToolbelt from '@/components/mobile/toolbelt/MobileToolbelt';
-import MobileToolbeltTrigger from '@/components/mobile/toolbelt/MobileToolbeltTrigger';
 import MobileSaveToDrawerSheet from '@/components/mobile/character-sheet/MobileSaveToDrawerSheet';
 import { MobileCharacterNameHeader } from '@/components/mobile/character-sheet/MobileCharacterNameHeader';
 import { MobileCharacterSheetTabBar } from '@/components/mobile/character-sheet/MobileCharacterSheetTabBar';
@@ -286,17 +285,6 @@ export default function MobileCharacterSheet({
 					}}
 					onOpenAddCard={onOpenAddCard}
 					onSaveToDrawer={handleSaveToDrawer}
-				/>
-			)}
-
-
-
-			{/* Thumb-zone toolbelt trigger (side-panel mode only; hidden while open or reordering) */}
-			{!isMobileFABMode && !isReorderingCards && !isToolbeltOpen && (
-				<MobileToolbeltTrigger
-					isLeftHanded={isLeftHanded}
-					isCardsTab={activeTab === 'cards'}
-					onOpen={() => handleToolbeltOpenChange(true)}
 				/>
 			)}
 

@@ -7,7 +7,8 @@
          "exportSuccess": "Fichier exporté.",
          "exportError": "Échec de l'exportation.",
          "invalidExportType": "Cet objet ne peut pas être exporté.",
-         "appReset": "Réinitialisation de l'application terminée. Actualisation..."
+         "appReset": "Réinitialisation de l'application terminée. Actualisation...",
+         "gestureTipsReset": "[TO COMPLETE]"
       },
       "character": {
          "saved": "Personnage sauvegardé dans",
@@ -327,7 +328,9 @@
       "gestureHints": {
          "title": "Astuces gestuelles",
          "shown": "Affichées",
-         "hidden": "Masquées"
+         "hidden": "Masquées",
+         "replayLabel": "[TO COMPLETE]",
+         "replayButton": "[TO COMPLETE]"
       },
 
       "toolbeltMode": {
@@ -981,7 +984,8 @@
       "sheet": "Fiche",
       "drawer": "Tiroir",
       "menu": "Menu",
-      "edit": "Modifier"
+      "edit": "Modifier",
+      "toolbelt": "[TO COMPLETE]"
    },
    "MobileFAB": {
       "edit": "Mode Édition",
@@ -1063,6 +1067,13 @@
          "navigationHint": "Choisissez comment interagir avec l'application",
          "bottomTabs": "Onglets & Panneaux",
          "floatingButton": "Boutons Flottants"
+      },
+      "tips": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "show": "[TO COMPLETE]",
+         "hide": "[TO COMPLETE]",
+         "reminder": "[TO COMPLETE]"
       },
       "ready": {
          "title": "Vous Êtes Prêt !",

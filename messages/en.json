@@ -7,7 +7,8 @@
          "exportSuccess": "File exported.",
          "exportError": "Export failed.",
          "invalidExportType": "This object cannot be exported.",
-         "appReset": "Application successfully reset. Reloading..."
+         "appReset": "Application successfully reset. Reloading...",
+         "gestureTipsReset": "Gesture tips will show again as you use the app."
       },
       "character": {
          "saved": "Character saved to",
@@ -327,7 +328,9 @@
       "gestureHints": {
          "title": "Gesture tips",
          "shown": "Shown",
-         "hidden": "Hidden"
+         "hidden": "Hidden",
+         "replayLabel": "Refresh gesture tips",
+         "replayButton": "Show gesture tips again"
       },
 
       "toolbeltMode": {
@@ -981,7 +984,8 @@
       "sheet": "Sheet",
       "drawer": "Drawer",
       "menu": "Menu",
-      "edit": "Edit"
+      "edit": "Edit",
+      "toolbelt": "Toolbelt"
    },
    "MobileFAB": {
       "edit": "Edit Mode",
@@ -1063,6 +1067,13 @@
          "navigationHint": "Choose how you interact with the app",
          "bottomTabs": "Tabs & Panels",
          "floatingButton": "Floating Buttons"
+      },
+      "tips": {
+         "title": "Gesture tips",
+         "description": "Show one-time hints that introduce each touch gesture the first time you can use it. You can change this anytime in Settings.",
+         "show": "Show tips",
+         "hide": "No tips",
+         "reminder": "Missed them? You can show the tips again anytime from Settings."
       },
       "ready": {
          "title": "You're All Set!",

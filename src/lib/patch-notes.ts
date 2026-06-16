@@ -11,6 +11,7 @@ export const patchNotes: PatchNote[] = [
 As per requested, Mobile compatibility is here! Characters of the Mist can now be opened on a mobile device with a specially made mobile UI!
 Please keep in mind I am absolutely not used to mobile UIs. I tried my best to make something intuitive and pleasant to use, but feeback is always welcome.
 There may be unexpected bugs, I didn't get the opportunity to test this on a lot of screen sizes. Don't hesitate to hit up the Tools of the Mist discord !
+For the best experience, please install Characters of the Mist as a Progressive Web App on your device using a browser that supports this feature.
 
 **Here's what's in it:**
 * **Two navigation modes**: pick what feels best in Settings. Bottom tabs gives you a familiar Sheet / Drawer / Menu bar at the bottom. FAB mode replaces it with a single corner button that expands into the same options, leaving more room for content.
@@ -27,6 +28,7 @@ There may be unexpected bugs, I didn't get the opportunity to test this on a lot
 
 ### 🔧 Changes
 * "Unload Character" button is now at the bottom of the sidebar, and is called "Return to Menu". The effect is the same, it will completely unload your character from memory. Make sure you saved your character to the drawer beforehand! Hopefully this makes it less ambiguous.
+* Tags on the back of character cards (Merc Card (Special) / Hero Card (Backpack) / Rift Card (Nemesis)) are now selectable/burnable.
 
 ### 🐛 Bugfixes
 * "Save Character As" now properly saves to currently open Drawer folder instead of root.

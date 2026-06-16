@@ -2,11 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Home, FolderOpen, MoreHorizontal, Edit } from 'lucide-react';
-
-// -- Store Imports --
-import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { Home, FolderOpen, MoreHorizontal, Wrench } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -16,13 +12,18 @@ type TabId = 'sheet' | 'drawer' | 'menu';
 interface MobileBottomTabsProps {
 	activeTab: TabId;
 	onTabChange: (tab: TabId) => void;
+	/** Whether the toolbelt side-panel is currently open. */
+	isToolbeltOpen: boolean;
+	/** Toggles the toolbelt side-panel open/closed. */
+	onToggleToolbelt: () => void;
 }
 
-export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBottomTabsProps) {
+export default function MobileBottomTabs({ activeTab, onTabChange, isToolbeltOpen, onToggleToolbelt }: MobileBottomTabsProps) {
 	const { t } = useTranslation();
-	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
-	const { toggleIsEditing } = useAppGeneralStateActions();
-	const character = useCharacterStore((state) => state.character);
+
+	// The toolbelt only operates on the character sheet, so its trigger is
+	// disabled (and visually grayed) on every other tab.
+	const isToolbeltAvailable = activeTab === 'sheet';
 
 	const tabs = [
 		{
@@ -69,25 +70,28 @@ export default function MobileBottomTabs({ activeTab, onTabChange }: MobileBotto
 					);
 				})}
 
-				{/* Edit Mode Toggle - Only visible when character is loaded */}
-				{character && (
-					<button
-						onClick={toggleIsEditing}
-						className={cn(
-							"flex flex-col items-center justify-center flex-1 h-full transition-colors",
-							"active:bg-muted/50",
-							isEditing
-								? "text-primary"
-								: "text-muted-foreground hover:text-foreground"
-						)}
-						aria-label={t('MobileBottomTabs.edit')}
-					>
-						<Edit className="h-6 w-6 mb-1" />
-						<span className="text-xs font-medium">
-							{t('MobileBottomTabs.edit')}
-						</span>
-					</button>
-				)}
+				{/* Toolbelt Toggle - Disabled outside the character sheet, where it has nothing to act on */}
+				<button
+					onClick={onToggleToolbelt}
+					disabled={!isToolbeltAvailable}
+					className={cn(
+						"flex flex-col items-center justify-center flex-1 h-full transition-colors",
+						isToolbeltAvailable
+							? cn(
+								"active:bg-muted/50",
+								isToolbeltOpen
+									? "text-primary"
+									: "text-muted-foreground hover:text-foreground"
+							)
+							: "text-muted-foreground/40 cursor-not-allowed"
+					)}
+					aria-label={t('MobileBottomTabs.toolbelt')}
+				>
+					<Wrench className="h-6 w-6 mb-1" />
+					<span className="text-xs font-medium">
+						{t('MobileBottomTabs.toolbelt')}
+					</span>
+				</button>
 			</div>
 		</div>
 	);
