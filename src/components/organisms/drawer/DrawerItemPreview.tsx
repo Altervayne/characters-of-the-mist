@@ -1,8 +1,12 @@
 // -- React Imports --
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
 import { Folder, GripVertical } from 'lucide-react';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
 
 // -- Component Imports --
 import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
@@ -34,7 +38,27 @@ export function FolderPreview({ folder }: { folder: FolderType }) {
    );
 }
 
-export function DrawerItemPreview({ item }: { item: DrawerItem }) {
+/**
+ * Static preview card for a drawer item: name, a non-interactive snapshot of the
+ * stored content, and the game/type label.
+ *
+ * @param item - The drawer item to preview.
+ * @param headerAction - Optional control rendered on the title row (e.g. the
+ *   mobile context-menu button), so it reads as a corner action of this card
+ *   rather than floating in a separate column beside it. Desktop and drag-overlay
+ *   callers omit it and the title row keeps its original single-element layout.
+ * @param headerActionLeft - Places `headerAction` on the left of the title
+ *   instead of the right, to follow left-handed placement on mobile.
+ */
+export function DrawerItemPreview({
+   item,
+   headerAction,
+   headerActionLeft = false,
+}: {
+   item: DrawerItem;
+   headerAction?: ReactNode;
+   headerActionLeft?: boolean;
+}) {
    const { t } = useTranslation();
 
    const renderSnapshot = () => {
@@ -78,9 +102,15 @@ export function DrawerItemPreview({ item }: { item: DrawerItem }) {
 
    return (
       <div className="p-2 rounded-md hover:bg-muted transition-colors bg-card/75 border-2 border-border">
-         <p className="font-semibold truncate text-md mb-2 px-1">
-            {item.name}
-         </p>
+         <div className={cn(
+            "flex items-center gap-2 mb-2",
+            headerActionLeft && "flex-row-reverse"
+         )}>
+            <p className="flex-1 min-w-0 font-semibold truncate text-md px-1">
+               {item.name}
+            </p>
+            {headerAction}
+         </div>
 
          <div className="w-full h-30 my-4 flex items-center justify-center bg-transparent pointer-events-none rounded-md overflow-hidden">
             <div>

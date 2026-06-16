@@ -90,13 +90,14 @@ const getGameDisplayName = (game: string) => {
  * grip handle, reclaiming the horizontal space it used to occupy and letting
  * names use the row's full width (wrapping over multiple lines if needed).
  *
- * The `⋯` context-menu button sits as a real flex sibling on the trailing edge
- * (opposite the name), inside the same card. Compact view aligns it vertically
- * with the name; rich view aligns it to the top of the preview's column so it
- * reads as the card's top-corner action without floating outside the row. Its
- * side flips with handedness: right for right-handed (default), left when
- * left-handed. Touch events on the button are stopped from propagating so a
- * tap on it never also begins a drag on the body.
+ * The `⋯` context-menu button placement differs by view. Compact view keeps it
+ * as a real flex sibling beside the name, inside the same card. Rich view passes
+ * it into the preview card's own title row (via `DrawerItemPreview`'s
+ * `headerAction`) so it reads as that card's corner action instead of floating
+ * in a separate column beside it. Either way its side flips with handedness:
+ * right for right-handed (default), left when left-handed. Touch events on the
+ * button are stopped from propagating so a tap on it never also begins a drag on
+ * the body.
  *
  * @param item - The drawer item to render.
  * @param isCompact - Render the compact row when true, the rich preview otherwise.
@@ -113,34 +114,44 @@ export default function MobileDrawerItem({
 
 	const Icon = getItemIcon(item.type);
 
+	// Shared context-menu button used by both layouts. Stops touch events from
+	// bubbling so a tap on the button never also begins a drag on the body.
+	const menuButton = (
+		<button
+			type="button"
+			aria-label={t('Common.moreOptions')}
+			onClick={(event) => {
+				event.stopPropagation();
+				const rect = event.currentTarget.getBoundingClientRect();
+				onLongPress(item.id, item.name, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+			}}
+			onTouchStart={(event) => event.stopPropagation()}
+			onTouchEnd={(event) => event.stopPropagation()}
+			className="flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground"
+		>
+			<MoreHorizontal className="w-5 h-5" />
+		</button>
+	);
+
 	return (
 		<Sortable id={item.id} data={{ type: DRAG_TYPES.DRAWER_ITEM, item }}>
 			{({ dragAttributes, dragListeners, isBeingDragged }) => (
 				<DragStaticWrapper isBeingDragged={isBeingDragged}>
-					<div
-						className={cn(
-							"flex rounded-lg border border-border bg-card overflow-hidden",
-							// Compact rows are short enough to keep the body and menu
-							// button on the same vertical centre. Rich rows are tall
-							// (full preview), so the menu button aligns to the top of
-							// its column to read as the card's top-corner action.
-							isCompact ? "items-center" : "items-start",
-							// Default DOM order: [body, menu]. Right-handed wants the
-							// menu on the right (trailing visually = right edge) which
-							// is the default flow; left-handed flips with `row-reverse`
-							// so the menu ends up on the left edge.
-							isLeftHanded && "flex-row-reverse"
-						)}
-					>
-						{/* Body = drag target. Long-press (~500ms hold) arms a drag via
-						    the TouchSensor; a tap does nothing for items (folders use
-						    onTap to navigate, items have no tap action). */}
+					{isCompact ? (
+						// Compact: a thin card whose body (icon + name + badge) is the
+						// drag target, with the menu button as a real flex sibling on
+						// the handedness-leading edge.
 						<div
-							{...dragAttributes}
-							{...dragListeners}
-							className="flex flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
+							className={cn(
+								"flex items-center rounded-lg border border-border bg-card overflow-hidden",
+								isLeftHanded && "flex-row-reverse"
+							)}
 						>
-							{isCompact ? (
+							<div
+								{...dragAttributes}
+								{...dragListeners}
+								className="flex flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
+							>
 								<div className="flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11">
 									<div className="shrink-0">
 										<Icon className="w-5 h-5 text-muted-foreground" />
@@ -157,30 +168,27 @@ export default function MobileDrawerItem({
 										</div>
 									</div>
 								</div>
-							) : (
-								<div className="flex-1 min-w-0">
-									<DrawerItemPreview item={item} />
-								</div>
-							)}
-						</div>
+							</div>
 
-						{/* Inline context-menu button. Stops touch events from bubbling so
-						    a tap on the button doesn't also begin a drag on the body. */}
-						<button
-							type="button"
-							aria-label={t('Common.moreOptions')}
-							onClick={(event) => {
-								event.stopPropagation();
-								const rect = event.currentTarget.getBoundingClientRect();
-								onLongPress(item.id, item.name, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-							}}
-							onTouchStart={(event) => event.stopPropagation()}
-							onTouchEnd={(event) => event.stopPropagation()}
-							className="flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground"
+							{menuButton}
+						</div>
+					) : (
+						// Rich: the preview card itself is the whole row and the drag
+						// target. The menu button lives inside the preview's title row
+						// (handedness-aware side) so it reads as the card's own corner
+						// action instead of floating in a separate column beside it.
+						<div
+							{...dragAttributes}
+							{...dragListeners}
+							className="cursor-grab active:cursor-grabbing select-none"
 						>
-							<MoreHorizontal className="w-5 h-5" />
-						</button>
-					</div>
+							<DrawerItemPreview
+								item={item}
+								headerAction={menuButton}
+								headerActionLeft={isLeftHanded}
+							/>
+						</div>
+					)}
 				</DragStaticWrapper>
 			)}
 		</Sortable>

@@ -8,7 +8,7 @@
          "exportError": "Échec de l'exportation.",
          "invalidExportType": "Cet objet ne peut pas être exporté.",
          "appReset": "Réinitialisation de l'application terminée. Actualisation...",
-         "gestureTipsReset": "[TO COMPLETE]"
+         "gestureTipsReset": "Les astuces de Commandes Tactiles vont s'afficher à nouveau."
       },
       "character": {
          "saved": "Personnage sauvegardé dans",
@@ -329,8 +329,8 @@
          "title": "Astuces gestuelles",
          "shown": "Affichées",
          "hidden": "Masquées",
-         "replayLabel": "[TO COMPLETE]",
-         "replayButton": "[TO COMPLETE]"
+         "replayLabel": "Réinitialiser les astuces de Commandes Tactiles",
+         "replayButton": "Afficher les astuces de Commandes Tactiles"
       },
 
       "toolbeltMode": {
@@ -985,7 +985,7 @@
       "drawer": "Tiroir",
       "menu": "Menu",
       "edit": "Modifier",
-      "toolbelt": "[TO COMPLETE]"
+      "toolbelt": "Ceinture à outils"
    },
    "MobileFAB": {
       "edit": "Mode Édition",
@@ -1069,11 +1069,11 @@
          "floatingButton": "Boutons Flottants"
       },
       "tips": {
-         "title": "[TO COMPLETE]",
-         "description": "[TO COMPLETE]",
-         "show": "[TO COMPLETE]",
-         "hide": "[TO COMPLETE]",
-         "reminder": "[TO COMPLETE]"
+         "title": "Astuces de Commandes Tactiles",
+         "description": "Afficher des astuces la première fois que vous pouvez utiliser des Commandes Tactiles sur un écran.",
+         "show": "Afficher",
+         "hide": "Pas d'astuces",
+         "reminder": "Vous les avez manquées ? Vous pouvez les réinitialiser depuis les Paramètres de l'application."
       },
       "ready": {
          "title": "Vous Êtes Prêt !",
