@@ -71,6 +71,6 @@ Thank you so much for helping make this tool accessible to more people!
 
 This is a fan-made project and is in no way endorsed by Amit Moshe or Son of Oak Game Studio LLC.
 
-The code for this application is distributed under the **[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)](http://creativecommons.org/licenses/by-nc-sa/4.0/)**.
+The code for this application is distributed under the **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)**.
 
-This means you are free to copy, redistribute, remix, transform, and build upon the material. However, you must give appropriate credit, not use the code for commercial purposes, and distribute your contributions under the same license.
+This means you are free to use, modify, and redistribute the code, including for commercial purposes. However, if you distribute or run a modified version (including hosting it for others over a network), you must release your full source code under this same license.
