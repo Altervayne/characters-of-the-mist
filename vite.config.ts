@@ -28,7 +28,7 @@ export default defineConfig({
       // update banner (see `PWAUpdatePrompt`) lets the user apply it on their own
       // terms, or dismiss it and keep using the current version.
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'icons/**/*', 'ko-fi/**/*'],
+      includeAssets: ['favicon.ico', 'icons/**/*'],
       manifest: {
         name: 'Characters of the Mist',
         short_name: 'CotM',
