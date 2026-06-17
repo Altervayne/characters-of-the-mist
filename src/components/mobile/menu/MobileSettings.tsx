@@ -43,7 +43,8 @@ import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettin
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { clearAllCharacterData } from '@/lib/character/characterRepository';
+import { setActiveCharacterId } from '@/lib/character/characterSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { useLegacyBlobRemovable } from '@/hooks/drawer/useLegacyBlobRemovable';
@@ -81,7 +82,8 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 	const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable();
 
 	const handleAppReset = async () => {
-		useCharacterStore.persist.clearStorage();
+		await clearAllCharacterData();
+		setActiveCharacterId(null);
 		await clearAllDrawerData();
 		drawerCommandEngine.clear();
 		useAppSettingsStore.persist.clearStorage();

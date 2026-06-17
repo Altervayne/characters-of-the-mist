@@ -3,6 +3,7 @@ import { Dexie, type EntityTable } from 'dexie';
 
 // -- Type Imports --
 import type { DrawerFolderRecord, DrawerItemRecord, DrawerMetaRecord } from './drawerRecords';
+import type { CharacterRecord } from '@/lib/character/characterRecords';
 
 /**
  * The Dexie database for the normalized drawer.
@@ -13,8 +14,14 @@ import type { DrawerFolderRecord, DrawerItemRecord, DrawerMetaRecord } from './d
  *   children of folder X").
  * - `items` — flat item records, keyed by `id`. Same parent/order indexes, plus
  *   `game` and `type` (resolved Q-5) to pre-empt future filtering/search.
- * - `meta` — singleton key/value bookkeeping (schema version, migration flag),
+ * - `meta` — singleton key/value bookkeeping (schema version, migration flags),
  *   keyed by `key`.
+ * - `characters` — one row per character, the full character stored inline
+ *   (added in `version(2)`; see the character migration spec §1).
+ *
+ * Despite the database name, it holds both the drawer and the character domains:
+ * keeping them in one database lets a save-character-to-drawer update both the
+ * `characters` row and the linked drawer `items` row in a single transaction.
  *
  * Only indexed properties are declared in the schema string; non-indexed columns
  * such as `name` and `content` are stored but not listed. Schema changes going
@@ -28,6 +35,8 @@ export class DrawerDatabase extends Dexie {
    items!: EntityTable<DrawerItemRecord, 'id'>;
    /** Singleton meta key/value rows. */
    meta!: EntityTable<DrawerMetaRecord, 'key'>;
+   /** One row per character, the full character stored inline (version(2)). */
+   characters!: EntityTable<CharacterRecord, 'id'>;
 
    constructor() {
       super('CharactersOfTheMistDrawerDatabase');
@@ -36,6 +45,14 @@ export class DrawerDatabase extends Dexie {
          folders: 'id, parentFolderId, [parentFolderId+order]',
          items: 'id, parentFolderId, [parentFolderId+order], game, type',
          meta: 'key',
+      });
+
+      // version(2): purely additive - declares only the NEW `characters` store.
+      // Dexie carries the version(1) stores (folders/items/meta) forward unchanged,
+      // so an existing drawer database upgrades by creating one empty store with no
+      // transform of existing data.
+      this.version(2).stores({
+         characters: 'id, updatedAt, game, drawerItemId',
       });
    }
 }

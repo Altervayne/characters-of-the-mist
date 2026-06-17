@@ -23,8 +23,12 @@ import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSett
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 import { useDeviceType } from '@/hooks/useDeviceType';
 
-// -- Drawer Migration --
+// -- Migrations --
 import { runDrawerMigrationIfNeeded } from '@/lib/drawer/runDrawerMigration';
+import { runCharacterMigrationIfNeeded } from '@/lib/character/runCharacterMigration';
+
+// -- Character Persistence --
+import { startCharacterPersistence, runCharacterBoot } from '@/lib/character/characterPersistence';
 
 
 
@@ -67,16 +71,36 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
 
    // ==================
-   //  Drawer IndexedDB migration (one-time, additive)
+   //  IndexedDB migrations + character boot (one-time)
    // ==================
    // Copies the legacy localStorage drawer blob into Dexie exactly once. Runs in
    // the background and never blocks startup; a failure surfaces as a non-blocking
    // toast and the migration retries on the next load. The call is self-guarded
    // and de-duplicates StrictMode's double mount.
+   //
+   // The character is now sourced from IndexedDB (spec §5): attach the save
+   // subscription, then — after the one-time character migration — read the session
+   // pointer and load the active character. The boot loading gate (set inside
+   // runCharacterBoot) keeps first paint on a neutral loading screen until this
+   // resolves, so the main menu never flashes before the sheet appears.
    useEffect(() => {
+      startCharacterPersistence();
+
       runDrawerMigrationIfNeeded().catch(() => {
          toast.error(t('Notifications.drawer.storageUpgradeFailed'));
       });
+
+      void (async () => {
+         try {
+            await runCharacterMigrationIfNeeded();
+         } catch (error) {
+            // The migration sets the session pointer and writes the record before
+            // its verify step, so even a verification failure leaves a usable
+            // character to boot into; log and continue rather than block startup.
+            console.error('Character IndexedDB migration failed (will retry next load):', error);
+         }
+         await runCharacterBoot();
+      })();
    }, [t]);
 
    // ==================

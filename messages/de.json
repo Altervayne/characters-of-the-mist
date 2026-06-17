@@ -13,7 +13,8 @@
          "exportFailedNoChar": "Der Export is fehlgeschlagen. Es wurde kein Charakter gefunden.",
          "imported": "Charakterdatei erfolgreich importiert.",
          "reset": "Charakter erfolgreich zurückgesetzt.",
-         "componentImported": "Komponentendatei erfolgreich importiert."
+         "componentImported": "Komponentendatei erfolgreich importiert.",
+         "linkedItemMissing": "[TO COMPLETE]"
       },
       "card": {
          "created": "Karte erfolgreich erstellt.",

@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { exportCharacterSheet, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
 import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
+import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -60,7 +61,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const character = useCharacterStore((state) => state.character);
    const drawerCurrentFolderId = useDrawerStore((state) => state.currentFolderId);
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, returnToMenu } = useCharacterActions();
-   const { updateItem, initiateItemDrop } = useDrawerActions();
+   const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
    const characterFormRef = useRef<HTMLFormElement>(null);
@@ -73,10 +74,20 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       if (!character) return;
 
       if (character.drawerItemId) {
+         const savedItemId = character.drawerItemId;
          try {
-            await updateItem(character.drawerItemId, character);
-            const itemPath = await getDrawerItemDisplayPath(character.drawerItemId);
-            toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
+            // Atomic cross-store save (spec §7): working record + the linked drawer
+            // item in one transaction.
+            const { linkedItemUpdated } = await saveCharacterToLinkedDrawerItem(character);
+            if (linkedItemUpdated) {
+               await reloadCurrentFolder();
+               const itemPath = await getDrawerItemDisplayPath(savedItemId);
+               toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
+            } else {
+               // The linked drawer item was deleted: fall back to Save As + notify.
+               handleSaveCharacterAsToDrawer();
+               toast(tNotifications('Notifications.character.linkedItemMissing'));
+            }
          } catch {
             toast.error(tNotifications('Notifications.drawer.actionFailed'));
          }

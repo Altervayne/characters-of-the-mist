@@ -33,9 +33,11 @@ import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
 import MobileCharacterSheetPage from '@/components/mobile/character-sheet/MobileCharacterSheetPage';
+import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useIsBootHydrating } from '@/lib/character/characterPersistence';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
@@ -51,6 +53,7 @@ function DesktopCharacterSheetPage() {
    //  Data Stores
    // ==================
    const character = useCharacterStore((state) => state.character);
+   const isBootHydrating = useIsBootHydrating();
    const { updateCharacterName, addStatus, addStoryTag } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
 
@@ -151,6 +154,13 @@ function DesktopCharacterSheetPage() {
       startTour();
    };
 
+
+   // Boot loading gate (spec §5, C-4): while the active character is still being
+   // read from IndexedDB, show a neutral loading screen rather than flashing the
+   // main menu before the sheet resolves. All hooks above run unconditionally.
+   if (isBootHydrating && !character) {
+      return <CharacterBootLoading />;
+   }
 
    return (
       <DndContext onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={customCollisionDetection}>

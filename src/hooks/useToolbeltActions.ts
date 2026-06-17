@@ -41,6 +41,7 @@ import useCharacterTemporalStore from '@/hooks/useCharacterTemporalStore';
 // -- Utils Imports --
 import { exportToFile, exportCharacterSheet } from '@/lib/utils/export-import';
 import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
+import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
@@ -73,7 +74,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 	const { toggleIsEditing, setCardDialogOpen, setDrawerOpen } = useAppGeneralStateStore((state) => state.actions);
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 
-	const { updateItem, initiateItemDrop } = useDrawerActions();
+	const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
 	const { undo, redo, pastStates, futureStates } = useCharacterTemporalStore(
 		(state) => state,
@@ -126,18 +127,9 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				const character = useCharacterStore.getState().character;
 				if (!character) return;
 
-				if (character.drawerItemId) {
-					const savedItemId = character.drawerItemId;
-					void (async () => {
-						try {
-							await updateItem(savedItemId, character);
-							const itemPath = await getDrawerItemDisplayPath(savedItemId);
-							toast.success(`${t('Notifications.character.saved')} ${itemPath}`);
-						} catch {
-							toast.error(t('Notifications.drawer.actionFailed'));
-						}
-					})();
-				} else {
+				// "Save As": create a new drawer item and link it to the character.
+				// Also the fallback when an existing link is dangling (item deleted).
+				const saveAsNewDrawerItem = () => {
 					const newItemId = cuid();
 					const characterWithDrawerId = { ...character, drawerItemId: newItemId };
 					loadCharacter(character, newItemId);
@@ -151,6 +143,31 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 						presetId: newItemId,
 						parentFolderId: drawerCurrentFolderId ?? undefined,
 					});
+				};
+
+				if (character.drawerItemId) {
+					const savedItemId = character.drawerItemId;
+					void (async () => {
+						try {
+							// Atomic cross-store save (spec §7): working record + the
+							// linked drawer item, in one transaction.
+							const { linkedItemUpdated } = await saveCharacterToLinkedDrawerItem(character);
+							if (linkedItemUpdated) {
+								await reloadCurrentFolder();
+								const itemPath = await getDrawerItemDisplayPath(savedItemId);
+								toast.success(`${t('Notifications.character.saved')} ${itemPath}`);
+							} else {
+								// The linked drawer item was deleted: don't silently
+								// no-op the user's save — fall back to Save As + notify.
+								saveAsNewDrawerItem();
+								toast(t('Notifications.character.linkedItemMissing'));
+							}
+						} catch {
+							toast.error(t('Notifications.drawer.actionFailed'));
+						}
+					})();
+				} else {
+					saveAsNewDrawerItem();
 				}
 			},
 			show: true
@@ -509,8 +526,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		addStoryTheme,
 		setCardDialogOpen,
 		toggleIsEditing,
-		updateItem,
 		initiateItemDrop,
+		reloadCurrentFolder,
 		setDrawerOpen,
 		onEnterCardReorderMode,
 		onOpenAddCard,

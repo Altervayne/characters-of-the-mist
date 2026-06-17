@@ -74,11 +74,26 @@ export interface DrawerItemRecord {
  * - `migratedRecordCounts` — `{ folders, items }` written from the same faithful
  *   migration, for diagnostics.
  *
+ * The `character*` keys mirror the drawer keys for the per-character migration
+ * (spec §6): `characterMigrationStatus`, `characterMigrationVerified`,
+ * `characterMigratedRecordCount`, and `characterLegacyBlobRetainedUntil`. (The
+ * active-character session pointer lives in localStorage, not here — see
+ * `characterSession.ts`.)
+ *
  * Each `key` addresses exactly one row.
  */
 export interface DrawerMetaRecord {
    /** The well-known meta key this row stores. */
-   key: 'schemaVersion' | 'migrationStatus' | 'legacyBlobRetainedUntil' | 'migrationVerified' | 'migratedRecordCounts';
+   key:
+      | 'schemaVersion'
+      | 'migrationStatus'
+      | 'legacyBlobRetainedUntil'
+      | 'migrationVerified'
+      | 'migratedRecordCounts'
+      | 'characterMigrationStatus'
+      | 'characterMigrationVerified'
+      | 'characterMigratedRecordCount'
+      | 'characterLegacyBlobRetainedUntil';
    /** The stored value for `key`. */
    value: unknown;
 }

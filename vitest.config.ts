@@ -18,6 +18,6 @@ export default defineConfig({
    test: {
       environment: 'node',
       setupFiles: ['fake-indexeddb/auto'],
-      include: ['src/lib/drawer/**/*.test.ts'],
+      include: ['src/lib/**/*.test.ts'],
    },
 });

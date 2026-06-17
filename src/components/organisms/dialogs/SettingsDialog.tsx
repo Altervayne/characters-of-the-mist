@@ -24,7 +24,8 @@ import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyD
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { clearAllCharacterData } from '@/lib/character/characterRepository';
+import { setActiveCharacterId } from '@/lib/character/characterSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { useLegacyBlobRemovable } from '@/hooks/drawer/useLegacyBlobRemovable';
@@ -135,7 +136,8 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable();
 
    const handleAppReset = async () => {
-      useCharacterStore.persist.clearStorage();
+      await clearAllCharacterData();
+      setActiveCharacterId(null);
       await clearAllDrawerData();
       drawerCommandEngine.clear();
       useAppSettingsStore.persist.clearStorage();

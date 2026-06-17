@@ -1,15 +1,11 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
 import { temporal } from 'zundo';
-import { persist } from 'zustand/middleware';
 import cuid from 'cuid';
 
 // -- Utils Imports --
 import { createNewCharacter } from '../utils/character';
 import { deepReId } from '../utils/drawer';
-import { harmonizeData } from '../harmonization';
-import { createDebouncedStorage } from '../utils/debouncedStorage';
-import { STORE_VERSION } from '../config';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
@@ -154,9 +150,23 @@ const updateCardInState = (state: CharacterState, cardId: string, updateFn: (car
 
 
 
-export const useCharacterStore = create<CharacterState>()(
-   temporal(
-      persist(
+/**
+ * Builds a character store instance: the in-memory character plus the full action
+ * API, wrapped in zundo `temporal` for snapshot undo/redo (spec §3.1, §4).
+ *
+ * Persistence is deliberately NOT part of the store — there is no zustand
+ * `persist` here. The store is pure in-memory state; `characterPersistence.ts` is
+ * the only bridge to IndexedDB (load-on-open + a debounced save subscription), and
+ * harmonization runs at load time rather than in a persist `migrate` hook.
+ *
+ * It is a factory (rather than a bare `create(...)`) so a future per-tab pass can
+ * instantiate one independent store — hence one independent undo stack — per open
+ * character, with no schema change (spec §3.3, C-1). Today exactly one instance is
+ * created: the `useCharacterStore` singleton below.
+ */
+function createCharacterStore() {
+   return create<CharacterState>()(
+      temporal(
          (set) => ({
             ...initialState,
             actions: {
@@ -171,6 +181,12 @@ export const useCharacterStore = create<CharacterState>()(
                },
                loadCharacter: (character: Character, drawerItemId?: string) => {
                   set(() => {
+                     // Reset undo history on load so undo can never cross from this
+                     // character into the previously loaded one (spec §4, C-2). In the
+                     // future per-tab factory model each character has its own fresh
+                     // instance, making this automatic; for the single active store it
+                     // must be done explicitly, matching createCharacter/returnToMenu.
+                     useCharacterStore.temporal.getState().clear();
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                      return { character: {
                         ...character,
@@ -1187,26 +1203,11 @@ export const useCharacterStore = create<CharacterState>()(
                   }));
                },
             },
-         }),
-         {
-            name: 'characters-of-the-mist_character-storage',
-            storage: createDebouncedStorage(300),
-            partialize: (state) => ({ character: state.character }),
-            version: STORE_VERSION,
-            migrate: (persistedState, _version) => {
-               const state = persistedState as Pick<CharacterState, 'character'>;
-
-               if (state.character) {
-                  console.log("Harmonizing character data via migrate function...");
-                  state.character = harmonizeData(state.character, 'FULL_CHARACTER_SHEET');
-                  console.log("Character data harmonization complete.");
-               }
-
-               return state;
-            },
-         }
+         })
       )
-   )
-);
+   );
+}
+
+export const useCharacterStore = createCharacterStore();
 
 export const useCharacterActions = () => useCharacterStore((state) => state.actions);

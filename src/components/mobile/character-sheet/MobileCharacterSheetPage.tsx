@@ -17,10 +17,12 @@ import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
 import MobileAddCard from '@/components/mobile/menu/MobileAddCard';
 import MobileDrawer from '@/components/mobile/drawer/MobileDrawer';
 import MobileTutorial from '@/components/mobile/tutorial/MobileTutorial';
+import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useIsBootHydrating } from '@/lib/character/characterPersistence';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
@@ -45,6 +47,7 @@ export default function MobileCharacterSheetPage() {
 	const [isReorderingCards, setIsReorderingCards] = useState(false);
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 	const character = useCharacterStore((state) => state.character);
+	const isBootHydrating = useIsBootHydrating();
 	const isMobileTutorialOpen = useAppGeneralStateStore((state) => state.isMobileTutorialOpen);
 	const { setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
 
@@ -221,6 +224,13 @@ export default function MobileCharacterSheetPage() {
 			addImportedTracker(item.content as import('@/lib/types/character').Tracker);
 		}
 	};
+
+	// Boot loading gate (spec §5, C-4): while the active character is still being
+	// read from IndexedDB, show a neutral loading screen rather than flashing the
+	// main menu before the sheet resolves.
+	if (isBootHydrating && !character) {
+		return <CharacterBootLoading />;
+	}
 
 	// If no character is loaded, show the main menu
 	if (!character) {

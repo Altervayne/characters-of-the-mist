@@ -24,7 +24,8 @@
          "imported": "Fichier personnage exporté avec succès.",
          "reset": "Fiche de personnage réinitialisée avec succès.",
          "unloaded": "Fiche de personnage déchargée avec succès.",
-         "componentImported": "Fichier de composant importé avec succès."
+         "componentImported": "Fichier de composant importé avec succès.",
+         "linkedItemMissing": "[TO COMPLETE]"
       },
       "card": {
          "created": "Carte créée avec succès.",
