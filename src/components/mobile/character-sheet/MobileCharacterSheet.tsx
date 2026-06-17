@@ -49,6 +49,7 @@ interface MobileCharacterSheetProps {
 	isReorderingCards?: boolean;
 	onReorderingCardsChange?: (isReordering: boolean) => void;
 	onOpenAddCard?: () => void;
+	onEditCard?: (card: Card) => void;
 	initialCardId?: string | null;
 }
 
@@ -61,6 +62,7 @@ export default function MobileCharacterSheet({
 	isReorderingCards: controlledIsReorderingCards,
 	onReorderingCardsChange: controlledOnReorderingCardsChange,
 	onOpenAddCard,
+	onEditCard,
 	initialCardId
 }: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
@@ -285,6 +287,7 @@ export default function MobileCharacterSheet({
 					}}
 					onOpenAddCard={onOpenAddCard}
 					onSaveToDrawer={handleSaveToDrawer}
+					onEditCard={onEditCard}
 				/>
 			)}
 

@@ -156,7 +156,7 @@ export default function MobileOnboarding({ isOpen, onComplete }: MobileOnboardin
 						x: { type: 'spring', stiffness: 300, damping: 30 },
 						opacity: { duration: 0.2 },
 					}}
-					className="absolute inset-0 flex flex-col"
+					className="absolute inset-0 flex flex-col overflow-y-auto"
 				>
 					{renderStep()}
 				</motion.div>
