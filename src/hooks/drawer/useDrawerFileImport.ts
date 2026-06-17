@@ -10,7 +10,8 @@ import toast from 'react-hot-toast';
 import { deriveDrawerFolderName, exportDrawer, importFromFile } from '@/lib/utils/export-import';
 
 // -- Store Imports --
-import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
+import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 
 // -- Type Imports --
 import type { Folder as FolderType, DrawerItemContent, Drawer as DrawerType } from '@/lib/types/drawer';
@@ -94,10 +95,14 @@ export function useDrawerFileImport(currentFolderId: string | null) {
       formRef.current?.reset();
    };
 
-   const handleExportDrawer = () => {
-      const drawerState = useDrawerStore.getState().drawer;
-      exportDrawer(drawerState);
-      toast.success(tNotifications('Notifications.drawer.exported'));
+   const handleExportDrawer = async () => {
+      try {
+         const drawer = await exportEntireDrawerAsNestedTree();
+         exportDrawer(drawer);
+         toast.success(tNotifications('Notifications.drawer.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.drawer.actionFailed'));
+      }
    };
 
    return { getRootProps, isDragActive, handleFileSelected, handleExportDrawer, formRef, fileInputRef };

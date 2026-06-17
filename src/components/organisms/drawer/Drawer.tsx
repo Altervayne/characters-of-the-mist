@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -29,6 +29,7 @@ import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
 import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
@@ -70,6 +71,15 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
       parentFolderId,
       breadcrumbPath,
    } = useDrawerNavigation();
+
+   const { reloadCurrentFolder } = useDrawerActions();
+
+   // The store loads the current-folder view on demand (it is not auto-loaded on
+   // import). Trigger the initial load when the drawer mounts; reopening the drawer
+   // remounts and refreshes the view.
+   useEffect(() => {
+      void reloadCurrentFolder();
+   }, [reloadCurrentFolder]);
 
    const {
       activeAction,

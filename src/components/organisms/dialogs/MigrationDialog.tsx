@@ -18,10 +18,10 @@ import { HardDriveUpload, File, X, Heart } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { transformLegacyCharacter } from '@/lib/utils/migration';
-import { findFolder } from '@/lib/utils/drawer';
 
 // -- Store and Hook Imports --
-import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
+import { getFolderChildren } from '@/lib/drawer/drawerRepository';
 
 
 
@@ -62,36 +62,14 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
 
 
 
-   const getOrCreateFolder = (name: string, parentId?: string): Promise<string> => {
-      return new Promise((resolve, reject) => {
-         const state = useDrawerStore.getState();
-         const parentFolder = parentId ? findFolder(state.drawer.folders, parentId) : null;
-         const searchScope = parentFolder ? parentFolder.folders : state.drawer.folders;
-         const existingFolder = searchScope.find(f => f.name === name);
-
-         if (existingFolder) {
-            resolve(existingFolder.id);
-            return;
-         }
-
-         const unsubscribe = useDrawerStore.subscribe((newState) => {
-            const newParentFolder = parentId ? findFolder(newState.drawer.folders, parentId) : null;
-            const newSearchScope = newParentFolder ? newParentFolder.folders : newState.drawer.folders;
-            const newFolder = newSearchScope.find(f => f.name === name);
-
-            if (newFolder) {
-               unsubscribe();
-               resolve(newFolder.id);
-            }
-         });
-
-         addFolder(name, parentId);
-
-         setTimeout(() => {
-            unsubscribe();
-            reject(new Error(`Folder "${name}" creation timed out.`));
-         }, 2000);
-      });
+   // Find a same-named child folder of `parentId` (null = root), or create one and
+   // return its id. The async store action now returns the created id directly, so
+   // the old subscribe-and-poll id-discovery dance (spec C-3) is gone.
+   const getOrCreateFolder = async (name: string, parentId?: string): Promise<string> => {
+      const { folders } = await getFolderChildren(parentId ?? null);
+      const existingFolder = folders.find(folder => folder.name === name);
+      if (existingFolder) return existingFolder.id;
+      return addFolder(name, parentId);
    };
 
 
@@ -114,20 +92,20 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
                const characterFolderName = `${character.name} - ${today}`;
                const characterFolderId = await getOrCreateFolder(characterFolderName, migrationRootFolderId);
 
-               addItem(character.name, character.game, 'FULL_CHARACTER_SHEET', character, characterFolderId);
+               await addItem(character.name, character.game, 'FULL_CHARACTER_SHEET', character, characterFolderId);
 
                if (deconstructedCards.length > 0) {
                   const cardsFolderId = await getOrCreateFolder("Cards", characterFolderId);
-                  deconstructedCards.forEach(card => {
-                     addItem(card.title, character.game, card.cardType, card, cardsFolderId);
-                  });
+                  for (const card of deconstructedCards) {
+                     await addItem(card.title, character.game, card.cardType, card, cardsFolderId);
+                  }
                }
 
                if (deconstructedTrackers.length > 0) {
                   const trackersFolderId = await getOrCreateFolder("Trackers", characterFolderId);
-                  deconstructedTrackers.forEach(tracker => {
-                     addItem(tracker.name, character.game, 'STATUS_TRACKER', tracker, trackersFolderId);
-                  });
+                  for (const tracker of deconstructedTrackers) {
+                     await addItem(tracker.name, character.game, 'STATUS_TRACKER', tracker, trackersFolderId);
+                  }
                }
 
                successCount++;

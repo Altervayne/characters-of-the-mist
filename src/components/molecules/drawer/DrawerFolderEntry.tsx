@@ -2,6 +2,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+// -- Other Library Imports --
+import toast from 'react-hot-toast';
+
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
@@ -15,20 +18,29 @@ import { Folder, MoreHorizontal, Pencil, Trash2, Move, GripVertical, Upload } fr
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { exportToFile, generateExportFilename } from '@/lib/utils/export-import';
+import { exportFolderAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
-import type { Folder as FolderType } from '@/lib/types/drawer';
+import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 
 
 
-export function DrawerFolderEntry({ folder, parentFolderId, isOver, onNavigate, onRename, onDelete, onMove }: { folder: FolderType, parentFolderId: string | null, isOver: boolean, onNavigate: (id: string) => void, onRename: () => void, onDelete: () => void, onMove: () => void }) {
+export function DrawerFolderEntry({ folder, parentFolderId, isOver, onNavigate, onRename, onDelete, onMove }: { folder: DrawerFolderRecord, parentFolderId: string | null, isOver: boolean, onNavigate: (id: string) => void, onRename: () => void, onDelete: () => void, onMove: () => void }) {
    const { t } = useTranslation();
 
-   const handleExport = (e: React.MouseEvent) => {
+   // The folder row is now a flat record; reassemble its full subtree from the
+   // repository before exporting it to the nested `.cotm` shape.
+   const handleExport = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
-      exportToFile(folder, 'FOLDER', 'NEUTRAL', fileName);
+      try {
+         const nestedFolder = await exportFolderAsNestedTree(folder.id);
+         const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
+         exportToFile(nestedFolder, 'FOLDER', 'NEUTRAL', fileName);
+         toast.success(t('Notifications.drawer.folderExported'));
+      } catch {
+         toast.error(t('Notifications.drawer.actionFailed'));
+      }
    };
 
    return (

@@ -8,13 +8,11 @@ import { Home, ChevronRight } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
-// -- Type Imports --
-import type { Folder } from '@/lib/types/drawer';
-
 
 
 interface MobileBreadcrumbsProps {
-	breadcrumbPath: Folder[];
+	/** Root-to-current folder trail; any object with an id and name (e.g. a folder record). */
+	breadcrumbPath: Array<{ id: string; name: string }>;
 	onNavigate: (folderId: string | null) => void;
 }
 

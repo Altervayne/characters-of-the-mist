@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -8,38 +8,49 @@ import { Button } from '@/components/ui/button';
 // -- Icon Imports --
 import { Folder, ArrowLeft, ArrowUpToLine } from 'lucide-react';
 
-// -- Utils Imports --
-import { buildBreadcrumb, findFolderMemoized, findParentFolderMemoized } from '@/lib/utils/drawer';
-
 // -- Component Imports --
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 
-// -- Store and Hook Imports --
-import { useDrawerStore } from '@/lib/stores/drawerStore';
+// -- Drawer Data Layer Imports --
+import { getBreadcrumbPath, getFolderChildren } from '@/lib/drawer/drawerRepository';
+import { DRAWER_ROOT_PARENT_ID } from '@/lib/drawer/drawerRecords';
 
 // -- Type Imports --
 import type { ActiveAction } from '@/hooks/drawer/useDrawerActionState';
+import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 
 
 
 export function DrawerMoveItemNavigator({ action, onConfirm, onClose }: { action: ActiveAction, onConfirm: (destinationId?: string) => void, onClose: () => void }) {
    const { t } = useTranslation();
-   const { folders: allFolders } = useDrawerStore((state) => state.drawer);
    const [currentNavFolderId, setCurrentNavFolderId] = useState<string | null>(null);
+   const [childFolders, setChildFolders] = useState<DrawerFolderRecord[]>([]);
+   const [breadcrumbPath, setBreadcrumbPath] = useState<DrawerFolderRecord[]>([]);
 
-   const itemToMove = (action.target && 'id' in action.target) ? action.target : null;
+   // The action target is a flat record carrying its own parent id - no tree walk
+   // needed. Records carry `order`; a pending item does not.
+   const itemToMove = action.target && 'order' in action.target ? action.target : null;
+   const parentOfItemToMoveId = itemToMove
+      ? (itemToMove.parentFolderId === DRAWER_ROOT_PARENT_ID ? null : itemToMove.parentFolderId)
+      : null;
 
-   const currentView = useMemo(() => {
-      if (!currentNavFolderId) return { folders: allFolders, parent: null };
-      const folder = findFolderMemoized(allFolders, currentNavFolderId);
-      return { folders: folder?.folders ?? [], parent: findParentFolderMemoized(allFolders, currentNavFolderId) };
-   }, [currentNavFolderId, allFolders]);
+   // Load the browsed folder's subfolders and breadcrumb on navigation.
+   useEffect(() => {
+      let cancelled = false;
+      void (async () => {
+         const [{ folders }, breadcrumb] = await Promise.all([
+            getFolderChildren(currentNavFolderId),
+            getBreadcrumbPath(currentNavFolderId),
+         ]);
+         if (!cancelled) {
+            setChildFolders(folders);
+            setBreadcrumbPath(breadcrumb);
+         }
+      })();
+      return () => { cancelled = true; };
+   }, [currentNavFolderId]);
 
-   const breadcrumbPath = useMemo(() => buildBreadcrumb(allFolders, currentNavFolderId), [allFolders, currentNavFolderId]);
-
-   const parentOfItemToMove = useMemo(() => {
-      return itemToMove ? findParentFolderMemoized(allFolders, itemToMove.id) : null;
-   }, [allFolders, itemToMove]);
+   const parentOfCurrentNavId = breadcrumbPath.length >= 2 ? breadcrumbPath[breadcrumbPath.length - 2].id : null;
 
    return (
       <div className="flex flex-col h-150">
@@ -64,11 +75,12 @@ export function DrawerMoveItemNavigator({ action, onConfirm, onClose }: { action
          <div className="grow overflow-y-auto p-2">
 
             {currentNavFolderId && (
-               <div onClick={() => setCurrentNavFolderId(currentView.parent?.id ?? null)} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
+               <div onClick={() => setCurrentNavFolderId(parentOfCurrentNavId)} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
                   <ArrowLeft className="h-6 w-6" /> <span>{t('Drawer.Actions.moveUp')}</span>
                </div>
             )}
-            {currentView.folders.map(folder => {
+            {childFolders.map(folder => {
+               // Hide the folder being moved so it cannot be moved into itself.
                if (action.type === 'move-folder' && folder.id === itemToMove?.id) {
                   return null;
                }
@@ -89,7 +101,7 @@ export function DrawerMoveItemNavigator({ action, onConfirm, onClose }: { action
             <Button variant="ghost" onClick={onClose} className="cursor-pointer">{t('Drawer.Actions.cancel')}</Button>
             <Button
                onClick={() => onConfirm(currentNavFolderId ?? undefined)}
-               disabled={(parentOfItemToMove?.id ?? null) === currentNavFolderId}
+               disabled={parentOfItemToMoveId === currentNavFolderId}
             >
                {t('Drawer.Actions.moveHere')}
             </Button>

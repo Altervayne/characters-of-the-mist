@@ -40,7 +40,7 @@ import useCharacterTemporalStore from '@/hooks/useCharacterTemporalStore';
 
 // -- Utils Imports --
 import { exportToFile, exportCharacterSheet } from '@/lib/utils/export-import';
-import { getItemDisplayPath } from '@/lib/utils/drawer';
+import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 
 // -- Type Imports --
 import type { ToolbeltActions, ToolbeltAction, ToolbeltContext } from '@/lib/types/toolbelt';
@@ -127,16 +127,22 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				if (!character) return;
 
 				if (character.drawerItemId) {
-					const { drawer } = useDrawerStore.getState();
-					updateItem(character.drawerItemId, character);
-					const itemPath = getItemDisplayPath(drawer.folders, drawer.rootItems, character.drawerItemId);
-					toast.success(`${t('Notifications.character.saved')} ${itemPath}`);
+					const savedItemId = character.drawerItemId;
+					void (async () => {
+						try {
+							await updateItem(savedItemId, character);
+							const itemPath = await getDrawerItemDisplayPath(savedItemId);
+							toast.success(`${t('Notifications.character.saved')} ${itemPath}`);
+						} catch {
+							toast.error(t('Notifications.drawer.actionFailed'));
+						}
+					})();
 				} else {
 					const newItemId = cuid();
 					const characterWithDrawerId = { ...character, drawerItemId: newItemId };
 					loadCharacter(character, newItemId);
 					setDrawerOpen(true);
-					const { drawerCurrentFolderId } = useDrawerStore.getState();
+					const drawerCurrentFolderId = useDrawerStore.getState().currentFolderId;
 					initiateItemDrop({
 						game: character.game,
 						type: 'FULL_CHARACTER_SHEET',

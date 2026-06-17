@@ -8,18 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Undo, Redo } from 'lucide-react';
 
 // -- Store and Hook Imports --
-import useDrawerTemporalStore from '@/hooks/drawer/useDrawerTemporalStore';
+import { useDrawerUndoRedo } from '@/hooks/drawer/useDrawerUndoRedo';
 
 
 
 export function DrawerUndoRedoControls() {
    const { t: t } = useTranslation();
-   const { undo, redo, pastStates, futureStates } = useDrawerTemporalStore(
-      (state) => state,
-   );
-
-   const canUndo = pastStates?.length > 1;
-   const canRedo = futureStates?.length > 0;
+   const { canUndo, canRedo, undo, redo } = useDrawerUndoRedo();
 
 
 
@@ -28,7 +23,7 @@ export function DrawerUndoRedoControls() {
          <Button
             variant="outline"
             size="sm"
-            onClick={() => undo()}
+            onClick={() => { void undo(); }}
             disabled={!canUndo}
             aria-label={t('Actions.undo')}
             title={t('Actions.undo')}
@@ -40,7 +35,7 @@ export function DrawerUndoRedoControls() {
          <Button
             variant="outline"
             size="sm"
-            onClick={() => redo()}
+            onClick={() => { void redo(); }}
             disabled={!canRedo}
             aria-label={t('Actions.redo')}
             title={t('Actions.redo')}

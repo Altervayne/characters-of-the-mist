@@ -11,17 +11,35 @@ import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 
 // -- Type Imports --
 import type { PendingDrawerItem } from '@/lib/stores/drawerStore';
-import type { Folder as FolderType, DrawerItem } from '@/lib/types/drawer';
+import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 
 
 
 export type ActionType = 'add-folder' | 'rename-folder' | 'delete-folder' | 'add-item' | 'rename-item' | 'delete-item' | 'move-item' | 'move-folder';
 
+/** The target of an action: a flat folder/item record, or a pending dropped item. */
+export type ActiveActionTarget = DrawerFolderRecord | DrawerItemRecord | PendingDrawerItem;
+
 export interface ActiveAction {
    id: string;
    type: ActionType;
-   target?: FolderType | DrawerItem | PendingDrawerItem;
+   target?: ActiveActionTarget;
    parentId?: string | null;
+}
+
+/** A folder record carries `order` but no `content` (which items have) and no `defaultName` (pending items have). */
+function isFolderTarget(target: ActiveActionTarget | undefined): target is DrawerFolderRecord {
+   return !!target && 'order' in target && !('content' in target);
+}
+
+/** An item record carries both `content` and `order` (a pending item has `content` but no `order`). */
+function isItemTarget(target: ActiveActionTarget | undefined): target is DrawerItemRecord {
+   return !!target && 'content' in target && 'order' in target;
+}
+
+/** A pending dropped item carries `defaultName`. */
+function isPendingTarget(target: ActiveActionTarget | undefined): target is PendingDrawerItem {
+   return !!target && 'defaultName' in target;
 }
 
 
@@ -81,71 +99,75 @@ export function useDrawerActionState(currentFolderId: string | null) {
       setActiveAction({ id: cuid(), type: 'add-folder', parentId: currentFolderId });
    };
 
-   const handleConfirmAction = (value?: string) => {
+   const handleConfirmAction = async (value?: string) => {
       if (!activeAction) return;
       const target = activeAction.target;
 
+      // Each action now dispatches an async store action (command -> repository).
+      // Success toasts stay here per the spec; a failure surfaces a single generic
+      // toast (the store has already recorded the error in its `error` state).
+      try {
+         switch (activeAction.type) {
+            case 'add-folder':
+               if (value) {
+                  await addFolder(value, activeAction.parentId ?? undefined);
+                  toast.success(tNotifications('Notifications.drawer.folderCreated'));
+               }
+               break;
 
-      switch (activeAction.type) {
-         case 'add-folder':
-            if (value) {
-               addFolder(value, activeAction.parentId ?? undefined);
-               toast.success(tNotifications('Notifications.drawer.folderCreated'));
-            }
-            break;
+            case 'rename-folder':
+               if (isFolderTarget(target) && value) {
+                  await renameFolder(target.id, value);
+                  toast.success(tNotifications('Notifications.drawer.folderRenamed'));
+               }
+               break;
 
-         case 'rename-folder':
-            if (target && 'items' in target && value) {
-               renameFolder(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.folderRenamed'));
-            }
-            break;
+            case 'delete-folder':
+               if (isFolderTarget(target)) {
+                  await deleteFolder(target.id);
+                  toast.success(tNotifications('Notifications.drawer.folderDeleted'));
+               }
+               break;
 
-         case 'delete-folder':
-            if (target && 'items' in target) {
-               deleteFolder(target.id);
-               toast.success(tNotifications('Notifications.drawer.folderDeleted'));
-            }
-            break;
+            case 'move-folder':
+               if (isFolderTarget(target)) {
+                  await moveFolder(target.id, value);
+                  toast.success(tNotifications('Notifications.drawer.folderMoved'));
+               }
+               break;
 
-         case 'move-folder':
-            if (target && 'items' in target) {
-               moveFolder(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.folderMoved'));
-            }
-            break;
+            case 'rename-item':
+               if (isItemTarget(target) && value) {
+                  await renameItem(target.id, value);
+                  toast.success(tNotifications('Notifications.drawer.itemRenamed'));
+               }
+               break;
 
+            case 'delete-item':
+               if (isItemTarget(target)) {
+                  await deleteItem(target.id);
+                  toast.success(tNotifications('Notifications.drawer.itemDeleted'));
+               }
+               break;
 
+            case 'add-item':
+               if (value && isPendingTarget(target)) {
+                  const { game, type, content, parentFolderId } = target;
+                  await addItem(value, game, type, content, parentFolderId);
+                  toast.success(tNotifications('Notifications.drawer.itemCreated'));
+               }
+               clearPendingItemDrop();
+               break;
 
-         case 'rename-item':
-            if (target && 'id' in target && 'content' in target && value) {
-               renameItem(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.itemRenamed'));
-            }
-            break;
-
-         case 'delete-item':
-            if (target && 'id' in target && 'content' in target) {
-               deleteItem(target.id);
-               toast.success(tNotifications('Notifications.drawer.itemDeleted'));
-            }
-            break;
-
-         case 'add-item':
-            if (value && target && 'defaultName' in target) {
-               const { game, type, content, parentFolderId } = target;
-               addItem(value, game, type, content, parentFolderId);
-               toast.success(tNotifications('Notifications.drawer.itemCreated'));
-            }
-            clearPendingItemDrop();
-            break;
-
-         case 'move-item':
-            if (target && 'id' in target && 'content' in target) {
-               moveItem(target.id, value);
-               toast.success(tNotifications('Notifications.drawer.itemMoved'));
-            }
-            break;
+            case 'move-item':
+               if (isItemTarget(target)) {
+                  await moveItem(target.id, value);
+                  toast.success(tNotifications('Notifications.drawer.itemMoved'));
+               }
+               break;
+         }
+      } catch {
+         toast.error(tNotifications('Notifications.drawer.actionFailed'));
       }
 
       setActiveAction(null);

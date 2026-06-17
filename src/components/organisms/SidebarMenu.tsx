@@ -16,7 +16,7 @@ import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLef
 import { cn } from '@/lib/utils';
 import { exportCharacterSheet, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
-import { getItemDisplayPath } from '@/lib/utils/drawer';
+import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -58,8 +58,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const { t: tNotifications } = useTranslation();
 
    const character = useCharacterStore((state) => state.character);
-   const drawer = useDrawerStore((state) => state.drawer);
-   const drawerCurrentFolderId = useDrawerStore((state) => state.drawerCurrentFolderId);
+   const drawerCurrentFolderId = useDrawerStore((state) => state.currentFolderId);
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, returnToMenu } = useCharacterActions();
    const { updateItem, initiateItemDrop } = useDrawerActions();
 
@@ -70,13 +69,17 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
 
 
-   const handleSaveCharacterToDrawer = () => {
+   const handleSaveCharacterToDrawer = async () => {
       if (!character) return;
 
       if (character.drawerItemId) {
-         updateItem(character.drawerItemId, character);
-         const itemPath = getItemDisplayPath(drawer.folders, drawer.rootItems, character.drawerItemId);
-         toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
+         try {
+            await updateItem(character.drawerItemId, character);
+            const itemPath = await getDrawerItemDisplayPath(character.drawerItemId);
+            toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
+         } catch {
+            toast.error(tNotifications('Notifications.drawer.actionFailed'));
+         }
       } else {
          handleSaveCharacterAsToDrawer();
       }

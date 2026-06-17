@@ -23,6 +23,14 @@ import type { Drawer, DrawerItem, Folder } from '@/lib/types/drawer';
  * `{ state: { drawer }, version }`). Exported so the later removal phase has a
  * single source of truth. NOT the `characterData` key (LegacyDataDialog) nor the
  * character-file import feature (MigrationDialog) — those are unrelated (§6.1).
+ *
+ * TODO (deferred per migration spec §6.4 / Q-4 — a LATER release, NOT now):
+ * once the Dexie drawer is proven in the field, remove this blob with
+ * `localStorage.removeItem(LEGACY_DRAWER_STORAGE_KEY)` (e.g. in a new bootstrap
+ * step gated on `meta.legacyBlobRetainedUntil`) and drop the
+ * `legacyBlobRetainedUntil` marker. It is intentionally RETAINED for now as a
+ * read-only safety net; the migration is idempotent and never re-imports it once
+ * `meta.migrationStatus === 'completed'`.
  */
 export const LEGACY_DRAWER_STORAGE_KEY = 'characters-of-the-mist_drawer-storage';
 

@@ -24,7 +24,8 @@ import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog'
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore } from '@/lib/stores/characterStore';
-import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
+import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { useDeviceType } from '@/hooks/useDeviceType';
 
 
@@ -129,16 +130,18 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
    const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
 
-   const handleAppReset = () => {
+   const handleAppReset = async () => {
       useCharacterStore.persist.clearStorage();
-      useDrawerStore.persist.clearStorage();
+      await clearAllDrawerData();
+      drawerCommandEngine.clear();
       useAppSettingsStore.persist.clearStorage();
       setTimeout(() => window.location.reload(), 500);
       toast.success(t('Notifications.general.appReset'));
    };
 
-   const handleDeleteDrawer = () => {
-      useDrawerStore.persist.clearStorage();
+   const handleDeleteDrawer = async () => {
+      await clearAllDrawerData();
+      drawerCommandEngine.clear();
       setTimeout(() => window.location.reload(), 500);
       toast.success(t('Notifications.drawer.deleted'));
    }

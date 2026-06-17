@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,15 +22,18 @@ import {
 } from 'lucide-react';
 
 // -- Store Imports --
-import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useCharacterStore } from '@/lib/stores/characterStore';
 
+// -- Drawer Data Layer Imports --
+import { exportFolderAsNestedTree, getItem } from '@/lib/drawer/drawerRepository';
+
 // -- Utils Imports --
-import { findFolder, findAndRemoveItem } from '@/lib/utils/drawer';
 import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 
 // -- Type Imports --
 import type { DrawerItem } from '@/lib/types/drawer';
+import type { DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 
 
 
@@ -71,7 +74,6 @@ export default function MobileDrawerContextMenu({
 	onAddToCharacter
 }: MobileDrawerContextMenuProps) {
 	const { t } = useTranslation();
-	const drawer = useDrawerStore((state) => state.drawer);
 	const character = useCharacterStore((state) => state.character);
 	const {
 		renameFolder,
@@ -86,6 +88,22 @@ export default function MobileDrawerContextMenu({
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [showFolderPicker, setShowFolderPicker] = useState(false);
 	const [newName, setNewName] = useState('');
+
+	// Resolve the targeted item's record (for export content + add-to-character).
+	// Folder export needs only the id/name carried by `target`, so no folder fetch.
+	const [resolvedItem, setResolvedItem] = useState<DrawerItemRecord | null>(null);
+	useEffect(() => {
+		// Only resolve for item targets. A stale value from a previous item target
+		// is harmless: it is read only when the current target is that item (folder
+		// targets gate the item-only controls off), and each item target re-resolves.
+		if (!isOpen || !target || target.type === 'folder') return;
+		let cancelled = false;
+		void (async () => {
+			const item = await getItem(target.id);
+			if (!cancelled) setResolvedItem(item ?? null);
+		})();
+		return () => { cancelled = true; };
+	}, [isOpen, target]);
 
 	// Finger-anchored menu position, clamped to the menu's real rendered rect.
 	const menuRef = useRef<HTMLDivElement>(null);
@@ -109,24 +127,27 @@ export default function MobileDrawerContextMenu({
 
 	if (!target) return null;
 
-	// Find the actual item or folder
 	const isFolder = target.type === 'folder';
-	const folder = isFolder ? findFolder(drawer.folders, target.id) : null;
-	const item = !isFolder ? (drawer.rootItems.find(i => i.id === target.id) || findAndRemoveItem(drawer.folders, target.id).item) : null;
+	// The targeted item record (folders carry their id/name on `target`).
+	const item = resolvedItem;
 
 	const handleRename = () => {
 		setNewName(target.name);
 		setShowRenameDialog(true);
 	};
 
-	const confirmRename = () => {
+	const confirmRename = async () => {
 		if (newName.trim()) {
-			if (isFolder) {
-				renameFolder(target.id, newName.trim());
-				toast.success(t('Notifications.drawer.folderRenamed'));
-			} else {
-				renameItem(target.id, newName.trim());
-				toast.success(t('Notifications.drawer.itemRenamed'));
+			try {
+				if (isFolder) {
+					await renameFolder(target.id, newName.trim());
+					toast.success(t('Notifications.drawer.folderRenamed'));
+				} else {
+					await renameItem(target.id, newName.trim());
+					toast.success(t('Notifications.drawer.itemRenamed'));
+				}
+			} catch {
+				toast.error(t('Notifications.drawer.actionFailed'));
 			}
 		}
 		// Delay closing to allow exit animation
@@ -138,24 +159,29 @@ export default function MobileDrawerContextMenu({
 		setShowFolderPicker(true);
 	};
 
-	const handleMoveConfirm = (destinationFolderId: string | null) => {
-		if (isFolder) {
-			// Prevent moving folder into itself or its children
-			moveFolder(target.id, destinationFolderId ?? undefined);
-			toast.success(t('Notifications.drawer.folderMoved'));
-		} else {
-			moveItem(target.id, destinationFolderId ?? undefined);
-			toast.success(t('Notifications.drawer.itemMoved'));
+	const handleMoveConfirm = async (destinationFolderId: string | null) => {
+		try {
+			if (isFolder) {
+				await moveFolder(target.id, destinationFolderId ?? undefined);
+				toast.success(t('Notifications.drawer.folderMoved'));
+			} else {
+				await moveItem(target.id, destinationFolderId ?? undefined);
+				toast.success(t('Notifications.drawer.itemMoved'));
+			}
+		} catch {
+			toast.error(t('Notifications.drawer.actionFailed'));
 		}
 		setShowFolderPicker(false);
 		onClose();
 	};
 
-	const handleExport = () => {
+	const handleExport = async () => {
 		try {
-			if (isFolder && folder) {
-				const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
-				exportToFile(folder, 'FOLDER', 'NEUTRAL', fileName);
+			if (isFolder) {
+				// Reassemble the folder's full subtree before exporting.
+				const nestedFolder = await exportFolderAsNestedTree(target.id);
+				const fileName = generateExportFilename('NEUTRAL', 'FOLDER', nestedFolder.name);
+				exportToFile(nestedFolder, 'FOLDER', 'NEUTRAL', fileName);
 				toast.success(t('Notifications.drawer.folderExported'));
 			} else if (item) {
 				const { content, type, game, name } = item;
@@ -164,8 +190,7 @@ export default function MobileDrawerContextMenu({
 				exportToFile(content, type, game, fileName);
 				toast.success(t('Notifications.drawer.itemExported'));
 			}
-		} catch (error) {
-			console.error('Export error:', error);
+		} catch {
 			toast.error(t('Notifications.general.exportError'));
 		}
 		onClose();
@@ -175,13 +200,17 @@ export default function MobileDrawerContextMenu({
 		setShowDeleteConfirm(true);
 	};
 
-	const confirmDelete = () => {
-		if (isFolder) {
-			deleteFolder(target.id);
-			toast.success(t('Notifications.drawer.folderDeleted'));
-		} else {
-			deleteItem(target.id);
-			toast.success(t('Notifications.drawer.itemDeleted'));
+	const confirmDelete = async () => {
+		try {
+			if (isFolder) {
+				await deleteFolder(target.id);
+				toast.success(t('Notifications.drawer.folderDeleted'));
+			} else {
+				await deleteItem(target.id);
+				toast.success(t('Notifications.drawer.itemDeleted'));
+			}
+		} catch {
+			toast.error(t('Notifications.drawer.actionFailed'));
 		}
 		// Delay closing to allow exit animation
 		setShowDeleteConfirm(false);

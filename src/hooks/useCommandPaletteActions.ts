@@ -19,7 +19,7 @@ import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
-import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 
 
 
@@ -44,7 +44,6 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
-   const drawer = useDrawerStore((state) => state.drawer);
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView } = useAppSettingsActions();
    const { setTheme: setMode } = useTheme();
@@ -58,9 +57,14 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       toast.success(tNotifications('Notifications.character.exported'));
    };
 
-   const handleExportDrawer = () => {
-      exportDrawer(drawer);
-      toast.success(tNotifications('Notifications.drawer.exported'));
+   const handleExportDrawer = async () => {
+      try {
+         const drawer = await exportEntireDrawerAsNestedTree();
+         exportDrawer(drawer);
+         toast.success(tNotifications('Notifications.drawer.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.drawer.actionFailed'));
+      }
    };
 
    // Determine if creation commands should be shown

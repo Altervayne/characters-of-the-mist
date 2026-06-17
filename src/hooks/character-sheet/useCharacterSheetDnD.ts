@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 
 // -- Utils Imports --
-import { findFolder } from '@/lib/utils/drawer';
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
@@ -50,7 +49,9 @@ export function useCharacterSheetDnD() {
    const character = useCharacterStore((state) => state.character);
    const { loadCharacter, reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker } = useCharacterActions();
-   const drawer = useDrawerStore((state) => state.drawer);
+   // The drawer renders a single folder at a time, so the loaded current-folder
+   // view is the reorder scope for any in-drawer drag.
+   const currentFolderView = useDrawerStore((state) => state.currentFolderView);
    const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems } = useDrawerActions();
    const { setContextualGame } = useAppSettingsActions();
 
@@ -238,17 +239,16 @@ export function useCharacterSheetDnD() {
             const activeIsFolder = activeType === 'drawer-folder';
             const activeIsItem = activeType === 'drawer-item';
             const parentFolderId = active.data.current?.parentFolderId ?? null;
-            const folderData = parentFolderId ? findFolder(drawer.folders, parentFolderId) : null;
-            const itemsInScope = parentFolderId ? folderData?.items : drawer.rootItems;
-            const foldersInScope = parentFolderId ? folderData?.folders : drawer.folders;
-
-            if (!itemsInScope || !foldersInScope) return;
+            // Scope = the currently loaded folder's children (the drawer only ever
+            // shows one folder, so every in-drawer drag originates there).
+            const foldersInScope = currentFolderView?.folders ?? [];
+            const itemsInScope = currentFolderView?.items ?? [];
 
             if (overIdStr.startsWith('drawer-back-button-')) {
                const draggedId = active.id.toString();
                const destinationId = over.data.current?.destinationId;
-               if (activeIsFolder) moveFolder(draggedId, destinationId);
-               if (activeIsItem) moveItem(draggedId, destinationId);
+               if (activeIsFolder) void moveFolder(draggedId, destinationId);
+               if (activeIsItem) void moveItem(draggedId, destinationId);
                return;
             }
             if (overType === 'drawer-drop-zone' && activeIsFolder) {
@@ -261,22 +261,22 @@ export function useCharacterSheetDnD() {
                if (newIndex === -1) return;
                if (oldIndex < newIndex) newIndex--;
                if (oldIndex === newIndex) return;
-               reorderFolders(parentFolderId, oldIndex, newIndex);
+               void reorderFolders(parentFolderId, oldIndex, newIndex);
                return;
             }
             if (overType === 'drawer-folder') {
                if (active.id === over.id) return;
                const draggedId = active.id.toString();
                const destinationFolderId = overIdStr;
-               if (activeIsFolder) moveFolder(draggedId, destinationFolderId);
-               if (activeIsItem) moveItem(draggedId, destinationFolderId);
+               if (activeIsFolder) void moveFolder(draggedId, destinationFolderId);
+               if (activeIsItem) void moveItem(draggedId, destinationFolderId);
                return;
             }
             if (overType === 'drawer-item' && activeIsItem) {
                if (active.data.current?.parentFolderId !== over.data.current?.parentFolderId) return;
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
                const newIndex = itemsInScope.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) reorderItems(parentFolderId, oldIndex, newIndex);
+               if (oldIndex !== -1 && newIndex !== -1) void reorderItems(parentFolderId, oldIndex, newIndex);
                return;
             }
          }
@@ -339,7 +339,7 @@ export function useCharacterSheetDnD() {
       }
    }, [
       character,
-      drawer,
+      currentFolderView,
       moveFolder,
       reorderFolders,
       moveItem,

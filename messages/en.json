@@ -48,7 +48,8 @@
          "importedAsFolder": "Drawer imported as a folder at the drawer root.",
          "exported": "Drawer successfully exported.",
          "deleted": "Drawer successfully deleted.",
-         "storageUpgradeFailed": "The drawer storage upgrade could not complete. It will be retried next time you open the app."
+         "storageUpgradeFailed": "The drawer storage upgrade could not complete. It will be retried next time you open the app.",
+         "actionFailed": "That drawer action could not be completed. Please try again."
       },
       "migration": {
          "legacyDataDownloaded": "Legacy data download sent.",

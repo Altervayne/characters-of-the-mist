@@ -35,14 +35,15 @@ import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
 import { useMobileDragSensors } from '@/hooks/mobile/useMobileDragSensors';
 import { useMobileDrawerDragReorder } from '@/hooks/mobile/useMobileDrawerDragReorder';
-import useDrawerTemporalStore from '@/hooks/drawer/useDrawerTemporalStore';
+import { useDrawerUndoRedo } from '@/hooks/drawer/useDrawerUndoRedo';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/haptics';
 
 // -- Type Imports --
-import type { DrawerItem, Folder, GeneralItemType } from '@/lib/types/drawer';
+import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
+import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 
 // -- Constants Imports --
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
@@ -104,7 +105,7 @@ const getGameDisplayName = (game: string) => {
  * context-menu button drawn in its handedness-leading position. Kept inline so
  * the overlay is self-contained.
  */
-const renderFolderOverlay = (folder: Folder, isLeftHanded: boolean) => (
+const renderFolderOverlay = (folder: DrawerFolderRecord, folderCount: number, itemCount: number, isLeftHanded: boolean) => (
    <div className={cn(
       "flex items-center rounded-lg border border-border bg-card shadow-2xl overflow-hidden",
       isLeftHanded && "flex-row-reverse"
@@ -114,7 +115,7 @@ const renderFolderOverlay = (folder: Folder, isLeftHanded: boolean) => (
             <FolderIcon className="w-6 h-6 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
                <p className="font-medium text-foreground break-words">{folder.name}</p>
-               <FolderCountLabel folders={folder.folders.length} items={folder.items.length} />
+               <FolderCountLabel folders={folderCount} items={itemCount} />
             </div>
          </div>
       </div>
@@ -173,10 +174,16 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	const { t } = useTranslation();
 
 	// Drawer state
-	const { addFolder } = useDrawerActions();
+	const { addFolder, reloadCurrentFolder } = useDrawerActions();
 
 	// Folder navigation (current folder, contents, breadcrumb) via the shared hook
-	const { currentFolderId, navigateToFolder, currentItems, currentFolders, breadcrumbPath } = useDrawerNavigation();
+	const { currentFolderId, navigateToFolder, currentItems, currentFolders, breadcrumbPath, childCounts } = useDrawerNavigation();
+
+	// The store loads the current-folder view on demand; trigger the initial load
+	// when the drawer mounts (reopening remounts and refreshes).
+	useEffect(() => {
+		void reloadCurrentFolder();
+	}, [reloadCurrentFolder]);
 
 	// File import via the shared hook (button-triggered file-input path only; no drag zone)
 	const { handleFileSelected, fileInputRef, formRef } = useDrawerFileImport(currentFolderId);
@@ -266,9 +273,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
    // Undo/redo for drawer mutations (rename/move/delete/reorder/add), mirroring how
    // the character sheet exposes undo/redo via the temporal store. Any past state
    // means there is a mutation to undo; any future state means there is one to redo.
-   const { undo, redo, pastStates, futureStates } = useDrawerTemporalStore((state) => state);
-   const canUndo = (pastStates?.length ?? 0) > 0;
-   const canRedo = (futureStates?.length ?? 0) > 0;
+   const { canUndo, canRedo, undo, redo } = useDrawerUndoRedo();
 
 	// Handlers
 	const handleFolderLongPress = (folderId: string, folderName: string, position: { x: number; y: number }) => {
@@ -287,9 +292,13 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 		setShowAddFolderSheet(true);
 	};
 
-	const handleAddFolderConfirm = (folderName: string) => {
-		addFolder(folderName, currentFolderId ?? undefined);
-		toast.success(t('Notifications.drawer.folderCreated'));
+	const handleAddFolderConfirm = async (folderName: string) => {
+		try {
+			await addFolder(folderName, currentFolderId ?? undefined);
+			toast.success(t('Notifications.drawer.folderCreated'));
+		} catch {
+			toast.error(t('Notifications.drawer.actionFailed'));
+		}
 	};
 
 	const hasContent = currentFolders.length > 0 || currentItems.length > 0;
@@ -324,6 +333,8 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 							<MobileFolderItem
 								key={folder.id}
 								folder={folder}
+								folderCount={childCounts.get(folder.id)?.folderCount ?? 0}
+								itemCount={childCounts.get(folder.id)?.itemCount ?? 0}
 								onNavigate={navigateToFolder}
 								onLongPress={handleFolderLongPress}
 								isLeftHanded={isLeftHanded}
@@ -352,7 +363,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
 				{/* Overlay snapshot of the active row, floating with the pointer */}
 				<DragOverlay dropAnimation={null}>
-					{activeFolder ? renderFolderOverlay(activeFolder, isLeftHanded) : null}
+					{activeFolder ? renderFolderOverlay(activeFolder, childCounts.get(activeFolder.id)?.folderCount ?? 0, childCounts.get(activeFolder.id)?.itemCount ?? 0, isLeftHanded) : null}
 					{activeItem ? renderItemOverlay(activeItem, isCompactView, isLeftHanded) : null}
 				</DragOverlay>
 			</DndContext>
@@ -436,7 +447,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 					<IconButton
 						variant="outline"
 						size="lg"
-						onClick={() => undo()}
+						onClick={() => { void undo(); }}
 						disabled={!canUndo}
 						title={t('Toolbelt.undo')}
 						aria-label={t('Toolbelt.undo')}
@@ -447,7 +458,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 					<IconButton
 						variant="outline"
 						size="lg"
-						onClick={() => redo()}
+						onClick={() => { void redo(); }}
 						disabled={!canRedo}
 						title={t('Toolbelt.redo')}
 						aria-label={t('Toolbelt.redo')}

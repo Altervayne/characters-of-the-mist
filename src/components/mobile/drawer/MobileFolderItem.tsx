@@ -15,12 +15,16 @@ import { cn } from '@/lib/utils';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
-import type { Folder as FolderType } from '@/lib/types/drawer';
+import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 
 
 
 interface MobileFolderItemProps {
-	folder: FolderType;
+	folder: DrawerFolderRecord;
+	/** Number of direct child folders (the flat record no longer embeds them). */
+	folderCount: number;
+	/** Number of direct child items. */
+	itemCount: number;
 	onNavigate: (folderId: string) => void;
 	onLongPress: (folderId: string, folderName: string, position: { x: number; y: number }) => void;
 	isLeftHanded: boolean;
@@ -54,15 +58,13 @@ interface MobileFolderItemProps {
  */
 export default function MobileFolderItem({
 	folder,
+	folderCount,
+	itemCount,
 	onNavigate,
 	onLongPress,
 	isLeftHanded,
 }: MobileFolderItemProps) {
 	const { t } = useTranslation();
-
-	// Calculate total items in folder (including nested)
-	const totalItems = folder.items.length;
-	const totalSubfolders = folder.folders.length;
 
 	return (
 		<Sortable id={folder.id} data={{ type: DRAG_TYPES.DRAWER_FOLDER, item: folder }}>
@@ -94,7 +96,7 @@ export default function MobileFolderItem({
 									<p className="font-medium text-foreground break-words">
 										{folder.name}
 									</p>
-									<FolderCountLabel folders={totalSubfolders} items={totalItems} />
+									<FolderCountLabel folders={folderCount} items={itemCount} />
 								</div>
 							</div>
 						</div>

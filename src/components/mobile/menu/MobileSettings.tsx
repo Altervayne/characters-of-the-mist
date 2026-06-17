@@ -43,7 +43,8 @@ import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettin
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore } from '@/lib/stores/characterStore';
-import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
+import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 
 // -- Utils Imports --
 import { IconButton } from '@/components/ui/icon-button';
@@ -75,16 +76,18 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 	const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
 	const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
 
-	const handleAppReset = () => {
+	const handleAppReset = async () => {
 		useCharacterStore.persist.clearStorage();
-		useDrawerStore.persist.clearStorage();
+		await clearAllDrawerData();
+		drawerCommandEngine.clear();
 		useAppSettingsStore.persist.clearStorage();
 		setTimeout(() => window.location.reload(), 500);
 		toast.success(t('Notifications.general.appReset'));
 	};
 
-	const handleDeleteDrawer = () => {
-		useDrawerStore.persist.clearStorage();
+	const handleDeleteDrawer = async () => {
+		await clearAllDrawerData();
+		drawerCommandEngine.clear();
 		setTimeout(() => window.location.reload(), 500);
 		toast.success(t('Notifications.drawer.deleted'));
 	};

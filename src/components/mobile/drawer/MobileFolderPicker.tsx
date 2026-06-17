@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
@@ -10,12 +10,14 @@ import { FolderCountLabel } from '@/components/mobile/shared/FolderCountLabel';
 // -- Icon Imports --
 import { Folder, Home, ChevronRight } from 'lucide-react';
 
-// -- Store Imports --
-import { useDrawerStore } from '@/lib/stores/drawerStore';
+// -- Drawer Data Layer Imports --
+import { getBreadcrumbPath, getChildCountsForFolders, getFolderChildren, isFolderSelfOrDescendant } from '@/lib/drawer/drawerRepository';
 
 // -- Utils Imports --
-import { findFolder, buildBreadcrumb } from '@/lib/utils/drawer';
 import { cn } from '@/lib/utils';
+
+// -- Type Imports --
+import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 
 
 
@@ -33,39 +35,39 @@ export default function MobileFolderPicker({
 	excludeFolderId
 }: MobileFolderPickerProps) {
 	const { t } = useTranslation();
-	const drawer = useDrawerStore((state) => state.drawer);
 
-	// State for navigating within the picker
+	// State for navigating within the picker, loaded per-folder from the store.
 	const [pickerFolderId, setPickerFolderId] = useState<string | null>(null);
+	const [availableFolders, setAvailableFolders] = useState<DrawerFolderRecord[]>([]);
+	const [breadcrumbPath, setBreadcrumbPath] = useState<DrawerFolderRecord[]>([]);
+	const [childCounts, setChildCounts] = useState<Map<string, { folderCount: number; itemCount: number }>>(new Map());
 
-	// Get current folder and its subfolders
-	const currentFolderInPicker = pickerFolderId
-		? findFolder(drawer.folders, pickerFolderId)
-		: null;
+	// Load the browsed folder's subfolders, breadcrumb, and child counts. When a
+	// folder is being moved, exclude it and its descendants (can't move into self).
+	useEffect(() => {
+		if (!isOpen) return;
+		let cancelled = false;
+		void (async () => {
+			const [{ folders }, breadcrumb] = await Promise.all([
+				getFolderChildren(pickerFolderId),
+				getBreadcrumbPath(pickerFolderId),
+			]);
 
-	const foldersInPicker = currentFolderInPicker?.folders ?? drawer.folders;
+			let visibleFolders = folders;
+			if (excludeFolderId) {
+				const excluded = await Promise.all(folders.map((folder) => isFolderSelfOrDescendant(folder.id, excludeFolderId)));
+				visibleFolders = folders.filter((_, index) => !excluded[index]);
+			}
 
-	// Build breadcrumb path for current location in picker
-	const breadcrumbPath = pickerFolderId
-		? buildBreadcrumb(drawer.folders, pickerFolderId)
-		: [];
-
-	// Check if a folder is the excluded folder or a descendant of it
-	const isFolderExcluded = (folderId: string): boolean => {
-		if (!excludeFolderId) return false;
-		if (folderId === excludeFolderId) return true;
-
-		// Check if this folder is a descendant of the excluded folder
-		const excludedFolder = findFolder(drawer.folders, excludeFolderId);
-		if (!excludedFolder) return false;
-
-		return !!findFolder([excludedFolder], folderId);
-	};
-
-	// Filter out excluded folders
-	const availableFolders = foldersInPicker.filter(
-		folder => !isFolderExcluded(folder.id)
-	);
+			const counts = await getChildCountsForFolders(visibleFolders.map((folder) => folder.id));
+			if (!cancelled) {
+				setAvailableFolders(visibleFolders);
+				setBreadcrumbPath(breadcrumb);
+				setChildCounts(counts);
+			}
+		})();
+		return () => { cancelled = true; };
+	}, [isOpen, pickerFolderId, excludeFolderId]);
 
 	const handleNavigate = (folderId: string | null) => {
 		setPickerFolderId(folderId);
@@ -111,7 +113,7 @@ export default function MobileFolderPicker({
                               <p className="font-medium text-foreground truncate">
                                  {folder.name}
                               </p>
-                              <FolderCountLabel folders={folder.folders.length} items={folder.items.length} />
+                              <FolderCountLabel folders={childCounts.get(folder.id)?.folderCount ?? 0} items={childCounts.get(folder.id)?.itemCount ?? 0} />
                            </div>
                         </button>
                      ))}

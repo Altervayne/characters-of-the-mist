@@ -12,7 +12,7 @@ import { MobileMenuItemButton } from '@/components/mobile/menu/MobileMenuItemBut
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
-import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Hook Imports --
@@ -35,7 +35,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
 	const { returnToMenu } = useCharacterActions();
-	const drawer = useDrawerStore((state) => state.drawer);
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 
 	const {
@@ -150,8 +149,15 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				triggerCharacterImport();
 				break;
 			case 'exportDrawer':
-				exportDrawer(drawer);
-				toast.success(t('Notifications.drawer.exported'));
+				void (async () => {
+					try {
+						const drawer = await exportEntireDrawerAsNestedTree();
+						exportDrawer(drawer);
+						toast.success(t('Notifications.drawer.exported'));
+					} catch {
+						toast.error(t('Notifications.drawer.actionFailed'));
+					}
+				})();
 				break;
 			case 'importDrawer':
 				triggerDrawerImport();

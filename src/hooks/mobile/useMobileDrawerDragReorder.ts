@@ -11,7 +11,7 @@ import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
-import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 
 
 
@@ -36,8 +36,8 @@ import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
  */
 export function useMobileDrawerDragReorder(
 	currentFolderId: string | null,
-	currentFolders: FolderType[],
-	currentItems: DrawerItem[],
+	currentFolders: readonly DrawerFolderRecord[],
+	currentItems: readonly DrawerItemRecord[],
 ) {
 	const { reorderFolders, reorderItems } = useDrawerActions();
 
@@ -52,11 +52,11 @@ export function useMobileDrawerDragReorder(
 		if (activeType === DRAG_TYPES.DRAWER_FOLDER) {
 			const oldIndex = currentFolders.findIndex(folder => folder.id === active.id);
 			const newIndex = currentFolders.findIndex(folder => folder.id === over.id);
-			if (oldIndex !== -1 && newIndex !== -1) reorderFolders(currentFolderId, oldIndex, newIndex);
+			if (oldIndex !== -1 && newIndex !== -1) void reorderFolders(currentFolderId, oldIndex, newIndex);
 		} else if (activeType === DRAG_TYPES.DRAWER_ITEM) {
 			const oldIndex = currentItems.findIndex(item => item.id === active.id);
 			const newIndex = currentItems.findIndex(item => item.id === over.id);
-			if (oldIndex !== -1 && newIndex !== -1) reorderItems(currentFolderId, oldIndex, newIndex);
+			if (oldIndex !== -1 && newIndex !== -1) void reorderItems(currentFolderId, oldIndex, newIndex);
 		}
 	}, [currentFolderId, currentFolders, currentItems, reorderFolders, reorderItems]);
 

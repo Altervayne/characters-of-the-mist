@@ -11,13 +11,14 @@ import { ChevronRight, MoreHorizontal } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
-// -- Type Imports --
-import type { Folder as FolderType } from '@/lib/types/drawer';
-
-
+/** Minimal breadcrumb entry - any object carrying an id and a display name. */
+interface BreadcrumbEntry {
+    id: string;
+    name: string;
+}
 
 interface BreadcrumbProps {
-    path: FolderType[];
+    path: BreadcrumbEntry[];
     onNavigate: (id: string | null) => void;
 }
 
@@ -26,7 +27,7 @@ interface BreadcrumbProps {
 export function Breadcrumb({ path, onNavigate }: BreadcrumbProps) {
    const MAX_VISIBLE = 4;
 
-   const renderPart = (part: FolderType, isLast: boolean) => (
+   const renderPart = (part: BreadcrumbEntry, isLast: boolean) => (
       <span 
          className={cn(
             'cursor-pointer hover:text-foreground truncate',

@@ -6,6 +6,9 @@ import { useCharacterStore } from '@/lib/stores/characterStore';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 
+// -- Drawer Engine Imports --
+import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
+
 
 
 /**
@@ -27,24 +30,27 @@ export function useCharacterSheetUndoRedo(isDrawerOpen: boolean) {
 
    useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
+         // Character history is still zundo (out of scope); the drawer history is
+         // now the command engine. Drive the drawer via the store actions so the
+         // current-folder view is reloaded after the undo/redo.
          const { undo: undoCharacter, redo: redoCharacter, pastStates: pastStatesCharacter, futureStates: futureStatesCharacter } = useCharacterStore.temporal.getState();
-         const { undo: undoDrawer, redo: redoDrawer, pastStates: pastStatesDrawer, futureStates: futureStatesDrawer } = useDrawerStore.temporal.getState();
+         const { undoDrawer, redoDrawer } = useDrawerStore.getState().actions;
 
          const isUndo = (event.ctrlKey || event.metaKey) && event.key === 'z';
          const isRedo = (event.ctrlKey || event.metaKey) && event.key === 'y';
 
          const characterCanUndo = pastStatesCharacter.length > 1
          const characterCanRedo = futureStatesCharacter.length > 0
-         const drawerCanUndo = pastStatesDrawer.length > 1
-         const drawerCanRedo = futureStatesDrawer.length > 0
+         const drawerCanUndo = drawerCommandEngine.canUndo()
+         const drawerCanRedo = drawerCommandEngine.canRedo()
 
          if (!isUndo && !isRedo) return;
 
          event.preventDefault();
 
          if (lastModifiedStore === 'drawer' && isDrawerOpen) {
-            if (isUndo && drawerCanUndo) undoDrawer();
-            if (isRedo && drawerCanRedo) redoDrawer();
+            if (isUndo && drawerCanUndo) void undoDrawer();
+            if (isRedo && drawerCanRedo) void redoDrawer();
          } else {
             if (isUndo && characterCanUndo) undoCharacter();
             if (isRedo && characterCanRedo) redoCharacter();

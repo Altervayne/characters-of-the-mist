@@ -48,7 +48,8 @@
          "importedAsFolder": "Tiroir importé comme nouveau dossier à la racine.",
          "exported": "Tiroir exporté avec succès.",
          "deleted": "Tiroir supprimé avec succès.",
-         "storageUpgradeFailed": "[TO COMPLETE]"
+         "storageUpgradeFailed": "[TO COMPLETE]",
+         "actionFailed": "[TO COMPLETE]"
       },
       "migration": {
          "legacyDataDownloaded": "Données anciennes téléchargées avec succès.",
