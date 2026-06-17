@@ -63,13 +63,22 @@ export interface DrawerItemRecord {
 /**
  * A singleton key/value row in the `meta` store.
  *
- * Holds bookkeeping that is not folder/item data: the persisted schema version,
- * the one-time migration status flag, and the legacy-blob retention marker. Each
- * `key` addresses exactly one row.
+ * Holds bookkeeping that is not folder/item data:
+ * - `schemaVersion` — the persisted Dexie schema version.
+ * - `migrationStatus` — the one-time legacy-blob migration status flag.
+ * - `legacyBlobRetainedUntil` — marker that the legacy localStorage blob is still
+ *   retained as a safety backup (dropped when the blob is finally removed).
+ * - `migrationVerified` — `true` once the migration was proven faithful by
+ *   reconstructing the Dexie tree at migration time and deep-comparing it to the
+ *   source blob. Gates legacy-blob removal; absent ⇒ never offer removal.
+ * - `migratedRecordCounts` — `{ folders, items }` written from the same faithful
+ *   migration, for diagnostics.
+ *
+ * Each `key` addresses exactly one row.
  */
 export interface DrawerMetaRecord {
    /** The well-known meta key this row stores. */
-   key: 'schemaVersion' | 'migrationStatus' | 'legacyBlobRetainedUntil';
+   key: 'schemaVersion' | 'migrationStatus' | 'legacyBlobRetainedUntil' | 'migrationVerified' | 'migratedRecordCounts';
    /** The stored value for `key`. */
    value: unknown;
 }

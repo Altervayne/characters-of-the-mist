@@ -3,9 +3,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // -- Module under test + collaborators --
 import * as harmonization from '@/lib/harmonization';
+import * as drawerRepository from './drawerRepository';
 import { drawerDatabase } from './drawerDatabase';
 import { DRAWER_ROOT_PARENT_ID } from './drawerRecords';
-import { DrawerMigrationError, LEGACY_DRAWER_STORAGE_KEY, runDrawerMigrationIfNeeded } from './runDrawerMigration';
+import {
+   DrawerMigrationError,
+   LEGACY_DRAWER_STORAGE_KEY,
+   getLegacyBlobRemovalState,
+   getLegacyDrawerForBackup,
+   removeLegacyDrawerBlob,
+   runDrawerMigrationIfNeeded,
+} from './runDrawerMigration';
 
 // -- Type Imports --
 import type { DrawerItem, DrawerItemContent, Drawer } from '@/lib/types/drawer';
@@ -243,5 +251,81 @@ describe('fresh install', () => {
       expect((await drawerDatabase.meta.get('schemaVersion'))?.value).toBe(1);
       expect(await drawerDatabase.folders.count()).toBe(0);
       expect(await drawerDatabase.items.count()).toBe(0);
+   });
+});
+
+// ==================
+//  Migration-time verification (Q1)
+// ==================
+
+describe('migration-time verification', () => {
+   it('records migrationVerified + counts on a faithful migration', async () => {
+      seedLegacyBlob(makeLegacyDrawer());
+
+      await runDrawerMigrationIfNeeded();
+
+      expect((await drawerDatabase.meta.get('migrationVerified'))?.value).toBe(true);
+      // makeLegacyDrawer: 3 folders (Campaign, NPCs, Archive), 3 items (Hero, Villain, Loose).
+      expect((await drawerDatabase.meta.get('migratedRecordCounts'))?.value).toEqual({ folders: 3, items: 3 });
+   });
+
+   it('fails closed (no migrationVerified) when the reconstructed tree mismatches the source', async () => {
+      // Force the post-write reconstruction to differ from the source blob.
+      vi.spyOn(drawerRepository, 'exportEntireDrawerAsNestedTree').mockResolvedValueOnce({ folders: [], rootItems: [] });
+      seedLegacyBlob(makeLegacyDrawer());
+
+      await expect(runDrawerMigrationIfNeeded()).rejects.toBeInstanceOf(DrawerMigrationError);
+
+      // Data is still migrated and usable, but NOT verified, and the blob is retained.
+      expect((await drawerDatabase.meta.get('migrationStatus'))?.value).toBe('completed');
+      expect(await drawerDatabase.meta.get('migrationVerified')).toBeUndefined();
+      expect(localStorage.getItem(LEGACY_DRAWER_STORAGE_KEY)).not.toBeNull();
+   });
+});
+
+// ==================
+//  Legacy-blob removal gating (Q1-Q3)
+// ==================
+
+describe('legacy-blob removal gating', () => {
+   it('is removable only after a verified migration with the blob still present', async () => {
+      seedLegacyBlob(makeLegacyDrawer());
+      await runDrawerMigrationIfNeeded();
+
+      expect(await getLegacyBlobRemovalState()).toEqual({ removable: true, blobPresent: true });
+   });
+
+   it('is NOT removable when verification did not record the flag', async () => {
+      vi.spyOn(drawerRepository, 'exportEntireDrawerAsNestedTree').mockResolvedValueOnce({ folders: [], rootItems: [] });
+      seedLegacyBlob(makeLegacyDrawer());
+      await runDrawerMigrationIfNeeded().catch(() => undefined);
+
+      expect(await getLegacyBlobRemovalState()).toEqual({ removable: false, blobPresent: true });
+   });
+
+   it('is NOT removable when the blob is already gone', async () => {
+      expect(await getLegacyBlobRemovalState()).toEqual({ removable: false, blobPresent: false });
+   });
+
+   it('produces a backup drawer for a valid blob and null for a corrupt one', async () => {
+      seedLegacyBlob(makeLegacyDrawer());
+      expect(getLegacyDrawerForBackup()?.folders.map((folder) => folder.name)).toEqual(['Campaign', 'Archive']);
+
+      localStorage.setItem(LEGACY_DRAWER_STORAGE_KEY, '{ not valid json');
+      expect(getLegacyDrawerForBackup()).toBeNull();
+   });
+
+   it('removeLegacyDrawerBlob removes the key + retention marker and is idempotent', async () => {
+      seedLegacyBlob(makeLegacyDrawer());
+      await runDrawerMigrationIfNeeded();
+      expect((await drawerDatabase.meta.get('legacyBlobRetainedUntil'))?.value).toBeTruthy();
+
+      await removeLegacyDrawerBlob();
+      expect(localStorage.getItem(LEGACY_DRAWER_STORAGE_KEY)).toBeNull();
+      expect(await drawerDatabase.meta.get('legacyBlobRetainedUntil')).toBeUndefined();
+      // After removal the blob is no longer removable.
+      expect(await getLegacyBlobRemovalState()).toEqual({ removable: false, blobPresent: false });
+
+      await removeLegacyDrawerBlob(); // idempotent: no throw
    });
 });

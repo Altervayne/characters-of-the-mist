@@ -37,6 +37,7 @@ import {
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
+import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyDrawerBackupDialog';
 import { MobileSettingsConfirmationDialog } from '@/components/mobile/menu/MobileSettingsConfirmationDialog';
 import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettingsToggleGroup';
 
@@ -45,6 +46,7 @@ import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSett
 import { useCharacterStore } from '@/lib/stores/characterStore';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
+import { useLegacyBlobRemovable } from '@/hooks/drawer/useLegacyBlobRemovable';
 
 // -- Utils Imports --
 import { IconButton } from '@/components/ui/icon-button';
@@ -75,6 +77,8 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 	const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
 	const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
 	const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
+	const [isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen] = useState(false);
+	const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable();
 
 	const handleAppReset = async () => {
 		useCharacterStore.persist.clearStorage();
@@ -371,6 +375,18 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 								<OctagonMinus className="mr-3 h-5 w-5 shrink-0" />
 								<span>{t('SettingsDialog.dangerZone.resetButton')}</span>
 							</Button>
+							{/* Legacy backup cleanup - shown only when the migration is
+							    verified and the blob is still present; removal is gated on a
+							    backup export + explicit confirm inside the dialog. */}
+							{legacyBlobRemovable && (
+								<Button
+									variant="outline"
+									className="w-full h-12 text-base justify-start"
+									onClick={() => setIsLegacyBackupDialogOpen(true)}
+								>
+									<span className="truncate">{t('SettingsDialog.legacyBackup.actionLabel')}</span>
+								</Button>
+							)}
 						</div>
 					</div>
 				</div>
@@ -400,6 +416,12 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 				description={t('SettingsDialog.dangerZone.resetDialog.description')}
 				confirmationText="DELETE ALL MY APP DATA"
 				confirmButtonText={t('SettingsDialog.dangerZone.resetDialog.confirm')}
+			/>
+
+			<LegacyDrawerBackupDialog
+				isOpen={isLegacyBackupDialogOpen}
+				onOpenChange={setIsLegacyBackupDialogOpen}
+				onRemoved={refreshLegacyBlobRemovable}
 			/>
 		</>
 	);

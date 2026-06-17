@@ -49,7 +49,10 @@
          "exported": "Tiroir exporté avec succès.",
          "deleted": "Tiroir supprimé avec succès.",
          "storageUpgradeFailed": "[TO COMPLETE]",
-         "actionFailed": "[TO COMPLETE]"
+         "actionFailed": "[TO COMPLETE]",
+         "legacyBackupDownloaded": "[TO COMPLETE]",
+         "legacyBackupRemoved": "[TO COMPLETE]",
+         "legacyBackupExportFailed": "[TO COMPLETE]"
       },
       "migration": {
          "legacyDataDownloaded": "Données anciennes téléchargées avec succès.",
@@ -356,6 +359,17 @@
       "migration": {
          "label": "Migration",
          "button": "Migrer des anciens personnages"
+      },
+
+      "legacyBackup": {
+         "actionLabel": "[TO COMPLETE]",
+         "confirmTitle": "[TO COMPLETE]",
+         "confirmDescription": "[TO COMPLETE]",
+         "downloadBackupButton": "[TO COMPLETE]",
+         "backupDownloadedLabel": "[TO COMPLETE]",
+         "confirmCheckbox": "[TO COMPLETE]",
+         "removeButton": "[TO COMPLETE]",
+         "cancel": "[TO COMPLETE]"
       },
 
       "dangerZone": {

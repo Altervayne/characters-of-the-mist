@@ -20,12 +20,14 @@ import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinu
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
+import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyDrawerBackupDialog';
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore } from '@/lib/stores/characterStore';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
+import { useLegacyBlobRemovable } from '@/hooks/drawer/useLegacyBlobRemovable';
 import { useDeviceType } from '@/hooks/useDeviceType';
 
 
@@ -129,6 +131,8 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
    const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
    const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
+   const [isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen] = useState(false);
+   const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable();
 
    const handleAppReset = async () => {
       useCharacterStore.persist.clearStorage();
@@ -345,6 +349,20 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <span className="truncate">{t('SettingsDialog.dangerZone.resetButton')}</span>
                      </Button>
                   </div>
+
+                  {/* Legacy backup cleanup - only shown once the migration is
+                      verified faithful and the blob is still present. Removing it
+                      is gated on a backup export + explicit confirm in the dialog. */}
+                  {legacyBlobRemovable && (
+                     <Button
+                        variant="outline"
+                        className="cursor-pointer w-full min-w-0"
+                        onClick={() => setIsLegacyBackupDialogOpen(true)}
+                        title={t('SettingsDialog.legacyBackup.actionLabel')}
+                     >
+                        <span className="truncate">{t('SettingsDialog.legacyBackup.actionLabel')}</span>
+                     </Button>
+                  )}
                </div>
 
 
@@ -354,6 +372,12 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
          <MigrationDialog
             isOpen={isMigrationDialogOpen}
             onOpenChange={setIsMigrationDialogOpen}
+         />
+
+         <LegacyDrawerBackupDialog
+            isOpen={isLegacyBackupDialogOpen}
+            onOpenChange={setIsLegacyBackupDialogOpen}
+            onRemoved={refreshLegacyBlobRemovable}
          />
 
          <ConfirmationDialog

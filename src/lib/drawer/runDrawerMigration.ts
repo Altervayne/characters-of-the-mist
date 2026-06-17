@@ -5,6 +5,7 @@ import { APP_VERSION } from '@/lib/config';
 // -- Local Imports --
 import { drawerDatabase } from './drawerDatabase';
 import { DRAWER_ROOT_PARENT_ID } from './drawerRecords';
+import { exportEntireDrawerAsNestedTree } from './drawerRepository';
 
 // -- Type Imports --
 import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
@@ -131,6 +132,59 @@ function flattenDrawer(drawer: Drawer): { folderRecords: DrawerFolderRecord[]; i
    return { folderRecords, itemRecords };
 }
 
+/** Recursive structural equality: key-order-insensitive for objects, order-sensitive for arrays. */
+function deepEqual(a: unknown, b: unknown): boolean {
+   if (a === b) return true;
+   if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
+
+   const aIsArray = Array.isArray(a);
+   const bIsArray = Array.isArray(b);
+   if (aIsArray !== bIsArray) return false;
+   if (aIsArray && bIsArray) {
+      if (a.length !== b.length) return false;
+      return a.every((element, index) => deepEqual(element, b[index]));
+   }
+
+   const aObj = a as Record<string, unknown>;
+   const bObj = b as Record<string, unknown>;
+   const aKeys = Object.keys(aObj);
+   const bKeys = Object.keys(bObj);
+   if (aKeys.length !== bKeys.length) return false;
+   return aKeys.every((key) => Object.prototype.hasOwnProperty.call(bObj, key) && deepEqual(aObj[key], bObj[key]));
+}
+
+/**
+ * Deep-compares the migratable contents of two drawers - their `folders` and
+ * `rootItems` trees (ids, structure, content). The drawer-level `version` field is
+ * intentionally ignored: the tree reconstructed by `exportEntireDrawerAsNestedTree`
+ * carries no top-level version, while the harmonized source may.
+ */
+function nestedDrawerContentsEqual(source: Drawer, reconstructed: Drawer): boolean {
+   return deepEqual(source.folders, reconstructed.folders) && deepEqual(source.rootItems, reconstructed.rootItems);
+}
+
+/** Strictly parses a legacy blob string, distinguishing a corrupt blob from a valid one. */
+type LegacyBlobParse = { ok: true; drawer: Drawer } | { ok: false };
+function parseLegacyBlobStrict(rawBlob: string): LegacyBlobParse {
+   try {
+      const parsed = JSON.parse(rawBlob) as { state?: { drawer?: unknown } };
+      const candidate = parsed?.state?.drawer;
+      if (isDrawerShape(candidate)) return { ok: true, drawer: candidate };
+   } catch {
+      // fall through to the failure result
+   }
+   return { ok: false };
+}
+
+/** Whether the legacy blob is still present in localStorage (read-safe). */
+function isLegacyBlobPresent(): boolean {
+   try {
+      return localStorage.getItem(LEGACY_DRAWER_STORAGE_KEY) !== null;
+   } catch {
+      return false;
+   }
+}
+
 /** Writes the fresh-install meta flags (no blob to migrate) in one meta transaction. */
 async function markFreshInstall(): Promise<void> {
    await drawerDatabase.transaction('rw', drawerDatabase.meta, async () => {
@@ -198,6 +252,24 @@ async function performMigration(): Promise<DrawerMigrationOutcome> {
       ]);
    });
 
+   // Verify faithfulness NOW, the one moment Dexie is guaranteed to equal the
+   // source: reconstruct the nested tree from Dexie and deep-compare it to the
+   // harmonized source blob (structure + content + ids). Record `migrationVerified`
+   // ONLY on an exact match - it is the sole gate for ever removing the legacy
+   // blob. On mismatch, leave the flag unset and fail closed by throwing: the data
+   // is migrated and usable, but the blob is then retained indefinitely (removal is
+   // never offered without the flag).
+   const reconstructedDrawer = await exportEntireDrawerAsNestedTree();
+   if (!nestedDrawerContentsEqual(harmonizedDrawer, reconstructedDrawer)) {
+      throw new DrawerMigrationError(
+         'Migration verification failed: the reconstructed Dexie tree does not match the source blob; the legacy blob will be retained.',
+      );
+   }
+   await drawerDatabase.meta.bulkPut([
+      { key: 'migrationVerified', value: true },
+      { key: 'migratedRecordCounts', value: { folders: folderRecords.length, items: itemRecords.length } },
+   ]);
+
    return 'migrated';
 }
 
@@ -220,4 +292,66 @@ export function runDrawerMigrationIfNeeded(): Promise<DrawerMigrationOutcome> {
       });
    }
    return inFlightMigration;
+}
+
+// ==================
+//  Legacy-blob retirement (user-data-safe, user-initiated)
+// ==================
+// The legacy blob is removed ONLY via an explicit settings action, gated on the
+// migration-time `migrationVerified` flag plus a user-completed backup export plus
+// an explicit confirmation. There is no automatic removal and no post-hoc
+// live-Dexie-vs-blob comparison (Dexie legitimately diverges through normal use).
+
+/**
+ * Whether the legacy localStorage blob may be offered for removal.
+ *
+ * Removable ONLY when the blob is still present, the migration completed, AND it
+ * was proven faithful at migration time (`meta.migrationVerified === true`).
+ * Anything else - no blob, unverified, or an early migration predating the
+ * verification flag - yields `removable: false`, so the blob is kept (fail-safe).
+ *
+ * @returns `blobPresent` (is there anything to remove) and `removable` (is it safe
+ *   to offer removal).
+ */
+export async function getLegacyBlobRemovalState(): Promise<{ removable: boolean; blobPresent: boolean }> {
+   const blobPresent = isLegacyBlobPresent();
+   if (!blobPresent) return { removable: false, blobPresent: false };
+
+   const status = await drawerDatabase.meta.get('migrationStatus');
+   const verified = await drawerDatabase.meta.get('migrationVerified');
+   return { removable: status?.value === 'completed' && verified?.value === true, blobPresent: true };
+}
+
+/**
+ * Parses the legacy blob into a harmonized {@link Drawer} for a safety-backup
+ * export. Returns `null` when the blob is absent or unparseable (so the caller
+ * fails closed and never deletes without a real backup). Does NOT delete anything.
+ */
+export function getLegacyDrawerForBackup(): Drawer | null {
+   let rawBlob: string | null;
+   try {
+      rawBlob = localStorage.getItem(LEGACY_DRAWER_STORAGE_KEY);
+   } catch {
+      return null;
+   }
+   if (rawBlob === null) return null;
+
+   const parsed = parseLegacyBlobStrict(rawBlob);
+   if (!parsed.ok) return null;
+   return harmonizeData(parsed.drawer, 'FULL_DRAWER');
+}
+
+/**
+ * Removes the legacy localStorage blob and drops the `legacyBlobRetainedUntil`
+ * marker. The caller MUST have gated this on {@link getLegacyBlobRemovalState}
+ * being removable, an explicit user confirmation, and a completed backup export.
+ * Idempotent: `removeItem` on an absent key is a no-op.
+ */
+export async function removeLegacyDrawerBlob(): Promise<void> {
+   try {
+      localStorage.removeItem(LEGACY_DRAWER_STORAGE_KEY);
+   } catch {
+      // localStorage unavailable: nothing to remove.
+   }
+   await drawerDatabase.meta.delete('legacyBlobRetainedUntil');
 }
