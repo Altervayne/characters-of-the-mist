@@ -8,6 +8,9 @@ import {
    CharacterMigrationError,
    LEGACY_CHARACTER_STORAGE_KEY,
    runCharacterMigrationIfNeeded,
+   getCharacterLegacyBlobRemovalState,
+   getLegacyCharacterForBackup,
+   removeLegacyCharacterBlob,
 } from './runCharacterMigration';
 
 // -- Type Imports --
@@ -140,5 +143,37 @@ describe('character migration', () => {
       const outcome = await runCharacterMigrationIfNeeded();
       expect(outcome).toBe('fresh-install');
       expect(await drawerDatabase.characters.count()).toBe(0);
+   });
+});
+
+describe('character legacy-blob removal (user-data-safe)', () => {
+   it('is not removable when the blob is absent', async () => {
+      expect(await getCharacterLegacyBlobRemovalState()).toEqual({ removable: false, blobPresent: false });
+   });
+
+   it('is NOT removable when migrated but not verified (fail-safe keeps the blob)', async () => {
+      seedLegacyBlob(makeCharacter('char-1'));
+      await drawerDatabase.meta.put({ key: 'characterMigrationStatus', value: 'completed' });
+      // characterMigrationVerified intentionally unset (e.g. an early/failed verification).
+
+      expect(await getCharacterLegacyBlobRemovalState()).toEqual({ removable: false, blobPresent: true });
+   });
+
+   it('is removable only after a verified migration; removal drops the blob + marker but keeps the data', async () => {
+      seedLegacyBlob(makeCharacter('char-1', { name: 'Aria' }));
+      await runCharacterMigrationIfNeeded(); // completed + verified + retained marker
+
+      expect(await getCharacterLegacyBlobRemovalState()).toEqual({ removable: true, blobPresent: true });
+      // A faithful backup can be produced before any deletion.
+      expect(getLegacyCharacterForBackup()?.name).toBe('Aria');
+
+      await removeLegacyCharacterBlob();
+
+      // Blob gone and marker dropped, but the migrated record survives untouched.
+      expect(localStorage.getItem(LEGACY_CHARACTER_STORAGE_KEY)).toBeNull();
+      expect(await drawerDatabase.meta.get('characterLegacyBlobRetainedUntil')).toBeUndefined();
+      expect(await drawerDatabase.characters.get('char-1')).toBeDefined();
+      // No longer offered once removed.
+      expect(await getCharacterLegacyBlobRemovalState()).toEqual({ removable: false, blobPresent: false });
    });
 });

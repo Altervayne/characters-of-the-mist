@@ -25,7 +25,10 @@
          "reset": "Fiche de personnage réinitialisée avec succès.",
          "unloaded": "Fiche de personnage déchargée avec succès.",
          "componentImported": "Fichier de composant importé avec succès.",
-         "linkedItemMissing": "[TO COMPLETE]"
+         "linkedItemMissing": "[TO COMPLETE]",
+         "legacyBackupDownloaded": "[TO COMPLETE]",
+         "legacyBackupRemoved": "[TO COMPLETE]",
+         "legacyBackupExportFailed": "[TO COMPLETE]"
       },
       "card": {
          "created": "Carte créée avec succès.",
@@ -363,6 +366,17 @@
       },
 
       "legacyBackup": {
+         "actionLabel": "[TO COMPLETE]",
+         "confirmTitle": "[TO COMPLETE]",
+         "confirmDescription": "[TO COMPLETE]",
+         "downloadBackupButton": "[TO COMPLETE]",
+         "backupDownloadedLabel": "[TO COMPLETE]",
+         "confirmCheckbox": "[TO COMPLETE]",
+         "removeButton": "[TO COMPLETE]",
+         "cancel": "[TO COMPLETE]"
+      },
+
+      "legacyCharacterBackup": {
          "actionLabel": "[TO COMPLETE]",
          "confirmTitle": "[TO COMPLETE]",
          "confirmDescription": "[TO COMPLETE]",

@@ -100,23 +100,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       if (!character) return;
 
       const newItemId = cuid();
-      console.log('[SaveAs...] 1. Generated newItemId:', newItemId);
-      
       const characterWithDrawerId = { ...character, drawerItemId: newItemId };
-      console.log('[SaveAs...] 2. characterWithDrawerId has drawerItemId?', !!characterWithDrawerId.drawerItemId);
 
       loadCharacter(character, newItemId);
-      
-      // Giving the store a tick to update
-      setTimeout(() => {
-         const storeChar = useCharacterStore.getState().character;
-         console.log('[SaveAs...] 3. After loadCharacter, store has drawerItemId?', storeChar?.drawerItemId);
-      }, 0);
 
       if (!isDrawerOpen) {
          onToggleDrawer();
       }
-      
+
       initiateItemDrop({
          game: character.game,
          type: 'FULL_CHARACTER_SHEET',
@@ -125,8 +116,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          presetId: newItemId,
          parentFolderId: drawerCurrentFolderId ?? undefined,
       });
-      
-      console.log('[SaveAs...] 4. Pending item presetId:', newItemId);
    };
 
    const handleExportCharacter = () => {

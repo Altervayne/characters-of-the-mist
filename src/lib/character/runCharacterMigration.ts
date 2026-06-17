@@ -231,3 +231,72 @@ export function runCharacterMigrationIfNeeded(): Promise<CharacterMigrationOutco
    }
    return inFlightMigration;
 }
+
+// ==================
+//  Legacy-blob retirement (user-data-safe, user-initiated)
+// ==================
+// Mirrors the drawer's flow: the legacy character blob is removed ONLY via an
+// explicit settings action, gated on the migration-time `characterMigrationVerified`
+// flag plus a user-completed backup export plus an explicit confirmation. There is
+// no automatic removal and no post-hoc live-vs-blob comparison.
+
+/** Whether the legacy character blob is still present in localStorage (read-safe). */
+function isLegacyCharacterBlobPresent(): boolean {
+   try {
+      return localStorage.getItem(LEGACY_CHARACTER_STORAGE_KEY) !== null;
+   } catch {
+      return false;
+   }
+}
+
+/**
+ * Whether the legacy character blob may be offered for removal.
+ *
+ * Removable ONLY when the blob is still present, the migration completed, AND it
+ * was proven faithful at migration time (`meta.characterMigrationVerified === true`).
+ * Anything else - no blob, unverified, or an early migration predating the
+ * verification flag - yields `removable: false`, so the blob is kept (fail-safe).
+ */
+export async function getCharacterLegacyBlobRemovalState(): Promise<{ removable: boolean; blobPresent: boolean }> {
+   const blobPresent = isLegacyCharacterBlobPresent();
+   if (!blobPresent) return { removable: false, blobPresent: false };
+
+   const status = await drawerDatabase.meta.get('characterMigrationStatus');
+   const verified = await drawerDatabase.meta.get('characterMigrationVerified');
+   return { removable: status?.value === 'completed' && verified?.value === true, blobPresent: true };
+}
+
+/**
+ * Parses the legacy blob into a harmonized {@link Character} for a safety-backup
+ * export. Returns `null` when the blob is absent, unparseable, or holds no active
+ * character (so the caller fails closed and never deletes without a real backup).
+ * Does NOT delete anything.
+ */
+export function getLegacyCharacterForBackup(): Character | null {
+   let rawBlob: string | null;
+   try {
+      rawBlob = localStorage.getItem(LEGACY_CHARACTER_STORAGE_KEY);
+   } catch {
+      return null;
+   }
+   if (rawBlob === null) return null;
+
+   const parsed = parseLegacyCharacterBlob(rawBlob);
+   if (!parsed.ok || parsed.character === null) return null;
+   return harmonizeData(parsed.character, 'FULL_CHARACTER_SHEET');
+}
+
+/**
+ * Removes the legacy character blob and drops the `characterLegacyBlobRetainedUntil`
+ * marker. The caller MUST have gated this on {@link getCharacterLegacyBlobRemovalState}
+ * being removable, an explicit user confirmation, and a completed backup export.
+ * Idempotent: `removeItem` on an absent key is a no-op.
+ */
+export async function removeLegacyCharacterBlob(): Promise<void> {
+   try {
+      localStorage.removeItem(LEGACY_CHARACTER_STORAGE_KEY);
+   } catch {
+      // localStorage unavailable: nothing to remove.
+   }
+   await drawerDatabase.meta.delete('characterLegacyBlobRetainedUntil');
+}

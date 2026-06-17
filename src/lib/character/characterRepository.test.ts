@@ -28,6 +28,7 @@ function makeCharacter(id: string, overrides: Partial<Character> = {}): Characte
 
 beforeEach(async () => {
    await drawerDatabase.characters.clear();
+   await drawerDatabase.items.clear();
    await drawerDatabase.meta.clear();
 });
 
@@ -96,5 +97,55 @@ describe('character repository', () => {
       expect(await drawerDatabase.characters.count()).toBe(0);
       // Migration flag must survive so a retained legacy blob is not re-imported.
       expect((await drawerDatabase.meta.get('characterMigrationStatus'))?.value).toBe('completed');
+   });
+});
+
+describe('saveCharacterToLinkedDrawerItem (cross-store atomic save)', () => {
+   /** Seeds a drawer FULL_CHARACTER_SHEET item linked to a character. */
+   function seedLinkedDrawerItem(itemId: string, displayName: string, content: Character) {
+      return drawerDatabase.items.add({
+         id: itemId,
+         name: displayName,
+         parentFolderId: 'root',
+         order: 0,
+         game: content.game,
+         type: 'FULL_CHARACTER_SHEET',
+         content,
+      });
+   }
+
+   it('atomically upserts the working record AND updates the linked drawer item, preserving the item display name/placement', async () => {
+      const before = makeCharacter('char-1', { name: 'Before', drawerItemId: 'item-1' });
+      await seedLinkedDrawerItem('item-1', 'My Saved Hero', before);
+      await repository.saveCharacter(before);
+
+      const after = makeCharacter('char-1', { name: 'After', drawerItemId: 'item-1' });
+      const result = await repository.saveCharacterToLinkedDrawerItem(after);
+
+      expect(result.linkedItemUpdated).toBe(true);
+      // Both stores reflect the save.
+      expect((await repository.getCharacter('char-1'))?.character.name).toBe('After');
+      const item = await drawerDatabase.items.get('item-1');
+      expect((item?.content as Character).name).toBe('After');
+      // The drawer item's own metadata (display name, parent, order) is untouched.
+      expect(item?.name).toBe('My Saved Hero');
+      expect(item?.parentFolderId).toBe('root');
+      expect(item?.order).toBe(0);
+   });
+
+   it('reports linkedItemUpdated:false when the link is dangling (item deleted), still saving the working record', async () => {
+      const orphan = makeCharacter('char-1', { name: 'Orphan', drawerItemId: 'item-gone' });
+      const result = await repository.saveCharacterToLinkedDrawerItem(orphan);
+
+      expect(result.linkedItemUpdated).toBe(false);
+      // The working record is still persisted so the caller can route to Save-As.
+      expect((await repository.getCharacter('char-1'))?.character.name).toBe('Orphan');
+   });
+
+   it('reports linkedItemUpdated:false when the character has no drawerItemId', async () => {
+      const result = await repository.saveCharacterToLinkedDrawerItem(makeCharacter('char-1'));
+
+      expect(result.linkedItemUpdated).toBe(false);
+      expect(await repository.getCharacter('char-1')).toBeDefined();
    });
 });

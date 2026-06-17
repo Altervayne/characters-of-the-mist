@@ -38,6 +38,7 @@ import {
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
 import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyDrawerBackupDialog';
+import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/LegacyCharacterBackupDialog';
 import { MobileSettingsConfirmationDialog } from '@/components/mobile/menu/MobileSettingsConfirmationDialog';
 import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettingsToggleGroup';
 
@@ -47,7 +48,9 @@ import { clearAllCharacterData } from '@/lib/character/characterRepository';
 import { setActiveCharacterId } from '@/lib/character/characterSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
-import { useLegacyBlobRemovable } from '@/hooks/drawer/useLegacyBlobRemovable';
+import { getLegacyBlobRemovalState } from '@/lib/drawer/runDrawerMigration';
+import { getCharacterLegacyBlobRemovalState } from '@/lib/character/runCharacterMigration';
+import { useLegacyBlobRemovable } from '@/hooks/useLegacyBlobRemovable';
 
 // -- Utils Imports --
 import { IconButton } from '@/components/ui/icon-button';
@@ -79,7 +82,9 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 	const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
 	const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
 	const [isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen] = useState(false);
-	const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable();
+	const [isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen] = useState(false);
+	const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable(getLegacyBlobRemovalState);
+	const { removable: legacyCharacterRemovable, refresh: refreshLegacyCharacterRemovable } = useLegacyBlobRemovable(getCharacterLegacyBlobRemovalState);
 
 	const handleAppReset = async () => {
 		await clearAllCharacterData();
@@ -389,6 +394,15 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 									<span className="truncate">{t('SettingsDialog.legacyBackup.actionLabel')}</span>
 								</Button>
 							)}
+							{legacyCharacterRemovable && (
+								<Button
+									variant="outline"
+									className="w-full h-12 text-base justify-start"
+									onClick={() => setIsLegacyCharacterBackupDialogOpen(true)}
+								>
+									<span className="truncate">{t('SettingsDialog.legacyCharacterBackup.actionLabel')}</span>
+								</Button>
+							)}
 						</div>
 					</div>
 				</div>
@@ -424,6 +438,12 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 				isOpen={isLegacyBackupDialogOpen}
 				onOpenChange={setIsLegacyBackupDialogOpen}
 				onRemoved={refreshLegacyBlobRemovable}
+			/>
+
+			<LegacyCharacterBackupDialog
+				isOpen={isLegacyCharacterBackupDialogOpen}
+				onOpenChange={setIsLegacyCharacterBackupDialogOpen}
+				onRemoved={refreshLegacyCharacterRemovable}
 			/>
 		</>
 	);

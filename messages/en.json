@@ -25,7 +25,10 @@
          "reset": "Character sheet successfully reset.",
          "unloaded": "Character has been unloaded successfully.",
          "componentImported": "Component file imported successfully.",
-         "linkedItemMissing": "The linked drawer save no longer exists, so the character was saved as a new item."
+         "linkedItemMissing": "The linked drawer save no longer exists, so the character was saved as a new item.",
+         "legacyBackupDownloaded": "Backup downloaded.",
+         "legacyBackupRemoved": "Old character backup removed.",
+         "legacyBackupExportFailed": "Backup download failed — the old copy was not removed."
       },
       "card": {
          "created": "Card created successfully.",
@@ -366,6 +369,17 @@
          "actionLabel": "Clean up legacy backup data",
          "confirmTitle": "Remove the old drawer backup?",
          "confirmDescription": "When the app updated, your drawer was moved to faster local storage. The old copy was kept as a safety backup, and we verified your data transferred intact. Download a backup first, then remove the old copy.",
+         "downloadBackupButton": "Download backup",
+         "backupDownloadedLabel": "Backup downloaded",
+         "confirmCheckbox": "I understand the old backup will be permanently removed",
+         "removeButton": "Remove old copy",
+         "cancel": "Cancel"
+      },
+
+      "legacyCharacterBackup": {
+         "actionLabel": "Clean up legacy character backup",
+         "confirmTitle": "Remove the old character backup?",
+         "confirmDescription": "When the app updated, your active character was moved to faster local storage. The old copy was kept as a safety backup, and we verified your data transferred intact. Download a backup first, then remove the old copy.",
          "downloadBackupButton": "Download backup",
          "backupDownloadedLabel": "Backup downloaded",
          "confirmCheckbox": "I understand the old backup will be permanently removed",
