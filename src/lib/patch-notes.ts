@@ -5,6 +5,16 @@ export interface PatchNote {
 
 export const patchNotes: PatchNote[] = [
    {
+      version: '1.3.1',
+      content: `
+### 🐛 Bugfixes
+* Added missing localization keys for update prompt in French.
+* Allowed scroll in onboarding screen on mobile for smaller screens.
+* Fixed Edit Theme action in mobile toolbelt not working.
+* Fixed custom themebooks not working on mobile.
+`
+   },
+   {
       version: '1.3.0',
       content: `
 ### ✨ The Mobile Update!

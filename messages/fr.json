@@ -1,9 +1,9 @@
 {
    "PWA": {
-      "updateAvailable": "[TO COMPLETE]",
-      "update": "[TO COMPLETE]",
-      "dismiss": "[TO COMPLETE]",
-      "offlineReady": "[TO COMPLETE]"
+      "updateAvailable": "Une nouvelle version est disponible.",
+      "update": "Mettre à jour",
+      "dismiss": "Passer",
+      "offlineReady": "Le mode hors-ligne est prêt."
    },
    "Notifications": {
       "general": {
