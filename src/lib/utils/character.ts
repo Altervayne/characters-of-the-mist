@@ -8,7 +8,7 @@ import type { GameSystem } from '../types/drawer';
 
 /**
  * Converts a card theme type string into a CSS class name.
- * Example: "Mythos" → "card-type-mythos", "Self & Noise" → "card-type-self-&-noise"
+ * Example: "Mythos" -> "card-type-mythos", "Self & Noise" -> "card-type-self-&-noise"
  */
 export function getCardTypeClass(type: string): string {
    return `card-type-${type.toLowerCase().replace(/\s+/g, '-')}`;

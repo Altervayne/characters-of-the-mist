@@ -104,7 +104,7 @@ describe('character migration', () => {
 
       await expect(runCharacterMigrationIfNeeded()).rejects.toBeInstanceOf(CharacterMigrationError);
 
-      // Migrated + completed, but NOT verified → removal never offered; blob retained.
+      // Migrated + completed, but NOT verified, so removal never offered; blob retained.
       expect((await drawerDatabase.meta.get('characterMigrationStatus'))?.value).toBe('completed');
       expect(await drawerDatabase.meta.get('characterMigrationVerified')).toBeUndefined();
       expect(localStorage.getItem(LEGACY_CHARACTER_STORAGE_KEY)).not.toBeNull();

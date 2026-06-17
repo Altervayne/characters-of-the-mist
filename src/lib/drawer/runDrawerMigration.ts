@@ -23,9 +23,9 @@ import type { Drawer, DrawerItem, Folder } from '@/lib/types/drawer';
  * localStorage key of the legacy zustand-persist drawer blob (shape
  * `{ state: { drawer }, version }`). Exported so the later removal phase has a
  * single source of truth. NOT the `characterData` key (LegacyDataDialog) nor the
- * character-file import feature (MigrationDialog) — those are unrelated (§6.1).
+ * character-file import feature (MigrationDialog); those are unrelated (§6.1).
  *
- * TODO (deferred per migration spec §6.4 / Q-4 — a LATER release, NOT now):
+ * TODO (deferred per migration spec §6.4 / Q-4, a LATER release, NOT now):
  * once the Dexie drawer is proven in the field, remove this blob with
  * `localStorage.removeItem(LEGACY_DRAWER_STORAGE_KEY)` (e.g. in a new bootstrap
  * step gated on `meta.legacyBlobRetainedUntil`) and drop the
@@ -85,7 +85,7 @@ function extractDrawerFromBlob(rawBlob: string): Drawer {
       const candidate = parsed?.state?.drawer;
       if (isDrawerShape(candidate)) return candidate;
    } catch {
-      // Corrupt blob — fall through to an empty drawer (handled as above).
+      // Corrupt blob, fall through to an empty drawer (handled as above).
    }
    return { folders: [], rootItems: [] };
 }
@@ -279,7 +279,7 @@ async function performMigration(): Promise<DrawerMigrationOutcome> {
  * Idempotent and concurrency-safe: gated on `meta.migrationStatus` (with a
  * re-check and an empty-store assertion inside the write transaction), and
  * de-duplicated across concurrent/StrictMode double invocations via a shared
- * in-flight promise. The whole write is atomic — a failure rolls back, leaves the
+ * in-flight promise. The whole write is atomic: a failure rolls back, leaves the
  * flag unset and the legacy blob untouched, and is safe to retry on the next
  * load.
  *

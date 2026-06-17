@@ -158,7 +158,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 								toast.success(`${t('Notifications.character.saved')} ${itemPath}`);
 							} else {
 								// The linked drawer item was deleted: don't silently
-								// no-op the user's save — fall back to Save As + notify.
+								// no-op the user's save, and fall back to Save As + notify.
 								saveAsNewDrawerItem();
 								toast(t('Notifications.character.linkedItemMissing'));
 							}

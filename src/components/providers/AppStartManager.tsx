@@ -16,6 +16,7 @@ import { LegacyDataDialog } from '@/components/organisms/dialogs/LegacyDataDialo
 import { PatchNotesDialog } from '@/components/organisms/dialogs/PatchNotesDialog';
 import { WelcomeDialog } from '@/components/organisms/dialogs/WelcomeDialog';
 import MobileOnboarding from '@/components/mobile/onboarding/MobileOnboarding';
+import { MigrationNoticeDialog } from '@/components/organisms/dialogs/MigrationNoticeDialog';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
@@ -56,6 +57,7 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const [shouldShowWelcome, setShouldShowWelcome] = useState(false);
    const [shouldShowPatchNotes, setShouldShowPatchNotes] = useState(false);
    const [didInit, setDidInit] = useState(false);
+   const [showMigrationNotice, setShowMigrationNotice] = useState(false);
 
    const { t } = useTranslation();
    const { isMobile } = useDeviceType();
@@ -79,20 +81,25 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    // and de-duplicates StrictMode's double mount.
    //
    // The character is now sourced from IndexedDB (spec §5): attach the save
-   // subscription, then — after the one-time character migration — read the session
+   // subscription, then, after the one-time character migration, read the session
    // pointer and load the active character. The boot loading gate (set inside
    // runCharacterBoot) keeps first paint on a neutral loading screen until this
    // resolves, so the main menu never flashes before the sheet appears.
    useEffect(() => {
       startCharacterPersistence();
 
-      runDrawerMigrationIfNeeded().catch(() => {
+      // Drawer migration runs concurrently and never blocks the boot critical path
+      // (only the character load gates first paint). We keep its outcome to decide
+      // the one-time upgrade notice below.
+      const drawerMigration = runDrawerMigrationIfNeeded().catch(() => {
          toast.error(t('Notifications.drawer.storageUpgradeFailed'));
+         return 'error' as const;
       });
 
       void (async () => {
+         let characterMigrated = false;
          try {
-            await runCharacterMigrationIfNeeded();
+            characterMigrated = (await runCharacterMigrationIfNeeded()) === 'migrated';
          } catch (error) {
             // The migration sets the session pointer and writes the record before
             // its verify step, so even a verification failure leaves a usable
@@ -100,6 +107,16 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
             console.error('Character IndexedDB migration failed (will retry next load):', error);
          }
          await runCharacterBoot();
+
+         // One-time transparency notice: shown only when data was actually moved
+         // this load (each migration returns 'migrated' exactly once, so the notice
+         // never repeats). Awaiting the drawer promise here, AFTER boot, keeps the
+         // drawer migration off the first-paint critical path while still gating the
+         // notice on both domains.
+         const drawerMigrated = (await drawerMigration) === 'migrated';
+         if (characterMigrated || drawerMigrated) {
+            startTransition(() => setShowMigrationNotice(true));
+         }
       })();
    }, [t]);
 
@@ -286,6 +303,10 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
          <MobileOnboarding
             isOpen={isMobileOnboardingOpen}
             onComplete={handleMobileOnboardingComplete}
+         />
+         <MigrationNoticeDialog
+            isOpen={showMigrationNotice}
+            onClose={() => setShowMigrationNotice(false)}
          />
       </>
    );

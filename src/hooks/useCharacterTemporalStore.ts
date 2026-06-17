@@ -16,7 +16,7 @@ type CharacterStoreState = ReturnType<typeof useCharacterStore.getState>;
 
 /**
  * Reactive subscription to the character store's temporal (undo/redo) state.
- * Use this instead of useCharacterStore.temporal.getState() — that call is a
+ * Use this instead of useCharacterStore.temporal.getState(); that call is a
  * one-shot snapshot and will not trigger a re-render when undo/redo history changes.
  */
 function useCharacterTemporalStore(): TemporalState<CharacterStoreState>;

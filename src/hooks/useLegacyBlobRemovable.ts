@@ -2,8 +2,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Whether a legacy backup blob may be offered for removal in settings — generic
- * over the data domain (drawer, character, …).
+ * Whether a legacy backup blob may be offered for removal in settings, generic
+ * over the data domain (drawer, character, etc.).
  *
  * Calls the supplied `getRemovalState` on mount: the cleanup action is shown only
  * when that domain reports `removable` (the blob is present AND the migration was

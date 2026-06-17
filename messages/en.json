@@ -5,6 +5,15 @@
       "dismiss": "Dismiss",
       "offlineReady": "Ready to work offline."
    },
+   "MigrationNotice": {
+      "title": "Your data was upgraded",
+      "description": "The App moved your characters and Drawer into a new, faster and more reliable in-browser storage system. Nothing was lost. Your previous data is kept as a safety backup. You can download that backup now, or export and remove it any time from the Settings, under the Danger Zone.",
+      "exportButton": "Download a backup of my old data",
+      "exportedLabel": "Backup downloaded",
+      "exported": "Backup downloaded.",
+      "exportFailed": "Backup download failed.",
+      "dismissButton": "Got it"
+   },
    "Notifications": {
       "general": {
          "importFailed": "File import failed. The data may be incorrect or corrupted.",
@@ -28,7 +37,7 @@
          "linkedItemMissing": "The linked drawer save no longer exists, so the character was saved as a new item.",
          "legacyBackupDownloaded": "Backup downloaded.",
          "legacyBackupRemoved": "Old character backup removed.",
-         "legacyBackupExportFailed": "Backup download failed — the old copy was not removed."
+         "legacyBackupExportFailed": "Backup download failed. The old copy was not removed."
       },
       "card": {
          "created": "Card created successfully.",
@@ -56,7 +65,7 @@
          "actionFailed": "That drawer action could not be completed. Please try again.",
          "legacyBackupDownloaded": "Backup downloaded.",
          "legacyBackupRemoved": "Old drawer backup removed.",
-         "legacyBackupExportFailed": "Backup download failed — the old copy was not removed."
+         "legacyBackupExportFailed": "Backup download failed. The old copy was not removed."
       },
       "migration": {
          "legacyDataDownloaded": "Legacy data download sent.",

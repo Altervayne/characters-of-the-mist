@@ -26,7 +26,7 @@ interface MobileBottomSheetProps {
  * The shared mobile bottom-sheet scaffold: a tap-to-dismiss backdrop plus a
  * spring-slide-up container with the standard sheet chrome (rounded top, top
  * border, shadow). It owns only the backdrop, the slide animation, and the
- * container chrome — every caller supplies its own header/body/buttons as
+ * container chrome; every caller supplies its own header/body/buttons as
  * `children`.
  *
  * Replaces five hand-rolled copies of the same backdrop + `motion.div` slide.

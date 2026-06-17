@@ -4,8 +4,8 @@ import cuid from "cuid";
  * Drawer shared utilities.
  *
  * The recursive nested-tree operations that once lived here (add/rename/delete/
- * move/reorder…Recursively, findAndRemove*, findFolder*, buildBreadcrumb,
- * getItemDisplayPath, findItemFolder, mergeIntoFolderRecursively, …) were retired
+ * move/reorder...Recursively, findAndRemove*, findFolder*, buildBreadcrumb,
+ * getItemDisplayPath, findItemFolder, mergeIntoFolderRecursively, ...) were retired
  * in the IndexedDB migration (spec §7.1): the drawer is now flat Dexie records and
  * those operations are served by `@/lib/drawer/drawerRepository`.
  *

@@ -64,20 +64,20 @@ export interface DrawerItemRecord {
  * A singleton key/value row in the `meta` store.
  *
  * Holds bookkeeping that is not folder/item data:
- * - `schemaVersion` — the persisted Dexie schema version.
- * - `migrationStatus` — the one-time legacy-blob migration status flag.
- * - `legacyBlobRetainedUntil` — marker that the legacy localStorage blob is still
+ * - `schemaVersion`: the persisted Dexie schema version.
+ * - `migrationStatus`: the one-time legacy-blob migration status flag.
+ * - `legacyBlobRetainedUntil`: marker that the legacy localStorage blob is still
  *   retained as a safety backup (dropped when the blob is finally removed).
- * - `migrationVerified` — `true` once the migration was proven faithful by
+ * - `migrationVerified`: `true` once the migration was proven faithful by
  *   reconstructing the Dexie tree at migration time and deep-comparing it to the
- *   source blob. Gates legacy-blob removal; absent ⇒ never offer removal.
- * - `migratedRecordCounts` — `{ folders, items }` written from the same faithful
+ *   source blob. Gates legacy-blob removal; absent means never offer removal.
+ * - `migratedRecordCounts`: `{ folders, items }` written from the same faithful
  *   migration, for diagnostics.
  *
  * The `character*` keys mirror the drawer keys for the per-character migration
  * (spec §6): `characterMigrationStatus`, `characterMigrationVerified`,
  * `characterMigratedRecordCount`, and `characterLegacyBlobRetainedUntil`. (The
- * active-character session pointer lives in localStorage, not here — see
+ * active-character session pointer lives in localStorage, not here. See
  * `characterSession.ts`.)
  *
  * Each `key` addresses exactly one row.

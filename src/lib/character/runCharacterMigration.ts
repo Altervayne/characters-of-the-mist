@@ -24,7 +24,7 @@ import type { Character } from '@/lib/types/character';
  * `{ state: { character }, version }`). Exported so the later removal phase has a
  * single source of truth.
  *
- * TODO (deferred — a LATER release, NOT now): once the IndexedDB character store
+ * TODO (deferred to a LATER release, NOT now): once the IndexedDB character store
  * is proven, remove this blob via the drawer's verified-confirm-export flow,
  * gated on `meta.characterLegacyBlobRetainedUntil`. It is intentionally RETAINED
  * for now as a read-only safety net; the migration is idempotent and never
@@ -84,7 +84,7 @@ function parseLegacyCharacterBlob(rawBlob: string): LegacyCharacterParse {
  * The active-character session pointer is the boot gate's primary signal, but on
  * the one-time pre-migration launch that pointer is not set yet (the migration
  * sets it). Without this check the gate would briefly flash the main menu before
- * the just-migrated character loads — alarming on the very release that moves a
+ * the just-migrated character loads, alarming on the very release that moves a
  * user's only character. Returns `false` once the blob is gone or holds no active
  * character.
  */

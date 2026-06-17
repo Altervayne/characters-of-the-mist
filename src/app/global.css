@@ -636,7 +636,7 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
 /* ###   MOBILE STACKING LADDER (C3)  ### */
 /* ###################################### */
 /* The single source of truth for how mobile floating/overlay controls stack,
-   low → high. (Bare `z-<n>` utilities do resolve in this Tailwind v4 setup, but
+   low to high. (Bare `z-<n>` utilities do resolve in this Tailwind v4 setup, but
    these named layers document the intended order and keep it consistent across
    components.)
      layer-content  (10): in-flow stickies / selection badges (local stacking; left as z-10)

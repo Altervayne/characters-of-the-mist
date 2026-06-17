@@ -25,10 +25,10 @@
          "reset": "Fiche de personnage réinitialisée avec succès.",
          "unloaded": "Fiche de personnage déchargée avec succès.",
          "componentImported": "Fichier de composant importé avec succès.",
-         "linkedItemMissing": "[TO COMPLETE]",
-         "legacyBackupDownloaded": "[TO COMPLETE]",
-         "legacyBackupRemoved": "[TO COMPLETE]",
-         "legacyBackupExportFailed": "[TO COMPLETE]"
+         "linkedItemMissing": "Cette Fiche n'a pas été trouvée dans le tiroir. Un nouvel Objet a été créé.",
+         "legacyBackupDownloaded": "Backup téléchargé.",
+         "legacyBackupRemoved": "Ancien backup du personnage supprimé.",
+         "legacyBackupExportFailed": "Téléchargement du backup échoué. L'ancienne copie n'a pas été supprimée."
       },
       "card": {
          "created": "Carte créée avec succès.",
@@ -52,11 +52,11 @@
          "importedAsFolder": "Tiroir importé comme nouveau dossier à la racine.",
          "exported": "Tiroir exporté avec succès.",
          "deleted": "Tiroir supprimé avec succès.",
-         "storageUpgradeFailed": "[TO COMPLETE]",
-         "actionFailed": "[TO COMPLETE]",
-         "legacyBackupDownloaded": "[TO COMPLETE]",
-         "legacyBackupRemoved": "[TO COMPLETE]",
-         "legacyBackupExportFailed": "[TO COMPLETE]"
+         "storageUpgradeFailed": "La mise à niveau du stockage du Tiroir n'a pas pu aboutir. Une nouvelle tentative sera effectuée au prochain lancement de l'application.",
+         "actionFailed": "Cette action du Tiroir a échoué. Veuillez réessayer.",
+         "legacyBackupDownloaded": "Backup téléchargé.",
+         "legacyBackupRemoved": "Ancien backup du Tiroir supprimé.",
+         "legacyBackupExportFailed": "Téléchargement du backup échoué. L'ancienne copie n'a pas été supprimée."
       },
       "migration": {
          "legacyDataDownloaded": "Données anciennes téléchargées avec succès.",
@@ -366,25 +366,25 @@
       },
 
       "legacyBackup": {
-         "actionLabel": "[TO COMPLETE]",
-         "confirmTitle": "[TO COMPLETE]",
-         "confirmDescription": "[TO COMPLETE]",
-         "downloadBackupButton": "[TO COMPLETE]",
-         "backupDownloadedLabel": "[TO COMPLETE]",
-         "confirmCheckbox": "[TO COMPLETE]",
-         "removeButton": "[TO COMPLETE]",
-         "cancel": "[TO COMPLETE]"
+         "actionLabel": "Nettoyer le backup de l'ancien système.",
+         "confirmTitle": "Voulez-vous supprimer l'ancien backup du Tiroir ?",
+         "confirmDescription": "Lorsque l'application a été mise à jour, votre Tiroir a été déplacé vers un système de stockage plus performant. L'ancienne copie a été préservée comme backup de secours, et l'application a bien vérifie que vos données ont été transférées correctement. Téléchargez un backup par sécurité, puis supprimez l'ancienne copie.",
+         "downloadBackupButton": "Télécharger le backup",
+         "backupDownloadedLabel": "Backup téléchargé",
+         "confirmCheckbox": "Je comprend que l'ancien backup sera irrécupérablement supprimé.",
+         "removeButton": "Supprimer l'ancienne copie",
+         "cancel": "Annuler"
       },
 
       "legacyCharacterBackup": {
-         "actionLabel": "[TO COMPLETE]",
-         "confirmTitle": "[TO COMPLETE]",
-         "confirmDescription": "[TO COMPLETE]",
-         "downloadBackupButton": "[TO COMPLETE]",
-         "backupDownloadedLabel": "[TO COMPLETE]",
-         "confirmCheckbox": "[TO COMPLETE]",
-         "removeButton": "[TO COMPLETE]",
-         "cancel": "[TO COMPLETE]"
+         "actionLabel": "Nettoyer le backup de l'ancien système.",
+         "confirmTitle": "Voulez-vous supprimer l'ancien backup de votre personnage ?",
+         "confirmDescription": "Lorsque l'application a été mise à jour, votre personnage actif a été déplacé vers un système de stockage plus performant. L'ancienne copie a été préservée comme backup de secours, et l'application a bien vérifie que vos données ont été transférées correctement. Téléchargez un backup par sécurité, puis supprimez l'ancienne copie.",
+         "downloadBackupButton": "Télécharger le backup",
+         "backupDownloadedLabel": "Backup téléchargé",
+         "confirmCheckbox": "Je comprend que l'ancien backup sera irrécupérablement supprimé.",
+         "removeButton": "Supprimer l'ancienne copie",
+         "cancel": "Annuler"
       },
 
       "dangerZone": {

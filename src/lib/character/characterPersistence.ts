@@ -16,12 +16,12 @@ import { legacyBlobHasMigratableCharacter } from './runCharacterMigration';
 import type { Character } from '@/lib/types/character';
 
 /*
- * Persistence sync layer (migration spec §3.3 / §5) — the ONLY bridge between the
+ * Persistence sync layer (migration spec §3.3 / §5). It is the ONLY bridge between the
  * pure in-memory character store and the IndexedDB repository. It is deliberately
- * one-directional: state → IndexedDB. Saving never calls the store's `set()`, so it
+ * one-directional: state to IndexedDB. Saving never calls the store's `set()`, so it
  * creates no zundo entry and cannot form a write loop (undo restores a snapshot via
  * zundo's internal set, the save subscription writes it once, and IndexedDB writes
- * never feed back into store state — exactly the desired behaviour, spec §4).
+ * never feed back into store state, exactly the desired behaviour, spec §4).
  *
  * No UI here: it touches the store and the repository only. The boot loading gate
  * below is a tiny reactive flag that the page shells read to avoid flashing the

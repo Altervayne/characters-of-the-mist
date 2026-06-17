@@ -128,14 +128,14 @@ export function useMobileCardSheetGestures({
 
 		// Edge swipe behavior depends on handedness setting (only in side-panel mode)
 		if (isLeftHanded) {
-			// Left-handed mode: Left edge → Open toolbelt
+			// Left-handed mode: Left edge opens the toolbelt
 			if (trackersSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
 				if (!isMobileFABMode && !isToolbeltOpen) {
 					setIsToolbeltOpen(true);
 				}
 			}
 		} else {
-			// Right-handed mode: Right edge → Open toolbelt
+			// Right-handed mode: Right edge opens the toolbelt
 			if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
 				if (!isMobileFABMode && !isToolbeltOpen) {
 					setIsToolbeltOpen(true);

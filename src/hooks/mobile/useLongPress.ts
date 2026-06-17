@@ -11,7 +11,7 @@ interface Position {
 export interface UseLongPressOptions {
 	/** Fired when the press is held past `delay` without moving beyond `moveTolerance`. Receives the touch-start position. */
 	onLongPress: (position: Position) => void;
-	/** Optional. Fired when the touch ends before the long-press triggers and without a cancelling move — i.e. a short tap. */
+	/** Optional. Fired when the touch ends before the long-press triggers and without a cancelling move, i.e. a short tap. */
 	onTap?: () => void;
 	/** How long (ms) the press must be held to count as a long-press. Default 500. */
 	delay?: number;
@@ -42,7 +42,7 @@ export interface UseLongPressResult {
  * and optional haptic feedback. Captures the touch-start position and hands it
  * to `onLongPress` so callers can anchor a context menu where the finger landed.
  * An optional `onTap` distinguishes a short tap (touch ends while still pressing,
- * with no long-press and no cancelling move) — used where a tap has its own
+ * with no long-press and no cancelling move), used where a tap has its own
  * meaning, e.g. a folder row that navigates on tap and opens a menu on hold.
  *
  * Touch-only by design (these are mobile-only surfaces); no pointer/mouse fallback.

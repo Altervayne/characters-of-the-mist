@@ -95,7 +95,7 @@ export interface SaveCharacterToDrawerResult {
 
 /**
  * Explicit "Save Character" (spec §7): in ONE read/write transaction over both
- * `characters` and `items` (same database — the reason §1.1 keeps a single DB),
+ * `characters` and `items` (same database, the reason §1.1 keeps a single DB),
  * upsert the working record and, when the character is linked to a drawer
  * `FULL_CHARACTER_SHEET` item that still exists, update that item's content too.
  *

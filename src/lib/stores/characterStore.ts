@@ -154,13 +154,13 @@ const updateCardInState = (state: CharacterState, cardId: string, updateFn: (car
  * Builds a character store instance: the in-memory character plus the full action
  * API, wrapped in zundo `temporal` for snapshot undo/redo (spec §3.1, §4).
  *
- * Persistence is deliberately NOT part of the store — there is no zustand
+ * Persistence is deliberately NOT part of the store; there is no zustand
  * `persist` here. The store is pure in-memory state; `characterPersistence.ts` is
  * the only bridge to IndexedDB (load-on-open + a debounced save subscription), and
  * harmonization runs at load time rather than in a persist `migrate` hook.
  *
  * It is a factory (rather than a bare `create(...)`) so a future per-tab pass can
- * instantiate one independent store — hence one independent undo stack — per open
+ * instantiate one independent store, hence one independent undo stack, per open
  * character, with no schema change (spec §3.3, C-1). Today exactly one instance is
  * created: the `useCharacterStore` singleton below.
  */
