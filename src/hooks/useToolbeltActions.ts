@@ -52,7 +52,7 @@ import type { CardViewMode, Card, Tracker } from '@/lib/types/character';
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void, onEditCard?: (card: Card) => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		loadCharacter,
@@ -312,7 +312,13 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					label: t('Toolbelt.editThemebook'),
 					icon: Edit3,
 					onClick: () => {
-						setCardDialogOpen(true);
+						// Mobile routes through onEditCard (opens MobileAddCard in edit
+						// mode for this card); desktop falls back to the card dialog flag.
+						if (onEditCard) {
+							onEditCard(card);
+						} else {
+							setCardDialogOpen(true);
+						}
 					},
 					show: true
 				});
@@ -509,5 +515,6 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		onEnterCardReorderMode,
 		onOpenAddCard,
 		onSaveToDrawer,
+		onEditCard,
 	]);
 }

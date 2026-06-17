@@ -50,7 +50,7 @@ export default function MobileCharacterSheetPage() {
 
 	// Card creation state
 	const { t: tNotifications } = useTranslation();
-	const { addCard, addImportedCard, addImportedTracker } = useCharacterActions();
+	const { addCard, updateCardDetails, addImportedCard, addImportedTracker } = useCharacterActions();
 	const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
 	const [newlyCreatedCardId, setNewlyCreatedCardId] = useState<string | null>(null);
 
@@ -185,10 +185,23 @@ export default function MobileCharacterSheetPage() {
 		navigateToTab('addCard');
 	};
 
-	const handleConfirmCard = (options: CreateCardOptions) => {
-		const cardId = addCard(options);
+	const handleEditCard = (card: Card) => {
+		setCardToEdit(card);
+		navigateToTab('addCard');
+	};
+
+	const handleConfirmCard = (options: CreateCardOptions, cardId?: string) => {
+		let resolvedCardId: string;
+		if (cardId) {
+			// Edit mode: change only the themebook/type of the existing card, preserving its tags.
+			updateCardDetails(cardId, { themebook: options.themebook, themeType: options.themeType });
+			resolvedCardId = cardId;
+		} else {
+			// Create mode: add a new card.
+			resolvedCardId = addCard(options);
+		}
 		setCardToEdit(null);
-		setNewlyCreatedCardId(cardId);
+		setNewlyCreatedCardId(resolvedCardId);
 		navigateToTab('sheet');
 		navigateToSheetTab('cards');
 	};
@@ -232,6 +245,7 @@ export default function MobileCharacterSheetPage() {
 						isReorderingCards={isReorderingCards}
 						onReorderingCardsChange={setReorderingWithHistory}
 						onOpenAddCard={handleOpenAddCard}
+						onEditCard={handleEditCard}
 						initialCardId={newlyCreatedCardId}
 					/>
 				)}

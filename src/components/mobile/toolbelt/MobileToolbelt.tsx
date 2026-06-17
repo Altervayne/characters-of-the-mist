@@ -21,6 +21,7 @@ interface MobileToolbeltProps {
 	onEnterCardReorderMode?: () => void;
 	onOpenAddCard?: () => void;
 	onSaveToDrawer?: (item: Card | Tracker) => void;
+	onEditCard?: (card: Card) => void;
 }
 
 export default function MobileToolbelt({
@@ -32,10 +33,11 @@ export default function MobileToolbelt({
 	isMenuFABExpanded,
 	onEnterCardReorderMode,
 	onOpenAddCard,
-	onSaveToDrawer
+	onSaveToDrawer,
+	onEditCard
 }: MobileToolbeltProps) {
 	// Build action lists based on context and active tab
-	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode, onOpenAddCard, onSaveToDrawer);
+	const { itemActions, globalActions } = useToolbeltActions(context, activeTab, onEnterCardReorderMode, onOpenAddCard, onSaveToDrawer, onEditCard);
 
 	// Render appropriate UI based on mode. In side-panel mode the actions are now
 	// presented as a compact bottom sheet (it no longer covers the selected item).
