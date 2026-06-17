@@ -3,6 +3,8 @@ import React, { useState, useEffect, startTransition } from 'react';
 
 // -- Other Library Imports --
 import { gt as isVersionGreaterThan } from 'semver';
+import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 // -- Utils Imports --
 import { APP_VERSION } from '@/lib/config';
@@ -20,6 +22,9 @@ import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 import { useDeviceType } from '@/hooks/useDeviceType';
+
+// -- Drawer Migration --
+import { runDrawerMigrationIfNeeded } from '@/lib/drawer/runDrawerMigration';
 
 
 
@@ -48,6 +53,7 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const [shouldShowPatchNotes, setShouldShowPatchNotes] = useState(false);
    const [didInit, setDidInit] = useState(false);
 
+   const { t } = useTranslation();
    const { isMobile } = useDeviceType();
 
    const isLegacyDataDialogOpen = useAppGeneralStateStore((state) => state.isLegacyDataDialogOpen);
@@ -59,6 +65,19 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const { startTour } = useAppTourDriver();
 
 
+
+   // ==================
+   //  Drawer IndexedDB migration (one-time, additive)
+   // ==================
+   // Copies the legacy localStorage drawer blob into Dexie exactly once. Runs in
+   // the background and never blocks startup; a failure surfaces as a non-blocking
+   // toast and the migration retries on the next load. The call is self-guarded
+   // and de-duplicates StrictMode's double mount.
+   useEffect(() => {
+      runDrawerMigrationIfNeeded().catch(() => {
+         toast.error(t('Notifications.drawer.storageUpgradeFailed'));
+      });
+   }, [t]);
 
    // ==================
    //  Dialog queue generator and handler

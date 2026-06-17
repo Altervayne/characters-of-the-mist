@@ -1,70 +1,53 @@
 // -- React Imports --
-import { useState, useMemo } from 'react';
+import { useCallback } from 'react';
 
 // -- Store Imports --
-import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 
-// -- Utils Imports --
-import { buildBreadcrumb, buildFolderPathIds, getParentFromPath, findFolderMemoized } from '@/lib/utils/drawer';
-
-
+// -- Hook Imports --
+import { useDrawerCurrentView } from './useDrawerCurrentView';
 
 /**
- * Owns the Drawer's folder navigation and the view derived from the current
- * folder.
+ * Owns the drawer's folder navigation and exposes the current-folder view.
  *
- * Tracks the currently open folder and derives the items, subfolders, parent id,
- * and breadcrumb trail for that folder. `navigateToFolder` updates the local
- * state and mirrors it into the drawer store (`setDrawerCurrentFolderId`) in one
- * step, so navigation and the store's notion of the current folder never drift
- * apart.
+ * Reimplemented over the normalized store (migration spec §3.3): the view (items,
+ * subfolders, breadcrumb, parent, child counts) now comes from the store's loaded
+ * `currentFolderView` rather than being derived from an in-memory tree, and
+ * `navigateToFolder` calls the async `setDrawerCurrentFolderId` (which loads the
+ * target folder). The callback is fire-and-forget so click handlers stay
+ * synchronous; loading/error are observable via the returned flags.
  *
- * The parent-folder id is resolved in O(1) from a cached chain of folder ids
- * (`currentFolderPath`) rather than by re-traversing the folder tree - preserve
- * this when reading the code.
+ * The records are now flat `DrawerFolderRecord` / `DrawerItemRecord` (not the old
+ * nested `Folder` / `DrawerItem`), and the old `currentFolderPath` id-chain is
+ * gone (the parent id is supplied directly by the store). Consumers adapt to
+ * these shapes in Phase 6.
  *
- * @returns The current folder id, the store-syncing `navigateToFolder`, the
- *   cached folder-path chain, and the derived view (`currentItems`,
- *   `currentFolders`, `parentFolderId`, `breadcrumbPath`).
+ * @returns The current folder id, the `navigateToFolder` callback, the ordered
+ *   `currentItems` / `currentFolders`, `parentFolderId`, `breadcrumbPath`,
+ *   per-child `childCounts`, and `isLoading` / `error`.
  */
 export function useDrawerNavigation() {
-   const folders = useDrawerStore((state) => state.drawer.folders);
-   const rootItems = useDrawerStore((state) => state.drawer.rootItems);
+   const view = useDrawerCurrentView();
    const { setDrawerCurrentFolderId } = useDrawerActions();
 
-   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-
-   const navigateToFolder = (id: string | null) => {
-      setCurrentFolderId(id);
-      setDrawerCurrentFolderId(id);
-   };
-
-   // Cache folder path as chain of IDs: ['rootId', 'childId', 'currentId']
-   // Provides O(1) access to parent folder ID
-   const currentFolderPath = useMemo(() => buildFolderPathIds(folders, currentFolderId), [folders, currentFolderId]);
-
-   const { currentItems, currentFolders, parentFolderId } = useMemo(() => {
-      if (!currentFolderId) {
-         return { currentItems: rootItems, currentFolders: folders, parentFolderId: null };
-      }
-      const folder = findFolderMemoized(folders, currentFolderId);
-      if (folder) {
-         // O(1) parent lookup using cached path instead of O(n) tree traversal
-         const parentId = getParentFromPath(currentFolderPath);
-         return { currentItems: folder.items, currentFolders: folder.folders, parentFolderId: parentId };
-      }
-      return { currentItems: rootItems, currentFolders: folders, parentFolderId: null };
-   }, [currentFolderId, folders, rootItems, currentFolderPath]);
-
-   const breadcrumbPath = useMemo(() => buildBreadcrumb(folders, currentFolderId), [folders, currentFolderId]);
+   const navigateToFolder = useCallback(
+      (id: string | null) => {
+         // Fire-and-forget: the store sets the id and loads the folder; callers
+         // (click handlers) do not need to await.
+         void setDrawerCurrentFolderId(id);
+      },
+      [setDrawerCurrentFolderId],
+   );
 
    return {
-      currentFolderId,
+      currentFolderId: view.currentFolderId,
       navigateToFolder,
-      currentFolderPath,
-      currentItems,
-      currentFolders,
-      parentFolderId,
-      breadcrumbPath,
+      currentItems: view.items,
+      currentFolders: view.folders,
+      parentFolderId: view.parentFolderId,
+      breadcrumbPath: view.breadcrumbPath,
+      childCounts: view.childCounts,
+      isLoading: view.isLoading,
+      error: view.error,
    };
 }

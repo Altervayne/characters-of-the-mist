@@ -47,7 +47,8 @@
          "importSuccess": "Fichier importé dans le tiroir avec succès.",
          "importedAsFolder": "Tiroir importé comme nouveau dossier à la racine.",
          "exported": "Tiroir exporté avec succès.",
-         "deleted": "Tiroir supprimé avec succès."
+         "deleted": "Tiroir supprimé avec succès.",
+         "storageUpgradeFailed": "[TO COMPLETE]"
       },
       "migration": {
          "legacyDataDownloaded": "Données anciennes téléchargées avec succès.",
