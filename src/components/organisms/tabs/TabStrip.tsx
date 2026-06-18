@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
-import { DndContext, DragOverlay, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Icon Imports --
@@ -11,14 +10,10 @@ import { Plus } from 'lucide-react';
 
 // -- Component Imports --
 import { Tab } from './Tab';
-import { TabDragPreview } from './TabDragPreview';
 import { NewTabDialog } from '@/components/organisms/dialogs/NewTabDialog';
 
 // -- Store Imports --
-import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
-
-// -- Type Imports --
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 
 /**
  * Desktop multi-character tab strip (tabs spec §5): a top bar over the character area,
@@ -26,11 +21,11 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
  * that opens the {@link NewTabDialog}. Overflow scrolls horizontally and the active
  * tab scrolls itself into view (see `Tab`).
  *
- * Tabs are drag-reorderable. The strip owns its OWN `DndContext` + horizontal
- * `SortableContext`, deliberately separate from the character sheet's `DndContext`,
- * so tab drags never reach the sheet's card/tracker/drawer drag handlers (the repo's
- * dnd-kit isolation rule). A `PointerSensor` with a small activation distance keeps
- * single clicks (activate / close) working while a longer drag reorders.
+ * The tab `SortableContext` is registered inside the **sheet's** `DndContext`
+ * (`CharacterSheetPage`), not its own — the strip mounts within that subtree, so the
+ * tabs reorder through the sheet's shared sensors, collision detection, drag overlay,
+ * and `handleDragEnd` (which routes a `'tab'` drag to `reorderTabs`). Sharing one
+ * context is what lets a tab drag later cross between the strip and the drawer.
  *
  * At zero open tabs the strip shows just the `+` and the area below renders the
  * MainMenu. Mobile does not render this strip (it stays single-character).
@@ -39,52 +34,17 @@ export function TabStrip() {
    const { t } = useTranslation();
    const openTabs = useTabManagerStore((state) => state.openTabs);
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
-   const { reorderTabs } = useTabManagerActions();
    const [isNewTabDialogOpen, setIsNewTabDialogOpen] = useState(false);
-   // The tab currently being dragged, rendered free-floating in the DragOverlay.
-   const [activeDragId, setActiveDragId] = useState<string | null>(null);
-
-   // Distance constraint: a click (no movement) still fires the tab's activate/close;
-   // only a drag past 5px starts a reorder.
-   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
-   const handleDragStart = (event: DragStartEvent) => {
-      setActiveDragId(String(event.active.id));
-   };
-
-   const handleDragEnd = (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (over && active.id !== over.id) {
-         reorderTabs(String(active.id), String(over.id));
-      }
-      setActiveDragId(null);
-   };
-
-   const draggedTab = activeDragId === null ? null : openTabs.find((tab) => tab.id === activeDragId) ?? null;
 
    return (
       <div className="flex shrink-0 items-stretch border-b-2 border-border bg-card overflow-x-auto overscroll-x-contain">
-         <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragCancel={() => setActiveDragId(null)}
-         >
-            <SortableContext items={openTabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
-               <div className="flex items-stretch">
-                  {openTabs.map((tab) => (
-                     <Tab key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
-                  ))}
-               </div>
-            </SortableContext>
-
-            {/* Free-floating preview: portals out of the strip's overflow container so
-                the dragged tab follows the cursor unclipped, above everything. */}
-            <DragOverlay>
-               {draggedTab ? <TabDragPreview tab={draggedTab} /> : null}
-            </DragOverlay>
-         </DndContext>
+         <SortableContext items={openTabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
+            <div className="flex items-stretch">
+               {openTabs.map((tab) => (
+                  <Tab key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
+               ))}
+            </div>
+         </SortableContext>
 
          <button
             type="button"

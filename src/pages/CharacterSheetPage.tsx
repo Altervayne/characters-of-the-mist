@@ -11,7 +11,7 @@ import { useCharacterSheetUndoRedo } from '@/hooks/character-sheet/useCharacterS
 import { useCardDialogState } from '@/hooks/character-sheet/useCardDialogState';
 
 // -- Other Library Imports --
-import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { AnimatePresence } from 'framer-motion';
 
 // -- Utils Imports --
@@ -29,6 +29,7 @@ import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialo
 import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
+import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
@@ -78,6 +79,7 @@ function DesktopCharacterSheetPage() {
    // ==================
    const {
       activeDragItem,
+      activeTabDrag,
       overDragId,
       isOverDrawer,
       statusIds,
@@ -87,7 +89,16 @@ function DesktopCharacterSheetPage() {
       handleDragStart,
       handleDragOver,
       handleDragEnd,
+      handleDragCancel,
    } = useCharacterSheetDnD();
+
+   // One sensor config for every sheet drag (tabs, cards, trackers, drawer). The 5px
+   // activation distance lets a tab single-click still activate/close while a drag
+   // past the threshold reorders; the KeyboardSensor preserves the default a11y drag.
+   const sensors = useSensors(
+      useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+      useSensor(KeyboardSensor),
+   );
 
 
    // #########################################
@@ -164,7 +175,7 @@ function DesktopCharacterSheetPage() {
    }
 
    return (
-      <DndContext onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={customCollisionDetection}>
+      <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection}>
          <div className="flex bg-background text-foreground" style={{ height: '100dvh', width: '100dvw' }}>
             <SidebarMenu 
                isEditing={isEditing}
@@ -273,11 +284,15 @@ function DesktopCharacterSheetPage() {
 
 
          <DragOverlay>
-            <DragOverlayContent
-               activeDragItem={activeDragItem}
-               isEditing={isEditing}
-               isCompactDrawer={isCompactDrawer}
-            />
+            {activeTabDrag ? (
+               <TabDragPreview tab={activeTabDrag} />
+            ) : (
+               <DragOverlayContent
+                  activeDragItem={activeDragItem}
+                  isEditing={isEditing}
+                  isCompactDrawer={isCompactDrawer}
+               />
+            )}
          </DragOverlay>
       </DndContext>
    );

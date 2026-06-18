@@ -53,6 +53,18 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    const draggedItemType = (activeData?.item as DrawerItem)?.type;
 
    // ==================
+   //  If dragging a tab (the desktop tab strip shares the sheet's DndContext)
+   // ==================
+   // A tab only ever reorders against other tabs, so collisions are scoped to the
+   // tab droppables; this keeps tab drags from resolving against sheet/drawer zones.
+   if (activeDataType === 'tab') {
+      const tabDroppables = args.droppableContainers.filter(
+         (container) => container.data.current?.type === 'tab',
+      );
+      return closestCenter({ ...args, droppableContainers: tabDroppables });
+   }
+
+   // ==================
    //  If dragging a full character sheet
    // ==================
    if (draggedItemType === 'FULL_CHARACTER_SHEET') {

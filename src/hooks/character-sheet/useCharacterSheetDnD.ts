@@ -19,6 +19,7 @@ import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { OpenTab } from '@/lib/character/tabManagerStore';
 
 
 
@@ -50,7 +51,7 @@ export function useCharacterSheetDnD() {
    const character = useCharacterStore((state) => state.character);
    const { reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker } = useCharacterActions();
-   const { openCharacterTab } = useTabManagerActions();
+   const { openCharacterTab, reorderTabs } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
@@ -63,6 +64,9 @@ export function useCharacterSheetDnD() {
    const [isOverDrawer, setIsOverDrawer] = useState(false);
    const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
    const [overDragId, setOverDragId] = useState<string | null>(null);
+   // The tab being dragged (the strip shares this DndContext); drives the overlay's
+   // tab-preview branch. Separate from `activeDragItem` since a tab is not a sheet item.
+   const [activeTabDrag, setActiveTabDrag] = useState<OpenTab | null>(null);
 
    // Memoize SortableContext arrays to prevent unnecessary re-renders
    const statusIds = useMemo(
@@ -85,6 +89,12 @@ export function useCharacterSheetDnD() {
    const handleDragStart = useCallback((event: DragStartEvent) => {
       const { active } = event;
 
+      // A tab drag is previewed via its own overlay branch, not as a sheet item.
+      if (active.data.current?.type === DRAG_TYPES.TAB) {
+         setActiveTabDrag({ id: String(active.id), type: 'character' });
+         return;
+      }
+
       if (active.data.current?.isDrawer) {
          setActiveDragItem(active.data.current.item as DrawerItem | FolderType);
          return;
@@ -99,6 +109,10 @@ export function useCharacterSheetDnD() {
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
+
+      // A tab drag reorders within the strip's SortableContext; it has no bearing on
+      // the drawer-hover state, so leave that untouched.
+      if (active.data.current?.type === DRAG_TYPES.TAB) return;
 
       setOverDragId(over ? over.id.toString() : null);
 
@@ -207,6 +221,7 @@ export function useCharacterSheetDnD() {
       setActiveDragItem(null);
       setIsOverDrawer(false);
       setOverDragId(null);
+      setActiveTabDrag(null);
 
       if (!over || active.id === over.id) {
          return;
@@ -215,6 +230,19 @@ export function useCharacterSheetDnD() {
       const activeType = active.data.current?.type as string;
       const overType = over.data.current?.type as string;
       const overIdStr = over.id.toString();
+
+      // ##########################################
+      // ###   BRANCH 0: Reordering tab strip   ###
+      // ##########################################
+      // A tab only reorders against another tab (collision detection scopes it so).
+      // Dropping a tab anywhere else is a no-op here (cross-context drag is a later
+      // phase). Reorder persistence is handled by the TabManager.
+      if (activeType === DRAG_TYPES.TAB) {
+         if (overType === DRAG_TYPES.TAB) {
+            reorderTabs(String(active.id), String(over.id));
+         }
+         return;
+      }
 
       // ##############################################
       // ###   BRANCH 1: Dragging FROM the Drawer   ###
@@ -350,14 +378,28 @@ export function useCharacterSheetDnD() {
       handleSheetTrackerReorder,
       handleSheetToDrawerDrop,
       openCharacterTab,
+      reorderTabs,
       setContextualGame,
       addImportedTracker,
       addImportedCard,
       tNotifications,
    ]);
 
+   /**
+    * Clears all transient drag state when a drag is cancelled (Escape, or a drop
+    * outside any droppable). Mirrors the reset at the top of `handleDragEnd` so the
+    * overlay (including a tab preview) never lingers after a cancelled drag.
+    */
+   const handleDragCancel = useCallback(() => {
+      setActiveDragItem(null);
+      setIsOverDrawer(false);
+      setOverDragId(null);
+      setActiveTabDrag(null);
+   }, []);
+
    return {
       activeDragItem,
+      activeTabDrag,
       overDragId,
       isOverDrawer,
       statusIds,
@@ -367,5 +409,6 @@ export function useCharacterSheetDnD() {
       handleDragStart,
       handleDragOver,
       handleDragEnd,
+      handleDragCancel,
    };
 }

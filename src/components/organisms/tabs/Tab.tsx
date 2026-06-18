@@ -19,6 +19,7 @@ import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 
 // -- Constants --
 import { getGameVisual } from '@/lib/constants/gameVisuals';
+import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
@@ -53,7 +54,12 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
    const gameVisual = getGameVisual(game);
    const GameIcon = gameVisual.Icon;
 
-   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
+   // The discriminating payload lets the sheet's shared DnD handlers route a tab
+   // drag (now in the same DndContext) without the leaf knowing about them.
+   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: tab.id,
+      data: { type: DRAG_TYPES.TAB, tabId: tab.id },
+   });
 
    // Compose dnd-kit's node ref with a local ref so the active tab can scroll itself
    // into view when activated (or on mount), revealing an off-screen tab.
