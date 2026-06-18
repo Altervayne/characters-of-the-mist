@@ -13,7 +13,7 @@ import { ScrollText, Building2, Bot, Plus, FolderOpen } from 'lucide-react';
 
 // -- Store and Hook Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
@@ -26,11 +26,11 @@ interface MobileMainMenuProps {
 export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 	const { t } = useTranslation();
 	const { contextualGame } = useAppSettingsStore();
-	const { createCharacter } = useCharacterActions();
+	const { createCharacterTab } = useTabManagerActions();
 	const { setContextualGame } = useAppSettingsActions();
 
 	const handleCreateCharacter = () => {
-		createCharacter(contextualGame);
+		createCharacterTab(contextualGame);
 	};
 
 	const handleGameSelect = (game: GameSystem) => {

@@ -138,6 +138,20 @@ const initialState: Pick<CharacterState, 'character'> = {
    character: null,
 };
 
+/**
+ * Builds a fresh, fully-formed character (with its generated id) for `game`,
+ * without touching any store. The TabManager needs the character — and crucially
+ * its id — *before* it can key an instance for it (tabs spec §2, point 3), so the
+ * construction is extracted here as a pure helper. The `createCharacter` action
+ * below delegates to it, so the "New Character" default name is shared.
+ *
+ * @param game - The game system the new character belongs to.
+ * @returns A new {@link Character} with a generated id; not persisted or loaded.
+ */
+export function buildNewCharacter(game: GameSystem): Character {
+   return createNewCharacter('New Character', game);
+}
+
 const updateCardInState = (state: CharacterState, cardId: string, updateFn: (card: Card) => Card): CharacterState => {
    if (!state.character) return state;
    return {
@@ -178,7 +192,7 @@ export function createCharacterStore() {
                // Character Actions
                createCharacter: (game) => {
                   set(() => {
-                    const newCharacter = createNewCharacter("New Character", game);
+                    const newCharacter = buildNewCharacter(game);
                     useStore.temporal.getState().clear();
                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                     return { character: newCharacter };

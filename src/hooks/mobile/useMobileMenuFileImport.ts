@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Store Imports --
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useDrawerActions } from '@/lib/stores/drawerStore';
 
 // -- Utils Imports --
@@ -38,7 +38,7 @@ import type { Drawer } from '@/lib/types/drawer';
  */
 export function useMobileMenuFileImport() {
    const { t } = useTranslation();
-   const { loadCharacter } = useCharacterActions();
+   const { openCharacterTab } = useTabManagerActions();
    const { importDrawerAsFolder } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +54,7 @@ export function useMobileMenuFileImport() {
 
          if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
             const harmonized = harmonizeData(importedData.content, importedData.fileType);
-            loadCharacter(harmonized as Character);
+            openCharacterTab(harmonized as Character);
             toast.success(t('Notifications.character.imported'));
          } else {
             toast.error(t('Notifications.general.importFailed'));

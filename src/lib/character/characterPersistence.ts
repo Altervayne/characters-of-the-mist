@@ -1,29 +1,32 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
 
-// -- Utils Imports --
-import { harmonizeData } from '@/lib/harmonization';
-
 // -- Local Imports --
-import { getActiveCharacterStore } from './characterStoreRegistry';
-import { getCharacter, saveCharacter } from './characterRepository';
-import { getActiveCharacterId, setActiveCharacterId } from './characterSession';
+import { saveCharacter } from './characterRepository';
+import { getActiveCharacterId } from './characterSession';
 import { legacyBlobHasMigratableCharacter } from './runCharacterMigration';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
+import type { CharacterStore } from '@/lib/stores/characterStore';
 
 /*
- * Persistence sync layer (migration spec §3.3 / §5). It is the ONLY bridge between the
- * pure in-memory character store and the IndexedDB repository. It is deliberately
- * one-directional: state to IndexedDB. Saving never calls the store's `set()`, so it
- * creates no zundo entry and cannot form a write loop (undo restores a snapshot via
- * zundo's internal set, the save subscription writes it once, and IndexedDB writes
- * never feed back into store state, exactly the desired behaviour, spec §4).
+ * Persistence sync layer (migration spec §3.3 / §5; tabs spec §2.1 / §3.1). It is
+ * the only bridge between a pure in-memory character store instance and the
+ * IndexedDB repository, and it is deliberately one-directional: state to IndexedDB.
+ * Saving never calls the store's `set()`, so it creates no zundo entry and cannot
+ * form a write loop (undo restores a snapshot via zundo's internal set, the save
+ * subscription writes it once, and IndexedDB writes never feed back into store
+ * state — exactly the desired behaviour, spec §4).
  *
- * No UI here: it touches the store and the repository only. The boot loading gate
- * below is a tiny reactive flag that the page shells read to avoid flashing the
- * main menu while the active character is loaded asynchronously at boot.
+ * As of Phase 2 persistence is **per-instance**: each open character tab owns a
+ * {@link PersistenceHandle} (its own subscription, debounce timer, and hydration
+ * flag), so one tab can never disturb another's save (tabs spec §2.1). The session
+ * pointer and active-instance bookkeeping are the TabManager's concern, not this
+ * module's. The menu fallback instance gets no handle.
+ *
+ * No UI here. The boot loading gate below is a tiny reactive flag the page shells
+ * read to avoid flashing the main menu while the active character loads at boot.
  */
 
 // ==================
@@ -57,127 +60,132 @@ export const useCharacterBootStore = create<CharacterBootState>(() => ({
 /** Reactive selector for the boot loading gate, for the page shells. */
 export const useIsBootHydrating = (): boolean => useCharacterBootStore((state) => state.isBootHydrating);
 
-/** Marks boot hydration complete, so the shells stop showing the loading screen. */
-function finishBootHydration(): void {
+/** Marks boot hydration complete, so the shells stop showing the loading screen. Called by the TabManager's boot step. */
+export function finishBootHydration(): void {
    useCharacterBootStore.setState({ isBootHydrating: false });
 }
 
 // ==================
-//  Hydration guard + debounced save
+//  Per-instance persistence handle (tabs spec §2.1, §3.1)
 // ==================
-
-/**
- * True only while {@link loadActiveCharacter} is applying a record to the store, so
- * the save subscription does not echo the freshly-loaded state straight back to
- * IndexedDB (the record is already there) nor rewrite the session pointer (already
- * correct). A plain module flag is sufficient: loads are not concurrent.
- */
-let isHydrating = false;
-
-/** Guards against attaching the store subscription more than once (StrictMode-safe). */
-let persistenceStarted = false;
 
 const SAVE_DEBOUNCE_MS = 300;
 
-/** Minimal trailing-edge debouncer (no new dependency); one in-flight timer at a time. */
-function createDebouncer<T>(delay: number, run: (value: T) => void): (value: T) => void {
-   let handle: ReturnType<typeof setTimeout> | null = null;
-   return (value: T) => {
-      if (handle) clearTimeout(handle);
-      handle = setTimeout(() => {
-         handle = null;
+/** A trailing-edge debouncer with an explicit `cancel`, so a handle can drop a pending save on detach. */
+interface Debouncer<T> {
+   (value: T): void;
+   /** Cancels any pending invocation. */
+   cancel(): void;
+}
+
+/** Builds a trailing-edge debouncer (no new dependency); at most one timer in flight. */
+function createDebouncer<T>(delay: number, run: (value: T) => void): Debouncer<T> {
+   let timer: ReturnType<typeof setTimeout> | null = null;
+   const debounced = ((value: T) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+         timer = null;
          run(value);
       }, delay);
+   }) as Debouncer<T>;
+   debounced.cancel = () => {
+      if (timer) {
+         clearTimeout(timer);
+         timer = null;
+      }
    };
+   return debounced;
 }
 
-const debouncedSave = createDebouncer<Character>(SAVE_DEBOUNCE_MS, (character) => {
-   void saveCharacter(character).catch((error) => {
-      // Autosave is best-effort; a failure must never surface into the React tree.
-      console.error('Character autosave to IndexedDB failed:', error);
-   });
-});
+/**
+ * A per-instance persistence handle (tabs spec §3.1). Each open character tab owns
+ * one: its own subscription, debounce timer, and hydration flag, so one tab's edits
+ * can never cancel another tab's pending save nor suppress another tab's load.
+ */
+export interface PersistenceHandle {
+   /**
+    * Loads a character into the instance WITHOUT echoing it back to IndexedDB —
+    * used for boot restore of a record that is already stored. Subsequent edits
+    * autosave normally.
+    */
+   hydrate(character: Character, drawerItemId?: string): void;
+   /** Writes the current character immediately, cancelling any pending debounce. Call before detach. */
+   flush(): void;
+   /** Cancels the pending debounce and unsubscribes. Does not save — call {@link PersistenceHandle.flush} first. */
+   detach(): void;
+}
 
-// ==================
-//  Load on open (spec §3.3 / §5)
-// ==================
+/** Live handles keyed by character id, so attach is idempotent under StrictMode and double-open. */
+const handles = new Map<string, PersistenceHandle>();
 
 /**
- * Loads the character with `id` from IndexedDB into the store: read the record,
- * harmonize its content (load-time harmonization replaces the old persist
- * `migrate`), then apply it through the unchanged `loadCharacter` action (which
- * also resets the undo stack, C-2) under the {@link isHydrating} guard.
+ * Attaches (or returns the existing) per-instance persistence handle for `characterId`.
+ * The handle subscribes to `instance` and debounce-saves the character on every
+ * change; it does NOT touch the session pointer (the TabManager owns that). Attaching
+ * twice for the same id returns the same handle (StrictMode-/double-open-safe).
  *
- * @returns `true` when a record was found and loaded; `false` when no record exists
- *   for `id` (a stale pointer), so the caller can clear the pointer.
+ * @param characterId - The character id keying both the instance and its handle.
+ * @param instance - The store instance to persist.
+ * @returns The persistence handle for that instance.
  */
-export async function loadActiveCharacter(id: string): Promise<boolean> {
-   const record = await getCharacter(id);
-   if (!record) return false;
+export function attachPersistenceHandle(characterId: string, instance: CharacterStore): PersistenceHandle {
+   const existing = handles.get(characterId);
+   if (existing) return existing;
 
-   const store = getActiveCharacterStore();
-   if (!store) return false; // defensive: in Phase 1 the single instance is always present
+   let isHydrating = false;
+   const debouncedSave = createDebouncer<Character>(SAVE_DEBOUNCE_MS, (character) => {
+      void saveCharacter(character).catch((error) => {
+         // Autosave is best-effort; a failure must never surface into the React tree.
+         console.error('Character autosave to IndexedDB failed:', error);
+      });
+   });
 
-   const harmonized = harmonizeData(record.character, 'FULL_CHARACTER_SHEET');
-   isHydrating = true;
-   try {
-      store.getState().actions.loadCharacter(harmonized, record.drawerItemId ?? undefined);
-   } finally {
-      isHydrating = false;
-   }
-   return true;
-}
-
-// ==================
-//  Save on change (spec §3.3)
-// ==================
-
-/**
- * Attaches the one-directional save subscription (idempotent). On every character
- * change it keeps the session pointer in sync immediately (so a boot after an
- * abrupt close reopens the right character) and debounces the IndexedDB write. A
- * `null` character (return-to-menu) clears the pointer; the record itself remains
- * in IndexedDB (spec §5).
- */
-export function startCharacterPersistence(): void {
-   if (persistenceStarted) return;
-
-   const store = getActiveCharacterStore();
-   if (!store) return; // defensive: instance is ensured at startup; retried if somehow absent
-   persistenceStarted = true;
-
-   store.subscribe((state, previousState) => {
+   const unsubscribe = instance.subscribe((state, previousState) => {
       if (isHydrating) return;
       if (state.character === previousState.character) return;
-
       const character = state.character;
-      if (character) {
-         if (getActiveCharacterId() !== character.id) setActiveCharacterId(character.id);
-         debouncedSave(character);
-      } else {
-         setActiveCharacterId(null);
-      }
+      if (character) debouncedSave(character);
    });
+
+   const handle: PersistenceHandle = {
+      hydrate(character, drawerItemId) {
+         isHydrating = true;
+         try {
+            instance.getState().actions.loadCharacter(character, drawerItemId);
+         } finally {
+            isHydrating = false;
+         }
+      },
+      flush() {
+         debouncedSave.cancel();
+         const character = instance.getState().character;
+         if (character) {
+            void saveCharacter(character).catch((error) => {
+               console.error('Character flush save to IndexedDB failed:', error);
+            });
+         }
+      },
+      detach() {
+         debouncedSave.cancel();
+         unsubscribe();
+      },
+   };
+
+   handles.set(characterId, handle);
+   return handle;
 }
 
-// ==================
-//  Boot (spec §5)
-// ==================
-
 /**
- * Boot step run by `AppStartManager` after the character migration: read the
- * session pointer and, if present, load that character; clear a stale pointer whose
- * record no longer exists. Always lifts the boot loading gate when done, whatever
- * the outcome, so the shell resolves to the sheet or the main menu without a flash.
+ * Flushes the pending save, detaches the subscription, and forgets the handle for
+ * `characterId`. Idempotent. Call when closing a tab, BEFORE disposing its instance:
+ * flush must run before detach or the last edit is lost (tabs spec gotcha).
+ *
+ * @param characterId - The character id whose handle to tear down.
  */
-export async function runCharacterBoot(): Promise<void> {
-   try {
-      const activeCharacterId = getActiveCharacterId();
-      if (activeCharacterId) {
-         const loaded = await loadActiveCharacter(activeCharacterId);
-         if (!loaded) setActiveCharacterId(null);
-      }
-   } finally {
-      finishBootHydration();
-   }
+export function detachPersistenceHandle(characterId: string): void {
+   const handle = handles.get(characterId);
+   if (!handle) return;
+   handle.flush();
+   handle.detach();
+   handles.delete(characterId);
 }

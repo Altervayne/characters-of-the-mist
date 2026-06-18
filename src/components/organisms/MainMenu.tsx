@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
@@ -84,12 +84,12 @@ const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSelected, 
 const MainMenu: React.FC = () => {
    const { t: t } = useTranslation();
    const { contextualGame } = useAppSettingsStore();
-   const { createCharacter } = useCharacterActions();
+   const { createCharacterTab } = useTabManagerActions();
    const { setContextualGame } = useAppSettingsActions();
    const { setDrawerOpen } = useAppGeneralStateActions();
 
    const handleCreateCharacter = () => {
-      createCharacter(contextualGame);
+      createCharacterTab(contextualGame);
    };
 
    const handleGameSelect = (game: GameSystem) => {

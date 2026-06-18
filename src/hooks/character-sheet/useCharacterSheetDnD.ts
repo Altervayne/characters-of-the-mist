@@ -12,6 +12,7 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
@@ -47,8 +48,9 @@ export function useCharacterSheetDnD() {
    const { t: tNotifications } = useTranslation();
 
    const character = useCharacterStore((state) => state.character);
-   const { loadCharacter, reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
+   const { reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker } = useCharacterActions();
+   const { openCharacterTab } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
@@ -226,7 +228,7 @@ export function useCharacterSheetDnD() {
             const draggedItem = active.data.current?.item as DrawerItem;
             if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
                const characterData = draggedItem.content as Character;
-               loadCharacter(characterData, draggedItem.id);
+               openCharacterTab(characterData, draggedItem.id);
                setContextualGame(characterData.game);
             }
             return;
@@ -347,7 +349,7 @@ export function useCharacterSheetDnD() {
       handleSheetCardReorder,
       handleSheetTrackerReorder,
       handleSheetToDrawerDrop,
-      loadCharacter,
+      openCharacterTab,
       setContextualGame,
       addImportedTracker,
       addImportedCard,

@@ -28,9 +28,9 @@ import { useDeviceType } from '@/hooks/useDeviceType';
 import { runDrawerMigrationIfNeeded } from '@/lib/drawer/runDrawerMigration';
 import { runCharacterMigrationIfNeeded } from '@/lib/character/runCharacterMigration';
 
-// -- Character Persistence --
-import { startCharacterPersistence, runCharacterBoot } from '@/lib/character/characterPersistence';
-import { ensureSingleActiveInstance } from '@/lib/character/characterStoreRegistry';
+// -- Character Persistence / Tabs --
+import { runCharacterBoot } from '@/lib/character/tabManagerStore';
+import { ensureMenuFallbackInstance } from '@/lib/character/characterStoreRegistry';
 
 
 
@@ -87,11 +87,11 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    // runCharacterBoot) keeps first paint on a neutral loading screen until this
    // resolves, so the main menu never flashes before the sheet appears.
    useEffect(() => {
-      // Ensure the single active character instance exists before persistence
-      // attaches or boot loads into it, independent of component render order
-      // (tabs spec §6). Idempotent: the registry returns the same instance.
-      ensureSingleActiveInstance();
-      startCharacterPersistence();
+      // Ensure the menu fallback instance exists and is active before boot opens a
+      // character into its id-keyed instance, independent of component render order
+      // (tabs spec §1.2). Idempotent. Per-instance persistence is now attached by the
+      // TabManager when a tab opens, so there is no global subscription to start.
+      ensureMenuFallbackInstance();
 
       // Drawer migration runs concurrently and never blocks the boot critical path
       // (only the character load gates first paint). We keep its outcome to decide

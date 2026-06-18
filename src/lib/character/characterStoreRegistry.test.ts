@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
    SINGLE_ACTIVE_INSTANCE_ID,
    disposeInstance,
-   ensureSingleActiveInstance,
+   ensureMenuFallbackInstance,
    getActiveCharacterStore,
    getOrCreateInstance,
    setActiveInstance,
@@ -76,9 +76,9 @@ describe('character store registry', () => {
       expect(getActiveCharacterStore()).toBeNull();
    });
 
-   it('ensureSingleActiveInstance creates one instance and keeps it active', () => {
-      const first = ensureSingleActiveInstance();
-      const second = ensureSingleActiveInstance();
+   it('ensureMenuFallbackInstance creates one instance and keeps it active', () => {
+      const first = ensureMenuFallbackInstance();
+      const second = ensureMenuFallbackInstance();
 
       expect(first).toBe(second); // idempotent
       expect(getActiveCharacterStore()).toBe(first);

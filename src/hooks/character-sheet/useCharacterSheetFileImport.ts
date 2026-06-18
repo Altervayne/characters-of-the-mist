@@ -12,6 +12,7 @@ import { harmonizeData } from '@/lib/harmonization';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
@@ -35,7 +36,8 @@ import type { Character, Card as CardData, Tracker } from '@/lib/types/character
 export function useCharacterSheetFileImport() {
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
-   const { loadCharacter, addImportedCard, addImportedTracker } = useCharacterActions();
+   const { addImportedCard, addImportedTracker } = useCharacterActions();
+   const { openCharacterTab } = useTabManagerActions();
    const { setContextualGame } = useAppSettingsActions();
 
    const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -52,7 +54,7 @@ export function useCharacterSheetFileImport() {
          // ==================
          if (fileType === 'FULL_CHARACTER_SHEET') {
             const characterData = migratedContent as Character;
-            loadCharacter(characterData);
+            openCharacterTab(characterData);
             setContextualGame(characterData.game);
             toast.success(tNotifications('Notifications.character.imported'));
             return;
@@ -91,7 +93,7 @@ export function useCharacterSheetFileImport() {
          console.error("Failed to import file:", error);
          toast.error(tNotifications('Notifications.general.importFailed'));
       }
-   }, [character, loadCharacter, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
+   }, [character, openCharacterTab, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
 
    const { getRootProps, isDragActive } = useDropzone({
       onDrop: onFileDrop,

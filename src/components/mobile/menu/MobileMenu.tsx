@@ -11,7 +11,8 @@ import { Settings, Info, FileDown, FileUp, Save, FileText, LogOut, FolderDown, F
 import { MobileMenuItemButton } from '@/components/mobile/menu/MobileMenuItemButton';
 
 // -- Store Imports --
-import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useCharacterStore } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
@@ -34,7 +35,7 @@ interface MobileMenuProps {
 export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
-	const { returnToMenu } = useCharacterActions();
+	const { closeActiveTab } = useTabManagerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 
 	const {
@@ -163,7 +164,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				triggerDrawerImport();
 				break;
 			case 'unload':
-				returnToMenu();
+				closeActiveTab();
 				break;
 		}
 	};

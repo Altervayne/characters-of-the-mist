@@ -25,6 +25,7 @@ import { SidebarButton } from '../molecules/SidebarButton';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- Other Imports --
@@ -60,7 +61,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
    const character = useCharacterStore((state) => state.character);
    const drawerCurrentFolderId = useDrawerStore((state) => state.currentFolderId);
-   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, returnToMenu } = useCharacterActions();
+   // `loadCharacter` here is the Save-As relink (sets drawerItemId on the CURRENT
+   // active character), not a tab open — it stays a per-character action. Opening a
+   // *different* character (file import) and returning to the menu go through the
+   // TabManager.
+   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter } = useCharacterActions();
+   const { openCharacterTab, closeActiveTab } = useTabManagerActions();
    const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
@@ -134,7 +140,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
          if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
             const newCharacter = migratedContent as Character;
-            loadCharacter(newCharacter);
+            openCharacterTab(newCharacter);
             toast.success(tNotifications('Notifications.character.imported'));
          } else {
             toast.error(tNotifications('Notifications.general.importFailed'));
@@ -210,7 +216,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    }, [isUnloadDialogOpen]);
 
    const handleUnloadCharacter = () => {
-      returnToMenu();
+      closeActiveTab();
       toast.success(tNotifications('Notifications.character.unloaded'));
    };
 

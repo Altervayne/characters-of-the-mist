@@ -1,9 +1,10 @@
 // -- React Imports --
-import { type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 // -- Local Imports --
 import { ActiveCharacterStoreContext } from './ActiveCharacterStoreContext';
-import { ensureSingleActiveInstance } from './characterStoreRegistry';
+import { getMenuFallbackInstance, getOrCreateInstance } from './characterStoreRegistry';
+import { useTabManagerStore } from './tabManagerStore';
 
 /*
  * Provider for {@link ActiveCharacterStoreContext}. Kept in its own component-only
@@ -13,15 +14,22 @@ import { ensureSingleActiveInstance } from './characterStoreRegistry';
  */
 
 /**
- * Provides the active character store instance to its subtree. In Phase 1 it ensures
- * the single instance exists and supplies it as a stable value (the registry returns
- * the same instance on every render, so the context value reference never churns).
- * Phase 2 makes the value follow the active tab.
+ * Provides the ACTIVE character store instance to its subtree, following the
+ * TabManager's `activeTabId` (tabs spec §1.2, §2): the instance for the active tab,
+ * or the permanent menu fallback instance when no character tab is open. The value
+ * is memoized on `activeTabId` so its reference is stable per active id — supplying
+ * a fresh instance each render would thrash all character consumers.
  *
- * @param props.children - The sheet subtree (every character consumer must be inside it).
+ * @param props.children - The app subtree; every character consumer must be inside it.
  */
 export function ActiveCharacterStoreProvider({ children }: { children: ReactNode }) {
-   const activeStore = ensureSingleActiveInstance();
+   const activeTabId = useTabManagerStore((state) => state.activeTabId);
+
+   const activeStore = useMemo(
+      () => (activeTabId === null ? getMenuFallbackInstance() : getOrCreateInstance(activeTabId)),
+      [activeTabId],
+   );
+
    return (
       <ActiveCharacterStoreContext.Provider value={activeStore}>
          {children}

@@ -22,9 +22,11 @@ import type { CharacterStore } from '@/lib/stores/characterStore';
  */
 
 /**
- * The fixed key under which Phase 1 stores its single instance. The running app's
- * one character can change (null → A → null → B) within this same instance, exactly
- * as the old singleton behaved; Phase 2 replaces this with real per-character keys.
+ * The fixed key of the permanent **menu fallback** instance. Real characters are
+ * keyed by their own id (Phase 2); this dedicated instance keeps `character` null
+ * and is active whenever no character tab is open, so the root provider always has
+ * a non-null store to supply (the menu shell resolves to it). Characters are never
+ * loaded into it. The literal value is kept from Phase 1 for continuity.
  */
 export const SINGLE_ACTIVE_INSTANCE_ID = '__single-active__';
 
@@ -89,15 +91,29 @@ export function disposeInstance(id: string): void {
 }
 
 /**
- * Ensures the Phase 1 single instance exists and is active, returning it. Idempotent
- * — safe to call from every provider render and from boot — because it resolves the
- * same {@link SINGLE_ACTIVE_INSTANCE_ID} entry every time. This is the one seam that
- * replaces `export const useCharacterStore = createCharacterStore()`.
+ * Returns the permanent menu fallback instance, creating it on first request.
+ * Idempotent and side-effect-free with respect to the active pointer, so the root
+ * provider can call it during render to resolve the zero-character state without
+ * repointing `activeInstance`.
  *
- * @returns The single active store instance.
+ * @returns The menu fallback store instance.
  */
-export function ensureSingleActiveInstance(): CharacterStore {
-   const instance = getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID);
-   setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+export function getMenuFallbackInstance(): CharacterStore {
+   return getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID);
+}
+
+/**
+ * Ensures the menu fallback instance exists and, if nothing is active yet, makes it
+ * the active instance. Idempotent. Called once at startup so `getActiveCharacterStore()`
+ * is non-null before any character tab opens; a subsequent character open repoints
+ * the active instance to that character's id.
+ *
+ * @returns The menu fallback store instance.
+ */
+export function ensureMenuFallbackInstance(): CharacterStore {
+   const instance = getMenuFallbackInstance();
+   if (activeInstanceId === null) {
+      setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+   }
    return instance;
 }
