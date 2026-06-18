@@ -1,0 +1,75 @@
+// -- Icon Imports --
+import { ScrollText, Building2, Bot, Dices } from 'lucide-react';
+
+// -- Type Imports --
+import type { LucideIcon } from 'lucide-react';
+import type { GameSystem } from '@/lib/types/common';
+
+/*
+ * Single source of truth for per-game visuals (icon + colors), shared by the
+ * MainMenu game picker, the New Tab dialog, and the tab strip's game-icon block.
+ * Previously the icon/color mapping was duplicated inline in `MainMenu` and
+ * `NewTabDialog`; this consolidates it so the three surfaces stay in sync.
+ */
+
+/** The icon + color treatment for one game system. */
+export interface GameVisual {
+   /** The lucide icon component for the game. */
+   Icon: LucideIcon;
+   /** Tailwind text-color class for the game's accent (a coloured icon on a card). */
+   accentText: string;
+   /** Tailwind background class for the game's solid colour (a white icon on a tab block). */
+   solidBg: string;
+   /** Tailwind gradient classes for the faded wash behind a game card. */
+   gradient: string;
+}
+
+/**
+ * Visuals for every {@link GameSystem}. `NEUTRAL` doubles as the placeholder for a
+ * tab whose game is momentarily unavailable (it is never offered in the pickers).
+ */
+export const GAME_VISUALS: Record<GameSystem, GameVisual> = {
+   LEGENDS: {
+      Icon: ScrollText,
+      accentText: 'text-amber-500',
+      solidBg: 'bg-amber-500',
+      gradient: 'bg-gradient-to-br from-amber-500 via-orange-400 to-rose-500',
+   },
+   CITY_OF_MIST: {
+      Icon: Building2,
+      accentText: 'text-purple-500',
+      solidBg: 'bg-purple-500',
+      gradient: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600',
+   },
+   OTHERSCAPE: {
+      Icon: Bot,
+      accentText: 'text-cyan-500',
+      solidBg: 'bg-cyan-500',
+      gradient: 'bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600',
+   },
+   NEUTRAL: {
+      Icon: Dices,
+      accentText: 'text-muted-foreground',
+      solidBg: 'bg-muted-foreground',
+      gradient: 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600',
+   },
+};
+
+/** Resolves a game's visual, falling back to the neutral placeholder for an absent game. */
+export function getGameVisual(game: GameSystem | undefined | null): GameVisual {
+   return GAME_VISUALS[game ?? 'NEUTRAL'];
+}
+
+/** A selectable game in the MainMenu / New Tab pickers, with its translation keys. */
+export interface GameCardOption {
+   game: GameSystem;
+   titleKey: string;
+   subtitleKey: string;
+}
+
+/** The games offered in the pickers, in display order (excludes `NEUTRAL`). */
+export const GAME_CARD_OPTIONS: GameCardOption[] = [
+   { game: 'LEGENDS', titleKey: 'MainMenu.games.legends.title', subtitleKey: 'MainMenu.games.legends.subtitle' },
+   { game: 'CITY_OF_MIST', titleKey: 'MainMenu.games.cityOfMist.title', subtitleKey: 'MainMenu.games.cityOfMist.subtitle' },
+   { game: 'OTHERSCAPE', titleKey: 'MainMenu.games.otherscape.title', subtitleKey: 'MainMenu.games.otherscape.subtitle' },
+];

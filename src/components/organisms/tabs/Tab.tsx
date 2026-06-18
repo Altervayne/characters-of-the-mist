@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils';
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 
+// -- Constants --
+import { getGameVisual } from '@/lib/constants/gameVisuals';
+
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
 
@@ -42,7 +45,13 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
 
    const instance = useMemo(() => getOrCreateInstance(tab.id), [tab.id]);
    const name = useStore(instance, (state) => state.character?.name);
+   const game = useStore(instance, (state) => state.character?.game);
    const label = name && name.trim().length > 0 ? name : t('Tabs.untitled');
+
+   // Left game-icon block: the tab's game icon in white on the game's solid colour
+   // (a neutral placeholder when the game is momentarily unavailable).
+   const gameVisual = getGameVisual(game);
+   const GameIcon = gameVisual.Icon;
 
    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
 
@@ -62,11 +71,17 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          ref={setRefs}
          style={{ transform: CSS.Translate.toString(transform), transition }}
          className={cn(
-            'group relative flex shrink-0 items-center gap-1 border-r border-border pl-3 pr-1 max-w-[12rem] border-t-2',
+            'group relative flex shrink-0 items-center gap-2 overflow-hidden border-r border-border pr-1 max-w-[12rem] border-t-2',
             isActive ? 'bg-background border-t-primary' : 'bg-muted/40 border-t-transparent hover:bg-muted/70',
             isDragging && 'z-10 opacity-80',
          )}
       >
+         <div
+            aria-hidden
+            className={cn('flex w-7 shrink-0 self-stretch items-center justify-center', gameVisual.solidBg)}
+         >
+            <GameIcon className="h-3.5 w-3.5 text-white" />
+         </div>
          <button
             type="button"
             onClick={() => setActiveTab(tab.id)}

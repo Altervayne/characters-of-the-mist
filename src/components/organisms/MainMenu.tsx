@@ -8,8 +8,11 @@ import { motion } from 'framer-motion';
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
 
+// -- Component Imports --
+import { GameCard } from '@/components/molecules/GameCard';
+
 // -- Icon Imports --
-import { ScrollText, Building2, Bot, Plus, FolderOpen, Feather } from 'lucide-react';
+import { Plus, FolderOpen } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -20,64 +23,11 @@ import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
+// -- Constants --
+import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
+
 // -- Type Imports --
 import type { GameSystem } from '@/lib/types/drawer';
-
-
-
-interface GameCardProps {
-   title: string;
-   subtitle: string;
-   icon: React.ReactNode;
-   isSelected: boolean;
-   onClick: () => void;
-   gradient: string;
-}
-
-
-
-const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSelected, onClick, gradient }) => {
-   return (
-      <motion.button
-         onClick={onClick}
-         className={cn(
-            "relative overflow-hidden rounded-xl p-6 w-72 h-48 text-left transition-all cursor-pointer",
-            "border-2 bg-card hover:shadow-xl",
-            isSelected
-               ? "border-primary shadow-lg ring-4 ring-primary/20"
-               : "border-border hover:border-primary/50"
-         )}
-      >
-         <div className={cn(
-            "absolute inset-0 opacity-10 transition-opacity",
-            isSelected && "opacity-20",
-            gradient
-         )} />
-
-         <div className="relative z-10 flex flex-col h-full justify-between">
-            <div className="flex items-start justify-between">
-               <div className="p-3 rounded-lg bg-background/50 backdrop-blur-sm">
-                  {icon}
-               </div>
-               {isSelected && (
-                  <motion.div
-                     initial={{ scale: 0, rotate: -180 }}
-                     animate={{ scale: 1, rotate: 0 }}
-                     className="p-1.5 rounded-full bg-primary text-primary-foreground"
-                  >
-                     <Feather className="h-4 w-4" />
-                  </motion.div>
-               )}
-            </div>
-
-            <div>
-               <h3 className="text-xl font-bold text-foreground mb-1">{title}</h3>
-               <p className="text-sm text-muted-foreground">{subtitle}</p>
-            </div>
-         </div>
-      </motion.button>
-   );
-};
 
 
 
@@ -100,29 +50,16 @@ const MainMenu: React.FC = () => {
       setDrawerOpen(true);
    };
 
-   const gameOptions = [
-      {
-         game: 'LEGENDS' as GameSystem,
-         title: t('MainMenu.games.legends.title'),
-         subtitle: t('MainMenu.games.legends.subtitle'),
-         icon: <ScrollText className="h-6 w-6 text-amber-500" />,
-         gradient: 'bg-gradient-to-br from-amber-500 via-orange-400 to-rose-500'
-      },
-      {
-         game: 'CITY_OF_MIST' as GameSystem,
-         title: t('MainMenu.games.cityOfMist.title'),
-         subtitle: t('MainMenu.games.cityOfMist.subtitle'),
-         icon: <Building2 className="h-6 w-6 text-purple-500" />,
-         gradient: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600'
-      },
-      {
-         game: 'OTHERSCAPE' as GameSystem,
-         title: t('MainMenu.games.otherscape.title'),
-         subtitle: t('MainMenu.games.otherscape.subtitle'),
-         icon: <Bot className="h-6 w-6 text-cyan-500" />,
-         gradient: 'bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600'
-      }
-   ];
+   const gameOptions = GAME_CARD_OPTIONS.map(({ game, titleKey, subtitleKey }) => {
+      const { Icon, accentText, gradient } = GAME_VISUALS[game];
+      return {
+         game,
+         title: t(titleKey),
+         subtitle: t(subtitleKey),
+         icon: <Icon className={cn('h-6 w-6', accentText)} />,
+         gradient,
+      };
+   });
 
    return (
       <main className="absolute flex h-full w-full flex-col items-center justify-center bg-linear-to-br from-background via-background to-muted/20 overflow-hidden">
