@@ -73,7 +73,9 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          className={cn(
             'group relative flex shrink-0 items-center gap-2 overflow-hidden border-r border-border pr-1 max-w-[12rem] border-t-2',
             isActive ? 'bg-background border-t-primary' : 'bg-muted/40 border-t-transparent hover:bg-muted/70',
-            isDragging && 'z-10 opacity-80',
+            // While dragging, the free-floating DragOverlay preview is what moves;
+            // dim the in-strip source so its slot reads as a placeholder gap.
+            isDragging && 'opacity-30',
          )}
       >
          <div
