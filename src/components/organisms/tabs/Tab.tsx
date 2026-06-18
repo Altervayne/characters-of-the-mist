@@ -1,9 +1,11 @@
 // -- React Imports --
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useStore } from 'zustand';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // -- Icon Imports --
 import { X } from 'lucide-react';
@@ -20,10 +22,16 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
 
 /**
  * A single tab in the desktop {@link import('./TabStrip').TabStrip}. Its label is
- * live-bound to that tab's OWN store instance (not the active one), so a rename in
- * the sheet updates the tab immediately and a background tab shows its own name. The
+ * live-bound to that tab's OWN store instance (not the active one), so a rename in the
+ * sheet updates the tab immediately and a background tab shows its own name. The
  * instance is resolved once per tab id (idempotent + memoized) so the subscription is
  * stable and no instance is re-created on render.
+ *
+ * Drag-to-reorder: the tab is a `useSortable` item registered in the strip's own
+ * `SortableContext`. The drag listeners sit on the label body; the strip's
+ * `PointerSensor` has a small activation distance, so a click still activates and a
+ * drag past the threshold reorders. The close button is a plain button (it stops the
+ * pointer from starting a drag) so closing always works.
  *
  * @param props.tab - The tab descriptor (its `id` keys the store instance).
  * @param props.isActive - Whether this tab is the active one (drives the highlight).
@@ -36,19 +44,37 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
    const name = useStore(instance, (state) => state.character?.name);
    const label = name && name.trim().length > 0 ? name : t('Tabs.untitled');
 
+   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
+
+   // Compose dnd-kit's node ref with a local ref so the active tab can scroll itself
+   // into view when activated (or on mount), revealing an off-screen tab.
+   const localRef = useRef<HTMLDivElement | null>(null);
+   const setRefs = (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      localRef.current = node;
+   };
+   useEffect(() => {
+      if (isActive) localRef.current?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+   }, [isActive]);
+
    return (
       <div
+         ref={setRefs}
+         style={{ transform: CSS.Translate.toString(transform), transition }}
          className={cn(
-            'group flex shrink-0 items-center gap-1 border-r border-border pl-3 pr-1 max-w-[12rem]',
-            isActive ? 'bg-background' : 'bg-muted/40 hover:bg-muted/70',
+            'group relative flex shrink-0 items-center gap-1 border-r border-border pl-3 pr-1 max-w-[12rem] border-t-2',
+            isActive ? 'bg-background border-t-primary' : 'bg-muted/40 border-t-transparent hover:bg-muted/70',
+            isDragging && 'z-10 opacity-80',
          )}
       >
          <button
             type="button"
             onClick={() => setActiveTab(tab.id)}
             title={label}
+            {...attributes}
+            {...listeners}
             className={cn(
-               'min-w-0 flex-1 truncate py-2 text-sm cursor-pointer text-left',
+               'min-w-0 flex-1 truncate py-2 text-sm cursor-pointer text-left touch-none select-none',
                isActive ? 'text-foreground font-medium' : 'text-muted-foreground',
             )}
          >
@@ -56,6 +82,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          </button>
          <button
             type="button"
+            onPointerDown={(event) => event.stopPropagation()}
             onClick={() => closeTab(tab.id)}
             aria-label={t('Tabs.closeTab')}
             className="shrink-0 rounded p-1 text-muted-foreground opacity-60 hover:bg-muted hover:text-foreground hover:opacity-100 cursor-pointer"

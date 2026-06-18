@@ -331,3 +331,57 @@ describe('platform-aware boot', () => {
       expect(getCharacterInstanceIds().sort()).toEqual(['A', 'B']); // all live (desktop keep-alive)
    });
 });
+
+describe('reorderTabs', () => {
+   it('reorders openTabs and persists the new order, leaving the active tab unchanged', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+      actions.openCharacterTab(makeCharacter('C'));
+      actions.setActiveTab('A');
+
+      actions.reorderTabs('A', 'C'); // move A to C's slot → [B, C, A]
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['B', 'C', 'A']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('A'); // unchanged by a reorder
+      expect(readWorkspace().openTabs.map((t) => t.id)).toEqual(['B', 'C', 'A']); // persisted
+   });
+
+   it('is a no-op when the ids match', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+
+      actions.reorderTabs('A', 'A');
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B']);
+   });
+});
+
+describe('cross-tab undo isolation + routing', () => {
+   it('undo on the active tab leaves the other tab untouched, and switching routes undo to the active tab', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A', { name: 'A0' }));
+      actions.openCharacterTab(makeCharacter('B', { name: 'B0' })); // B is active
+      const instA = getOrCreateInstance('A');
+      const instB = getOrCreateInstance('B');
+
+      // Edit B, then undo via the registry-resolved ACTIVE instance (exactly what the
+      // Ctrl+Z router does in useCharacterSheetUndoRedo).
+      instB.getState().actions.updateCharacterName('B1');
+      const aPastBefore = instA.temporal.getState().pastStates.length;
+      getActiveCharacterStore()!.temporal.getState().undo();
+
+      expect(instB.getState().character?.name).toBe('B0'); // B reverted
+      expect(instA.getState().character?.name).toBe('A0'); // A untouched
+      expect(instA.temporal.getState().pastStates.length).toBe(aPastBefore); // A's undo stack untouched
+
+      // Switch to A → undo now routes to A, not B.
+      actions.setActiveTab('A');
+      instA.getState().actions.updateCharacterName('A1');
+      getActiveCharacterStore()!.temporal.getState().undo();
+
+      expect(instA.getState().character?.name).toBe('A0'); // A reverted
+      expect(instB.getState().character?.name).toBe('B0'); // B still unchanged
+   });
+});

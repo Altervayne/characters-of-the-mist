@@ -71,6 +71,8 @@ interface TabManagerState {
       closeActiveTab: () => void;
       /** Activates an already-open tab by id WITHOUT disposing the previously active one (keep-alive). */
       setActiveTab: (id: string) => void;
+      /** Moves the `fromId` tab to the position of `toId`, persisting the new order; active tab unchanged. */
+      reorderTabs: (fromId: string, toId: string) => void;
       /** Desktop "Return to Menu": show the menu while KEEPING every open tab and its live instance (spec §4). */
       deactivate: () => void;
 
@@ -205,6 +207,20 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          if (instance.getState().character === null) {
             void hydrateInstanceFromStorage(id);
          }
+      },
+      reorderTabs: (fromId, toId) => {
+         if (fromId === toId) return;
+         const { openTabs } = useTabManagerStore.getState();
+         const fromIndex = openTabs.findIndex((tab) => tab.id === fromId);
+         const toIndex = openTabs.findIndex((tab) => tab.id === toId);
+         if (fromIndex === -1 || toIndex === -1) return;
+
+         const next = [...openTabs];
+         const [moved] = next.splice(fromIndex, 1);
+         next.splice(toIndex, 0, moved);
+         // Order only — `activeTabId` and every instance are untouched.
+         useTabManagerStore.setState({ openTabs: next });
+         persistWorkspace();
       },
       deactivate: () => {
          // Desktop "Return to Menu": no disposal — tabs and instances stay live.

@@ -2,6 +2,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// -- Other Library Imports --
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+
 // -- Icon Imports --
 import { Plus } from 'lucide-react';
 
@@ -10,28 +14,55 @@ import { Tab } from './Tab';
 import { NewTabDialog } from '@/components/organisms/dialogs/NewTabDialog';
 
 // -- Store Imports --
-import { useTabManagerStore } from '@/lib/character/tabManagerStore';
+import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
+
+// -- Type Imports --
+import type { DragEndEvent } from '@dnd-kit/core';
 
 /**
- * Desktop multi-character tab strip (tabs spec §5): a top bar over the character
- * area, to the right of the SidebarMenu. Renders the open tabs in order with a
- * trailing `+` that opens the {@link NewTabDialog}. Overflow scrolls horizontally
- * (drag-to-reorder and overflow polish are Phase 4). At zero open tabs the strip
- * shows just the `+` and the area below renders the MainMenu.
+ * Desktop multi-character tab strip (tabs spec §5): a top bar over the character area,
+ * to the right of the SidebarMenu. Renders the open tabs in order with a trailing `+`
+ * that opens the {@link NewTabDialog}. Overflow scrolls horizontally and the active
+ * tab scrolls itself into view (see `Tab`).
  *
- * Mobile does not render this strip (it stays single-character).
+ * Tabs are drag-reorderable. The strip owns its OWN `DndContext` + horizontal
+ * `SortableContext`, deliberately separate from the character sheet's `DndContext`,
+ * so tab drags never reach the sheet's card/tracker/drawer drag handlers (the repo's
+ * dnd-kit isolation rule). A `PointerSensor` with a small activation distance keeps
+ * single clicks (activate / close) working while a longer drag reorders.
+ *
+ * At zero open tabs the strip shows just the `+` and the area below renders the
+ * MainMenu. Mobile does not render this strip (it stays single-character).
  */
 export function TabStrip() {
    const { t } = useTranslation();
    const openTabs = useTabManagerStore((state) => state.openTabs);
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
+   const { reorderTabs } = useTabManagerActions();
    const [isNewTabDialogOpen, setIsNewTabDialogOpen] = useState(false);
+
+   // Distance constraint: a click (no movement) still fires the tab's activate/close;
+   // only a drag past 5px starts a reorder.
+   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+   const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+         reorderTabs(String(active.id), String(over.id));
+      }
+   };
 
    return (
       <div className="flex shrink-0 items-stretch border-b-2 border-border bg-card overflow-x-auto overscroll-x-contain">
-         {openTabs.map((tab) => (
-            <Tab key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
-         ))}
+         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={openTabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
+               <div className="flex items-stretch">
+                  {openTabs.map((tab) => (
+                     <Tab key={tab.id} tab={tab} isActive={tab.id === activeTabId} />
+                  ))}
+               </div>
+            </SortableContext>
+         </DndContext>
 
          <button
             type="button"
