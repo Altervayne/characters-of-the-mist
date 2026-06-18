@@ -4,10 +4,8 @@ import { create } from 'zustand';
 // -- Utils Imports --
 import { harmonizeData } from '@/lib/harmonization';
 
-// -- Store Imports --
-import { useCharacterStore } from '@/lib/stores/characterStore';
-
 // -- Local Imports --
+import { getActiveCharacterStore } from './characterStoreRegistry';
 import { getCharacter, saveCharacter } from './characterRepository';
 import { getActiveCharacterId, setActiveCharacterId } from './characterSession';
 import { legacyBlobHasMigratableCharacter } from './runCharacterMigration';
@@ -117,10 +115,13 @@ export async function loadActiveCharacter(id: string): Promise<boolean> {
    const record = await getCharacter(id);
    if (!record) return false;
 
+   const store = getActiveCharacterStore();
+   if (!store) return false; // defensive: in Phase 1 the single instance is always present
+
    const harmonized = harmonizeData(record.character, 'FULL_CHARACTER_SHEET');
    isHydrating = true;
    try {
-      useCharacterStore.getState().actions.loadCharacter(harmonized, record.drawerItemId ?? undefined);
+      store.getState().actions.loadCharacter(harmonized, record.drawerItemId ?? undefined);
    } finally {
       isHydrating = false;
    }
@@ -140,9 +141,12 @@ export async function loadActiveCharacter(id: string): Promise<boolean> {
  */
 export function startCharacterPersistence(): void {
    if (persistenceStarted) return;
+
+   const store = getActiveCharacterStore();
+   if (!store) return; // defensive: instance is ensured at startup; retried if somehow absent
    persistenceStarted = true;
 
-   useCharacterStore.subscribe((state, previousState) => {
+   store.subscribe((state, previousState) => {
       if (isHydrating) return;
       if (state.character === previousState.character) return;
 

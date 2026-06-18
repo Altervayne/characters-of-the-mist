@@ -3,34 +3,34 @@
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 
 // -- Store and Hook Imports --
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 
 // -- Type Imports --
 import type { TemporalState } from 'zundo';
-
-
-
-type CharacterStoreState = ReturnType<typeof useCharacterStore.getState>;
+import type { CharacterState } from '@/lib/stores/characterStore';
 
 
 
 /**
- * Reactive subscription to the character store's temporal (undo/redo) state.
- * Use this instead of useCharacterStore.temporal.getState(); that call is a
- * one-shot snapshot and will not trigger a re-render when undo/redo history changes.
+ * Reactive subscription to the ACTIVE character store's temporal (undo/redo) state.
+ * Use this instead of `getActiveCharacterStore()?.temporal.getState()`; that call is
+ * a one-shot snapshot and will not trigger a re-render when undo/redo history
+ * changes. The temporal store is resolved from the active instance via context, so
+ * the sidebar undo/redo controls track whichever tab is active (tabs spec §1.2, §4).
  */
-function useCharacterTemporalStore(): TemporalState<CharacterStoreState>;
-function useCharacterTemporalStore<T>(selector: (state: TemporalState<CharacterStoreState>) => T): T;
+function useCharacterTemporalStore(): TemporalState<CharacterState>;
+function useCharacterTemporalStore<T>(selector: (state: TemporalState<CharacterState>) => T): T;
 function useCharacterTemporalStore<T>(
-   selector: (state: TemporalState<CharacterStoreState>) => T,
+   selector: (state: TemporalState<CharacterState>) => T,
    equality?: (a: T, b: T) => boolean,
 ): T;
 
 function useCharacterTemporalStore<T>(
-   selector?: (state: TemporalState<CharacterStoreState>) => T,
+   selector?: (state: TemporalState<CharacterState>) => T,
    equality?: (a: T, b: T) => boolean,
 ) {
-   return useStoreWithEqualityFn(useCharacterStore.temporal, selector!, equality);
+   const instance = useActiveCharacterInstance();
+   return useStoreWithEqualityFn(instance.temporal, selector!, equality);
 }
 
 

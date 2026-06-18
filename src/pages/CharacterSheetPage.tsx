@@ -278,6 +278,9 @@ function DesktopCharacterSheetPage() {
 export default function CharacterSheetPage() {
    const { isMobile } = useDeviceType();
 
+   // The ActiveCharacterStoreProvider is mounted in App.tsx (above
+   // AppStartManagerProvider, which also consumes the store), so it already covers
+   // both shells here — no provider needed at this level (tabs spec §1.2, §6).
    if (isMobile) {
       return <MobileCharacterSheetPage />;
    }

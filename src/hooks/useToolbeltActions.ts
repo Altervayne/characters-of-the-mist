@@ -31,7 +31,8 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Store Imports --
-import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
+import { useCharacterActions } from '@/lib/stores/characterStore';
+import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 
@@ -124,7 +125,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: t('Toolbelt.saveCharacter'),
 			icon: Save,
 			onClick: () => {
-				const character = useCharacterStore.getState().character;
+				const character = getActiveCharacterStore()?.getState().character;
 				if (!character) return;
 
 				// "Save As": create a new drawer item and link it to the character.
@@ -178,7 +179,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: t('Toolbelt.saveCharacterAs'),
 			icon: SaveAll,
 			onClick: () => {
-				const character = useCharacterStore.getState().character;
+				const character = getActiveCharacterStore()?.getState().character;
 				if (character) {
 					exportCharacterSheet(character);
 					toast.success(t('Notifications.character.exported'));

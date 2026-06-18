@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
+import { ActiveCharacterStoreProvider } from '@/lib/character/ActiveCharacterStoreProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import { router } from '@/router';
@@ -40,11 +41,17 @@ export default function App() {
       disableTransitionOnChange
     >
       <ThemeClassManager>
-        <AppStartManagerProvider>
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
-        </AppStartManagerProvider>
+        {/* Resolution layer for the active character store (tabs spec §1.2, §6).
+            Hoisted above AppStartManagerProvider because that provider consumes the
+            store (via useAppTourDriver), so it too must sit inside the provider —
+            this covers every character consumer in the app. */}
+        <ActiveCharacterStoreProvider>
+          <AppStartManagerProvider>
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
+          </AppStartManagerProvider>
+        </ActiveCharacterStoreProvider>
       </ThemeClassManager>
     </ThemeProvider>
   );

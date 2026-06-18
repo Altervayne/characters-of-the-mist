@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 
 // -- Store Imports --
-import { useCharacterStore } from '@/lib/stores/characterStore';
+import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 
@@ -32,15 +32,17 @@ export function useCharacterSheetUndoRedo(isDrawerOpen: boolean) {
       const handleKeyDown = (event: KeyboardEvent) => {
          // Character history is still zundo (out of scope); the drawer history is
          // now the command engine. Drive the drawer via the store actions so the
-         // current-folder view is reloaded after the undo/redo.
-         const { undo: undoCharacter, redo: redoCharacter, pastStates: pastStatesCharacter, futureStates: futureStatesCharacter } = useCharacterStore.temporal.getState();
+         // current-folder view is reloaded after the undo/redo. The character
+         // temporal is read from the ACTIVE instance via the registry (tabs spec
+         // §4); a null instance (no character open) simply does nothing.
+         const characterTemporal = getActiveCharacterStore()?.temporal.getState();
          const { undoDrawer, redoDrawer } = useDrawerStore.getState().actions;
 
          const isUndo = (event.ctrlKey || event.metaKey) && event.key === 'z';
          const isRedo = (event.ctrlKey || event.metaKey) && event.key === 'y';
 
-         const characterCanUndo = pastStatesCharacter.length > 1
-         const characterCanRedo = futureStatesCharacter.length > 0
+         const characterCanUndo = (characterTemporal?.pastStates.length ?? 0) > 1
+         const characterCanRedo = (characterTemporal?.futureStates.length ?? 0) > 0
          const drawerCanUndo = drawerCommandEngine.canUndo()
          const drawerCanRedo = drawerCommandEngine.canRedo()
 
@@ -52,8 +54,8 @@ export function useCharacterSheetUndoRedo(isDrawerOpen: boolean) {
             if (isUndo && drawerCanUndo) void undoDrawer();
             if (isRedo && drawerCanRedo) void redoDrawer();
          } else {
-            if (isUndo && characterCanUndo) undoCharacter();
-            if (isRedo && characterCanRedo) redoCharacter();
+            if (isUndo && characterCanUndo) characterTemporal?.undo();
+            if (isRedo && characterCanRedo) characterTemporal?.redo();
          }
       };
 

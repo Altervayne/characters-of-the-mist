@@ -1,5 +1,5 @@
 // -- Other Library Imports --
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 import { temporal } from 'zundo';
 import cuid from 'cuid';
 
@@ -9,6 +9,7 @@ import { deepReId } from '../utils/drawer';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
+import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 
 // -- Type Imports --
 import type { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
@@ -75,7 +76,7 @@ const updateOtherscapeEssence = (cards: Card[]): Card[] => {
 
 
 
-interface CharacterState {
+export interface CharacterState {
    character: Character | null;
    actions: {
       createCharacter: (game: GameSystem) => void;
@@ -164,8 +165,12 @@ const updateCardInState = (state: CharacterState, cardId: string, updateFn: (car
  * character, with no schema change (spec §3.3, C-1). Today exactly one instance is
  * created: the `useCharacterStore` singleton below.
  */
-function createCharacterStore() {
-   return create<CharacterState>()(
+export function createCharacterStore() {
+   // Forward reference to the instance being built. Action bodies run later (at
+   // dispatch time), by which point `useStore` is assigned, so each instance's
+   // temporal self-references target its OWN undo stack rather than a global
+   // singleton (tabs spec §2) — the change that makes the factory self-contained.
+   const useStore = create<CharacterState>()(
       temporal(
          (set) => ({
             ...initialState,
@@ -174,7 +179,7 @@ function createCharacterStore() {
                createCharacter: (game) => {
                   set(() => {
                     const newCharacter = createNewCharacter("New Character", game);
-                    useCharacterStore.temporal.getState().clear(); 
+                    useStore.temporal.getState().clear();
                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                     return { character: newCharacter };
                   });
@@ -186,7 +191,7 @@ function createCharacterStore() {
                      // future per-tab factory model each character has its own fresh
                      // instance, making this automatic; for the single active store it
                      // must be done explicitly, matching createCharacter/returnToMenu.
-                     useCharacterStore.temporal.getState().clear();
+                     useStore.temporal.getState().clear();
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                      return { character: {
                         ...character,
@@ -204,7 +209,7 @@ function createCharacterStore() {
                },
                returnToMenu: () => {
                   set(() => {
-                     useCharacterStore.temporal.getState().clear();
+                     useStore.temporal.getState().clear();
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                      return { character: null };
                   });
@@ -1206,8 +1211,33 @@ function createCharacterStore() {
          })
       )
    );
+
+   return useStore;
 }
 
-export const useCharacterStore = createCharacterStore();
+/**
+ * A single character store instance: the in-memory character + actions wrapped in
+ * zundo `temporal`. The registry holds one of these per open character (one today,
+ * N once tabs land); `getActiveCharacterStore()` resolves the active one for
+ * non-React callers, and the hooks below resolve it for React callers.
+ */
+export type CharacterStore = ReturnType<typeof createCharacterStore>;
 
+/**
+ * Subscribes the calling component to the **active** character store instance with
+ * `selector`. Resolves the instance from {@link ActiveCharacterStoreContext} rather
+ * than a module global, so the same hook serves whichever tab is active (tabs spec
+ * §1.2). The public signature and the `@/lib/stores/characterStore` import path are
+ * unchanged, so the ~36 consumers need no edit.
+ *
+ * @template T - The selected slice type.
+ * @param selector - Maps the character state to the slice the component needs.
+ * @returns The selected slice, re-rendering the component when it changes.
+ */
+export function useCharacterStore<T>(selector: (state: CharacterState) => T): T {
+   const instance = useActiveCharacterInstance();
+   return useStore(instance, selector);
+}
+
+/** Selector hook for the active character's action bag (a stable reference). */
 export const useCharacterActions = () => useCharacterStore((state) => state.actions);
