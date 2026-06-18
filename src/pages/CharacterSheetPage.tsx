@@ -28,6 +28,7 @@ import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
 import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
+import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
@@ -181,49 +182,56 @@ function DesktopCharacterSheetPage() {
             {/* Character Sheet Area */}
             <div {...getRootProps()} className="relative w-full h-full flex-1 flex flex-col">
 
-               { character ? (
-                  <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
-                     <CharacterNameHeader
-                        value={localName}
-                        onChange={setLocalName}
-                        placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
-                     />
+               {/* Multi-character tab strip (desktop top bar, tabs spec §5) */}
+               <TabStrip />
 
-                     <div className="flex-1 p-4 md:p-8">
-                        <SheetMainDropZone>
-                           <TrackersSection
-                              character={character}
-                              isEditing={isEditing}
-                              areTrackersEditable={areTrackersEditable}
-                              onExport={handleExportComponent}
-                              onAddStatus={addStatus}
-                              onAddStoryTag={addStoryTag}
-                              statusIds={statusIds}
-                              storyTagIds={storyTagIds}
-                              storyThemeIds={storyThemeIds}
-                           />
+               {/* Content area: own positioning context for the absolutely-filled
+                   sheet/menu so they sit below the strip rather than over it. */}
+               <div className="relative flex-1 min-h-0">
+                  { character ? (
+                     <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
+                        <CharacterNameHeader
+                           value={localName}
+                           onChange={setLocalName}
+                           placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
+                        />
 
-                           <CardsSection
-                              character={character}
-                              isEditing={isEditing}
-                              onExport={handleExportComponent}
-                              onEditCard={handleEditCard}
-                              onAddCard={handleAddCardClick}
-                              cardIds={cardIds}
-                           />
-                        </SheetMainDropZone>
-                     </div>
-                  </main>
-               )           : (
-                  <MainMenu />
-               )}
+                        <div className="flex-1 p-4 md:p-8">
+                           <SheetMainDropZone>
+                              <TrackersSection
+                                 character={character}
+                                 isEditing={isEditing}
+                                 areTrackersEditable={areTrackersEditable}
+                                 onExport={handleExportComponent}
+                                 onAddStatus={addStatus}
+                                 onAddStoryTag={addStoryTag}
+                                 statusIds={statusIds}
+                                 storyTagIds={storyTagIds}
+                                 storyThemeIds={storyThemeIds}
+                              />
+
+                              <CardsSection
+                                 character={character}
+                                 isEditing={isEditing}
+                                 onExport={handleExportComponent}
+                                 onEditCard={handleEditCard}
+                                 onAddCard={handleAddCardClick}
+                                 cardIds={cardIds}
+                              />
+                           </SheetMainDropZone>
+                        </div>
+                     </main>
+                  )           : (
+                     <MainMenu />
+                  )}
 
 
-               {/* Character from Drawer Drop Zone */}
-               <CharacterLoadDropZone activeDragItem={activeDragItem} />
+                  {/* Character from Drawer Drop Zone */}
+                  <CharacterLoadDropZone activeDragItem={activeDragItem} />
 
-               {/* File Drop Zone */}
-               <FileDragOverlay isDragActive={isFileDragActive} />
+                  {/* File Drop Zone */}
+                  <FileDragOverlay isDragActive={isFileDragActive} />
+               </div>
             </div>
 
             {/* Drawer */}

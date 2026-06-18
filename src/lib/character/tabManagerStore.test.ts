@@ -1,5 +1,5 @@
 // -- Library Imports --
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // -- Local Imports --
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
@@ -8,19 +8,22 @@ import {
    SINGLE_ACTIVE_INSTANCE_ID,
    disposeInstance,
    getActiveCharacterStore,
+   getCharacterInstanceIds,
    getOrCreateInstance,
 } from './characterStoreRegistry';
-import { attachPersistenceHandle, detachPersistenceHandle, useCharacterBootStore } from './characterPersistence';
-import { getCharacter, saveCharacter } from './characterRepository';
-import { getActiveCharacterId, setActiveCharacterId } from './characterSession';
+import { detachPersistenceHandle, useCharacterBootStore } from './characterPersistence';
+import { saveCharacter } from './characterRepository';
+import { readWorkspace, writeWorkspace, WORKSPACE_KEY } from './workspaceSession';
+import { ACTIVE_CHARACTER_ID_KEY } from './characterSession';
+import * as deviceTypeModule from '@/hooks/useDeviceType';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
 
 /*
- * Tests for the TabManager lifecycle, the single-tab cap, per-instance persistence
- * isolation, and boot restore (tabs spec §1.2, §2.1, §3). Runs against
- * fake-indexeddb plus an in-memory localStorage shim for the session pointer.
+ * Tests for the Phase 3 multi-tab TabManager: lifted cap (keep-alive, focus-or-add),
+ * workspace persistence + backward seed, and boot restore-of-many. Runs against
+ * fake-indexeddb plus an in-memory localStorage shim.
  */
 
 function installLocalStorageShim(): void {
@@ -48,7 +51,7 @@ function makeCharacter(id: string, overrides: Partial<Character> = {}): Characte
    } as Character;
 }
 
-const FIXTURE_IDS = ['boot-1', 'char-2', 'seq-x', 'seq-y', 'persist-A', 'persist-B', SINGLE_ACTIVE_INSTANCE_ID];
+const FIXTURE_IDS = ['A', 'B', 'C', 'D', 'old', 'gone', SINGLE_ACTIVE_INSTANCE_ID];
 
 beforeEach(async () => {
    installLocalStorageShim();
@@ -58,118 +61,273 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-   try {
-      useTabManagerStore.getState().actions.closeActiveTab();
-   } catch {
-      // ignore; the test may have left no active tab
-   }
-   FIXTURE_IDS.forEach(disposeInstance);
+   vi.restoreAllMocks();
+   FIXTURE_IDS.forEach((id) => {
+      detachPersistenceHandle(id);
+      disposeInstance(id);
+   });
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
-   await new Promise((resolve) => setTimeout(resolve, 0)); // let any in-flight IDB write settle
+   await new Promise((resolve) => setTimeout(resolve, 0));
 });
 
-describe('TabManager lifecycle', () => {
-   it('createCharacterTab mints an id-keyed instance + active pointer + session pointer, and autosaves', async () => {
-      useTabManagerStore.getState().actions.createCharacterTab('LEGENDS');
+describe('multi-tab lifecycle (keep-alive)', () => {
+   it('opens three live tabs and switches active without disposing', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+      actions.openCharacterTab(makeCharacter('C'));
 
-      const id = useTabManagerStore.getState().activeTabId;
-      expect(id).toBeTruthy();
-      expect(useTabManagerStore.getState().openTabs).toEqual([{ id, type: 'character' }]);
-      // Active instance is the id-keyed one, holding the new character.
-      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(id!));
-      expect(getOrCreateInstance(id!).getState().character?.id).toBe(id);
-      // Session pointer set immediately; record autosaved after the debounce.
-      expect(getActiveCharacterId()).toBe(id);
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      expect(await getCharacter(id!)).toBeDefined();
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B', 'C']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('C');
 
-      disposeInstance(id!);
+      const instA = getOrCreateInstance('A');
+      const instC = getOrCreateInstance('C');
+
+      actions.setActiveTab('A');
+      expect(useTabManagerStore.getState().activeTabId).toBe('A');
+      expect(getActiveCharacterStore()).toBe(instA);
+      // Switching disposes nothing: A and C are the same instances as before.
+      expect(getOrCreateInstance('C')).toBe(instC);
+      expect(getOrCreateInstance('A')).toBe(instA);
    });
 
-   it('openCharacterTab switches and disposes the previous tab (single-tab cap)', () => {
+   it('closeTab disposes only that tab and activates a neighbour (right, else left, else menu)', () => {
       const actions = useTabManagerStore.getState().actions;
-      actions.createCharacterTab('LEGENDS');
-      const firstId = useTabManagerStore.getState().activeTabId!;
-      const firstInstance = getOrCreateInstance(firstId);
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+      actions.openCharacterTab(makeCharacter('C'));
+      actions.setActiveTab('B');
 
-      actions.openCharacterTab(makeCharacter('char-2', { name: 'Second' }));
+      const instB = getOrCreateInstance('B');
+      const instA = getOrCreateInstance('A');
 
-      expect(useTabManagerStore.getState().activeTabId).toBe('char-2');
-      expect(useTabManagerStore.getState().openTabs.length).toBe(1);
-      expect(getActiveCharacterStore()).toBe(getOrCreateInstance('char-2'));
-      // The previous instance was disposed: re-resolving its id yields a NEW instance.
-      expect(getOrCreateInstance(firstId)).not.toBe(firstInstance);
+      actions.closeTab('B');
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'C']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('C'); // right neighbour
+      expect(getOrCreateInstance('B')).not.toBe(instB); // B disposed (re-created here)
+      expect(getOrCreateInstance('A')).toBe(instA); // A kept alive
+      disposeInstance('B'); // clean up the re-created stub
 
-      disposeInstance(firstId);
+      actions.closeTab('C'); // active, rightmost → left neighbour A
+      expect(useTabManagerStore.getState().activeTabId).toBe('A');
+
+      actions.closeTab('A'); // last tab → menu fallback
+      expect(useTabManagerStore.getState().openTabs).toEqual([]);
+      expect(useTabManagerStore.getState().activeTabId).toBeNull();
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
    });
 
-   it('closeActiveTab disposes the tab and falls back to the menu instance with the pointer cleared', () => {
+   it('closing a background tab leaves the active tab untouched', () => {
       const actions = useTabManagerStore.getState().actions;
-      actions.createCharacterTab('LEGENDS');
-      const id = useTabManagerStore.getState().activeTabId!;
-      const instance = getOrCreateInstance(id);
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+      actions.setActiveTab('B');
+      const instB = getOrCreateInstance('B');
 
-      actions.closeActiveTab();
+      actions.closeTab('A'); // background
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['B']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('B');
+      expect(getOrCreateInstance('B')).toBe(instB);
+   });
+});
+
+describe('focus-or-add', () => {
+   it('focuses an already-open character without reloading it (state + undo preserved)', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A', { name: 'Original' }));
+      const instA = getOrCreateInstance('A');
+      instA.getState().actions.updateCharacterName('Edited');
+      const pastBefore = instA.temporal.getState().pastStates.length;
+
+      // Re-open the same id with different content → must focus, not rebuild.
+      actions.openCharacterTab(makeCharacter('B'));
+      actions.openCharacterTab(makeCharacter('A', { name: 'WOULD-CLOBBER' }));
+
+      expect(getOrCreateInstance('A')).toBe(instA); // same instance
+      expect(instA.getState().character?.name).toBe('Edited'); // not reloaded
+      expect(instA.temporal.getState().pastStates.length).toBe(pastBefore); // undo intact
+      expect(useTabManagerStore.getState().activeTabId).toBe('A'); // focused
+   });
+});
+
+describe('workspace persistence + backward seed', () => {
+   it('persists the workspace on every mutating action', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+
+      const persisted = readWorkspace();
+      expect(persisted.openTabs.map((t) => t.id)).toEqual(['A', 'B']);
+      expect(persisted.activeId).toBe('B');
+   });
+
+   it('seeds the workspace from a lone legacy pointer and removes the old key', () => {
+      localStorage.setItem(ACTIVE_CHARACTER_ID_KEY, 'old');
+
+      const seeded = readWorkspace();
+
+      expect(seeded).toEqual({ openTabs: [{ id: 'old', type: 'character' }], activeId: 'old' });
+      expect(localStorage.getItem(WORKSPACE_KEY)).not.toBeNull();
+      expect(localStorage.getItem(ACTIVE_CHARACTER_ID_KEY)).toBeNull();
+   });
+});
+
+describe('boot restore-of-many', () => {
+   it('opens every stored tab in order, prunes a stale one, activates the stored active, and lifts the gate', async () => {
+      await saveCharacter(makeCharacter('A', { name: 'Alpha' }));
+      await saveCharacter(makeCharacter('B', { name: 'Bravo' }));
+      await saveCharacter(makeCharacter('C', { name: 'Charlie' }));
+      writeWorkspace({
+         openTabs: [
+            { id: 'A', type: 'character' },
+            { id: 'gone', type: 'character' }, // stale: no record
+            { id: 'B', type: 'character' },
+            { id: 'C', type: 'character' },
+         ],
+         activeId: 'B',
+      });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B', 'C']); // order preserved, 'gone' pruned
+      expect(useTabManagerStore.getState().activeTabId).toBe('B');
+      expect(getActiveCharacterStore()?.getState().character?.name).toBe('Bravo');
+      expect(useCharacterBootStore.getState().isBootHydrating).toBe(false);
+      // Pruned workspace persisted.
+      expect(readWorkspace().openTabs.map((t) => t.id)).toEqual(['A', 'B', 'C']);
+   });
+
+   it('falls back to the menu and lifts the gate when no stored tab survives', async () => {
+      writeWorkspace({ openTabs: [{ id: 'gone', type: 'character' }], activeId: 'gone' });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
 
       expect(useTabManagerStore.getState().openTabs).toEqual([]);
       expect(useTabManagerStore.getState().activeTabId).toBeNull();
-      expect(getActiveCharacterId()).toBeNull();
-      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
-      expect(getOrCreateInstance(id)).not.toBe(instance); // disposed
+      expect(useCharacterBootStore.getState().isBootHydrating).toBe(false);
    });
+});
 
-   it('keeps at most one open tab through any sequence of opens/creates', () => {
+describe('desktop deactivate (Return to Menu, keep tabs)', () => {
+   it('clears the active id and points at the menu fallback while keeping tabs + the live instance', () => {
       const actions = useTabManagerStore.getState().actions;
-      actions.createCharacterTab('LEGENDS');
-      actions.openCharacterTab(makeCharacter('seq-x'));
-      actions.createCharacterTab('OTHERSCAPE');
-      actions.openCharacterTab(makeCharacter('seq-y'));
+      actions.openCharacterTab(makeCharacter('A'));
+      actions.openCharacterTab(makeCharacter('B'));
+      const instB = getOrCreateInstance('B');
 
-      expect(useTabManagerStore.getState().openTabs.length).toBeLessThanOrEqual(1);
-      expect(useTabManagerStore.getState().activeTabId).toBe('seq-y');
-   });
-});
+      actions.deactivate();
 
-describe('per-instance persistence isolation', () => {
-   it('an edit + debounce on A writes A and never B', async () => {
-      const a = getOrCreateInstance('persist-A');
-      const b = getOrCreateInstance('persist-B');
-      attachPersistenceHandle('persist-A', a);
-      attachPersistenceHandle('persist-B', b);
-
-      // Edit only A (a load is an observable change that schedules A's debounced save).
-      a.getState().actions.loadCharacter(makeCharacter('persist-A', { name: 'Alpha' }));
-      await new Promise((resolve) => setTimeout(resolve, 400));
-
-      expect((await getCharacter('persist-A'))?.character.name).toBe('Alpha');
-      expect(await getCharacter('persist-B')).toBeUndefined();
-
-      detachPersistenceHandle('persist-A');
-      detachPersistenceHandle('persist-B');
-   });
-});
-
-describe('boot restore', () => {
-   it('opens the pointed character into its id-keyed instance and lifts the gate', async () => {
-      await saveCharacter(makeCharacter('boot-1', { name: 'Booted' }));
-      setActiveCharacterId('boot-1');
-      useCharacterBootStore.setState({ isBootHydrating: true });
-
-      await runCharacterBoot();
-
-      expect(useTabManagerStore.getState().activeTabId).toBe('boot-1');
-      expect(getActiveCharacterStore()?.getState().character?.name).toBe('Booted');
-      expect(useCharacterBootStore.getState().isBootHydrating).toBe(false);
-   });
-
-   it('clears a stale pointer and stays at the menu', async () => {
-      setActiveCharacterId('missing-id');
-      useCharacterBootStore.setState({ isBootHydrating: true });
-
-      await runCharacterBoot();
-
-      expect(getActiveCharacterId()).toBeNull();
       expect(useTabManagerStore.getState().activeTabId).toBeNull();
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B']); // tabs kept
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID)); // menu active
+      expect(getOrCreateInstance('B')).toBe(instB); // previously-active instance still live
+      expect(readWorkspace().activeId).toBeNull(); // persisted
+
+      // Reactivating returns to the same live instance.
+      actions.setActiveTab('B');
+      expect(getActiveCharacterStore()).toBe(instB);
+   });
+});
+
+describe('mobile single-live lifecycle', () => {
+   it('keeps exactly one live character instance across opens/creates, never pruning openTabs', () => {
+      const actions = useTabManagerStore.getState().actions;
+
+      actions.mobileOpenCharacter(makeCharacter('A'));
+      expect(getCharacterInstanceIds()).toEqual(['A']);
+
+      actions.mobileCreateCharacter('LEGENDS');
+      const created = useTabManagerStore.getState().activeTabId!;
+      // A's instance is gone, only the new one is live; A stays in openTabs.
+      expect(getCharacterInstanceIds()).toEqual([created]);
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toContain('A');
+      expect(useTabManagerStore.getState().openTabs.length).toBe(2);
+
+      disposeInstance(created); // cleanup the minted instance
+   });
+
+   it('mobileReturnToMenu disposes the live instance, nulls active, and keeps openTabs', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.mobileOpenCharacter(makeCharacter('A'));
+      actions.mobileOpenCharacter(makeCharacter('B'));
+
+      actions.mobileReturnToMenu();
+
+      expect(getCharacterInstanceIds()).toEqual([]); // no live character instance
+      expect(useTabManagerStore.getState().activeTabId).toBeNull();
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B']); // kept
+   });
+});
+
+describe('platform-aware boot', () => {
+   it('mobile boot hydrates only the active tab and keeps the full openTabs list', async () => {
+      vi.spyOn(deviceTypeModule, 'getEffectiveDeviceType').mockReturnValue('mobile');
+      await saveCharacter(makeCharacter('A', { name: 'Alpha' }));
+      await saveCharacter(makeCharacter('B', { name: 'Bravo' }));
+      await saveCharacter(makeCharacter('C', { name: 'Charlie' }));
+      writeWorkspace({
+         openTabs: [
+            { id: 'A', type: 'character' },
+            { id: 'B', type: 'character' },
+            { id: 'C', type: 'character' },
+         ],
+         activeId: 'B',
+      });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
+
+      // The whole list is preserved, but only the active instance is live.
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B', 'C']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('B');
+      expect(getCharacterInstanceIds()).toEqual(['B']);
       expect(useCharacterBootStore.getState().isBootHydrating).toBe(false);
+   });
+
+   it('desktop boot hydrates all stored tabs', async () => {
+      vi.spyOn(deviceTypeModule, 'getEffectiveDeviceType').mockReturnValue('desktop');
+      await saveCharacter(makeCharacter('A'));
+      await saveCharacter(makeCharacter('B'));
+      await saveCharacter(makeCharacter('C'));
+      writeWorkspace({
+         openTabs: [
+            { id: 'A', type: 'character' },
+            { id: 'B', type: 'character' },
+            { id: 'C', type: 'character' },
+         ],
+         activeId: 'A',
+      });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B', 'C']);
+      expect(getCharacterInstanceIds().sort()).toEqual(['A', 'B', 'C']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('A');
+   });
+
+   it('desktop boot preserves a deactivated workspace (null active) as menu + all tabs hydrated', async () => {
+      vi.spyOn(deviceTypeModule, 'getEffectiveDeviceType').mockReturnValue('desktop');
+      await saveCharacter(makeCharacter('A'));
+      await saveCharacter(makeCharacter('B'));
+      // activeId null = the user hit "Return to Menu" (deactivated) before reloading.
+      writeWorkspace({
+         openTabs: [
+            { id: 'A', type: 'character' },
+            { id: 'B', type: 'character' },
+         ],
+         activeId: null,
+      });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
+
+      expect(useTabManagerStore.getState().activeTabId).toBeNull(); // stayed at the menu
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B']); // tabs kept
+      expect(getCharacterInstanceIds().sort()).toEqual(['A', 'B']); // all live (desktop keep-alive)
    });
 });

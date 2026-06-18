@@ -26,11 +26,11 @@ interface MobileMainMenuProps {
 export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 	const { t } = useTranslation();
 	const { contextualGame } = useAppSettingsStore();
-	const { createCharacterTab } = useTabManagerActions();
+	const { mobileCreateCharacter } = useTabManagerActions();
 	const { setContextualGame } = useAppSettingsActions();
 
 	const handleCreateCharacter = () => {
-		createCharacterTab(contextualGame);
+		mobileCreateCharacter(contextualGame);
 	};
 
 	const handleGameSelect = (game: GameSystem) => {

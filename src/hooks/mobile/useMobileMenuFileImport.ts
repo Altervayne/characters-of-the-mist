@@ -38,7 +38,7 @@ import type { Drawer } from '@/lib/types/drawer';
  */
 export function useMobileMenuFileImport() {
    const { t } = useTranslation();
-   const { openCharacterTab } = useTabManagerActions();
+   const { mobileOpenCharacter } = useTabManagerActions();
    const { importDrawerAsFolder } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +54,7 @@ export function useMobileMenuFileImport() {
 
          if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
             const harmonized = harmonizeData(importedData.content, importedData.fileType);
-            openCharacterTab(harmonized as Character);
+            mobileOpenCharacter(harmonized as Character);
             toast.success(t('Notifications.character.imported'));
          } else {
             toast.error(t('Notifications.general.importFailed'));

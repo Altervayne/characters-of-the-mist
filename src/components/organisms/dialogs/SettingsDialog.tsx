@@ -26,7 +26,7 @@ import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/Lega
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
-import { setActiveCharacterId } from '@/lib/character/characterSession';
+import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { getLegacyBlobRemovalState } from '@/lib/drawer/runDrawerMigration';
@@ -142,7 +142,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
    const handleAppReset = async () => {
       await clearAllCharacterData();
-      setActiveCharacterId(null);
+      clearWorkspace();
       await clearAllDrawerData();
       drawerCommandEngine.clear();
       useAppSettingsStore.persist.clearStorage();

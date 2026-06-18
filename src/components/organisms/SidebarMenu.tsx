@@ -66,7 +66,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // *different* character (file import) and returning to the menu go through the
    // TabManager.
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter } = useCharacterActions();
-   const { openCharacterTab, closeActiveTab } = useTabManagerActions();
+   const { openCharacterTab, deactivate } = useTabManagerActions();
    const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
@@ -216,7 +216,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    }, [isUnloadDialogOpen]);
 
    const handleUnloadCharacter = () => {
-      closeActiveTab();
+      // Desktop "Return to Menu": show the menu but keep every open tab and its
+      // live instance (tabs spec §4) — not a close.
+      deactivate();
       toast.success(tNotifications('Notifications.character.unloaded'));
    };
 

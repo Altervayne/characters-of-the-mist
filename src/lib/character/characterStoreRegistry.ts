@@ -91,6 +91,17 @@ export function disposeInstance(id: string): void {
 }
 
 /**
+ * Lists the ids of all live character instances, EXCLUDING the permanent menu
+ * fallback. Backs the mobile single-live invariant (dispose every character instance
+ * but the menu fallback before opening the next, tabs spec §7).
+ *
+ * @returns The character instance ids currently held in the registry.
+ */
+export function getCharacterInstanceIds(): string[] {
+   return [...registry.keys()].filter((id) => id !== SINGLE_ACTIVE_INSTANCE_ID);
+}
+
+/**
  * Returns the permanent menu fallback instance, creating it on first request.
  * Idempotent and side-effect-free with respect to the active pointer, so the root
  * provider can call it during render to resolve the zero-character state without

@@ -35,7 +35,7 @@ interface MobileMenuProps {
 export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNotes }: MobileMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
-	const { closeActiveTab } = useTabManagerActions();
+	const { mobileReturnToMenu } = useTabManagerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 
 	const {
@@ -164,7 +164,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 				triggerDrawerImport();
 				break;
 			case 'unload':
-				closeActiveTab();
+				mobileReturnToMenu();
 				break;
 		}
 	};

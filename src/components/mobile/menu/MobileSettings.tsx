@@ -45,7 +45,7 @@ import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettin
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
-import { setActiveCharacterId } from '@/lib/character/characterSession';
+import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { getLegacyBlobRemovalState } from '@/lib/drawer/runDrawerMigration';
@@ -88,7 +88,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 
 	const handleAppReset = async () => {
 		await clearAllCharacterData();
-		setActiveCharacterId(null);
+		clearWorkspace();
 		await clearAllDrawerData();
 		drawerCommandEngine.clear();
 		useAppSettingsStore.persist.clearStorage();

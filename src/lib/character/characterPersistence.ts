@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 // -- Local Imports --
 import { saveCharacter } from './characterRepository';
-import { getActiveCharacterId } from './characterSession';
+import { readWorkspace } from './workspaceSession';
 import { legacyBlobHasMigratableCharacter } from './runCharacterMigration';
 
 // -- Type Imports --
@@ -49,7 +49,9 @@ interface CharacterBootState {
 }
 
 function computeInitialBootExpectation(): boolean {
-   if (getActiveCharacterId() !== null) return true;
+   // Any restorable open tab (workspace, which also back-seeds the legacy single-id
+   // pointer) means a character will load; otherwise the one-time pre-migration blob.
+   if (readWorkspace().openTabs.length > 0) return true;
    return legacyBlobHasMigratableCharacter();
 }
 

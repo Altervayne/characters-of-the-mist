@@ -47,6 +47,20 @@ function isMobileScreenWidth(): boolean {
 	return window.innerWidth < 768; // md breakpoint
 }
 
+/**
+ * Non-hook effective device type for code that runs outside React (e.g. the boot
+ * step in `AppStartManager`/`tabManagerStore`). Respects a persisted user override
+ * exactly like the hook does, falling back to auto-detection. Safe to call before
+ * first paint: zustand-persist rehydrates synchronously on store creation, so the
+ * override is already readable, and detection only touches `navigator`/`window`.
+ *
+ * @returns The effective device type (`'mobile'` or `'desktop'`).
+ */
+export function getEffectiveDeviceType(): DeviceType {
+	const override = useAppSettingsStore.getState().deviceTypeOverride;
+	return override || detectDeviceType();
+}
+
 // Auto-detect device type
 function detectDeviceType(): DeviceType {
 	const isUserAgentMobile = isMobileUserAgent();
