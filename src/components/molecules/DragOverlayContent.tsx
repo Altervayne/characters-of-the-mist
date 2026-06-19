@@ -31,10 +31,18 @@ export function DragOverlayContent({ activeDragItem, isEditing, isCompactDrawer 
       return null;
    }
 
+   // A dragged drawer folder is a flat DrawerFolderRecord (id/name/parentFolderId/
+   // order) — it has none of the discriminants the other drag sources carry
+   // (`cardType`/`trackerType`/`game`), and crucially NOT `folders`, so the old
+   // `'folders' in item` check never matched it and a folder drag showed no clone.
+   // Detect it by elimination instead, then render its folder preview.
+   const isFolder =
+      !('cardType' in activeDragItem) && !('trackerType' in activeDragItem) && !('game' in activeDragItem);
+
    return (
       <motion.div className="shadow-2xl rounded-lg">
-         {'folders' in activeDragItem ? (
-            <FolderPreview folder={activeDragItem as FolderType} />
+         {isFolder ? (
+            <FolderPreview folder={activeDragItem as unknown as FolderType} />
          ) : 'cardType' in activeDragItem ? (
             <CardRenderer card={activeDragItem} isEditing={isEditing} isSnapshot={true}/>
          ) : 'trackerType' in activeDragItem ? (

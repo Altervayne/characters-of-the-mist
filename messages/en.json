@@ -19,7 +19,8 @@
       "openAsTab": "Open as tab",
       "open": "Open",
       "addToSheet": "Add to sheet",
-      "saveToDrawer": "Save to drawer"
+      "saveToDrawer": "Save to drawer",
+      "move": "Move"
    },
    "MigrationNotice": {
       "title": "Your data was upgraded",

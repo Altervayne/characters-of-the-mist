@@ -94,9 +94,23 @@ describe('deriveDragContext (kind + over-zone → action)', () => {
       expect(deriveDragContext('sheet-item', 'drawer', false)).toBe('save-to-drawer');
    });
 
+   it('a drawer-sourced drag over the drawer → drawer-move (when no more specific action)', () => {
+      expect(deriveDragContext('drawer-folder', 'drawer', false)).toBe('drawer-move');
+      expect(deriveDragContext('drawer-component', 'drawer', false)).toBe('drawer-move');
+      expect(deriveDragContext('drawer-character', 'drawer', false)).toBe('drawer-move');
+   });
+
+   it('more specific actions still win over drawer-move', () => {
+      // A character over the tab lane / play area is open(-tab), not a move.
+      expect(deriveDragContext('drawer-character', 'drawer', true)).toBe('open-tab');
+      expect(deriveDragContext('drawer-character', 'play-area', false)).toBe('open');
+      // A component over the sheet adds, not moves.
+      expect(deriveDragContext('drawer-component', 'sheet', false)).toBe('add-to-sheet');
+   });
+
    it('plain reorders / non-actionable hovers → null', () => {
       expect(deriveDragContext('tab', null, false)).toBeNull();
-      expect(deriveDragContext('drawer-folder', 'drawer', false)).toBeNull();
+      expect(deriveDragContext('drawer-folder', null, false)).toBeNull();
       expect(deriveDragContext('drawer-character', null, false)).toBeNull();
       expect(deriveDragContext('drawer-component', null, false)).toBeNull();
       expect(deriveDragContext('sheet-item', 'sheet', false)).toBeNull();
@@ -145,7 +159,7 @@ describe('springDirection (dwell → arrow)', () => {
 });
 
 describe('MORPH_DESCRIPTORS (context → descriptor)', () => {
-   const contexts: NonNullable<DragContext>[] = ['open-tab', 'open', 'add-to-sheet', 'save-to-drawer'];
+   const contexts: NonNullable<DragContext>[] = ['open-tab', 'open', 'add-to-sheet', 'save-to-drawer', 'drawer-move'];
 
    it('resolves every drag context to a descriptor with an icon + label', () => {
       for (const context of contexts) {

@@ -69,16 +69,16 @@ export const DragMorphCluster = forwardRef<HTMLDivElement, DragMorphClusterProps
                {/* Dot, centered exactly on the cursor point (the wrapper origin). */}
                <span
                   aria-hidden
-                  className="absolute block size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-md ring-2 ring-background"
+                  className="absolute block size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-md ring-2 ring-background"
                />
 
-               {/* Spring progress ring around the dot; keyed off springKey so it restarts per target. */}
+               {/* Spring progress ring hugging the dot (~2x its size); keyed off springKey so it restarts per target. */}
                {springKey && (
                   <svg
                      key={springKey}
                      aria-hidden
                      viewBox="0 0 36 36"
-                     className="absolute size-10 -translate-x-1/2 -translate-y-1/2 -rotate-90"
+                     className="absolute size-6 -translate-x-1/2 -translate-y-1/2 -rotate-90"
                   >
                      <circle cx="18" cy="18" r={RING_RADIUS} fill="none" strokeWidth="2.5" className="stroke-primary/20" />
                      <circle
@@ -94,20 +94,23 @@ export const DragMorphCluster = forwardRef<HTMLDivElement, DragMorphClusterProps
                   </svg>
                )}
 
-               {/* Left action badge: one glyph (dwell arrow, else the action icon). */}
+               {/* Left action badge: one glyph (dwell arrow, else the action icon),
+                   translated fully off the dot's left and vertically centered. */}
                {GlyphIcon && (
                   <span
                      role="img"
                      aria-label={actionLabel}
-                     className="absolute right-3 top-0 flex size-[22px] -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-background"
+                     style={{ transform: 'translate(calc(-100% - 11px), -50%)' }}
+                     className="absolute left-0 top-0 flex size-[22px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-background"
                   >
                      <GlyphIcon className="size-3" />
                   </span>
                )}
 
-               {/* Right identity pill: the opaque "what am I dragging" node, when supplied. */}
+               {/* Right identity pill: the opaque "what am I dragging" node, offset
+                   up-and-to-the-right so it clears the pointer and the content beneath. */}
                {active && identity && (
-                  <div aria-hidden className="absolute left-3 top-0 -translate-y-1/2">
+                  <div aria-hidden style={{ left: '11px', top: '-11px', transform: 'translateY(-100%)' }} className="absolute">
                      {identity}
                   </div>
                )}

@@ -9,7 +9,7 @@
  */
 
 // -- Icon Imports (descriptor data only) --
-import { Download, ExternalLink, Plus, Save } from 'lucide-react';
+import { Download, ExternalLink, Move, Plus, Save } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /** What is being dragged, classified once at drag start. */
@@ -25,7 +25,7 @@ export type DragKind =
 export type DragOverZone = 'play-area' | 'sheet' | 'drawer' | null;
 
 /** The action a drop would perform right now; drives the morph cluster (null = hidden). */
-export type DragContext = 'open-tab' | 'open' | 'add-to-sheet' | 'save-to-drawer' | null;
+export type DragContext = 'open-tab' | 'open' | 'add-to-sheet' | 'save-to-drawer' | 'drawer-move' | null;
 
 /** The directional hint shown in the morph cluster (null = no arrow). */
 export type MorphArrow = 'in' | 'up' | null;
@@ -132,9 +132,15 @@ export function deriveDragContext(
    if (kind === 'drawer-character') {
       if (isOverTabLane) return 'open-tab';
       if (overZone === 'play-area') return 'open';
+      if (overZone === 'drawer') return 'drawer-move';
       return null;
    }
-   if (kind === 'drawer-component') return overZone === 'sheet' ? 'add-to-sheet' : null;
+   if (kind === 'drawer-component') {
+      if (overZone === 'sheet') return 'add-to-sheet';
+      if (overZone === 'drawer') return 'drawer-move';
+      return null;
+   }
+   if (kind === 'drawer-folder') return overZone === 'drawer' ? 'drawer-move' : null;
    if (kind === 'sheet-item') return overZone === 'drawer' ? 'save-to-drawer' : null;
    return null;
 }
@@ -150,6 +156,7 @@ export const MORPH_DESCRIPTORS: Record<NonNullable<DragContext>, MorphDescriptor
    open: { Icon: ExternalLink, labelKey: 'DragPuck.open' },
    'add-to-sheet': { Icon: Download, labelKey: 'DragPuck.addToSheet' },
    'save-to-drawer': { Icon: Save, labelKey: 'DragPuck.saveToDrawer' },
+   'drawer-move': { Icon: Move, labelKey: 'DragPuck.move' },
 };
 
 /** What the cluster's single left action badge should show (null = no glyph). */
