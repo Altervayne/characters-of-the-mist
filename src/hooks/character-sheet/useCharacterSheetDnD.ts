@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
+import cuid from 'cuid';
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
 
 // -- Utils Imports --
@@ -13,8 +14,10 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
@@ -57,6 +60,7 @@ export function useCharacterSheetDnD() {
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
    const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems } = useDrawerActions();
    const { setContextualGame } = useAppSettingsActions();
+   const { setDrawerOpen } = useAppGeneralStateActions();
 
    // ==================
    //  Utility & Library States
@@ -90,8 +94,11 @@ export function useCharacterSheetDnD() {
       const { active } = event;
 
       // A tab drag is previewed via its own overlay branch, not as a sheet item.
+      // Auto-open the drawer so the tab→drawer save has visible drop targets (the
+      // chosen affordance; it does not auto-close).
       if (active.data.current?.type === DRAG_TYPES.TAB) {
          setActiveTabDrag({ id: String(active.id), type: 'character' });
+         setDrawerOpen(true);
          return;
       }
 
@@ -105,7 +112,7 @@ export function useCharacterSheetDnD() {
       if (item) {
          setActiveDragItem(item);
       }
-   }, [character?.cards, character?.trackers]);
+   }, [character?.cards, character?.trackers, setDrawerOpen]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
@@ -215,6 +222,51 @@ export function useCharacterSheetDnD() {
       });
    }, [activeDragItem, initiateItemDrop]);
 
+   /**
+    * Save a dragged tab's character to the drawer as a NEW linked copy (owner
+    * decision: never overwrites). The character is resolved from its OWN instance by
+    * id, so dragging a background tab saves the right character — not the active one.
+    * The destination folder is derived from the drop target exactly as
+    * {@link handleSheetToDrawerDrop} does, and the live character is linked to the new
+    * item id WITHOUT clearing that tab's undo stack (`linkToDrawerItem`).
+    *
+    * @param tabId - The dragged tab's character id (its store instance key).
+    * @param overIdStr - The drop target's id.
+    * @param overType - The drop target's `data.current.type`.
+    * @param over - The drop target (for a back-button's `destinationId`).
+    */
+   const saveTabToDrawer = useCallback((
+      tabId: string,
+      overIdStr: string,
+      overType: string,
+      over: NonNullable<DragOverEvent['over']>,
+   ) => {
+      const instance = getOrCreateInstance(tabId);
+      const tabCharacter = instance.getState().character;
+      if (!tabCharacter) return;
+
+      let destinationFolderId: string | undefined = undefined;
+      if (overType === 'drawer-folder') {
+         destinationFolderId = overIdStr;
+      } else if (overIdStr.startsWith('drawer-drop-zone-')) {
+         const parsedId = overIdStr.replace('drawer-drop-zone-', '');
+         destinationFolderId = parsedId === 'root' ? undefined : parsedId;
+      } else if (overType === 'drawer-back-button') {
+         destinationFolderId = over.data.current?.destinationId ?? undefined;
+      }
+
+      const newItemId = cuid();
+      instance.getState().actions.linkToDrawerItem(newItemId);
+      initiateItemDrop({
+         game: tabCharacter.game,
+         type: 'FULL_CHARACTER_SHEET',
+         content: { ...tabCharacter, drawerItemId: newItemId },
+         parentFolderId: destinationFolderId,
+         presetId: newItemId,
+         defaultName: tabCharacter.name,
+      });
+   }, [initiateItemDrop]);
+
    const handleDragEnd = useCallback((event: DragEndEvent) => {
       const { active, over } = event;
 
@@ -234,12 +286,15 @@ export function useCharacterSheetDnD() {
       // ##########################################
       // ###   BRANCH 0: Reordering tab strip   ###
       // ##########################################
-      // A tab only reorders against another tab (collision detection scopes it so).
-      // Dropping a tab anywhere else is a no-op here (cross-context drag is a later
-      // phase). Reorder persistence is handled by the TabManager.
+      // A tab reorders against another tab, or saves to the drawer when dropped on a
+      // drawer target (collision detection scopes a tab drag to those two). Reorder
+      // persistence is the TabManager's; the save creates a new linked drawer copy.
       if (activeType === DRAG_TYPES.TAB) {
+         const tabId = (active.data.current?.tabId as string) ?? String(active.id);
          if (overType === DRAG_TYPES.TAB) {
             reorderTabs(String(active.id), String(over.id));
+         } else if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
+            saveTabToDrawer(tabId, overIdStr, overType, over);
          }
          return;
       }
@@ -257,6 +312,20 @@ export function useCharacterSheetDnD() {
             if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
                const characterData = draggedItem.content as Character;
                openCharacterTab(characterData, draggedItem.id);
+               setContextualGame(characterData.game);
+            }
+            return;
+         }
+
+         // ==================
+         //  SCENARIO 1.1b: Dropping a character onto the tab strip (open or focus)
+         // ==================
+         // Only FULL_CHARACTER_SHEET items are valid here; anything else is a no-op.
+         if (overIdStr === 'tab-strip-drop-zone') {
+            const draggedItem = active.data.current?.item as DrawerItem;
+            if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
+               const characterData = draggedItem.content as Character;
+               openCharacterTab(characterData, draggedItem.id); // append-or-focus
                setContextualGame(characterData.game);
             }
             return;
@@ -377,6 +446,7 @@ export function useCharacterSheetDnD() {
       handleSheetCardReorder,
       handleSheetTrackerReorder,
       handleSheetToDrawerDrop,
+      saveTabToDrawer,
       openCharacterTab,
       reorderTabs,
       setContextualGame,

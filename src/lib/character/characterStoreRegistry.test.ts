@@ -18,7 +18,7 @@ import {
  * app uses exactly one instance in Phase 1.
  */
 
-const CREATED_IDS = ['iso-A', 'iso-B', 'res-A', 'res-B', SINGLE_ACTIVE_INSTANCE_ID];
+const CREATED_IDS = ['iso-A', 'iso-B', 'res-A', 'res-B', 'link-A', SINGLE_ACTIVE_INSTANCE_ID];
 
 afterEach(() => {
    CREATED_IDS.forEach(disposeInstance);
@@ -86,5 +86,22 @@ describe('character store registry', () => {
 
    it('getActiveCharacterStore is null when nothing is active', () => {
       expect(getActiveCharacterStore()).toBeNull();
+   });
+
+   it('linkToDrawerItem sets drawerItemId WITHOUT clearing the undo stack', () => {
+      const instance = getOrCreateInstance('link-A');
+      instance.getState().actions.createCharacter('LEGENDS');
+      instance.getState().actions.updateCharacterName('Edited'); // build undo history
+      const pastBefore = instance.temporal.getState().pastStates.length;
+      expect(pastBefore).toBeGreaterThan(0);
+
+      instance.getState().actions.linkToDrawerItem('item-xyz');
+
+      expect(instance.getState().character?.drawerItemId).toBe('item-xyz');
+      // Stack preserved (not cleared, unlike loadCharacter); the link is one more entry.
+      expect(instance.temporal.getState().pastStates.length).toBeGreaterThanOrEqual(pastBefore);
+      // Undo reverts the link only — the earlier edit survives, proving history intact.
+      instance.temporal.getState().undo();
+      expect(instance.getState().character?.name).toBe('Edited');
    });
 });

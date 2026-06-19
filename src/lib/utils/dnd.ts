@@ -55,12 +55,23 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // ==================
    //  If dragging a tab (the desktop tab strip shares the sheet's DndContext)
    // ==================
-   // A tab only ever reorders against other tabs, so collisions are scoped to the
-   // tab droppables; this keeps tab drags from resolving against sheet/drawer zones.
+   // A tab reorders against other tabs, OR saves into the drawer when dropped on a
+   // drawer target. Prioritise drawer drop zones, then folders / back-buttons
+   // (pointerWithin), and otherwise resolve the tab sortables for reordering.
    if (activeDataType === 'tab') {
-      const tabDroppables = args.droppableContainers.filter(
-         (container) => container.data.current?.type === 'tab',
+      const drawerZoneDroppables = args.droppableContainers.filter((container) =>
+         container.id.toString().startsWith('drawer-drop-zone-'),
       );
+      const drawerZoneCollisions = pointerWithin({ ...args, droppableContainers: drawerZoneDroppables });
+      if (drawerZoneCollisions.length > 0) return drawerZoneCollisions;
+
+      const folderDroppables = args.droppableContainers.filter(
+         (container) => container.data.current?.type === 'drawer-folder' || container.id.toString().startsWith('drawer-back-button-'),
+      );
+      const folderCollisions = pointerWithin({ ...args, droppableContainers: folderDroppables });
+      if (folderCollisions.length > 0) return folderCollisions;
+
+      const tabDroppables = args.droppableContainers.filter((container) => container.data.current?.type === 'tab');
       return closestCenter({ ...args, droppableContainers: tabDroppables });
    }
 
@@ -73,6 +84,7 @@ export const customCollisionDetection: CollisionDetection = (args) => {
          const containerType = container.data.current?.type as string;
          return (
             container.id === 'main-character-drop-zone' ||
+            container.id === 'tab-strip-drop-zone' ||
             containerType === 'drawer-item' ||
             containerType === 'drawer-folder' ||
             containerId.startsWith('drawer-back-button-')

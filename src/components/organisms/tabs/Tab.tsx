@@ -49,8 +49,8 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
    const game = useStore(instance, (state) => state.character?.game);
    const label = name && name.trim().length > 0 ? name : t('Tabs.untitled');
 
-   // Left game-icon block: the tab's game icon in white on the game's solid colour
-   // (a neutral placeholder when the game is momentarily unavailable).
+   // Left game crest: a centered, rounded, gradient-filled square with a white icon
+   // and a subtle inner ring (a neutral placeholder when the game is unavailable).
    const gameVisual = getGameVisual(game);
    const GameIcon = gameVisual.Icon;
 
@@ -77,8 +77,15 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          ref={setRefs}
          style={{ transform: CSS.Translate.toString(transform), transition }}
          className={cn(
-            'group relative flex shrink-0 items-center gap-2 overflow-hidden border-r border-border pr-1 max-w-[12rem] border-t-2',
-            isActive ? 'bg-background border-t-primary' : 'bg-muted/40 border-t-transparent hover:bg-muted/70',
+            'group relative flex shrink-0 items-center gap-1.5 rounded-t-[10px] pr-1 max-w-[12rem]',
+            // Active tab: same fill as the sheet, lifted above the strip's bottom
+            // border and pulled down 1px to overlap it, so it reads as one surface
+            // connected to the content below (no seam). Inactive tabs are lighter
+            // recessed chips nudged down a touch (the strip aligns the row to its
+            // baseline) so the active tab stands proud of them.
+            isActive
+               ? 'relative z-10 -mb-px bg-background pb-px'
+               : 'mt-1 bg-muted/40 hover:bg-muted/70',
             // While dragging, the free-floating DragOverlay preview is what moves;
             // dim the in-strip source so its slot reads as a placeholder gap.
             isDragging && 'opacity-30',
@@ -86,9 +93,12 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
       >
          <div
             aria-hidden
-            className={cn('flex w-7 shrink-0 self-stretch items-center justify-center', gameVisual.solidBg)}
+            className={cn(
+               'ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25',
+               gameVisual.gradient,
+            )}
          >
-            <GameIcon className="h-3.5 w-3.5 text-white" />
+            <GameIcon className="h-4 w-4 text-white" />
          </div>
          <button
             type="button"

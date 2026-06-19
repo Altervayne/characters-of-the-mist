@@ -81,6 +81,7 @@ export interface CharacterState {
    actions: {
       createCharacter: (game: GameSystem) => void;
       loadCharacter: (character: Character, drawerItemId?: string) => void;
+      linkToDrawerItem: (drawerItemId: string) => void;
       resetCharacter: () => void;
       returnToMenu: () => void;
       setGame: (game: Character['game']) => void;
@@ -212,6 +213,16 @@ export function createCharacterStore() {
                         drawerItemId: drawerItemId
                      } }
                   })
+               },
+               linkToDrawerItem: (drawerItemId) => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     // Link to a drawer item WITHOUT clearing the undo stack (unlike
+                     // loadCharacter): used by the tab→drawer save so dragging a
+                     // background tab to the drawer doesn't reset that tab's history.
+                     return { character: { ...state.character, drawerItemId } };
+                  });
                },
                resetCharacter: () => {
                   set((state) => {
