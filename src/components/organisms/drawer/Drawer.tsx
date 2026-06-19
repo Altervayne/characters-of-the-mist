@@ -193,7 +193,10 @@ export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetI
                               <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
                                  {currentFolders.map((folder, index) => {
                                     const dropZoneId = `drop-zone-before-${folder.id}`;
-                                    const showDropZone = index !== activeFolderIndex && index !== activeFolderIndex + 1;
+                                    // Folder reposition zones only make sense while a FOLDER from this view is
+                                    // being dragged. `activeFolderIndex` is -1 during an item drag, so without
+                                    // this guard the zones would render mid-item-drag (the slots between folders).
+                                    const showDropZone = activeFolderIndex !== -1 && index !== activeFolderIndex && index !== activeFolderIndex + 1;
 
                                     return (
                                        <React.Fragment key={folder.id}>
@@ -223,7 +226,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetI
                                        </React.Fragment>
                                     )
                                  })}
-                                 {activeFolderIndex !== currentFolders.length - 1 && (
+                                 {activeFolderIndex !== -1 && activeFolderIndex !== currentFolders.length - 1 && (
                                     <FolderDropZone
                                        id={`drop-zone-after-last`}
                                        activeId={activeDragId}
@@ -247,7 +250,11 @@ export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetI
                               data-drawer-items-area
                               className={cn(
                                  "w-full grow min-h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
-                                 isDragHovering && "border-primary bg-primary/10"
+                                 // Highlight when something is positioned to drop into THIS folder body:
+                                 // a sheet item saving in (`isDragHovering`) OR any droppable item whose
+                                 // resolved `over` is this items-area zone (a drawer item moving in
+                                 // cross-folder). Same-folder reorder resolves to a row, so no body highlight.
+                                 (isDragHovering || overDragId === droppableId) && "border-primary bg-primary/10"
                               )}
                            >
                               {currentItems.length > 0 ? (

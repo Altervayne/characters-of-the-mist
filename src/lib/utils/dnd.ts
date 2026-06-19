@@ -157,6 +157,29 @@ export const customCollisionDetection: CollisionDetection = (args) => {
          const type = container.data.current?.type as string;
          return type === 'drawer-item' || type === 'sheet-card' || type === 'sheet-tracker';
       });
+
+      // The current folder's items-area drop zone (`drawer-drop-zone-<id>`). It spatially
+      // contains the item rows, so when the cursor is within it we decide: a drop into a
+      // DIFFERENT folder than the item's origin (e.g. after spring-navigating in, or an
+      // empty folder) resolves to the zone (a move-into-folder); a same-folder drop falls
+      // through to reorder over the nearest item row. Without this an empty destination
+      // resolved to `over = null` and the item couldn't be dropped.
+      const itemsAreaDroppables = args.droppableContainers.filter((container) =>
+         container.id.toString().startsWith('drawer-drop-zone-'),
+      );
+      const itemsAreaCollisions = pointerWithin({ ...args, droppableContainers: itemsAreaDroppables });
+      if (itemsAreaCollisions.length > 0) {
+         const destFolder = itemsAreaCollisions[0].id.toString().slice('drawer-drop-zone-'.length);
+         const originParent = args.active.data.current?.parentFolderId;
+         const originFolder = originParent == null ? 'root' : String(originParent);
+         if (destFolder !== originFolder) {
+            return itemsAreaCollisions; // moving into a different folder → the folder body wins
+         }
+         // Same folder: reorder over a sibling row if there is one, else the (empty) zone.
+         const sameFolderItemCollisions = closestCenter({ ...args, droppableContainers: itemDroppables });
+         return sameFolderItemCollisions.length > 0 ? sameFolderItemCollisions : itemsAreaCollisions;
+      }
+
       return closestCenter({ ...args, droppableContainers: itemDroppables });
    }
 

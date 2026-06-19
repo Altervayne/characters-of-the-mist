@@ -142,6 +142,9 @@ export function useCharacterSheetDnD() {
    // Whether the dragged item can actually land on the current sheet (game match).
    // Gates the 'add-to-sheet' glyph: no action possible → no glyph (still morphs).
    const sheetCompatibleRef = useRef(true);
+   // Reactive flag for the whole drag of a game-incompatible component, driving the
+   // large "can't drop here" overlay over the sheet (issue 5). Set once at drag start.
+   const [isIncompatibleComponentDrag, setIsIncompatibleComponentDrag] = useState(false);
    // The character a dragged SHEET item came from, so a drop on a DIFFERENT tab's
    // sheet (after tab auto-nav) imports a copy rather than a no-op reorder.
    const dragSourceCharacterIdRef = useRef<string | null>(null);
@@ -165,6 +168,9 @@ export function useCharacterSheetDnD() {
    const [springTarget, setSpringTarget] = useState<string | null>(null);
    const draggedFolderIdRef = useRef<string | null>(null);
    const springNavigatingRef = useRef(false);
+   // The live cursor, captured each move, so an async spring navigation can re-fire a
+   // synthetic pointermove there once the destination's droppables mount (issue 2).
+   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
 
    /**
     * Performs a spring navigation when a dwell completes: drill into a folder, or go
@@ -186,6 +192,14 @@ export function useCharacterSheetDnD() {
       springNavigatingRef.current = true;
       void Promise.resolve(setDrawerCurrentFolderId(destination)).finally(() => {
          springNavigatingRef.current = false;
+         // The dwell fired without pointer movement, so @dnd-kit's `over` still points
+         // at the old (now unmounted) view. The destination's droppables just mounted;
+         // re-fire a synthetic pointermove at the live cursor so `over` re-resolves and
+         // a dwell-then-release drops into the new folder. Guard on an active drag.
+         const cursor = lastPointerRef.current;
+         if (cursor && dragKindRef.current) {
+            window.dispatchEvent(new PointerEvent('pointermove', { clientX: cursor.x, clientY: cursor.y, bubbles: true }));
+         }
       });
    }, [setDrawerCurrentFolderId, setActiveTab]);
 
@@ -243,6 +257,7 @@ export function useCharacterSheetDnD() {
    const handlePointerMove = useCallback((event: PointerEvent) => {
       // Pin the cursor cluster to the pointer (imperative; no re-render).
       setCursor(event.clientX, event.clientY);
+      lastPointerRef.current = { x: event.clientX, y: event.clientY };
 
       const rect = tabStripElRef.current?.getBoundingClientRect() ?? null;
       const overLane = isOverTabLaneFor(dragKindRef.current, rect, event.clientX, event.clientY);
@@ -327,11 +342,13 @@ export function useCharacterSheetDnD() {
       springNavigatingRef.current = false;
       dragSourceCharacterIdRef.current = null;
       sheetCompatibleRef.current = true;
+      lastPointerRef.current = null;
       if (forceMorphRef.current) {
          forceMorphRef.current = false;
          setForceMorph(false);
       }
       setSheetHighlight(null);
+      setIsIncompatibleComponentDrag(false);
       // Clear the morph feedback (clone funnel + cursor cluster).
       resetMorph();
    }, [handlePointerMove, resetMorph]);
@@ -373,8 +390,17 @@ export function useCharacterSheetDnD() {
       }
 
       if (active.data.current?.isDrawer) {
-         setActiveDragItem(active.data.current.item as DrawerItem | FolderType);
+         const drawerItem = active.data.current.item as DrawerItem | FolderType;
+         setActiveDragItem(drawerItem);
          setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, untitledLabel }));
+         // A component dragged while a character of a DIFFERENT game is loaded can't be
+         // dropped on the sheet — flag it to show the "can't drop here" overlay.
+         if (
+            dragKindRef.current === 'drawer-component' && character &&
+            (drawerItem as DrawerItem).game !== character.game
+         ) {
+            setIsIncompatibleComponentDrag(true);
+         }
          return;
       }
 
@@ -387,7 +413,7 @@ export function useCharacterSheetDnD() {
          // tab auto-nav) imports a copy instead of a no-op same-character reorder.
          dragSourceCharacterIdRef.current = character?.id ?? null;
       }
-   }, [character?.id, character?.cards, character?.trackers, setDrawerOpen, handlePointerMove, captureGrab, setIdentity, tNotifications]);
+   }, [character, setDrawerOpen, handlePointerMove, captureGrab, setIdentity, tNotifications]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
@@ -706,8 +732,22 @@ export function useCharacterSheetDnD() {
                if (activeIsItem) void moveItem(draggedId, destinationFolderId);
                return;
             }
+            if (activeIsItem && overIdStr.startsWith('drawer-drop-zone-')) {
+               // Dropped in the current folder body (incl. an empty folder, or a
+               // different folder reached via spring-nav): move the item into the
+               // destination parsed from the zone id ('root' → root). No-op if already there.
+               const parsed = overIdStr.replace('drawer-drop-zone-', '');
+               const destinationFolderId = parsed === 'root' ? null : parsed;
+               if (destinationFolderId !== parentFolderId) void moveItem(active.id.toString(), destinationFolderId ?? undefined);
+               return;
+            }
             if (overType === 'drawer-item' && activeIsItem) {
-               if (active.data.current?.parentFolderId !== over.data.current?.parentFolderId) return;
+               const overParent = (over.data.current?.parentFolderId ?? null) as string | null;
+               if (parentFolderId !== overParent) {
+                  // Dropped among a DIFFERENT folder's items (e.g. after spring-nav) → move it in.
+                  void moveItem(active.id.toString(), overParent ?? undefined);
+                  return;
+               }
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
                const newIndex = itemsInScope.findIndex(item => item.id === over.id);
                if (oldIndex !== -1 && newIndex !== -1) void reorderItems(parentFolderId, oldIndex, newIndex);
@@ -731,10 +771,20 @@ export function useCharacterSheetDnD() {
             if (activeType !== 'drawer-item') return;
 
             const draggedItem = active.data.current?.item as DrawerItem;
-            if (!draggedItem || draggedItem.game !== character.game) return;
+            if (!draggedItem) return;
 
             const isTrackerType = draggedItem.type === 'STATUS_TRACKER' || draggedItem.type === 'STORY_TAG_TRACKER' || draggedItem.type === 'STORY_THEME_TRACKER';
             const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME';
+
+            // Only sheet components add here; a FULL_CHARACTER_SHEET over the sheet is
+            // not a failure (it opens a tab via its own zone), so don't toast for it.
+            if (!isTrackerType && !isCardType) return;
+
+            // Game mismatch: the drop can't land — tell the user why instead of a silent no-op.
+            if (draggedItem.game !== character.game) {
+               toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
+               return;
+            }
 
             if (isTrackerType) {
                addImportedTracker(draggedItem.content as Tracker);
@@ -850,6 +900,9 @@ export function useCharacterSheetDnD() {
       springTarget,
       // Content-aware sheet highlight (tabs polish-11): which section to light up.
       sheetHighlight,
+      // "Can't drop here" overlay flag (tabs polish-12): a game-incompatible component
+      // is being dragged while a character is loaded.
+      isIncompatibleComponentDrag,
       // Drag-morph engine slots (tabs polish-8): clone goes inside <DragOverlay>,
       // cluster is a sibling.
       renderClone,

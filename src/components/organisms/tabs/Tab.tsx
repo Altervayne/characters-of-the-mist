@@ -92,15 +92,9 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             isDragging && 'opacity-30',
          )}
       >
-         <div
-            aria-hidden
-            className={cn(
-               'ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25',
-               gameVisual.gradient,
-            )}
-         >
-            <GameIcon className="h-4 w-4 text-white" />
-         </div>
+         {/* Crest + label are ONE activate/drag surface so the crest is no longer a
+             dead zone: the whole tab (except the X) clicks to activate and drags to
+             reorder. The crest stays decorative (`aria-hidden`) inside it. */}
          <button
             type="button"
             onClick={() => setActiveTab(tab.id)}
@@ -108,11 +102,20 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             {...attributes}
             {...listeners}
             className={cn(
-               'min-w-0 flex-1 truncate py-2 text-sm cursor-pointer text-left touch-none select-none',
+               'flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pl-2 text-sm cursor-pointer text-left touch-none select-none',
                isActive ? 'text-foreground font-medium' : 'text-muted-foreground',
             )}
          >
-            {label}
+            <span
+               aria-hidden
+               className={cn(
+                  'flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25',
+                  gameVisual.gradient,
+               )}
+            >
+               <GameIcon className="h-4 w-4 text-white" />
+            </span>
+            <span className="min-w-0 flex-1 truncate">{label}</span>
          </button>
          <button
             type="button"

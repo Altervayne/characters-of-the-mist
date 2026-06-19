@@ -11,7 +11,7 @@ import { useCharacterSheetUndoRedo } from '@/hooks/character-sheet/useCharacterS
 import { useCardDialogState } from '@/hooks/character-sheet/useCardDialogState';
 
 // -- Other Library Imports --
-import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { AnimatePresence } from 'framer-motion';
 
 // -- Utils Imports --
@@ -31,6 +31,7 @@ import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
+import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
@@ -93,6 +94,7 @@ function DesktopCharacterSheetPage() {
       isOverTabLane,
       springTarget,
       sheetHighlight,
+      isIncompatibleComponentDrag,
       renderClone,
       renderCluster,
    } = useCharacterSheetDnD();
@@ -180,7 +182,7 @@ function DesktopCharacterSheetPage() {
    }
 
    return (
-      <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection}>
+      <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
          <div className="flex bg-background text-foreground" style={{ height: '100dvh', width: '100dvw' }}>
             <SidebarMenu 
                isEditing={isEditing}
@@ -246,6 +248,9 @@ function DesktopCharacterSheetPage() {
 
                   {/* Character from Drawer Drop Zone */}
                   <CharacterLoadDropZone activeDragItem={activeDragItem} />
+
+                  {/* "Can't drop here" overlay for an incompatible (wrong-game) component */}
+                  <CannotDropOverlay active={isIncompatibleComponentDrag} />
 
                   {/* File Drop Zone */}
                   <FileDragOverlay isDragActive={isFileDragActive} />

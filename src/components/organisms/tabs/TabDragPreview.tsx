@@ -43,9 +43,18 @@ export function TabDragPreview({ tab }: { tab: OpenTab }) {
    const GameIcon = gameVisual.Icon;
 
    return (
-      <div className="flex h-full w-full items-center gap-2 overflow-hidden rounded-md border border-border bg-background shadow-lg cursor-grabbing pr-1">
-         <div aria-hidden className={cn('flex w-7 shrink-0 self-stretch items-center justify-center', gameVisual.solidBg)}>
-            <GameIcon className="h-3.5 w-3.5 text-white" />
+      // Mirrors the active Tab (gradient crest + inner ring, label, close glyph) but
+      // as a free-floating chip: rounded on ALL four corners (the tab is rounded-top
+      // only) with a drop shadow.
+      <div className="flex h-full w-full items-center gap-1.5 overflow-hidden rounded-[10px] border border-border bg-background shadow-lg cursor-grabbing pr-1">
+         <div
+            aria-hidden
+            className={cn(
+               'ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25',
+               gameVisual.gradient,
+            )}
+         >
+            <GameIcon className="h-4 w-4 text-white" />
          </div>
          <span className="min-w-0 flex-1 truncate py-2 text-sm font-medium text-foreground">{label}</span>
          <span aria-hidden className="shrink-0 rounded p-1 text-muted-foreground opacity-60">
