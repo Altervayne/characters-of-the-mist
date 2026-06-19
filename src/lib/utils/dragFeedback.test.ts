@@ -1,14 +1,19 @@
 // -- Library Imports --
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // -- Local Imports --
 import {
+   SPRING_HOLD_MS,
    TAB_LANE_BELOW_PADDING,
    TAB_LANE_SIDE_PADDING,
+   createSpringController,
    deriveDragContext,
    isOverTabLaneFor,
    isWithinTabLane,
+   resolveSpringTarget,
    type LaneRect,
+   type SpringHitArea,
+   type SpringTarget,
 } from './dragFeedback';
 
 /*
@@ -90,5 +95,112 @@ describe('deriveDragContext (kind + over-zone → action)', () => {
       expect(deriveDragContext('drawer-character', null, false)).toBeNull();
       expect(deriveDragContext('drawer-component', null, false)).toBeNull();
       expect(deriveDragContext('sheet-item', 'sheet', false)).toBeNull();
+   });
+});
+
+// Three stacked 40px folder rows, with a Back button above them.
+const back: LaneRect = { left: 0, right: 200, top: 0, bottom: 30, height: 30 };
+const folders: SpringHitArea[] = [
+   { id: 'f1', rect: { left: 0, right: 200, top: 40, bottom: 80, height: 40 } },
+   { id: 'f2', rect: { left: 0, right: 200, top: 80, bottom: 120, height: 40 } },
+   { id: 'f3', rect: { left: 0, right: 200, top: 120, bottom: 160, height: 40 } },
+];
+
+describe('resolveSpringTarget (dwell hit-test)', () => {
+   it('resolves the folder under the cursor', () => {
+      expect(resolveSpringTarget(folders, back, 100, 100, null)).toEqual({ kind: 'folder', id: 'f2' });
+   });
+
+   it('resolves Back first when over the Back button', () => {
+      expect(resolveSpringTarget(folders, back, 100, 15, null)).toEqual({ kind: 'back' });
+   });
+
+   it('treats Back as absent at root (null rect)', () => {
+      expect(resolveSpringTarget(folders, null, 100, 15, null)).toBeNull();
+   });
+
+   it('excludes the folder being dragged', () => {
+      // Cursor squarely over f2, but f2 is the dragged folder → no target.
+      expect(resolveSpringTarget(folders, back, 100, 100, 'f2')).toBeNull();
+   });
+
+   it('returns null over empty space', () => {
+      expect(resolveSpringTarget(folders, back, 100, 500, null)).toBeNull();
+   });
+});
+
+describe('createSpringController (dwell timer)', () => {
+   beforeEach(() => vi.useFakeTimers());
+   afterEach(() => vi.useRealTimers());
+
+   const folderTarget: SpringTarget = { kind: 'folder', id: 'f1' };
+   const otherTarget: SpringTarget = { kind: 'folder', id: 'f2' };
+   const backTarget: SpringTarget = { kind: 'back' };
+
+   it('fires navigation after holding the same target for SPRING_HOLD_MS', () => {
+      const onNavigate = vi.fn();
+      const controller = createSpringController({ onNavigate });
+
+      controller.setTarget(folderTarget);
+      vi.advanceTimersByTime(SPRING_HOLD_MS - 1);
+      expect(onNavigate).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onNavigate).toHaveBeenCalledExactlyOnceWith(folderTarget);
+   });
+
+   it('fires the Back target after the hold', () => {
+      const onNavigate = vi.fn();
+      const controller = createSpringController({ onNavigate });
+
+      controller.setTarget(backTarget);
+      vi.advanceTimersByTime(SPRING_HOLD_MS);
+      expect(onNavigate).toHaveBeenCalledExactlyOnceWith(backTarget);
+   });
+
+   it('restarts the timer when the target changes (no nav to the first)', () => {
+      const onNavigate = vi.fn();
+      const controller = createSpringController({ onNavigate });
+
+      controller.setTarget(folderTarget);
+      vi.advanceTimersByTime(SPRING_HOLD_MS - 100); // not yet
+      controller.setTarget(otherTarget); // switch before it fires
+      vi.advanceTimersByTime(SPRING_HOLD_MS - 100); // would have fired the first by now
+      expect(onNavigate).not.toHaveBeenCalledWith(folderTarget);
+      vi.advanceTimersByTime(100); // complete the second hold
+      expect(onNavigate).toHaveBeenCalledExactlyOnceWith(otherTarget);
+   });
+
+   it('does not restart while the same target is held continuously', () => {
+      const onTargetChange = vi.fn();
+      const controller = createSpringController({ onNavigate: vi.fn(), onTargetChange });
+
+      controller.setTarget(folderTarget);
+      controller.setTarget(folderTarget); // same target, repeated moves
+      expect(onTargetChange).toHaveBeenCalledExactlyOnceWith('f1');
+   });
+
+   it('cancel() aborts a pending dwell (a drop before the hold wins)', () => {
+      const onNavigate = vi.fn();
+      const onTargetChange = vi.fn();
+      const controller = createSpringController({ onNavigate, onTargetChange });
+
+      controller.setTarget(folderTarget);
+      vi.advanceTimersByTime(SPRING_HOLD_MS - 50);
+      controller.cancel(); // drop happens here
+      vi.advanceTimersByTime(SPRING_HOLD_MS);
+      expect(onNavigate).not.toHaveBeenCalled();
+      expect(onTargetChange).toHaveBeenLastCalledWith(null);
+   });
+
+   it('a null target clears the affordance without navigating', () => {
+      const onNavigate = vi.fn();
+      const onTargetChange = vi.fn();
+      const controller = createSpringController({ onNavigate, onTargetChange });
+
+      controller.setTarget(folderTarget);
+      controller.setTarget(null); // cursor left the row before the hold
+      vi.advanceTimersByTime(SPRING_HOLD_MS);
+      expect(onNavigate).not.toHaveBeenCalled();
+      expect(onTargetChange).toHaveBeenLastCalledWith(null);
    });
 });

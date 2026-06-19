@@ -653,3 +653,12 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
 @utility layer-backdrop { z-index: 40; }
 @utility layer-panel { z-index: 50; }
 @utility layer-overlay { z-index: 60; }
+
+/* Spring-loaded drawer navigation (tabs polish-7): the dwell progress bar fills
+   left-to-right over the hold window. The 800ms here MUST match SPRING_HOLD_MS in
+   src/lib/utils/dragFeedback.ts. `forwards` holds it full until the row remounts. */
+@keyframes spring-fill {
+   from { width: 0; }
+   to { width: 100%; }
+}
+@utility animate-spring-fill { animation: spring-fill 800ms linear forwards; }

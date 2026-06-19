@@ -94,6 +94,7 @@ function DesktopCharacterSheetPage() {
       cursorRef,
       dragContext,
       isOverTabLane,
+      springTarget,
    } = useCharacterSheetDnD();
 
    // The cursor puck mounts for the whole drag (so its node — and thus the imperative
@@ -259,7 +260,8 @@ function DesktopCharacterSheetPage() {
                   <Drawer
                      isDragHovering={isOverDrawer}
                      activeDragId={activeDragItem?.id ?? null}
-                     overDragId={overDragId} 
+                     overDragId={overDragId}
+                     springTargetId={springTarget}
                   />
                }
             </AnimatePresence>

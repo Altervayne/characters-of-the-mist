@@ -9,7 +9,7 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { deriveDragContext, isOverTabLaneFor } from '@/lib/utils/dragFeedback';
+import { createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget } from '@/lib/utils/dragFeedback';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Store Imports --
@@ -24,7 +24,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
-import type { DragContext, DragKind, DragOverZone } from '@/lib/utils/dragFeedback';
+import type { DragContext, DragKind, DragOverZone, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
 
 
 
@@ -82,7 +82,7 @@ export function useCharacterSheetDnD() {
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
-   const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems } = useDrawerActions();
+   const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems, setDrawerCurrentFolderId } = useDrawerActions();
    const { setContextualGame } = useAppSettingsActions();
    const { setDrawerOpen } = useAppGeneralStateActions();
 
@@ -132,6 +132,47 @@ export function useCharacterSheetDnD() {
    const isOverTabLaneRef = useRef(false);
    const dragContextRef = useRef<DragContext>(null);
 
+   // ==================
+   //  Spring-loaded drawer navigation (tabs polish-7)
+   // ==================
+   // Dwelling on a folder row / Back button mid-drag drills the drawer there without
+   // ending the drag, so a deep move is one continuous gesture. `springTarget` (state)
+   // drives the progress affordance on the hovered row; `draggedFolderIdRef` excludes
+   // the held folder; `springNavigatingRef` guards against re-firing while a (async)
+   // navigation is in flight. The controller owns the dwell timer (see dragFeedback).
+   const [springTarget, setSpringTarget] = useState<string | null>(null);
+   const draggedFolderIdRef = useRef<string | null>(null);
+   const springNavigatingRef = useRef(false);
+
+   /**
+    * Performs a spring navigation when a dwell completes: drill into a folder, or go
+    * up via the parent (read fresh from the store so Back is never stale). Guards
+    * against re-firing while a navigation is in flight; the next pointer move
+    * re-derives the dwell against the freshly loaded view, chaining multi-level
+    * drilling without ending the drag.
+    */
+   const handleSpringNavigate = useCallback((target: SpringTarget) => {
+      if (springNavigatingRef.current) return;
+      const destination = target.kind === 'back' ? useDrawerStore.getState().parentFolderId : target.id;
+      springNavigatingRef.current = true;
+      void Promise.resolve(setDrawerCurrentFolderId(destination)).finally(() => {
+         springNavigatingRef.current = false;
+      });
+   }, [setDrawerCurrentFolderId]);
+
+   // The dwell controller is an imperative object created once (in an effect, not
+   // during render, so its ref-reading callback is allowed) and reused for the
+   // hook's lifetime; the event handlers below drive it via the ref.
+   const springControllerRef = useRef<SpringController | null>(null);
+   useEffect(() => {
+      springControllerRef.current = createSpringController({
+         onTargetChange: setSpringTarget,
+         onNavigate: handleSpringNavigate,
+      });
+      const controller = springControllerRef.current;
+      return () => controller.cancel();
+   }, [handleSpringNavigate]);
+
    /**
     * Recomputes the drag context from the current kind + over-zone + lane flag and
     * commits it to state only when it actually changes (the puck re-renders rarely).
@@ -164,6 +205,24 @@ export function useCharacterSheetDnD() {
       }
 
       updateContext();
+
+      // Spring-loaded drawer navigation: hit-test the live folder rows + Back button
+      // against the cursor (re-queried each move, so it stays correct across spring-
+      // navigations) and feed the result to the dwell controller. Empty/absent when
+      // the drawer is closed, so this no-ops for drags that never enter the drawer.
+      const backEl = document.querySelector('[data-drawer-back]');
+      const backRect = backEl ? backEl.getBoundingClientRect() : null;
+      const folders: SpringHitArea[] = Array.from(
+         document.querySelectorAll<HTMLElement>('[data-folder-id]'),
+      ).flatMap((el) => (el.dataset.folderId ? [{ id: el.dataset.folderId, rect: el.getBoundingClientRect() }] : []));
+      const springTargetUnderCursor = resolveSpringTarget(
+         folders,
+         backRect,
+         event.clientX,
+         event.clientY,
+         draggedFolderIdRef.current,
+      );
+      springControllerRef.current?.setTarget(springTargetUnderCursor);
    }, [updateContext]);
 
    /**
@@ -184,6 +243,10 @@ export function useCharacterSheetDnD() {
          dragContextRef.current = null;
          setDragContext(null);
       }
+      // Abort any pending spring dwell (a drop / cancel must win over navigation).
+      springControllerRef.current?.cancel();
+      draggedFolderIdRef.current = null;
+      springNavigatingRef.current = false;
    }, [handlePointerMove]);
 
    // Safety net: never leak the window listener if the sheet unmounts mid-drag.
@@ -198,6 +261,8 @@ export function useCharacterSheetDnD() {
       tabStripElRef.current = document.querySelector<HTMLElement>('[data-tab-strip]');
       isOverTabLaneRef.current = false;
       overZoneRef.current = null;
+      // The dragged folder is excluded as a spring target (can't drill into what you hold).
+      draggedFolderIdRef.current = dragKindRef.current === 'drawer-folder' ? String(active.id) : null;
       window.addEventListener('pointermove', handlePointerMove);
 
       // A tab drag is previewed via its own overlay branch, not as a sheet item.
@@ -631,5 +696,8 @@ export function useCharacterSheetDnD() {
       cursorRef,
       dragContext,
       isOverTabLane,
+      // Spring-loaded drawer navigation (tabs polish-7): the active dwell target id
+      // (folder id or the Back sentinel), for the progress affordance.
+      springTarget,
    };
 }

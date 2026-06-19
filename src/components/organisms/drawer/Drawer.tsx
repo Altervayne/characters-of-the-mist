@@ -17,12 +17,14 @@ import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Ro
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
+import { SPRING_BACK_KEY } from '@/lib/utils/dragFeedback';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
 import { DrawerFolderEntry } from '@/components/molecules/drawer/DrawerFolderEntry';
 import { DrawerItemEntry } from '@/components/molecules/drawer/DrawerItemEntry';
 import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerCompactItemEntry';
+import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwellAffordance';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
@@ -59,7 +61,7 @@ const contentVariants: Variants = {
 };
 
 
-export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHovering : boolean, activeDragId: string | null, overDragId: string | null; }) {
+export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, overDragId: string | null; springTargetId?: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
 
@@ -174,15 +176,17 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                  layout
                                  transition={{ duration: 0.1 }}
                                  ref={backButtonRef}
+                                 data-drawer-back
                                  onClick={() => navigateToFolder(parentFolderId)}
                                  className={cn(
-                                    'flex h-10 items-center gap-2 p-2 bg-card rounded hover:bg-muted cursor-pointer mb-2 transition-colors',
+                                    'relative flex h-10 items-center gap-2 p-2 bg-card rounded hover:bg-muted cursor-pointer mb-2 transition-colors',
                                     { 'bg-muted': isOverBackButton && activeDragId }
                                  )}
                                  role="button"
                               >
                                  <ArrowLeft className="h-5 w-5" />
                                  <span className="font-medium text-sm">{tActions('Drawer.Actions.moveUp')}</span>
+                                 <SpringDwellAffordance active={springTargetId === SPRING_BACK_KEY} />
                               </motion.div>
                            )}
                            {currentFolders.length > 0 && (
@@ -210,6 +214,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId }: { isDragHov
                                              folder={folder}
                                              parentFolderId={currentFolderId}
                                              isOver={!!activeDragId && overDragId === folder.id && activeDragId !== folder.id}
+                                             isSpringTarget={springTargetId === folder.id}
                                              onNavigate={navigateToFolder}
                                              onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
                                              onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}

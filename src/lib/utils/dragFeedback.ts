@@ -43,6 +43,11 @@ export interface LaneRect {
    height: number;
 }
 
+/** Whether a point falls inside a rect (inclusive edges). */
+function pointInRect(rect: { left: number; right: number; top: number; bottom: number }, x: number, y: number): boolean {
+   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
 /**
  * Tests a cursor point against the tab strip's rect padded generously sideways and
  * (especially) downward into the top band — far more forgiving than @dnd-kit's thin
@@ -112,4 +117,129 @@ export function deriveDragContext(
    if (kind === 'drawer-component') return overZone === 'sheet' ? 'add-to-sheet' : null;
    if (kind === 'sheet-item') return overZone === 'drawer' ? 'save-to-drawer' : null;
    return null;
+}
+
+
+// ==================
+//  Spring-loaded drawer navigation (tabs polish-7)
+// ==================
+
+/**
+ * How long (ms) the cursor must dwell on a folder/Back target before the drawer
+ * navigates there mid-drag. MUST stay in sync with the `spring-fill` keyframe
+ * duration in `global.css` (the progress affordance fills over the same window).
+ */
+export const SPRING_HOLD_MS = 800;
+
+/** Sentinel key for the Back target (folders use their own id as the key). */
+export const SPRING_BACK_KEY = '__drawer_back__';
+
+/** A resolved dwell target: a specific folder, or the drawer's Back button. */
+export type SpringTarget = { kind: 'folder'; id: string } | { kind: 'back' };
+
+/** A folder row's id paired with its measured rect, for the dwell hit-test. */
+export interface SpringHitArea {
+   id: string;
+   rect: LaneRect;
+}
+
+/** Stable key for a target (used to detect when the dwell target changes). */
+export function springTargetKey(target: SpringTarget | null): string | null {
+   if (!target) return null;
+   return target.kind === 'back' ? SPRING_BACK_KEY : target.id;
+}
+
+/**
+ * Resolves which dwell target (if any) the cursor is over, hit-testing the Back
+ * button first then the visible folder rows. The folder currently being dragged is
+ * excluded — you cannot drill into the thing you are holding — and Back is only a
+ * target when its rect is supplied (the caller omits it at root, matching the Back
+ * button's `disabled` gate).
+ *
+ * @param folders - The visible folder rows with their measured rects.
+ * @param back - The Back button's rect, or null when at root / not rendered.
+ * @param x - Cursor clientX.
+ * @param y - Cursor clientY.
+ * @param draggedFolderId - The id of the folder being dragged, or null.
+ * @returns The dwell target under the cursor, or null.
+ */
+export function resolveSpringTarget(
+   folders: SpringHitArea[],
+   back: LaneRect | null,
+   x: number,
+   y: number,
+   draggedFolderId: string | null,
+): SpringTarget | null {
+   if (back && pointInRect(back, x, y)) return { kind: 'back' };
+   for (const folder of folders) {
+      if (folder.id === draggedFolderId) continue;
+      if (pointInRect(folder.rect, x, y)) return { kind: 'folder', id: folder.id };
+   }
+   return null;
+}
+
+/** Options for {@link createSpringController}. */
+export interface SpringControllerOptions {
+   /** Dwell duration; defaults to {@link SPRING_HOLD_MS}. */
+   holdMs?: number;
+   /** Fired when the dwell completes on a target (perform the navigation here). */
+   onNavigate: (target: SpringTarget) => void;
+   /** Fired whenever the active target key changes (drive the progress affordance). */
+   onTargetChange?: (key: string | null) => void;
+}
+
+/** The dwell timer state machine returned by {@link createSpringController}. */
+export interface SpringController {
+   /** Feed the current hit-test result each pointer move (null = no target). */
+   setTarget(target: SpringTarget | null): void;
+   /** Abort any pending dwell and clear the affordance (drop / drag end / cancel). */
+   cancel(): void;
+}
+
+/**
+ * A small, DOM-free dwell timer: feed it the target under the cursor on every
+ * pointer move and it (re)starts a hold timer, firing `onNavigate` only when the
+ * SAME target is held for the full `holdMs`. Changing targets restarts the timer;
+ * a `null` target or `cancel()` aborts it (so a drop before the hold wins). Kept
+ * free of the DOM and React so the hold/restart/abort logic is unit-testable.
+ *
+ * @param options - Navigation + affordance callbacks and the optional hold time.
+ * @returns A controller with `setTarget` / `cancel`.
+ */
+export function createSpringController(options: SpringControllerOptions): SpringController {
+   const holdMs = options.holdMs ?? SPRING_HOLD_MS;
+   let currentKey: string | null = null;
+   let timer: ReturnType<typeof setTimeout> | null = null;
+
+   const clearTimer = (): void => {
+      if (timer !== null) {
+         clearTimeout(timer);
+         timer = null;
+      }
+   };
+
+   return {
+      setTarget(target) {
+         const key = springTargetKey(target);
+         if (key === currentKey) return; // same target: let the running timer continue
+         clearTimer();
+         currentKey = key;
+         options.onTargetChange?.(key);
+         if (target) {
+            timer = setTimeout(() => {
+               timer = null;
+               currentKey = null;
+               options.onTargetChange?.(null);
+               options.onNavigate(target);
+            }, holdMs);
+         }
+      },
+      cancel() {
+         clearTimer();
+         if (currentKey !== null) {
+            currentKey = null;
+            options.onTargetChange?.(null);
+         }
+      },
+   };
 }

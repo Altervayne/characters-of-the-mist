@@ -8,6 +8,9 @@ import toast from 'react-hot-toast';
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
+// -- Component Imports --
+import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwellAffordance';
+
 // -- Basic UI Imports --
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -26,7 +29,7 @@ import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 
 
 
-export function DrawerFolderEntry({ folder, parentFolderId, isOver, onNavigate, onRename, onDelete, onMove }: { folder: DrawerFolderRecord, parentFolderId: string | null, isOver: boolean, onNavigate: (id: string) => void, onRename: () => void, onDelete: () => void, onMove: () => void }) {
+export function DrawerFolderEntry({ folder, parentFolderId, isOver, isSpringTarget = false, onNavigate, onRename, onDelete, onMove }: { folder: DrawerFolderRecord, parentFolderId: string | null, isOver: boolean, isSpringTarget?: boolean, onNavigate: (id: string) => void, onRename: () => void, onDelete: () => void, onMove: () => void }) {
    const { t } = useTranslation();
 
    // The folder row is now a flat record; reassemble its full subtree from the
@@ -54,16 +57,17 @@ export function DrawerFolderEntry({ folder, parentFolderId, isOver, onNavigate, 
          }}
       >
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <div onClick={() => onNavigate(folder.id)}>
+            <div data-folder-id={folder.id} onClick={() => onNavigate(folder.id)}>
                <DragStaticWrapper isBeingDragged={isBeingDragged}>
                   <div
                      className={cn(
-                        "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
+                        "group relative flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
                         {
                            "bg-muted": isOver,
                         }
                      )}
                   >
+                     <SpringDwellAffordance active={isSpringTarget} />
                      <div
                         className="flex h-8 items-center gap-2 truncate"
                         onClick={() => onNavigate(folder.id)}
