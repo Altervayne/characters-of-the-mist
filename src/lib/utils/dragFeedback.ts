@@ -127,12 +127,16 @@ export function isOverTabLaneFor(
  * @param kind - The classified drag kind.
  * @param overZone - The @dnd-kit-derived surface under the cursor.
  * @param isOverTabLane - Whether the generous tab lane is engaged.
+ * @param sheetCompatible - Whether the dragged item can actually be added to the
+ *   current sheet (game match). When false, no `add-to-sheet` glyph is shown — there
+ *   is no possible action — though the item still morphs.
  * @returns The drag context (puck content), or null when nothing actionable.
  */
 export function deriveDragContext(
    kind: DragKind,
    overZone: DragOverZone,
    isOverTabLane: boolean,
+   sheetCompatible: boolean = true,
 ): DragContext {
    if (kind === 'drawer-character') {
       if (isOverTabLane) return 'open-tab';
@@ -142,7 +146,7 @@ export function deriveDragContext(
       return null;
    }
    if (kind === 'drawer-component') {
-      if (overZone === 'sheet') return 'add-to-sheet';
+      if (overZone === 'sheet') return sheetCompatible ? 'add-to-sheet' : null;
       if (overZone === 'drawer-nav') return 'drawer-move';
       // 'drawer-items' → null: full overlay for reordering among items.
       return null;

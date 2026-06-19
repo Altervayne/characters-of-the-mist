@@ -97,12 +97,14 @@ export const DragMorphCluster = forwardRef<HTMLDivElement, DragMorphClusterProps
                )}
 
                {/* Left action badge: one glyph (dwell arrow, else the action icon),
-                   translated fully off the dot's left and vertically centered. */}
+                   translated fully off the dot's left and vertically centered. The
+                   18px gap clears the spring ring (radius ~12px) so it never overlaps
+                   the loading circle. */}
                {GlyphIcon && (
                   <span
                      role="img"
                      aria-label={actionLabel}
-                     style={{ transform: 'translate(calc(-100% - 11px), -50%)' }}
+                     style={{ transform: 'translate(calc(-100% - 18px), -50%)' }}
                      className="absolute left-0 top-0 flex size-[22px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-background"
                   >
                      <GlyphIcon className="size-3" />

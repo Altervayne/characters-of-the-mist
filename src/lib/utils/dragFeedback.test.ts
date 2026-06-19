@@ -116,6 +116,12 @@ describe('deriveDragContext (kind + over-zone → action)', () => {
       expect(deriveDragContext('drawer-component', 'sheet', false)).toBe('add-to-sheet');
    });
 
+   it('suppresses add-to-sheet for an incompatible game (no possible action → no glyph)', () => {
+      expect(deriveDragContext('drawer-component', 'sheet', false, false)).toBeNull();
+      // Still adds when compatible (default true / explicit true).
+      expect(deriveDragContext('drawer-component', 'sheet', false, true)).toBe('add-to-sheet');
+   });
+
    it('plain reorders / non-actionable hovers → null', () => {
       expect(deriveDragContext('tab', null, false)).toBeNull();
       expect(deriveDragContext('drawer-folder', null, false)).toBeNull();

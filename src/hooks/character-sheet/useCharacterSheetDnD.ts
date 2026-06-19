@@ -139,6 +139,9 @@ export function useCharacterSheetDnD() {
    const forceMorphRef = useRef(false);
    // Which sheet section to highlight for a compatible drawer-item drag ('cards'/'trackers').
    const [sheetHighlight, setSheetHighlight] = useState<'cards' | 'trackers' | null>(null);
+   // Whether the dragged item can actually land on the current sheet (game match).
+   // Gates the 'add-to-sheet' glyph: no action possible → no glyph (still morphs).
+   const sheetCompatibleRef = useRef(true);
    // The character a dragged SHEET item came from, so a drop on a DIFFERENT tab's
    // sheet (after tab auto-nav) imports a copy rather than a no-op reorder.
    const dragSourceCharacterIdRef = useRef<string | null>(null);
@@ -225,7 +228,7 @@ export function useCharacterSheetDnD() {
     * commits it to state only when it actually changes (the puck re-renders rarely).
     */
    const updateContext = useCallback(() => {
-      const next = deriveDragContext(dragKindRef.current, overZoneRef.current, isOverTabLaneRef.current);
+      const next = deriveDragContext(dragKindRef.current, overZoneRef.current, isOverTabLaneRef.current, sheetCompatibleRef.current);
       if (next !== dragContextRef.current) {
          dragContextRef.current = next;
          setDragContext(next);
@@ -323,6 +326,7 @@ export function useCharacterSheetDnD() {
       draggedFolderIdRef.current = null;
       springNavigatingRef.current = false;
       dragSourceCharacterIdRef.current = null;
+      sheetCompatibleRef.current = true;
       if (forceMorphRef.current) {
          forceMorphRef.current = false;
          setForceMorph(false);
@@ -427,11 +431,18 @@ export function useCharacterSheetDnD() {
 
          // Content-aware sheet highlight: over the play area, only the section that
          // matches the dragged drawer item's type lights up (the drop is still
-         // accepted anywhere on the sheet and routed by type).
+         // accepted anywhere on the sheet and routed by type). Game-incompatible
+         // items neither highlight nor get an action glyph (no possible action).
          if (zone === 'sheet' && activeType === 'drawer-item' && character) {
             const item = active.data.current?.item as DrawerItem | undefined;
-            if (item && item.game === character.game) highlight = sheetSectionForItemType(item.type);
+            const compatible = !!item && item.game === character.game;
+            sheetCompatibleRef.current = compatible;
+            if (compatible && item) highlight = sheetSectionForItemType(item.type);
+         } else {
+            sheetCompatibleRef.current = true;
          }
+      } else {
+         sheetCompatibleRef.current = true;
       }
 
       setIsOverDrawer(isHoveringDrawer);

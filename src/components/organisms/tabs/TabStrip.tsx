@@ -64,7 +64,11 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
             // Inset, recessed strip: the active tab below overlaps this single
             // bottom border to merge with the sheet. Tabs sit on the baseline so
             // the active one (slightly taller) stands proud of the inactive chips.
-            'flex shrink-0 items-end gap-1.5 px-2 pt-2 border-b border-border bg-card overflow-x-auto overscroll-x-contain',
+            // `overflow-y-hidden` is explicit: `overflow-x-auto` alone makes the
+            // browser compute overflow-y to `auto`, and the active tab's 1px overlap
+            // then triggers a stray vertical scrollbar. Pinning y keeps a constant
+            // height with horizontal scroll only when there are many tabs.
+            'flex shrink-0 items-end gap-1.5 px-2 pt-2 border-b border-border bg-card overflow-x-auto overflow-y-hidden overscroll-x-contain',
             showDropHighlight && 'ring-2 ring-inset ring-primary bg-primary/10',
          )}
       >
