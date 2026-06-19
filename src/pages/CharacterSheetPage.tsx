@@ -92,6 +92,7 @@ function DesktopCharacterSheetPage() {
       handleDragCancel,
       isOverTabLane,
       springTarget,
+      sheetHighlight,
       renderClone,
       renderCluster,
    } = useCharacterSheetDnD();
@@ -223,6 +224,7 @@ function DesktopCharacterSheetPage() {
                                  statusIds={statusIds}
                                  storyTagIds={storyTagIds}
                                  storyThemeIds={storyThemeIds}
+                                 isDropTarget={sheetHighlight === 'trackers'}
                               />
 
                               <CardsSection
@@ -232,6 +234,7 @@ function DesktopCharacterSheetPage() {
                                  onEditCard={handleEditCard}
                                  onAddCard={handleAddCardClick}
                                  cardIds={cardIds}
+                                 isDropTarget={sheetHighlight === 'cards'}
                               />
                            </SheetMainDropZone>
                         </div>

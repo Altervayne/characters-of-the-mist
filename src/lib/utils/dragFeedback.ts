@@ -21,8 +21,13 @@ export type DragKind =
    | 'tab'
    | null;
 
-/** The actionable surface the cursor is currently over (from @dnd-kit's `over`). */
-export type DragOverZone = 'play-area' | 'sheet' | 'drawer' | null;
+/**
+ * The actionable surface the cursor is currently over (from @dnd-kit's `over`). The
+ * drawer is split into its **items** area (where items reorder / land) and its
+ * **nav** area (folder rows, folder reorder slots, Back) so a dragged drawer item
+ * can keep its full card overlay in the items area while morphing elsewhere.
+ */
+export type DragOverZone = 'play-area' | 'sheet' | 'drawer-items' | 'drawer-nav' | null;
 
 /** The action a drop would perform right now; drives the morph cluster (null = hidden). */
 export type DragContext = 'open-tab' | 'open' | 'add-to-sheet' | 'save-to-drawer' | 'drawer-move' | null;
@@ -132,17 +137,44 @@ export function deriveDragContext(
    if (kind === 'drawer-character') {
       if (isOverTabLane) return 'open-tab';
       if (overZone === 'play-area') return 'open';
-      if (overZone === 'drawer') return 'drawer-move';
+      if (overZone === 'drawer-nav') return 'drawer-move';
+      // 'drawer-items' → null: the item keeps its full overlay for precise reordering.
       return null;
    }
    if (kind === 'drawer-component') {
       if (overZone === 'sheet') return 'add-to-sheet';
-      if (overZone === 'drawer') return 'drawer-move';
+      if (overZone === 'drawer-nav') return 'drawer-move';
+      // 'drawer-items' → null: full overlay for reordering among items.
       return null;
    }
-   if (kind === 'drawer-folder') return overZone === 'drawer' ? 'drawer-move' : null;
-   if (kind === 'sheet-item') return overZone === 'drawer' ? 'save-to-drawer' : null;
+   if (kind === 'drawer-folder') {
+      return overZone === 'drawer-nav' || overZone === 'drawer-items' ? 'drawer-move' : null;
+   }
+   if (kind === 'sheet-item') {
+      return overZone === 'drawer-nav' || overZone === 'drawer-items' ? 'save-to-drawer' : null;
+   }
    return null;
+}
+
+/**
+ * Whether a dragged DRAWER ITEM (a component or a character item) should be forced
+ * into morph mode regardless of whether it has an action descriptor. Drawer items
+ * keep their full card overlay ONLY while the cursor is genuinely inside the drawer
+ * items area (for precise reordering); everywhere else they morph to the cursor
+ * cluster — showing just the dot + identity when there is no action glyph. Folders
+ * and sheet items are not force-morphed (they keep the descriptor-driven default).
+ *
+ * `overItemsArea` MUST come from a real geometry hit-test, not dnd-kit's `over`:
+ * the collision detection's closestCenter fallback snaps `over` to the nearest item
+ * even in neutral space, which would falsely read as the items area.
+ *
+ * @param kind - The classified drag kind.
+ * @param overItemsArea - Whether the cursor is geometrically inside the items area.
+ * @returns Whether to funnel the clone even with no descriptor.
+ */
+export function shouldForceMorph(kind: DragKind, overItemsArea: boolean): boolean {
+   if (kind !== 'drawer-component' && kind !== 'drawer-character') return false;
+   return !overItemsArea;
 }
 
 /**
@@ -198,10 +230,13 @@ export const SPRING_HOLD_MS = 800;
 /** Sentinel key for the Back target (folders use their own id as the key). */
 export const SPRING_BACK_KEY = '__drawer_back__';
 
-/** A resolved dwell target: a specific folder, or the drawer's Back button. */
-export type SpringTarget = { kind: 'folder'; id: string } | { kind: 'back' };
+/**
+ * A resolved dwell target: a drawer folder, the drawer's Back button, or a
+ * background tab (which spring-switches the active character mid-drag).
+ */
+export type SpringTarget = { kind: 'folder'; id: string } | { kind: 'back' } | { kind: 'tab'; id: string };
 
-/** A folder row's id paired with its measured rect, for the dwell hit-test. */
+/** A hit-test area: an id paired with its measured rect (folder row or tab). */
 export interface SpringHitArea {
    id: string;
    rect: LaneRect;
@@ -210,12 +245,42 @@ export interface SpringHitArea {
 /** Stable key for a target (used to detect when the dwell target changes). */
 export function springTargetKey(target: SpringTarget | null): string | null {
    if (!target) return null;
-   return target.kind === 'back' ? SPRING_BACK_KEY : target.id;
+   if (target.kind === 'back') return SPRING_BACK_KEY;
+   if (target.kind === 'tab') return `tab:${target.id}`;
+   return target.id;
 }
 
-/** Maps a dwell target to the morph cluster's direction arrow (folder → in, back → up). */
+/**
+ * Maps a dwell target to the morph cluster's direction arrow: folders drill `in`,
+ * Back and tabs point `up` (Back goes up a level; tabs sit at the top of the screen).
+ */
 export function springDirection(target: SpringTarget): MorphArrow {
    return target.kind === 'folder' ? 'in' : 'up';
+}
+
+/**
+ * Resolves which background tab (if any) the cursor is over, for the tab auto-nav
+ * dwell. The active tab is excluded — dwelling on the tab you are already viewing
+ * is a no-op. Tabs never overlap the drawer, so the caller can fall back from the
+ * drawer hit-test to this one.
+ *
+ * @param tabs - The open tabs' ids with their measured rects.
+ * @param x - Cursor clientX.
+ * @param y - Cursor clientY.
+ * @param activeTabId - The currently active tab id (excluded as a target).
+ * @returns The tab dwell target under the cursor, or null.
+ */
+export function resolveTabSpringTarget(
+   tabs: SpringHitArea[],
+   x: number,
+   y: number,
+   activeTabId: string | null,
+): SpringTarget | null {
+   for (const tab of tabs) {
+      if (tab.id === activeTabId) continue;
+      if (pointInRect(tab.rect, x, y)) return { kind: 'tab', id: tab.id };
+   }
+   return null;
 }
 
 /**

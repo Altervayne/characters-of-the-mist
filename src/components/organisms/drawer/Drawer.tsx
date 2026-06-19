@@ -244,6 +244,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetI
                         <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="flex-1 px-3 py-3 flex flex-col">
                            <div
                               ref={setNodeRef}
+                              data-drawer-items-area
                               className={cn(
                                  "w-full grow min-h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
                                  isDragHovering && "border-primary bg-primary/10"

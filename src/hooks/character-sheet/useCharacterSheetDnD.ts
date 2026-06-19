@@ -9,7 +9,8 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget, springDirection } from '@/lib/utils/dragFeedback';
+import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
+import { sheetSectionForItemType } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Drag-morph engine (tabs polish-8/9) --
@@ -18,7 +19,7 @@ import { buildDragIdentity } from '@/hooks/character-sheet/buildDragIdentity';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
-import { useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
@@ -82,7 +83,7 @@ export function useCharacterSheetDnD() {
    const character = useCharacterStore((state) => state.character);
    const { reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker } = useCharacterActions();
-   const { openCharacterTab, reorderTabs } = useTabManagerActions();
+   const { openCharacterTab, reorderTabs, setActiveTab } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
@@ -133,6 +134,14 @@ export function useCharacterSheetDnD() {
    const overZoneRef = useRef<DragOverZone>(null);
    const isOverTabLaneRef = useRef(false);
    const dragContextRef = useRef<DragContext>(null);
+   // Force-morph (tabs polish-11): drawer items morph everywhere except the items area.
+   const [forceMorph, setForceMorph] = useState(false);
+   const forceMorphRef = useRef(false);
+   // Which sheet section to highlight for a compatible drawer-item drag ('cards'/'trackers').
+   const [sheetHighlight, setSheetHighlight] = useState<'cards' | 'trackers' | null>(null);
+   // The character a dragged SHEET item came from, so a drop on a DIFFERENT tab's
+   // sheet (after tab auto-nav) imports a copy rather than a no-op reorder.
+   const dragSourceCharacterIdRef = useRef<string | null>(null);
 
    // ==================
    //  Drag-morph engine (tabs polish-8)
@@ -162,13 +171,20 @@ export function useCharacterSheetDnD() {
     * drilling without ending the drag.
     */
    const handleSpringNavigate = useCallback((target: SpringTarget) => {
+      // Tab auto-nav: spring-switch the active character (synchronous). The drag
+      // stays alive via the shared DragOverlay; the next move re-evaluates against
+      // the now-active tab's sheet.
+      if (target.kind === 'tab') {
+         setActiveTab(target.id);
+         return;
+      }
       if (springNavigatingRef.current) return;
       const destination = target.kind === 'back' ? useDrawerStore.getState().parentFolderId : target.id;
       springNavigatingRef.current = true;
       void Promise.resolve(setDrawerCurrentFolderId(destination)).finally(() => {
          springNavigatingRef.current = false;
       });
-   }, [setDrawerCurrentFolderId]);
+   }, [setDrawerCurrentFolderId, setActiveTab]);
 
    // The dwell controller is an imperative object created once (in an effect, not
    // during render, so its ref-reading callback is allowed) and reused for the
@@ -187,15 +203,22 @@ export function useCharacterSheetDnD() {
    // the spring target changes (polish-8). The arrow mirrors springDirection() for
    // the active dwell; the engine renders, knowing nothing of what the action means.
    useEffect(() => {
-      const springArrow = springTarget == null
-         ? null
-         : springDirection(springTarget === SPRING_BACK_KEY ? { kind: 'back' } : { kind: 'folder', id: springTarget });
+      let springArrow = null as ReturnType<typeof springDirection> | null;
+      if (springTarget != null) {
+         const target: SpringTarget = springTarget === SPRING_BACK_KEY
+            ? { kind: 'back' }
+            : springTarget.startsWith('tab:')
+               ? { kind: 'tab', id: springTarget.slice(4) }
+               : { kind: 'folder', id: springTarget };
+         springArrow = springDirection(target);
+      }
       setMorph({
          descriptor: dragContext ? MORPH_DESCRIPTORS[dragContext] : null,
          springKey: springTarget,
          springArrow,
+         morph: forceMorph,
       });
-   }, [dragContext, springTarget, setMorph]);
+   }, [dragContext, springTarget, forceMorph, setMorph]);
 
    /**
     * Recomputes the drag context from the current kind + over-zone + lane flag and
@@ -236,14 +259,45 @@ export function useCharacterSheetDnD() {
       const folders: SpringHitArea[] = Array.from(
          document.querySelectorAll<HTMLElement>('[data-folder-id]'),
       ).flatMap((el) => (el.dataset.folderId ? [{ id: el.dataset.folderId, rect: el.getBoundingClientRect() }] : []));
-      const springTargetUnderCursor = resolveSpringTarget(
+      const drawerTarget = resolveSpringTarget(
          folders,
          backRect,
          event.clientX,
          event.clientY,
          draggedFolderIdRef.current,
       );
-      springControllerRef.current?.setTarget(springTargetUnderCursor);
+
+      // Tab auto-nav: a dragged drawer COMPONENT or sheet item can dwell on a
+      // background tab to spring-switch the active character mid-drag (then drop on
+      // its sheet). Tabs never overlap the drawer, so the drawer target wins ties.
+      const kind = dragKindRef.current;
+      const canTabNav = kind === 'drawer-component' || kind === 'sheet-item';
+      let tabTarget = null;
+      if (canTabNav && !drawerTarget) {
+         const tabAreas: SpringHitArea[] = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-tab-id]'),
+         ).flatMap((el) => (el.dataset.tabId ? [{ id: el.dataset.tabId, rect: el.getBoundingClientRect() }] : []));
+         tabTarget = resolveTabSpringTarget(tabAreas, event.clientX, event.clientY, useTabManagerStore.getState().activeTabId);
+      }
+
+      springControllerRef.current?.setTarget(drawerTarget ?? tabTarget);
+
+      // Force-morph (the "full card only in the drawer items area" rule): decide by
+      // real cursor geometry against the items-area rect, NOT dnd-kit's `over` — its
+      // closestCenter fallback snaps `over` to the nearest item even in neutral space,
+      // which would wrongly read as the items area. A drawer item keeps its full clone
+      // only while the cursor is genuinely inside the items area; it morphs elsewhere.
+      const itemsAreaEl = document.querySelector('[data-drawer-items-area]');
+      let overItemsArea = false;
+      if (itemsAreaEl) {
+         const r = itemsAreaEl.getBoundingClientRect();
+         overItemsArea = event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom;
+      }
+      const nextForce = shouldForceMorph(dragKindRef.current, overItemsArea);
+      if (nextForce !== forceMorphRef.current) {
+         forceMorphRef.current = nextForce;
+         setForceMorph(nextForce);
+      }
    }, [updateContext, setCursor]);
 
    /**
@@ -268,6 +322,12 @@ export function useCharacterSheetDnD() {
       springControllerRef.current?.cancel();
       draggedFolderIdRef.current = null;
       springNavigatingRef.current = false;
+      dragSourceCharacterIdRef.current = null;
+      if (forceMorphRef.current) {
+         forceMorphRef.current = false;
+         setForceMorph(false);
+      }
+      setSheetHighlight(null);
       // Clear the morph feedback (clone funnel + cursor cluster).
       resetMorph();
    }, [handlePointerMove, resetMorph]);
@@ -319,8 +379,11 @@ export function useCharacterSheetDnD() {
       if (item) {
          setActiveDragItem(item);
          setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, sheetItem: item, untitledLabel }));
+         // Remember the source character so a drop on a DIFFERENT tab's sheet (after
+         // tab auto-nav) imports a copy instead of a no-op same-character reorder.
+         dragSourceCharacterIdRef.current = character?.id ?? null;
       }
-   }, [character?.cards, character?.trackers, setDrawerOpen, handlePointerMove, captureGrab, setIdentity, tNotifications]);
+   }, [character?.id, character?.cards, character?.trackers, setDrawerOpen, handlePointerMove, captureGrab, setIdentity, tNotifications]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
@@ -332,9 +395,11 @@ export function useCharacterSheetDnD() {
       setOverDragId(over ? over.id.toString() : null);
 
       let isHoveringDrawer = false;
-      // The actionable surface under the cursor, for the puck context. The thin
+      // The actionable surface under the cursor. The drawer splits into its items
+      // area (reorder/land) and its nav area (folders, folder slots, Back). The thin
       // tab strip is handled by the generous pointermove test, not here.
       let zone: DragOverZone = null;
+      let highlight: 'cards' | 'trackers' | null = null;
       if (over) {
         const activeType = active.data.current?.type as string;
         const overId = over.id.toString();
@@ -348,19 +413,32 @@ export function useCharacterSheetDnD() {
          if (overId === 'main-character-drop-zone') {
             zone = 'play-area';
          } else if (
-            overId === 'character-sheet-main-drop-zone' || overId === 'tracker-drop-zone' ||
-            overId === 'card-drop-zone' || overType === 'sheet-card' || overType === 'sheet-tracker'
+            overId === 'character-sheet-main-drop-zone' || overId === 'tracker-drop-zone' || overId === 'card-drop-zone'
          ) {
+            // Only the explicit sheet zones (resolved via pointerWithin when the cursor
+            // is truly over them) count as 'sheet' — NOT a closestCenter-snapped
+            // sheet-card/tracker, which would mislabel neutral space.
             zone = 'sheet';
-         } else if (overIsDrawerComponent || (typeof overType === 'string' && overType.startsWith('drawer-'))) {
-            zone = 'drawer';
+         } else if (overId.startsWith('drawer-drop-zone-') || overType === 'drawer-item') {
+            zone = 'drawer-items';
+         } else if (overType === 'drawer-folder' || overType === 'drawer-drop-zone' || overId.startsWith('drawer-back-button-')) {
+            zone = 'drawer-nav';
+         }
+
+         // Content-aware sheet highlight: over the play area, only the section that
+         // matches the dragged drawer item's type lights up (the drop is still
+         // accepted anywhere on the sheet and routed by type).
+         if (zone === 'sheet' && activeType === 'drawer-item' && character) {
+            const item = active.data.current?.item as DrawerItem | undefined;
+            if (item && item.game === character.game) highlight = sheetSectionForItemType(item.type);
          }
       }
 
       setIsOverDrawer(isHoveringDrawer);
+      setSheetHighlight(highlight);
       overZoneRef.current = zone;
       updateContext();
-   }, [updateContext]);
+   }, [updateContext, character]);
 
    /**
     * Handle reordering cards on the character sheet
@@ -664,6 +742,31 @@ export function useCharacterSheetDnD() {
       if (activeType?.startsWith('sheet-')) {
 
          // ==================
+         //  SCENARIO 2.0: Dropping on a DIFFERENT character's sheet (after tab auto-nav)
+         // ==================
+         // The sheet item came from another tab; import a copy into the now-active
+         // character (game must match). A same-character drop falls through to reorder.
+         const overIsSheetZone = overIdStr === 'character-sheet-main-drop-zone' ||
+            overIdStr === 'card-drop-zone' || overIdStr === 'tracker-drop-zone' ||
+            overType?.startsWith('sheet-');
+         if (
+            character && activeDragItem && overIsSheetZone &&
+            dragSourceCharacterIdRef.current && dragSourceCharacterIdRef.current !== character.id
+         ) {
+            const info = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
+            if (info && info[1] === character.game) {
+               if ('cardType' in activeDragItem) {
+                  addImportedCard(activeDragItem as CardData);
+                  toast.success(tNotifications('Notifications.character.componentImported'));
+               } else if ('trackerType' in activeDragItem) {
+                  addImportedTracker(activeDragItem as Tracker);
+                  toast.success(tNotifications('Notifications.character.componentImported'));
+               }
+            }
+            return;
+         }
+
+         // ==================
          //  SCENARIO 2.1: Dropping ONTO the drawer
          // ==================
          if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
@@ -700,6 +803,7 @@ export function useCharacterSheetDnD() {
       addImportedCard,
       tNotifications,
       clearDragFeedback,
+      activeDragItem,
    ]);
 
    /**
@@ -733,6 +837,8 @@ export function useCharacterSheetDnD() {
       // Spring-loaded drawer navigation (tabs polish-7): the active dwell target id
       // (folder id or the Back sentinel), for the static row/Back highlight.
       springTarget,
+      // Content-aware sheet highlight (tabs polish-11): which section to light up.
+      sheetHighlight,
       // Drag-morph engine slots (tabs polish-8): clone goes inside <DragOverlay>,
       // cluster is a sibling.
       renderClone,

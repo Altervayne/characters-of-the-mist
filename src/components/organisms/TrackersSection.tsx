@@ -38,6 +38,8 @@ interface TrackersSectionProps {
    statusIds: string[];
    storyTagIds: string[];
    storyThemeIds: string[];
+   /** Highlight the section as the landing spot for a compatible tracker-type drawer drag. */
+   isDropTarget?: boolean;
 }
 
 /**
@@ -56,10 +58,13 @@ export function TrackersSection({
    statusIds,
    storyTagIds,
    storyThemeIds,
+   isDropTarget = false,
 }: TrackersSectionProps) {
    const { t: tTrackers } = useTranslation();
 
-   const { setNodeRef: trackersDropRef, isOver: isOverTrackers } = useDroppable({
+   // Still a droppable (the drop is accepted here / routed by type), but the
+   // highlight is driven by `isDropTarget` so only the type-matching section lights up.
+   const { setNodeRef: trackersDropRef } = useDroppable({
       id: 'tracker-drop-zone',
       data: { type: 'tracker-drop-zone' }
    });
@@ -71,7 +76,7 @@ export function TrackersSection({
          className={cn(
             "flex gap-4",
             "w-full bg-muted/75 rounded-lg p-4 border-2 border-border transition-colors",
-            { "border-primary shadow-lg": isOverTrackers }
+            { "border-primary shadow-lg": isDropTarget }
          )}
       >
          <div className="flex-1 min-w-0 space-y-4">

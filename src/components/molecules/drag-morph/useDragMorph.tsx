@@ -17,6 +17,11 @@ export interface DragMorphSignal {
    springKey: string | null;
    /** The spring's direction arrow (folder → in, back → up), or null. */
    springArrow: MorphArrow;
+   /**
+    * Force the clone to funnel + the cluster to show even with no descriptor/spring
+    * (e.g. a drawer item in neutral space morphs to dot + identity, no action glyph).
+    */
+   morph?: boolean;
 }
 
 /** A minimal rect shape for capturing the grab origin (matches @dnd-kit's ClientRect). */
@@ -78,6 +83,7 @@ export function useDragMorph(): DragMorphEngine {
    const [descriptor, setDescriptor] = useState<MorphDescriptor | null>(null);
    const [springKey, setSpringKey] = useState<string | null>(null);
    const [springArrow, setSpringArrow] = useState<MorphArrow>(null);
+   const [forceMorph, setForceMorph] = useState(false);
    const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
    // The opaque dragged-item node, set once at drag start (no per-move churn).
    const [identity, setIdentityState] = useState<ReactNode>(null);
@@ -105,10 +111,12 @@ export function useDragMorph(): DragMorphEngine {
 
    const setMorph = useCallback((signal: DragMorphSignal) => {
       const prev = signalRef.current;
+      const morph = signal.morph ?? false;
       if (
          prev.descriptor === signal.descriptor &&
          prev.springKey === signal.springKey &&
-         prev.springArrow === signal.springArrow
+         prev.springArrow === signal.springArrow &&
+         (prev.morph ?? false) === morph
       ) {
          return; // unchanged: avoid a needless re-render
       }
@@ -116,6 +124,7 @@ export function useDragMorph(): DragMorphEngine {
       setDescriptor(signal.descriptor);
       setSpringKey(signal.springKey);
       setSpringArrow(signal.springArrow);
+      setForceMorph(morph);
    }, []);
 
    const setIdentity = useCallback((node: ReactNode | null) => {
@@ -123,17 +132,18 @@ export function useDragMorph(): DragMorphEngine {
    }, []);
 
    const reset = useCallback(() => {
-      signalRef.current = { descriptor: null, springKey: null, springArrow: null };
+      signalRef.current = { descriptor: null, springKey: null, springArrow: null, morph: false };
       setDescriptor(null);
       setSpringKey(null);
       setSpringArrow(null);
+      setForceMorph(false);
       setOrigin(null);
       setIdentityState(null);
    }, []);
 
-   // The clone funnels whenever a descriptor is active OR a spring dwell is running;
-   // the cluster cross-fades in over exactly the same condition.
-   const funneling = descriptor !== null || springKey !== null;
+   // The clone funnels (and the cluster cross-fades in) whenever a descriptor is
+   // active, a spring dwell is running, OR the consumer forced morph mode.
+   const funneling = descriptor !== null || springKey !== null || forceMorph;
 
    const renderClone = useCallback(
       (preview: ReactNode): ReactNode => (
@@ -148,13 +158,14 @@ export function useDragMorph(): DragMorphEngine {
       (): ReactNode => (
          <DragMorphCluster
             ref={clusterRef}
+            active={funneling}
             descriptor={descriptor}
             springKey={springKey}
             arrow={descriptor?.arrow ?? springArrow}
             identity={identity}
          />
       ),
-      [descriptor, springKey, springArrow, identity],
+      [funneling, descriptor, springKey, springArrow, identity],
    );
 
    return { captureGrab, setCursor, setMorph, setIdentity, reset, renderClone, renderCluster };

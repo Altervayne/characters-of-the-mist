@@ -19,6 +19,8 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 /** Props for {@link DragMorphCluster}. */
 interface DragMorphClusterProps {
+   /** Whether the cluster is showing (cross-fades in); the engine's funnel state. */
+   active: boolean;
    /** The active morph descriptor (action icon + label), or null when nothing actionable. */
    descriptor: MorphDescriptor | null;
    /** The dwell target key; non-null draws + restarts the progress ring (keyed off it). */
@@ -46,6 +48,7 @@ interface DragMorphClusterProps {
  * spring dwell is active). It knows nothing of what the action does — only the
  * descriptor / arrow / ring signals and the opaque identity node it is handed.
  *
+ * @param props.active - Whether the cluster is visible (the engine's funnel state).
  * @param props.descriptor - The active descriptor, or null.
  * @param props.springKey - The dwell key (restarts the ring on change), or null.
  * @param props.arrow - The direction arrow, or null.
@@ -53,9 +56,8 @@ interface DragMorphClusterProps {
  * @param ref - Forwarded to the fixed wrapper the engine positions each frame.
  */
 export const DragMorphCluster = forwardRef<HTMLDivElement, DragMorphClusterProps>(
-   function DragMorphCluster({ descriptor, springKey, arrow, identity }, ref) {
+   function DragMorphCluster({ active, descriptor, springKey, arrow, identity }, ref) {
       const { t } = useTranslation();
-      const active = descriptor !== null || springKey !== null;
 
       const glyph = selectMorphGlyph(descriptor, springKey, arrow);
       const GlyphIcon = glyph?.kind === 'arrow' ? (glyph.arrow === 'up' ? ArrowUp : ArrowRight) : descriptor?.Icon ?? null;

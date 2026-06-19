@@ -38,6 +38,29 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
 
 
 
+/**
+ * Which sheet section a drawer item type belongs to, so the play area can highlight
+ * only the relevant region while still accepting a drop anywhere (the drop is routed
+ * by type regardless). Card/theme types → the cards section; tracker types → the
+ * trackers section; anything else (e.g. a full character sheet) → null.
+ */
+export function sheetSectionForItemType(type: GeneralItemType): 'cards' | 'trackers' | null {
+   switch (type) {
+      case 'CHARACTER_CARD':
+      case 'CHARACTER_THEME':
+      case 'GROUP_THEME':
+      case 'LOADOUT_THEME':
+         return 'cards';
+      case 'STATUS_TRACKER':
+      case 'STORY_TAG_TRACKER':
+      case 'STORY_THEME_TRACKER':
+         return 'trackers';
+      default:
+         return null;
+   }
+}
+
+
 // ==================
 //  Custom DndToolkit sorting strategies and collision detection
 // ==================

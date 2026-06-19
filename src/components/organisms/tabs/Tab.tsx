@@ -75,6 +75,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
    return (
       <div
          ref={setRefs}
+         data-tab-id={tab.id}
          style={{ transform: CSS.Translate.toString(transform), transition }}
          className={cn(
             'group relative flex shrink-0 items-center gap-1.5 rounded-t-[10px] pr-1 max-w-[12rem]',

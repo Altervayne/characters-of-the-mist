@@ -12,7 +12,9 @@ import {
    isOverTabLaneFor,
    isWithinTabLane,
    resolveSpringTarget,
+   resolveTabSpringTarget,
    selectMorphGlyph,
+   shouldForceMorph,
    springDirection,
    type DragContext,
    type LaneRect,
@@ -90,21 +92,27 @@ describe('deriveDragContext (kind + over-zone → action)', () => {
       expect(deriveDragContext('drawer-component', 'sheet', false)).toBe('add-to-sheet');
    });
 
-   it('a sheet item over the drawer → save-to-drawer', () => {
-      expect(deriveDragContext('sheet-item', 'drawer', false)).toBe('save-to-drawer');
+   it('a sheet item over the drawer → save-to-drawer (items or nav area)', () => {
+      expect(deriveDragContext('sheet-item', 'drawer-items', false)).toBe('save-to-drawer');
+      expect(deriveDragContext('sheet-item', 'drawer-nav', false)).toBe('save-to-drawer');
    });
 
-   it('a drawer-sourced drag over the drawer → drawer-move (when no more specific action)', () => {
-      expect(deriveDragContext('drawer-folder', 'drawer', false)).toBe('drawer-move');
-      expect(deriveDragContext('drawer-component', 'drawer', false)).toBe('drawer-move');
-      expect(deriveDragContext('drawer-character', 'drawer', false)).toBe('drawer-move');
+   it('a drawer-sourced drag over the drawer NAV area → drawer-move', () => {
+      expect(deriveDragContext('drawer-folder', 'drawer-nav', false)).toBe('drawer-move');
+      expect(deriveDragContext('drawer-component', 'drawer-nav', false)).toBe('drawer-move');
+      expect(deriveDragContext('drawer-character', 'drawer-nav', false)).toBe('drawer-move');
+   });
+
+   it('a drawer item over the ITEMS area → null (keeps its full overlay for reordering)', () => {
+      expect(deriveDragContext('drawer-component', 'drawer-items', false)).toBeNull();
+      expect(deriveDragContext('drawer-character', 'drawer-items', false)).toBeNull();
+      // A folder has no items-area reorder, so it still reads as a move there.
+      expect(deriveDragContext('drawer-folder', 'drawer-items', false)).toBe('drawer-move');
    });
 
    it('more specific actions still win over drawer-move', () => {
-      // A character over the tab lane / play area is open(-tab), not a move.
-      expect(deriveDragContext('drawer-character', 'drawer', true)).toBe('open-tab');
+      expect(deriveDragContext('drawer-character', 'drawer-nav', true)).toBe('open-tab');
       expect(deriveDragContext('drawer-character', 'play-area', false)).toBe('open');
-      // A component over the sheet adds, not moves.
       expect(deriveDragContext('drawer-component', 'sheet', false)).toBe('add-to-sheet');
    });
 
@@ -114,6 +122,24 @@ describe('deriveDragContext (kind + over-zone → action)', () => {
       expect(deriveDragContext('drawer-character', null, false)).toBeNull();
       expect(deriveDragContext('drawer-component', null, false)).toBeNull();
       expect(deriveDragContext('sheet-item', 'sheet', false)).toBeNull();
+   });
+});
+
+describe('shouldForceMorph (drawer items morph except in the items area)', () => {
+   it('forces morph for a drawer item when NOT geometrically over the items area', () => {
+      expect(shouldForceMorph('drawer-component', false)).toBe(true);
+      expect(shouldForceMorph('drawer-character', false)).toBe(true);
+   });
+
+   it('does NOT force morph while over the items area (full overlay for reordering)', () => {
+      expect(shouldForceMorph('drawer-component', true)).toBe(false);
+      expect(shouldForceMorph('drawer-character', true)).toBe(false);
+   });
+
+   it('never forces morph for folders, sheet items, or tabs', () => {
+      expect(shouldForceMorph('drawer-folder', false)).toBe(false);
+      expect(shouldForceMorph('sheet-item', false)).toBe(false);
+      expect(shouldForceMorph('tab', false)).toBe(false);
    });
 });
 
@@ -153,8 +179,28 @@ describe('springDirection (dwell → arrow)', () => {
       expect(springDirection({ kind: 'folder', id: 'f1' })).toBe('in');
    });
 
-   it('maps the Back target to the "up" arrow', () => {
+   it('maps the Back and tab targets to the "up" arrow', () => {
       expect(springDirection({ kind: 'back' })).toBe('up');
+      expect(springDirection({ kind: 'tab', id: 't1' })).toBe('up');
+   });
+});
+
+describe('resolveTabSpringTarget (tab auto-nav hit-test)', () => {
+   const tabs: SpringHitArea[] = [
+      { id: 'tab-a', rect: { left: 0, right: 100, top: 0, bottom: 40, height: 40 } },
+      { id: 'tab-b', rect: { left: 100, right: 200, top: 0, bottom: 40, height: 40 } },
+   ];
+
+   it('resolves the tab under the cursor', () => {
+      expect(resolveTabSpringTarget(tabs, 150, 20, 'tab-a')).toEqual({ kind: 'tab', id: 'tab-b' });
+   });
+
+   it('excludes the already-active tab', () => {
+      expect(resolveTabSpringTarget(tabs, 50, 20, 'tab-a')).toBeNull();
+   });
+
+   it('returns null off any tab', () => {
+      expect(resolveTabSpringTarget(tabs, 300, 20, null)).toBeNull();
    });
 });
 

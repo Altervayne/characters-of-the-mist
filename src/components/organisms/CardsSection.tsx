@@ -25,6 +25,8 @@ interface CardsSectionProps {
    onEditCard: (card: CardData) => void;
    onAddCard: () => void;
    cardIds: string[];
+   /** Highlight the section as the landing spot for a compatible card-type drawer drag. */
+   isDropTarget?: boolean;
 }
 
 /**
@@ -41,8 +43,12 @@ export function CardsSection({
    onEditCard,
    onAddCard,
    cardIds,
+   isDropTarget = false,
 }: CardsSectionProps) {
-   const { setNodeRef: cardsDropRef, isOver: isOverCards } = useDroppable({
+   // Still a droppable (the drop is accepted here / routed by type), but the
+   // highlight is now driven by `isDropTarget` — only the section matching the
+   // dragged item's type lights up, regardless of which sub-zone the cursor is over.
+   const { setNodeRef: cardsDropRef } = useDroppable({
       id: 'card-drop-zone',
       data: { type: 'card-drop-zone' }
    });
@@ -53,7 +59,7 @@ export function CardsSection({
          ref={cardsDropRef}
          className={cn(
             "flex flex-wrap gap-12 justify-center w-full p-4 rounded-lg border-2 border-transparent transition-colors",
-            { "border-primary bg-muted/50 shadow-inner": isOverCards }
+            { "border-primary bg-muted/50 shadow-inner": isDropTarget }
          )}
       >
          {/* Cards Group */}
