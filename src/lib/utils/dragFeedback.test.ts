@@ -12,9 +12,11 @@ import {
    isOverTabLaneFor,
    isWithinTabLane,
    resolveSpringTarget,
+   selectMorphGlyph,
    springDirection,
    type DragContext,
    type LaneRect,
+   type MorphDescriptor,
    type SpringHitArea,
    type SpringTarget,
 } from './dragFeedback';
@@ -159,6 +161,29 @@ describe('MORPH_DESCRIPTORS (context → descriptor)', () => {
       expect(MORPH_DESCRIPTORS.open.arrow).toBeUndefined();
       expect(MORPH_DESCRIPTORS['add-to-sheet'].arrow).toBeUndefined();
       expect(MORPH_DESCRIPTORS['save-to-drawer'].arrow).toBeUndefined();
+   });
+});
+
+describe('selectMorphGlyph (left action badge)', () => {
+   const descriptor = MORPH_DESCRIPTORS.open; // any descriptor (no arrow)
+
+   it('shows the dwell arrow while a spring dwell is running (dwell wins)', () => {
+      expect(selectMorphGlyph(descriptor, 'folder-1', 'in')).toEqual({ kind: 'arrow', arrow: 'in' });
+      expect(selectMorphGlyph(null, '__drawer_back__', 'up')).toEqual({ kind: 'arrow', arrow: 'up' });
+   });
+
+   it('shows the action icon when a descriptor is active and no dwell is running', () => {
+      expect(selectMorphGlyph(descriptor, null, null)).toEqual({ kind: 'action' });
+      expect(selectMorphGlyph(MORPH_DESCRIPTORS['open-tab'], null, 'up')).toEqual({ kind: 'action' });
+   });
+
+   it('shows nothing when neither a descriptor nor a dwell is active', () => {
+      expect(selectMorphGlyph(null, null, null)).toBeNull();
+   });
+
+   it('falls back to the action icon if a dwell is keyed but has no arrow', () => {
+      const orphanDwell: MorphDescriptor | null = descriptor;
+      expect(selectMorphGlyph(orphanDwell, 'folder-1', null)).toEqual({ kind: 'action' });
    });
 });
 

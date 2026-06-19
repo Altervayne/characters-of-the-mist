@@ -12,8 +12,9 @@ import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget, springDirection } from '@/lib/utils/dragFeedback';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
-// -- Drag-morph engine (tabs polish-8) --
+// -- Drag-morph engine (tabs polish-8/9) --
 import { useDragMorph } from '@/components/molecules/drag-morph/useDragMorph';
+import { buildDragIdentity } from '@/hooks/character-sheet/buildDragIdentity';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -139,7 +140,7 @@ export function useCharacterSheetDnD() {
    // The reusable overlay-feedback engine (funnel clone + cursor cluster). This hook
    // computes the signals (cursor, descriptor, spring) and feeds them in; the engine
    // owns only the visual choreography and knows nothing of drawers/tabs/navigation.
-   const { captureGrab, setCursor, setMorph, reset: resetMorph, renderClone, renderCluster } = useDragMorph();
+   const { captureGrab, setCursor, setMorph, setIdentity, reset: resetMorph, renderClone, renderCluster } = useDragMorph();
 
    // ==================
    //  Spring-loaded drawer navigation (tabs polish-7)
@@ -298,14 +299,18 @@ export function useCharacterSheetDnD() {
       // A tab drag is previewed via its own overlay branch, not as a sheet item.
       // Auto-open the drawer so the tab→drawer save has visible drop targets (the
       // chosen affordance; it does not auto-close).
+      const untitledLabel = tNotifications('Tabs.untitled');
+
       if (active.data.current?.type === DRAG_TYPES.TAB) {
          setActiveTabDrag({ id: String(active.id), type: 'character' });
          setDrawerOpen(true);
+         setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, untitledLabel }));
          return;
       }
 
       if (active.data.current?.isDrawer) {
          setActiveDragItem(active.data.current.item as DrawerItem | FolderType);
+         setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, untitledLabel }));
          return;
       }
 
@@ -313,8 +318,9 @@ export function useCharacterSheetDnD() {
       const item = allSheetItems.find(i => i.id === active.id);
       if (item) {
          setActiveDragItem(item);
+         setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, sheetItem: item, untitledLabel }));
       }
-   }, [character?.cards, character?.trackers, setDrawerOpen, handlePointerMove, captureGrab]);
+   }, [character?.cards, character?.trackers, setDrawerOpen, handlePointerMove, captureGrab, setIdentity, tNotifications]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;

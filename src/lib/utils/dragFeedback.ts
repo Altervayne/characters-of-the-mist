@@ -152,6 +152,30 @@ export const MORPH_DESCRIPTORS: Record<NonNullable<DragContext>, MorphDescriptor
    'save-to-drawer': { Icon: Save, labelKey: 'DragPuck.saveToDrawer' },
 };
 
+/** What the cluster's single left action badge should show (null = no glyph). */
+export type MorphGlyph = { kind: 'arrow'; arrow: 'in' | 'up' } | { kind: 'action' } | null;
+
+/**
+ * Picks the ONE glyph for the cluster's left action badge (tabs polish-9). The dwell
+ * direction takes precedence: while a spring dwell is running its arrow shows;
+ * otherwise the descriptor's action icon shows; with neither, no glyph. This
+ * precedence is a tunable rule — the point is a single clear glyph per moment.
+ *
+ * @param descriptor - The active morph descriptor, or null.
+ * @param springKey - The dwell key (non-null while a dwell is running), or null.
+ * @param arrow - The resolved direction arrow (from the descriptor or the dwell).
+ * @returns Which glyph to render, or null when the cluster has none.
+ */
+export function selectMorphGlyph(
+   descriptor: MorphDescriptor | null,
+   springKey: string | null,
+   arrow: MorphArrow,
+): MorphGlyph {
+   if (springKey !== null && (arrow === 'in' || arrow === 'up')) return { kind: 'arrow', arrow };
+   if (descriptor) return { kind: 'action' };
+   return null;
+}
+
 
 // ==================
 //  Spring-loaded drawer navigation (tabs polish-7)
