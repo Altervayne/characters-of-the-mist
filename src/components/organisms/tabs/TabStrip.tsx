@@ -36,8 +36,12 @@ import type { DrawerItem } from '@/lib/types/drawer';
  *
  * At zero open tabs the strip shows just the `+` and the area below renders the
  * MainMenu. Mobile does not render this strip (it stays single-character).
+ *
+ * @param props.forceDropHighlight - When set, forces the drop highlight on (the
+ *   sheet's generous tab-lane test, tabs polish-6, is more forgiving than the thin
+ *   droppable and supersedes it). Falls back to @dnd-kit's own `isOver` test.
  */
-export function TabStrip() {
+export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: boolean }) {
    const { t } = useTranslation();
    const openTabs = useTabManagerStore((state) => state.openTabs);
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
@@ -50,11 +54,12 @@ export function TabStrip() {
    const activeIsCharacterItem =
       active?.data.current?.type === 'drawer-item' &&
       (active.data.current.item as DrawerItem | undefined)?.type === 'FULL_CHARACTER_SHEET';
-   const showDropHighlight = isOver && Boolean(activeIsCharacterItem);
+   const showDropHighlight = forceDropHighlight || (isOver && Boolean(activeIsCharacterItem));
 
    return (
       <div
          ref={setNodeRef}
+         data-tab-strip
          className={cn(
             // Inset, recessed strip: the active tab below overlaps this single
             // bottom border to merge with the sheet. Tabs sit on the baseline so

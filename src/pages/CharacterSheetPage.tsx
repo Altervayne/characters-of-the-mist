@@ -25,6 +25,7 @@ import { SheetMainDropZone } from '@/components/organisms/SheetMainDropZone';
 import { CharacterNameHeader } from '@/components/molecules/CharacterNameHeader';
 import { FileDragOverlay } from '@/components/molecules/FileDragOverlay';
 import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
+import { DragCursorPuck } from '@/components/molecules/DragCursorPuck';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
 import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
@@ -90,7 +91,14 @@ function DesktopCharacterSheetPage() {
       handleDragOver,
       handleDragEnd,
       handleDragCancel,
+      cursorRef,
+      dragContext,
+      isOverTabLane,
    } = useCharacterSheetDnD();
+
+   // The cursor puck mounts for the whole drag (so its node — and thus the imperative
+   // position writes — stay stable), morphing its content with `dragContext`.
+   const isDragActive = activeDragItem !== null || activeTabDrag !== null;
 
    // One sensor config for every sheet drag (tabs, cards, trackers, drawer). The 5px
    // activation distance lets a tab single-click still activate/close while a drag
@@ -194,7 +202,7 @@ function DesktopCharacterSheetPage() {
             <div {...getRootProps()} className="relative w-full h-full flex-1 flex flex-col">
 
                {/* Multi-character tab strip (desktop top bar, tabs spec §5) */}
-               <TabStrip />
+               <TabStrip forceDropHighlight={isOverTabLane} />
 
                {/* Content area: own positioning context for the absolutely-filled
                    sheet/menu so they sit below the strip rather than over it. */}
@@ -294,6 +302,11 @@ function DesktopCharacterSheetPage() {
                />
             )}
          </DragOverlay>
+
+         {/* Context cursor-puck — a SIBLING of <DragOverlay> (never a child: the
+             overlay's transform would offset this fixed element). Mounted for the
+             whole drag so the hook's per-frame position writes hit a stable node. */}
+         {isDragActive && <DragCursorPuck ref={cursorRef} context={dragContext} />}
       </DndContext>
    );
 }

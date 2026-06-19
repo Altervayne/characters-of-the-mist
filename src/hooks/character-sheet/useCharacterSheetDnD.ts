@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -9,6 +9,7 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
+import { deriveDragContext, isOverTabLaneFor } from '@/lib/utils/dragFeedback';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Store Imports --
@@ -23,6 +24,29 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
+import type { DragContext, DragKind, DragOverZone } from '@/lib/utils/dragFeedback';
+
+
+
+/**
+ * Classifies a drag's source ONCE at start, so the drag-scoped `pointermove`
+ * listener can branch (tab-lane test, puck context) by kind without re-reading
+ * @dnd-kit's active data on every move.
+ *
+ * @param active - The @dnd-kit `active` descriptor from `onDragStart`.
+ * @returns The {@link DragKind}, or null when the source is not recognised.
+ */
+function classifyDrag(active: DragStartEvent['active']): DragKind {
+   const type = active.data.current?.type as string | undefined;
+   if (type === DRAG_TYPES.TAB) return 'tab';
+   if (type === DRAG_TYPES.DRAWER_FOLDER) return 'drawer-folder';
+   if (type === DRAG_TYPES.DRAWER_ITEM) {
+      const item = active.data.current?.item as DrawerItem | undefined;
+      return item?.type === 'FULL_CHARACTER_SHEET' ? 'drawer-character' : 'drawer-component';
+   }
+   if (typeof type === 'string' && type.startsWith('sheet-')) return 'sheet-item';
+   return null;
+}
 
 
 
@@ -90,8 +114,91 @@ export function useCharacterSheetDnD() {
       [character?.cards]
    );
 
+   // ==================
+   //  Drag-feedback layer (tabs polish-6): cursor puck + generous tab lane
+   // ==================
+   // `dragContext`/`isOverTabLane` are React state (drive the puck content and the
+   // strip highlight); their `*Ref` twins are the truth read inside `handleDragEnd`,
+   // where the matching state can lag. The puck is positioned by direct DOM writes
+   // to `cursorRef` every move (no re-render); state changes only when the context
+   // morphs. `tabStripElRef` caches the strip element (queried once at drag start)
+   // for the generous geometry test.
+   const [dragContext, setDragContext] = useState<DragContext>(null);
+   const [isOverTabLane, setIsOverTabLane] = useState(false);
+   const cursorRef = useRef<HTMLDivElement | null>(null);
+   const tabStripElRef = useRef<HTMLElement | null>(null);
+   const dragKindRef = useRef<DragKind>(null);
+   const overZoneRef = useRef<DragOverZone>(null);
+   const isOverTabLaneRef = useRef(false);
+   const dragContextRef = useRef<DragContext>(null);
+
+   /**
+    * Recomputes the drag context from the current kind + over-zone + lane flag and
+    * commits it to state only when it actually changes (the puck re-renders rarely).
+    */
+   const updateContext = useCallback(() => {
+      const next = deriveDragContext(dragKindRef.current, overZoneRef.current, isOverTabLaneRef.current);
+      if (next !== dragContextRef.current) {
+         dragContextRef.current = next;
+         setDragContext(next);
+      }
+   }, []);
+
+   /**
+    * Drag-scoped `pointermove` handler: pins the puck to the cursor via a cheap
+    * direct DOM write, runs the generous tab-lane hit test (characters only), and
+    * refreshes the context. Attached to `window` on start, detached on end/cancel.
+    */
+   const handlePointerMove = useCallback((event: PointerEvent) => {
+      const puck = cursorRef.current;
+      if (puck) {
+         puck.style.left = `${event.clientX}px`;
+         puck.style.top = `${event.clientY}px`;
+      }
+
+      const rect = tabStripElRef.current?.getBoundingClientRect() ?? null;
+      const overLane = isOverTabLaneFor(dragKindRef.current, rect, event.clientX, event.clientY);
+      if (overLane !== isOverTabLaneRef.current) {
+         isOverTabLaneRef.current = overLane;
+         setIsOverTabLane(overLane);
+      }
+
+      updateContext();
+   }, [updateContext]);
+
+   /**
+    * Tears down the feedback layer: detaches the move listener and clears every
+    * ref + its mirrored state. Called from both `handleDragEnd` and the cancel path
+    * (and on unmount) so nothing leaks across drags.
+    */
+   const clearDragFeedback = useCallback(() => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      dragKindRef.current = null;
+      tabStripElRef.current = null;
+      overZoneRef.current = null;
+      if (isOverTabLaneRef.current) {
+         isOverTabLaneRef.current = false;
+         setIsOverTabLane(false);
+      }
+      if (dragContextRef.current) {
+         dragContextRef.current = null;
+         setDragContext(null);
+      }
+   }, [handlePointerMove]);
+
+   // Safety net: never leak the window listener if the sheet unmounts mid-drag.
+   useEffect(() => () => window.removeEventListener('pointermove', handlePointerMove), [handlePointerMove]);
+
    const handleDragStart = useCallback((event: DragStartEvent) => {
       const { active } = event;
+
+      // Arm the drag-feedback layer for every drag: classify the source, cache the
+      // strip element for the lane test, and attach the move listener.
+      dragKindRef.current = classifyDrag(active);
+      tabStripElRef.current = document.querySelector<HTMLElement>('[data-tab-strip]');
+      isOverTabLaneRef.current = false;
+      overZoneRef.current = null;
+      window.addEventListener('pointermove', handlePointerMove);
 
       // A tab drag is previewed via its own overlay branch, not as a sheet item.
       // Auto-open the drawer so the tab→drawer save has visible drop targets (the
@@ -112,7 +219,7 @@ export function useCharacterSheetDnD() {
       if (item) {
          setActiveDragItem(item);
       }
-   }, [character?.cards, character?.trackers, setDrawerOpen]);
+   }, [character?.cards, character?.trackers, setDrawerOpen, handlePointerMove]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
@@ -124,18 +231,35 @@ export function useCharacterSheetDnD() {
       setOverDragId(over ? over.id.toString() : null);
 
       let isHoveringDrawer = false;
+      // The actionable surface under the cursor, for the puck context. The thin
+      // tab strip is handled by the generous pointermove test, not here.
+      let zone: DragOverZone = null;
       if (over) {
         const activeType = active.data.current?.type as string;
         const overId = over.id.toString();
+        const overType = over.data.current?.type as string | undefined;
         const overIsDrawerComponent = over.data.current?.isDrawer || overId.startsWith('drawer-drop-zone-');
 
          if (activeType?.startsWith('sheet-') && overIsDrawerComponent) {
             isHoveringDrawer = true;
          }
+
+         if (overId === 'main-character-drop-zone') {
+            zone = 'play-area';
+         } else if (
+            overId === 'character-sheet-main-drop-zone' || overId === 'tracker-drop-zone' ||
+            overId === 'card-drop-zone' || overType === 'sheet-card' || overType === 'sheet-tracker'
+         ) {
+            zone = 'sheet';
+         } else if (overIsDrawerComponent || (typeof overType === 'string' && overType.startsWith('drawer-'))) {
+            zone = 'drawer';
+         }
       }
 
       setIsOverDrawer(isHoveringDrawer);
-   }, []);
+      overZoneRef.current = zone;
+      updateContext();
+   }, [updateContext]);
 
    /**
     * Handle reordering cards on the character sheet
@@ -270,10 +394,31 @@ export function useCharacterSheetDnD() {
    const handleDragEnd = useCallback((event: DragEndEvent) => {
       const { active, over } = event;
 
+      // Read the feedback refs BEFORE tearing them down (clearDragFeedback resets them).
+      const wasOverTabLane = isOverTabLaneRef.current;
+      const dragKind = dragKindRef.current;
+
       setActiveDragItem(null);
       setIsOverDrawer(false);
       setOverDragId(null);
       setActiveTabDrag(null);
+      clearDragFeedback();
+
+      // ##################################################
+      // ###   Generous tab lane (drawer character)     ###
+      // ##################################################
+      // A character released anywhere in the padded top band opens/focuses its tab —
+      // even when @dnd-kit's thin `tab-strip-drop-zone` was missed (so this runs
+      // BEFORE the `over` null-guard). The kind guard keeps it character-only.
+      if (wasOverTabLane && dragKind === 'drawer-character') {
+         const draggedItem = active.data.current?.item as DrawerItem | undefined;
+         if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
+            const characterData = draggedItem.content as Character;
+            openCharacterTab(characterData, draggedItem.id); // append-or-focus
+            setContextualGame(characterData.game);
+         }
+         return;
+      }
 
       if (!over || active.id === over.id) {
          return;
@@ -453,6 +598,7 @@ export function useCharacterSheetDnD() {
       addImportedTracker,
       addImportedCard,
       tNotifications,
+      clearDragFeedback,
    ]);
 
    /**
@@ -465,7 +611,8 @@ export function useCharacterSheetDnD() {
       setIsOverDrawer(false);
       setOverDragId(null);
       setActiveTabDrag(null);
-   }, []);
+      clearDragFeedback();
+   }, [clearDragFeedback]);
 
    return {
       activeDragItem,
@@ -480,5 +627,9 @@ export function useCharacterSheetDnD() {
       handleDragOver,
       handleDragEnd,
       handleDragCancel,
+      // Drag-feedback layer (tabs polish-6).
+      cursorRef,
+      dragContext,
+      isOverTabLane,
    };
 }

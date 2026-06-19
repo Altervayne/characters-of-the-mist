@@ -15,6 +15,12 @@
          "characterSheetType": "Character Sheet"
       }
    },
+   "DragPuck": {
+      "openAsTab": "Open as tab",
+      "open": "Open",
+      "addToSheet": "Add to sheet",
+      "saveToDrawer": "Save to drawer"
+   },
    "MigrationNotice": {
       "title": "Your data was upgraded",
       "description": "The App moved your characters and Drawer into a new, faster and more reliable in-browser storage system. Nothing was lost. Your previous data is kept as a safety backup. You can download that backup now, or export and remove it any time from the Settings, under the Danger Zone.",
