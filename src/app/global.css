@@ -654,11 +654,13 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
 @utility layer-panel { z-index: 50; }
 @utility layer-overlay { z-index: 60; }
 
-/* Spring-loaded drawer navigation (tabs polish-7): the dwell progress bar fills
-   left-to-right over the hold window. The 800ms here MUST match SPRING_HOLD_MS in
-   src/lib/utils/dragFeedback.ts. `forwards` holds it full until the row remounts. */
-@keyframes spring-fill {
-   from { width: 0; }
-   to { width: 100%; }
+/* Spring-loaded drawer navigation (tabs polish-8): the dwell progress ring around
+   the cursor dot draws from empty to full over the hold window. The SVG circle's
+   stroke-dasharray equals its circumference (2π·16 ≈ 100.53), so animating the
+   dashoffset to 0 fills the ring. The 800ms here MUST match SPRING_HOLD_MS in
+   src/lib/utils/dragFeedback.ts. `forwards` holds it full until the ring remounts. */
+@keyframes spring-ring {
+   from { stroke-dashoffset: 100.53; }
+   to { stroke-dashoffset: 0; }
 }
-@utility animate-spring-fill { animation: spring-fill 800ms linear forwards; }
+@utility animate-spring-ring { animation: spring-ring 800ms linear forwards; }

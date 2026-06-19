@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // -- Local Imports --
 import {
+   MORPH_DESCRIPTORS,
    SPRING_HOLD_MS,
    TAB_LANE_BELOW_PADDING,
    TAB_LANE_SIDE_PADDING,
@@ -11,6 +12,8 @@ import {
    isOverTabLaneFor,
    isWithinTabLane,
    resolveSpringTarget,
+   springDirection,
+   type DragContext,
    type LaneRect,
    type SpringHitArea,
    type SpringTarget,
@@ -126,6 +129,36 @@ describe('resolveSpringTarget (dwell hit-test)', () => {
 
    it('returns null over empty space', () => {
       expect(resolveSpringTarget(folders, back, 100, 500, null)).toBeNull();
+   });
+});
+
+describe('springDirection (dwell → arrow)', () => {
+   it('maps a folder target to the "in" arrow', () => {
+      expect(springDirection({ kind: 'folder', id: 'f1' })).toBe('in');
+   });
+
+   it('maps the Back target to the "up" arrow', () => {
+      expect(springDirection({ kind: 'back' })).toBe('up');
+   });
+});
+
+describe('MORPH_DESCRIPTORS (context → descriptor)', () => {
+   const contexts: NonNullable<DragContext>[] = ['open-tab', 'open', 'add-to-sheet', 'save-to-drawer'];
+
+   it('resolves every drag context to a descriptor with an icon + label', () => {
+      for (const context of contexts) {
+         const descriptor = MORPH_DESCRIPTORS[context];
+         expect(descriptor).toBeDefined();
+         expect(descriptor.Icon).toBeTruthy(); // a lucide component (forwardRef object)
+         expect(descriptor.labelKey).toMatch(/^DragPuck\./);
+      }
+   });
+
+   it('carries the up arrow only for the directional open-tab context', () => {
+      expect(MORPH_DESCRIPTORS['open-tab'].arrow).toBe('up');
+      expect(MORPH_DESCRIPTORS.open.arrow).toBeUndefined();
+      expect(MORPH_DESCRIPTORS['add-to-sheet'].arrow).toBeUndefined();
+      expect(MORPH_DESCRIPTORS['save-to-drawer'].arrow).toBeUndefined();
    });
 });
 

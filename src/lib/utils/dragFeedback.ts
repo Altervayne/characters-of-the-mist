@@ -1,10 +1,16 @@
 /**
- * Pure helpers for the drag-feedback layer (tabs polish-6): the generous tab-lane
- * hit test and the cross-surface context derivation. Kept free of React and
- * @dnd-kit so the geometry and the kind→context mapping can be unit-tested in
- * isolation, while {@link import('@/hooks/character-sheet/useCharacterSheetDnD')}
- * owns the stateful wiring (refs, listeners, the cursor puck).
+ * Pure helpers + descriptors for the drag-feedback layer (tabs polish-6/7/8): the
+ * generous tab-lane hit test, the cross-surface context derivation, the spring
+ * dwell controller, and the per-context morph descriptors. Kept free of React,
+ * @dnd-kit, and any drawer/tab/character concept (lucide icons are imported only as
+ * descriptor data) so the geometry, the kind→context mapping, and the descriptor
+ * resolution can be unit-tested in isolation; the stateful wiring lives in
+ * {@link import('@/hooks/character-sheet/useCharacterSheetDnD')} and the morph engine.
  */
+
+// -- Icon Imports (descriptor data only) --
+import { Download, ExternalLink, Plus, Save } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 /** What is being dragged, classified once at drag start. */
 export type DragKind =
@@ -18,8 +24,22 @@ export type DragKind =
 /** The actionable surface the cursor is currently over (from @dnd-kit's `over`). */
 export type DragOverZone = 'play-area' | 'sheet' | 'drawer' | null;
 
-/** The action a drop would perform right now; drives the cursor puck (null = hidden). */
+/** The action a drop would perform right now; drives the morph cluster (null = hidden). */
 export type DragContext = 'open-tab' | 'open' | 'add-to-sheet' | 'save-to-drawer' | null;
+
+/** The directional hint shown in the morph cluster (null = no arrow). */
+export type MorphArrow = 'in' | 'up' | null;
+
+/**
+ * Presentational descriptor for a drag context: the icon, i18n label, and optional
+ * direction arrow the morph cluster renders. Pure data — the engine consumes it
+ * without knowing what the action means.
+ */
+export interface MorphDescriptor {
+   Icon: LucideIcon;
+   labelKey: string;
+   arrow?: MorphArrow;
+}
 
 /**
  * Sideways slack (px) added to each edge of the tab strip's measured rect so a
@@ -119,6 +139,19 @@ export function deriveDragContext(
    return null;
 }
 
+/**
+ * Per-context presentational descriptors driving the drag-morph cluster (icon,
+ * i18n label, optional direction arrow). Adding a new draggable's morph is a single
+ * entry here plus a new {@link DragContext} value — no choreography change. (Folds
+ * in the former `DragCursorPuck` content map, adding arrows where directional.)
+ */
+export const MORPH_DESCRIPTORS: Record<NonNullable<DragContext>, MorphDescriptor> = {
+   'open-tab': { Icon: Plus, labelKey: 'DragPuck.openAsTab', arrow: 'up' },
+   open: { Icon: ExternalLink, labelKey: 'DragPuck.open' },
+   'add-to-sheet': { Icon: Download, labelKey: 'DragPuck.addToSheet' },
+   'save-to-drawer': { Icon: Save, labelKey: 'DragPuck.saveToDrawer' },
+};
+
 
 // ==================
 //  Spring-loaded drawer navigation (tabs polish-7)
@@ -126,8 +159,8 @@ export function deriveDragContext(
 
 /**
  * How long (ms) the cursor must dwell on a folder/Back target before the drawer
- * navigates there mid-drag. MUST stay in sync with the `spring-fill` keyframe
- * duration in `global.css` (the progress affordance fills over the same window).
+ * navigates there mid-drag. MUST stay in sync with the `spring-ring` keyframe
+ * duration in `global.css` (the cursor ring fills over the same window).
  */
 export const SPRING_HOLD_MS = 800;
 
@@ -147,6 +180,11 @@ export interface SpringHitArea {
 export function springTargetKey(target: SpringTarget | null): string | null {
    if (!target) return null;
    return target.kind === 'back' ? SPRING_BACK_KEY : target.id;
+}
+
+/** Maps a dwell target to the morph cluster's direction arrow (folder → in, back → up). */
+export function springDirection(target: SpringTarget): MorphArrow {
+   return target.kind === 'folder' ? 'in' : 'up';
 }
 
 /**

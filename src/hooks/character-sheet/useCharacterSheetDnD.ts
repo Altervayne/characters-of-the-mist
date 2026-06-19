@@ -9,8 +9,11 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget } from '@/lib/utils/dragFeedback';
+import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget, springDirection } from '@/lib/utils/dragFeedback';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
+
+// -- Drag-morph engine (tabs polish-8) --
+import { useDragMorph } from '@/components/molecules/drag-morph/useDragMorph';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -115,22 +118,28 @@ export function useCharacterSheetDnD() {
    );
 
    // ==================
-   //  Drag-feedback layer (tabs polish-6): cursor puck + generous tab lane
+   //  Drag-feedback layer (tabs polish-6): context derivation + generous tab lane
    // ==================
-   // `dragContext`/`isOverTabLane` are React state (drive the puck content and the
+   // `dragContext`/`isOverTabLane` are React state (feed the morph engine and the
    // strip highlight); their `*Ref` twins are the truth read inside `handleDragEnd`,
-   // where the matching state can lag. The puck is positioned by direct DOM writes
-   // to `cursorRef` every move (no re-render); state changes only when the context
-   // morphs. `tabStripElRef` caches the strip element (queried once at drag start)
-   // for the generous geometry test.
+   // where the matching state can lag. `tabStripElRef` caches the strip element
+   // (queried once at drag start) for the generous geometry test. The cursor itself
+   // is positioned imperatively by the morph engine (see below), not here.
    const [dragContext, setDragContext] = useState<DragContext>(null);
    const [isOverTabLane, setIsOverTabLane] = useState(false);
-   const cursorRef = useRef<HTMLDivElement | null>(null);
    const tabStripElRef = useRef<HTMLElement | null>(null);
    const dragKindRef = useRef<DragKind>(null);
    const overZoneRef = useRef<DragOverZone>(null);
    const isOverTabLaneRef = useRef(false);
    const dragContextRef = useRef<DragContext>(null);
+
+   // ==================
+   //  Drag-morph engine (tabs polish-8)
+   // ==================
+   // The reusable overlay-feedback engine (funnel clone + cursor cluster). This hook
+   // computes the signals (cursor, descriptor, spring) and feeds them in; the engine
+   // owns only the visual choreography and knows nothing of drawers/tabs/navigation.
+   const { captureGrab, setCursor, setMorph, reset: resetMorph, renderClone, renderCluster } = useDragMorph();
 
    // ==================
    //  Spring-loaded drawer navigation (tabs polish-7)
@@ -173,6 +182,20 @@ export function useCharacterSheetDnD() {
       return () => controller.cancel();
    }, [handleSpringNavigate]);
 
+   // Feed the morph engine a single resolved signal whenever the derived context or
+   // the spring target changes (polish-8). The arrow mirrors springDirection() for
+   // the active dwell; the engine renders, knowing nothing of what the action means.
+   useEffect(() => {
+      const springArrow = springTarget == null
+         ? null
+         : springDirection(springTarget === SPRING_BACK_KEY ? { kind: 'back' } : { kind: 'folder', id: springTarget });
+      setMorph({
+         descriptor: dragContext ? MORPH_DESCRIPTORS[dragContext] : null,
+         springKey: springTarget,
+         springArrow,
+      });
+   }, [dragContext, springTarget, setMorph]);
+
    /**
     * Recomputes the drag context from the current kind + over-zone + lane flag and
     * commits it to state only when it actually changes (the puck re-renders rarely).
@@ -191,11 +214,8 @@ export function useCharacterSheetDnD() {
     * refreshes the context. Attached to `window` on start, detached on end/cancel.
     */
    const handlePointerMove = useCallback((event: PointerEvent) => {
-      const puck = cursorRef.current;
-      if (puck) {
-         puck.style.left = `${event.clientX}px`;
-         puck.style.top = `${event.clientY}px`;
-      }
+      // Pin the cursor cluster to the pointer (imperative; no re-render).
+      setCursor(event.clientX, event.clientY);
 
       const rect = tabStripElRef.current?.getBoundingClientRect() ?? null;
       const overLane = isOverTabLaneFor(dragKindRef.current, rect, event.clientX, event.clientY);
@@ -223,7 +243,7 @@ export function useCharacterSheetDnD() {
          draggedFolderIdRef.current,
       );
       springControllerRef.current?.setTarget(springTargetUnderCursor);
-   }, [updateContext]);
+   }, [updateContext, setCursor]);
 
    /**
     * Tears down the feedback layer: detaches the move listener and clears every
@@ -247,7 +267,9 @@ export function useCharacterSheetDnD() {
       springControllerRef.current?.cancel();
       draggedFolderIdRef.current = null;
       springNavigatingRef.current = false;
-   }, [handlePointerMove]);
+      // Clear the morph feedback (clone funnel + cursor cluster).
+      resetMorph();
+   }, [handlePointerMove, resetMorph]);
 
    // Safety net: never leak the window listener if the sheet unmounts mid-drag.
    useEffect(() => () => window.removeEventListener('pointermove', handlePointerMove), [handlePointerMove]);
@@ -264,6 +286,14 @@ export function useCharacterSheetDnD() {
       // The dragged folder is excluded as a spring target (can't drill into what you hold).
       draggedFolderIdRef.current = dragKindRef.current === 'drawer-folder' ? String(active.id) : null;
       window.addEventListener('pointermove', handlePointerMove);
+
+      // Capture the grab point so the clone funnels toward the cursor, not the card
+      // center. dnd-kit provides the dragged element's initial rect + the activator.
+      const activator = event.activatorEvent as PointerEvent | null;
+      const initialRect = event.active.rect.current.initial;
+      if (initialRect && activator && typeof activator.clientX === 'number') {
+         captureGrab(initialRect, activator.clientX, activator.clientY);
+      }
 
       // A tab drag is previewed via its own overlay branch, not as a sheet item.
       // Auto-open the drawer so the tab→drawer save has visible drop targets (the
@@ -284,7 +314,7 @@ export function useCharacterSheetDnD() {
       if (item) {
          setActiveDragItem(item);
       }
-   }, [character?.cards, character?.trackers, setDrawerOpen, handlePointerMove]);
+   }, [character?.cards, character?.trackers, setDrawerOpen, handlePointerMove, captureGrab]);
 
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
@@ -692,12 +722,14 @@ export function useCharacterSheetDnD() {
       handleDragOver,
       handleDragEnd,
       handleDragCancel,
-      // Drag-feedback layer (tabs polish-6).
-      cursorRef,
-      dragContext,
+      // Strip highlight (tabs polish-6): the generous tab-lane flag.
       isOverTabLane,
       // Spring-loaded drawer navigation (tabs polish-7): the active dwell target id
-      // (folder id or the Back sentinel), for the progress affordance.
+      // (folder id or the Back sentinel), for the static row/Back highlight.
       springTarget,
+      // Drag-morph engine slots (tabs polish-8): clone goes inside <DragOverlay>,
+      // cluster is a sibling.
+      renderClone,
+      renderCluster,
    };
 }

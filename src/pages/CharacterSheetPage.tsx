@@ -25,7 +25,6 @@ import { SheetMainDropZone } from '@/components/organisms/SheetMainDropZone';
 import { CharacterNameHeader } from '@/components/molecules/CharacterNameHeader';
 import { FileDragOverlay } from '@/components/molecules/FileDragOverlay';
 import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
-import { DragCursorPuck } from '@/components/molecules/DragCursorPuck';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
 import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
@@ -91,15 +90,11 @@ function DesktopCharacterSheetPage() {
       handleDragOver,
       handleDragEnd,
       handleDragCancel,
-      cursorRef,
-      dragContext,
       isOverTabLane,
       springTarget,
+      renderClone,
+      renderCluster,
    } = useCharacterSheetDnD();
-
-   // The cursor puck mounts for the whole drag (so its node — and thus the imperative
-   // position writes — stay stable), morphing its content with `dragContext`.
-   const isDragActive = activeDragItem !== null || activeTabDrag !== null;
 
    // One sensor config for every sheet drag (tabs, cards, trackers, drawer). The 5px
    // activation distance lets a tab single-click still activate/close while a drag
@@ -293,22 +288,24 @@ function DesktopCharacterSheetPage() {
          {/* DIALOGS END */}
 
 
+         {/* Funneling clone INSIDE the overlay (the morph engine wraps the preview). */}
          <DragOverlay>
-            {activeTabDrag ? (
-               <TabDragPreview tab={activeTabDrag} />
-            ) : (
-               <DragOverlayContent
-                  activeDragItem={activeDragItem}
-                  isEditing={isEditing}
-                  isCompactDrawer={isCompactDrawer}
-               />
+            {renderClone(
+               activeTabDrag ? (
+                  <TabDragPreview tab={activeTabDrag} />
+               ) : (
+                  <DragOverlayContent
+                     activeDragItem={activeDragItem}
+                     isEditing={isEditing}
+                     isCompactDrawer={isCompactDrawer}
+                  />
+               ),
             )}
          </DragOverlay>
 
-         {/* Context cursor-puck — a SIBLING of <DragOverlay> (never a child: the
-             overlay's transform would offset this fixed element). Mounted for the
-             whole drag so the hook's per-frame position writes hit a stable node. */}
-         {isDragActive && <DragCursorPuck ref={cursorRef} context={dragContext} />}
+         {/* Cursor cluster as a SIBLING of <DragOverlay> (never a child: the overlay's
+             transform would offset this fixed element). */}
+         {renderCluster()}
       </DndContext>
    );
 }
