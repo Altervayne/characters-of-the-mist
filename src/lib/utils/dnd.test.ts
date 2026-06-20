@@ -91,3 +91,76 @@ describe('customCollisionDetection — drawer item (reorder only; in-drawer move
       expect(result).toHaveLength(0);
    });
 });
+
+/*
+ * Tests for the FULL_CHARACTER_SHEET (saved-character) branch (tabs polish-17). A saved
+ * character is a `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so it must
+ * reorder among its siblings (closestCenter, excluding self) while the sheet/tab targets
+ * still win. (Move-into-folder is resolved by the geometry resolver, not this collision,
+ * so folders are not in this branch — see the polish-15 cleanup.)
+ */
+function buildSavedCharArgs(params: {
+   containers: Container[];
+   rects: Array<[string, Rect]>;
+   pointer: { x: number; y: number };
+}) {
+   const args = {
+      active: { id: 'dragged-item', data: { current: { type: 'drawer-item', item: { type: 'FULL_CHARACTER_SHEET' }, parentFolderId: 'dest' } } },
+      collisionRect: rect(params.pointer.x - 10, params.pointer.y - 10, 20, 20),
+      droppableRects: new Map<string, Rect>(params.rects),
+      droppableContainers: params.containers,
+      pointerCoordinates: params.pointer,
+   };
+   return args as unknown as Parameters<typeof customCollisionDetection>[0];
+}
+
+const SHEET_ZONE = 'main-character-drop-zone';
+const TAB_ZONE = 'tab-strip-drop-zone';
+const sheetRect = rect(500, 0, 300, 600); // the sheet, far right
+const tabRect = rect(0, 0, 400, 40); // the tab strip, across the top
+const sib1Rect = rect(0, 100, 200, 40);
+const activeRect = rect(0, 140, 200, 40);
+const savedCharContainers = (): Container[] => [
+   container(SHEET_ZONE),
+   container(TAB_ZONE),
+   container('item-1', { type: 'drawer-item', parentFolderId: 'dest' }),
+   container('dragged-item', { type: 'drawer-item', parentFolderId: 'dest' }),
+];
+const savedCharRects: Array<[string, Rect]> = [
+   [SHEET_ZONE, sheetRect], [TAB_ZONE, tabRect], ['item-1', sib1Rect], ['dragged-item', activeRect],
+];
+
+describe('customCollisionDetection — saved character (FULL_CHARACTER_SHEET) reorder', () => {
+   it('reorders over the nearest sibling drawer-item, excluding itself', () => {
+      const result = customCollisionDetection(
+         buildSavedCharArgs({ containers: savedCharContainers(), rects: savedCharRects, pointer: { x: 100, y: 120 } }),
+      );
+      expect(result[0]?.id).toBe('item-1');
+      expect(result.some((c) => c.id === 'dragged-item')).toBe(false);
+   });
+
+   it('still prefers the play-area (sheet load) over a reorder', () => {
+      const result = customCollisionDetection(
+         buildSavedCharArgs({ containers: savedCharContainers(), rects: savedCharRects, pointer: { x: 650, y: 300 } }),
+      );
+      expect(result[0]?.id).toBe(SHEET_ZONE);
+   });
+
+   it('still prefers the tab strip (open as tab) over a reorder', () => {
+      const result = customCollisionDetection(
+         buildSavedCharArgs({ containers: savedCharContainers(), rects: savedCharRects, pointer: { x: 200, y: 20 } }),
+      );
+      expect(result[0]?.id).toBe(TAB_ZONE);
+   });
+
+   it('resolves no reorder target when the saved character is the only item (no siblings)', () => {
+      const result = customCollisionDetection(
+         buildSavedCharArgs({
+            containers: [container(SHEET_ZONE), container(TAB_ZONE), container('dragged-item', { type: 'drawer-item', parentFolderId: 'dest' })],
+            rects: [[SHEET_ZONE, sheetRect], [TAB_ZONE, tabRect], ['dragged-item', activeRect]],
+            pointer: { x: 100, y: 160 },
+         }),
+      );
+      expect(result).toHaveLength(0);
+   });
+});

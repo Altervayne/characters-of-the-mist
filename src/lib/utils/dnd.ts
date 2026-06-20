@@ -101,16 +101,31 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // ==================
    //  If dragging a full character sheet
    // ==================
-   // Only the non-drawer targets remain: the play area and the tab strip. In-drawer
-   // moves (into a folder / the current folder) are resolved by the live-geometry
-   // resolver at drop (tabs polish-13/15), which returns before this `over` is read, so
-   // the former folder / back-button in-drawer collision here was dead and is removed.
+   // A saved character is a `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so
+   // it needs BOTH its own high-priority targets AND the ordinary sibling reorder.
+   // Priority 1 (pointerWithin): load onto the sheet / open as a tab. In-drawer MOVES
+   // (into a folder / the current folder) are resolved by the live-geometry resolver at
+   // drop (tabs polish-13/15) — not this `over` — so no folder/back collision is needed.
+   // Priority 2 (polish-17): same-folder REORDER. Strict pointerWithin rarely lands on a
+   // sibling row, which is exactly why a saved character never reordered; fall back to the
+   // nearest sibling `drawer-item` via closestCenter, EXCLUDING the active item so `over`
+   // is always a different row (handleDragEnd's reorder no-ops on a self drop). This
+   // mirrors the regular `drawer-item` branch's reorder, kept LAST so the sheet/tab
+   // targets still win.
    if (draggedItemType === 'FULL_CHARACTER_SHEET') {
-      const filteredDroppables = args.droppableContainers.filter((container) => (
+      const primaryDroppables = args.droppableContainers.filter((container) => (
          container.id === 'main-character-drop-zone' ||
          container.id === 'tab-strip-drop-zone'
       ));
-      return pointerWithin({ ...args, droppableContainers: filteredDroppables });
+      const primaryCollisions = pointerWithin({ ...args, droppableContainers: primaryDroppables });
+      if (primaryCollisions.length > 0) {
+         return primaryCollisions;
+      }
+
+      const siblingDroppables = args.droppableContainers.filter(
+         (container) => container.data.current?.type === 'drawer-item' && container.id !== args.active.id,
+      );
+      return closestCenter({ ...args, droppableContainers: siblingDroppables });
    };
 
    // ==================
