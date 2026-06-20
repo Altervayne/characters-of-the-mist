@@ -300,8 +300,11 @@ function DesktopCharacterSheetPage() {
          {/* DIALOGS END */}
 
 
-         {/* Funneling clone INSIDE the overlay (the morph engine wraps the preview). */}
-         <DragOverlay>
+         {/* Funneling clone INSIDE the overlay (the morph engine wraps the preview).
+             `dropAnimation={null}` kills dnd-kit's ~250ms snap-back to the source slot
+             (tabs polish-16): with the optimistic reorder/move the dropped row is already
+             in place, so there is nothing to animate back to. Matches the mobile drawer. */}
+         <DragOverlay dropAnimation={null}>
             {renderClone(
                activeTabDrag ? (
                   <TabDragPreview tab={activeTabDrag} />

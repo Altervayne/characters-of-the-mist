@@ -1,5 +1,6 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
+import { arrayMove } from '@dnd-kit/sortable';
 
 // -- Utils Imports --
 import { deepReId } from '../utils/drawer';
@@ -204,10 +205,33 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             await runMutation(createDeleteFolderCommand(folderId));
          },
          moveFolder: async (folderId, destinationFolderId) => {
-            await runMutation(createMoveFolderCommand(folderId, destinationFolderId ?? null));
+            // Optimistic (tabs polish-16): the moved folder leaves the current view, so
+            // drop it from the loaded folders immediately; the command then persists the
+            // move and the reload confirms it. On failure, reload to the real order.
+            const view = get().currentFolderView;
+            if (view) set({ currentFolderView: { ...view, folders: view.folders.filter((folder) => folder.id !== folderId) } });
+            try {
+               await runMutation(createMoveFolderCommand(folderId, destinationFolderId ?? null));
+            } catch (error) {
+               await loadView(get().currentFolderId);
+               set({ error: toStoreError(error) });
+               throw error;
+            }
          },
          reorderFolders: async (parentFolderId, oldIndex, newIndex) => {
-            await runMutation(createReorderFoldersCommand(parentFolderId, oldIndex, newIndex));
+            // Optimistic (tabs polish-16): reflect the new order in the loaded view at once
+            // so the row lands where released — no wait for the command + reload. The
+            // engine reorders with the same arrayMove semantics, so the reload is a no-op
+            // visually; on failure, reload to revert to the persisted truth.
+            const view = get().currentFolderView;
+            if (view) set({ currentFolderView: { ...view, folders: arrayMove(view.folders, oldIndex, newIndex) } });
+            try {
+               await runMutation(createReorderFoldersCommand(parentFolderId, oldIndex, newIndex));
+            } catch (error) {
+               await loadView(get().currentFolderId);
+               set({ error: toStoreError(error) });
+               throw error;
+            }
          },
 
          // ==================
@@ -237,10 +261,33 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             await runMutation(createDeleteItemCommand(itemId));
          },
          moveItem: async (itemId, destinationFolderId) => {
-            await runMutation(createMoveItemCommand(itemId, destinationFolderId ?? null));
+            // Optimistic (tabs polish-16): the moved item leaves the current view, so drop
+            // it from the loaded items immediately; the command persists the move and the
+            // reload confirms it. On failure, reload to restore the real view.
+            const view = get().currentFolderView;
+            if (view) set({ currentFolderView: { ...view, items: view.items.filter((item) => item.id !== itemId) } });
+            try {
+               await runMutation(createMoveItemCommand(itemId, destinationFolderId ?? null));
+            } catch (error) {
+               await loadView(get().currentFolderId);
+               set({ error: toStoreError(error) });
+               throw error;
+            }
          },
          reorderItems: async (parentFolderId, oldIndex, newIndex) => {
-            await runMutation(createReorderItemsCommand(parentFolderId, oldIndex, newIndex));
+            // Optimistic (tabs polish-16): reflect the new order in the loaded view at once
+            // so the row lands where released — no wait for the command + reload. The
+            // engine reorders with the same arrayMove semantics, so the reload is a no-op
+            // visually; on failure, reload to revert to the persisted truth.
+            const view = get().currentFolderView;
+            if (view) set({ currentFolderView: { ...view, items: arrayMove(view.items, oldIndex, newIndex) } });
+            try {
+               await runMutation(createReorderItemsCommand(parentFolderId, oldIndex, newIndex));
+            } catch (error) {
+               await loadView(get().currentFolderId);
+               set({ error: toStoreError(error) });
+               throw error;
+            }
          },
          updateItem: async (itemId, newContent, newName) => {
             await runMutation(createUpdateItemContentCommand(itemId, newContent, newName));
