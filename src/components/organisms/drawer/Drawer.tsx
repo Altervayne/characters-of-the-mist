@@ -61,7 +61,7 @@ const contentVariants: Variants = {
 };
 
 
-export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, overDragId: string | null; springTargetId?: string | null; }) {
+export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, isFolderDrag?: boolean, overDragId: string | null; springTargetId?: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
 
@@ -193,10 +193,17 @@ export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetI
                               <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
                                  {currentFolders.map((folder, index) => {
                                     const dropZoneId = `drop-zone-before-${folder.id}`;
-                                    // Folder reposition zones only make sense while a FOLDER from this view is
-                                    // being dragged. `activeFolderIndex` is -1 during an item drag, so without
-                                    // this guard the zones would render mid-item-drag (the slots between folders).
-                                    const showDropZone = activeFolderIndex !== -1 && index !== activeFolderIndex && index !== activeFolderIndex + 1;
+                                    // Folder reposition zones make sense whenever a FOLDER is being dragged
+                                    // (`isFolderDrag` — false for item drags). When the dragged folder is in
+                                    // THIS view (`activeFolderIndex !== -1`) it is a reorder, so the two slots
+                                    // flanking it are hidden (no-op positions). When it was dragged in from
+                                    // another folder via a spring navigation (`activeFolderIndex === -1`), every
+                                    // slot is a valid insert target, so all are shown.
+                                    const showDropZone = isFolderDrag && (
+                                       activeFolderIndex === -1
+                                          ? true
+                                          : (index !== activeFolderIndex && index !== activeFolderIndex + 1)
+                                    );
 
                                     return (
                                        <React.Fragment key={folder.id}>
@@ -226,7 +233,7 @@ export function Drawer({ isDragHovering, activeDragId, overDragId, springTargetI
                                        </React.Fragment>
                                     )
                                  })}
-                                 {activeFolderIndex !== -1 && activeFolderIndex !== currentFolders.length - 1 && (
+                                 {isFolderDrag && (activeFolderIndex === -1 || activeFolderIndex !== currentFolders.length - 1) && (
                                     <FolderDropZone
                                        id={`drop-zone-after-last`}
                                        activeId={activeDragId}

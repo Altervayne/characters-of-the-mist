@@ -316,8 +316,15 @@ export function resolveSpringTarget(
    return null;
 }
 
-/** A resolved in-drawer DROP target: a folder row, the Back button, or the items body. */
-export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'back' } | { kind: 'items-body' };
+/**
+ * A resolved in-drawer DROP target: into a specific folder row, or into the current
+ * folder (anywhere else in the drawer). The Back button is intentionally NOT a drop
+ * target — it is navigation-only during a drag (dwell to go up). To move an item up,
+ * dwell Back to navigate to the parent, then drop, which lands in that now-current
+ * folder. `current-folder` is resolved against the live store at drop time, so it is
+ * immune to which folder the cursor happened to be over before a spring navigation.
+ */
+export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'current-folder' };
 
 /**
  * Resolves the in-drawer DROP target under the cursor by live element geometry —
@@ -326,22 +333,20 @@ export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'back' }
  * remounting context, so its collision only fires near a folder's center; this reads
  * `getBoundingClientRect()` against the cursor so a drop anywhere on a row lands.
  *
- * Priority: a folder row (excluding the dragged folder itself), then Back, then the
- * items body. Folder rows, the Back button, and the items body occupy disjoint
- * regions, so the order only formalises intent.
+ * A folder ROW (excluding the dragged folder) drops INTO that folder; anywhere else
+ * inside the drawer panel — the Back button, the items body, headers, gaps — drops
+ * into the CURRENT folder. Folder rows are checked first so they win over the panel.
  *
  * @param folders - The visible folder rows with their measured rects.
- * @param back - The Back button's rect, or null at root / not rendered.
- * @param itemsBody - The items-area rect, or null when not rendered.
+ * @param drawerPanel - The whole drawer panel's rect (the "current folder" catch-all).
  * @param x - Cursor clientX.
  * @param y - Cursor clientY.
  * @param draggedFolderId - The folder being dragged (excluded as a target), or null.
- * @returns The drop target under the cursor, or null.
+ * @returns The drop target under the cursor, or null when outside the drawer.
  */
 export function resolveDrawerDropTarget(
    folders: SpringHitArea[],
-   back: LaneRect | null,
-   itemsBody: LaneRect | null,
+   drawerPanel: LaneRect | null,
    x: number,
    y: number,
    draggedFolderId: string | null,
@@ -350,8 +355,7 @@ export function resolveDrawerDropTarget(
       if (folder.id === draggedFolderId) continue;
       if (pointInRect(folder.rect, x, y)) return { kind: 'folder', id: folder.id };
    }
-   if (back && pointInRect(back, x, y)) return { kind: 'back' };
-   if (itemsBody && pointInRect(itemsBody, x, y)) return { kind: 'items-body' };
+   if (drawerPanel && pointInRect(drawerPanel, x, y)) return { kind: 'current-folder' };
    return null;
 }
 

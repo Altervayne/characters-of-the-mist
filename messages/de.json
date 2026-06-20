@@ -1,10 +1,46 @@
 {
+   "PWA": {
+      "updateAvailable": "[TO COMPLETE]",
+      "update": "[TO COMPLETE]",
+      "dismiss": "[TO COMPLETE]",
+      "offlineReady": "[TO COMPLETE]"
+   },
+   "Tabs": {
+      "untitled": "[TO COMPLETE]",
+      "closeTab": "[TO COMPLETE]",
+      "newTab": "[TO COMPLETE]",
+      "newTabDialog": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "characterSheetType": "[TO COMPLETE]"
+      }
+   },
+   "DragPuck": {
+      "openAsTab": "[TO COMPLETE]",
+      "open": "[TO COMPLETE]",
+      "addToSheet": "[TO COMPLETE]",
+      "saveToDrawer": "[TO COMPLETE]",
+      "move": "[TO COMPLETE]"
+   },
+   "MigrationNotice": {
+      "title": "[TO COMPLETE]",
+      "description": "[TO COMPLETE]",
+      "exportButton": "[TO COMPLETE]",
+      "exportedLabel": "[TO COMPLETE]",
+      "exported": "[TO COMPLETE]",
+      "exportFailed": "[TO COMPLETE]",
+      "dismissButton": "[TO COMPLETE]"
+   },
    "Notifications": {
       "general": {
          "importFailed": "Datei-Import fehlgeschlagen. Daten können inkorrekt oder beschädigt sein.",
+         "importFailedNoCharacter": "[TO COMPLETE]",
+         "importFailedWrongGame": "[TO COMPLETE]",
          "exportSuccess": "Datei exportiert.",
+         "exportError": "[TO COMPLETE]",
          "invalidExportType": "Dieses Objekt kann nicht exportiert werden.",
-         "appReset": "Anwendung erfolgreich zurückgesetzt. Läd erneut..."
+         "appReset": "Anwendung erfolgreich zurückgesetzt. Läd erneut...",
+         "gestureTipsReset": "[TO COMPLETE]"
       },
       "character": {
          "saved": "Charakter gespeichert in",
@@ -13,8 +49,12 @@
          "exportFailedNoChar": "Der Export is fehlgeschlagen. Es wurde kein Charakter gefunden.",
          "imported": "Charakterdatei erfolgreich importiert.",
          "reset": "Charakter erfolgreich zurückgesetzt.",
+         "unloaded": "[TO COMPLETE]",
          "componentImported": "Komponentendatei erfolgreich importiert.",
-         "linkedItemMissing": "[TO COMPLETE]"
+         "linkedItemMissing": "[TO COMPLETE]",
+         "legacyBackupDownloaded": "[TO COMPLETE]",
+         "legacyBackupRemoved": "[TO COMPLETE]",
+         "legacyBackupExportFailed": "[TO COMPLETE]"
       },
       "card": {
          "created": "Karte erfolgreich erstellt.",
@@ -28,13 +68,21 @@
          "itemRenamed": "Objekt umbenannt.",
          "itemDeleted": "Objekt gelöscht.",
          "itemMoved": "Objekt veschoben.",
+         "itemExported": "[TO COMPLETE]",
          "folderCreated": "Ordner im Drawer erstellt.",
          "folderRenamed": "Ordner umbenannt.",
          "folderDeleted": "Ordner gelöscht.",
          "folderMoved": "Ordner verschoben.",
+         "folderExported": "[TO COMPLETE]",
          "importSuccess": "Datei erfolgreich in den Drawer importiert.",
+         "importedAsFolder": "[TO COMPLETE]",
          "exported": "Drawer erfolgreich exportiert.",
-         "deleted": "Drawer erfolgreich gelöscht."
+         "deleted": "Drawer erfolgreich gelöscht.",
+         "storageUpgradeFailed": "[TO COMPLETE]",
+         "actionFailed": "[TO COMPLETE]",
+         "legacyBackupDownloaded": "[TO COMPLETE]",
+         "legacyBackupRemoved": "[TO COMPLETE]",
+         "legacyBackupExportFailed": "[TO COMPLETE]"
       },
       "migration": {
          "legacyDataDownloaded": "Legacy Daten Download geschickt.",
@@ -46,7 +94,18 @@
    },
    "Errors": {
       "localStorageDisabled_title": "Kritischer Speicherfehler",
-      "localStorageDisabled_description": "Ihr Browser kann den lokalen Speicher für die App nicht nutzen. Characters of the Mist benötigt diesen Speicher für die Datenverwaltung und verwendet keinen Server. Daher kann die App in Ihrem Fall nicht ausgeführt werden."
+      "localStorageDisabled_description": "Ihr Browser kann den lokalen Speicher für die App nicht nutzen. Characters of the Mist benötigt diesen Speicher für die Datenverwaltung und verwendet keinen Server. Daher kann die App in Ihrem Fall nicht ausgeführt werden.",
+      "ErrorBoundary": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "errorMessage": "[TO COMPLETE]",
+         "technicalDetails": "[TO COMPLETE]",
+         "appSettings": "[TO COMPLETE]",
+         "copyButton": "[TO COMPLETE]",
+         "reloadButton": "[TO COMPLETE]",
+         "copySuccess": "[TO COMPLETE]",
+         "copyFailed": "[TO COMPLETE]"
+      }
    },
    "Tooltips": {
       "ViewMode": {
@@ -67,6 +126,7 @@
       "addCard": "Karte hinzufügen",
       "dropToLoadCharacter": "Ziehe den Character hier hin um ihn vollständig zu laden. Aber vorsicht, dass wird den bisher aktiven Charakter ersetzen.",
       "dropToImport": "Ziehe die Datei hier hin um die Komponente in das Charakterblatt zu importieren. Wenn du einen Charakter hier hin ziehst, wird es den aktiven Charakter ersetzen.",
+      "cannotDropWrongGame": "[TO COMPLETE]",
 
       "SidebarMenu": {
          "sidebarTitle": "Menü",
@@ -78,6 +138,7 @@
          "closeDrawer": "Drawer schließen",
 
          "saveToDrawer": "Save Charakter speichern",
+         "saveToDrawerAs": "[TO COMPLETE]",
          "exportCharacter": "Charakter exportieren",
          "importCharacter": "Charakter importieren",
          "importComponent": "Komponente importieren",
@@ -87,6 +148,12 @@
          "resetConfirmDescription": "Diese Aktion ist zerstörend. Ihr aktiver Charakter wird gelöscht und mit einem leeren Charakter ersetzt. Wenn sie die App nicht neu laden, können Sie den den alten Charakter mit der Rückgängig Funktion immernoch wiederherstellen.",
          "resetConfirmCancelButton": "Abbrechen",
          "resetConfirmButton": "Charakter wurde zurückgesetzt.",
+
+         "returnToMenu": "[TO COMPLETE]",
+         "unloadConfirmTitle": "[TO COMPLETE]",
+         "unloadConfirmDescription": "[TO COMPLETE]",
+         "unloadConfirmCancelButton": "[TO COMPLETE]",
+         "unloadConfirmButton": "[TO COMPLETE]",
 
          "settings": "Einstellngen",
          "info": "App Information",
@@ -100,15 +167,39 @@
    "Drawer": {
       "title": "Drawer",
       "toggleView": "Wechsele den Ansichtsmodus zwischen ausführlicher Vorschau und Listenansicht der Elemente des Drawer",
+      "compactView": "[TO COMPLETE]",
+      "close": "[TO COMPLETE]",
+      "backToRoot": "[TO COMPLETE]",
+      "namePlaceholder": "[TO COMPLETE]",
+      "noSubfolders": "[TO COMPLETE]",
+      "selectThisFolder": "[TO COMPLETE]",
+      "movingUnknown": "[TO COMPLETE]",
+
+      "root": "[TO COMPLETE]",
+      "empty": "[TO COMPLETE]",
+      "emptyDrawer": "[TO COMPLETE]",
+
+      "folderCount_one": "[TO COMPLETE]",
+      "folderCount_other": "[TO COMPLETE]",
+      "itemCount_one": "[TO COMPLETE]",
+      "itemCount_other": "[TO COMPLETE]",
 
       "emptyFolder": "Dieser Ordner ist leer; Zeit ihn zu füllen!",
       "addFolder": "Ordner hinzufügen",
+      "folderNamePlaceholder": "[TO COMPLETE]",
+      "importedDrawerDefaultName": "[TO COMPLETE]",
 
       "dropToImport": "Ziehe die Datei hierhin um sie in den Drawer zu importieren.",
 
       "Actions": {
          "addFolderTitle": "Neuen Ordner erstellen",
          "createFolder": "Ordner erstellen",
+
+         "addToCharacter": "[TO COMPLETE]",
+
+         "selectFolder": "[TO COMPLETE]",
+         "selectThisFolder": "[TO COMPLETE]",
+         "selectRoot": "[TO COMPLETE]",
 
          "nameItemTitle": "Wie möchten Sie den Eintrag nennen?",
 
@@ -136,6 +227,7 @@
          "exportFull": "Den gesamten Drawer exportieren",
          "import": "Datei in den aktuelleln Ordner importieren",
          "cancel": "Abbrechen",
+         "confirm": "[TO COMPLETE]",
 
          "defaultNames": {
             "characterCard": "Charakter Karte",
@@ -154,6 +246,7 @@
          "LEGENDS": "Legend in the Mist",
          "OTHERSCAPE": "Otherscape",
          "CITY": "City of Mist",
+         "CITY_OF_MIST": "[TO COMPLETE]",
 
          "LEGENDS_FULL_CHARACTER_SHEET": "Charakterbogen",
          "LEGENDS_CHARACTER_CARD": "Heldenkarte",
@@ -163,9 +256,37 @@
          "LEGENDS_STORY_TAG_TRACKER": "Handlungsmerkmal Tracker",
          "LEGENDS_STORY_THEME_TRACKER": "Handlungsthema Tracker",
 
+         "CITY_OF_MIST_FULL_CHARACTER_SHEET": "[TO COMPLETE]",
+         "CITY_OF_MIST_CHARACTER_CARD": "[TO COMPLETE]",
+         "CITY_OF_MIST_CHARACTER_THEME": "[TO COMPLETE]",
+         "CITY_OF_MIST_GROUP_THEME": "[TO COMPLETE]",
+         "CITY_OF_MIST_STATUS_TRACKER": "[TO COMPLETE]",
+         "CITY_OF_MIST_STORY_TAG_TRACKER": "[TO COMPLETE]",
+         "CITY_OF_MIST_STORY_THEME_TRACKER": "[TO COMPLETE]",
+
+         "OTHERSCAPE_FULL_CHARACTER_SHEET": "[TO COMPLETE]",
+         "OTHERSCAPE_CHARACTER_CARD": "[TO COMPLETE]",
+         "OTHERSCAPE_CHARACTER_THEME": "[TO COMPLETE]",
+         "OTHERSCAPE_GROUP_THEME": "[TO COMPLETE]",
+         "OTHERSCAPE_LOADOUT_THEME": "[TO COMPLETE]",
+         "OTHERSCAPE_STATUS_TRACKER": "[TO COMPLETE]",
+         "OTHERSCAPE_STORY_TAG_TRACKER": "[TO COMPLETE]",
+         "OTHERSCAPE_STORY_THEME_TRACKER": "[TO COMPLETE]",
+
          "cards": "Karten(n)",
          "trackers": "Tracker"
       }
+   },
+   "Cards": {
+      "heroCard": "[TO COMPLETE]",
+      "riftCard": "[TO COMPLETE]",
+      "mercCard": "[TO COMPLETE]",
+      "characterCard": "[TO COMPLETE]",
+      "fellowshipCard": "[TO COMPLETE]",
+      "crewCard": "[TO COMPLETE]",
+      "otherscapeCrewCard": "[TO COMPLETE]",
+      "otherscapeLoadoutCard": "[TO COMPLETE]",
+      "themeCard": "[TO COMPLETE]"
    },
 
 
@@ -181,7 +302,12 @@
       "selectPlaceholder": "Kartenart...",
       "cardTypeLabel": "Kartenart",
       "themeCard": "Heldenthema",
+      "riftThemeCard": "[TO COMPLETE]",
       "fellowshipCard": "Gefolgschaftsthema",
+      "crewCard": "[TO COMPLETE]",
+      "otherscapeThemeCard": "[TO COMPLETE]",
+      "otherscapeCrewCard": "[TO COMPLETE]",
+      "otherscapeLoadoutCard": "[TO COMPLETE]",
 
       "selectThemeTypePlaceholder": "Wähle eine Themenart...",
       "themeTypeLabel": "Themenart",
@@ -190,10 +316,13 @@
       "searchThemebookPlaceholder": "Suche oder erstelle ein Themenbuch...",
       "noThemebookFound": "Themenbuch wurde in den Standards nicht gefunden. Sie können es jedoch als individuelles Themenbuch verwenden!",
       "themebookLabel": "Themenbuch",
-      
+
       "startingTagsLabel": "Merkmale beginnen",
       "powerTagCountLabel": "Stärkemerkmal",
-      "weaknessTagCountLabel": "Schwächemerkmal"
+      "weaknessTagCountLabel": "Schwächemerkmal",
+      "gearTagCountLabel": "[TO COMPLETE]",
+      "flawTagCountLabel": "[TO COMPLETE]",
+      "wildcardSlotsLabel": "[TO COMPLETE]"
    },
    "SettingsDialog": {
       "title": "App Einstellungen",
@@ -221,18 +350,74 @@
          "locked": "gesetzt"
       },
 
+      "mobileFABMode": {
+         "title": "[TO COMPLETE]",
+         "bottomTabs": "[TO COMPLETE]",
+         "fab": "[TO COMPLETE]"
+      },
+
+      "mobileNavigation": {
+         "title": "[TO COMPLETE]",
+         "bottomTabs": "[TO COMPLETE]",
+         "fab": "[TO COMPLETE]"
+      },
+
+      "mobileHandedness": {
+         "title": "[TO COMPLETE]",
+         "left": "[TO COMPLETE]",
+         "right": "[TO COMPLETE]"
+      },
+
+      "gestureHints": {
+         "title": "[TO COMPLETE]",
+         "shown": "[TO COMPLETE]",
+         "hidden": "[TO COMPLETE]",
+         "replayLabel": "[TO COMPLETE]",
+         "replayButton": "[TO COMPLETE]"
+      },
+
+      "toolbeltMode": {
+         "title": "[TO COMPLETE]",
+         "sidePanel": "[TO COMPLETE]",
+         "fab": "[TO COMPLETE]"
+      },
+
       "tutorial": "App Anleitung",
       "tutorialButton": "Anleitung starten",
+
+      "onboarding": "[TO COMPLETE]",
+      "onboardingButton": "[TO COMPLETE]",
 
       "migration": {
          "label": "Daten migrieren",
          "button": "Legacy Character Dateien migrieren"
       },
 
+      "legacyBackup": {
+         "actionLabel": "[TO COMPLETE]",
+         "confirmTitle": "[TO COMPLETE]",
+         "confirmDescription": "[TO COMPLETE]",
+         "downloadBackupButton": "[TO COMPLETE]",
+         "backupDownloadedLabel": "[TO COMPLETE]",
+         "confirmCheckbox": "[TO COMPLETE]",
+         "removeButton": "[TO COMPLETE]",
+         "cancel": "[TO COMPLETE]"
+      },
+
+      "legacyCharacterBackup": {
+         "actionLabel": "[TO COMPLETE]",
+         "confirmTitle": "[TO COMPLETE]",
+         "confirmDescription": "[TO COMPLETE]",
+         "downloadBackupButton": "[TO COMPLETE]",
+         "backupDownloadedLabel": "[TO COMPLETE]",
+         "confirmCheckbox": "[TO COMPLETE]",
+         "removeButton": "[TO COMPLETE]",
+         "cancel": "[TO COMPLETE]"
+      },
+
       "dangerZone": {
          "title": "Gefahrenzone",
          "description": "Diese Optionen sind äußerst zerstörerisch; ihre Verwendung erfolgt auf eigenes Risiko. Es wird um Bestätigung gebeten.",
-
 
          "deleteDrawerButton": "Drawer löschen",
          "deleteDrawerDialog": {
@@ -264,9 +449,11 @@
       },
       "content": {
          "about": "#### Was ist Characters of the Mist?\n\nCharacters of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.\n\n---\n\n#### Was kann dieses Tool tun?\n\nDieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:\n\n* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.\n\n* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.\n\n* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.\n\n* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.\n\n* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.\n\n* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.\n\n---\n\n#### Kann dieses Tool als VTT verwendet werden?\n\nAktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.\n\n---\n\n#### Kann ich ein Problem mit der App melden?\n\nSie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
+         "license": "[TO COMPLETE]",
          "credits": "#### Credits & Attributions\n\nVielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legend in the Mist.",
          "localization": "#### Localization\n\nVielen Dank an alle, die dazu beigetragen haben, dass Characters of the Mist in anderen Sprachen als Englisch verfügbar ist!"
-      }
+      },
+      "license_credit": "[TO COMPLETE]"
    },
    "PatchNotesDialog": {
       "title": "Characters of the Mist - Patch Hinweise",
@@ -277,10 +464,14 @@
 
       "pageCounterLabel": "Seite",
 
+      "previousNote": "[TO COMPLETE]",
+      "nextNote": "[TO COMPLETE]",
+
       "close": "Schließen"
    },
    "MigrationDialog": {
       "title": "Legacy Charakter Daten migrieren",
+      "removeFile": "[TO COMPLETE]",
       "description": "Hier können Sie alte Charakterdateien aus der Alpha-Version von Characters of the Mist in die neue, optimierte Version migrieren. Der Migrator platziert die aktualisierten Dateien im Wurzelverzeichnis Ihres Drawer",
       "thankYou": "Wenn Sie hier sind, haben Sie höchstwahrscheinlich die Alpha-Version von Characters of the Mist verwendet. Ich möchte mich persönlich bei Ihnen bedanken, dass Sie meine App genutzt haben, trotz ihrer vielen Mängel. Viel Liebe,",
 
@@ -304,6 +495,27 @@
       "dismissButton": "Verwerfen",
       "downloadButton": "Legacy Daten herrunterladen"
    },
+   "MainMenu": {
+      "title": "[TO COMPLETE]",
+      "subtitle": "[TO COMPLETE]",
+      "createButton": "[TO COMPLETE]",
+      "openDrawerButton": "[TO COMPLETE]",
+      "hint": "[TO COMPLETE]",
+      "games": {
+         "legends": {
+            "title": "[TO COMPLETE]",
+            "subtitle": "[TO COMPLETE]"
+         },
+         "cityOfMist": {
+            "title": "[TO COMPLETE]",
+            "subtitle": "[TO COMPLETE]"
+         },
+         "otherscape": {
+            "title": "[TO COMPLETE]",
+            "subtitle": "[TO COMPLETE]"
+         }
+      }
+   },
    "WelcomeDialog": {
       "title": "Wilkonnen zu Characters of the Mist!",
       "description": "Dies ist ein inoffizieller, von Fans erstellter Charaktermanager für TTRPGs von Son of Oak Game Studios. Alle Ihre Daten werden in Ihrem Browser gespeichert, um vollständige Privatsphäre zu gewährleisten.",
@@ -313,7 +525,7 @@
       "feature3": "Ein vollständiges Dateisystem in der Drawer zur Organisation deiner Charaktere und Komponenten.",
       "feature4": "Ein robustes Rückgängig/Wiederherstellen-System, um Fehler zu beheben.",
       "callToAction": "Es gibt ein einfaches Anfänger-Tutorial, das Sie mit der Schaltfläche unten starten können. Alternativ können Sie die Patch-Notizen lesen. Wenn Sie direkt zur App möchten, können Sie einfach dieses Fenster schließen.",
-      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt „Über“ des App-Info-Fensters. Vielen Dank, dass Sie Characters of the Mist verwenden, viel Spaß!",
+      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt 'Übe' des App-Info-Fensters. Vielen Dank, dass Sie Characters of the Mist verwenden, viel Spaß!",
       "startTutorialButton": "Tutorial beginnen",
       "patchNotesButton": "Patch Hinweise ansehen"
    },
@@ -350,14 +562,12 @@
       "placeholders": {
          "renameCharacter": "Neuner Charaktername...",
 
-
          "newCardName": "Neuer Merkmalname für die neue Karte...",
          "themeType": "Wähle den Thementyp...",
          "themebook": "Wähle ein Themenbuch oder tippe ein indeviduelles...",
          "mainTagName": "Schreibe den Namen deines Hauptmerkmals...",
          "powerTags": "Anzahl an Stärkemerkmalen...",
          "weaknessTags": "Anzahl an Schwächemerkmalen...",
-
 
          "trackerType": "Wähle eine Tracker Art...",
          "trackerName": "Gib eine Tracker Namen ein..."
@@ -372,7 +582,9 @@
 
       "themes": {
          "theme-neutral": "Neutral",
-         "theme-legends": "Legend in the Mist"
+         "theme-legends": "Legend in the Mist",
+         "theme-otherscape": "[TO COMPLETE]",
+         "theme-city-of-mist": "[TO COMPLETE]"
       },
 
       "empty": "Es wurden keine Kommandos gefudnen.",
@@ -384,7 +596,6 @@
          "export": "Export",
          "character": "Charakterbogen",
          "creation": "Erstellung",
-
 
          "themePalette": "Wähle eine neue Themen Palette",
 
@@ -411,9 +622,11 @@
 
          "createCard": "Erstellen: Themenkarte",
          "createTracker": "Erstellen: Tracker",
-         
+
          "cardTypeCharacter": "Art: Charakterthema",
          "cardTypeFellowship": "Art: Gefolgschaftsthema",
+         "cardTypeCrew": "[TO COMPLETE]",
+         "cardTypeLoadout": "[TO COMPLETE]",
 
          "trackerTypeStatus": "Art: Status Tracker",
          "trackerTypeStoryTag": "Art: Handlungsmerkmal Tracker"
@@ -422,16 +635,25 @@
    "Tutorial": {
       "welcome_title": "Wilkommen zu Characters of the Mist!",
       "welcome_content": "Diese kurze Tour führt Sie durch die Hauptfunktionen. Sie können jederzeit aussteigen, indem Sie auf das 'X' oben rechts in diesem kleinen Fenster oder außerhalb klicken. Wenn Sie versehentlich aussteigen, können Sie das Tutorial erneut im Einstellungsmenü starten.",
-      
+
+      "mainMenuGames_title": "[TO COMPLETE]",
+      "mainMenuGames_content": "[TO COMPLETE]",
+
+      "mainMenuLegends_title": "[TO COMPLETE]",
+      "mainMenuLegends_content": "[TO COMPLETE]",
+
+      "mainMenuCreate_title": "[TO COMPLETE]",
+      "mainMenuCreate_content": "[TO COMPLETE]",
+
       "sidebar_title": "Hauptseitenleiste",
       "sidebar_content": "Dies ist die Hauptseitenleiste. Sie enthält globale Aktionen wie das Umschalten des Bearbeitungsmodus, das Öffnen der Dateiansicht und den Zugriff auf die Einstellungen.",
 
       "playArea_title": "Charakterbogen",
-      "playArea_content": "Characters of the Mist kann sich auf deinen „Spielbereich“ oder „Charakterbogen“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
-      
+      "playArea_content": "Characters of the Mist kann sich auf deinen 'Spielbereich' oder 'Charakterbogen' beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
+
       "characterName_title": "Charaktername",
       "characterName_content": "Du kannst den Namen deines Charakters hier jederzeit ändern. Deine Änderungen werden automatisch gespeichert.",
-      
+
       "trackers_title": "Trackers",
       "trackers_content": "Dieser Bereich enthält Ihre Status- und Handlungsmerkaml-Tracker sowie Ihre Handlungsthemen-Tracker. Sie können neue hinzufügen, wenn Sie sich im 'Bearbeitungsmodus' befinden. Jeder Tracker verfügt über einen Verschiebegriff, der erscheint, wenn Sie mit der Maus darüber fahren. Damit können Sie sie verschieben oder exportieren.",
 
@@ -462,15 +684,18 @@
       "resetCharacter_title": "Charakter zurücksetzen",
       "resetCharacter_content": "Dieser Button löscht deinen aktiven Charakter vollständig und verwandelt dein Charakterblatt in eine frische leere Vorlage, um von vorne zu beginnen.",
 
+      "unloadCharacter_title": "[TO COMPLETE]",
+      "unloadCharacter_content": "[TO COMPLETE]",
+
       "settings_title": "Einstellungen",
       "settings_content": "Dieser Button öffnet das Einstellungsmenü, wo Sie Funktionen wie die Auswahl der Farbpalette Ihrer App, den Wechsel zwischen Hell- und Dunkelmodus oder das Zurücksetzen aller Ihrer Daten nutzen können. Hier finden Sie auch das Migrationswerkzeug, mit dem Sie die Daten der Legacy Characters of the Mist in diese neue Version migrieren können.",
 
       "appInfo_title": "App Informaton",
-      "appInfo_content": "Dieser Button öffnet ein Informationsmenü, das einen allgemeinen „Über“-Bereich für diese App, Lizenzinformationen und Danksagungen enthält.",
+      "appInfo_content": "Dieser Button öffnet ein Informationsmenü, das einen allgemeinen 'Über'-Bereich für diese App, Lizenzinformationen und Danksagungen enthält.",
 
       "patchNotes_title": "Patch Notizen",
       "patchNotes_content": "Dieser Button öffnet ein Menü, in dem Sie die Patch-Notizen-Historie der App einsehen können.",
-      
+
       "editMode_title": "Bearbeitungsmodus",
       "editMode_content": "Dieser Button versetzt Sie in den 'Bearbeitungsmodus'. Dadurch können Sie Karten und Tracker hinzufügen, entfernen und bearbeiten.",
 
@@ -482,13 +707,13 @@
 
       "addStoryTag_title": "Handlungsmerkmal hinzufügen",
       "addStoryTag_content": "Ebenso können Sie jetzt einen Button sehen, um einen neuen Handlungsmerkmal-Tracker hinzuzufügen. Sie können ein Handlungsmerkmal mit einem Button in der Werkzeugleiste, der erscheint, wenn Sie über den Tracker fahren, in ein Handlungsthema weiterentwickeln.",
-    
+
       "addCard_title": "Neue Karten hinzufügen",
       "addCard_content": "Dieser Button ist jetzt in Ihrer Kartenliste erschienen, wodurch Sie eine Karte erstellen können.",
 
       "openAddCard_title": "Öffne den Kartenersteller",
       "openAddCard_content": "Wir werden jetzt sehen, wie die Erstellung einer Karte funktioniert.",
-      
+
       "creationDialog_title": "Kartenerstellung",
       "creationDialog_content": "Dieser Dialog ermöglicht es Ihnen, die Eigenschaften der neuen Karte festzulegen.",
 
@@ -497,15 +722,15 @@
 
       "drawer_title": "Der Drawer",
       "drawer_content": "Dies ist dein Drawer, ein leistungsstarkes Speichersystem, das du verwenden kannst, um einzelne Elemente wie Karten und Tracker sowie vollständige Charakterblätter zu speichern, zu sichern und zu organisieren. Du kannst eine externe Datei hierher ziehen, um sie zu importieren.",
-   
+
       "drawerUndoRedo_title": "Rückgängig/Wiederherstellen",
       "drawerUndoRedo_content": "Ähnlich wie im Seitenmenü verfügt die Drawer über ein Paar Rückgängig/Wiederholen-Buttons. Diese Buttons ermöglichen es Ihnen, Aktionen innerhalb der Drawer rückgängig zu machen oder wiederherzustellen. Genau wie beim Charakterblatt können Sie, wenn Ihre letzte Aktion in der Drawer war, auch die Tasten CTRL+Z und CTRL+Y verwenden.",
 
       "drawerRichView_title": "Ausführliche Ansicht",
-      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Characters of the Mist als „Ausführliche Ansicht“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
+      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Characters of the Mist als 'Ausführliche Ansicht' bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
 
       "drawerFolders_title": "Ordner",
-      "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche „Ordner hinzufügen“, mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von „...“ auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
+      "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche 'Ordner hinzufügen', mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von '...' auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
 
       "drawerItems_title": "Einträge",
       "drawerItems_content": "Hier ist der Ort, an dem Ihre Items gespeichert sind. Items sind Charakterblätter, Karten oder Tracker. Sie können Einträge hinzufügen, indem Sie Ihren Charakter speichern oder sie von Ihrem Charakterblatt in die Schublade ziehen und ablegen. Jeder Eintrag verfügt außerdem über ein Kontextmenü mit verschiedenen Optionen und kann verschoben werden.",
@@ -520,7 +745,7 @@
       "commandPalette_content": "Characters of the Mist bietet eine leistungsstarke Kommando-Palette, mit der Sie die Funktionen der App nur mit Ihrer Tastatur nutzen können! Um sie zu verwenden, drücken Sie einfach CTRL+K. Beachten Sie, dass dieses Feature auf Power-User ausgerichtet ist.",
 
       "closingWords_title": "Das Ende",
-      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt „App-Info“. Vielen Dank, dass Sie Characters of the Mist verwenden!"
+      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt 'App-Info'. Vielen Dank, dass Sie Characters of the Mist verwenden!"
    },
 
 
@@ -531,21 +756,81 @@
    },
    "ThemeCard": {
       "fellowshipTitle": "Gefolgschaftsthema",
+      "crewThemeTitle": "[TO COMPLETE]",
 
       "placeholderName": "SChreibe dein Hauptmerkmal...",
+      "mainTagPlaceholder": "[TO COMPLETE]",
       "noName": "KEIN NAME",
       "power": "STRÄKE",
       "weakness": "SCHWÄCHE",
-      
+
       "questTitle": "Aufgabe",
       "noQuest": "LEERER AUFGABENTEXT",
       "questPlaceholder": "Schreibe deinen Aufgabentext hier...",
+
+      "mysteryTitle": "[TO COMPLETE]",
+      "noMystery": "[TO COMPLETE]",
+      "mysteryPlaceholder": "[TO COMPLETE]",
+
+      "identityTitle": "[TO COMPLETE]",
+      "noIdentity": "[TO COMPLETE]",
+      "identityPlaceholder": "[TO COMPLETE]",
+
+      "mythos": "[TO COMPLETE]",
+      "logos": "[TO COMPLETE]",
+      "attention": "[TO COMPLETE]",
+      "fade": "[TO COMPLETE]",
+      "crack": "[TO COMPLETE]",
 
       "addPowerTag": "Stärkemerkmal hinzufügen",
       "addWeaknessTag": "Schwächemerkmal hinzufügen",
 
       "improvements": "Spezialverbesserung",
       "addImprovement": "Verbesserung hinzufügen"
+   },
+   "OtherscapeThemeCard": {
+      "crewThemeTitle": "[TO COMPLETE]",
+      "loadoutTitle": "[TO COMPLETE]",
+
+      "placeholderName": "[TO COMPLETE]",
+      "noName": "[TO COMPLETE]",
+      "power": "[TO COMPLETE]",
+      "weakness": "[TO COMPLETE]",
+      "flaw": "[TO COMPLETE]",
+
+      "ritualTitle": "[TO COMPLETE]",
+      "noRitual": "[TO COMPLETE]",
+      "ritualPlaceholder": "[TO COMPLETE]",
+
+      "identityTitle": "[TO COMPLETE]",
+      "noIdentity": "[TO COMPLETE]",
+      "identityPlaceholder": "[TO COMPLETE]",
+
+      "itchTitle": "[TO COMPLETE]",
+      "noItch": "[TO COMPLETE]",
+      "itchPlaceholder": "[TO COMPLETE]",
+
+      "descriptionTitle": "[TO COMPLETE]",
+      "noDescription": "[TO COMPLETE]",
+      "descriptionPlaceholder": "[TO COMPLETE]",
+
+      "attention": "[TO COMPLETE]",
+      "fade": "[TO COMPLETE]",
+      "crack": "[TO COMPLETE]",
+      "upgrade": "[TO COMPLETE]",
+      "decay": "[TO COMPLETE]",
+
+      "improvements": "[TO COMPLETE]",
+      "addImprovement": "[TO COMPLETE]",
+
+      "gearTitle": "[TO COMPLETE]",
+      "addGearTag": "[TO COMPLETE]",
+      "flawsTitle": "[TO COMPLETE]",
+      "addFlawTag": "[TO COMPLETE]",
+      "loadedGear": "[TO COMPLETE]",
+      "unloadedGear": "[TO COMPLETE]",
+      "wildcardSlots": "[TO COMPLETE]",
+      "noGear": "[TO COMPLETE]"
    },
    "TagItem": {
       "placeholder": "Schreib das Merkmal...",
@@ -555,7 +840,66 @@
       "abandon": "VERNACHLÄSSIGUNG",
       "improve": "VERBESSERUNG",
       "milestone": "MEILENSTEIN",
-      "promise": "VERSPRECHEN"
+      "promise": "VERSPRECHEN",
+      "Attention": "[TO COMPLETE]",
+      "Fade": "[TO COMPLETE]",
+      "Crack": "[TO COMPLETE]",
+      "Upgrade": "[TO COMPLETE]",
+      "Decay": "[TO COMPLETE]"
+   },
+   "RiftCard": {
+      "title": "[TO COMPLETE]",
+      "mythos": "[TO COMPLETE]",
+      "mythosPlaceholder": "[TO COMPLETE]",
+      "logos": "[TO COMPLETE]",
+      "logosPlaceholder": "[TO COMPLETE]",
+      "characterNamePlaceholder": "[TO COMPLETE]",
+      "noName": "[TO COMPLETE]",
+      "Crew": {
+         "title": "[TO COMPLETE]",
+         "name": "[TO COMPLETE]",
+         "help": "[TO COMPLETE]",
+         "hurt": "[TO COMPLETE]",
+         "noName": "[TO COMPLETE]",
+         "addCrewMember": "[TO COMPLETE]"
+      },
+      "buildup": "[TO COMPLETE]",
+      "Nemesis": {
+         "title": "[TO COMPLETE]",
+         "addNemesis": "[TO COMPLETE]"
+      }
+   },
+   "OtherscapeCharacterCard": {
+      "title": "[TO COMPLETE]",
+      "characterNamePlaceholder": "[TO COMPLETE]",
+      "noName": "[TO COMPLETE]",
+      "essence": "[TO COMPLETE]",
+      "Essence": {
+         "mythos": "[TO COMPLETE]",
+         "self": "[TO COMPLETE]",
+         "noise": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "vertices": {
+            "nexus": "[TO COMPLETE]",
+            "real": "[TO COMPLETE]",
+            "spiritualist": "[TO COMPLETE]",
+            "avatar": "[TO COMPLETE]",
+            "conduit": "[TO COMPLETE]",
+            "transhuman": "[TO COMPLETE]",
+            "singularity": "[TO COMPLETE]",
+            "cyborg": "[TO COMPLETE]"
+         }
+      },
+      "relationships": "[TO COMPLETE]",
+      "addRelationship": "[TO COMPLETE]",
+      "companionPlaceholder": "[TO COMPLETE]",
+      "relationshipPlaceholder": "[TO COMPLETE]",
+      "relationshipCompanionNoName": "[TO COMPLETE]",
+      "relationshipRelationNoName": "[TO COMPLETE]",
+      "Specials": {
+         "title": "[TO COMPLETE]",
+         "addSpecial": "[TO COMPLETE]"
+      }
    },
    "HeroCard": {
       "title": "HEldenkarte",
@@ -588,9 +932,18 @@
       "placeholder": "Schreibe die Verbesserung...",
       "noName": "KEINE VERBESSERUNG"
    },
+   "specials": {
+      "placeholder": "[TO COMPLETE]",
+      "noName": "[TO COMPLETE]"
+   },
+   "nemeses": {
+      "placeholder": "[TO COMPLETE]",
+      "noName": "[TO COMPLETE]"
+   },
    "Trackers": {
       "addStatus": "Status hinzufügen",
       "addStoryTag": "Handlungsmerkmal hinzufügen",
+      "addStoryTheme": "[TO COMPLETE]",
       "statusPlaceholder": "Gib den Status ein...",
       "statusNoName": "KEIN STATUS",
       "storyTagPlaceholder": "Gib das Handlungsmerkmal ein...",
@@ -626,6 +979,41 @@
          "possessions": "Besitztümer"
       }
    },
+   "CityData": {
+      "themebook": {
+         "adaptation": "[TO COMPLETE]",
+         "bastion": "[TO COMPLETE]",
+         "divination": "[TO COMPLETE]",
+         "expression": "[TO COMPLETE]",
+         "mobility": "[TO COMPLETE]",
+         "relic": "[TO COMPLETE]",
+         "subversion": "[TO COMPLETE]",
+         "training": "[TO COMPLETE]",
+
+         "definingEvent": "[TO COMPLETE]",
+         "definingRelationship": "[TO COMPLETE]",
+         "mission": "[TO COMPLETE]",
+         "personality": "[TO COMPLETE]",
+         "occupation": "[TO COMPLETE]"
+      }
+   },
+   "OtherscapeData": {
+      "themebook": {
+         "artifact": "[TO COMPLETE]",
+         "esoterica": "[TO COMPLETE]",
+         "exposure": "[TO COMPLETE]",
+
+         "affiliation": "[TO COMPLETE]",
+         "assets": "[TO COMPLETE]",
+         "expertise": "[TO COMPLETE]",
+         "horizon": "[TO COMPLETE]",
+         "personality": "[TO COMPLETE]",
+         "troubledPast": "[TO COMPLETE]",
+
+         "augmentation": "[TO COMPLETE]",
+         "cuttingEdge": "[TO COMPLETE]"
+      }
+   },
    "ThemeTypes": {
       "Origin": "Ursprung",
       "Adventure": "Abenteuer",
@@ -636,5 +1024,227 @@
 
       "Self": "Ego",
       "Noise": "Rauschen"
+   },
+
+
+
+   "MobileCharacterSheet": {
+      "noCharacter": "[TO COMPLETE]",
+      "loadCharacterPrompt": "[TO COMPLETE]",
+      "drawerHint": "[TO COMPLETE]",
+      "trackersTab": "[TO COMPLETE]",
+      "cardsTab": "[TO COMPLETE]",
+      "statuses": "[TO COMPLETE]",
+      "storyTags": "[TO COMPLETE]",
+      "storyThemes": "[TO COMPLETE]",
+      "reorderCards": "[TO COMPLETE]"
+   },
+   "MobileCardCarousel": {
+      "noCards": "[TO COMPLETE]",
+      "cardCounter": "[TO COMPLETE]"
+   },
+   "MobileBottomTabs": {
+      "sheet": "[TO COMPLETE]",
+      "drawer": "[TO COMPLETE]",
+      "menu": "[TO COMPLETE]",
+      "edit": "[TO COMPLETE]",
+      "toolbelt": "[TO COMPLETE]"
+   },
+   "MobileFAB": {
+      "edit": "[TO COMPLETE]",
+      "drawer": "[TO COMPLETE]",
+      "sheet": "[TO COMPLETE]",
+      "menu": "[TO COMPLETE]",
+      "open": "[TO COMPLETE]",
+      "close": "[TO COMPLETE]"
+   },
+   "Toolbelt": {
+      "title": "[TO COMPLETE]",
+      "noActions": "[TO COMPLETE]",
+      "itemSection": "[TO COMPLETE]",
+      "globalSection": "[TO COMPLETE]",
+      "undo": "[TO COMPLETE]",
+      "redo": "[TO COMPLETE]",
+      "editMode": "[TO COMPLETE]",
+      "playMode": "[TO COMPLETE]",
+      "saveCharacter": "[TO COMPLETE]",
+      "saveCharacterAs": "[TO COMPLETE]",
+      "addCard": "[TO COMPLETE]",
+      "addStatus": "[TO COMPLETE]",
+      "addStoryTag": "[TO COMPLETE]",
+      "addStoryTheme": "[TO COMPLETE]",
+      "reorderCards": "[TO COMPLETE]",
+      "flipCard": "[TO COMPLETE]",
+      "export": "[TO COMPLETE]",
+      "sideBySideMode": "[TO COMPLETE]",
+      "flipMode": "[TO COMPLETE]",
+      "editThemebook": "[TO COMPLETE]",
+      "delete": "[TO COMPLETE]",
+      "makePositive": "[TO COMPLETE]",
+      "makeNegative": "[TO COMPLETE]",
+      "upgradeToTheme": "[TO COMPLETE]",
+      "downgradeToTag": "[TO COMPLETE]",
+      "saveToDrawer": "[TO COMPLETE]"
+   },
+   "MobileSaveToDrawerSheet": {
+      "title": "[TO COMPLETE]",
+      "placeholder": "[TO COMPLETE]",
+      "confirm": "[TO COMPLETE]"
+   },
+   "MobileMenu": {
+      "title": "[TO COMPLETE]",
+      "description": "[TO COMPLETE]",
+      "settings": "[TO COMPLETE]",
+      "info": "[TO COMPLETE]",
+      "patchNotes": "[TO COMPLETE]",
+      "save": "[TO COMPLETE]",
+      "saveCharacterAs": "[TO COMPLETE]",
+      "export": "[TO COMPLETE]",
+      "import": "[TO COMPLETE]",
+      "unload": "[TO COMPLETE]"
+   },
+   "MobileOnboarding": {
+      "welcome": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "getStarted": "[TO COMPLETE]"
+      },
+      "language": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "appearance": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "mode": "[TO COMPLETE]",
+         "palette": "[TO COMPLETE]"
+      },
+      "interface": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "handedness": "[TO COMPLETE]",
+         "handednessHint": "[TO COMPLETE]",
+         "leftHanded": "[TO COMPLETE]",
+         "rightHanded": "[TO COMPLETE]",
+         "navigation": "[TO COMPLETE]",
+         "navigationHint": "[TO COMPLETE]",
+         "bottomTabs": "[TO COMPLETE]",
+         "floatingButton": "[TO COMPLETE]"
+      },
+      "tips": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "show": "[TO COMPLETE]",
+         "hide": "[TO COMPLETE]",
+         "reminder": "[TO COMPLETE]"
+      },
+      "ready": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "startApp": "[TO COMPLETE]",
+         "takeTour": "[TO COMPLETE]",
+         "tutorialReminder": "[TO COMPLETE]"
+      },
+      "navigation": {
+         "back": "[TO COMPLETE]",
+         "next": "[TO COMPLETE]",
+         "skip": "[TO COMPLETE]"
+      }
+   },
+   "MobileTutorial": {
+      "intro": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "navigation": {
+         "title": "[TO COMPLETE]",
+         "tabs": {
+            "description": "[TO COMPLETE]"
+         },
+         "fab": {
+            "description": "[TO COMPLETE]"
+         }
+      },
+      "menu": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "sheet": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "trackers": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "trackerSelection": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "toolbelt": {
+         "title": "[TO COMPLETE]",
+         "sidePanel": {
+            "description": "[TO COMPLETE]"
+         },
+         "fab": {
+            "description": "[TO COMPLETE]"
+         }
+      },
+      "cards": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "cardNavigation": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "drawer": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "drawerContent": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "drawerInteractions": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "drawerToolbar": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "menuActions": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "complete": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]"
+      },
+      "controls": {
+         "next": "[TO COMPLETE]",
+         "back": "[TO COMPLETE]",
+         "skip": "[TO COMPLETE]",
+         "done": "[TO COMPLETE]"
+      }
+   },
+   "MobileCardNavigationBar": {
+      "swipeHint": "[TO COMPLETE]",
+      "previousCard": "[TO COMPLETE]",
+      "nextCard": "[TO COMPLETE]",
+      "goToCard": "[TO COMPLETE]"
+   },
+   "MobileGestureHints": {
+      "trackerLongPress": "[TO COMPLETE]",
+      "drawerLongPress": "[TO COMPLETE]",
+      "selectTracker": "[TO COMPLETE]"
+   },
+   "Common": {
+      "dragHandle": "[TO COMPLETE]",
+      "moreOptions": "[TO COMPLETE]",
+      "done": "[TO COMPLETE]",
+      "back": "[TO COMPLETE]",
+      "name": "[TO COMPLETE]"
    }
 }
