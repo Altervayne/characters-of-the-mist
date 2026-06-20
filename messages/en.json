@@ -653,6 +653,9 @@
       "sidebar_title": "Main Sidebar",
       "sidebar_content": "This is the main sidebar. It contains global actions like toggling edit mode, opening the file drawer, and accessing settings.",
 
+      "tabStrip_title": "Open several characters at once",
+      "tabStrip_content": "The strip at the top holds every character you have open. Click a tab to switch, drag tabs to reorder them, and press + to open another. You can also drag a character from the drawer onto the strip to open it, or drag a tab into the drawer to save it.",
+
       "playArea_title": "Character Sheet",
       "playArea_content": "This is what Characters of the Mist can refer to as your \"Play Area\" or \"Character Sheet\". It holds your Trackers and Cards. They are all draggable, which lets you reorder them, or store them in the Drawer. More on that later. You can drop an external file here to import it.",
       

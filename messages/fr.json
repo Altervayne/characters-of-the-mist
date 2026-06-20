@@ -624,6 +624,9 @@
       "sidebar_title": "Menu Latéral Principal",
       "sidebar_content": "Ceci est la barre latérale principale. Elle contient des actions globales comme basculer le mode édition, ouvrir le tiroir de fichiers, et accéder aux paramètres.",
 
+      "tabStrip_title": "[TO COMPLETE]",
+      "tabStrip_content": "[TO COMPLETE]",
+
       "playArea_title": "Fiche de Personnage",
       "playArea_content": "C'est ce que Characters of the Mist peut appeler votre \"Zone de Jeu\" ou \"Fiche de Personnage\". Elle contient vos Suivis et vos Cartes. Ils sont tous déplaçables par glisser-déposer, ce qui vous permet de les réorganiser ou de les stocker dans le Tiroir. Nous y reviendrons plus tard. Vous pouvez déposer un fichier externe ici pour l'importer.",
 

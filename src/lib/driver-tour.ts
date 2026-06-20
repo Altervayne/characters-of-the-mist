@@ -170,6 +170,14 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
          },
       },
       {
+         element: '[data-tour="tab-strip"]',
+         popover: {
+            title: t('Tutorial.tabStrip_title'),
+            description: t('Tutorial.tabStrip_content'),
+            side: 'bottom',
+         },
+      },
+      {
          element: '[data-tour="character-sheet"]',
          popover: {
             title: t('Tutorial.playArea_title'),
