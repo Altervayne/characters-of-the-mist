@@ -97,7 +97,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             // recessed chips nudged down a touch (the strip aligns the row to its
             // baseline) so the active tab stands proud of them.
             isActive
-               ? 'relative z-10 -mb-px bg-primary text-primary-foreground pb-px'
+               ? 'relative z-10 bg-primary text-primary-foreground pb-1'
                : 'bg-muted/40 hover:bg-muted/70',
             // While dragging, the free-floating DragOverlay preview is what moves;
             // dim the in-strip source so its slot reads as a placeholder gap.

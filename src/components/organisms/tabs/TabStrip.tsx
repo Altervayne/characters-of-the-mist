@@ -182,7 +182,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
              wheel to horizontal scroll, so there is no vertical scrolling to show. */}
          <div
             ref={scrollRef}
-            className="min-w-0 h-12 flex-1 flex items-end gap-1.5 overflow-x-auto overscroll-x-contain scrollbar-hide"
+            className="min-w-0 h-12 flex-1 flex items-end gap-1.5 overflow-y-hide overflow-x-auto overscroll-x-contain scrollbar-hide"
          >
             <SortableContext items={openTabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
                <div className="flex items-end">
