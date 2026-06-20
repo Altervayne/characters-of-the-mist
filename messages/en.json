@@ -157,8 +157,8 @@
          "resetConfirmCancelButton": "Cancel",
          "resetConfirmButton": "Reset the Character",
 
-         "openMenu": "Open menu",
-         "returnToMenu": "Return to Menu",
+         "openMenu": "Open main menu",
+         "returnToMenu": "Return to main menu",
          "unloadConfirmTitle": "Are you sure you want to return to the menu?",
          "unloadConfirmDescription": "This action is extremely destructive. Your active character will be unloaded and the history erased. You will not be able to undo this, make sure you either saved your character to the drawer or exported it.",
          "unloadConfirmCancelButton": "Cancel",
