@@ -316,6 +316,45 @@ export function resolveSpringTarget(
    return null;
 }
 
+/** A resolved in-drawer DROP target: a folder row, the Back button, or the items body. */
+export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'back' } | { kind: 'items-body' };
+
+/**
+ * Resolves the in-drawer DROP target under the cursor by live element geometry —
+ * the same strategy the spring uses to drill in (tabs polish-13). dnd-kit's measured
+ * droppable rects desync in the drawer's scrollable / layout-animated / spring-
+ * remounting context, so its collision only fires near a folder's center; this reads
+ * `getBoundingClientRect()` against the cursor so a drop anywhere on a row lands.
+ *
+ * Priority: a folder row (excluding the dragged folder itself), then Back, then the
+ * items body. Folder rows, the Back button, and the items body occupy disjoint
+ * regions, so the order only formalises intent.
+ *
+ * @param folders - The visible folder rows with their measured rects.
+ * @param back - The Back button's rect, or null at root / not rendered.
+ * @param itemsBody - The items-area rect, or null when not rendered.
+ * @param x - Cursor clientX.
+ * @param y - Cursor clientY.
+ * @param draggedFolderId - The folder being dragged (excluded as a target), or null.
+ * @returns The drop target under the cursor, or null.
+ */
+export function resolveDrawerDropTarget(
+   folders: SpringHitArea[],
+   back: LaneRect | null,
+   itemsBody: LaneRect | null,
+   x: number,
+   y: number,
+   draggedFolderId: string | null,
+): DrawerDropTarget | null {
+   for (const folder of folders) {
+      if (folder.id === draggedFolderId) continue;
+      if (pointInRect(folder.rect, x, y)) return { kind: 'folder', id: folder.id };
+   }
+   if (back && pointInRect(back, x, y)) return { kind: 'back' };
+   if (itemsBody && pointInRect(itemsBody, x, y)) return { kind: 'items-body' };
+   return null;
+}
+
 /** Options for {@link createSpringController}. */
 export interface SpringControllerOptions {
    /** Dwell duration; defaults to {@link SPRING_HOLD_MS}. */

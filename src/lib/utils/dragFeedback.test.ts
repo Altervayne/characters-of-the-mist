@@ -11,6 +11,7 @@ import {
    deriveDragContext,
    isOverTabLaneFor,
    isWithinTabLane,
+   resolveDrawerDropTarget,
    resolveSpringTarget,
    resolveTabSpringTarget,
    selectMorphGlyph,
@@ -177,6 +178,39 @@ describe('resolveSpringTarget (dwell hit-test)', () => {
 
    it('returns null over empty space', () => {
       expect(resolveSpringTarget(folders, back, 100, 500, null)).toBeNull();
+   });
+});
+
+describe('resolveDrawerDropTarget (manual in-drawer drop hit-test)', () => {
+   // Items body sits below the folders (y 40–160) and Back (y 0–30).
+   const itemsBody: LaneRect = { left: 0, right: 200, top: 200, bottom: 600, height: 400 };
+
+   it('resolves a folder row anywhere on the row (full-row, not center-only)', () => {
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 5, 100, null)).toEqual({ kind: 'folder', id: 'f2' });
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 195, 100, null)).toEqual({ kind: 'folder', id: 'f2' });
+   });
+
+   it('resolves Back over the Back button', () => {
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 100, 15, null)).toEqual({ kind: 'back' });
+   });
+
+   it('resolves the items body when over it', () => {
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 100, 300, null)).toEqual({ kind: 'items-body' });
+   });
+
+   it('excludes the dragged folder (falls through to items body if that is where the cursor is)', () => {
+      // Over f2's row but f2 is the dragged folder → not a folder target; not over body either → null.
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 100, 100, 'f2')).toBeNull();
+      // Dragged folder excluded, cursor in the body → items-body.
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 100, 300, 'f2')).toEqual({ kind: 'items-body' });
+   });
+
+   it('returns null when over nothing (e.g. a gap below the body)', () => {
+      expect(resolveDrawerDropTarget(folders, back, itemsBody, 100, 900, null)).toBeNull();
+   });
+
+   it('handles absent Back / items body (root, not rendered)', () => {
+      expect(resolveDrawerDropTarget(folders, null, null, 100, 15, null)).toBeNull();
    });
 });
 

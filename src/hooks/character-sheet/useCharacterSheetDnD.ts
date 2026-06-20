@@ -9,7 +9,7 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
+import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveDrawerDropTarget, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
 import { sheetSectionForItemType } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
@@ -29,7 +29,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
-import type { DragContext, DragKind, DragOverZone, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
+import type { DragContext, DragKind, DragOverZone, DrawerDropTarget, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
 
 
 
@@ -168,9 +168,12 @@ export function useCharacterSheetDnD() {
    const [springTarget, setSpringTarget] = useState<string | null>(null);
    const draggedFolderIdRef = useRef<string | null>(null);
    const springNavigatingRef = useRef(false);
-   // The live cursor, captured each move, so an async spring navigation can re-fire a
-   // synthetic pointermove there once the destination's droppables mount (issue 2).
-   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
+   // The in-drawer drop target under the cursor, resolved by live geometry each move
+   // (tabs polish-13). dnd-kit's collision rects desync in the scrollable/animated
+   // drawer so folder drops were center-only; this is the source of truth for an
+   // in-drawer move at drop. Read at dragEnd (the dwell-then-release value is correct
+   // — it holds the folder the spring drilled into). Cleared on end/cancel.
+   const hoveredDrawerTargetRef = useRef<DrawerDropTarget | null>(null);
 
    /**
     * Performs a spring navigation when a dwell completes: drill into a folder, or go
@@ -190,16 +193,11 @@ export function useCharacterSheetDnD() {
       if (springNavigatingRef.current) return;
       const destination = target.kind === 'back' ? useDrawerStore.getState().parentFolderId : target.id;
       springNavigatingRef.current = true;
+      // No synthetic-pointermove re-resolve needed for the drop (tabs polish-13): the
+      // manual drop resolver reads `hoveredDrawerTargetRef`, which after a dwell holds
+      // the folder the spring drilled into — exactly the drop destination.
       void Promise.resolve(setDrawerCurrentFolderId(destination)).finally(() => {
          springNavigatingRef.current = false;
-         // The dwell fired without pointer movement, so @dnd-kit's `over` still points
-         // at the old (now unmounted) view. The destination's droppables just mounted;
-         // re-fire a synthetic pointermove at the live cursor so `over` re-resolves and
-         // a dwell-then-release drops into the new folder. Guard on an active drag.
-         const cursor = lastPointerRef.current;
-         if (cursor && dragKindRef.current) {
-            window.dispatchEvent(new PointerEvent('pointermove', { clientX: cursor.x, clientY: cursor.y, bubbles: true }));
-         }
       });
    }, [setDrawerCurrentFolderId, setActiveTab]);
 
@@ -242,7 +240,14 @@ export function useCharacterSheetDnD() {
     * commits it to state only when it actually changes (the puck re-renders rarely).
     */
    const updateContext = useCallback(() => {
-      const next = deriveDragContext(dragKindRef.current, overZoneRef.current, isOverTabLaneRef.current, sheetCompatibleRef.current);
+      // In-drawer zones come from the manual geometry target (full-row, reliable);
+      // non-drawer zones (play area / sheet) come from `overZoneRef` (dnd-kit `over`,
+      // set in handleDragOver). The manual target wins when present.
+      const manual = hoveredDrawerTargetRef.current;
+      const zone: DragOverZone = manual
+         ? (manual.kind === 'items-body' ? 'drawer-items' : 'drawer-nav')
+         : overZoneRef.current;
+      const next = deriveDragContext(dragKindRef.current, zone, isOverTabLaneRef.current, sheetCompatibleRef.current);
       if (next !== dragContextRef.current) {
          dragContextRef.current = next;
          setDragContext(next);
@@ -257,7 +262,6 @@ export function useCharacterSheetDnD() {
    const handlePointerMove = useCallback((event: PointerEvent) => {
       // Pin the cursor cluster to the pointer (imperative; no re-render).
       setCursor(event.clientX, event.clientY);
-      lastPointerRef.current = { x: event.clientX, y: event.clientY };
 
       const rect = tabStripElRef.current?.getBoundingClientRect() ?? null;
       const overLane = isOverTabLaneFor(dragKindRef.current, rect, event.clientX, event.clientY);
@@ -266,17 +270,17 @@ export function useCharacterSheetDnD() {
          setIsOverTabLane(overLane);
       }
 
-      updateContext();
-
-      // Spring-loaded drawer navigation: hit-test the live folder rows + Back button
-      // against the cursor (re-queried each move, so it stays correct across spring-
-      // navigations) and feed the result to the dwell controller. Empty/absent when
-      // the drawer is closed, so this no-ops for drags that never enter the drawer.
+      // Live-geometry hit-test of the drawer (re-queried each move, so scroll- and
+      // navigation-correct by construction). Folder rows + Back drive the spring; all
+      // three (folders, Back, items body) drive the manual in-drawer DROP target.
       const backEl = document.querySelector('[data-drawer-back]');
       const backRect = backEl ? backEl.getBoundingClientRect() : null;
       const folders: SpringHitArea[] = Array.from(
          document.querySelectorAll<HTMLElement>('[data-folder-id]'),
       ).flatMap((el) => (el.dataset.folderId ? [{ id: el.dataset.folderId, rect: el.getBoundingClientRect() }] : []));
+      const itemsAreaEl = document.querySelector('[data-drawer-items-area]');
+      const itemsAreaRect = itemsAreaEl ? itemsAreaEl.getBoundingClientRect() : null;
+
       const drawerTarget = resolveSpringTarget(
          folders,
          backRect,
@@ -284,6 +288,21 @@ export function useCharacterSheetDnD() {
          event.clientY,
          draggedFolderIdRef.current,
       );
+
+      // The instantaneous in-drawer drop target (NOT the dwell target): the source of
+      // truth for an in-drawer move at drop, replacing dnd-kit's center-only collision.
+      hoveredDrawerTargetRef.current = resolveDrawerDropTarget(
+         folders,
+         backRect,
+         itemsAreaRect,
+         event.clientX,
+         event.clientY,
+         draggedFolderIdRef.current,
+      );
+
+      // The morph context reads the SAME manual signal, so the "drawer-move" cluster
+      // lights up full-row (not center-only). Recomputed after the hit-test above.
+      updateContext();
 
       // Tab auto-nav: a dragged drawer COMPONENT or sheet item can dwell on a
       // background tab to spring-switch the active character mid-drag (then drop on
@@ -301,16 +320,10 @@ export function useCharacterSheetDnD() {
       springControllerRef.current?.setTarget(drawerTarget ?? tabTarget);
 
       // Force-morph (the "full card only in the drawer items area" rule): decide by
-      // real cursor geometry against the items-area rect, NOT dnd-kit's `over` — its
-      // closestCenter fallback snaps `over` to the nearest item even in neutral space,
-      // which would wrongly read as the items area. A drawer item keeps its full clone
-      // only while the cursor is genuinely inside the items area; it morphs elsewhere.
-      const itemsAreaEl = document.querySelector('[data-drawer-items-area]');
-      let overItemsArea = false;
-      if (itemsAreaEl) {
-         const r = itemsAreaEl.getBoundingClientRect();
-         overItemsArea = event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom;
-      }
+      // real cursor geometry against the items-area rect, NOT dnd-kit's `over`.
+      const overItemsArea = !!itemsAreaRect &&
+         event.clientX >= itemsAreaRect.left && event.clientX <= itemsAreaRect.right &&
+         event.clientY >= itemsAreaRect.top && event.clientY <= itemsAreaRect.bottom;
       const nextForce = shouldForceMorph(dragKindRef.current, overItemsArea);
       if (nextForce !== forceMorphRef.current) {
          forceMorphRef.current = nextForce;
@@ -342,7 +355,7 @@ export function useCharacterSheetDnD() {
       springNavigatingRef.current = false;
       dragSourceCharacterIdRef.current = null;
       sheetCompatibleRef.current = true;
-      lastPointerRef.current = null;
+      hoveredDrawerTargetRef.current = null;
       if (forceMorphRef.current) {
          forceMorphRef.current = false;
          setForceMorph(false);
@@ -473,7 +486,10 @@ export function useCharacterSheetDnD() {
 
       setIsOverDrawer(isHoveringDrawer);
       setSheetHighlight(highlight);
-      overZoneRef.current = zone;
+      // Only the NON-drawer zones come from dnd-kit's `over`; the in-drawer zones are
+      // owned by the manual geometry target (set in handlePointerMove → updateContext),
+      // which is reliable full-row where dnd-kit's collision is center-only.
+      overZoneRef.current = zone === 'play-area' || zone === 'sheet' ? zone : null;
       updateContext();
    }, [updateContext, character]);
 
@@ -613,6 +629,7 @@ export function useCharacterSheetDnD() {
       // Read the feedback refs BEFORE tearing them down (clearDragFeedback resets them).
       const wasOverTabLane = isOverTabLaneRef.current;
       const dragKind = dragKindRef.current;
+      const manualDrawerTarget = hoveredDrawerTargetRef.current;
 
       setActiveDragItem(null);
       setIsOverDrawer(false);
@@ -634,6 +651,46 @@ export function useCharacterSheetDnD() {
             setContextualGame(characterData.game);
          }
          return;
+      }
+
+      // ##################################################
+      // ###   Manual in-drawer drop targeting          ###
+      // ##################################################
+      // For a drawer-sourced drag, the in-drawer DROP target is resolved by live cursor
+      // geometry (tabs polish-13), NOT dnd-kit's `over` — its collision rects desync in
+      // the scrollable/animated drawer (folder drops were center-only). This runs BEFORE
+      // the `over` null-guard so an off-center drop the collision missed still lands.
+      // (A dwell-then-release reads the dwelled folder here, which IS the destination.)
+      // Folder / Back targets always route here; the items body only when moving into a
+      // DIFFERENT folder than the item's origin — same-folder body falls through to the
+      // dnd-kit reorder path below.
+      const activeIsDrawerMove =
+         dragKind === 'drawer-character' || dragKind === 'drawer-component' || dragKind === 'drawer-folder';
+      if (activeIsDrawerMove && manualDrawerTarget) {
+         const draggedId = active.id.toString();
+         const isFolderDrag = dragKind === 'drawer-folder';
+         if (manualDrawerTarget.kind === 'folder') {
+            if (manualDrawerTarget.id !== draggedId) {
+               if (isFolderDrag) void moveFolder(draggedId, manualDrawerTarget.id);
+               else void moveItem(draggedId, manualDrawerTarget.id);
+            }
+            return;
+         }
+         if (manualDrawerTarget.kind === 'back') {
+            const destination = useDrawerStore.getState().parentFolderId ?? undefined;
+            if (isFolderDrag) void moveFolder(draggedId, destination);
+            else void moveItem(draggedId, destination);
+            return;
+         }
+         // items-body: move into the current folder only when crossing folders.
+         const currentFolderId = useDrawerStore.getState().currentFolderId ?? null;
+         const originParent = (active.data.current?.parentFolderId ?? null) as string | null;
+         if (currentFolderId !== originParent) {
+            if (isFolderDrag) void moveFolder(draggedId, currentFolderId ?? undefined);
+            else void moveItem(draggedId, currentFolderId ?? undefined);
+            return;
+         }
+         // Same-folder body → fall through to the dnd-kit reorder path below.
       }
 
       if (!over || active.id === over.id) {
@@ -704,13 +761,12 @@ export function useCharacterSheetDnD() {
             const foldersInScope = currentFolderView?.folders ?? [];
             const itemsInScope = currentFolderView?.items ?? [];
 
-            if (overIdStr.startsWith('drawer-back-button-')) {
-               const draggedId = active.id.toString();
-               const destinationId = over.data.current?.destinationId;
-               if (activeIsFolder) void moveFolder(draggedId, destinationId);
-               if (activeIsItem) void moveItem(draggedId, destinationId);
-               return;
-            }
+            // NOTE: moves INTO a folder / Back / the items body of a different folder
+            // are handled by the manual geometry resolver above (tabs polish-13); this
+            // block now only handles REORDER, which dnd-kit's `over` resolves reliably
+            // (folder insertion slots and sibling item rows are precise targets).
+
+            // Folder REORDER over an insertion slot.
             if (overType === 'drawer-drop-zone' && activeIsFolder) {
                const oldIndex = foldersInScope.findIndex(folder => folder.id === active.id);
                if (oldIndex === -1) return;
@@ -724,30 +780,8 @@ export function useCharacterSheetDnD() {
                void reorderFolders(parentFolderId, oldIndex, newIndex);
                return;
             }
-            if (overType === 'drawer-folder') {
-               if (active.id === over.id) return;
-               const draggedId = active.id.toString();
-               const destinationFolderId = overIdStr;
-               if (activeIsFolder) void moveFolder(draggedId, destinationFolderId);
-               if (activeIsItem) void moveItem(draggedId, destinationFolderId);
-               return;
-            }
-            if (activeIsItem && overIdStr.startsWith('drawer-drop-zone-')) {
-               // Dropped in the current folder body (incl. an empty folder, or a
-               // different folder reached via spring-nav): move the item into the
-               // destination parsed from the zone id ('root' → root). No-op if already there.
-               const parsed = overIdStr.replace('drawer-drop-zone-', '');
-               const destinationFolderId = parsed === 'root' ? null : parsed;
-               if (destinationFolderId !== parentFolderId) void moveItem(active.id.toString(), destinationFolderId ?? undefined);
-               return;
-            }
-            if (overType === 'drawer-item' && activeIsItem) {
-               const overParent = (over.data.current?.parentFolderId ?? null) as string | null;
-               if (parentFolderId !== overParent) {
-                  // Dropped among a DIFFERENT folder's items (e.g. after spring-nav) → move it in.
-                  void moveItem(active.id.toString(), overParent ?? undefined);
-                  return;
-               }
+            // Same-folder item REORDER over a sibling row.
+            if (overType === 'drawer-item' && activeIsItem && parentFolderId === (over.data.current?.parentFolderId ?? null)) {
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
                const newIndex = itemsInScope.findIndex(item => item.id === over.id);
                if (oldIndex !== -1 && newIndex !== -1) void reorderItems(parentFolderId, oldIndex, newIndex);
