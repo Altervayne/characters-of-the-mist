@@ -11,7 +11,7 @@ import type { CharacterStore } from '@/lib/stores/characterStore';
  * here, so the ~36 leaf consumers never learn that tabs exist.
  *
  * Phase 1: the provider value is the one instance, constant for the app's lifetime.
- * Phase 2 makes the value follow the active tab — every consumer re-resolves through
+ * Phase 2 makes the value follow the active tab, every consumer re-resolves through
  * this same context with no further change.
  *
  * The context + hook live in this `.ts` file (no component export) so the

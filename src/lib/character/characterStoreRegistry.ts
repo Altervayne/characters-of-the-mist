@@ -12,11 +12,11 @@ import type { CharacterStore } from '@/lib/stores/characterStore';
  *
  * Non-React callers (persistence, the undo-router keydown handler) reach the active
  * instance through `getActiveCharacterStore()`; React callers resolve it through
- * `ActiveCharacterStoreContext`. This is NOT a React module — it holds no JSX and
+ * `ActiveCharacterStoreContext`. This is NOT a React module, it holds no JSX and
  * no hooks, only the instance map and the active-id pointer.
  *
  * Phase 1 keeps exactly one instance, created lazily and kept active for the app's
- * lifetime under {@link SINGLE_ACTIVE_INSTANCE_ID} — it replaces the old module
+ * lifetime under {@link SINGLE_ACTIVE_INSTANCE_ID}, it replaces the old module
  * singleton's role. Per-character keying and multiple live instances arrive in
  * Phase 2 with the TabManager.
  */
@@ -79,7 +79,7 @@ export function setActiveInstance(id: string): void {
  * Drops the instance for `id` from the registry, clearing the active pointer if it
  * referenced that id. Idempotent. (Phase 2 will also flush and detach the
  * instance's persistence handle before disposing; in Phase 1 nothing is disposed in
- * normal flow — this exists for the registry's forward-looking API and tests.)
+ * normal flow, this exists for the registry's forward-looking API and tests.)
  *
  * @param id - The id to dispose.
  */

@@ -43,7 +43,7 @@ export default function App() {
       <ThemeClassManager>
         {/* Resolution layer for the active character store (tabs spec §1.2, §6).
             Hoisted above AppStartManagerProvider because that provider consumes the
-            store (via useAppTourDriver), so it too must sit inside the provider —
+            store (via useAppTourDriver), so it too must sit inside the provider,
             this covers every character consumer in the app. */}
         <ActiveCharacterStoreProvider>
           <AppStartManagerProvider>

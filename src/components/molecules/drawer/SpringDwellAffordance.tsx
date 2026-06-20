@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
  * Static target highlight for spring-loaded drawer navigation (tabs polish-7/8): a
  * light inset ring marking WHICH folder row / Back button the dwell is aimed at.
  * The dwell *progress* now lives on the drag-morph cursor ring (polish-8), so this
- * carries no fill — it only answers "which target?" while the ring answers "how
+ * carries no fill, it only answers "which target?" while the ring answers "how
  * long left?". Render it inside a `relative` row; it is absolutely positioned and
  * `pointer-events-none` so it never affects layout or intercepts the drag.
  *

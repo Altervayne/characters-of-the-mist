@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 /*
  * Tests for the drawer store's OPTIMISTIC reorder/move (tabs polish-16): the loaded
- * `currentFolderView` must reflect the result the instant the action is called —
- * synchronously, before the (async) command + reload — and must revert to the real
+ * `currentFolderView` must reflect the result the instant the action is called,
+ * synchronously, before the (async) command + reload, and must revert to the real
  * order when the command fails. The command engine and repository are mocked so we
  * control the persist outcome (resolve vs reject) and the reverted view in isolation.
  */
 
 // The store dispatches through the command engine and reloads via the repository, and
-// marks itself modified on the general-state store — mock all three so the test drives
+// marks itself modified on the general-state store, mock all three so the test drives
 // only the optimistic view logic.
 vi.mock('./appGeneralStateStore', () => ({
    useAppGeneralStateStore: { getState: () => ({ actions: { setLastModifiedStore: vi.fn() } }) },

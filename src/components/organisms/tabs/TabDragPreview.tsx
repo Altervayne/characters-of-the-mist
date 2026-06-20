@@ -23,8 +23,8 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
 /**
  * Presentational preview of a tab, rendered inside a dnd-kit `<DragOverlay>` so the
  * dragged tab floats free of the strip's `overflow-x-auto` clipping and follows the
- * cursor. It mirrors a real {@link import('./Tab').Tab} — the game-icon block and the
- * live-bound label — but has no activate/close handlers (it is purely visual).
+ * cursor. It mirrors a real {@link import('./Tab').Tab}, the game-icon block and the
+ * live-bound label, but has no activate/close handlers (it is purely visual).
  *
  * Built as its own component so the upcoming shared-`DndContext` work can reuse it to
  * render a tab preview when a tab is the active drag, rather than rebuilding it.

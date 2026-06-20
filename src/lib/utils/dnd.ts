@@ -105,7 +105,7 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // it needs BOTH its own high-priority targets AND the ordinary sibling reorder.
    // Priority 1 (pointerWithin): load onto the sheet / open as a tab. In-drawer MOVES
    // (into a folder / the current folder) are resolved by the live-geometry resolver at
-   // drop (tabs polish-13/15) — not this `over` — so no folder/back collision is needed.
+   // drop (tabs polish-13/15), not this `over`, so no folder/back collision is needed.
    // Priority 2 (polish-17): same-folder REORDER. Strict pointerWithin rarely lands on a
    // sibling row, which is exactly why a saved character never reordered; fall back to the
    // nearest sibling `drawer-item` via closestCenter, EXCLUDING the active item so `over`
@@ -131,10 +131,10 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // ==================
    //  If dragging a folder
    // ==================
-   // Only the reorder/insert SLOTS (`drawer-drop-zone`, the FolderDropZone targets)
-   // remain: `handleDragEnd`'s slot-placement still reads this `over` to land a folder at
-   // an exact position. Nesting INTO a folder row / the current folder is resolved by the
-   // live-geometry resolver, so the former folder-row + back-button collision was dead.
+   // Folder reorder uses the expanding-dropzone SLOTS (`drawer-drop-zone`, the
+   // FolderDropZone targets): `handleDragEnd`'s slot-placement reads this `over` to land a
+   // folder at an exact position. The slots sit BETWEEN folders so they never compete with
+   // the folder rows themselves, which stay free for spring-nav (dwell) and nest.
    if (activeDataType === 'drawer-folder') {
       const filteredDroppables = args.droppableContainers.filter(
          (container) => container.data.current?.type === 'drawer-drop-zone',
@@ -147,7 +147,7 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // ==================
    // In-drawer moves (into a folder / Back / the current folder's items body) are now
    // resolved by the live-geometry resolver at drop (tabs polish-13/15), which returns
-   // before this `over` is read — so the former folder / back-button / items-area-zone
+   // before this `over` is read, so the former folder / back-button / items-area-zone
    // collision was dead and is removed. What remains is still live: the sheet drop zones
    // (dropping the item onto the sheet), then same-folder item REORDER over the nearest
    // sibling row (`closestCenter`, resolved by `handleDragEnd`'s reorder path).

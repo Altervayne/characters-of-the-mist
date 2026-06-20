@@ -31,7 +31,7 @@ const overlayVariants: Variants = {
  * (a different game system), signalling it cannot be dropped there.
  *
  * It is `pointer-events-none` and NOT a droppable, so it never intercepts the drag it
- * describes — it only explains why the drop will be rejected. `absolute inset-0`
+ * describes, it only explains why the drop will be rejected. `absolute inset-0`
  * (rather than the load zone's `relative`) so it overlays without affecting layout.
  *
  * @param props.active - Whether an incompatible component is currently being dragged.

@@ -83,8 +83,8 @@ function DesktopCharacterSheetPage() {
       activeTabDrag,
       overDragId,
       isOverDrawer,
-      isFolderDragActive,
       drawerDropTarget,
+      reorderIndicator,
       statusIds,
       storyTagIds,
       storyThemeIds,
@@ -229,6 +229,7 @@ function DesktopCharacterSheetPage() {
                                  storyTagIds={storyTagIds}
                                  storyThemeIds={storyThemeIds}
                                  isDropTarget={sheetHighlight === 'trackers'}
+                                 reorderIndicator={reorderIndicator}
                               />
 
                               <CardsSection
@@ -239,6 +240,7 @@ function DesktopCharacterSheetPage() {
                                  onAddCard={handleAddCardClick}
                                  cardIds={cardIds}
                                  isDropTarget={sheetHighlight === 'cards'}
+                                 reorderIndicator={reorderIndicator}
                               />
                            </SheetMainDropZone>
                         </div>
@@ -265,8 +267,8 @@ function DesktopCharacterSheetPage() {
                   <Drawer
                      isDragHovering={isOverDrawer}
                      activeDragId={activeDragItem?.id ?? null}
-                     isFolderDrag={isFolderDragActive}
                      drawerDropTarget={drawerDropTarget}
+                     reorderIndicator={reorderIndicator}
                      overDragId={overDragId}
                      springTargetId={springTarget}
                   />
@@ -330,7 +332,7 @@ export default function CharacterSheetPage() {
 
    // The ActiveCharacterStoreProvider is mounted in App.tsx (above
    // AppStartManagerProvider, which also consumes the store), so it already covers
-   // both shells here — no provider needed at this level (tabs spec §1.2, §6).
+   // both shells here, no provider needed at this level (tabs spec §1.2, §6).
    if (isMobile) {
       return <MobileCharacterSheetPage />;
    }

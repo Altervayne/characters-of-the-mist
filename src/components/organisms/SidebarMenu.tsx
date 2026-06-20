@@ -62,7 +62,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const character = useCharacterStore((state) => state.character);
    const drawerCurrentFolderId = useDrawerStore((state) => state.currentFolderId);
    // `loadCharacter` here is the Save-As relink (sets drawerItemId on the CURRENT
-   // active character), not a tab open — it stays a per-character action. Opening a
+   // active character), not a tab open, it stays a per-character action. Opening a
    // *different* character (file import) and returning to the menu go through the
    // TabManager.
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter } = useCharacterActions();
@@ -217,7 +217,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
    const handleUnloadCharacter = () => {
       // Desktop "Return to Menu": show the menu but keep every open tab and its
-      // live instance (tabs spec §4) — not a close.
+      // live instance (tabs spec §4), not a close.
       deactivate();
       toast.success(tNotifications('Notifications.character.unloaded'));
    };

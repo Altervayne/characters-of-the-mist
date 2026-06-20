@@ -27,7 +27,7 @@ import type { GameSystem } from '@/lib/types/drawer';
 import type { Workspace } from './workspaceSession';
 
 /*
- * TabManager (tabs spec §1.2, §3, §4, §7) — owns the open/create/close lifecycle of
+ * TabManager (tabs spec §1.2, §3, §4, §7), owns the open/create/close lifecycle of
  * character tabs: instance creation/disposal, persistence-handle attach/detach, the
  * registry's active pointer, and the workspace session pointer. The per-character
  * store actions (loadCharacter etc.) stay strictly per-character; the TabManager
@@ -218,12 +218,12 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          const next = [...openTabs];
          const [moved] = next.splice(fromIndex, 1);
          next.splice(toIndex, 0, moved);
-         // Order only — `activeTabId` and every instance are untouched.
+         // Order only, `activeTabId` and every instance are untouched.
          useTabManagerStore.setState({ openTabs: next });
          persistWorkspace();
       },
       deactivate: () => {
-         // Desktop "Return to Menu": no disposal — tabs and instances stay live.
+         // Desktop "Return to Menu": no disposal, tabs and instances stay live.
          deactivateToMenu();
       },
 
@@ -262,7 +262,7 @@ export const useTabManagerActions = () => useTabManagerStore((state) => state.ac
 /**
  * Creates the instance for stored character `id`, attaches its handle, and hydrates
  * it from IndexedDB under the handle's guard (so the just-restored state is not
- * written straight back). Does NOT touch tab state or the active pointer — the boot
+ * written straight back). Does NOT touch tab state or the active pointer, the boot
  * loop manages ordering and activation. Returns `false` when no record exists.
  */
 async function hydrateInstanceFromStorage(id: string): Promise<boolean> {

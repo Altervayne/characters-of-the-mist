@@ -220,7 +220,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          },
          reorderFolders: async (parentFolderId, oldIndex, newIndex) => {
             // Optimistic (tabs polish-16): reflect the new order in the loaded view at once
-            // so the row lands where released — no wait for the command + reload. The
+            // so the row lands where released, no wait for the command + reload. The
             // engine reorders with the same arrayMove semantics, so the reload is a no-op
             // visually; on failure, reload to revert to the persisted truth.
             const view = get().currentFolderView;
@@ -276,7 +276,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          },
          reorderItems: async (parentFolderId, oldIndex, newIndex) => {
             // Optimistic (tabs polish-16): reflect the new order in the loaded view at once
-            // so the row lands where released — no wait for the command + reload. The
+            // so the row lands where released, no wait for the command + reload. The
             // engine reorders with the same arrayMove semantics, so the reload is a no-op
             // visually; on failure, reload to revert to the persisted truth.
             const view = get().currentFolderView;

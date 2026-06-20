@@ -16,7 +16,7 @@ interface DragMorphCloneProps {
  * When a morph is active it shrinks toward the captured grab point and fades out,
  * cross-fading with the cursor cluster; off-target it shows the preview at full size.
  *
- * It owns no state — the engine ({@link import('./useDragMorph').useDragMorph})
+ * It owns no state, the engine ({@link import('./useDragMorph').useDragMorph})
  * feeds `funneling` + `origin`. Scale/opacity are inline (driven by `funneling`) so
  * the transition is GPU-cheap; left to the overlay's own transform for following the
  * cursor.

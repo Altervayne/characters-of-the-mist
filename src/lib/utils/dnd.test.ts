@@ -7,7 +7,7 @@ import { customCollisionDetection } from './dnd';
 /*
  * Tests for the drawer-item branch of customCollisionDetection. As of tabs polish-15
  * the in-drawer MOVE targets (folder rows, Back, the items-area drop zone) are resolved
- * by the live-geometry resolver at drop, NOT by this collision — so the branch's only
+ * by the live-geometry resolver at drop, NOT by this collision, so the branch's only
  * remaining in-drawer job is same-folder REORDER over the nearest item row (closestCenter).
  * These tests pin that: the items-area zone is never returned, the nearest item row is,
  * and an empty folder body yields no collision (the resolver lands the drop). The dnd-kit
@@ -52,7 +52,7 @@ const ZONE = 'drawer-drop-zone-dest';
 const zoneRect = rect(0, 0, 200, 400);
 const itemRect = rect(0, 50, 200, 40);
 
-describe('customCollisionDetection — drawer item (reorder only; in-drawer moves are resolver-driven)', () => {
+describe('customCollisionDetection, drawer item (reorder only; in-drawer moves are resolver-driven)', () => {
    it('returns the nearest item ROW for a same-folder drop, never the items-area zone', () => {
       const result = customCollisionDetection(
          buildArgs({
@@ -66,7 +66,7 @@ describe('customCollisionDetection — drawer item (reorder only; in-drawer move
       expect(result.some((c) => c.id === ZONE)).toBe(false);
    });
 
-   it('still resolves to the item row across folders — the MOVE itself is resolver-driven at drop', () => {
+   it('still resolves to the item row across folders, the MOVE itself is resolver-driven at drop', () => {
       const result = customCollisionDetection(
          buildArgs({
             originParent: 'origin', // different from the row's folder
@@ -79,7 +79,7 @@ describe('customCollisionDetection — drawer item (reorder only; in-drawer move
       expect(result.some((c) => c.id === ZONE)).toBe(false);
    });
 
-   it('returns no collision over an EMPTY folder body (no rows) — the resolver lands the drop', () => {
+   it('returns no collision over an EMPTY folder body (no rows), the resolver lands the drop', () => {
       const result = customCollisionDetection(
          buildArgs({
             originParent: 'origin',
@@ -97,7 +97,7 @@ describe('customCollisionDetection — drawer item (reorder only; in-drawer move
  * character is a `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so it must
  * reorder among its siblings (closestCenter, excluding self) while the sheet/tab targets
  * still win. (Move-into-folder is resolved by the geometry resolver, not this collision,
- * so folders are not in this branch — see the polish-15 cleanup.)
+ * so folders are not in this branch, see the polish-15 cleanup.)
  */
 function buildSavedCharArgs(params: {
    containers: Container[];
@@ -130,7 +130,7 @@ const savedCharRects: Array<[string, Rect]> = [
    [SHEET_ZONE, sheetRect], [TAB_ZONE, tabRect], ['item-1', sib1Rect], ['dragged-item', activeRect],
 ];
 
-describe('customCollisionDetection — saved character (FULL_CHARACTER_SHEET) reorder', () => {
+describe('customCollisionDetection, saved character (FULL_CHARACTER_SHEET) reorder', () => {
    it('reorders over the nearest sibling drawer-item, excluding itself', () => {
       const result = customCollisionDetection(
          buildSavedCharArgs({ containers: savedCharContainers(), rects: savedCharRects, pointer: { x: 100, y: 120 } }),

@@ -141,8 +141,8 @@ const initialState: Pick<CharacterState, 'character'> = {
 
 /**
  * Builds a fresh, fully-formed character (with its generated id) for `game`,
- * without touching any store. The TabManager needs the character — and crucially
- * its id — *before* it can key an instance for it (tabs spec §2, point 3), so the
+ * without touching any store. The TabManager needs the character, and crucially
+ * its id, *before* it can key an instance for it (tabs spec §2, point 3), so the
  * construction is extracted here as a pure helper. The `createCharacter` action
  * below delegates to it, so the "New Character" default name is shared.
  *
@@ -184,7 +184,7 @@ export function createCharacterStore() {
    // Forward reference to the instance being built. Action bodies run later (at
    // dispatch time), by which point `useStore` is assigned, so each instance's
    // temporal self-references target its OWN undo stack rather than a global
-   // singleton (tabs spec §2) — the change that makes the factory self-contained.
+   // singleton (tabs spec §2), the change that makes the factory self-contained.
    const useStore = create<CharacterState>()(
       temporal(
          (set) => ({

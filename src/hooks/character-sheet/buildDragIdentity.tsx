@@ -34,7 +34,7 @@ interface BuildDragIdentityParams {
 
 /**
  * Builds the optional identity node for the drag-morph cluster's right pill (tabs
- * polish-9/10). This is the CONSUMER's job — the engine takes the result opaquely —
+ * polish-9/10). This is the CONSUMER's job, the engine takes the result opaquely,
  * so the crest / type-icon lookup stays out of the engine. Each kind gets a leading
  * mark that says *what* it is: a game crest for characters/tabs, the drawer
  * item-type icon for components, a folder icon for folders, and the card/tracker

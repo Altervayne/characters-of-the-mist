@@ -43,7 +43,7 @@ export interface DragMorphEngine {
    /**
     * Set the optional, OPAQUE "what am I dragging" node for the cluster's right pill
     * (call once at drag start; pass null for no pill). The engine never builds or
-    * inspects it — that keeps the engine agnostic of games/characters/drawers.
+    * inspects it, that keeps the engine agnostic of games/characters/drawers.
     */
    setIdentity(node: ReactNode | null): void;
    /** Clear all feedback (drag end / cancel). */
@@ -58,8 +58,8 @@ const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 
 /**
  * The reusable drag-morph engine (tabs polish-8): owns the overlay feedback
- * choreography — the grab-point funnel, the converged cursor cluster (dot + label +
- * arrow + spring ring), and the cross-fades — and exposes it as a hook with two
+ * choreography, the grab-point funnel, the converged cursor cluster (dot + label +
+ * arrow + spring ring), and the cross-fades, and exposes it as a hook with two
  * render slots. dnd-kit transforms its `<DragOverlay>`, so the funneling clone must
  * render inside it while the cluster must be a sibling; one component cannot span
  * both, hence a hook owning shared state + two slots.
@@ -68,7 +68,7 @@ const clamp = (value: number): number => Math.max(0, Math.min(100, value));
  * tabs, characters, or navigation. It is fed only a cursor position, a resolved
  * {@link MorphDescriptor}, and a spring signal; the drag system computes those and
  * keeps all hit-testing, navigation, and drop routing. That decoupling is what makes
- * the engine reusable — a new draggable's morph is a new descriptor, nothing here.
+ * the engine reusable, a new draggable's morph is a new descriptor, nothing here.
  *
  * Cursor position is imperative (a direct `style.left/top` write to the cluster ref
  * every move, no re-render); React state changes only when the descriptor / spring

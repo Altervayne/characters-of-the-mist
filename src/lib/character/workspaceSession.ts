@@ -9,7 +9,7 @@ import type { OpenTab } from './tabManagerStore';
  * `ACTIVE_CHARACTER_ID_KEY` with the full set of open desktop tabs plus the active
  * one, persisted as a small JSON blob in `localStorage` (the character *data* still
  * lives in IndexedDB). Read synchronously before first paint so boot knows what to
- * restore. This is a localStorage shape bump only — no IndexedDB change.
+ * restore. This is a localStorage shape bump only, no IndexedDB change.
  */
 
 /** localStorage key holding the serialized {@link Workspace}. */

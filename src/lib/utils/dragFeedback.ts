@@ -37,7 +37,7 @@ export type MorphArrow = 'in' | 'up' | null;
 
 /**
  * Presentational descriptor for a drag context: the icon, i18n label, and optional
- * direction arrow the morph cluster renders. Pure data — the engine consumes it
+ * direction arrow the morph cluster renders. Pure data, the engine consumes it
  * without knowing what the action means.
  */
 export interface MorphDescriptor {
@@ -75,7 +75,7 @@ function pointInRect(rect: { left: number; right: number; top: number; bottom: n
 
 /**
  * Tests a cursor point against the tab strip's rect padded generously sideways and
- * (especially) downward into the top band — far more forgiving than @dnd-kit's thin
+ * (especially) downward into the top band, far more forgiving than @dnd-kit's thin
  * droppable. The band never reaches the play area: its bottom is the strip height
  * plus {@link TAB_LANE_BELOW_PADDING} below the strip.
  *
@@ -98,7 +98,7 @@ export function isWithinTabLane(
 }
 
 /**
- * The generous lane only ever engages for a dragged drawer character — a component,
+ * The generous lane only ever engages for a dragged drawer character, a component,
  * folder, tab, or sheet item passing through the same band must NOT register as a
  * tab-open. This guards the geometry test by drag kind.
  *
@@ -128,8 +128,8 @@ export function isOverTabLaneFor(
  * @param overZone - The @dnd-kit-derived surface under the cursor.
  * @param isOverTabLane - Whether the generous tab lane is engaged.
  * @param sheetCompatible - Whether the dragged item can actually be added to the
- *   current sheet (game match). When false, no `add-to-sheet` glyph is shown — there
- *   is no possible action — though the item still morphs.
+ *   current sheet (game match). When false, no `add-to-sheet` glyph is shown, there
+ *   is no possible action, though the item still morphs.
  * @returns The drag context (puck content), or null when nothing actionable.
  */
 export function deriveDragContext(
@@ -165,7 +165,7 @@ export function deriveDragContext(
  * into morph mode regardless of whether it has an action descriptor. Drawer items
  * keep their full card overlay ONLY while the cursor is genuinely inside the drawer
  * items area (for precise reordering); everywhere else they morph to the cursor
- * cluster — showing just the dot + identity when there is no action glyph. Folders
+ * cluster, showing just the dot + identity when there is no action glyph. Folders
  * and sheet items are not force-morphed (they keep the descriptor-driven default).
  *
  * `overItemsArea` MUST come from a real geometry hit-test, not dnd-kit's `over`:
@@ -184,7 +184,7 @@ export function shouldForceMorph(kind: DragKind, overItemsArea: boolean): boolea
 /**
  * Per-context presentational descriptors driving the drag-morph cluster (icon,
  * i18n label, optional direction arrow). Adding a new draggable's morph is a single
- * entry here plus a new {@link DragContext} value — no choreography change. (Folds
+ * entry here plus a new {@link DragContext} value, no choreography change. (Folds
  * in the former `DragCursorPuck` content map, adding arrows where directional.)
  */
 export const MORPH_DESCRIPTORS: Record<NonNullable<DragContext>, MorphDescriptor> = {
@@ -202,7 +202,7 @@ export type MorphGlyph = { kind: 'arrow'; arrow: 'in' | 'up' } | { kind: 'action
  * Picks the ONE glyph for the cluster's left action badge (tabs polish-9). The dwell
  * direction takes precedence: while a spring dwell is running its arrow shows;
  * otherwise the descriptor's action icon shows; with neither, no glyph. This
- * precedence is a tunable rule — the point is a single clear glyph per moment.
+ * precedence is a tunable rule, the point is a single clear glyph per moment.
  *
  * @param descriptor - The active morph descriptor, or null.
  * @param springKey - The dwell key (non-null while a dwell is running), or null.
@@ -264,7 +264,7 @@ export function springDirection(target: SpringTarget): MorphArrow {
 
 /**
  * Resolves which background tab (if any) the cursor is over, for the tab auto-nav
- * dwell. The active tab is excluded — dwelling on the tab you are already viewing
+ * dwell. The active tab is excluded, dwelling on the tab you are already viewing
  * is a no-op. Tabs never overlap the drawer, so the caller can fall back from the
  * drawer hit-test to this one.
  *
@@ -290,7 +290,7 @@ export function resolveTabSpringTarget(
 /**
  * Resolves which dwell target (if any) the cursor is over, hit-testing the Back
  * button first then the visible folder rows. The folder currently being dragged is
- * excluded — you cannot drill into the thing you are holding — and Back is only a
+ * excluded, you cannot drill into the thing you are holding, and Back is only a
  * target when its rect is supplied (the caller omits it at root, matching the Back
  * button's `disabled` gate).
  *
@@ -319,7 +319,7 @@ export function resolveSpringTarget(
 /**
  * A resolved in-drawer DROP target: into a specific folder row, or into the current
  * folder (anywhere else in the drawer). The Back button is intentionally NOT a drop
- * target — it is navigation-only during a drag (dwell to go up). To move an item up,
+ * target, it is navigation-only during a drag (dwell to go up). To move an item up,
  * dwell Back to navigate to the parent, then drop, which lands in that now-current
  * folder. `current-folder` is resolved against the live store at drop time, so it is
  * immune to which folder the cursor happened to be over before a spring navigation.
@@ -327,14 +327,14 @@ export function resolveSpringTarget(
 export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'current-folder' };
 
 /**
- * Resolves the in-drawer DROP target under the cursor by live element geometry —
+ * Resolves the in-drawer DROP target under the cursor by live element geometry,
  * the same strategy the spring uses to drill in (tabs polish-13). dnd-kit's measured
  * droppable rects desync in the drawer's scrollable / layout-animated / spring-
  * remounting context, so its collision only fires near a folder's center; this reads
  * `getBoundingClientRect()` against the cursor so a drop anywhere on a row lands.
  *
  * A folder ROW (excluding the dragged folder) drops INTO that folder; anywhere else
- * inside the drawer panel — the Back button, the items body, headers, gaps — drops
+ * inside the drawer panel, the Back button, the items body, headers, gaps, drops
  * into the CURRENT folder. Folder rows are checked first so they win over the panel.
  *
  * @param folders - The visible folder rows with their measured rects.
@@ -371,6 +371,71 @@ export function resolveDrawerDropTarget(
 export function drawerDropTargetKey(target: DrawerDropTarget | null): string | null {
    if (!target) return null;
    return target.kind === 'folder' ? `folder:${target.id}` : 'current-folder';
+}
+
+/** Where a reordered row/card will land relative to the element under the cursor. */
+export type InsertPosition = 'before' | 'after';
+
+/** Which reorderable list/grid an insertion line belongs to. */
+export type ReorderListId = 'drawer-items' | 'sheet-cards' | 'sheet-trackers';
+
+/**
+ * The single active reorder insertion indicator (tabs polish-18): the list, the element
+ * under the cursor, and whether the drop lands before/after it. Folders are NOT here —
+ * they keep the expanding-dropzone slot model (the folder row must stay free for
+ * spring-nav + nest), so an insertion line on the row would conflict.
+ */
+export interface ReorderIndicator {
+   listId: ReorderListId;
+   overId: string;
+   position: InsertPosition;
+}
+
+/**
+ * Resolves whether a reordered item lands BEFORE or AFTER the element under the cursor,
+ * from the cursor position vs that element's midpoint (tabs polish-18). The single
+ * insertion-line indicator renders at the returned edge. The comparison axis matches the
+ * list layout: `vertical` (stacked rows, drawer items) compares the cursor Y to the
+ * row's vertical midpoint and yields a horizontal line; `horizontal` (a wrapping card /
+ * tracker grid) compares the cursor X to the card's horizontal midpoint and yields a
+ * vertical line.
+ *
+ * @param rect - The hovered element's rect (`top`/`bottom` used for vertical, `left`/
+ *   `right` for horizontal).
+ * @param x - Cursor clientX.
+ * @param y - Cursor clientY.
+ * @param axis - The list's main axis: `vertical` (rows) or `horizontal` (grid).
+ * @returns `before` when the cursor is in the first half along the axis, else `after`.
+ */
+export function resolveInsertPosition(
+   rect: { top: number; bottom: number; left: number; right: number },
+   x: number,
+   y: number,
+   axis: 'vertical' | 'horizontal',
+): InsertPosition {
+   if (axis === 'horizontal') {
+      return x < (rect.left + rect.right) / 2 ? 'before' : 'after';
+   }
+   return y < (rect.top + rect.bottom) / 2 ? 'before' : 'after';
+}
+
+/**
+ * Destination index for an `arrayMove(list, oldIndex, target)` that lands the dragged
+ * item BEFORE/AFTER the element under the cursor (tabs polish-18). With static layout the
+ * insertion line shows the cursor-resolved edge, so the persisted reorder must honour that
+ * exact edge (not dnd-kit's direction-dependent default) or the drop wouldn't match the
+ * line. `after` aims one past the target; removing the dragged item first shifts the
+ * target down by one when it sits before the insertion point.
+ *
+ * @param oldIndex - The dragged item's current index in the list.
+ * @param overIndex - The hovered element's index in the list.
+ * @param position - Whether to land before or after the hovered element.
+ * @returns The `arrayMove` destination index.
+ */
+export function computeReorderTargetIndex(oldIndex: number, overIndex: number, position: InsertPosition): number {
+   let target = position === 'after' ? overIndex + 1 : overIndex;
+   if (oldIndex < target) target -= 1;
+   return target;
 }
 
 /** Options for {@link createSpringController}. */

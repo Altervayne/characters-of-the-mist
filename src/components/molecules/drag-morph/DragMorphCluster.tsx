@@ -33,19 +33,19 @@ interface DragMorphClusterProps {
 
 /**
  * The cursor cluster template (tabs polish-9), centered on the cursor dot:
- *  - **Dot** — pinned exactly on the cursor.
- *  - **Loading ring** — wraps the dot, fills over the dwell window; present only
+ *  - **Dot**, pinned exactly on the cursor.
+ *  - **Loading ring**, wraps the dot, fills over the dwell window; present only
  *    during a spring dwell (keyed off `springKey` so it restarts per target).
- *  - **Action glyph (left)** — one small filled badge: the dwell direction arrow
+ *  - **Action glyph (left)**, one small filled badge: the dwell direction arrow
  *    while dwelling, otherwise the descriptor's action icon (see {@link selectMorphGlyph}).
- *  - **Dragged-item pill (right)** — the optional `identity` node, shown only when
+ *  - **Dragged-item pill (right)**, the optional `identity` node, shown only when
  *    the consumer supplies it.
  *
- * Rendered as a SIBLING of `<DragOverlay>` (never a child — the overlay's transform
+ * Rendered as a SIBLING of `<DragOverlay>` (never a child, the overlay's transform
  * would offset this fixed element) and positioned imperatively by the engine writing
  * `style.left/top` on the forwarded ref, so per-frame motion never re-renders React.
  * The whole cluster cross-fades opposite the clone (visible iff a descriptor or a
- * spring dwell is active). It knows nothing of what the action does — only the
+ * spring dwell is active). It knows nothing of what the action does, only the
  * descriptor / arrow / ring signals and the opaque identity node it is handed.
  *
  * @param props.active - Whether the cluster is visible (the engine's funnel state).
@@ -62,7 +62,7 @@ export const DragMorphCluster = forwardRef<HTMLDivElement, DragMorphClusterProps
       const glyph = selectMorphGlyph(descriptor, springKey, arrow);
       const GlyphIcon = glyph?.kind === 'arrow' ? (glyph.arrow === 'up' ? ArrowUp : ArrowRight) : descriptor?.Icon ?? null;
       // The action label is no longer shown as text, but it remains the badge's
-      // accessible name (tunable — the glyph is the visual, the label the a11y hook).
+      // accessible name (tunable, the glyph is the visual, the label the a11y hook).
       const actionLabel = descriptor ? t(descriptor.labelKey) : undefined;
 
       return (

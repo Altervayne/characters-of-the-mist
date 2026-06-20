@@ -9,7 +9,7 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, drawerDropTargetKey, isOverTabLaneFor, resolveDrawerDropTarget, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
+import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, computeReorderTargetIndex, createSpringController, deriveDragContext, drawerDropTargetKey, isOverTabLaneFor, resolveDrawerDropTarget, resolveInsertPosition, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
 import { sheetSectionForItemType } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
@@ -29,7 +29,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
-import type { DragContext, DragKind, DragOverZone, DrawerDropTarget, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
+import type { DragContext, DragKind, DragOverZone, DrawerDropTarget, ReorderIndicator, ReorderListId, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
 
 
 
@@ -105,10 +105,6 @@ export function useCharacterSheetDnD() {
    const [isOverDrawer, setIsOverDrawer] = useState(false);
    const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
    const [overDragId, setOverDragId] = useState<string | null>(null);
-   // Whether the active drag is a drawer FOLDER — drives the folder reposition slots,
-   // which must stay visible even after a spring navigation moves the dragged folder out
-   // of the current view (so the user keeps an exact drop target while relocating it).
-   const [isFolderDragActive, setIsFolderDragActive] = useState(false);
    // The tab being dragged (the strip shares this DndContext); drives the overlay's
    // tab-preview branch. Separate from `activeDragItem` since a tab is not a sheet item.
    const [activeTabDrag, setActiveTabDrag] = useState<OpenTab | null>(null);
@@ -184,16 +180,28 @@ export function useCharacterSheetDnD() {
    // (tabs polish-13). dnd-kit's collision rects desync in the scrollable/animated
    // drawer so folder drops were center-only; this is the source of truth for an
    // in-drawer move at drop. Read at dragEnd (the dwell-then-release value is correct
-   // — it holds the folder the spring drilled into). Cleared on end/cancel.
+   //, it holds the folder the spring drilled into). Cleared on end/cancel.
    const hoveredDrawerTargetRef = useRef<DrawerDropTarget | null>(null);
    // Reactive mirror of `hoveredDrawerTargetRef` for the drop INDICATORS (tabs polish-15):
    // the folder nest highlight + items-area highlight read this so the highlight matches
    // the full-row resolver drop, not dnd-kit's center-only `over`. Updated only when the
    // resolved target's key CHANGES (the ref stays the per-frame truth read at drop), and
-   // scoped to resolver-driven drags (drawer moves) — sheet/tab saves keep their dnd-kit
+   // scoped to resolver-driven drags (drawer moves), sheet/tab saves keep their dnd-kit
    // `over` indicator path so a center-only save never shows a full-row highlight.
    const [drawerDropTarget, setDrawerDropTarget] = useState<DrawerDropTarget | null>(null);
    const drawerDropTargetKeyRef = useRef<string | null>(null);
+   // Single reorder insertion-line indicator (tabs polish-18). `reorderOverRef` caches the
+   // current same-list reorder target (set in handleDragOver from dnd-kit's `over` + its
+   // measured rect); `handlePointerMove` derives the before/after edge from the live cursor
+   // each move and mirrors it into `reorderIndicator` state ONLY on a key change (so the
+   // line re-renders when the row/edge changes, not per frame). Static layout keeps the
+   // cached rect valid for the whole drag.
+   const [reorderIndicator, setReorderIndicator] = useState<ReorderIndicator | null>(null);
+   const reorderOverRef = useRef<{ listId: ReorderListId; overId: string; rect: { top: number; bottom: number; left: number; right: number }; axis: 'vertical' | 'horizontal' } | null>(null);
+   const reorderIndicatorKeyRef = useRef<string | null>(null);
+   // The latest resolved indicator, read at drop so the persisted reorder lands on the
+   // exact edge the line showed (handleDragEnd is a stable callback; a ref avoids re-binding).
+   const reorderIndicatorRef = useRef<ReorderIndicator | null>(null);
    // The live cursor each move, so a spring nav can anchor the post-nav grace below.
    const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
    // After a spring nav the view reflows under the STATIONARY cursor (e.g. at root the
@@ -226,7 +234,7 @@ export function useCharacterSheetDnD() {
       springNavigatingRef.current = true;
       // No post-nav target reset needed: dropping over the Back button (or anywhere in
       // the drawer that isn't a folder row) resolves to `current-folder`, which reads
-      // the live current folder at drop — so a dwell-Back-then-release lands in the
+      // the live current folder at drop, so a dwell-Back-then-release lands in the
       // folder you navigated to, regardless of pointer movement after the nav.
       void Promise.resolve(setDrawerCurrentFolderId(destination)).finally(() => {
          springNavigatingRef.current = false;
@@ -334,7 +342,7 @@ export function useCharacterSheetDnD() {
 
       // The instantaneous in-drawer drop target (NOT the dwell target): the source of
       // truth for an in-drawer move at drop, replacing dnd-kit's center-only collision.
-      // Back is NOT a drop target — over it (or anywhere in the drawer that isn't a
+      // Back is NOT a drop target, over it (or anywhere in the drawer that isn't a
       // folder row) resolves to the current folder, read live at drop. During the
       // post-nav grace, force the current folder so a row that reflowed under the
       // stationary cursor (Back vanishing at root) isn't an accidental target.
@@ -348,7 +356,7 @@ export function useCharacterSheetDnD() {
       // Mirror the resolved target into reactive state for the drop indicators, scoped to
       // the resolver-driven drags (drawer moves) and committed only when the target's key
       // CHANGES (never per frame). Sheet/tab saves resolve their target via dnd-kit `over`,
-      // so they stay null here — their indicators ride that path, and no full-row highlight
+      // so they stay null here, their indicators ride that path, and no full-row highlight
       // is shown where the (center-only) save could not honor it.
       const moveKind = dragKindRef.current;
       const isDrawerMoveDrag =
@@ -358,6 +366,20 @@ export function useCharacterSheetDnD() {
       if (nextDropKey !== drawerDropTargetKeyRef.current) {
          drawerDropTargetKeyRef.current = nextDropKey;
          setDrawerDropTarget(nextDropTarget);
+      }
+
+      // Reorder insertion line (tabs polish-18): derive the before/after edge from the live
+      // cursor vs the cached reorder target's rect (set in handleDragOver), committed only
+      // on a key change.
+      const reorderOver = reorderOverRef.current;
+      const nextReorder: ReorderIndicator | null = reorderOver
+         ? { listId: reorderOver.listId, overId: reorderOver.overId, position: resolveInsertPosition(reorderOver.rect, event.clientX, event.clientY, reorderOver.axis) }
+         : null;
+      reorderIndicatorRef.current = nextReorder;
+      const nextReorderKey = nextReorder ? `${nextReorder.listId}:${nextReorder.overId}:${nextReorder.position}` : null;
+      if (nextReorderKey !== reorderIndicatorKeyRef.current) {
+         reorderIndicatorKeyRef.current = nextReorderKey;
+         setReorderIndicator(nextReorder);
       }
 
       // The morph context reads the SAME manual signal, so the "drawer-move" cluster
@@ -420,6 +442,12 @@ export function useCharacterSheetDnD() {
          drawerDropTargetKeyRef.current = null;
          setDrawerDropTarget(null);
       }
+      reorderOverRef.current = null;
+      reorderIndicatorRef.current = null;
+      if (reorderIndicatorKeyRef.current !== null) {
+         reorderIndicatorKeyRef.current = null;
+         setReorderIndicator(null);
+      }
       navGraceAnchorRef.current = null;
       lastPointerRef.current = null;
       if (forceMorphRef.current) {
@@ -428,7 +456,6 @@ export function useCharacterSheetDnD() {
       }
       setSheetHighlight(null);
       setIsIncompatibleComponentDrag(false);
-      setIsFolderDragActive(false);
       // Clear the morph feedback (clone funnel + cursor cluster).
       resetMorph();
    }, [handlePointerMove, resetMorph]);
@@ -447,7 +474,6 @@ export function useCharacterSheetDnD() {
       overZoneRef.current = null;
       // The dragged folder is excluded as a spring target (can't drill into what you hold).
       draggedFolderIdRef.current = dragKindRef.current === 'drawer-folder' ? String(active.id) : null;
-      setIsFolderDragActive(dragKindRef.current === 'drawer-folder');
       window.addEventListener('pointermove', handlePointerMove);
 
       // Capture the grab point so the clone funnels toward the cursor, not the card
@@ -475,7 +501,7 @@ export function useCharacterSheetDnD() {
          setActiveDragItem(drawerItem);
          setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, untitledLabel }));
          // A component dragged while a character of a DIFFERENT game is loaded can't be
-         // dropped on the sheet — flag it to show the "can't drop here" overlay.
+         // dropped on the sheet, flag it to show the "can't drop here" overlay.
          if (
             dragKindRef.current === 'drawer-component' && character &&
             (drawerItem as DrawerItem).game !== character.game
@@ -500,11 +526,11 @@ export function useCharacterSheetDnD() {
       const { active, over } = event;
 
       // A tab drag reorders within the strip's SortableContext and never touches the
-      // sheet zones — but it CAN save into the drawer, so light the drawer items-area
+      // sheet zones, but it CAN save into the drawer, so light the drawer items-area
       // while it is held over the drawer (mirroring a sheet-item save), then bail out of
       // the sheet/zone logic below.
       if (active.data.current?.type === DRAG_TYPES.TAB) {
-         // Light the items-BODY dropzone only when over it — not over a folder/Back (a
+         // Light the items-BODY dropzone only when over it, not over a folder/Back (a
          // tab save INTO a folder still works via the dnd-kit `over` at drop).
          const overId = over?.id.toString();
          setIsOverDrawer(overId?.startsWith('drawer-drop-zone-') ?? false);
@@ -512,6 +538,31 @@ export function useCharacterSheetDnD() {
       }
 
       setOverDragId(over ? over.id.toString() : null);
+
+      // Cache the same-list reorder target for the insertion line (tabs polish-18): a
+      // drawer item over a sibling item (same folder), or a sheet card/tracker over a
+      // sibling of its kind. Self is excluded; the before/after edge is derived per-move
+      // from the live cursor in handlePointerMove. Folders reorder via their own slots.
+      const reorderActiveType = active.data.current?.type as string | undefined;
+      const reorderOverType = over?.data.current?.type as string | undefined;
+      if (over && over.id !== active.id) {
+         const r = over.rect;
+         const rect = { top: r.top, bottom: r.top + r.height, left: r.left, right: r.left + r.width };
+         if (
+            reorderActiveType === 'drawer-item' && reorderOverType === 'drawer-item' &&
+            (active.data.current?.parentFolderId ?? null) === (over.data.current?.parentFolderId ?? null)
+         ) {
+            reorderOverRef.current = { listId: 'drawer-items', overId: over.id.toString(), rect, axis: 'vertical' };
+         } else if (reorderActiveType === DRAG_TYPES.SHEET_CARD && reorderOverType === DRAG_TYPES.SHEET_CARD) {
+            reorderOverRef.current = { listId: 'sheet-cards', overId: over.id.toString(), rect, axis: 'horizontal' };
+         } else if (reorderActiveType === DRAG_TYPES.SHEET_TRACKER && reorderOverType === DRAG_TYPES.SHEET_TRACKER) {
+            reorderOverRef.current = { listId: 'sheet-trackers', overId: over.id.toString(), rect, axis: 'horizontal' };
+         } else {
+            reorderOverRef.current = null;
+         }
+      } else {
+         reorderOverRef.current = null;
+      }
 
       let isHoveringDrawer = false;
       // The actionable surface under the cursor. The drawer splits into its items
@@ -524,7 +575,7 @@ export function useCharacterSheetDnD() {
         const overId = over.id.toString();
         const overType = over.data.current?.type as string | undefined;
         // Light the drawer items-BODY dropzone only when the cursor is actually over it
-        // (`drawer-drop-zone-<id>`), NOT over a folder/Back — those are their own targets,
+        // (`drawer-drop-zone-<id>`), NOT over a folder/Back, those are their own targets,
         // and lighting the body while aiming at a folder is misleading. A save INTO a
         // folder still works via the dnd-kit `over` at drop (handleSheetToDrawerDrop).
         const overIsItemsBody = overId.startsWith('drawer-drop-zone-');
@@ -539,7 +590,7 @@ export function useCharacterSheetDnD() {
             overId === 'character-sheet-main-drop-zone' || overId === 'tracker-drop-zone' || overId === 'card-drop-zone'
          ) {
             // Only the explicit sheet zones (resolved via pointerWithin when the cursor
-            // is truly over them) count as 'sheet' — NOT a closestCenter-snapped
+            // is truly over them) count as 'sheet', NOT a closestCenter-snapped
             // sheet-card/tracker, which would mislabel neutral space.
             zone = 'sheet';
          } else if (overId.startsWith('drawer-drop-zone-') || overType === 'drawer-item') {
@@ -579,8 +630,13 @@ export function useCharacterSheetDnD() {
    const handleSheetCardReorder = useCallback((activeId: string, overId: string) => {
       if (!character) return;
       const oldIndex = character.cards.findIndex(item => item.id === activeId);
-      const newIndex = character.cards.findIndex(item => item.id === overId);
-      if (oldIndex !== -1 && newIndex !== -1) {
+      const overIndex = character.cards.findIndex(item => item.id === overId);
+      if (oldIndex !== -1 && overIndex !== -1) {
+         // Land on the insertion line's edge (tabs polish-18); fall back to the over index.
+         const ind = reorderIndicatorRef.current;
+         const newIndex = ind && ind.listId === 'sheet-cards' && ind.overId === overId
+            ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
+            : overIndex;
          reorderCards(oldIndex, newIndex);
       }
    }, [character, reorderCards]);
@@ -603,18 +659,25 @@ export function useCharacterSheetDnD() {
       const activeId = active.id as string;
       const overId = over.id as string;
 
+      // Land on the insertion line's edge (tabs polish-18); fall back to the over index.
+      const ind = reorderIndicatorRef.current;
+      const targetIndex = (oldIndex: number, overIndex: number): number =>
+         ind && ind.listId === 'sheet-trackers' && ind.overId === overId
+            ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
+            : overIndex;
+
       if (activeTracker.trackerType === 'STATUS') {
          const oldIndex = character.trackers.statuses.findIndex(item => item.id === activeId);
-         const newIndex = character.trackers.statuses.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && newIndex !== -1) reorderStatuses(oldIndex, newIndex);
+         const overIndex = character.trackers.statuses.findIndex(item => item.id === overId);
+         if (oldIndex !== -1 && overIndex !== -1) reorderStatuses(oldIndex, targetIndex(oldIndex, overIndex));
       } else if (activeTracker.trackerType === 'STORY_TAG') {
          const oldIndex = character.trackers.storyTags.findIndex(item => item.id === activeId);
-         const newIndex = character.trackers.storyTags.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && newIndex !== -1) reorderStoryTags(oldIndex, newIndex);
+         const overIndex = character.trackers.storyTags.findIndex(item => item.id === overId);
+         if (oldIndex !== -1 && overIndex !== -1) reorderStoryTags(oldIndex, targetIndex(oldIndex, overIndex));
       } else if (activeTracker.trackerType === 'STORY_THEME') {
          const oldIndex = character.trackers.storyThemes.findIndex(item => item.id === activeId);
-         const newIndex = character.trackers.storyThemes.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && newIndex !== -1) reorderStoryThemes(oldIndex, newIndex);
+         const overIndex = character.trackers.storyThemes.findIndex(item => item.id === overId);
+         if (oldIndex !== -1 && overIndex !== -1) reorderStoryThemes(oldIndex, targetIndex(oldIndex, overIndex));
       }
    }, [character, reorderStatuses, reorderStoryTags, reorderStoryThemes]);
 
@@ -661,7 +724,7 @@ export function useCharacterSheetDnD() {
    /**
     * Save a dragged tab's character to the drawer as a NEW linked copy (owner
     * decision: never overwrites). The character is resolved from its OWN instance by
-    * id, so dragging a background tab saves the right character — not the active one.
+    * id, so dragging a background tab saves the right character, not the active one.
     * The destination folder is derived from the drop target exactly as
     * {@link handleSheetToDrawerDrop} does, and the live character is linked to the new
     * item id WITHOUT clearing that tab's undo stack (`linkToDrawerItem`).
@@ -720,7 +783,7 @@ export function useCharacterSheetDnD() {
       // ##################################################
       // ###   Generous tab lane (drawer character)     ###
       // ##################################################
-      // A character released anywhere in the padded top band opens/focuses its tab —
+      // A character released anywhere in the padded top band opens/focuses its tab,
       // even when @dnd-kit's thin `tab-strip-drop-zone` was missed (so this runs
       // BEFORE the `over` null-guard). The kind guard keeps it character-only.
       if (wasOverTabLane && dragKind === 'drawer-character') {
@@ -737,12 +800,12 @@ export function useCharacterSheetDnD() {
       // ###   Manual in-drawer drop targeting          ###
       // ##################################################
       // For a drawer-sourced drag, the in-drawer DROP target is resolved by live cursor
-      // geometry (tabs polish-13), NOT dnd-kit's `over` — its collision rects desync in
+      // geometry (tabs polish-13), NOT dnd-kit's `over`, its collision rects desync in
       // the scrollable/animated drawer (folder drops were center-only). This runs BEFORE
       // the `over` null-guard so an off-center drop the collision missed still lands.
       // A folder-row target moves into that folder; a current-folder target (Back, the
       // items body, anywhere else in the drawer) moves into the folder currently being
-      // VIEWED — read live from the store, so a dwell-Back-then-release lands in the
+      // VIEWED, read live from the store, so a dwell-Back-then-release lands in the
       // folder you navigated to (not its parent). Same-folder current-folder drops fall
       // through to the dnd-kit reorder path below.
       const activeIsDrawerMove =
@@ -791,7 +854,7 @@ export function useCharacterSheetDnD() {
          }
          // current-folder: move into the folder being VIEWED, unless the dragged item is
          // ALREADY a child of it (then fall through to reorder). The source of truth is
-         // the loaded current-folder view — NOT the drag data's `parentFolderId`, which is
+         // the loaded current-folder view, NOT the drag data's `parentFolderId`, which is
          // stale/null after a spring navigation (it reported ROOT for an item dragged from
          // a folder, making a real cross-folder drop look like a same-folder no-op).
          const currentFolderId = useDrawerStore.getState().currentFolderId ?? null;
@@ -878,11 +941,19 @@ export function useCharacterSheetDnD() {
             // manual geometry resolver above (tabs polish-13/14); this block now only handles
             // same-folder item REORDER, which dnd-kit's `over` resolves reliably.
 
-            // Same-folder item REORDER over a sibling row.
+            // Same-folder item REORDER over a sibling row. Land on the exact edge the
+            // insertion line showed (tabs polish-18): the cursor-resolved before/after, not
+            // dnd-kit's direction-default. Fall back to the over index if no indicator.
             if (overType === 'drawer-item' && activeIsItem && parentFolderId === (over.data.current?.parentFolderId ?? null)) {
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
-               const newIndex = itemsInScope.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && newIndex !== -1) void reorderItems(parentFolderId, oldIndex, newIndex);
+               const overIndex = itemsInScope.findIndex(item => item.id === over.id);
+               if (oldIndex !== -1 && overIndex !== -1) {
+                  const ind = reorderIndicatorRef.current;
+                  const newIndex = ind && ind.listId === 'drawer-items' && ind.overId === over.id.toString()
+                     ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
+                     : overIndex;
+                  void reorderItems(parentFolderId, oldIndex, newIndex);
+               }
                return;
             }
          }
@@ -912,7 +983,7 @@ export function useCharacterSheetDnD() {
             // not a failure (it opens a tab via its own zone), so don't toast for it.
             if (!isTrackerType && !isCardType) return;
 
-            // Game mismatch: the drop can't land — tell the user why instead of a silent no-op.
+            // Game mismatch: the drop can't land, tell the user why instead of a silent no-op.
             if (draggedItem.game !== character.game) {
                toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
                return;
@@ -1017,10 +1088,11 @@ export function useCharacterSheetDnD() {
       activeTabDrag,
       overDragId,
       isOverDrawer,
-      isFolderDragActive,
       // Honest in-drawer drop indicator (tabs polish-15): the resolved full-row target,
       // driving the folder nest + items-area highlights so they match the drop.
       drawerDropTarget,
+      // Single reorder insertion-line indicator (tabs polish-18): list + over + before/after.
+      reorderIndicator,
       statusIds,
       storyTagIds,
       storyThemeIds,

@@ -9,12 +9,12 @@ import type { GameSystem } from '@/lib/types/common';
 /**
  * The "what am I dragging" pill shown on the RIGHT of the drag-morph cursor cluster
  * (tabs polish-9/10). A flat app-token pill carrying a leading "what is this" mark
- * plus the item's name. It lives on the CONSUMER side — the drag-morph engine stays
- * behavior-agnostic and receives this only as an opaque `ReactNode` — so the
+ * plus the item's name. It lives on the CONSUMER side, the drag-morph engine stays
+ * behavior-agnostic and receives this only as an opaque `ReactNode`, so the
  * `gameVisuals` / type-icon lookup happens here, never in the engine.
  *
  * Two mutually-exclusive leading marks: a **game crest** (gradient square + white
- * icon) when a `game` is supplied — reserved for characters; otherwise a **neutral
+ * icon) when a `game` is supplied, reserved for characters; otherwise a **neutral
  * type icon** when `icon` is supplied (folders, components, sheet items). With
  * neither, the pill is label-only.
  *

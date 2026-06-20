@@ -43,7 +43,7 @@ describe('character store registry', () => {
       a.getState().actions.updateCharacterName('Alpha');
       a.getState().actions.updateCharacterName('Beta');
 
-      // B is completely untouched by A's edits — separate state AND separate stack.
+      // B is completely untouched by A's edits, separate state AND separate stack.
       expect(b.getState().character).toBeNull();
       expect(b.temporal.getState().pastStates.length).toBe(0);
 
@@ -100,7 +100,7 @@ describe('character store registry', () => {
       expect(instance.getState().character?.drawerItemId).toBe('item-xyz');
       // Stack preserved (not cleared, unlike loadCharacter); the link is one more entry.
       expect(instance.temporal.getState().pastStates.length).toBeGreaterThanOrEqual(pastBefore);
-      // Undo reverts the link only — the earlier edit survives, proving history intact.
+      // Undo reverts the link only, the earlier edit survives, proving history intact.
       instance.temporal.getState().undo();
       expect(instance.getState().character?.name).toBe('Edited');
    });

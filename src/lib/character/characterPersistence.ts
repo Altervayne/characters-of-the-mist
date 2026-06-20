@@ -17,7 +17,7 @@ import type { CharacterStore } from '@/lib/stores/characterStore';
  * Saving never calls the store's `set()`, so it creates no zundo entry and cannot
  * form a write loop (undo restores a snapshot via zundo's internal set, the save
  * subscription writes it once, and IndexedDB writes never feed back into store
- * state — exactly the desired behaviour, spec §4).
+ * state, exactly the desired behaviour, spec §4).
  *
  * As of Phase 2 persistence is **per-instance**: each open character tab owns a
  * {@link PersistenceHandle} (its own subscription, debounce timer, and hydration
@@ -106,14 +106,14 @@ function createDebouncer<T>(delay: number, run: (value: T) => void): Debouncer<T
  */
 export interface PersistenceHandle {
    /**
-    * Loads a character into the instance WITHOUT echoing it back to IndexedDB —
+    * Loads a character into the instance WITHOUT echoing it back to IndexedDB,
     * used for boot restore of a record that is already stored. Subsequent edits
     * autosave normally.
     */
    hydrate(character: Character, drawerItemId?: string): void;
    /** Writes the current character immediately, cancelling any pending debounce. Call before detach. */
    flush(): void;
-   /** Cancels the pending debounce and unsubscribes. Does not save — call {@link PersistenceHandle.flush} first. */
+   /** Cancels the pending debounce and unsubscribes. Does not save, call {@link PersistenceHandle.flush} first. */
    detach(): void;
 }
 

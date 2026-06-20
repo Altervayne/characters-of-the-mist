@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 // -- Other Library Imports --
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext } from '@dnd-kit/sortable';
 import cuid from 'cuid';
 
 // -- Basic UI Imports --
@@ -29,6 +29,7 @@ import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwell
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
+import { DropInsertionLine } from '@/components/molecules/DropInsertionLine';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
@@ -41,6 +42,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
+import type { ReorderIndicator } from '@/lib/utils/dragFeedback';
 
 
 const drawerVariants: Variants = {
@@ -62,7 +64,7 @@ const contentVariants: Variants = {
 };
 
 
-export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, drawerDropTarget = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, isFolderDrag?: boolean, drawerDropTarget?: DrawerDropTarget | null, overDragId: string | null; springTargetId?: string | null; }) {
+export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, reorderIndicator = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, drawerDropTarget?: DrawerDropTarget | null, reorderIndicator?: ReorderIndicator | null, overDragId: string | null; springTargetId?: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
 
@@ -110,6 +112,8 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, dra
 
 
    const folderIds = useMemo(() => currentFolders.map(f => f.id), [currentFolders]);
+   // Index of the dragged folder within this view (−1 when an item/nothing is dragged),
+   // used to suppress expansion of the two no-op slots flanking it (tabs polish-18b).
    const activeFolderIndex = useMemo(() => {
       if (!activeDragId) return -1;
       return currentFolders.findIndex(f => f.id === activeDragId);
@@ -192,56 +196,42 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, dra
                            )}
                            {currentFolders.length > 0 && (
                               <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
-                                 {currentFolders.map((folder, index) => {
-                                    const dropZoneId = `drop-zone-before-${folder.id}`;
-                                    // Folder reposition zones make sense whenever a FOLDER is being dragged
-                                    // (`isFolderDrag` — false for item drags). When the dragged folder is in
-                                    // THIS view (`activeFolderIndex !== -1`) it is a reorder, so the two slots
-                                    // flanking it are hidden (no-op positions). When it was dragged in from
-                                    // another folder via a spring navigation (`activeFolderIndex === -1`), every
-                                    // slot is a valid insert target, so all are shown.
-                                    const showDropZone = isFolderDrag && (
-                                       activeFolderIndex === -1
-                                          ? true
-                                          : (index !== activeFolderIndex && index !== activeFolderIndex + 1)
-                                    );
-
-                                    return (
-                                       <React.Fragment key={folder.id}>
-                                          {showDropZone && (
-                                             <FolderDropZone
-                                                id={dropZoneId}
-                                                activeId={activeDragId}
-                                                overId={overDragId}
-                                                data={{
-                                                   type: 'drawer-drop-zone',
-                                                   targetId: folder.id,
-                                                   position: 'before',
-                                                }}
-                                             />
-                                          )}
-                                          <DrawerFolderEntry
-                                             key={folder.id}
-                                             folder={folder}
-                                             parentFolderId={currentFolderId}
-                                             isOver={drawerDropTarget?.kind === 'folder' && drawerDropTarget.id === folder.id}
-                                             isSpringTarget={springTargetId === folder.id}
-                                             onNavigate={navigateToFolder}
-                                             onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
-                                             onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}
-                                             onMove={() => setActiveAction({ id: cuid(), type: 'move-folder', target: folder })}
-                                          />
-                                       </React.Fragment>
-                                    )
-                                 })}
-                                 {isFolderDrag && (activeFolderIndex === -1 || activeFolderIndex !== currentFolders.length - 1) && (
-                                    <FolderDropZone
-                                       id={`drop-zone-after-last`}
-                                       activeId={activeDragId}
-                                       overId={overDragId}
-                                       data={{ type: 'drawer-drop-zone', targetId: 'last', position: 'after' }}
-                                    />
-                                 )}
+                                 {/* Folder reorder slots are ALWAYS rendered (tabs polish-18b): each is a
+                                     thin, constant gap between folders, so the layout never jumps on drag
+                                     start and spacing stays even. During a folder drag the slot under the
+                                     cursor EXPANDS + highlights as the clear drop target, while the folder
+                                     rows themselves stay free for spring-nav (dwell) and nest. */}
+                                 {currentFolders.map((folder, index) => (
+                                    <React.Fragment key={folder.id}>
+                                       {/* No-op when inserting before the dragged folder (its own slot) or
+                                           before the folder right after it — those leave it in place. */}
+                                       <FolderDropZone
+                                          id={`drop-zone-before-${folder.id}`}
+                                          activeId={activeDragId}
+                                          overId={overDragId}
+                                          canExpand={activeFolderIndex === -1 || (index !== activeFolderIndex && index !== activeFolderIndex + 1)}
+                                          data={{ type: 'drawer-drop-zone', targetId: folder.id, position: 'before' }}
+                                       />
+                                       <DrawerFolderEntry
+                                          folder={folder}
+                                          parentFolderId={currentFolderId}
+                                          isOver={drawerDropTarget?.kind === 'folder' && drawerDropTarget.id === folder.id}
+                                          isSpringTarget={springTargetId === folder.id}
+                                          onNavigate={navigateToFolder}
+                                          onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
+                                          onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}
+                                          onMove={() => setActiveAction({ id: cuid(), type: 'move-folder', target: folder })}
+                                       />
+                                    </React.Fragment>
+                                 ))}
+                                 {/* No-op when the dragged folder is already last. */}
+                                 <FolderDropZone
+                                    id={`drop-zone-after-last`}
+                                    activeId={activeDragId}
+                                    overId={overDragId}
+                                    canExpand={activeFolderIndex === -1 || activeFolderIndex !== currentFolders.length - 1}
+                                    data={{ type: 'drawer-drop-zone', targetId: 'last', position: 'after' }}
+                                 />
                               </SortableContext>
                            )}
                            <motion.div layout transition={{ duration: 0.1 }} className="bg-card mt-1 border-2 border-dashed border-border rounded">
@@ -261,14 +251,16 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, dra
                                  // Highlight when something is positioned to drop into THIS folder body:
                                  // a sheet item saving in (`isDragHovering`, still dnd-kit-routed) OR a
                                  // drawer move whose resolved target is the current folder (full-row,
-                                 // resolver-driven — matches the drop). Same-folder reorder resolves to a
+                                 // resolver-driven, matches the drop). Same-folder reorder resolves to a
                                  // folder ROW target, so the body does not light up for it.
                                  (isDragHovering || drawerDropTarget?.kind === 'current-folder') && "border-primary bg-primary/10"
                               )}
                            >
                               {currentItems.length > 0 ? (
                                  <div className="flex flex-col gap-2">
-                                    <SortableContext items={currentItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                                    {/* Static layout (no live shuffle) + a single horizontal insertion line at
+                                        the hovered row's top/bottom edge, tabs polish-18. */}
+                                    <SortableContext items={currentItems.map(item => item.id)} strategy={staticListSortingStrategy}>
                                        {currentItems.map((item) => {
                                           const commonProps = {
                                              item,
@@ -277,10 +269,18 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, dra
                                              onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: item }),
                                              onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: item }),
                                           };
+                                          const line = reorderIndicator?.listId === 'drawer-items' && reorderIndicator.overId === item.id
+                                             ? reorderIndicator.position : null;
 
-                                          return isCompactDrawer
-                                             ? <DrawerCompactItemEntry key={item.id} {...commonProps} />
-                                             : <DrawerItemEntry key={item.id} {...commonProps} />;
+                                          return (
+                                             <div key={item.id} className="relative">
+                                                {line === 'before' && <DropInsertionLine orientation="horizontal" position="before" />}
+                                                {isCompactDrawer
+                                                   ? <DrawerCompactItemEntry {...commonProps} />
+                                                   : <DrawerItemEntry {...commonProps} />}
+                                                {line === 'after' && <DropInsertionLine orientation="horizontal" position="after" />}
+                                             </div>
+                                          );
                                        })}
                                     </SortableContext>
                                  </div>

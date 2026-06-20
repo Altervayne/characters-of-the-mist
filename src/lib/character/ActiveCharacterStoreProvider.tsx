@@ -17,7 +17,7 @@ import { useTabManagerStore } from './tabManagerStore';
  * Provides the ACTIVE character store instance to its subtree, following the
  * TabManager's `activeTabId` (tabs spec §1.2, §2): the instance for the active tab,
  * or the permanent menu fallback instance when no character tab is open. The value
- * is memoized on `activeTabId` so its reference is stable per active id — supplying
+ * is memoized on `activeTabId` so its reference is stable per active id, supplying
  * a fresh instance each render would thrash all character consumers.
  *
  * @param props.children - The app subtree; every character consumer must be inside it.

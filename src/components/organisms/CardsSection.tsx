@@ -1,10 +1,11 @@
 // -- Other Library Imports --
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext } from '@dnd-kit/sortable';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
+import { staticListSortingStrategy } from '@/lib/utils/dnd';
 
 // -- DnD Component Imports --
 import { Sortable, DragLayoutWrapper } from '@/components/dnd';
@@ -12,9 +13,11 @@ import { Sortable, DragLayoutWrapper } from '@/components/dnd';
 // -- Component Imports --
 import { CardRenderer } from '@/components/organisms/cards/CardRenderer';
 import { AddCardButton } from '@/components/molecules/AddThemeCardButton';
+import { DropInsertionLine } from '@/components/molecules/DropInsertionLine';
 
 // -- Type Imports --
 import type { Character, Card as CardData } from '@/lib/types/character';
+import type { ReorderIndicator } from '@/lib/utils/dragFeedback';
 
 
 
@@ -27,6 +30,8 @@ interface CardsSectionProps {
    cardIds: string[];
    /** Highlight the section as the landing spot for a compatible card-type drawer drag. */
    isDropTarget?: boolean;
+   /** The active reorder insertion line (tabs polish-18); rendered when it targets a card. */
+   reorderIndicator?: ReorderIndicator | null;
 }
 
 /**
@@ -44,9 +49,10 @@ export function CardsSection({
    onAddCard,
    cardIds,
    isDropTarget = false,
+   reorderIndicator = null,
 }: CardsSectionProps) {
    // Still a droppable (the drop is accepted here / routed by type), but the
-   // highlight is now driven by `isDropTarget` — only the section matching the
+   // highlight is now driven by `isDropTarget`, only the section matching the
    // dragged item's type lights up, regardless of which sub-zone the cursor is over.
    const { setNodeRef: cardsDropRef } = useDroppable({
       id: 'card-drop-zone',
@@ -63,27 +69,35 @@ export function CardsSection({
          )}
       >
          {/* Cards Group */}
-         <SortableContext items={cardIds} strategy={rectSortingStrategy}>
-            {character.cards.map(card => (
-               <Sortable
-                  key={card.id}
-                  id={card.id}
-                  data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}
-               >
-                  {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                     <DragLayoutWrapper isBeingDragged={isBeingDragged}>
-                        <CardRenderer
-                           card={card}
-                           isEditing={isEditing}
-                           dragAttributes={dragAttributes}
-                           dragListeners={dragListeners}
-                           onEditCard={() => onEditCard(card)}
-                           onExport={() => onExport(card)}
-                        />
-                     </DragLayoutWrapper>
-                  )}
-               </Sortable>
-            ))}
+         {/* Static layout during a drag (no live shuffle); a single vertical insertion
+             line (left/right edge of the hovered card) shows where it lands, tabs polish-18. */}
+         <SortableContext items={cardIds} strategy={staticListSortingStrategy}>
+            {character.cards.map(card => {
+               const onThisCard = reorderIndicator?.listId === 'sheet-cards' && reorderIndicator.overId === card.id;
+               return (
+                  <div key={card.id} className="relative">
+                     {onThisCard && reorderIndicator?.position === 'before' && <DropInsertionLine orientation="vertical" position="before" />}
+                     <Sortable
+                        id={card.id}
+                        data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}
+                     >
+                        {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                              <CardRenderer
+                                 card={card}
+                                 isEditing={isEditing}
+                                 dragAttributes={dragAttributes}
+                                 dragListeners={dragListeners}
+                                 onEditCard={() => onEditCard(card)}
+                                 onExport={() => onExport(card)}
+                              />
+                           </DragLayoutWrapper>
+                        )}
+                     </Sortable>
+                     {onThisCard && reorderIndicator?.position === 'after' && <DropInsertionLine orientation="vertical" position="after" />}
+                  </div>
+               );
+            })}
          </SortableContext>
          {isEditing && <AddCardButton onClick={onAddCard} />}
       </div>
