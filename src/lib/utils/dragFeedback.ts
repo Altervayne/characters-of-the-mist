@@ -359,6 +359,20 @@ export function resolveDrawerDropTarget(
    return null;
 }
 
+/**
+ * Stable string key for a resolved {@link DrawerDropTarget}, so the reactive drop
+ * indicator can re-render only when the target actually CHANGES (not on every pointer
+ * move): `folder:<id>` for a folder nest, `current-folder` for the viewed folder, and
+ * `null` for none. Mirrors {@link springTargetKey}'s role for the dwell target.
+ *
+ * @param target - The resolved in-drawer drop target, or null.
+ * @returns A stable key, or null when there is no target.
+ */
+export function drawerDropTargetKey(target: DrawerDropTarget | null): string | null {
+   if (!target) return null;
+   return target.kind === 'folder' ? `folder:${target.id}` : 'current-folder';
+}
+
 /** Options for {@link createSpringController}. */
 export interface SpringControllerOptions {
    /** Dwell duration; defaults to {@link SPRING_HOLD_MS}. */

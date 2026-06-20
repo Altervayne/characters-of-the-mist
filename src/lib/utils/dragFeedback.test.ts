@@ -9,6 +9,7 @@ import {
    TAB_LANE_SIDE_PADDING,
    createSpringController,
    deriveDragContext,
+   drawerDropTargetKey,
    isOverTabLaneFor,
    isWithinTabLane,
    resolveDrawerDropTarget,
@@ -208,6 +209,20 @@ describe('resolveDrawerDropTarget (manual in-drawer drop hit-test)', () => {
    it('returns null when outside the drawer panel entirely', () => {
       expect(resolveDrawerDropTarget(folders, drawerPanel, 100, 900, null)).toBeNull();
       expect(resolveDrawerDropTarget(folders, null, 100, 15, null)).toBeNull();
+   });
+});
+
+describe('drawerDropTargetKey (change-keyed indicator state)', () => {
+   it('keys a folder target by its id and the current folder by a constant', () => {
+      expect(drawerDropTargetKey({ kind: 'folder', id: 'abc' })).toBe('folder:abc');
+      expect(drawerDropTargetKey({ kind: 'current-folder' })).toBe('current-folder');
+      expect(drawerDropTargetKey(null)).toBeNull();
+   });
+
+   it('is stable for the same target and distinct across targets (so state updates only on change)', () => {
+      expect(drawerDropTargetKey({ kind: 'folder', id: 'a' })).toBe(drawerDropTargetKey({ kind: 'folder', id: 'a' }));
+      expect(drawerDropTargetKey({ kind: 'folder', id: 'a' })).not.toBe(drawerDropTargetKey({ kind: 'folder', id: 'b' }));
+      expect(drawerDropTargetKey({ kind: 'folder', id: 'a' })).not.toBe(drawerDropTargetKey({ kind: 'current-folder' }));
    });
 });
 

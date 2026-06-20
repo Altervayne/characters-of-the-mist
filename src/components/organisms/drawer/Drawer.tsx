@@ -18,6 +18,7 @@ import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Ro
 import { cn } from '@/lib/utils';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
 import { SPRING_BACK_KEY } from '@/lib/utils/dragFeedback';
+import type { DrawerDropTarget } from '@/lib/utils/dragFeedback';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
@@ -61,7 +62,7 @@ const contentVariants: Variants = {
 };
 
 
-export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, isFolderDrag?: boolean, overDragId: string | null; springTargetId?: string | null; }) {
+export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, drawerDropTarget = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, isFolderDrag?: boolean, drawerDropTarget?: DrawerDropTarget | null, overDragId: string | null; springTargetId?: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
 
@@ -223,7 +224,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, ove
                                              key={folder.id}
                                              folder={folder}
                                              parentFolderId={currentFolderId}
-                                             isOver={!!activeDragId && overDragId === folder.id && activeDragId !== folder.id}
+                                             isOver={drawerDropTarget?.kind === 'folder' && drawerDropTarget.id === folder.id}
                                              isSpringTarget={springTargetId === folder.id}
                                              onNavigate={navigateToFolder}
                                              onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
@@ -258,10 +259,11 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDrag = false, ove
                               className={cn(
                                  "w-full grow min-h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
                                  // Highlight when something is positioned to drop into THIS folder body:
-                                 // a sheet item saving in (`isDragHovering`) OR any droppable item whose
-                                 // resolved `over` is this items-area zone (a drawer item moving in
-                                 // cross-folder). Same-folder reorder resolves to a row, so no body highlight.
-                                 (isDragHovering || overDragId === droppableId) && "border-primary bg-primary/10"
+                                 // a sheet item saving in (`isDragHovering`, still dnd-kit-routed) OR a
+                                 // drawer move whose resolved target is the current folder (full-row,
+                                 // resolver-driven — matches the drop). Same-folder reorder resolves to a
+                                 // folder ROW target, so the body does not light up for it.
+                                 (isDragHovering || drawerDropTarget?.kind === 'current-folder') && "border-primary bg-primary/10"
                               )}
                            >
                               {currentItems.length > 0 ? (

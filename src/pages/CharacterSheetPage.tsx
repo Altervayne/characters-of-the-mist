@@ -84,6 +84,7 @@ function DesktopCharacterSheetPage() {
       overDragId,
       isOverDrawer,
       isFolderDragActive,
+      drawerDropTarget,
       statusIds,
       storyTagIds,
       storyThemeIds,
@@ -265,6 +266,7 @@ function DesktopCharacterSheetPage() {
                      isDragHovering={isOverDrawer}
                      activeDragId={activeDragItem?.id ?? null}
                      isFolderDrag={isFolderDragActive}
+                     drawerDropTarget={drawerDropTarget}
                      overDragId={overDragId}
                      springTargetId={springTarget}
                   />

@@ -63,7 +63,10 @@ export function DrawerFolderEntry({ folder, parentFolderId, isOver, isSpringTarg
                      className={cn(
                         "group relative flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
                         {
-                           "bg-muted": isOver,
+                           // Full-row "drop INTO this folder" treatment, driven by the resolved
+                           // drop target (tabs polish-15) so it matches the full-row drop — a clear
+                           // ring + fill, visibly distinct from the plain hover state above.
+                           "ring-2 ring-inset ring-primary bg-primary/10": isOver,
                         }
                      )}
                   >

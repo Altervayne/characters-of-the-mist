@@ -101,49 +101,42 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // ==================
    //  If dragging a full character sheet
    // ==================
+   // Only the non-drawer targets remain: the play area and the tab strip. In-drawer
+   // moves (into a folder / the current folder) are resolved by the live-geometry
+   // resolver at drop (tabs polish-13/15), which returns before this `over` is read, so
+   // the former folder / back-button in-drawer collision here was dead and is removed.
    if (draggedItemType === 'FULL_CHARACTER_SHEET') {
-      const filteredDroppables = args.droppableContainers.filter((container) => {
-         const containerId = container.id.toString();
-         const containerType = container.data.current?.type as string;
-         return (
-            container.id === 'main-character-drop-zone' ||
-            container.id === 'tab-strip-drop-zone' ||
-            containerType === 'drawer-item' ||
-            containerType === 'drawer-folder' ||
-            containerId.startsWith('drawer-back-button-')
-         );
-      });
+      const filteredDroppables = args.droppableContainers.filter((container) => (
+         container.id === 'main-character-drop-zone' ||
+         container.id === 'tab-strip-drop-zone'
+      ));
       return pointerWithin({ ...args, droppableContainers: filteredDroppables });
    };
 
    // ==================
    //  If dragging a folder
    // ==================
+   // Only the reorder/insert SLOTS (`drawer-drop-zone`, the FolderDropZone targets)
+   // remain: `handleDragEnd`'s slot-placement still reads this `over` to land a folder at
+   // an exact position. Nesting INTO a folder row / the current folder is resolved by the
+   // live-geometry resolver, so the former folder-row + back-button collision was dead.
    if (activeDataType === 'drawer-folder') {
-      const filteredDroppables = args.droppableContainers.filter((container) => {
-         const containerType = container.data.current?.type as string;
-         const containerId = container.id.toString();
-         return (
-            containerType === 'drawer-folder' ||
-            containerType === 'drawer-drop-zone' ||
-            containerId.startsWith('drawer-back-button-')
-         );
-      });
+      const filteredDroppables = args.droppableContainers.filter(
+         (container) => container.data.current?.type === 'drawer-drop-zone',
+      );
       return pointerWithin({ ...args, droppableContainers: filteredDroppables });
    };
 
    // ==================
    //  If dragging a drawer item
    // ==================
+   // In-drawer moves (into a folder / Back / the current folder's items body) are now
+   // resolved by the live-geometry resolver at drop (tabs polish-13/15), which returns
+   // before this `over` is read — so the former folder / back-button / items-area-zone
+   // collision was dead and is removed. What remains is still live: the sheet drop zones
+   // (dropping the item onto the sheet), then same-folder item REORDER over the nearest
+   // sibling row (`closestCenter`, resolved by `handleDragEnd`'s reorder path).
    if (activeDataType === 'drawer-item') {
-      const folderDroppables = args.droppableContainers.filter(
-         (container) => container.data.current?.type === 'drawer-folder' || container.id.toString().startsWith('drawer-back-button-')
-      );
-      const folderCollisions = pointerWithin({ ...args, droppableContainers: folderDroppables });
-      if (folderCollisions.length > 0) {
-         return folderCollisions;
-      }
-
       const sheetZoneDroppables = args.droppableContainers.filter((container) => {
          const id = container.id.toString();
          return id === 'character-sheet-main-drop-zone' || id === 'tracker-drop-zone' || id === 'card-drop-zone';
@@ -157,29 +150,6 @@ export const customCollisionDetection: CollisionDetection = (args) => {
          const type = container.data.current?.type as string;
          return type === 'drawer-item' || type === 'sheet-card' || type === 'sheet-tracker';
       });
-
-      // The current folder's items-area drop zone (`drawer-drop-zone-<id>`). It spatially
-      // contains the item rows, so when the cursor is within it we decide: a drop into a
-      // DIFFERENT folder than the item's origin (e.g. after spring-navigating in, or an
-      // empty folder) resolves to the zone (a move-into-folder); a same-folder drop falls
-      // through to reorder over the nearest item row. Without this an empty destination
-      // resolved to `over = null` and the item couldn't be dropped.
-      const itemsAreaDroppables = args.droppableContainers.filter((container) =>
-         container.id.toString().startsWith('drawer-drop-zone-'),
-      );
-      const itemsAreaCollisions = pointerWithin({ ...args, droppableContainers: itemsAreaDroppables });
-      if (itemsAreaCollisions.length > 0) {
-         const destFolder = itemsAreaCollisions[0].id.toString().slice('drawer-drop-zone-'.length);
-         const originParent = args.active.data.current?.parentFolderId;
-         const originFolder = originParent == null ? 'root' : String(originParent);
-         if (destFolder !== originFolder) {
-            return itemsAreaCollisions; // moving into a different folder → the folder body wins
-         }
-         // Same folder: reorder over a sibling row if there is one, else the (empty) zone.
-         const sameFolderItemCollisions = closestCenter({ ...args, droppableContainers: itemDroppables });
-         return sameFolderItemCollisions.length > 0 ? sameFolderItemCollisions : itemsAreaCollisions;
-      }
-
       return closestCenter({ ...args, droppableContainers: itemDroppables });
    }
 

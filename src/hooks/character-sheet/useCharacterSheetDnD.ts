@@ -9,7 +9,7 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, isOverTabLaneFor, resolveDrawerDropTarget, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
+import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, drawerDropTargetKey, isOverTabLaneFor, resolveDrawerDropTarget, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
 import { sheetSectionForItemType } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
@@ -186,6 +186,14 @@ export function useCharacterSheetDnD() {
    // in-drawer move at drop. Read at dragEnd (the dwell-then-release value is correct
    // — it holds the folder the spring drilled into). Cleared on end/cancel.
    const hoveredDrawerTargetRef = useRef<DrawerDropTarget | null>(null);
+   // Reactive mirror of `hoveredDrawerTargetRef` for the drop INDICATORS (tabs polish-15):
+   // the folder nest highlight + items-area highlight read this so the highlight matches
+   // the full-row resolver drop, not dnd-kit's center-only `over`. Updated only when the
+   // resolved target's key CHANGES (the ref stays the per-frame truth read at drop), and
+   // scoped to resolver-driven drags (drawer moves) — sheet/tab saves keep their dnd-kit
+   // `over` indicator path so a center-only save never shows a full-row highlight.
+   const [drawerDropTarget, setDrawerDropTarget] = useState<DrawerDropTarget | null>(null);
+   const drawerDropTargetKeyRef = useRef<string | null>(null);
    // The live cursor each move, so a spring nav can anchor the post-nav grace below.
    const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
    // After a spring nav the view reflows under the STATIONARY cursor (e.g. at root the
@@ -337,6 +345,21 @@ export function useCharacterSheetDnD() {
          ? (inDrawerPanel ? { kind: 'current-folder' } : null)
          : resolveDrawerDropTarget(folders, drawerPanelRect, event.clientX, event.clientY, draggedFolderIdRef.current);
 
+      // Mirror the resolved target into reactive state for the drop indicators, scoped to
+      // the resolver-driven drags (drawer moves) and committed only when the target's key
+      // CHANGES (never per frame). Sheet/tab saves resolve their target via dnd-kit `over`,
+      // so they stay null here — their indicators ride that path, and no full-row highlight
+      // is shown where the (center-only) save could not honor it.
+      const moveKind = dragKindRef.current;
+      const isDrawerMoveDrag =
+         moveKind === 'drawer-character' || moveKind === 'drawer-component' || moveKind === 'drawer-folder';
+      const nextDropTarget = isDrawerMoveDrag ? hoveredDrawerTargetRef.current : null;
+      const nextDropKey = drawerDropTargetKey(nextDropTarget);
+      if (nextDropKey !== drawerDropTargetKeyRef.current) {
+         drawerDropTargetKeyRef.current = nextDropKey;
+         setDrawerDropTarget(nextDropTarget);
+      }
+
       // The morph context reads the SAME manual signal, so the "drawer-move" cluster
       // lights up full-row (not center-only). Recomputed after the hit-test above.
       updateContext();
@@ -393,6 +416,10 @@ export function useCharacterSheetDnD() {
       dragSourceCharacterIdRef.current = null;
       sheetCompatibleRef.current = true;
       hoveredDrawerTargetRef.current = null;
+      if (drawerDropTargetKeyRef.current !== null) {
+         drawerDropTargetKeyRef.current = null;
+         setDrawerDropTarget(null);
+      }
       navGraceAnchorRef.current = null;
       lastPointerRef.current = null;
       if (forceMorphRef.current) {
@@ -979,6 +1006,9 @@ export function useCharacterSheetDnD() {
       overDragId,
       isOverDrawer,
       isFolderDragActive,
+      // Honest in-drawer drop indicator (tabs polish-15): the resolved full-row target,
+      // driving the folder nest + items-area highlights so they match the drop.
+      drawerDropTarget,
       statusIds,
       storyTagIds,
       storyThemeIds,
