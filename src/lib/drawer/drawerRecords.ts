@@ -74,8 +74,8 @@ export interface DrawerItemRecord {
  * - `migratedRecordCounts`: `{ folders, items }` written from the same faithful
  *   migration, for diagnostics.
  *
- * The `character*` keys mirror the drawer keys for the per-character migration
- * (spec §6): `characterMigrationStatus`, `characterMigrationVerified`,
+ * The `character*` keys mirror the drawer keys for the per-character migration:
+ * `characterMigrationStatus`, `characterMigrationVerified`,
  * `characterMigratedRecordCount`, and `characterLegacyBlobRetainedUntil`. (The
  * active-character session pointer lives in localStorage, not here. See
  * `characterSession.ts`.)

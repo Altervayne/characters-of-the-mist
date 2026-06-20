@@ -5,6 +5,14 @@
       "dismiss": "Passer",
       "offlineReady": "Le mode hors-ligne est prêt."
    },
+   "Tabs": {
+      "closeTabDialog": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "closeWithoutSaving": "[TO COMPLETE]",
+         "cancel": "[TO COMPLETE]"
+      }
+   },
    "Notifications": {
       "general": {
          "importFailed": "Import du fichier échoué. Les données sont corrompues ou incorrectes.",
@@ -122,6 +130,7 @@
          "resetConfirmCancelButton": "Annuler",
          "resetConfirmButton": "Réinitialiser le Perso.",
 
+         "openMenu": "[TO COMPLETE]",
          "returnToMenu": "Retourner au Menu",
          "unloadConfirmTitle": "Êtes vous certain de vouloir retourner au Menu?",
          "unloadConfirmDescription": "Cette action est extrêmement destructive. Votre Personnage actif sera déchargé, et votre historique d'action sur la fiche de personnage avec. Vous ne pourrez pas revenir en arrière avec la fonction Undo.",
@@ -662,6 +671,9 @@
 
       "resetCharacter_title": "Réinitialiser votre Personnage",
       "resetCharacter_content": "Ce bouton supprime complètement votre Personnage actif, transformant votre Fiche de Personnage en une page blanche pour recommencer à zéro.",
+
+      "openMenu_title": "[TO COMPLETE]",
+      "openMenu_content": "[TO COMPLETE]",
 
       "unloadCharacter_title": "Décharger votre Personnage",
       "unloadCharacter_content": "Ce bouton décharge complètement votre Personnage actif de l'application, ce qui le supprime, et remet à blanc tout votre historique d'actions. Après cela, vous serez renvoyé vers le menu principal sans aucune données de personnage chargées en fond.",

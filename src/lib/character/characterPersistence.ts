@@ -11,17 +11,16 @@ import type { Character } from '@/lib/types/character';
 import type { CharacterStore } from '@/lib/stores/characterStore';
 
 /*
- * Persistence sync layer (migration spec §3.3 / §5; tabs spec §2.1 / §3.1). It is
- * the only bridge between a pure in-memory character store instance and the
- * IndexedDB repository, and it is deliberately one-directional: state to IndexedDB.
- * Saving never calls the store's `set()`, so it creates no zundo entry and cannot
- * form a write loop (undo restores a snapshot via zundo's internal set, the save
- * subscription writes it once, and IndexedDB writes never feed back into store
- * state, exactly the desired behaviour, spec §4).
+ * Persistence sync layer. It is the only bridge between a pure in-memory character
+ * store instance and the IndexedDB repository, and it is deliberately
+ * one-directional: state to IndexedDB. Saving never calls the store's `set()`, so it
+ * creates no zundo entry and cannot form a write loop (undo restores a snapshot via
+ * zundo's internal set, the save subscription writes it once, and IndexedDB writes
+ * never feed back into store state).
  *
- * As of Phase 2 persistence is **per-instance**: each open character tab owns a
+ * Persistence is **per-instance**: each open character tab owns a
  * {@link PersistenceHandle} (its own subscription, debounce timer, and hydration
- * flag), so one tab can never disturb another's save (tabs spec §2.1). The session
+ * flag), so one tab can never disturb another's save. The session
  * pointer and active-instance bookkeeping are the TabManager's concern, not this
  * module's. The menu fallback instance gets no handle.
  *
@@ -30,7 +29,7 @@ import type { CharacterStore } from '@/lib/stores/characterStore';
  */
 
 // ==================
-//  Boot loading gate (spec §5, C-4)
+//  Boot loading gate
 // ==================
 
 /**
@@ -68,7 +67,7 @@ export function finishBootHydration(): void {
 }
 
 // ==================
-//  Per-instance persistence handle (tabs spec §2.1, §3.1)
+//  Per-instance persistence handle
 // ==================
 
 const SAVE_DEBOUNCE_MS = 300;
@@ -100,7 +99,7 @@ function createDebouncer<T>(delay: number, run: (value: T) => void): Debouncer<T
 }
 
 /**
- * A per-instance persistence handle (tabs spec §3.1). Each open character tab owns
+ * A per-instance persistence handle. Each open character tab owns
  * one: its own subscription, debounce timer, and hydration flag, so one tab's edits
  * can never cancel another tab's pending save nor suppress another tab's load.
  */
@@ -146,7 +145,11 @@ export function attachPersistenceHandle(characterId: string, instance: Character
       if (isHydrating) return;
       if (state.character === previousState.character) return;
       const character = state.character;
-      if (character) debouncedSave(character);
+      if (character) {
+         debouncedSave(character);
+         // A content change means the working record now differs from the drawer copy.
+         if (!state.hasUnsavedChanges) instance.getState().actions.setHasUnsavedChanges(true);
+      }
    });
 
    const handle: PersistenceHandle = {
@@ -180,7 +183,7 @@ export function attachPersistenceHandle(characterId: string, instance: Character
 /**
  * Flushes the pending save, detaches the subscription, and forgets the handle for
  * `characterId`. Idempotent. Call when closing a tab, BEFORE disposing its instance:
- * flush must run before detach or the last edit is lost (tabs spec gotcha).
+ * flush must run before detach or the last edit is lost.
  *
  * @param characterId - The character id whose handle to tear down.
  */
@@ -188,6 +191,20 @@ export function detachPersistenceHandle(characterId: string): void {
    const handle = handles.get(characterId);
    if (!handle) return;
    handle.flush();
+   handle.detach();
+   handles.delete(characterId);
+}
+
+/**
+ * Detaches the handle for `characterId` WITHOUT flushing, dropping any pending save and
+ * forgetting the handle. Use when the record is about to be deleted (a "close for good"),
+ * where flushing would race the delete and could leave an orphan record.
+ *
+ * @param characterId - The character id whose handle to discard.
+ */
+export function discardPersistenceHandle(characterId: string): void {
+   const handle = handles.get(characterId);
+   if (!handle) return;
    handle.detach();
    handles.delete(characterId);
 }

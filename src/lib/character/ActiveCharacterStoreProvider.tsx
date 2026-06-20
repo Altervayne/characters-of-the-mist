@@ -9,13 +9,13 @@ import { useTabManagerStore } from './tabManagerStore';
 /*
  * Provider for {@link ActiveCharacterStoreContext}. Kept in its own component-only
  * file so the context object and the resolving hook can live in a plain `.ts`
- * module (tabs spec §1.2); this separation keeps `react-refresh/only-export-components`
- * happy without changing any consumer import.
+ * module; this separation keeps `react-refresh/only-export-components` happy without
+ * changing any consumer import.
  */
 
 /**
  * Provides the ACTIVE character store instance to its subtree, following the
- * TabManager's `activeTabId` (tabs spec §1.2, §2): the instance for the active tab,
+ * TabManager's `activeTabId`: the instance for the active tab,
  * or the permanent menu fallback instance when no character tab is open. The value
  * is memoized on `activeTabId` so its reference is stable per active id, supplying
  * a fresh instance each render would thrash all character consumers.

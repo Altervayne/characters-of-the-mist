@@ -5,7 +5,7 @@ import { ACTIVE_CHARACTER_ID_KEY } from './characterSession';
 import type { OpenTab } from './tabManagerStore';
 
 /**
- * Workspace session pointer (tabs spec §3.2). Replaces the single-id
+ * Workspace session pointer. Replaces the single-id
  * `ACTIVE_CHARACTER_ID_KEY` with the full set of open desktop tabs plus the active
  * one, persisted as a small JSON blob in `localStorage` (the character *data* still
  * lives in IndexedDB). Read synchronously before first paint so boot knows what to

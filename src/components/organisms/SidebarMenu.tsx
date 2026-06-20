@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useEffect, useRef, useState, startTransition } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, FileX, SaveAll } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, LayoutGrid, SaveAll } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -51,10 +51,6 @@ interface SidebarMenuProps {
    onOpenPatchNotes: () => void;
 }
 
-const UNLOAD_TIMER_SECONDS = 3;
-
-
-
 export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
    const { t } = useTranslation();
    const { t: tNotifications } = useTranslation();
@@ -65,7 +61,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // active character), not a tab open, it stays a per-character action. Opening a
    // *different* character (file import) and returning to the menu go through the
    // TabManager.
-   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter } = useCharacterActions();
+   const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, setHasUnsavedChanges } = useCharacterActions();
    const { openCharacterTab, deactivate } = useTabManagerActions();
    const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
@@ -82,10 +78,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       if (character.drawerItemId) {
          const savedItemId = character.drawerItemId;
          try {
-            // Atomic cross-store save (spec §7): working record + the linked drawer
-            // item in one transaction.
+            // Atomic cross-store save: working record + the linked drawer item in one
+            // transaction.
             const { linkedItemUpdated } = await saveCharacterToLinkedDrawerItem(character);
             if (linkedItemUpdated) {
+               // The working record now matches its drawer copy.
+               setHasUnsavedChanges(false);
                await reloadCurrentFolder();
                const itemPath = await getDrawerItemDisplayPath(savedItemId);
                toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
@@ -109,6 +107,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       const characterWithDrawerId = { ...character, drawerItemId: newItemId };
 
       loadCharacter(character, newItemId);
+      // loadCharacter sets the flag clean, but the change subscription fires on the new
+      // character reference and re-dirties it; assert clean once more after.
+      setHasUnsavedChanges(false);
 
       if (!isDrawerOpen) {
          onToggleDrawer();
@@ -190,36 +191,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       toast.success(tNotifications('Notifications.character.reset'));
    };
 
-   const [isUnloadDialogOpen, setIsUnloadDialogOpen] = useState(false);
-   const [unloadCountdown, setUnloadCountdown] = useState(UNLOAD_TIMER_SECONDS);
-
-   useEffect(() => {
-      if (!isUnloadDialogOpen) {
-         return;
-      }
-
-      startTransition(() => {
-         setUnloadCountdown(UNLOAD_TIMER_SECONDS);
-      });
-
-      const timer = setInterval(() => {
-         setUnloadCountdown((prevCountdown) => {
-            if (prevCountdown <= 1) {
-               clearInterval(timer);
-               return 0;
-            }
-            return prevCountdown - 1;
-         });
-      }, 1000);
-
-      return () => clearInterval(timer);
-   }, [isUnloadDialogOpen]);
-
-   const handleUnloadCharacter = () => {
-      // Desktop "Return to Menu": show the menu but keep every open tab and its
-      // live instance (tabs spec §4), not a close.
+   const handleOpenMenu = () => {
+      // Show the main menu but keep every open tab and its live instance; this is a
+      // view switch, not a close.
       deactivate();
-      toast.success(tNotifications('Notifications.character.unloaded'));
    };
 
 
@@ -329,8 +304,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
                      {t('CharacterSheetPage.SidebarMenu.patchNotes')}
                   </SidebarButton>
-                  <SidebarButton data-tour="unload-character-button" variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsUnloadDialogOpen(true)} Icon={FileX}>
-                     {t('CharacterSheetPage.SidebarMenu.returnToMenu')}
+                  <SidebarButton data-tour="open-menu-button" isCollapsed={isCollapsed} onClick={handleOpenMenu} Icon={LayoutGrid}>
+                     {t('CharacterSheetPage.SidebarMenu.openMenu')}
                   </SidebarButton>
                </motion.section>
             </div>
@@ -367,26 +342,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                <AlertDialogFooter>
                   <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.resetConfirmCancelButton')}</AlertDialogCancel>
                   <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={handleResetCharacter}>{t('CharacterSheetPage.SidebarMenu.resetConfirmButton')}</AlertDialogAction>
-               </AlertDialogFooter>
-            </AlertDialogContent>
-         </AlertDialog>
-
-         <AlertDialog open={isUnloadDialogOpen} onOpenChange={setIsUnloadDialogOpen}>
-            <AlertDialogContent className="border-2 border-dashed border-destructive">
-               <AlertDialogHeader>
-                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.unloadConfirmTitle')}</AlertDialogTitle>
-
-                  <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.unloadConfirmDescription')}</AlertDialogDescription>
-               </AlertDialogHeader>
-               <AlertDialogFooter>
-                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.unloadConfirmCancelButton')}</AlertDialogCancel>
-                  <AlertDialogAction 
-                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
-                     onClick={handleUnloadCharacter}
-                     disabled={unloadCountdown > 0}
-                  >
-                     {unloadCountdown > 0 ? `${unloadCountdown}...` : t('CharacterSheetPage.SidebarMenu.unloadConfirmButton')}
-                  </AlertDialogAction>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>

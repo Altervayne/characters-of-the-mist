@@ -11,14 +11,13 @@ const EMPTY_ITEMS: readonly DrawerItemRecord[] = [];
 const EMPTY_CHILD_COUNTS: ReadonlyMap<string, { folderCount: number; itemCount: number }> = new Map();
 
 /**
- * Reads the loaded view of the current drawer folder from the store (migration
- * spec §3.3). Selects each field individually so a component re-renders only when
- * the value it uses actually changes, and falls back to stable empty references
- * before the first load completes.
+ * Reads the loaded view of the current drawer folder from the store. Selects each
+ * field individually so a component re-renders only when the value it uses actually
+ * changes, and falls back to stable empty references before the first load completes.
  *
  * This is a pure selector hook - it does not trigger loading. The current-folder
  * view is loaded by the store's `setDrawerCurrentFolderId` / `reloadCurrentFolder`
- * actions; a mounting surface must trigger an initial load (Phase 6 wiring).
+ * actions; a mounting surface must trigger an initial load.
  *
  * @returns The current folder id, its ordered child `folders` and `items`, the
  *   per-child-folder `childCounts`, the `breadcrumbPath`, the `parentFolderId`,

@@ -30,13 +30,12 @@ import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
 import type { Drawer, DrawerItemContent, Folder, GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
 /*
- * Operation/command-based undo for the drawer (migration spec §4), replacing
- * zundo. Lazy loading rules out zundo's whole-state snapshots, so each command
- * captures only the inverse delta it needs to revert itself; the engine keeps
- * in-memory undo/redo stacks. Pure logic over the Phase 2 repository - no React,
- * no store, no toasts. Undo is global and navigation-independent: commands operate
- * by id, so they revert correctly regardless of which folder is currently open
- * (Q-3).
+ * Operation/command-based undo for the drawer, replacing zundo. Lazy loading rules
+ * out zundo's whole-state snapshots, so each command captures only the inverse delta
+ * it needs to revert itself; the engine keeps in-memory undo/redo stacks. Pure logic
+ * over the repository - no React, no store, no toasts. Undo is global and
+ * navigation-independent: commands operate by id, so they revert correctly regardless
+ * of which folder is currently open.
  */
 
 /**
@@ -53,7 +52,7 @@ export interface DrawerCommand {
    readonly label: string;
    /**
     * Optional coalescing key. Consecutive commands with the same key, executed
-    * within the engine's coalescing window, merge into one undo step (§4.5).
+    * within the engine's coalescing window, merge into one undo step.
     */
    readonly coalesceKey?: string;
    /** Performs (or redoes) the operation. */
@@ -74,7 +73,7 @@ function toApiParent(storedParentFolderId: string): string | null {
 }
 
 // ==================
-//  Command set (§4.2) - one per current drawer mutation
+//  Command set - one per current drawer mutation
 // ==================
 
 /** A create command that exposes the id it created (available after `do()` has run). */
@@ -395,10 +394,10 @@ export function createImportDrawerAsFolderCommand(
 }
 
 // ==================
-//  Engine (§4.3)
+//  Engine
 // ==================
 
-/** The undo/redo engine surface the store (Phase 5) drives and mirrors. */
+/** The undo/redo engine surface the store drives and mirrors. */
 export interface DrawerCommandEngine {
    /** Runs a command and records it for undo (coalescing into the top entry when eligible); clears redo. */
    execute(command: DrawerCommand): Promise<void>;
@@ -416,7 +415,7 @@ export interface DrawerCommandEngine {
    subscribe(listener: () => void): () => void;
 }
 
-/** Tuning for {@link createDrawerCommandEngine}; defaults follow resolved Q-6 (cap 50, window 600 ms). */
+/** Tuning for {@link createDrawerCommandEngine}; defaults are cap 50, window 600 ms. */
 export interface DrawerCommandEngineOptions {
    /** Maximum undo depth; oldest entries are dropped beyond it. Default 50. */
    undoLimit?: number;
@@ -432,10 +431,10 @@ interface UndoStackEntry {
 }
 
 /**
- * Creates a command engine with in-memory, per-tab undo/redo stacks (spec §4.3).
- * Executing a command clears the redo stack; the undo stack is capped (oldest
- * dropped); coalescing merges consecutive same-key commands within the window
- * (§4.5). Commands operate by id, so undo/redo are navigation-independent.
+ * Creates a command engine with in-memory, per-tab undo/redo stacks. Executing a
+ * command clears the redo stack; the undo stack is capped (oldest dropped);
+ * coalescing merges consecutive same-key commands within the window. Commands
+ * operate by id, so undo/redo are navigation-independent.
  */
 export function createDrawerCommandEngine(options: DrawerCommandEngineOptions = {}): DrawerCommandEngine {
    const undoLimit = options.undoLimit ?? 50;
@@ -525,5 +524,5 @@ export function createDrawerCommandEngine(options: DrawerCommandEngineOptions = 
    };
 }
 
-/** The shared singleton engine the store (Phase 5) will drive and mirror. */
+/** The shared singleton engine the store drives and mirrors. */
 export const drawerCommandEngine = createDrawerCommandEngine();

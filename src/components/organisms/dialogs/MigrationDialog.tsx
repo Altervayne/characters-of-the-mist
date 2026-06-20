@@ -63,8 +63,8 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
 
 
    // Find a same-named child folder of `parentId` (null = root), or create one and
-   // return its id. The async store action now returns the created id directly, so
-   // the old subscribe-and-poll id-discovery dance (spec C-3) is gone.
+   // return its id. The async store action returns the created id directly, so the
+   // old subscribe-and-poll id-discovery dance is gone.
    const getOrCreateFolder = async (name: string, parentId?: string): Promise<string> => {
       const { folders } = await getFolderChildren(parentId ?? null);
       const existingFolder = folders.find(folder => folder.name === name);

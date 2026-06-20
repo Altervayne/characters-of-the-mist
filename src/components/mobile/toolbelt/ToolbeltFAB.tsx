@@ -148,7 +148,7 @@ export default function ToolbeltFAB({
                         onClick={handleRingClick}
 								// Full-width so labels are never clipped: an element with
 								// `overflow-y-auto` forces its `overflow-x` to compute to `auto`
-								// too (per spec), so the old `w-64` + `overflow-x-visible` clipped
+								// too, so the old `w-64` + `overflow-x-visible` clipped
 								// any label wider than 16rem. Spanning the viewport (with `px-4`
 								// edge insets) keeps vertical scroll and thumb-zone scaling intact
 								// while giving labels the whole width to extend into; the inner

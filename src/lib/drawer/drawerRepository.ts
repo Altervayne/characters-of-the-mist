@@ -15,15 +15,15 @@ import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
 import type { Drawer, DrawerItem, DrawerItemContent, Folder, GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
 /*
- * Framework-agnostic data-access layer for the normalized drawer (migration spec
- * §2). Pure persistence: no React, no zustand, no toasts, no console. Every
+ * Framework-agnostic data-access layer for the normalized drawer. Pure persistence:
+ * no React, no zustand, no toasts, no console. Every
  * mutation runs in a single Dexie `rw` transaction so multi-row operations
  * (move, delete-subtree, reorder, import) are atomic. Reads that must be
  * internally consistent run in a single `r` transaction. Errors are thrown as the
  * typed errors in `drawerErrors.ts`; the store layer is the only place that turns
  * them into UI.
  *
- * Ordering follows §1.4: each sibling set (children sharing a `parentFolderId`,
+ * Ordering: each sibling set (children sharing a `parentFolderId`,
  * separately for folders and items) holds a contiguous integer `order` of
  * `0..n-1`. Inserts append; moves/deletes/reorders reindex the affected sibling
  * set within the transaction.
@@ -246,7 +246,7 @@ function assertSamePermutation(current: string[], provided: string[], label: str
 }
 
 // ==================
-//  Read API (§2.1)
+//  Read API
 // ==================
 
 /**
@@ -346,7 +346,7 @@ export function isFolderSelfOrDescendant(candidateFolderId: string, potentialAnc
 }
 
 // ==================
-//  Folder mutations (§2.2)
+//  Folder mutations
 // ==================
 
 /** Creates an empty folder appended to the end of its parent (`null` = root). */
@@ -427,7 +427,7 @@ export function reorderFolders(parentFolderId: string | null, oldIndex: number, 
 }
 
 // ==================
-//  Item mutations (§2.3)
+//  Item mutations
 // ==================
 
 /**
@@ -435,7 +435,7 @@ export function reorderFolders(parentFolderId: string | null, oldIndex: number, 
  * caller-supplied `id` is honoured when present (preset-id support, e.g. linking
  * a loaded character to its drawer item); otherwise a fresh id is generated. The
  * `content` is persisted verbatim - id-regeneration for duplication is the
- * import operations' concern, not create's (see §2.4 / the file header note).
+ * import operations' concern, not create's.
  */
 export function createItem(input: {
    id?: string;
@@ -528,7 +528,7 @@ export function reorderItems(parentFolderId: string | null, oldIndex: number, ne
 }
 
 // ==================
-//  Tree / bulk operations (§2.4)
+//  Tree / bulk operations
 // ==================
 
 /**
@@ -620,7 +620,7 @@ export function clearAllDrawerData(): Promise<void> {
 }
 
 // ==================
-//  Undo-support operations (Phase 4)
+//  Undo-support operations
 // ==================
 // These back the command/undo engine: restoring deleted records verbatim and
 // re-applying an explicit sibling order. They are additive - the forward

@@ -22,10 +22,10 @@ import {
 import type { DrawerItemContent } from '@/lib/types/drawer';
 
 /*
- * Tests for the command/undo engine over the Phase 2 repository (fake-indexeddb).
+ * Tests for the command/undo engine over the normalized repository (fake-indexeddb).
  * Each command's do/undo/redo round-trips DB state exactly; the engine's stack
- * behaviour (cap eviction, redo-clear) and reorder coalescing (§4.5) are covered
- * with an injected clock.
+ * behaviour (cap eviction, redo-clear) and reorder coalescing are covered with an
+ * injected clock.
  */
 
 const ITEM_CONTENT = { id: 'content', label: 'content' } as unknown as DrawerItemContent;
@@ -250,7 +250,7 @@ describe('engine stack', () => {
 });
 
 // ==================
-//  Coalescing (§4.5)
+//  Coalescing
 // ==================
 
 describe('reorder coalescing', () => {

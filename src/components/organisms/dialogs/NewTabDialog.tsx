@@ -20,11 +20,10 @@ import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import type { GameSystem } from '@/lib/types/drawer';
 
 /*
- * The New Tab dialog (tabs spec §5.1). Framed as a tab-TYPE chooser even though only
+ * The New Tab dialog. Framed as a tab-TYPE chooser even though only
  * "Character Sheet" exists today, so Boards/Notes become additional sections later
  * with no change to the tab lifecycle. Choosing a game calls `createCharacterTab(game)`
- * and closes the dialog. The game cards reuse the shared {@link GameCard} so the
- * dialog matches the MainMenu picker exactly.
+ * and closes the dialog. The game cards reuse the shared {@link GameCard}.
  */
 
 interface NewTabDialogProps {

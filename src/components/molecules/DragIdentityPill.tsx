@@ -7,9 +7,9 @@ import type { LucideIcon } from 'lucide-react';
 import type { GameSystem } from '@/lib/types/common';
 
 /**
- * The "what am I dragging" pill shown on the RIGHT of the drag-morph cursor cluster
- * (tabs polish-9/10). A flat app-token pill carrying a leading "what is this" mark
- * plus the item's name. It lives on the CONSUMER side, the drag-morph engine stays
+ * The "what am I dragging" pill shown on the RIGHT of the drag-morph cursor cluster.
+ * A flat app-token pill carrying a leading "what is this" mark plus the item's name.
+ * It lives on the CONSUMER side, the drag-morph engine stays
  * behavior-agnostic and receives this only as an opaque `ReactNode`, so the
  * `gameVisuals` / type-icon lookup happens here, never in the engine.
  *

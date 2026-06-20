@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { customCollisionDetection } from './dnd';
 
 /*
- * Tests for the drawer-item branch of customCollisionDetection. As of tabs polish-15
- * the in-drawer MOVE targets (folder rows, Back, the items-area drop zone) are resolved
+ * Tests for the drawer-item branch of customCollisionDetection. The in-drawer MOVE
+ * targets (folder rows, Back, the items-area drop zone) are resolved
  * by the live-geometry resolver at drop, NOT by this collision, so the branch's only
  * remaining in-drawer job is same-folder REORDER over the nearest item row (closestCenter).
  * These tests pin that: the items-area zone is never returned, the nearest item row is,
@@ -93,11 +93,11 @@ describe('customCollisionDetection, drawer item (reorder only; in-drawer moves a
 });
 
 /*
- * Tests for the FULL_CHARACTER_SHEET (saved-character) branch (tabs polish-17). A saved
- * character is a `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so it must
- * reorder among its siblings (closestCenter, excluding self) while the sheet/tab targets
- * still win. (Move-into-folder is resolved by the geometry resolver, not this collision,
- * so folders are not in this branch, see the polish-15 cleanup.)
+ * Tests for the FULL_CHARACTER_SHEET (saved-character) branch. A saved character is a
+ * `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so it must reorder among its
+ * siblings (closestCenter, excluding self) while the sheet/tab targets still win.
+ * (Move-into-folder is resolved by the geometry resolver, not this collision, so folders
+ * are not in this branch.)
  */
 function buildSavedCharArgs(params: {
    containers: Container[];

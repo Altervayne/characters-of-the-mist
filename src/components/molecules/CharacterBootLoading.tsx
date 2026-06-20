@@ -3,7 +3,7 @@ import { LoaderCircle } from 'lucide-react';
 
 /**
  * Full-screen neutral loading shell shown while the active character is read from
- * IndexedDB at boot (spec §5, C-4). It exists so first paint never flashes the main
+ * IndexedDB at boot. It exists so first paint never flashes the main
  * menu before the asynchronous load resolves into the character sheet. Background
  * matches the app shell so the transition into either the sheet or the menu is
  * seamless.

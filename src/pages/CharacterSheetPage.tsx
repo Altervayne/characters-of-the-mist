@@ -176,9 +176,9 @@ function DesktopCharacterSheetPage() {
    };
 
 
-   // Boot loading gate (spec §5, C-4): while the active character is still being
-   // read from IndexedDB, show a neutral loading screen rather than flashing the
-   // main menu before the sheet resolves. All hooks above run unconditionally.
+   // While the active character is still being read from IndexedDB, show a neutral
+   // loading screen rather than flashing the main menu before the sheet resolves.
+   // All hooks above run unconditionally.
    if (isBootHydrating && !character) {
       return <CharacterBootLoading />;
    }
@@ -199,13 +199,12 @@ function DesktopCharacterSheetPage() {
                onOpenPatchNotes={() => setPatchNotesOpen(true)}
             />
 
-            {/* Character Sheet Area. `min-w-0` caps this flex item to its allocation
-                (the play area between the sidebar and the drawer) — without it the tab
-                strip's intrinsic width would grow the item and push the sidebar/drawer
-                off-screen instead of letting the strip scroll (tabs polish-19). */}
+            {/* Character Sheet Area. `min-w-0` caps this flex item to its allocation so
+                the tab strip scrolls instead of growing the item and pushing the
+                sidebar/drawer off-screen. */}
             <div {...getRootProps()} className="relative w-full h-full flex-1 min-w-0 flex flex-col">
 
-               {/* Multi-character tab strip (desktop top bar, tabs spec §5) */}
+               {/* Multi-character tab strip (desktop top bar) */}
                <TabStrip forceDropHighlight={isOverTabLane} />
 
                {/* Content area: own positioning context for the absolutely-filled
@@ -305,10 +304,7 @@ function DesktopCharacterSheetPage() {
          {/* DIALOGS END */}
 
 
-         {/* Funneling clone INSIDE the overlay (the morph engine wraps the preview).
-             `dropAnimation={null}` kills dnd-kit's ~250ms snap-back to the source slot
-             (tabs polish-16): with the optimistic reorder/move the dropped row is already
-             in place, so there is nothing to animate back to. Matches the mobile drawer. */}
+         {/* Reorders apply immediately, so disable the drop-back animation. */}
          <DragOverlay dropAnimation={null}>
             {renderClone(
                activeTabDrag ? (
@@ -335,7 +331,7 @@ export default function CharacterSheetPage() {
 
    // The ActiveCharacterStoreProvider is mounted in App.tsx (above
    // AppStartManagerProvider, which also consumes the store), so it already covers
-   // both shells here, no provider needed at this level (tabs spec §1.2, §6).
+   // both shells here; no provider needed at this level.
    if (isMobile) {
       return <MobileCharacterSheetPage />;
    }

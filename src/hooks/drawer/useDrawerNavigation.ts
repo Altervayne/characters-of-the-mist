@@ -10,8 +10,8 @@ import { useDrawerCurrentView } from './useDrawerCurrentView';
 /**
  * Owns the drawer's folder navigation and exposes the current-folder view.
  *
- * Reimplemented over the normalized store (migration spec §3.3): the view (items,
- * subfolders, breadcrumb, parent, child counts) now comes from the store's loaded
+ * Reimplemented over the normalized store: the view (items, subfolders, breadcrumb,
+ * parent, child counts) comes from the store's loaded
  * `currentFolderView` rather than being derived from an in-memory tree, and
  * `navigateToFolder` calls the async `setDrawerCurrentFolderId` (which loads the
  * target folder). The callback is fire-and-forget so click handlers stay
@@ -19,8 +19,7 @@ import { useDrawerCurrentView } from './useDrawerCurrentView';
  *
  * The records are now flat `DrawerFolderRecord` / `DrawerItemRecord` (not the old
  * nested `Folder` / `DrawerItem`), and the old `currentFolderPath` id-chain is
- * gone (the parent id is supplied directly by the store). Consumers adapt to
- * these shapes in Phase 6.
+ * gone (the parent id is supplied directly by the store).
  *
  * @returns The current folder id, the `navigateToFolder` callback, the ordered
  *   `currentItems` / `currentFolders`, `parentFolderId`, `breadcrumbPath`,

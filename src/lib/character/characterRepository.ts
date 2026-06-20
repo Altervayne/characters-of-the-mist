@@ -11,8 +11,8 @@ import type { CharacterRecord } from './characterRecords';
 import type { Character } from '@/lib/types/character';
 
 /*
- * Framework-agnostic data-access layer for per-character records (migration spec
- * §2). Pure persistence: no React, no zustand, no toasts, no console. One row per
+ * Framework-agnostic data-access layer for per-character records. Pure persistence:
+ * no React, no zustand, no toasts, no console. One row per
  * character (the full character stored inline), keyed by `character.id`, so the
  * API is naturally per-character and multi-character-ready. Lives in the same
  * Dexie database as the drawer so a save-character-to-drawer can transact across
@@ -94,9 +94,9 @@ export interface SaveCharacterToDrawerResult {
 }
 
 /**
- * Explicit "Save Character" (spec §7): in ONE read/write transaction over both
- * `characters` and `items` (same database, the reason §1.1 keeps a single DB),
- * upsert the working record and, when the character is linked to a drawer
+ * Explicit "Save Character": in ONE read/write transaction over both `characters`
+ * and `items` (same database, which is why they share a single DB), upsert the
+ * working record and, when the character is linked to a drawer
  * `FULL_CHARACTER_SHEET` item that still exists, update that item's content too.
  *
  * Atomicity is the point: the working copy and the named drawer save can never end

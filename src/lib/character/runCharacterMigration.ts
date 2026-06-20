@@ -13,7 +13,7 @@ import type { Character } from '@/lib/types/character';
 
 /*
  * One-time migration of the legacy localStorage active-character blob into the
- * per-character `characters` Dexie store (migration spec §6). Additive: the app
+ * per-character `characters` Dexie store. Additive: the app
  * keeps reading the old store; this only writes the IndexedDB copy and guards
  * itself so it runs exactly once. Mirrors the drawer migration, including
  * migration-time faithfulness verification that gates eventual blob removal.
@@ -21,7 +21,7 @@ import type { Character } from '@/lib/types/character';
 
 /**
  * localStorage key of the legacy zustand-persist character blob (shape
- * `{ state: { character }, version }`). Exported so the later removal phase has a
+ * `{ state: { character }, version }`). Exported so the later removal step has a
  * single source of truth.
  *
  * TODO (deferred to a LATER release, NOT now): once the IndexedDB character store
@@ -78,7 +78,7 @@ function parseLegacyCharacterBlob(rawBlob: string): LegacyCharacterParse {
 }
 
 /**
- * Synchronous, side-effect-free peek for the boot loading gate (spec §5, C-4):
+ * Synchronous, side-effect-free peek for the boot loading gate:
  * does the legacy localStorage blob still hold a migratable active character?
  *
  * The active-character session pointer is the boot gate's primary signal, but on
@@ -166,7 +166,7 @@ async function performMigration(): Promise<CharacterMigrationOutcome> {
       character: harmonizedCharacter,
    };
 
-   // Single atomic rw transaction over characters + meta (spec §6). On any throw
+   // Single atomic rw transaction over characters + meta. On any throw
    // the whole thing rolls back: the flag stays unset and the legacy blob is never
    // touched, so the next load safely retries.
    await drawerDatabase.transaction('rw', drawerDatabase.characters, drawerDatabase.meta, async () => {

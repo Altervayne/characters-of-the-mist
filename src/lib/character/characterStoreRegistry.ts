@@ -5,32 +5,26 @@ import { createCharacterStore } from '@/lib/stores/characterStore';
 import type { CharacterStore } from '@/lib/stores/characterStore';
 
 /*
- * Module-level registry of character store instances (tabs spec §1.2), keyed by
- * character id. Each entry is a fully isolated `createCharacterStore()` with its
- * own state and its own zundo undo stack, so N tabs give N independent undo stacks
- * with no shared mutable state.
+ * Module-level registry of character store instances, keyed by character id. Each
+ * entry is a fully isolated `createCharacterStore()` with its own state and its own
+ * zundo undo stack, so N tabs give N independent undo stacks with no shared mutable
+ * state.
  *
  * Non-React callers (persistence, the undo-router keydown handler) reach the active
  * instance through `getActiveCharacterStore()`; React callers resolve it through
  * `ActiveCharacterStoreContext`. This is NOT a React module, it holds no JSX and
  * no hooks, only the instance map and the active-id pointer.
- *
- * Phase 1 keeps exactly one instance, created lazily and kept active for the app's
- * lifetime under {@link SINGLE_ACTIVE_INSTANCE_ID}, it replaces the old module
- * singleton's role. Per-character keying and multiple live instances arrive in
- * Phase 2 with the TabManager.
  */
 
 /**
  * The fixed key of the permanent **menu fallback** instance. Real characters are
- * keyed by their own id (Phase 2); this dedicated instance keeps `character` null
- * and is active whenever no character tab is open, so the root provider always has
- * a non-null store to supply (the menu shell resolves to it). Characters are never
- * loaded into it. The literal value is kept from Phase 1 for continuity.
+ * keyed by their own id; this dedicated instance keeps `character` null and is active
+ * whenever no character tab is open, so the root provider always has a non-null store
+ * to supply (the menu shell resolves to it). Characters are never loaded into it.
  */
 export const SINGLE_ACTIVE_INSTANCE_ID = '__single-active__';
 
-/** characterId → store instance. Distinct instances are fully isolated (spec §2.1). */
+/** characterId → store instance. Distinct instances are fully isolated. */
 const registry = new Map<string, CharacterStore>();
 
 /** The id of the instance `getActiveCharacterStore()` resolves to, or `null` when none is active. */
@@ -41,7 +35,7 @@ let activeInstanceId: string | null = null;
  * Idempotent: the same id always yields the same instance (so a StrictMode double
  * invocation cannot create two stores for one character).
  *
- * @param id - The character id (or the Phase 1 sentinel) keying the instance.
+ * @param id - The character id (or the menu-fallback sentinel) keying the instance.
  * @returns The existing or freshly created store instance.
  */
 export function getOrCreateInstance(id: string): CharacterStore {
@@ -56,8 +50,7 @@ export function getOrCreateInstance(id: string): CharacterStore {
 /**
  * The currently active store instance, or `null` when none is active. The accessor
  * for non-React callers; it never creates an instance, so callers must tolerate
- * `null` (in Phase 1 the single instance is ensured at startup, so it is non-null
- * in normal flow).
+ * `null` (the menu fallback is ensured at startup, so it is non-null in normal flow).
  */
 export function getActiveCharacterStore(): CharacterStore | null {
    if (activeInstanceId === null) return null;
@@ -77,9 +70,8 @@ export function setActiveInstance(id: string): void {
 
 /**
  * Drops the instance for `id` from the registry, clearing the active pointer if it
- * referenced that id. Idempotent. (Phase 2 will also flush and detach the
- * instance's persistence handle before disposing; in Phase 1 nothing is disposed in
- * normal flow, this exists for the registry's forward-looking API and tests.)
+ * referenced that id. Idempotent. (The persistence handle is flushed and detached by
+ * the caller before disposing.)
  *
  * @param id - The id to dispose.
  */
@@ -93,7 +85,7 @@ export function disposeInstance(id: string): void {
 /**
  * Lists the ids of all live character instances, EXCLUDING the permanent menu
  * fallback. Backs the mobile single-live invariant (dispose every character instance
- * but the menu fallback before opening the next, tabs spec §7).
+ * but the menu fallback before opening the next).
  *
  * @returns The character instance ids currently held in the registry.
  */

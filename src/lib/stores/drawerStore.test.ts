@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 /*
- * Tests for the drawer store's OPTIMISTIC reorder/move (tabs polish-16): the loaded
+ * Tests for the drawer store's OPTIMISTIC reorder/move: the loaded
  * `currentFolderView` must reflect the result the instant the action is called,
  * synchronously, before the (async) command + reload, and must revert to the real
  * order when the command fails. The command engine and repository are mocked so we
@@ -52,7 +52,7 @@ const seedItems = (rows: DrawerItemRecord[]) =>
 const seedFolders = (rows: DrawerFolderRecord[]) =>
    useDrawerStore.setState({ currentFolderId: null, currentFolderView: { folders: rows, items: [], childCounts: new Map() }, error: null });
 
-describe('drawerStore optimistic reorder/move (tabs polish-16)', () => {
+describe('drawerStore optimistic reorder/move', () => {
    beforeEach(() => {
       vi.clearAllMocks();
       (drawerCommandEngine.execute as Mock).mockResolvedValue(undefined);

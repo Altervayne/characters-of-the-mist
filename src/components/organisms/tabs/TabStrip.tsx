@@ -33,11 +33,11 @@ import type { DrawerItem } from '@/lib/types/drawer';
  * play-area width (between the sidebar and the drawer) and SCROLLS rather than pushing
  * them off-screen. The chevrons flank the container, appear only when the tabs overflow,
  * and disable at each end; the mouse wheel scrolls horizontally. The bordered OUTER strip
- * stays the drop target (`tab-strip-drop-zone`, `data-tab-strip`) — the generous
+ * stays the drop target (`tab-strip-drop-zone`, `data-tab-strip`): the generous
  * tab-lane geometry test reads its rect, so the marker must stay on the full strip.
  *
  * The tab `SortableContext` is registered inside the **sheet's** `DndContext`
- * (`CharacterSheetPage`), not its own — the strip mounts within that subtree, so the
+ * (`CharacterSheetPage`), not its own; the strip mounts within that subtree, so the
  * tabs reorder through the sheet's shared sensors, collision detection, drag overlay,
  * and `handleDragEnd` (which routes a `'tab'` drag to `reorderTabs`). Sharing one
  * context is what lets a tab drag later cross between the strip and the drawer.
@@ -65,7 +65,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
    const showDropHighlight = forceDropHighlight || (isOver && Boolean(activeIsCharacterItem));
 
    // ==================
-   //  Overflow scroll UX (tabs polish-19)
+   //  Overflow scroll UX
    // ==================
    const scrollRef = useRef<HTMLDivElement>(null);
    const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -74,8 +74,8 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
    /**
     * Recomputes whether the tabs overflow to the left/right of the scroll container, to
     * drive the chevrons. Cheap; called on scroll, on resize (ResizeObserver), and when
-    * the tab set changes — never just once, so the arrows track the drawer opening, the
-    * window resizing, and tabs being added/removed.
+    * the tab set changes, so the arrows track the drawer opening, the window resizing,
+    * and tabs being added/removed.
     */
    const updateScrollAffordances = useCallback(() => {
       const el = scrollRef.current;
@@ -87,7 +87,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
 
    // Track the scroll position + container/content size so the chevrons stay correct
    // across scrolling, resizes, and drawer open/close. The wheel listener is attached
-   // natively (not via onWheel) so it can `preventDefault` — React's synthetic wheel
+   // natively (not via onWheel) so it can `preventDefault`; React's synthetic wheel
    // handler is passive, where preventDefault is a no-op.
    useEffect(() => {
       const el = scrollRef.current;
@@ -114,9 +114,9 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
    }, [updateScrollAffordances]);
 
    // Recompute when the tab set changes (add / remove / reorder). A reorder runs a drag,
-   // whose auto-scroll can nudge the container down its 1px vertical scroll range — the
+   // whose auto-scroll can nudge the container down its 1px vertical scroll range (the
    // active tab's 1px bottom overlap, exposed because `overflow-x-auto` also makes y
-   // scrollable — leaving the tabs shifted up by 1px. Pin `scrollTop` back to 0.
+   // scrollable), leaving the tabs shifted up by 1px. Pin `scrollTop` back to 0.
    useEffect(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = 0;
       updateScrollAffordances();
@@ -146,11 +146,11 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
          className={cn(
             // Inset, recessed strip: the active tab below overlaps this single bottom
             // border to merge with the sheet. The outer strip is NOT the scroll
-            // container (the inner one is) — it stays the full-width drop target whose
+            // container (the inner one is); it stays the full-width drop target whose
             // rect the tab-lane geometry test reads.
             // `overflow-x-clip` clips a slide-out arrow at the strip edge (so it never
-            // pokes over the sidebar) WITHOUT clipping the active tab's 1px bottom overlap
-            // — `clip` on x leaves y `visible` (unlike `hidden`, which would force y to auto).
+            // pokes over the sidebar) without clipping the active tab's 1px bottom overlap:
+            // `clip` on x leaves y `visible` (unlike `hidden`, which would force y to auto).
             'relative flex shrink-0 items-end gap-1 pt-1 overflow-x-clip border-b border-border bg-card',
             showDropHighlight && 'ring-2 ring-inset ring-primary bg-primary/10',
          )}
@@ -178,7 +178,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
              lets it shrink to the capped strip width so it scrolls instead of growing.
              `scrollbar-hide` hides the bar; it also removes the need for an explicit
              `overflow-y-hidden` (which would clip the active tab's 1px bottom overlap now
-             that the border lives on the outer strip) — the wheel handler maps vertical
+             that the border lives on the outer strip); the wheel handler maps vertical
              wheel to horizontal scroll, so there is no vertical scrolling to show. */}
          <div
             ref={scrollRef}

@@ -1,5 +1,5 @@
 /**
- * Pure helpers + descriptors for the drag-feedback layer (tabs polish-6/7/8): the
+ * Pure helpers + descriptors for the drag-feedback layer: the
  * generous tab-lane hit test, the cross-surface context derivation, the spring
  * dwell controller, and the per-context morph descriptors. Kept free of React,
  * @dnd-kit, and any drawer/tab/character concept (lucide icons are imported only as
@@ -199,7 +199,7 @@ export const MORPH_DESCRIPTORS: Record<NonNullable<DragContext>, MorphDescriptor
 export type MorphGlyph = { kind: 'arrow'; arrow: 'in' | 'up' } | { kind: 'action' } | null;
 
 /**
- * Picks the ONE glyph for the cluster's left action badge (tabs polish-9). The dwell
+ * Picks the ONE glyph for the cluster's left action badge. The dwell
  * direction takes precedence: while a spring dwell is running its arrow shows;
  * otherwise the descriptor's action icon shows; with neither, no glyph. This
  * precedence is a tunable rule, the point is a single clear glyph per moment.
@@ -221,7 +221,7 @@ export function selectMorphGlyph(
 
 
 // ==================
-//  Spring-loaded drawer navigation (tabs polish-7)
+//  Spring-loaded drawer navigation
 // ==================
 
 /**
@@ -328,7 +328,7 @@ export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'current
 
 /**
  * Resolves the in-drawer DROP target under the cursor by live element geometry,
- * the same strategy the spring uses to drill in (tabs polish-13). dnd-kit's measured
+ * the same strategy the spring uses to drill in. dnd-kit's measured
  * droppable rects desync in the drawer's scrollable / layout-animated / spring-
  * remounting context, so its collision only fires near a folder's center; this reads
  * `getBoundingClientRect()` against the cursor so a drop anywhere on a row lands.
@@ -380,9 +380,9 @@ export type InsertPosition = 'before' | 'after';
 export type ReorderListId = 'drawer-items' | 'sheet-cards' | 'sheet-trackers';
 
 /**
- * The single active reorder insertion indicator (tabs polish-18): the list, the element
- * under the cursor, and whether the drop lands before/after it. Folders are NOT here —
- * they keep the expanding-dropzone slot model (the folder row must stay free for
+ * The single active reorder insertion indicator: the list, the element under the
+ * cursor, and whether the drop lands before/after it. Folders are NOT here: they
+ * keep the expanding-dropzone slot model (the folder row must stay free for
  * spring-nav + nest), so an insertion line on the row would conflict.
  */
 export interface ReorderIndicator {
@@ -393,7 +393,7 @@ export interface ReorderIndicator {
 
 /**
  * Resolves whether a reordered item lands BEFORE or AFTER the element under the cursor,
- * from the cursor position vs that element's midpoint (tabs polish-18). The single
+ * from the cursor position vs that element's midpoint. The single
  * insertion-line indicator renders at the returned edge. The comparison axis matches the
  * list layout: `vertical` (stacked rows, drawer items) compares the cursor Y to the
  * row's vertical midpoint and yields a horizontal line; `horizontal` (a wrapping card /
@@ -421,7 +421,7 @@ export function resolveInsertPosition(
 
 /**
  * Destination index for an `arrayMove(list, oldIndex, target)` that lands the dragged
- * item BEFORE/AFTER the element under the cursor (tabs polish-18). With static layout the
+ * item BEFORE/AFTER the element under the cursor. With static layout the
  * insertion line shows the cursor-resolved edge, so the persisted reorder must honour that
  * exact edge (not dnd-kit's direction-dependent default) or the drop wouldn't match the
  * line. `after` aims one past the target; removing the dragged item first shifts the

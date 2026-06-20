@@ -225,8 +225,8 @@ export default function MobileCharacterSheetPage() {
 		}
 	};
 
-	// Boot loading gate (spec §5, C-4): while the active character is still being
-	// read from IndexedDB, show a neutral loading screen rather than flashing the
+	// While the active character is still being read from IndexedDB, show a neutral
+	// loading screen rather than flashing the
 	// main menu before the sheet resolves.
 	if (isBootHydrating && !character) {
 		return <CharacterBootLoading />;

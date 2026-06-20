@@ -32,7 +32,7 @@ interface DragMorphClusterProps {
 }
 
 /**
- * The cursor cluster template (tabs polish-9), centered on the cursor dot:
+ * The cursor cluster template, centered on the cursor dot:
  *  - **Dot**, pinned exactly on the cursor.
  *  - **Loading ring**, wraps the dot, fills over the dwell window; present only
  *    during a spring dwell (keyed off `springKey` so it restarts per target).

@@ -78,10 +78,14 @@ const updateOtherscapeEssence = (cards: Card[]): Card[] => {
 
 export interface CharacterState {
    character: Character | null;
+   /** True when the character differs from its saved drawer copy, or was never saved to the drawer. */
+   hasUnsavedChanges: boolean;
    actions: {
       createCharacter: (game: GameSystem) => void;
       loadCharacter: (character: Character, drawerItemId?: string) => void;
       linkToDrawerItem: (drawerItemId: string) => void;
+      /** Sets the unsaved-changes flag: the change subscription marks dirty on edit; save sites mark clean. */
+      setHasUnsavedChanges: (value: boolean) => void;
       resetCharacter: () => void;
       returnToMenu: () => void;
       setGame: (game: Character['game']) => void;
@@ -135,14 +139,15 @@ export interface CharacterState {
 
 
 
-const initialState: Pick<CharacterState, 'character'> = {
+const initialState: Pick<CharacterState, 'character' | 'hasUnsavedChanges'> = {
    character: null,
+   hasUnsavedChanges: false,
 };
 
 /**
  * Builds a fresh, fully-formed character (with its generated id) for `game`,
  * without touching any store. The TabManager needs the character, and crucially
- * its id, *before* it can key an instance for it (tabs spec §2, point 3), so the
+ * its id, *before* it can key an instance for it, so the
  * construction is extracted here as a pure helper. The `createCharacter` action
  * below delegates to it, so the "New Character" default name is shared.
  *
@@ -168,23 +173,21 @@ const updateCardInState = (state: CharacterState, cardId: string, updateFn: (car
 
 /**
  * Builds a character store instance: the in-memory character plus the full action
- * API, wrapped in zundo `temporal` for snapshot undo/redo (spec §3.1, §4).
+ * API, wrapped in zundo `temporal` for snapshot undo/redo.
  *
  * Persistence is deliberately NOT part of the store; there is no zustand
  * `persist` here. The store is pure in-memory state; `characterPersistence.ts` is
  * the only bridge to IndexedDB (load-on-open + a debounced save subscription), and
  * harmonization runs at load time rather than in a persist `migrate` hook.
  *
- * It is a factory (rather than a bare `create(...)`) so a future per-tab pass can
- * instantiate one independent store, hence one independent undo stack, per open
- * character, with no schema change (spec §3.3, C-1). Today exactly one instance is
- * created: the `useCharacterStore` singleton below.
+ * It is a factory (rather than a bare `create(...)`) so each open character tab gets
+ * one independent store, hence one independent undo stack.
  */
 export function createCharacterStore() {
    // Forward reference to the instance being built. Action bodies run later (at
    // dispatch time), by which point `useStore` is assigned, so each instance's
    // temporal self-references target its OWN undo stack rather than a global
-   // singleton (tabs spec §2), the change that makes the factory self-contained.
+   // singleton, which is what makes the factory self-contained.
    const useStore = create<CharacterState>()(
       temporal(
          (set) => ({
@@ -196,23 +199,27 @@ export function createCharacterStore() {
                     const newCharacter = buildNewCharacter(game);
                     useStore.temporal.getState().clear();
                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                    return { character: newCharacter };
+                    // A brand-new character was never saved to the drawer.
+                    return { character: newCharacter, hasUnsavedChanges: true };
                   });
                },
                loadCharacter: (character: Character, drawerItemId?: string) => {
                   set(() => {
                      // Reset undo history on load so undo can never cross from this
-                     // character into the previously loaded one (spec §4, C-2). In the
-                     // future per-tab factory model each character has its own fresh
-                     // instance, making this automatic; for the single active store it
-                     // must be done explicitly, matching createCharacter/returnToMenu.
+                     // character into the previously loaded one. Matches
+                     // createCharacter/returnToMenu.
                      useStore.temporal.getState().clear();
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     // Clean when opened from the drawer (has a link); dirty otherwise
+                     // (a new or imported character that is not in the drawer).
                      return { character: {
                         ...character,
                         drawerItemId: drawerItemId
-                     } }
+                     }, hasUnsavedChanges: !drawerItemId }
                   })
+               },
+               setHasUnsavedChanges: (value) => {
+                  set({ hasUnsavedChanges: value });
                },
                linkToDrawerItem: (drawerItemId) => {
                   set((state) => {
@@ -229,14 +236,15 @@ export function createCharacterStore() {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                      const newCharacter = createNewCharacter("New Character", state.character.game);
-                     return { character: newCharacter };
+                     // The wiped character no longer matches its drawer copy.
+                     return { character: newCharacter, hasUnsavedChanges: true };
                   });
                },
                returnToMenu: () => {
                   set(() => {
                      useStore.temporal.getState().clear();
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     return { character: null };
+                     return { character: null, hasUnsavedChanges: false };
                   });
                },
                updateCharacterName: (name) => {
@@ -1233,7 +1241,10 @@ export function createCharacterStore() {
                   }));
                },
             },
-         })
+         }),
+         // Only the character is undoable; the unsaved-changes flag and actions stay
+         // out of undo snapshots (undo/redo restore content, not the dirty marker).
+         { partialize: (state) => ({ character: state.character }) },
       )
    );
 
@@ -1251,9 +1262,9 @@ export type CharacterStore = ReturnType<typeof createCharacterStore>;
 /**
  * Subscribes the calling component to the **active** character store instance with
  * `selector`. Resolves the instance from {@link ActiveCharacterStoreContext} rather
- * than a module global, so the same hook serves whichever tab is active (tabs spec
- * §1.2). The public signature and the `@/lib/stores/characterStore` import path are
- * unchanged, so the ~36 consumers need no edit.
+ * than a module global, so the same hook serves whichever tab is active. The public
+ * signature and the `@/lib/stores/characterStore` import path are unchanged, so
+ * consumers need no edit.
  *
  * @template T - The selected slice type.
  * @param selector - Maps the character state to the slice the component needs.

@@ -12,7 +12,7 @@ import {
    getOrCreateInstance,
 } from './characterStoreRegistry';
 import { detachPersistenceHandle, useCharacterBootStore } from './characterPersistence';
-import { saveCharacter } from './characterRepository';
+import { saveCharacter, getCharacter } from './characterRepository';
 import { readWorkspace, writeWorkspace, WORKSPACE_KEY } from './workspaceSession';
 import { ACTIVE_CHARACTER_ID_KEY } from './characterSession';
 import * as deviceTypeModule from '@/hooks/useDeviceType';
@@ -21,7 +21,7 @@ import * as deviceTypeModule from '@/hooks/useDeviceType';
 import type { Character } from '@/lib/types/character';
 
 /*
- * Tests for the Phase 3 multi-tab TabManager: lifted cap (keep-alive, focus-or-add),
+ * Tests for the multi-tab TabManager: lifted cap (keep-alive, focus-or-add),
  * workspace persistence + backward seed, and boot restore-of-many. Runs against
  * fake-indexeddb plus an in-memory localStorage shim.
  */
@@ -129,6 +129,59 @@ describe('multi-tab lifecycle (keep-alive)', () => {
       expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['B']);
       expect(useTabManagerStore.getState().activeTabId).toBe('B');
       expect(getOrCreateInstance('B')).toBe(instB);
+   });
+});
+
+describe('closeTab deletes the working record', () => {
+   it('removes the character record from storage when a tab is closed for good', async () => {
+      await saveCharacter(makeCharacter('A', { name: 'Alpha' }));
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A', { name: 'Alpha' }), 'drawer-1');
+
+      expect(await getCharacter('A')).not.toBeUndefined();
+
+      actions.closeTab('A');
+      // The delete is fire-and-forget; let the microtask settle.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(await getCharacter('A')).toBeUndefined();
+   });
+});
+
+describe('unsaved-changes tracking', () => {
+   it('starts clean when opened from the drawer and dirty when imported (no link)', () => {
+      const actions = useTabManagerStore.getState().actions;
+
+      actions.openCharacterTab(makeCharacter('A'), 'drawer-1'); // from the drawer
+      expect(getOrCreateInstance('A').getState().hasUnsavedChanges).toBe(false);
+
+      actions.openCharacterTab(makeCharacter('B')); // import / new (no drawer link)
+      expect(getOrCreateInstance('B').getState().hasUnsavedChanges).toBe(true);
+   });
+
+   it('marks a clean tab dirty on the first content change', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'), 'drawer-1');
+      const instA = getOrCreateInstance('A');
+      expect(instA.getState().hasUnsavedChanges).toBe(false);
+
+      instA.getState().actions.updateCharacterName('Renamed');
+      expect(instA.getState().hasUnsavedChanges).toBe(true);
+   });
+
+   it('marks clean after a save links the tab to a drawer item (beats the re-dirty subscription)', () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A')); // imported → dirty
+      const instA = getOrCreateInstance('A');
+      instA.getState().actions.updateCharacterName('Edited');
+      expect(instA.getState().hasUnsavedChanges).toBe(true);
+
+      // The tab→drawer save pattern: relink, then assert clean. linkToDrawerItem swaps
+      // the character reference, so the change subscription re-dirties synchronously;
+      // the explicit clean must win.
+      instA.getState().actions.linkToDrawerItem('drawer-9');
+      instA.getState().actions.setHasUnsavedChanges(false);
+      expect(instA.getState().hasUnsavedChanges).toBe(false);
    });
 });
 

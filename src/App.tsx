@@ -41,10 +41,10 @@ export default function App() {
       disableTransitionOnChange
     >
       <ThemeClassManager>
-        {/* Resolution layer for the active character store (tabs spec §1.2, §6).
-            Hoisted above AppStartManagerProvider because that provider consumes the
-            store (via useAppTourDriver), so it too must sit inside the provider,
-            this covers every character consumer in the app. */}
+        {/* Resolution layer for the active character store. Hoisted above
+            AppStartManagerProvider because that provider consumes the store (via
+            useAppTourDriver), so it too must sit inside the provider; this covers
+            every character consumer in the app. */}
         <ActiveCharacterStoreProvider>
           <AppStartManagerProvider>
             <ErrorBoundary>

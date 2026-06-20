@@ -13,7 +13,7 @@ import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, computeReorderTargetIndex, createSp
 import { sheetSectionForItemType } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
-// -- Drag-morph engine (tabs polish-8/9) --
+// -- Drag-morph engine --
 import { useDragMorph } from '@/components/molecules/drag-morph/useDragMorph';
 import { buildDragIdentity } from '@/hooks/character-sheet/buildDragIdentity';
 
@@ -128,7 +128,7 @@ export function useCharacterSheetDnD() {
    );
 
    // ==================
-   //  Drag-feedback layer (tabs polish-6): context derivation + generous tab lane
+   //  Drag-feedback layer: context derivation + generous tab lane
    // ==================
    // `dragContext`/`isOverTabLane` are React state (feed the morph engine and the
    // strip highlight); their `*Ref` twins are the truth read inside `handleDragEnd`,
@@ -142,7 +142,7 @@ export function useCharacterSheetDnD() {
    const overZoneRef = useRef<DragOverZone>(null);
    const isOverTabLaneRef = useRef(false);
    const dragContextRef = useRef<DragContext>(null);
-   // Force-morph (tabs polish-11): drawer items morph everywhere except the items area.
+   // Force-morph: drawer items morph everywhere except the items area.
    const [forceMorph, setForceMorph] = useState(false);
    const forceMorphRef = useRef(false);
    // Which sheet section to highlight for a compatible drawer-item drag ('cards'/'trackers').
@@ -158,7 +158,7 @@ export function useCharacterSheetDnD() {
    const dragSourceCharacterIdRef = useRef<string | null>(null);
 
    // ==================
-   //  Drag-morph engine (tabs polish-8)
+   //  Drag-morph engine
    // ==================
    // The reusable overlay-feedback engine (funnel clone + cursor cluster). This hook
    // computes the signals (cursor, descriptor, spring) and feeds them in; the engine
@@ -166,7 +166,7 @@ export function useCharacterSheetDnD() {
    const { captureGrab, setCursor, setMorph, setIdentity, reset: resetMorph, renderClone, renderCluster } = useDragMorph();
 
    // ==================
-   //  Spring-loaded drawer navigation (tabs polish-7)
+   //  Spring-loaded drawer navigation
    // ==================
    // Dwelling on a folder row / Back button mid-drag drills the drawer there without
    // ending the drag, so a deep move is one continuous gesture. `springTarget` (state)
@@ -176,13 +176,13 @@ export function useCharacterSheetDnD() {
    const [springTarget, setSpringTarget] = useState<string | null>(null);
    const draggedFolderIdRef = useRef<string | null>(null);
    const springNavigatingRef = useRef(false);
-   // The in-drawer drop target under the cursor, resolved by live geometry each move
-   // (tabs polish-13). dnd-kit's collision rects desync in the scrollable/animated
+   // The in-drawer drop target under the cursor, resolved by live geometry each move.
+   // dnd-kit's collision rects desync in the scrollable/animated
    // drawer so folder drops were center-only; this is the source of truth for an
    // in-drawer move at drop. Read at dragEnd (the dwell-then-release value is correct
    //, it holds the folder the spring drilled into). Cleared on end/cancel.
    const hoveredDrawerTargetRef = useRef<DrawerDropTarget | null>(null);
-   // Reactive mirror of `hoveredDrawerTargetRef` for the drop INDICATORS (tabs polish-15):
+   // Reactive mirror of `hoveredDrawerTargetRef` for the drop INDICATORS:
    // the folder nest highlight + items-area highlight read this so the highlight matches
    // the full-row resolver drop, not dnd-kit's center-only `over`. Updated only when the
    // resolved target's key CHANGES (the ref stays the per-frame truth read at drop), and
@@ -190,7 +190,7 @@ export function useCharacterSheetDnD() {
    // `over` indicator path so a center-only save never shows a full-row highlight.
    const [drawerDropTarget, setDrawerDropTarget] = useState<DrawerDropTarget | null>(null);
    const drawerDropTargetKeyRef = useRef<string | null>(null);
-   // Single reorder insertion-line indicator (tabs polish-18). `reorderOverRef` caches the
+   // Single reorder insertion-line indicator. `reorderOverRef` caches the
    // current same-list reorder target (set in handleDragOver from dnd-kit's `over` + its
    // measured rect); `handlePointerMove` derives the before/after edge from the live cursor
    // each move and mirrors it into `reorderIndicator` state ONLY on a key change (so the
@@ -255,7 +255,7 @@ export function useCharacterSheetDnD() {
    }, [handleSpringNavigate]);
 
    // Feed the morph engine a single resolved signal whenever the derived context or
-   // the spring target changes (polish-8). The arrow mirrors springDirection() for
+   // the spring target changes. The arrow mirrors springDirection() for
    // the active dwell; the engine renders, knowing nothing of what the action means.
    useEffect(() => {
       let springArrow = null as ReturnType<typeof springDirection> | null;
@@ -368,7 +368,7 @@ export function useCharacterSheetDnD() {
          setDrawerDropTarget(nextDropTarget);
       }
 
-      // Reorder insertion line (tabs polish-18): derive the before/after edge from the live
+      // Reorder insertion line: derive the before/after edge from the live
       // cursor vs the cached reorder target's rect (set in handleDragOver), committed only
       // on a key change.
       const reorderOver = reorderOverRef.current;
@@ -539,7 +539,7 @@ export function useCharacterSheetDnD() {
 
       setOverDragId(over ? over.id.toString() : null);
 
-      // Cache the same-list reorder target for the insertion line (tabs polish-18): a
+      // Cache the same-list reorder target for the insertion line: a
       // drawer item over a sibling item (same folder), or a sheet card/tracker over a
       // sibling of its kind. Self is excluded; the before/after edge is derived per-move
       // from the live cursor in handlePointerMove. Folders reorder via their own slots.
@@ -632,7 +632,7 @@ export function useCharacterSheetDnD() {
       const oldIndex = character.cards.findIndex(item => item.id === activeId);
       const overIndex = character.cards.findIndex(item => item.id === overId);
       if (oldIndex !== -1 && overIndex !== -1) {
-         // Land on the insertion line's edge (tabs polish-18); fall back to the over index.
+         // Land on the insertion line's edge; fall back to the over index.
          const ind = reorderIndicatorRef.current;
          const newIndex = ind && ind.listId === 'sheet-cards' && ind.overId === overId
             ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
@@ -659,7 +659,7 @@ export function useCharacterSheetDnD() {
       const activeId = active.id as string;
       const overId = over.id as string;
 
-      // Land on the insertion line's edge (tabs polish-18); fall back to the over index.
+      // Land on the insertion line's edge; fall back to the over index.
       const ind = reorderIndicatorRef.current;
       const targetIndex = (oldIndex: number, overIndex: number): number =>
          ind && ind.listId === 'sheet-trackers' && ind.overId === overId
@@ -756,6 +756,9 @@ export function useCharacterSheetDnD() {
 
       const newItemId = cuid();
       instance.getState().actions.linkToDrawerItem(newItemId);
+      // The tab now has a saved drawer copy. linkToDrawerItem swaps in a new character
+      // reference, so the change subscription re-dirties it; assert clean after.
+      instance.getState().actions.setHasUnsavedChanges(false);
       initiateItemDrop({
          game: tabCharacter.game,
          type: 'FULL_CHARACTER_SHEET',
@@ -800,7 +803,7 @@ export function useCharacterSheetDnD() {
       // ###   Manual in-drawer drop targeting          ###
       // ##################################################
       // For a drawer-sourced drag, the in-drawer DROP target is resolved by live cursor
-      // geometry (tabs polish-13), NOT dnd-kit's `over`, its collision rects desync in
+      // geometry, NOT dnd-kit's `over`, its collision rects desync in
       // the scrollable/animated drawer (folder drops were center-only). This runs BEFORE
       // the `over` null-guard so an off-center drop the collision missed still lands.
       // A folder-row target moves into that folder; a current-folder target (Back, the
@@ -938,11 +941,11 @@ export function useCharacterSheetDnD() {
 
             // NOTE: moves INTO a folder / Back / the items body of a different folder, and
             // ALL folder slot placements (reorder + cross-folder insert), are handled by the
-            // manual geometry resolver above (tabs polish-13/14); this block now only handles
-            // same-folder item REORDER, which dnd-kit's `over` resolves reliably.
+            // manual geometry resolver above; this block now only handles same-folder
+            // item REORDER, which dnd-kit's `over` resolves reliably.
 
             // Same-folder item REORDER over a sibling row. Land on the exact edge the
-            // insertion line showed (tabs polish-18): the cursor-resolved before/after, not
+            // insertion line showed: the cursor-resolved before/after, not
             // dnd-kit's direction-default. Fall back to the over index if no indicator.
             if (overType === 'drawer-item' && activeIsItem && parentFolderId === (over.data.current?.parentFolderId ?? null)) {
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
@@ -1088,10 +1091,10 @@ export function useCharacterSheetDnD() {
       activeTabDrag,
       overDragId,
       isOverDrawer,
-      // Honest in-drawer drop indicator (tabs polish-15): the resolved full-row target,
-      // driving the folder nest + items-area highlights so they match the drop.
+      // Resolved full-row in-drawer drop target, driving the folder nest + items-area
+      // highlights so they match the drop.
       drawerDropTarget,
-      // Single reorder insertion-line indicator (tabs polish-18): list + over + before/after.
+      // Reorder insertion-line indicator: list + over + before/after.
       reorderIndicator,
       statusIds,
       storyTagIds,
@@ -1101,18 +1104,17 @@ export function useCharacterSheetDnD() {
       handleDragOver,
       handleDragEnd,
       handleDragCancel,
-      // Strip highlight (tabs polish-6): the generous tab-lane flag.
+      // Strip highlight: the generous tab-lane flag.
       isOverTabLane,
-      // Spring-loaded drawer navigation (tabs polish-7): the active dwell target id
-      // (folder id or the Back sentinel), for the static row/Back highlight.
+      // The active dwell target id (folder id or the Back sentinel), for the static
+      // row/Back highlight.
       springTarget,
-      // Content-aware sheet highlight (tabs polish-11): which section to light up.
+      // Content-aware sheet highlight: which section to light up.
       sheetHighlight,
-      // "Can't drop here" overlay flag (tabs polish-12): a game-incompatible component
-      // is being dragged while a character is loaded.
+      // True while a game-incompatible component is dragged with a character loaded,
+      // driving the "can't drop here" overlay.
       isIncompatibleComponentDrag,
-      // Drag-morph engine slots (tabs polish-8): clone goes inside <DragOverlay>,
-      // cluster is a sibling.
+      // Drag-morph engine slots: clone goes inside <DragOverlay>, cluster is a sibling.
       renderClone,
       renderCluster,
    };

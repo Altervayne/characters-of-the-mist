@@ -112,8 +112,8 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
 
 
    const folderIds = useMemo(() => currentFolders.map(f => f.id), [currentFolders]);
-   // Index of the dragged folder within this view (−1 when an item/nothing is dragged),
-   // used to suppress expansion of the two no-op slots flanking it (tabs polish-18b).
+   // Index of the dragged folder within this view (-1 when an item/nothing is dragged),
+   // used to suppress expansion of the two no-op slots flanking it.
    const activeFolderIndex = useMemo(() => {
       if (!activeDragId) return -1;
       return currentFolders.findIndex(f => f.id === activeDragId);
@@ -196,15 +196,15 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                            )}
                            {currentFolders.length > 0 && (
                               <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
-                                 {/* Folder reorder slots are ALWAYS rendered (tabs polish-18b): each is a
-                                     thin, constant gap between folders, so the layout never jumps on drag
-                                     start and spacing stays even. During a folder drag the slot under the
-                                     cursor EXPANDS + highlights as the clear drop target, while the folder
-                                     rows themselves stay free for spring-nav (dwell) and nest. */}
+                                 {/* Folder reorder slots are always rendered: each is a thin, constant
+                                     gap between folders, so the layout never jumps on drag start and
+                                     spacing stays even. During a folder drag the slot under the cursor
+                                     expands + highlights as the drop target, while the folder rows
+                                     themselves stay free for spring-nav (dwell) and nest. */}
                                  {currentFolders.map((folder, index) => (
                                     <React.Fragment key={folder.id}>
                                        {/* No-op when inserting before the dragged folder (its own slot) or
-                                           before the folder right after it — those leave it in place. */}
+                                           before the folder right after it; those leave it in place. */}
                                        <FolderDropZone
                                           id={`drop-zone-before-${folder.id}`}
                                           activeId={activeDragId}
@@ -259,7 +259,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                               {currentItems.length > 0 ? (
                                  <div className="flex flex-col gap-2">
                                     {/* Static layout (no live shuffle) + a single horizontal insertion line at
-                                        the hovered row's top/bottom edge, tabs polish-18. */}
+                                        the hovered row's top/bottom edge. */}
                                     <SortableContext items={currentItems.map(item => item.id)} strategy={staticListSortingStrategy}>
                                        {currentItems.map((item) => {
                                           const commonProps = {

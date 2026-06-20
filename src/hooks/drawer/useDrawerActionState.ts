@@ -104,7 +104,7 @@ export function useDrawerActionState(currentFolderId: string | null) {
       const target = activeAction.target;
 
       // Each action now dispatches an async store action (command -> repository).
-      // Success toasts stay here per the spec; a failure surfaces a single generic
+      // Success toasts stay here; a failure surfaces a single generic
       // toast (the store has already recorded the error in its `error` state).
       try {
          switch (activeAction.type) {

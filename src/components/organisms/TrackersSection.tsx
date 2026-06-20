@@ -45,7 +45,7 @@ interface TrackersSectionProps {
    storyThemeIds: string[];
    /** Highlight the section as the landing spot for a compatible tracker-type drawer drag. */
    isDropTarget?: boolean;
-   /** The active reorder insertion line (tabs polish-18); rendered when it targets a tracker. */
+   /** The active reorder insertion line; rendered when it targets a tracker. */
    reorderIndicator?: ReorderIndicator | null;
 }
 
@@ -70,8 +70,8 @@ export function TrackersSection({
 }: TrackersSectionProps) {
    const { t: tTrackers } = useTranslation();
 
-   // A tracker is in a wrapping grid, so its insertion line is VERTICAL (left/right edge),
-   // like the card grid (tabs polish-18). Helper: does the line target this tracker, and where?
+   // A tracker is in a wrapping grid, so its insertion line is VERTICAL (left/right edge).
+   // Helper: does the line target this tracker, and where?
    const lineFor = (trackerId: string): 'before' | 'after' | null =>
       reorderIndicator?.listId === 'sheet-trackers' && reorderIndicator.overId === trackerId ? reorderIndicator.position : null;
 

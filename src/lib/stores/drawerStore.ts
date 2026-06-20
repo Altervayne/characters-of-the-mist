@@ -33,13 +33,12 @@ import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRe
 import type { Drawer, Folder, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
 
 /*
- * Drawer store - the React-facing facade over the normalized Dexie repository
- * (Phase 2) and the command/undo engine (Phase 4). Per migration spec §3 the
- * store no longer holds the whole drawer tree, nor zustand `persist`/`temporal`:
- * its state is the loaded view of the *current folder* plus flags, and its
- * actions are async - each dispatches a command through the engine, then
- * explicitly re-queries the current folder (§3.4, resolved Q-2). Action names are
- * kept aligned with the old store so consumers change only by adding `await`.
+ * Drawer store - the React-facing facade over the normalized Dexie repository and
+ * the command/undo engine. The store no longer holds the whole drawer tree, nor
+ * zustand `persist`/`temporal`: its state is the loaded view of the *current folder*
+ * plus flags, and its actions are async - each dispatches a command through the
+ * engine, then explicitly re-queries the current folder. Action names are kept
+ * aligned with the old store so consumers change only by adding `await`.
  */
 
 /**
@@ -134,7 +133,7 @@ function toStoreError(error: unknown): DrawerStoreError {
    return { code: 'UNKNOWN', message };
 }
 
-/** Marks the drawer as the most recently modified store, so Ctrl/Cmd+Z routes here (spec §4.4). */
+/** Marks the drawer as the most recently modified store, so Ctrl/Cmd+Z routes here. */
 function markDrawerModified(): void {
    useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
 }
@@ -205,7 +204,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             await runMutation(createDeleteFolderCommand(folderId));
          },
          moveFolder: async (folderId, destinationFolderId) => {
-            // Optimistic (tabs polish-16): the moved folder leaves the current view, so
+            // Optimistic: the moved folder leaves the current view, so
             // drop it from the loaded folders immediately; the command then persists the
             // move and the reload confirms it. On failure, reload to the real order.
             const view = get().currentFolderView;
@@ -219,7 +218,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             }
          },
          reorderFolders: async (parentFolderId, oldIndex, newIndex) => {
-            // Optimistic (tabs polish-16): reflect the new order in the loaded view at once
+            // Optimistic: reflect the new order in the loaded view at once
             // so the row lands where released, no wait for the command + reload. The
             // engine reorders with the same arrayMove semantics, so the reload is a no-op
             // visually; on failure, reload to revert to the persisted truth.
@@ -261,7 +260,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             await runMutation(createDeleteItemCommand(itemId));
          },
          moveItem: async (itemId, destinationFolderId) => {
-            // Optimistic (tabs polish-16): the moved item leaves the current view, so drop
+            // Optimistic: the moved item leaves the current view, so drop
             // it from the loaded items immediately; the command persists the move and the
             // reload confirms it. On failure, reload to restore the real view.
             const view = get().currentFolderView;
@@ -275,7 +274,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             }
          },
          reorderItems: async (parentFolderId, oldIndex, newIndex) => {
-            // Optimistic (tabs polish-16): reflect the new order in the loaded view at once
+            // Optimistic: reflect the new order in the loaded view at once
             // so the row lands where released, no wait for the command + reload. The
             // engine reorders with the same arrayMove semantics, so the reload is a no-op
             // visually; on failure, reload to revert to the persisted truth.

@@ -150,7 +150,7 @@ describe('migration flatten correctness', () => {
       expect((await drawerDatabase.meta.get('schemaVersion'))?.value).toBe(1);
       expect((await drawerDatabase.meta.get('legacyBlobRetainedUntil'))?.value).toBeTruthy();
 
-      // The legacy blob is RETAINED (removed only in a later release per Q-4).
+      // The legacy blob is RETAINED (removed only in a later release).
       expect(localStorage.getItem(LEGACY_DRAWER_STORAGE_KEY)).not.toBeNull();
    });
 });

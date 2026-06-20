@@ -15,6 +15,12 @@
          "title": "New tab",
          "description": "Choose what kind of tab to open.",
          "characterSheetType": "Character Sheet"
+      },
+      "closeTabDialog": {
+         "title": "Close this tab?",
+         "description": "\"{{name}}\" has unsaved changes. Closing this tab discards them for good. Cancel and save it first (Save or Save As) if you want to keep your changes.",
+         "closeWithoutSaving": "Close without saving",
+         "cancel": "Cancel"
       }
    },
    "DragPuck": {
@@ -151,6 +157,7 @@
          "resetConfirmCancelButton": "Cancel",
          "resetConfirmButton": "Reset the Character",
 
+         "openMenu": "Open menu",
          "returnToMenu": "Return to Menu",
          "unloadConfirmTitle": "Are you sure you want to return to the menu?",
          "unloadConfirmDescription": "This action is extremely destructive. Your active character will be unloaded and the history erased. You will not be able to undo this, make sure you either saved your character to the drawer or exported it.",
@@ -691,6 +698,9 @@
 
       "resetCharacter_title": "Resetting your Character",
       "resetCharacter_content": "This button completely deletes your active Character, turning your Character Sheet into a fresh blank slate to start over from.",
+
+      "openMenu_title": "Opening the menu",
+      "openMenu_content": "This button takes you back to the main menu. Your open tabs stay open and nothing is unloaded, so you can pick a character or start a new one and return to your sheets at any time.",
 
       "unloadCharacter_title": "Unloading your Character",
       "unloadCharacter_content": "This button completely unloads your active Character, deleting it and removing the entire action history for the Undo/Redo feature. This sends you back to the main menu with a clean app and no background character loaded in.",

@@ -16,8 +16,8 @@ import {
    getOrCreateInstance,
    setActiveInstance,
 } from './characterStoreRegistry';
-import { attachPersistenceHandle, detachPersistenceHandle, finishBootHydration } from './characterPersistence';
-import { getCharacter } from './characterRepository';
+import { attachPersistenceHandle, detachPersistenceHandle, discardPersistenceHandle, finishBootHydration } from './characterPersistence';
+import { deleteCharacter, getCharacter } from './characterRepository';
 import { readWorkspace, writeWorkspace } from './workspaceSession';
 import { getEffectiveDeviceType } from '@/hooks/useDeviceType';
 
@@ -27,13 +27,13 @@ import type { GameSystem } from '@/lib/types/drawer';
 import type { Workspace } from './workspaceSession';
 
 /*
- * TabManager (tabs spec §1.2, §3, §4, §7), owns the open/create/close lifecycle of
- * character tabs: instance creation/disposal, persistence-handle attach/detach, the
- * registry's active pointer, and the workspace session pointer. The per-character
- * store actions (loadCharacter etc.) stay strictly per-character; the TabManager
- * calls them internally to populate or clear an instance, while the UI drives it.
+ * TabManager: owns the open/create/close lifecycle of character tabs: instance
+ * creation/disposal, persistence-handle attach/detach, the registry's active pointer,
+ * and the workspace session pointer. The per-character store actions (loadCharacter
+ * etc.) stay strictly per-character; the TabManager calls them internally to populate
+ * or clear an instance, while the UI drives it.
  *
- * PLATFORM SPLIT (Phase 4):
+ * PLATFORM SPLIT:
  * - DESKTOP keeps every open instance live (focus-or-add; dispose only on explicit
  *   `closeTab`). "Return to Menu" = `deactivate()` (show the menu, keep the tabs).
  * - MOBILE holds at most ONE live character instance (plus the permanent menu
@@ -43,7 +43,7 @@ import type { Workspace } from './workspaceSession';
  * first), mobile hydrates only the active one.
  */
 
-/** The kind of a tab. Only characters exist today; Boards/Notes are additive later (spec §1.2). */
+/** The kind of a tab. Only characters exist today; Boards/Notes are additive later. */
 export type TabType = 'character';
 
 /** A tab in the workspace, in tab order. */
@@ -73,10 +73,10 @@ interface TabManagerState {
       setActiveTab: (id: string) => void;
       /** Moves the `fromId` tab to the position of `toId`, persisting the new order; active tab unchanged. */
       reorderTabs: (fromId: string, toId: string) => void;
-      /** Desktop "Return to Menu": show the menu while KEEPING every open tab and its live instance (spec §4). */
+      /** Desktop "Return to Menu": show the menu while KEEPING every open tab and its live instance. */
       deactivate: () => void;
 
-      // -- Mobile (single live character instance, spec §7) --
+      // -- Mobile (single live character instance) --
       /** Mobile open: disposes the current live character, loads `character`, adds it to `openTabs` if missing, activates. */
       mobileOpenCharacter: (character: Character, drawerItemId?: string) => void;
       /** Mobile create: disposes the current live character, builds + appends a new one, activates. */
@@ -122,7 +122,7 @@ function deactivateToMenu(): void {
 
 /**
  * Disposes every live character instance (flush → detach → dispose), leaving only the
- * permanent menu fallback. Enforces the mobile single-live invariant (spec §7) in one
+ * permanent menu fallback. Enforces the mobile single-live invariant in one
  * place; never touches `openTabs`.
  */
 function disposeLiveCharacterInstances(): void {
@@ -158,6 +158,9 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          attachPersistenceHandle(character.id, instance);
          // Unguarded load: drawer/import content becomes an autosaved working record.
          instance.getState().actions.loadCharacter(character, drawerItemId);
+         // Opened from the drawer: it matches its saved copy, so it starts clean (the
+         // change subscription dirties it on the first edit). An import (no link) stays dirty.
+         if (drawerItemId) instance.getState().actions.setHasUnsavedChanges(false);
          appendAndActivate(character.id);
       },
       closeTab: (id) => {
@@ -165,9 +168,16 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          const index = openTabs.findIndex((tab) => tab.id === id);
          if (index === -1) return;
 
-         // Tear down only this tab's instance (flush → detach → dispose).
-         detachPersistenceHandle(id);
+         // Closing is "for good": discard the handle WITHOUT flushing (no point saving
+         // what we delete), dispose the instance, then delete the working record so the
+         // characters store stays in sync with the open tabs. A drawer-saved copy
+         // survives and reopens; an unsaved character is gone. (Desktop only; mobile
+         // keeps the record.)
+         discardPersistenceHandle(id);
          disposeInstance(id);
+         void deleteCharacter(id).catch((error) => {
+            console.error('Failed to delete closed character record:', error);
+         });
 
          const remaining = openTabs.filter((tab) => tab.id !== id);
 
@@ -228,7 +238,7 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
       },
 
       // ==================
-      //  Mobile (single live character instance, spec §7)
+      //  Mobile (single live character instance)
       // ==================
       mobileOpenCharacter: (character, drawerItemId) => {
          // Already the live active character → nothing to do.
@@ -237,6 +247,7 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          const instance = getOrCreateInstance(character.id);
          attachPersistenceHandle(character.id, instance);
          instance.getState().actions.loadCharacter(character, drawerItemId);
+         if (drawerItemId) instance.getState().actions.setHasUnsavedChanges(false);
          appendAndActivate(character.id);
       },
       mobileCreateCharacter: (game) => {
@@ -248,8 +259,8 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          appendAndActivate(character.id);
       },
       mobileReturnToMenu: () => {
-         // Dispose the live character (the Phase 3 bug fix: don't surface a hidden
-         // neighbour), then show the menu while keeping the shared `openTabs`.
+         // Dispose the live character (don't surface a hidden neighbour), then show
+         // the menu while keeping the shared `openTabs`.
          disposeLiveCharacterInstances();
          deactivateToMenu();
       },
@@ -278,7 +289,7 @@ async function hydrateInstanceFromStorage(id: string): Promise<boolean> {
 
 /**
  * Resolves the id boot should activate. A `null` stored active is intentional
- * (desktop "Return to Menu" deactivated while keeping tabs, spec §4) and is preserved
+ * (desktop "Return to Menu" deactivated while keeping tabs) and is preserved
  * as `null` (boot to the menu). A non-null-but-stale active (its tab is gone) falls
  * back to the first tab. Returns `null` when there are no tabs.
  */
@@ -289,7 +300,7 @@ function resolveIntendedActiveId(workspace: Workspace): string | null {
 }
 
 /**
- * Desktop boot (tabs spec §3.2 / §4): hydrate the intended-active tab FIRST and lift
+ * Desktop boot: hydrate the intended-active tab FIRST and lift
  * the loading gate immediately, then hydrate the rest just behind it in order,
  * pruning any whose record is missing. Persists the pruned workspace.
  */
@@ -330,7 +341,7 @@ async function bootDesktop(workspace: Workspace): Promise<void> {
 }
 
 /**
- * Mobile boot (tabs spec §7): preserve the full `openTabs` list (never prune the
+ * Mobile boot: preserve the full `openTabs` list (never prune the
  * shared desktop set) but hydrate ONLY the active tab's instance, leaving the others
  * as ids without live instances. Lands on the menu if the active record is missing.
  */
@@ -355,7 +366,7 @@ async function bootMobile(workspace: Workspace): Promise<void> {
 /**
  * Boot step run by `AppStartManager` after the character migration: restore the
  * workspace, platform-aware (desktop hydrates all tabs active-first; mobile hydrates
- * only the active one, spec §4 / §7). The device check is non-hook (boot runs outside
+ * only the active one). The device check is non-hook (boot runs outside
  * React). Always lifts the boot loading gate (the inner boots lift it early; the
  * `finally` is the safety net), so first paint resolves to the active sheet or the
  * menu without a flash.

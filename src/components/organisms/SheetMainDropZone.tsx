@@ -17,8 +17,7 @@ import { cn } from '@/lib/utils';
  *
  * The broad play-area highlight is suppressed for a dragged drawer item: those use
  * the content-aware per-section highlight (cards / trackers) instead, so only the
- * relevant region lights up (tabs polish-11). The drop is still accepted here and
- * routed by type.
+ * relevant region lights up. The drop is still accepted here and routed by type.
  */
 export function SheetMainDropZone({ children }: { children: ReactNode }) {
    const { setNodeRef, isOver } = useDroppable({

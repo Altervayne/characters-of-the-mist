@@ -33,8 +33,8 @@ export function useCharacterSheetUndoRedo(isDrawerOpen: boolean) {
          // Character history is still zundo (out of scope); the drawer history is
          // now the command engine. Drive the drawer via the store actions so the
          // current-folder view is reloaded after the undo/redo. The character
-         // temporal is read from the ACTIVE instance via the registry (tabs spec
-         // §4); a null instance (no character open) simply does nothing.
+         // temporal is read from the ACTIVE instance via the registry; a null
+         // instance (no character open) simply does nothing.
          const characterTemporal = getActiveCharacterStore()?.temporal.getState();
          const { undoDrawer, redoDrawer } = useDrawerStore.getState().actions;
 

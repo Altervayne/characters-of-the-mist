@@ -30,7 +30,7 @@ interface CardsSectionProps {
    cardIds: string[];
    /** Highlight the section as the landing spot for a compatible card-type drawer drag. */
    isDropTarget?: boolean;
-   /** The active reorder insertion line (tabs polish-18); rendered when it targets a card. */
+   /** The active reorder insertion line; rendered when it targets a card. */
    reorderIndicator?: ReorderIndicator | null;
 }
 
@@ -70,7 +70,7 @@ export function CardsSection({
       >
          {/* Cards Group */}
          {/* Static layout during a drag (no live shuffle); a single vertical insertion
-             line (left/right edge of the hovered card) shows where it lands, tabs polish-18. */}
+             line (left/right edge of the hovered card) shows where it lands. */}
          <SortableContext items={cardIds} strategy={staticListSortingStrategy}>
             {character.cards.map(card => {
                const onThisCard = reorderIndicator?.listId === 'sheet-cards' && reorderIndicator.overId === card.id;

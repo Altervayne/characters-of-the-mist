@@ -1,5 +1,5 @@
 /**
- * Active-character session pointer (migration spec §5 / Q-2).
+ * Active-character session pointer.
  *
  * The id of the character to reopen on boot lives in a tiny `localStorage` key -
  * read synchronously before first paint so the app knows what to load, while the

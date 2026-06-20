@@ -28,8 +28,8 @@ export default function MobileCardCarousel({ cards, currentIndex, onOpenAddCard 
 			card,
 			isEditing,
 			useVerticalStack: true,
-			onEditCard: () => {}, // TODO: Implement in later phase
-			onExport: () => {} // TODO: Implement in later phase
+			onEditCard: () => {}, // TODO: implement later
+			onExport: () => {} // TODO: implement later
 		};
 
 		if (!Component) {

@@ -6,8 +6,8 @@ import type { InsertPosition } from '@/lib/utils/dragFeedback';
 
 
 /**
- * A single, absolutely-positioned reorder insertion line (tabs polish-18). It marks
- * exactly where a dragged row/card will land WITHOUT affecting layout (so spacing stays
+ * A single, absolutely-positioned reorder insertion line. It marks exactly where a
+ * dragged row/card will land WITHOUT affecting layout (so spacing stays
  * constant during a drag), replacing the old expanding-gap indicator. Render it inside a
  * `relative` wrapper around the hovered row/card.
  *

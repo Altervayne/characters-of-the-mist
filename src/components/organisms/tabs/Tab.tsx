@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -12,6 +12,9 @@ import { X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+
+// -- Component Imports --
+import { CloseTabDialog } from '@/components/organisms/dialogs/CloseTabDialog';
 
 // -- Store Imports --
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
@@ -47,7 +50,16 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
    const instance = useMemo(() => getOrCreateInstance(tab.id), [tab.id]);
    const name = useStore(instance, (state) => state.character?.name);
    const game = useStore(instance, (state) => state.character?.game);
+   const hasUnsavedChanges = useStore(instance, (state) => state.hasUnsavedChanges);
    const label = name && name.trim().length > 0 ? name : t('Tabs.untitled');
+
+   // Closing deletes the working record. A clean tab closes silently; a dirty one
+   // confirms first so unsaved work is never discarded by a stray click.
+   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+   const handleCloseClick = () => {
+      if (hasUnsavedChanges) setIsCloseDialogOpen(true);
+      else closeTab(tab.id);
+   };
 
    // Left game crest: a centered, rounded, gradient-filled square with a white icon
    // and a subtle inner ring (a neutral placeholder when the game is unavailable).
@@ -120,7 +132,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          <button
             type="button"
             onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => closeTab(tab.id)}
+            onClick={handleCloseClick}
             aria-label={t('Tabs.closeTab')}
             className={cn(
                "shrink-0 rounded p-1 opacity-60 hover:bg-muted hover:text-foreground hover:opacity-100 cursor-pointer",
@@ -129,6 +141,13 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          >
             <X className="h-3.5 w-3.5" />
          </button>
+
+         <CloseTabDialog
+            isOpen={isCloseDialogOpen}
+            onOpenChange={setIsCloseDialogOpen}
+            characterName={label}
+            onConfirm={() => closeTab(tab.id)}
+         />
       </div>
    );
 }

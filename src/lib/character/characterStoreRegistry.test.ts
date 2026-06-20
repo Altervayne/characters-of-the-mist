@@ -12,10 +12,9 @@ import {
 } from './characterStoreRegistry';
 
 /*
- * Tests for the character store instance registry (tabs spec §1.2, §2.1). The
- * registry is module-level shared state, so each test disposes the ids it creates.
- * These exercise the forward-looking N-instance behaviour even though the running
- * app uses exactly one instance in Phase 1.
+ * Tests for the character store instance registry. The registry is module-level
+ * shared state, so each test disposes the ids it creates. These exercise the
+ * N-instance behaviour (full multi-tab isolation).
  */
 
 const CREATED_IDS = ['iso-A', 'iso-B', 'res-A', 'res-B', 'link-A', SINGLE_ACTIVE_INSTANCE_ID];
@@ -34,7 +33,7 @@ describe('character store registry', () => {
       expect(a1).not.toBe(b); // different ids => isolated instances
    });
 
-   it('isolates state and undo history between instances (spec §2.1)', () => {
+   it('isolates state and undo history between instances', () => {
       const a = getOrCreateInstance('iso-A');
       const b = getOrCreateInstance('iso-B');
 

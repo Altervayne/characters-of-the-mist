@@ -150,7 +150,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					const savedItemId = character.drawerItemId;
 					void (async () => {
 						try {
-							// Atomic cross-store save (spec §7): working record + the
+							// Atomic cross-store save: working record + the
 							// linked drawer item, in one transaction.
 							const { linkedItemUpdated } = await saveCharacterToLinkedDrawerItem(character);
 							if (linkedItemUpdated) {

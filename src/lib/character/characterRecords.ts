@@ -12,7 +12,7 @@ import type { GameSystem } from '@/lib/types/drawer';
 export const CHARACTER_SCHEMA_VERSION = 1;
 
 /**
- * One row per character in the `characters` store (migration spec §1.3).
+ * One row per character in the `characters` store.
  *
  * The full {@link Character} aggregate is stored INLINE on `character` (cards and
  * trackers are not shredded into separate stores) - a character is always read

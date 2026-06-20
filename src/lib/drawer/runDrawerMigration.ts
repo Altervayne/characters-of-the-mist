@@ -12,21 +12,20 @@ import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
 import type { Drawer, DrawerItem, Folder } from '@/lib/types/drawer';
 
 /*
- * One-time migration of the legacy localStorage drawer blob into the Phase 2
- * Dexie stores (migration spec §6). Additive: the app keeps reading the old
- * store; this only writes the Dexie copy and guards itself so it runs exactly
- * once. Ids are preserved (keeping `drawerItemId` links intact) and the legacy
- * key is retained for now (removed in a later release per resolved Q-4).
+ * One-time migration of the legacy localStorage drawer blob into the Dexie stores.
+ * Additive: the app keeps reading the old store; this only writes the Dexie copy and
+ * guards itself so it runs exactly once. Ids are preserved (keeping `drawerItemId`
+ * links intact) and the legacy key is retained for now (removed in a later release).
  */
 
 /**
  * localStorage key of the legacy zustand-persist drawer blob (shape
- * `{ state: { drawer }, version }`). Exported so the later removal phase has a
+ * `{ state: { drawer }, version }`). Exported so the later removal step has a
  * single source of truth. NOT the `characterData` key (LegacyDataDialog) nor the
- * character-file import feature (MigrationDialog); those are unrelated (§6.1).
+ * character-file import feature (MigrationDialog); those are unrelated.
  *
- * TODO (deferred per migration spec §6.4 / Q-4, a LATER release, NOT now):
- * once the Dexie drawer is proven in the field, remove this blob with
+ * TODO (a LATER release, NOT now): once the Dexie drawer is proven in the field,
+ * remove this blob with
  * `localStorage.removeItem(LEGACY_DRAWER_STORAGE_KEY)` (e.g. in a new bootstrap
  * step gated on `meta.legacyBlobRetainedUntil`) and drop the
  * `legacyBlobRetainedUntil` marker. It is intentionally RETAINED for now as a
@@ -38,7 +37,7 @@ export const LEGACY_DRAWER_STORAGE_KEY = 'characters-of-the-mist_drawer-storage'
 /**
  * The drawer's own schema version, written to `meta.schemaVersion`. Tracks the
  * Dexie `version(1)` declared in `drawerDatabase.ts`; the drawer no longer rides
- * on the shared `STORE_VERSION` (see spec §6.5 / Conflict C-2).
+ * on the shared `STORE_VERSION`.
  */
 const DRAWER_SCHEMA_VERSION = 1;
 
@@ -85,7 +84,7 @@ function extractDrawerFromBlob(rawBlob: string): Drawer {
       const candidate = parsed?.state?.drawer;
       if (isDrawerShape(candidate)) return candidate;
    } catch {
-      // Corrupt blob, fall through to an empty drawer (handled as above).
+      // Corrupt blob: fall through to an empty drawer.
    }
    return { folders: [], rootItems: [] };
 }
@@ -197,12 +196,12 @@ async function markFreshInstall(): Promise<void> {
 
 /** The actual migration body. See {@link runDrawerMigrationIfNeeded} for the guarded entry point. */
 async function performMigration(): Promise<DrawerMigrationOutcome> {
-   // Fast path: already migrated (spec §6.2). The authoritative gate is re-checked
+   // Fast path: already migrated. The authoritative gate is re-checked
    // inside the write transaction below.
    const status = await drawerDatabase.meta.get('migrationStatus');
    if (status?.value === 'completed') return 'already-completed';
 
-   // Read the legacy blob. A missing blob means a fresh install (spec §6.2).
+   // Read the legacy blob. A missing blob means a fresh install.
    let rawBlob: string | null;
    try {
       rawBlob = localStorage.getItem(LEGACY_DRAWER_STORAGE_KEY);
@@ -222,15 +221,15 @@ async function performMigration(): Promise<DrawerMigrationOutcome> {
    const harmonizedDrawer = harmonizeData(drawer, 'FULL_DRAWER');
    const { folderRecords, itemRecords } = flattenDrawer(harmonizedDrawer);
 
-   // Single atomic rw transaction over folders + items + meta (spec §6.3). On any
-   // throw the whole thing rolls back: the flag stays unset and the legacy blob is
-   // never touched, so the next load safely retries (spec §6.4).
+   // Single atomic rw transaction over folders + items + meta. On any throw the whole
+   // thing rolls back: the flag stays unset and the legacy blob is never touched, so
+   // the next load safely retries.
    await drawerDatabase.transaction('rw', drawerDatabase.folders, drawerDatabase.items, drawerDatabase.meta, async () => {
       // Re-check the gate inside the transaction for concurrent safety.
       const innerStatus = await drawerDatabase.meta.get('migrationStatus');
       if (innerStatus?.value === 'completed') return;
 
-      // Defense in depth (spec §6.4): refuse to write into non-empty stores when
+      // Defense in depth: refuse to write into non-empty stores when
       // the flag is unset, rather than duplicating data.
       const existingFolderCount = await drawerDatabase.folders.count();
       const existingItemCount = await drawerDatabase.items.count();

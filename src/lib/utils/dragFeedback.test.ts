@@ -28,9 +28,9 @@ import {
 } from './dragFeedback';
 
 /*
- * Unit tests for the drag-feedback geometry + context mapping (tabs polish-6).
- * The hook wiring (refs/listeners/puck) is exercised in the browser; these cover
- * the pure decision logic the prompt's acceptance criteria turn on.
+ * Unit tests for the drag-feedback geometry + context mapping. The hook wiring
+ * (refs/listeners/puck) is exercised in the browser; these cover the pure decision
+ * logic.
  */
 
 // A thin 40px-tall strip pinned to the top, mimicking the desktop tab strip.

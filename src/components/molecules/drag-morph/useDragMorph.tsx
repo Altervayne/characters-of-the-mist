@@ -57,7 +57,7 @@ export interface DragMorphEngine {
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 
 /**
- * The reusable drag-morph engine (tabs polish-8): owns the overlay feedback
+ * The reusable drag-morph engine: owns the overlay feedback
  * choreography, the grab-point funnel, the converged cursor cluster (dot + label +
  * arrow + spring ring), and the cross-fades, and exposes it as a hook with two
  * render slots. dnd-kit transforms its `<DragOverlay>`, so the funneling clone must

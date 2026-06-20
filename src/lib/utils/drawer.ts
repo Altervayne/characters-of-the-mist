@@ -6,12 +6,11 @@ import cuid from "cuid";
  * The recursive nested-tree operations that once lived here (add/rename/delete/
  * move/reorder...Recursively, findAndRemove*, findFolder*, buildBreadcrumb,
  * getItemDisplayPath, findItemFolder, mergeIntoFolderRecursively, ...) were retired
- * in the IndexedDB migration (spec §7.1): the drawer is now flat Dexie records and
- * those operations are served by `@/lib/drawer/drawerRepository`.
+ * in the IndexedDB migration: the drawer is now flat Dexie records and those
+ * operations are served by `@/lib/drawer/drawerRepository`.
  *
- * Only `deepReId` and `reorderList` remain - they are generic helpers still used
- * by `characterStore` (out of migration scope) and the new Dexie layer, so per
- * spec §8.1 (Conflict C-1) this file is kept rather than deleted.
+ * Only `deepReId` and `reorderList` remain - they are generic helpers still used by
+ * `characterStore` and the Dexie layer, so this file is kept rather than deleted.
  */
 
 /**

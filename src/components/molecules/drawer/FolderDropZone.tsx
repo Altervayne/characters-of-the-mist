@@ -12,7 +12,7 @@ interface DropZoneProps {
    /**
     * Whether this slot may expand when targeted. The two slots flanking the dragged
     * folder are no-op positions (dropping there leaves it in place), so they stay a
-    * constant gap and never expand — only real reorder targets light up.
+    * constant gap and never expand; only real reorder targets light up.
     */
    canExpand?: boolean;
    data: {
@@ -25,10 +25,10 @@ interface DropZoneProps {
 
 /**
  * A folder reorder/insert slot that sits BETWEEN folders. It is a thin `h-2` gap at rest
- * and EXPANDS to `h-8` with an accent highlight when targeted during a folder drag —
- * giving a large, clearly-signposted drop target while keeping the folder rows themselves
- * free for spring-nav (dwell to drill in) and nest. Living between rows (not on them) is
- * what lets folder reorder coexist with those two behaviours.
+ * and EXPANDS to `h-8` with an accent highlight when targeted during a folder drag,
+ * giving a large drop target while keeping the folder rows themselves free for spring-nav
+ * (dwell to drill in) and nest. Living between rows (not on them) is what lets folder
+ * reorder coexist with those two behaviours.
  *
  * @param props.id - The slot's droppable id.
  * @param props.activeId - The active drag id (gates the expansion to an in-progress drag).

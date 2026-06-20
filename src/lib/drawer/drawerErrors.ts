@@ -1,8 +1,8 @@
 /**
  * Typed errors thrown by the drawer repository.
  *
- * Per the migration spec (§2.5) the repository throws and never swallows: it has
- * no UI concerns (no toasts, no console). The store layer that wraps it is the
+ * The repository throws and never swallows: it has no UI concerns (no toasts, no
+ * console). The store layer that wraps it is the
  * single place that catches these, sets error state, and surfaces a notification.
  * Each error carries a stable `code` so callers can branch without string-matching
  * messages.

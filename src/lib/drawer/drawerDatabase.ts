@@ -8,16 +8,16 @@ import type { CharacterRecord } from '@/lib/character/characterRecords';
 /**
  * The Dexie database for the normalized drawer.
  *
- * Three object stores (migration spec §1.1):
+ * Three object stores:
  * - `folders`: flat folder records, keyed by `id`. Indexed on `parentFolderId`
  *   and the compound `[parentFolderId+order]` (the workhorse for "ordered
  *   children of folder X").
  * - `items`: flat item records, keyed by `id`. Same parent/order indexes, plus
- *   `game` and `type` (resolved Q-5) to pre-empt future filtering/search.
+ *   `game` and `type` to pre-empt future filtering/search.
  * - `meta`: singleton key/value bookkeeping (schema version, migration flags),
  *   keyed by `key`.
  * - `characters`: one row per character, the full character stored inline
- *   (added in `version(2)`; see the character migration spec §1).
+ *   (added in `version(2)`).
  *
  * Despite the database name, it holds both the drawer and the character domains:
  * keeping them in one database lets a save-character-to-drawer update both the

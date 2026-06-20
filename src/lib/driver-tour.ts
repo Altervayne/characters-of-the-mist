@@ -134,10 +134,10 @@ export const getTourSteps = (t: (key: string) => string, actions: TourActions): 
          },
       },
       {
-         element: '[data-tour="unload-character-button"]',
+         element: '[data-tour="open-menu-button"]',
          popover: {
-            title: t('Tutorial.unloadCharacter_title'),
-            description: t('Tutorial.unloadCharacter_content'),
+            title: t('Tutorial.openMenu_title'),
+            description: t('Tutorial.openMenu_content'),
             side: 'right',
             align: 'center',
          },

@@ -5,14 +5,11 @@ import { createContext, useContext } from 'react';
 import type { CharacterStore } from '@/lib/stores/characterStore';
 
 /*
- * React Context carrying the ACTIVE character store instance to the sheet subtree
- * (tabs spec §1.2). The three resolving hooks (`useCharacterStore`,
- * `useCharacterActions`, `useCharacterTemporalStore`) read the active instance from
- * here, so the ~36 leaf consumers never learn that tabs exist.
- *
- * Phase 1: the provider value is the one instance, constant for the app's lifetime.
- * Phase 2 makes the value follow the active tab, every consumer re-resolves through
- * this same context with no further change.
+ * React Context carrying the ACTIVE character store instance to the sheet subtree.
+ * The three resolving hooks (`useCharacterStore`, `useCharacterActions`,
+ * `useCharacterTemporalStore`) read the active instance from here, so the leaf
+ * consumers never learn that tabs exist. The value follows the active tab; every
+ * consumer re-resolves through this same context.
  *
  * The context + hook live in this `.ts` file (no component export) so the
  * provider, which is a component, can live in its own `.tsx` without tripping

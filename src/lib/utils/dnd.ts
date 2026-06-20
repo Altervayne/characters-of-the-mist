@@ -105,8 +105,8 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // it needs BOTH its own high-priority targets AND the ordinary sibling reorder.
    // Priority 1 (pointerWithin): load onto the sheet / open as a tab. In-drawer MOVES
    // (into a folder / the current folder) are resolved by the live-geometry resolver at
-   // drop (tabs polish-13/15), not this `over`, so no folder/back collision is needed.
-   // Priority 2 (polish-17): same-folder REORDER. Strict pointerWithin rarely lands on a
+   // drop, not this `over`, so no folder/back collision is needed.
+   // Priority 2: same-folder REORDER. Strict pointerWithin rarely lands on a
    // sibling row, which is exactly why a saved character never reordered; fall back to the
    // nearest sibling `drawer-item` via closestCenter, EXCLUDING the active item so `over`
    // is always a different row (handleDragEnd's reorder no-ops on a self drop). This
@@ -146,7 +146,7 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    //  If dragging a drawer item
    // ==================
    // In-drawer moves (into a folder / Back / the current folder's items body) are now
-   // resolved by the live-geometry resolver at drop (tabs polish-13/15), which returns
+   // resolved by the live-geometry resolver at drop, which returns
    // before this `over` is read, so the former folder / back-button / items-area-zone
    // collision was dead and is removed. What remains is still live: the sheet drop zones
    // (dropping the item onto the sheet), then same-folder item REORDER over the nearest

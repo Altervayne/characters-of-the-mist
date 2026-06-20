@@ -81,16 +81,16 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    // toast and the migration retries on the next load. The call is self-guarded
    // and de-duplicates StrictMode's double mount.
    //
-   // The character is now sourced from IndexedDB (spec §5): attach the save
-   // subscription, then, after the one-time character migration, read the session
+   // The character is sourced from IndexedDB: attach the save subscription, then,
+   // after the one-time character migration, read the session
    // pointer and load the active character. The boot loading gate (set inside
    // runCharacterBoot) keeps first paint on a neutral loading screen until this
    // resolves, so the main menu never flashes before the sheet appears.
    useEffect(() => {
       // Ensure the menu fallback instance exists and is active before boot opens a
-      // character into its id-keyed instance, independent of component render order
-      // (tabs spec §1.2). Idempotent. Per-instance persistence is now attached by the
-      // TabManager when a tab opens, so there is no global subscription to start.
+      // character into its id-keyed instance, independent of component render order.
+      // Idempotent. Per-instance persistence is attached by the TabManager when a tab
+      // opens, so there is no global subscription to start.
       ensureMenuFallbackInstance();
 
       // Drawer migration runs concurrently and never blocks the boot critical path
