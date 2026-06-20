@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, LayoutGrid, SaveAll } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -292,8 +292,23 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
             {/* Bottom-aligned sub-menu buttons */}
             <div className="flex flex-col shrink-0 w-full">
+               {/* "Open menu" is a navigation action (leave the sheet, go home), set apart
+                   from the meta utilities below by a divider. It has nowhere to go from the
+                   main menu itself, so it only shows in the play area. */}
+               { activeWindow === 'PLAY_AREA' &&
+                  <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                     "flex flex-col items-center gap-2 p-2 bg-card border-t-2 border-b border-border"
+                  )}>
+                     <SidebarButton data-tour="open-menu-button" isCollapsed={isCollapsed} onClick={handleOpenMenu} Icon={SquareMenu}>
+                        {t('CharacterSheetPage.SidebarMenu.openMenu')}
+                     </SidebarButton>
+                  </motion.section>
+               }
+               {/* The trio anchors the bottom region with the top border when the Open-menu
+                   section above is hidden. */}
                <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                  "flex flex-col items-center gap-2 p-2 bg-card border-t-2 border-border"
+                  "flex flex-col items-center gap-2 p-2 bg-card",
+                  activeWindow === 'MAIN_MENU' && "border-t-2 border-border"
                )}>
                   <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
                      {t('CharacterSheetPage.SidebarMenu.settings')}
@@ -303,9 +318,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   </SidebarButton>
                   <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
                      {t('CharacterSheetPage.SidebarMenu.patchNotes')}
-                  </SidebarButton>
-                  <SidebarButton data-tour="open-menu-button" isCollapsed={isCollapsed} onClick={handleOpenMenu} Icon={LayoutGrid}>
-                     {t('CharacterSheetPage.SidebarMenu.openMenu')}
                   </SidebarButton>
                </motion.section>
             </div>
