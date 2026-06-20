@@ -199,8 +199,11 @@ function DesktopCharacterSheetPage() {
                onOpenPatchNotes={() => setPatchNotesOpen(true)}
             />
 
-            {/* Character Sheet Area */}
-            <div {...getRootProps()} className="relative w-full h-full flex-1 flex flex-col">
+            {/* Character Sheet Area. `min-w-0` caps this flex item to its allocation
+                (the play area between the sidebar and the drawer) — without it the tab
+                strip's intrinsic width would grow the item and push the sidebar/drawer
+                off-screen instead of letting the strip scroll (tabs polish-19). */}
+            <div {...getRootProps()} className="relative w-full h-full flex-1 min-w-0 flex flex-col">
 
                {/* Multi-character tab strip (desktop top bar, tabs spec §5) */}
                <TabStrip forceDropHighlight={isOverTabLane} />

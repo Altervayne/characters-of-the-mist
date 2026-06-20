@@ -78,7 +78,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
          data-tab-id={tab.id}
          style={{ transform: CSS.Translate.toString(transform), transition }}
          className={cn(
-            'group relative flex shrink-0 items-center gap-1.5 rounded-t-[10px] pr-1 max-w-[12rem]',
+            'group relative flex shrink-0 items-center gap-1.5 ml-1.5 border-l border-r border-t border-secondary rounded-t-[10px] pr-1 max-w-[12rem]',
             // Active tab: same fill as the sheet, lifted above the strip's bottom
             // border and pulled down 1px to overlap it, so it reads as one surface
             // connected to the content below (no seam). Inactive tabs are lighter
@@ -86,7 +86,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             // baseline) so the active tab stands proud of them.
             isActive
                ? 'relative z-10 -mb-px bg-background pb-px'
-               : 'mt-1 bg-muted/40 hover:bg-muted/70',
+               : 'bg-muted/40 hover:bg-muted/70',
             // While dragging, the free-floating DragOverlay preview is what moves;
             // dim the in-strip source so its slot reads as a placeholder gap.
             isDragging && 'opacity-30',

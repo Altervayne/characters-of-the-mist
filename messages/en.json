@@ -9,6 +9,8 @@
       "untitled": "Untitled character",
       "closeTab": "Close tab",
       "newTab": "New tab",
+      "scrollLeft": "Scroll tabs left",
+      "scrollRight": "Scroll tabs right",
       "newTabDialog": {
          "title": "New tab",
          "description": "Choose what kind of tab to open.",
