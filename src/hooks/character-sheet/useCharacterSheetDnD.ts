@@ -499,9 +499,17 @@ export function useCharacterSheetDnD() {
    const handleDragOver = useCallback((event: DragOverEvent) => {
       const { active, over } = event;
 
-      // A tab drag reorders within the strip's SortableContext; it has no bearing on
-      // the drawer-hover state, so leave that untouched.
-      if (active.data.current?.type === DRAG_TYPES.TAB) return;
+      // A tab drag reorders within the strip's SortableContext and never touches the
+      // sheet zones — but it CAN save into the drawer, so light the drawer items-area
+      // while it is held over the drawer (mirroring a sheet-item save), then bail out of
+      // the sheet/zone logic below.
+      if (active.data.current?.type === DRAG_TYPES.TAB) {
+         // Light the items-BODY dropzone only when over it — not over a folder/Back (a
+         // tab save INTO a folder still works via the dnd-kit `over` at drop).
+         const overId = over?.id.toString();
+         setIsOverDrawer(overId?.startsWith('drawer-drop-zone-') ?? false);
+         return;
+      }
 
       setOverDragId(over ? over.id.toString() : null);
 
@@ -515,9 +523,13 @@ export function useCharacterSheetDnD() {
         const activeType = active.data.current?.type as string;
         const overId = over.id.toString();
         const overType = over.data.current?.type as string | undefined;
-        const overIsDrawerComponent = over.data.current?.isDrawer || overId.startsWith('drawer-drop-zone-');
+        // Light the drawer items-BODY dropzone only when the cursor is actually over it
+        // (`drawer-drop-zone-<id>`), NOT over a folder/Back — those are their own targets,
+        // and lighting the body while aiming at a folder is misleading. A save INTO a
+        // folder still works via the dnd-kit `over` at drop (handleSheetToDrawerDrop).
+        const overIsItemsBody = overId.startsWith('drawer-drop-zone-');
 
-         if (activeType?.startsWith('sheet-') && overIsDrawerComponent) {
+         if (activeType?.startsWith('sheet-') && overIsItemsBody) {
             isHoveringDrawer = true;
          }
 
