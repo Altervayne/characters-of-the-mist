@@ -228,17 +228,17 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       <aside 
          data-tour="sidebar-menu"
          className={cn(
-            "hidden md:flex flex-col bg-card pt-4 border-r-2 border-border space-y-4 transition-all duration-300 ease-in-out overflow-hidden",
-            isCollapsed ? "w-16 items-center" : "w-64"
+            "hidden md:flex flex-col bg-card pt-2 border-r-2 border-border space-y-4 transition-all duration-300 ease-in-out overflow-hidden",
+            isCollapsed ? "w-14 items-center" : "w-60"
          )}
       >
          <div className="flex flex-col justify-between w-full h-full">
             {/* Header */}
             <motion.section layout transition={{ duration: 0.2 }} className="w-full">
                <motion.div layout className={cn(
-                  "flex w-full items-center",
-                  isCollapsed ? "px-2 justify-center" : "px-4 justify-between",
-                  activeWindow === 'MAIN_MENU' && "pb-4 border-b-2 border-border"
+                  "flex w-full items-center px-2",
+                  isCollapsed ? "justify-center" : "justify-between",
+                  activeWindow === 'MAIN_MENU' && "pb-2 border-b-2 border-border"
                )}>
                   {!isCollapsed && <h2 className="text-lg font-bold">{t('CharacterSheetPage.SidebarMenu.sidebarTitle')}</h2>}
 
@@ -248,7 +248,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                </motion.div>
 
                { activeWindow === 'PLAY_AREA' &&
-                  <div className="pt-2 pb-4 border-b-2 border-border">
+                  <div className="py-2 border-b-2 border-border">
                      <CharacterUndoRedoControls isCollapsed={isCollapsed} />
                   </div>
                }
@@ -259,8 +259,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                { activeWindow === 'PLAY_AREA' && 
                   <>
                      <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
-                        isCollapsed ? "px-0" : "px-4"
+                        "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
+                        isCollapsed ? "px-0" : "px-2"
                      )}>
                         <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} Icon={isEditing ? Dices : Edit}>
                            {isEditing ? t('CharacterSheetPage.SidebarMenu.playMode') : t('CharacterSheetPage.SidebarMenu.editMode')}
@@ -271,8 +271,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      </motion.section>
 
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
-                        isCollapsed ? "px-2" : "px-4"
+                        "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
                         <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterToDrawer} Icon={Save}>
                            {t('CharacterSheetPage.SidebarMenu.saveToDrawer')}
@@ -292,8 +291,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      </motion.section>
 
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
-                        isCollapsed ? "px-2" : "px-4"
+                        "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
                         <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
                            {t('CharacterSheetPage.SidebarMenu.resetCharacter')}
@@ -304,8 +302,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
                { activeWindow === 'MAIN_MENU' &&
                   <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
-                     "flex flex-col items-center gap-2 py-4 bg-popover border-b border-border",
-                     isCollapsed ? "px-0" : "px-4"
+                     "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
+                     isCollapsed ? "px-0" : "px-2"
                   )}>
                      <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
                         {t('CharacterSheetPage.SidebarMenu.importCharacter')}
@@ -320,8 +318,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
             {/* Bottom-aligned sub-menu buttons */}
             <div className="flex flex-col shrink-0 w-full">
                <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                  "flex flex-col items-center gap-2 py-4 bg-card border-t-2 border-border",
-                  isCollapsed ? "px-2" : "px-4"
+                  "flex flex-col items-center gap-2 p-2 bg-card border-t-2 border-border"
                )}>
                   <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
                      {t('CharacterSheetPage.SidebarMenu.settings')}
