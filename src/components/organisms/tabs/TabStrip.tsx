@@ -113,10 +113,14 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
       };
    }, [updateScrollAffordances]);
 
-   // Recompute when tabs are added/removed (the content width changes).
+   // Recompute when the tab set changes (add / remove / reorder). A reorder runs a drag,
+   // whose auto-scroll can nudge the container down its 1px vertical scroll range — the
+   // active tab's 1px bottom overlap, exposed because `overflow-x-auto` also makes y
+   // scrollable — leaving the tabs shifted up by 1px. Pin `scrollTop` back to 0.
    useEffect(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
       updateScrollAffordances();
-   }, [openTabs.length, updateScrollAffordances]);
+   }, [openTabs, updateScrollAffordances]);
 
    /** Scrolls the tabs container toward one side by ~80% of its visible width. */
    const scrollByDirection = useCallback((direction: -1 | 1) => {
@@ -132,7 +136,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
    // can scroll; on unmount it slides off its own edge (the strip's `overflow-x-clip`
    // clips it cleanly so it never pokes over the sidebar).
    const arrowClass =
-      'absolute top-0 bottom-0 z-20 my-auto flex size-8 items-center justify-center rounded-md bg-muted/70 backdrop-blur-sm text-muted-foreground hover:bg-muted/90 hover:text-foreground cursor-pointer';
+      'absolute top-0 bottom-0 z-20 my-auto flex size-8 items-center justify-center rounded-md bg-primary/70 backdrop-blur-sm text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground cursor-pointer';
 
    return (
       <div
@@ -177,7 +181,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
              wheel to horizontal scroll, so there is no vertical scrolling to show. */}
          <div
             ref={scrollRef}
-            className="min-w-0 flex-1 flex items-end gap-1.5 overflow-x-auto overscroll-x-contain scrollbar-hide"
+            className="min-w-0 h-12 flex-1 flex items-end gap-1.5 overflow-x-auto overscroll-x-contain scrollbar-hide"
          >
             <SortableContext items={openTabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
                <div className="flex items-end">

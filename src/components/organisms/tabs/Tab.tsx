@@ -85,7 +85,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             // recessed chips nudged down a touch (the strip aligns the row to its
             // baseline) so the active tab stands proud of them.
             isActive
-               ? 'relative z-10 -mb-px bg-background pb-px'
+               ? 'relative z-10 -mb-px bg-primary text-primary-foreground pb-px'
                : 'bg-muted/40 hover:bg-muted/70',
             // While dragging, the free-floating DragOverlay preview is what moves;
             // dim the in-strip source so its slot reads as a placeholder gap.
@@ -103,7 +103,7 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             {...listeners}
             className={cn(
                'flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pl-2 text-sm cursor-pointer text-left touch-none select-none',
-               isActive ? 'text-foreground font-medium' : 'text-muted-foreground',
+               isActive ? 'text-primary-foreground font-medium' : 'text-muted-foreground',
             )}
          >
             <span
@@ -122,7 +122,10 @@ export function Tab({ tab, isActive }: { tab: OpenTab; isActive: boolean }) {
             onPointerDown={(event) => event.stopPropagation()}
             onClick={() => closeTab(tab.id)}
             aria-label={t('Tabs.closeTab')}
-            className="shrink-0 rounded p-1 text-muted-foreground opacity-60 hover:bg-muted hover:text-foreground hover:opacity-100 cursor-pointer"
+            className={cn(
+               "shrink-0 rounded p-1 opacity-60 hover:bg-muted hover:text-foreground hover:opacity-100 cursor-pointer",
+               isActive ? "text-primary-foreground" : "text-muted-foreground"
+            )}
          >
             <X className="h-3.5 w-3.5" />
          </button>
