@@ -699,6 +699,9 @@
       "resetCharacter_title": "Resetting your Character",
       "resetCharacter_content": "This button completely deletes your active Character, turning your Character Sheet into a fresh blank slate to start over from.",
 
+      "openMenu_title": "Opening the main menu",
+      "openMenu_content": "This button takes you back to the main menu without unloading anything. Your open tabs stay exactly as they are, so you can pick another character, start a new one, or jump right back to your sheets at any time.",
+
       "unloadCharacter_title": "Unloading your Character",
       "unloadCharacter_content": "This button completely unloads your active Character, deleting it and removing the entire action history for the Undo/Redo feature. This sends you back to the main menu with a clean app and no background character loaded in.",
 

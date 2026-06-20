@@ -592,6 +592,8 @@
       "importComponent_content": "Ce bouton vous invite également à choisir un fichier. Si vous lui donnez un fichier de Carte ou de Suivi de Characters of the Mist, il le chargera et l'ajoutera à votre Personnage actuel.",
       "resetCharacter_title": "Réinitialiser votre Personnage",
       "resetCharacter_content": "Ce bouton supprime complètement votre Personnage actif, transformant votre Fiche de Personnage en une page blanche pour recommencer à zéro.",
+      "openMenu_title": "Ouvrir le menu principal",
+      "openMenu_content": "Ce bouton permet de retourner sur le menu principal. Vous onglets ouverts restent exactement tels qu'ils sont, vous pouvez alors choisir un autre personnage, en créer un nouveau, ou directement retourner sur un de vos onglets n'importe quand.",
       "unloadCharacter_title": "Décharger votre Personnage",
       "unloadCharacter_content": "Ce bouton décharge complètement votre Personnage actif de l'application, ce qui le supprime, et remet à blanc tout votre historique d'actions. Après cela, vous serez renvoyé vers le menu principal sans aucune données de personnage chargées en fond.",
       "settings_title": "Paramètres",
