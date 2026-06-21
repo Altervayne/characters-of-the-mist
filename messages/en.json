@@ -50,7 +50,8 @@
       "imageChange": "Change image",
       "imageRemove": "Remove image",
       "imageToggleFit": "Toggle cover / contain",
-      "imageUploadFailed": "Could not process that image."
+      "imageUploadFailed": "Could not process that image.",
+      "embeddedUnavailable": "Preview unavailable"
    },
    "DragPuck": {
       "openAsTab": "Open as tab",

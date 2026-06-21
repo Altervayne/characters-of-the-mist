@@ -154,13 +154,16 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // (dropping the item onto the sheet), then same-folder item REORDER over the nearest
    // sibling row (`closestCenter`, resolved by `handleDragEnd`'s reorder path).
    if (activeDataType === 'drawer-item') {
-      const sheetZoneDroppables = args.droppableContainers.filter((container) => {
+      // Sheet drop zones (character tab) plus the board drop zone (board tab). The board
+      // zone exists only when a board is active, so it never competes with the sheet
+      // zones, and vice versa - exactly one of them is mounted at a time.
+      const surfaceZoneDroppables = args.droppableContainers.filter((container) => {
          const id = container.id.toString();
-         return id === 'character-sheet-main-drop-zone' || id === 'tracker-drop-zone' || id === 'card-drop-zone';
+         return id === 'character-sheet-main-drop-zone' || id === 'tracker-drop-zone' || id === 'card-drop-zone' || id === 'board-drop-zone';
       });
-      const sheetZoneCollisions = pointerWithin({ ...args, droppableContainers: sheetZoneDroppables });
-      if (sheetZoneCollisions.length > 0) {
-         return sheetZoneCollisions;
+      const surfaceZoneCollisions = pointerWithin({ ...args, droppableContainers: surfaceZoneDroppables });
+      if (surfaceZoneCollisions.length > 0) {
+         return surfaceZoneCollisions;
       }
 
       const itemDroppables = args.droppableContainers.filter((container) => {

@@ -50,7 +50,8 @@
       "imageChange": "[TO COMPLETE]",
       "imageRemove": "[TO COMPLETE]",
       "imageToggleFit": "[TO COMPLETE]",
-      "imageUploadFailed": "[TO COMPLETE]"
+      "imageUploadFailed": "[TO COMPLETE]",
+      "embeddedUnavailable": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "Ouvrir dans un nouvel onglet",

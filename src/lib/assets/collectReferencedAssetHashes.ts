@@ -41,10 +41,21 @@ function collectFromItemContent(content: DrawerItemContent, into: Set<string>): 
    // Trackers hold no asset references.
 }
 
-/** Adds a board image item's `content.assetId` to `into` when present (other kinds hold no asset references). */
+/**
+ * Adds a board item's asset references to `into`: a native `image` item's `assetId`, and
+ * an embedded `card` COPY's card art (e.g. a dropped IMAGE_CARD). Trackers carry no
+ * assets, and reference items hold no copy - their source drawer item is scanned
+ * separately - so neither contributes here.
+ */
 function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
    const { content } = item;
-   if (content.kind === 'image' && content.assetId) into.add(content.assetId);
+   if (content.kind === 'image') {
+      if (content.assetId) into.add(content.assetId);
+      return;
+   }
+   if (content.kind === 'card' && content.mode === 'copy' && content.data && typeof content.data === 'object' && 'details' in content.data) {
+      collectFromCard(content.data as Card, into);
+   }
 }
 
 /**

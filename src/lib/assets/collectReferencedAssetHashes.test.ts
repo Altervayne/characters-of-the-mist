@@ -68,6 +68,21 @@ function seedBoardItem(id: string, kind: 'image' | 'post-it', assetId: string | 
    });
 }
 
+/** Adds an embedded board CARD copy carrying an IMAGE_CARD whose `details.assetId` references an asset. */
+function seedBoardCardCopy(id: string, assetId: string) {
+   return drawerDatabase.boardItems.add({
+      id,
+      boardId: 'board-1',
+      kind: 'card',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      z: 0,
+      content: { kind: 'card', mode: 'copy', data: { cardType: 'IMAGE_CARD', details: { assetId } } },
+   });
+}
+
 beforeEach(async () => {
    await drawerDatabase.characters.clear();
    await drawerDatabase.items.clear();
@@ -133,5 +148,13 @@ describe('collectReferencedAssetHashes', () => {
       const referenced = await collectReferencedAssetHashes();
 
       expect(referenced.size).toBe(0);
+   });
+
+   it('finds the assetId on an embedded board card copy (so the GC keeps a dropped IMAGE_CARD)', async () => {
+      await seedBoardCardCopy('card-item', 'asset-embed');
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.has('asset-embed')).toBe(true);
    });
 });

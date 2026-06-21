@@ -24,6 +24,11 @@ import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+
+// -- Board Imports --
+import { screenToWorld } from '@/lib/board/boardCoordinates';
+import { embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
@@ -714,6 +719,8 @@ export function useCharacterSheetDnD() {
       const wasOverTabLane = isOverTabLaneRef.current;
       const dragKind = dragKindRef.current;
       const manualDrawerTarget = hoveredDrawerTargetRef.current;
+      // The last cursor position, for a board drop's world placement (cleared by cleanup).
+      const dropPointer = lastPointerRef.current;
 
       setActiveDragItem(null);
       setIsOverDrawer(false);
@@ -839,6 +846,49 @@ export function useCharacterSheetDnD() {
       // ###   BRANCH 1: Dragging FROM the Drawer   ###
       // ##############################################
       if (activeType === 'drawer-item' || activeType === 'drawer-folder') {
+
+         // ==================
+         //  SCENARIO 1.0: Dropping a card/tracker onto the board canvas
+         // ==================
+         // Board-only target (the zone exists solely on a board tab). A board is
+         // game-agnostic, so there is NO game gate. The item becomes a self-contained
+         // COPY at the drop point (or the viewport center as a fallback). Non-embeddable
+         // drags (folder, full sheet, full board) are a silent no-op.
+         if (overIdStr === 'board-drop-zone') {
+            const boardStore = getActiveBoardStore();
+            const draggedItem = active.data.current?.item as DrawerItem | undefined;
+            if (!boardStore || !draggedItem) return;
+            const spec = embeddedSpecForDrawerItem(draggedItem);
+            if (!spec) return;
+
+            const { viewport, items } = boardStore.getState();
+            const clip = document.querySelector('[data-board-clip]') as HTMLElement | null;
+            const rect = clip?.getBoundingClientRect() ?? null;
+            // Drop at the cursor when we have both the pointer and the canvas rect; else
+            // fall back to the viewport center.
+            const screenPoint = dropPointer && rect
+               ? dropPointer
+               : rect
+                  ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+                  : null;
+            const world = rect && screenPoint
+               ? screenToWorld(screenPoint.x, screenPoint.y, { left: rect.left, top: rect.top }, viewport)
+               : { x: 0, y: 0 };
+
+            const zValues = Object.values(items).map((boardItem) => boardItem.z);
+            const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+            void boardStore.getState().actions.addItem({
+               id: cuid(),
+               kind: spec.kind,
+               x: world.x - spec.width / 2,
+               y: world.y - spec.height / 2,
+               width: spec.width,
+               height: spec.height,
+               z,
+               content: spec.content,
+            });
+            return;
+         }
 
          // ==================
          //  SCENARIO 1.1: Dropping a full character onto the play area

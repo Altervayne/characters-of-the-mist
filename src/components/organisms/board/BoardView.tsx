@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useStore } from 'zustand';
+import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
@@ -75,7 +76,18 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const [selectedId, setSelectedId] = useState<string | null>(null);
    const [isPanning, setIsPanning] = useState(false);
 
+   // Cross-surface drop target for dragging a drawer card/tracker onto the canvas. Only
+   // mounted on a board tab (BoardView renders nothing otherwise), so it never competes
+   // with the sheet drop zones on a character tab. The drop is routed by `handleDragEnd`.
+   const { setNodeRef: setDroppableRef } = useDroppable({ id: 'board-drop-zone', data: { type: 'board-drop-zone' } });
+
    const clipRef = useRef<HTMLDivElement | null>(null);
+   // Compose the droppable node ref with the local clip ref (used for the wheel listener
+   // and screen->world math, and read by the drop handler via `data-board-clip`).
+   const setClipRefs = (node: HTMLDivElement | null) => {
+      clipRef.current = node;
+      setDroppableRef(node);
+   };
    // Mirror the live viewport into a ref so the native wheel listener and pan handlers
    // read the current value without re-subscribing.
    const viewportRef = useRef(viewport);
@@ -178,7 +190,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
    return (
       <div
-         ref={clipRef}
+         ref={setClipRefs}
+         data-board-clip
          onPointerDown={handleBackgroundPointerDown}
          onPointerMove={handleBackgroundPointerMove}
          onPointerUp={handleBackgroundPointerUp}

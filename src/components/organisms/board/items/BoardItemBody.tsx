@@ -2,15 +2,18 @@
 import { PostItItem } from './PostItItem';
 import { JournalItem } from './JournalItem';
 import { ImageItem } from './ImageItem';
+import { BoardCardItem } from './BoardCardItem';
+import { BoardTrackerItem } from './BoardTrackerItem';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent } from '@/lib/types/board';
 
 /*
  * Picks the per-kind body for a board item. The board-native kinds (post-it, journal,
- * image) render their real, editable body; every other kind (threat, connection, the
- * later embedded card/tracker) falls back to a generic labelled box. Content edits are
- * dispatched through `onContentChange`, already bound to this item's id by the box.
+ * image) render their real, editable body; embedded card/tracker copies render the real
+ * card/tracker component read-only; every other kind (threat, connection) falls back to
+ * a generic labelled box. Content edits are dispatched through `onContentChange`,
+ * already bound to this item's id by the box.
  */
 
 interface BoardItemBodyProps {
@@ -32,6 +35,10 @@ export function BoardItemBody({ item, isSelected, onContentChange, onRequestSele
          return <JournalItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'image':
          return <ImageItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+      case 'card':
+         return <BoardCardItem content={content} />;
+      case 'tracker':
+         return <BoardTrackerItem content={content} />;
       default:
          return <GenericItemBody item={item} />;
    }
