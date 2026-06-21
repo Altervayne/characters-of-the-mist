@@ -7,7 +7,7 @@ import { useStore } from 'zustand';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Plus } from 'lucide-react';
+import { Crosshair, Image as ImageIcon, NotebookText, StickyNote } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -21,22 +21,38 @@ import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { Viewport } from '@/lib/types/board';
+import type { BoardItemContent, Viewport } from '@/lib/types/board';
 
 /*
  * The board canvas: a pan/zoom world layer over the active board, with freeform move /
- * resize / select / z-order / delete wired to the board store's commands. It reads the
- * ACTIVE BOARD instance (never the character context) and only mounts when a board tab
- * is active. Per-kind item rendering, a real creation palette, and connections are later
- * prompts; items here are generic boxes and the `+` adds a stand-in post-it.
- *
- * Note: there is no sidebar/keyboard undo affordance on a board tab yet (board-7). The
- * store's undo works and is test-covered; this just doesn't surface it.
+ * resize / select / z-order / delete wired to the board store's commands, plus a
+ * creation palette for the board-native item kinds. It reads the ACTIVE BOARD instance
+ * (never the character context) and only mounts when a board tab is active. Embedded
+ * drawer items, connections, and threats are later prompts.
  */
 
-/** A new stand-in item's default size, in world units. */
-const DEFAULT_ITEM_WIDTH = 160;
-const DEFAULT_ITEM_HEIGHT = 120;
+/** The board-native item kinds the palette can create. */
+type CreatableKind = 'post-it' | 'journal' | 'image';
+
+/** Default size (world units) per creatable kind. */
+const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
+   'post-it': { width: 180, height: 180 },
+   journal: { width: 260, height: 320 },
+   image: { width: 240, height: 180 },
+};
+
+/** A fresh, empty content payload for a new item of `kind`. */
+function emptyContent(kind: CreatableKind): BoardItemContent {
+   switch (kind) {
+      case 'post-it':
+         return { kind: 'post-it', text: '' };
+      case 'journal':
+         return { kind: 'journal', pages: [''] };
+      case 'image':
+         return { kind: 'image', assetId: null, fit: 'cover' };
+   }
+}
+
 /** Wheel-to-zoom sensitivity: a typical notch (~100 deltaY) is a gentle step. */
 const ZOOM_SENSITIVITY = 0.0015;
 /** The store's default viewport, reused by return-to-origin. */
@@ -132,7 +148,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // ==================
    //  Toolbar actions
    // ==================
-   const handleAddItem = () => {
+   const handleAddItem = (kind: CreatableKind) => {
       const el = clipRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -140,17 +156,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
       const zValues = sortedItems.map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+      const size = ITEM_SIZE[kind];
       const id = cuid();
-      // Stand-in item until board-8's real palette: a minimal empty post-it.
       void actions.addItem({
          id,
-         kind: 'post-it',
-         x: center.x - DEFAULT_ITEM_WIDTH / 2,
-         y: center.y - DEFAULT_ITEM_HEIGHT / 2,
-         width: DEFAULT_ITEM_WIDTH,
-         height: DEFAULT_ITEM_HEIGHT,
+         kind,
+         x: center.x - size.width / 2,
+         y: center.y - size.height / 2,
+         width: size.width,
+         height: size.height,
          z,
-         content: { kind: 'post-it', text: '' },
+         content: emptyContent(kind),
       });
       setSelectedId(id);
    };
@@ -180,6 +196,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   onSelect={setSelectedId}
                   onMove={actions.moveItem}
                   onResize={actions.resizeItem}
+                  onUpdateContent={actions.updateItemContent}
                   onBringToFront={actions.bringToFront}
                   onSendToBack={actions.sendToBack}
                   onDelete={handleDelete}
@@ -187,31 +204,41 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             ))}
          </div>
 
-         {/* Floating toolbar: stop the pointer from starting a pan when using it. */}
+         {/* Floating palette + view controls: stop the pointer from starting a pan. */}
          <div
             onPointerDown={(event) => event.stopPropagation()}
             className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm"
          >
-            <button
-               type="button"
-               onClick={handleAddItem}
-               title={t('BoardView.addItem')}
-               aria-label={t('BoardView.addItem')}
-               className="flex items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
-            >
-               <Plus className="h-4 w-4" />
-            </button>
-            <button
-               type="button"
-               onClick={() => actions.setViewport({ ...ORIGIN_VIEWPORT })}
-               title={t('BoardView.returnToOrigin')}
-               aria-label={t('BoardView.returnToOrigin')}
-               className="flex items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
-            >
+            <ToolbarButton title={t('BoardView.addPostIt')} onClick={() => handleAddItem('post-it')}>
+               <StickyNote className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton title={t('BoardView.addJournal')} onClick={() => handleAddItem('journal')}>
+               <NotebookText className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton title={t('BoardView.addImage')} onClick={() => handleAddItem('image')}>
+               <ImageIcon className="h-4 w-4" />
+            </ToolbarButton>
+            <div className="mx-0.5 h-5 w-px bg-border" />
+            <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport({ ...ORIGIN_VIEWPORT })}>
                <Crosshair className="h-4 w-4" />
-            </button>
+            </ToolbarButton>
             <span className="px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
          </div>
       </div>
+   );
+}
+
+/** A button in the canvas palette/view toolbar. */
+function ToolbarButton({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+   return (
+      <button
+         type="button"
+         onClick={onClick}
+         title={title}
+         aria-label={title}
+         className="flex items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
+      >
+         {children}
+      </button>
    );
 }

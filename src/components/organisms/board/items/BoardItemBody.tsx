@@ -1,0 +1,50 @@
+// -- Component Imports --
+import { PostItItem } from './PostItItem';
+import { JournalItem } from './JournalItem';
+import { ImageItem } from './ImageItem';
+
+// -- Type Imports --
+import type { BoardItem, BoardItemContent } from '@/lib/types/board';
+
+/*
+ * Picks the per-kind body for a board item. The board-native kinds (post-it, journal,
+ * image) render their real, editable body; every other kind (threat, connection, the
+ * later embedded card/tracker) falls back to a generic labelled box. Content edits are
+ * dispatched through `onContentChange`, already bound to this item's id by the box.
+ */
+
+interface BoardItemBodyProps {
+   item: BoardItem;
+   isSelected: boolean;
+   /** Commits new content for this item (one undoable command per edit session). */
+   onContentChange: (content: BoardItemContent) => void;
+   /** Selects this item (used by text fields that stop pointer propagation). */
+   onRequestSelect: () => void;
+}
+
+export function BoardItemBody({ item, isSelected, onContentChange, onRequestSelect }: BoardItemBodyProps) {
+   const { content } = item;
+
+   switch (content.kind) {
+      case 'post-it':
+         return <PostItItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+      case 'journal':
+         return <JournalItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+      case 'image':
+         return <ImageItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+      default:
+         return <GenericItemBody item={item} />;
+   }
+}
+
+/** The pre-board-8 generic box: kind label + live size, for kinds without a real body yet. */
+function GenericItemBody({ item }: { item: BoardItem }) {
+   return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-card text-card-foreground">
+         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{item.kind}</span>
+         <span className="text-[10px] text-muted-foreground">
+            {Math.round(item.width)} × {Math.round(item.height)}
+         </span>
+      </div>
+   );
+}

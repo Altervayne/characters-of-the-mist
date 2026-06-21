@@ -33,11 +33,24 @@
       }
    },
    "BoardView": {
-      "addItem": "Add item",
+      "addPostIt": "Add post-it",
+      "addJournal": "Add journal",
+      "addImage": "Add image",
       "returnToOrigin": "Reset view",
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
-      "deleteItem": "Delete"
+      "deleteItem": "Delete",
+      "postItPlaceholder": "Write a note…",
+      "journalPlaceholder": "Write…",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "addPage": "Add page",
+      "removePage": "Remove page",
+      "imageUpload": "Upload image",
+      "imageChange": "Change image",
+      "imageRemove": "Remove image",
+      "imageToggleFit": "Toggle cover / contain",
+      "imageUploadFailed": "Could not process that image."
    },
    "DragPuck": {
       "openAsTab": "Open as tab",

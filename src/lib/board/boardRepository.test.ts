@@ -144,6 +144,16 @@ describe('board item CRUD', () => {
       expect(item?.kind).toBe('connection');
       expect(item?.content).toEqual({ kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#fff' } });
    });
+
+   it('listAllBoardItems returns every item across all boards (for asset GC)', async () => {
+      const a = await repository.createBoard('A');
+      const b = await repository.createBoard('B');
+      await repository.bulkPutItems([makeItem('a1', a.id, 0), makeItem('a2', a.id, 1)]);
+      await repository.addItem(makeItem('b1', b.id, 0));
+
+      const all = (await repository.listAllBoardItems()).map((i) => i.id).sort();
+      expect(all).toEqual(['a1', 'a2', 'b1']);
+   });
 });
 
 describe('deleteBoard (cascade)', () => {

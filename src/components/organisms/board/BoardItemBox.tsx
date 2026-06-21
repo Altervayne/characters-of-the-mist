@@ -9,14 +9,17 @@ import { ArrowDownToLine, ArrowUpToLine, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { screenDeltaToWorld } from '@/lib/board/boardCoordinates';
 
+// -- Component Imports --
+import { BoardItemBody } from './items/BoardItemBody';
+
 // -- Type Imports --
-import type { BoardItem } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent } from '@/lib/types/board';
 import type { ResizePatch } from '@/lib/board/boardCommands';
 
 /*
- * Generic presentational box for one board item: a bordered rectangle at the item's
- * world rect showing its kind (real per-kind rendering is a later prompt). When
- * selected it grows resize handles and a small action toolbar (raise / lower / delete).
+ * The chrome for one board item: the positioned box, move/resize gestures, the
+ * selection ring, resize handles, and the raise/lower/delete toolbar. The body itself
+ * is delegated to {@link BoardItemBody}, which renders the real per-kind content.
  *
  * Move and resize use plain pointer math (NOT dnd-kit, which is reserved for the
  * cross-surface drawer->board drop). The gesture is tracked in LOCAL state and rendered
@@ -56,6 +59,7 @@ interface BoardItemBoxProps {
    onSelect: (id: string) => void;
    onMove: (id: string, position: { x: number; y: number }) => void;
    onResize: (id: string, patch: ResizePatch) => void;
+   onUpdateContent: (id: string, content: BoardItemContent) => void;
    onBringToFront: (id: string) => void;
    onSendToBack: (id: string) => void;
    onDelete: (id: string) => void;
@@ -77,6 +81,7 @@ export function BoardItemBox({
    onSelect,
    onMove,
    onResize,
+   onUpdateContent,
    onBringToFront,
    onSendToBack,
    onDelete,
@@ -193,14 +198,16 @@ export function BoardItemBox({
             onPointerMove={handleBodyPointerMove}
             onPointerUp={handleBodyPointerUp}
             className={cn(
-               'flex h-full w-full select-none flex-col items-center justify-center gap-1 overflow-hidden rounded-md border bg-card text-card-foreground shadow-sm',
+               'h-full w-full select-none overflow-hidden rounded-md border shadow-sm',
                isSelected ? 'border-primary ring-2 ring-primary cursor-move' : 'border-border cursor-pointer hover:border-primary/50',
             )}
          >
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{item.kind}</span>
-            <span className="text-[10px] text-muted-foreground">
-               {Math.round(rect.width)} × {Math.round(rect.height)}
-            </span>
+            <BoardItemBody
+               item={item}
+               isSelected={isSelected}
+               onContentChange={(content) => onUpdateContent(item.id, content)}
+               onRequestSelect={() => onSelect(item.id)}
+            />
          </div>
 
          {isSelected && (

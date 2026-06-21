@@ -1,10 +1,12 @@
 // -- Local Imports --
 import { listCharacters } from '@/lib/character/characterRepository';
 import { listAllItemContents } from '@/lib/drawer/drawerRepository';
+import { listAllBoardItems } from '@/lib/board/boardRepository';
 
 // -- Type Imports --
 import type { Card, Character } from '@/lib/types/character';
 import type { DrawerItemContent } from '@/lib/types/drawer';
+import type { BoardItemRecord } from '@/lib/board/boardRecords';
 
 /*
  * The "mark" side of asset garbage collection: walks every place an asset id can
@@ -39,9 +41,16 @@ function collectFromItemContent(content: DrawerItemContent, into: Set<string>): 
    // Trackers hold no asset references.
 }
 
+/** Adds a board image item's `content.assetId` to `into` when present (other kinds hold no asset references). */
+function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
+   const { content } = item;
+   if (content.kind === 'image' && content.assetId) into.add(content.assetId);
+}
+
 /**
  * Collects every asset hash currently referenced anywhere in stored data: every
- * character's cards, and every drawer item whose content is a card or a character.
+ * character's cards, every drawer item whose content is a card or a character, and
+ * every board's image items.
  *
  * @returns The set of referenced hashes. Anything in the asset store NOT in this
  *   set is an orphan candidate for the sweep (subject to the grace window).
@@ -49,13 +58,15 @@ function collectFromItemContent(content: DrawerItemContent, into: Set<string>): 
 export async function collectReferencedAssetHashes(): Promise<Set<string>> {
    const referenced = new Set<string>();
 
-   const [characterRecords, itemContents] = await Promise.all([
+   const [characterRecords, itemContents, boardItems] = await Promise.all([
       listCharacters(),
       listAllItemContents(),
+      listAllBoardItems(),
    ]);
 
    for (const record of characterRecords) collectFromCharacter(record.character, referenced);
    for (const content of itemContents) collectFromItemContent(content, referenced);
+   for (const item of boardItems) collectFromBoardItem(item, referenced);
 
    return referenced;
 }

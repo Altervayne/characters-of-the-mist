@@ -33,11 +33,24 @@
       }
    },
    "BoardView": {
-      "addItem": "[TO COMPLETE]",
+      "addPostIt": "[TO COMPLETE]",
+      "addJournal": "[TO COMPLETE]",
+      "addImage": "[TO COMPLETE]",
       "returnToOrigin": "[TO COMPLETE]",
       "bringToFront": "[TO COMPLETE]",
       "sendToBack": "[TO COMPLETE]",
-      "deleteItem": "[TO COMPLETE]"
+      "deleteItem": "[TO COMPLETE]",
+      "postItPlaceholder": "[TO COMPLETE]",
+      "journalPlaceholder": "[TO COMPLETE]",
+      "prevPage": "[TO COMPLETE]",
+      "nextPage": "[TO COMPLETE]",
+      "addPage": "[TO COMPLETE]",
+      "removePage": "[TO COMPLETE]",
+      "imageUpload": "[TO COMPLETE]",
+      "imageChange": "[TO COMPLETE]",
+      "imageRemove": "[TO COMPLETE]",
+      "imageToggleFit": "[TO COMPLETE]",
+      "imageUploadFailed": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "Ouvrir dans un nouvel onglet",

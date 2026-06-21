@@ -186,6 +186,15 @@ export function deleteItem(id: string): Promise<void> {
    });
 }
 
+/**
+ * Lists EVERY board item across all boards, for the asset GC's reference scan (which
+ * must see board images, or board art is reclaimed once past the grace window). Reads
+ * the whole `boardItems` table; the sweep runs rarely, so the full read is fine.
+ */
+export function listAllBoardItems(): Promise<BoardItemRecord[]> {
+   return db.boardItems.toArray();
+}
+
 /** Inserts/replaces many items atomically (for the command engine's multi-item mutations). */
 export function bulkPutItems(records: BoardItemRecord[]): Promise<void> {
    return runWriteTransaction([db.boardItems], async () => {

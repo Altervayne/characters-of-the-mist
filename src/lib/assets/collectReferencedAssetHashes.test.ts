@@ -53,9 +53,25 @@ function seedDrawerItem(id: string, content: DrawerItemContent) {
    });
 }
 
+/** Adds a board item row directly (the kind drives whether it carries an asset reference). */
+function seedBoardItem(id: string, kind: 'image' | 'post-it', assetId: string | null) {
+   return drawerDatabase.boardItems.add({
+      id,
+      boardId: 'board-1',
+      kind,
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      z: 0,
+      content: kind === 'image' ? { kind: 'image', assetId, fit: 'cover' } : { kind: 'post-it', text: '' },
+   });
+}
+
 beforeEach(async () => {
    await drawerDatabase.characters.clear();
    await drawerDatabase.items.clear();
+   await drawerDatabase.boardItems.clear();
 });
 
 describe('collectReferencedAssetHashes', () => {
@@ -95,6 +111,24 @@ describe('collectReferencedAssetHashes', () => {
 
    it('ignores cards without an assetId and returns empty when nothing references', async () => {
       await saveCharacter(makeCharacter('char-1', [makeCard('c1', null)]));
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.size).toBe(0);
+   });
+
+   it('finds the assetId on a board image item (so the GC keeps board art)', async () => {
+      await seedBoardItem('img-item', 'image', 'asset-board');
+      await seedBoardItem('note-item', 'post-it', null); // a non-image item holds no reference
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.has('asset-board')).toBe(true);
+      expect(referenced.size).toBe(1);
+   });
+
+   it('ignores a board image item whose assetId is null (empty image box)', async () => {
+      await seedBoardItem('img-empty', 'image', null);
 
       const referenced = await collectReferencedAssetHashes();
 
