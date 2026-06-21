@@ -48,19 +48,23 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { setSideBySideView } = useAppSettingsActions();
    const { setTheme: setMode } = useTheme();
 
-   const handleExportCharacter = () => {
+   const handleExportCharacter = async () => {
       if (!character) {
          toast.error(tNotifications('Notifications.character.exportFailedNoChar'));
          return;
       };
-      exportCharacterSheet(character);
-      toast.success(tNotifications('Notifications.character.exported'));
+      try {
+         await exportCharacterSheet(character);
+         toast.success(tNotifications('Notifications.character.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.general.exportError'));
+      }
    };
 
    const handleExportDrawer = async () => {
       try {
          const drawer = await exportEntireDrawerAsNestedTree();
-         exportDrawer(drawer);
+         await exportDrawer(drawer);
          toast.success(tNotifications('Notifications.drawer.exported'));
       } catch {
          toast.error(tNotifications('Notifications.drawer.actionFailed'));

@@ -47,7 +47,7 @@ export function MigrationNoticeDialog({ isOpen, onClose }: MigrationNoticeDialog
    const { t } = useTranslation();
    const [exported, setExported] = useState(false);
 
-   const handleExportOldData = () => {
+   const handleExportOldData = async () => {
       const drawer = getLegacyDrawerForBackup();
       const character = getLegacyCharacterForBackup();
       if (!drawer && !character) {
@@ -55,8 +55,8 @@ export function MigrationNoticeDialog({ isOpen, onClose }: MigrationNoticeDialog
          return;
       }
       try {
-         if (drawer) exportDrawer(drawer);
-         if (character) exportCharacterSheet(character);
+         if (drawer) await exportDrawer(drawer);
+         if (character) await exportCharacterSheet(character);
          setExported(true);
          toast.success(t('MigrationNotice.exported'));
       } catch {

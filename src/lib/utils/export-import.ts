@@ -1,15 +1,33 @@
 import type { Card, Tracker, Character, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
-import type { Drawer, Folder, GameSystem, GeneralItemType } from '../types/drawer';
+import type { Drawer, DrawerItem, Folder, GameSystem, GeneralItemType } from '../types/drawer';
 import { APP_VERSION } from '../config';
+import { getAsset, storeAsset } from '@/lib/assets/assetRepository';
+import { hashBytes } from '@/lib/assets/processImage';
+import type { ProcessedImage } from '@/lib/assets/processImage';
 
 export type ExportableItemType = GeneralItemType
 export type ExportableContent = Card | Tracker | Character | Folder | Drawer;
+
+/** One asset's bytes carried inside an exported file so the file is self-contained. */
+export interface EmbeddedAsset {
+   mimeType: string;
+   width: number;
+   height: number;
+   /** The processed webp bytes, base64-encoded. */
+   base64: string;
+}
 
 export interface ExportFile {
    fileType: ExportableItemType;
    game: GameSystem;
    version?: string;
    content: ExportableContent;
+   /**
+    * The bytes of every asset the `content` references, keyed by hash. Optional and
+    * additive: files written before this (and any asset-free export) omit it and
+    * import exactly as before.
+    */
+   assets?: Record<string, EmbeddedAsset>;
 };
 
 /**
@@ -128,17 +146,160 @@ export function deriveDrawerFolderName(fileName: string, fallbackName: string): 
    return `${fallbackName} - ${date}`;
 }
 
-/**
- * Exports an item to a .cotm file and triggers the browser download.
- * Wraps the content in an ExportFile structure with metadata and version info.
+// ==================
+//  Asset embedding (inline-embed export / import)
+// ==================
+
+/*
+ * The in-hand-content analogue of `collectReferencedAssetHashes` (which reads the DB):
+ * it walks whatever is being exported and returns the asset hashes it references. The
+ * per-card/per-character walk mirrors that collector so the two stay consistent.
  */
-export function exportToFile(item: ExportableContent, type: ExportableItemType, game: GameSystem, fileName: string) {
+
+/** Adds a card's `details.assetId` to `into` when present (a pure presence check, no `cardType` gate). */
+function collectFromCard(card: Card, into: Set<string>): void {
+   const assetId = (card.details as { assetId?: unknown }).assetId;
+   if (typeof assetId === 'string' && assetId.length > 0) into.add(assetId);
+}
+
+/** Walks every card on a character. */
+function collectFromCharacter(character: Character, into: Set<string>): void {
+   for (const card of character.cards) collectFromCard(card, into);
+}
+
+/** A drawer item's content is a character (has `cards`), a card (has `details`), or a tracker (neither). */
+function collectFromItem(item: DrawerItem, into: Set<string>): void {
+   const content = item.content;
+   if (Array.isArray((content as Character).cards)) {
+      collectFromCharacter(content as Character, into);
+   } else if ('details' in content) {
+      collectFromCard(content as Card, into);
+   }
+}
+
+/** Recurses a folder's items and sub-folders. */
+function collectFromFolder(folder: Folder, into: Set<string>): void {
+   for (const item of folder.items) collectFromItem(item, into);
+   for (const sub of folder.folders) collectFromFolder(sub, into);
+}
+
+/**
+ * Collects every asset hash referenced by `content`, whatever it is: a character, a
+ * single card, or a folder/drawer of them. Trackers reference nothing.
+ *
+ * @param content - The item being exported.
+ * @returns The set of referenced asset hashes.
+ */
+export function collectAssetIdsFromContent(content: ExportableContent): Set<string> {
+   const ids = new Set<string>();
+   if ('rootItems' in content) {
+      // Drawer: root items + every folder subtree.
+      for (const item of content.rootItems) collectFromItem(item, ids);
+      for (const folder of content.folders) collectFromFolder(folder, ids);
+   } else if ('items' in content) {
+      collectFromFolder(content, ids); // Folder
+   } else if (Array.isArray((content as Character).cards)) {
+      collectFromCharacter(content as Character, ids);
+   } else if ('details' in content) {
+      collectFromCard(content as Card, ids);
+   }
+   // Trackers hold no asset references.
+   return ids;
+}
+
+/** Base64-encodes a blob's bytes, chunking the binary string so large images never blow the call stack. */
+export async function blobToBase64(blob: Blob): Promise<string> {
+   const bytes = new Uint8Array(await blob.arrayBuffer());
+   let binary = '';
+   const CHUNK = 0x8000;
+   for (let offset = 0; offset < bytes.length; offset += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+   }
+   return btoa(binary);
+}
+
+/** Decodes a base64 string to its raw bytes (ArrayBuffer-backed, so it feeds Blob/hashBytes directly). */
+export function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
+   const binary = atob(base64);
+   const bytes = new Uint8Array(binary.length);
+   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+   return bytes;
+}
+
+/**
+ * Builds the `assets` map for an export by reading each referenced asset's bytes and
+ * base64-encoding them. A referenced asset that is missing from the store (e.g. a
+ * dangling reference) is skipped, not fatal. Returns `undefined` when nothing embeds.
+ */
+async function buildEmbeddedAssets(content: ExportableContent): Promise<Record<string, EmbeddedAsset> | undefined> {
+   const ids = collectAssetIdsFromContent(content);
+   if (ids.size === 0) return undefined;
+
+   const assets: Record<string, EmbeddedAsset> = {};
+   for (const id of ids) {
+      const record = await getAsset(id);
+      if (!record) {
+         console.warn(`Export: referenced asset ${id} is missing from the store; skipping embed.`);
+         continue;
+      }
+      assets[id] = {
+         mimeType: record.mimeType,
+         width: record.width,
+         height: record.height,
+         base64: await blobToBase64(record.blob),
+      };
+   }
+   return Object.keys(assets).length > 0 ? assets : undefined;
+}
+
+/**
+ * Re-stores every embedded asset so the imported content's references resolve on this
+ * machine. Dedup-aware: assets already present collapse (no duplicate rows). The
+ * embedded hash is trusted as the key (the content references it); the bytes are
+ * re-hashed only to warn on a mismatch. A single bad asset is logged and skipped so
+ * it never blocks the rest of the import. Exported so the rehydration can be tested
+ * without a DOM `FileReader` (the full `importFromFile` path is browser-verified).
+ */
+export async function rehydrateEmbeddedAssets(assets: Record<string, EmbeddedAsset>): Promise<void> {
+   for (const [hash, embedded] of Object.entries(assets)) {
+      try {
+         const bytes = base64ToBytes(embedded.base64);
+         const blob = new Blob([bytes], { type: embedded.mimeType });
+         const actual = await hashBytes(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+         if (actual !== hash) {
+            console.warn(`Import: embedded asset hash mismatch (key ${hash}, bytes ${actual}); storing under the referenced key.`);
+         }
+         const processed: ProcessedImage = {
+            hash,
+            blob,
+            mimeType: embedded.mimeType,
+            width: embedded.width,
+            height: embedded.height,
+            byteSize: blob.size,
+         };
+         await storeAsset(processed);
+      } catch (error) {
+         console.error(`Import: failed to rehydrate embedded asset ${hash}:`, error);
+      }
+   }
+}
+
+/**
+ * Exports an item to a .cotm file and triggers the browser download. Wraps the
+ * content in an ExportFile with metadata + version, and embeds the bytes of every
+ * asset it references so the file is self-contained across devices. Async because
+ * reading the referenced asset blobs is async.
+ */
+export async function exportToFile(item: ExportableContent, type: ExportableItemType, game: GameSystem, fileName: string) {
    const exportData: ExportFile = {
       fileType: type,
       game: game,
       version: APP_VERSION,
       content: item,
    };
+
+   const assets = await buildEmbeddedAssets(item);
+   if (assets) exportData.assets = assets;
 
    const jsonString = JSON.stringify(exportData, null, 2);
    const blob = new Blob([jsonString], { type: 'application/json' });
@@ -158,30 +319,34 @@ export function exportToFile(item: ExportableContent, type: ExportableItemType, 
  * Quick helper to export a full character sheet.
  * Generates the filename automatically from the character's name and game.
  */
-export function exportCharacterSheet(character: Character) {
+export async function exportCharacterSheet(character: Character) {
    const fileName = generateExportFilename(character.game, 'FULL_CHARACTER_SHEET', character.name);
-   exportToFile(character, 'FULL_CHARACTER_SHEET', character.game, fileName);
+   await exportToFile(character, 'FULL_CHARACTER_SHEET', character.game, fileName);
 };
 
 /**
  * Exports the entire drawer - all your characters, folders, and components in one file.
  * Perfect for backups or transferring your whole collection to another device.
  */
-export function exportDrawer(drawer: Drawer) {
+export async function exportDrawer(drawer: Drawer) {
    const drawerFileName = generateExportFilename('NEUTRAL', 'FULL_DRAWER', 'Full Drawer');
-   exportToFile(drawer, 'FULL_DRAWER', 'NEUTRAL', drawerFileName);
+   await exportToFile(drawer, 'FULL_DRAWER', 'NEUTRAL', drawerFileName);
 };
 
 /**
  * Imports a .cotm file and parses it into an ExportFile structure.
  * Returns a promise that resolves with the parsed data, or rejects if the file is invalid.
  * Validates the file format to make sure it's actually a CotM export.
+ *
+ * Side effect: any embedded `assets` are re-stored (dedup-aware) BEFORE the promise
+ * resolves, so every import path resolves its asset references locally. An asset-free
+ * (or pre-embedding) file skips this and behaves exactly as before.
  */
 export function importFromFile(file: File): Promise<ExportFile> {
    return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
          try {
             const result = event.target?.result;
             if (typeof result !== 'string') {
@@ -194,7 +359,10 @@ export function importFromFile(file: File): Promise<ExportFile> {
                throw new Error('Invalid file format: Missing required properties.');
             }
 
-            resolve(parsedData as ExportFile);
+            const file = parsedData as ExportFile;
+            if (file.assets) await rehydrateEmbeddedAssets(file.assets);
+
+            resolve(file);
          } catch (error) {
             reject(error);
          }

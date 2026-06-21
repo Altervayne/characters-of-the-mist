@@ -98,7 +98,7 @@ export function useDrawerFileImport(currentFolderId: string | null) {
    const handleExportDrawer = async () => {
       try {
          const drawer = await exportEntireDrawerAsNestedTree();
-         exportDrawer(drawer);
+         await exportDrawer(drawer);
          toast.success(tNotifications('Notifications.drawer.exported'));
       } catch {
          toast.error(tNotifications('Notifications.drawer.actionFailed'));

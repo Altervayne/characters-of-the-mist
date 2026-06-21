@@ -69,6 +69,15 @@ export async function getAssetBlob(hash: string): Promise<Blob | undefined> {
 }
 
 /**
+ * Returns the full stored record for `hash` (blob + metadata), or `undefined` when
+ * absent. Used by export embedding, which needs the dimensions alongside the bytes so
+ * the import side never has to decode to learn them.
+ */
+export function getAsset(hash: string): Promise<AssetRecord | undefined> {
+   return db.assets.get(hash);
+}
+
+/**
  * Lists every asset's `hash` + `createdAt`, never the blobs - the GC's cheap "what
  * exists" side (prompt 2). Reads only the `createdAt` index and the primary keys it
  * traverses, so no row body (and no blob) is deserialized.

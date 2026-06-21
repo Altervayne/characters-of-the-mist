@@ -1,0 +1,117 @@
+// -- Library Imports --
+import { beforeEach, describe, expect, it } from 'vitest';
+
+// -- Local Imports --
+import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
+import { hashBytes } from '@/lib/assets/processImage';
+import {
+   base64ToBytes,
+   blobToBase64,
+   collectAssetIdsFromContent,
+   rehydrateEmbeddedAssets,
+} from './export-import';
+
+// -- Type Imports --
+import type { EmbeddedAsset } from './export-import';
+import type { Card, Character } from '@/lib/types/character';
+import type { Drawer, DrawerItem } from '@/lib/types/drawer';
+
+/*
+ * Tests for the inline-embed export/import plumbing: the content walk, the base64
+ * round-trip, and import rehydration (dedup-aware). The full file download/upload
+ * path (FileReader-based `importFromFile`, anchor download) is browser-verified - the
+ * Node test environment has no DOM FileReader.
+ */
+
+/** A card carrying an `assetId` (the field is not on the card type yet, so cast loosely). */
+function imageCard(assetId: string, id = 'c1'): Card {
+   return { id, title: 'Portrait', order: 0, isFlipped: false, cardType: 'IMAGE_CARD', details: { game: 'LEGENDS', assetId, fit: 'cover' } } as unknown as Card;
+}
+
+function character(cards: Card[]): Character {
+   return { id: 'ch', name: 'Hero', game: 'LEGENDS', cards, trackers: { statuses: [], storyTags: [], storyThemes: [] } } as unknown as Character;
+}
+
+function drawerItem(id: string, content: DrawerItem['content']): DrawerItem {
+   return { id, game: 'LEGENDS', type: 'IMAGE_CARD', name: id, content };
+}
+
+beforeEach(async () => {
+   await drawerDatabase.assets.clear();
+});
+
+describe('collectAssetIdsFromContent', () => {
+   it('finds the assetId on a single card', () => {
+      expect(collectAssetIdsFromContent(imageCard('hash-a'))).toEqual(new Set(['hash-a']));
+   });
+
+   it('finds assetIds across a character\'s cards', () => {
+      const result = collectAssetIdsFromContent(character([imageCard('hash-a', 'c1'), imageCard('hash-b', 'c2')]));
+      expect(result).toEqual(new Set(['hash-a', 'hash-b']));
+   });
+
+   it('recurses a drawer: root items + nested folders, cards + characters', () => {
+      const drawer: Drawer = {
+         rootItems: [drawerItem('i1', imageCard('hash-c'))],
+         folders: [
+            {
+               id: 'f1',
+               name: 'Folder',
+               items: [drawerItem('i2', character([imageCard('hash-d')]))],
+               folders: [
+                  { id: 'f2', name: 'Sub', items: [drawerItem('i3', imageCard('hash-e'))], folders: [] },
+               ],
+            },
+         ],
+      };
+
+      expect(collectAssetIdsFromContent(drawer)).toEqual(new Set(['hash-c', 'hash-d', 'hash-e']));
+   });
+
+   it('returns empty for content with no asset references', () => {
+      expect(collectAssetIdsFromContent(imageCard('')).size).toBe(0);
+      expect(collectAssetIdsFromContent(character([])).size).toBe(0);
+   });
+});
+
+describe('base64 round-trip', () => {
+   it('encodes and decodes a small blob to the exact same bytes', async () => {
+      const original = new Uint8Array([0, 1, 2, 127, 128, 200, 253, 254, 255]);
+      const blob = new Blob([original], { type: 'image/webp' });
+
+      const base64 = await blobToBase64(blob);
+      const decoded = base64ToBytes(base64);
+
+      expect(Array.from(decoded)).toEqual(Array.from(original));
+   });
+});
+
+describe('rehydrateEmbeddedAssets', () => {
+   /** Builds an embedded-assets map for the given bytes, keyed by their real hash. */
+   async function embed(bytes: Uint8Array<ArrayBuffer>): Promise<{ hash: string; assets: Record<string, EmbeddedAsset> }> {
+      const blob = new Blob([bytes], { type: 'image/webp' });
+      const base64 = await blobToBase64(blob);
+      const hash = await hashBytes(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+      return { hash, assets: { [hash]: { mimeType: 'image/webp', width: 12, height: 9, base64 } } };
+   }
+
+   it('stores embedded assets so references resolve, preserving metadata', async () => {
+      const bytes = new Uint8Array([1, 2, 3, 4, 5]);
+      const { hash, assets } = await embed(bytes);
+
+      await rehydrateEmbeddedAssets(assets);
+
+      expect(await drawerDatabase.assets.count()).toBe(1);
+      const record = await drawerDatabase.assets.get(hash);
+      expect(record).toMatchObject({ hash, mimeType: 'image/webp', width: 12, height: 9, byteSize: 5 });
+   });
+
+   it('dedups on a second import (no duplicate rows)', async () => {
+      const { assets } = await embed(new Uint8Array([9, 8, 7, 6]));
+
+      await rehydrateEmbeddedAssets(assets);
+      await rehydrateEmbeddedAssets(assets);
+
+      expect(await drawerDatabase.assets.count()).toBe(1);
+   });
+});

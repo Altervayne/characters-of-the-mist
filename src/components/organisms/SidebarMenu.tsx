@@ -125,10 +125,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       });
    };
 
-   const handleExportCharacter = () => {
+   const handleExportCharacter = async () => {
       if (!character) return;
-      exportCharacterSheet(character);
-      toast.success(tNotifications('Notifications.character.exported'));
+      try {
+         await exportCharacterSheet(character);
+         toast.success(tNotifications('Notifications.character.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.general.exportError'));
+      }
    };
 
    const handleCharacterFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {

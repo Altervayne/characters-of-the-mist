@@ -29,7 +29,9 @@ export function LegacyCharacterBackupDialog({ isOpen, onOpenChange, onRemoved }:
       const character = getLegacyCharacterForBackup();
       if (!character) return false;
       try {
-         exportCharacterSheet(character);
+         // Legacy backups predate image cards (no asset references), so the now-async
+         // export does no asset work; fire it and report the download was started.
+         void exportCharacterSheet(character);
          return true;
       } catch {
          return false;

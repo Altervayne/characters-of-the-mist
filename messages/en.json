@@ -130,6 +130,7 @@
       "upload": "Add image",
       "change": "Change image",
       "remove": "Remove image",
+      "download": "Download image",
       "uploadFailed": "Could not process that image. Please try another file."
    },
 

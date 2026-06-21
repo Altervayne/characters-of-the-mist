@@ -29,7 +29,9 @@ export function LegacyDrawerBackupDialog({ isOpen, onOpenChange, onRemoved }: Le
       const drawer = getLegacyDrawerForBackup();
       if (!drawer) return false;
       try {
-         exportDrawer(drawer);
+         // Legacy backups predate image cards (no asset references), so the now-async
+         // export does no asset work; fire it and report the download was started.
+         void exportDrawer(drawer);
          return true;
       } catch {
          return false;

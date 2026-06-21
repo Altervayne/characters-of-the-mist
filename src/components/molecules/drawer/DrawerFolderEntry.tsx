@@ -39,7 +39,7 @@ export function DrawerFolderEntry({ folder, parentFolderId, isOver, isSpringTarg
       try {
          const nestedFolder = await exportFolderAsNestedTree(folder.id);
          const fileName = generateExportFilename('NEUTRAL', 'FOLDER', folder.name);
-         exportToFile(nestedFolder, 'FOLDER', 'NEUTRAL', fileName);
+         await exportToFile(nestedFolder, 'FOLDER', 'NEUTRAL', fileName);
          toast.success(t('Notifications.drawer.folderExported'));
       } catch {
          toast.error(t('Notifications.drawer.actionFailed'));

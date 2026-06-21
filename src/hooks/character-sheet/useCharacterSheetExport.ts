@@ -26,7 +26,7 @@ import type { Card as CardData, Tracker } from '@/lib/types/character';
 export function useCharacterSheetExport() {
    const { t: tNotifications } = useTranslation();
 
-   const handleExportComponent = (item: CardData | Tracker) => {
+   const handleExportComponent = async (item: CardData | Tracker) => {
       const storableInfo = mapItemToStorableInfo(item);
 
       if (!storableInfo) {
@@ -38,8 +38,12 @@ export function useCharacterSheetExport() {
       const handle = deriveExportHandle(item, 'title' in item ? item.title : item.name);
 
       const fileName = generateExportFilename(gameSystem, itemType, handle);
-      exportToFile(item, itemType, gameSystem, fileName);
-      toast.success(tNotifications('Notifications.general.exportSuccess'));
+      try {
+         await exportToFile(item, itemType, gameSystem, fileName);
+         toast.success(tNotifications('Notifications.general.exportSuccess'));
+      } catch {
+         toast.error(tNotifications('Notifications.general.exportError'));
+      }
    };
 
    return { handleExportComponent };

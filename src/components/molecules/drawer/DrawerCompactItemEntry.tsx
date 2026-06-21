@@ -26,14 +26,18 @@ import type { DrawerItem } from '@/lib/types/drawer';
 export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
    const { t } = useTranslation();
 
-   const handleExport = (e: React.MouseEvent) => {
+   const handleExport = async (e: React.MouseEvent) => {
       e.stopPropagation();
       const { content, type, game, name } = item;
 
       const handle = deriveExportHandle(content, name);
 
       const fileName = generateExportFilename(game, type, handle);
-      exportToFile(content, type, game, fileName);
+      try {
+         await exportToFile(content, type, game, fileName);
+      } catch (error) {
+         console.error('Drawer item export failed:', error);
+      }
    };
 
    return (

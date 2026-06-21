@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 // -- Icon Imports --
-import { Image as ImageIcon, Loader2, Trash2, Upload } from 'lucide-react';
+import { Download, Image as ImageIcon, Loader2, Trash2, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -78,6 +78,19 @@ const ImageCardContent = React.memo(
 
          const altText = card.title || t('ImageCard.alt');
 
+         // Downloads the raw image file (the stored webp), distinct from the .cotm export.
+         // Uses the already-loaded object URL; a filesystem-friendly name from the title.
+         const downloadName = (card.title.trim() || 'portrait').replace(/[^\w-]+/g, '_');
+         const handleDownloadImage = () => {
+            if (!url) return;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${downloadName}.webp`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+         };
+
          const imageArea = (
             <div className="relative h-full w-full bg-muted">
                {showSpinner ? (
@@ -111,26 +124,41 @@ const ImageCardContent = React.memo(
                   </div>
                )}
 
-               {/* Image-specific edit controls, shown only with an image present. */}
-               {interactive && url && !showSpinner && (
+               {/* On-image controls. Change/Remove are edit-only; the raw-image download
+                   is available in play mode too, revealed on hover so it never covers the
+                   art (edit mode keeps them all visible). */}
+               {url && !showSpinner && !isSnapshot && !isDrawerPreview && (interactive || isHovered) && (
                   <div className="absolute right-2 top-2 flex gap-1">
+                     {interactive && (
+                        <Button
+                           variant="secondary"
+                           size="icon"
+                           className="h-8 w-8 cursor-pointer opacity-90"
+                           title={t('ImageCard.change')}
+                           onClick={openPicker}
+                        >
+                           <Upload className="h-4 w-4" />
+                        </Button>
+                     )}
+                     {interactive && (
+                        <Button
+                           variant="destructive"
+                           size="icon"
+                           className="h-8 w-8 cursor-pointer opacity-90"
+                           title={t('ImageCard.remove')}
+                           onClick={() => actions.setCardImage(card.id, null)}
+                        >
+                           <Trash2 className="h-4 w-4" />
+                        </Button>
+                     )}
                      <Button
                         variant="secondary"
                         size="icon"
                         className="h-8 w-8 cursor-pointer opacity-90"
-                        title={t('ImageCard.change')}
-                        onClick={openPicker}
+                        title={t('ImageCard.download')}
+                        onClick={handleDownloadImage}
                      >
-                        <Upload className="h-4 w-4" />
-                     </Button>
-                     <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-8 w-8 cursor-pointer opacity-90"
-                        title={t('ImageCard.remove')}
-                        onClick={() => actions.setCardImage(card.id, null)}
-                     >
-                        <Trash2 className="h-4 w-4" />
+                        <Download className="h-4 w-4" />
                      </Button>
                   </div>
                )}
