@@ -26,6 +26,7 @@ import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/Lega
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
+import { clearAllAssets } from '@/lib/assets/assetRepository';
 import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
@@ -142,6 +143,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
    const handleAppReset = async () => {
       await clearAllCharacterData();
+      await clearAllAssets();
       clearWorkspace();
       await clearAllDrawerData();
       drawerCommandEngine.clear();
