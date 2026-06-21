@@ -17,7 +17,7 @@ interface MobileCharacterNameHeaderProps {
  */
 export function MobileCharacterNameHeader({ value, onChange, placeholder }: MobileCharacterNameHeaderProps) {
 	return (
-		<header className="p-3 bg-popover border-b border-border flex items-center gap-3">
+		<header className="px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] bg-popover border-b border-border flex items-center gap-3">
 			<input
 				type="text"
 				value={value}

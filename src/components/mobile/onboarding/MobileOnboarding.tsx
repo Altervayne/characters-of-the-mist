@@ -128,7 +128,7 @@ export default function MobileOnboarding({ isOpen, onComplete }: MobileOnboardin
 	return (
 		<div className="fixed inset-0 z-100 bg-background">
 			{/* Progress Dots */}
-			<div className="absolute top-6 left-0 right-0 flex justify-center gap-2 z-10">
+			<div className="absolute top-[calc(1.5rem+env(safe-area-inset-top))] left-0 right-0 flex justify-center gap-2 z-10">
 				{STEPS.map((step, index) => (
 					<div
 						key={step}

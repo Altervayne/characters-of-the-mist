@@ -62,7 +62,7 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 	];
 
 	return (
-		<div className="h-full flex flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/10">
+		<div className="h-full flex flex-col overflow-hidden pt-safe bg-gradient-to-b from-background via-background to-muted/10">
 			{/* Header */}
 			<div className="p-6 pb-4 text-center">
 				<motion.div

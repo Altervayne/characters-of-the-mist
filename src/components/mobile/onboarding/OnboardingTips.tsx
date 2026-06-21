@@ -36,7 +36,7 @@ export default function OnboardingTips({ onNext, onBack, onSkip }: OnboardingTip
 	const setGestureHintsEnabled = useAppSettingsStore((state) => state.actions.setGestureHintsEnabled);
 
 	return (
-		<div className="flex-1 flex flex-col p-6 pt-16">
+		<div className="flex-1 flex flex-col p-6 pt-[calc(4rem+env(safe-area-inset-top))]">
 			{/* Header */}
 			<div className="text-center mb-6">
 				<div className="flex justify-center mb-4">

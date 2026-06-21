@@ -19,6 +19,8 @@ function AppContent() {
       <PWAUpdatePrompt />
       <Toaster
         position={isMobile ? 'top-center' : 'bottom-center'}
+        // Keep top-center toasts clear of the status bar on inset devices (0 elsewhere).
+        containerStyle={{ top: 'env(safe-area-inset-top)' }}
         toastOptions={{
           className: 'bg-card text-card-foreground border rounded-md shadow-lg',
           style: {

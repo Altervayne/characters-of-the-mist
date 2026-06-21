@@ -40,7 +40,7 @@ export default function MobilePatchNotes({ onBack }: MobilePatchNotesProps) {
 	};
 
 	return (
-		<div className="h-full flex flex-col overflow-y-auto">
+		<div className="h-full flex flex-col overflow-y-auto pt-safe">
 			<div className="p-6">
 				<div className="flex items-center gap-3 mb-4">
 					{onBack && (

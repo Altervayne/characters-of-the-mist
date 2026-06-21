@@ -644,6 +644,12 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
    padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Mirror of pb-safe for the top: clears the status bar / Dynamic Island on inset
+   devices in standalone. Resolves to 0 unless the document sets viewport-fit=cover. */
+@utility pt-safe {
+   padding-top: env(safe-area-inset-top);
+}
+
 /* ###################################### */
 /* ###   MOBILE STACKING LADDER (C3)  ### */
 /* ###################################### */

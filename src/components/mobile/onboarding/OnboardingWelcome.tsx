@@ -15,7 +15,7 @@ export default function OnboardingWelcome({ onNext, onSkip }: OnboardingWelcomeP
 	const { t } = useTranslation();
 
 	return (
-		<div className="flex-1 flex flex-col items-center justify-center p-6 pt-16">
+		<div className="flex-1 flex flex-col items-center justify-center p-6 pt-[calc(4rem+env(safe-area-inset-top))]">
 			{/* Logo/Icon */}
 			<div className="mb-8">
 				<div className="w-36 h-36 rounded-full flex items-center justify-center">

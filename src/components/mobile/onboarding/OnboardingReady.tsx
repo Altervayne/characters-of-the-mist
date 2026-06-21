@@ -18,7 +18,7 @@ export default function OnboardingReady({ onComplete, onBack }: OnboardingReadyP
 	const { t } = useTranslation();
 
 	return (
-		<div className="flex-1 flex flex-col items-center justify-center p-6 pt-16">
+		<div className="flex-1 flex flex-col items-center justify-center p-6 pt-[calc(4rem+env(safe-area-inset-top))]">
 			{/* Icon */}
 			<div className="mb-8">
 				<div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">

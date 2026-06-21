@@ -307,7 +307,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	const hasContent = currentFolders.length > 0 || currentItems.length > 0;
 
 	return (
-		<div className="h-full flex flex-col bg-background" data-tutorial="drawer-content">
+		<div className="h-full flex flex-col bg-background pt-safe" data-tutorial="drawer-content">
 			{/* Content */}
 			<DndContext
 				sensors={sensors}

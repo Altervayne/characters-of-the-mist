@@ -88,7 +88,8 @@ export default function TutorialTooltip({
 			return {
 				position: 'fixed' as const,
 				left: `${left}px`,
-				top: `${top}px`,
+				// Never let the tooltip sit under the status bar on an inset device.
+				top: `max(${top}px, env(safe-area-inset-top))`,
 				width: `${tooltipWidth}px`,
 				maxWidth: `calc(100vw - ${tooltipPadding * 2}px)`,
 			};
@@ -131,7 +132,8 @@ export default function TutorialTooltip({
 		return {
 			position: 'fixed' as const,
 			left: `${left}px`,
-			top: `${top}px`,
+			// Never let the tooltip sit under the status bar on an inset device.
+			top: `max(${top}px, env(safe-area-inset-top))`,
 			width: `${tooltipWidth}px`,
 		};
 	}, [targetRect, step.position, windowSize, measuredHeight]);

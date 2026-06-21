@@ -13,19 +13,22 @@ What this means is that it is now possible to do a lot of cool things, like lett
 
 Here's a summary of what's new:
 
-### Tabs !
+### 🗂️ Tabs !
 There is now a tabs system, letting you open more than one character sheet at once ! In theory, you can open infinitely many. However, I don't recommend it, as it is entirely dependent on your computer's memory, and may quickly become problematic if you start opening a large amount.
 Disclaimer: The tabs system has *not* been activated on Mobile. I honestly just don't know where I'd put it. It might come to mobile if I get a solid idea of how to implement it there.
 
-### Revamped Drag & Drop system
+### 👆 Revamped Drag & Drop system
 The drag and drop system was reviewed to feel more intuitive, and allow you to more quickly perform some actions. What has changed:
 * The Drawer now features during-drag navigation through folders. You simply need to hover over a folder, or the back button, while dragging something to open that folder or go back.
 * The drag overlay has been reviewed to be more intuitive. Items in the drawer will collapse into a pill-shaped summary containing their name and an icon showing the type of item. An icon on the left will show you the action you can perform where your cursor is.
 * The folders section has been made more consistent with itself, and should jitter less when dragging.
 * A large warning will now display when dragging an item incompatible with the current character sheet, so you don't try to drop it on there hoping it'll work.
 
-### Images !
+### 🖼️ Images !
 Characters of the Mist now has an assets system that permits the use of Images ! You can now add a portrait for your characters in the form of a savable Image card.
+
+### 🐛 Bugfixes
+* Enhanced safe-zone detection on mobile, which *should* make sure the app doesn't render underneath the notification bar when in PWA mode.
 `
    },
    {

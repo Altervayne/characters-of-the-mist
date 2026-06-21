@@ -145,7 +145,7 @@ export default function MobileAddCard({ onBack, onConfirm, mode, cardData, game 
 		(cardType === 'CHARACTER_THEME' && !themeType);
 
 	return (
-		<div className="h-full w-full flex flex-col">
+		<div className="h-full w-full flex flex-col pt-safe">
 			{/* Header */}
 			<header className="shrink-0 p-4 bg-popover border-b border-border flex items-center gap-3">
 				<IconButton

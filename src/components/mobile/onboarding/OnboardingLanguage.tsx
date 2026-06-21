@@ -33,7 +33,7 @@ export default function OnboardingLanguage({ onNext, onBack, onSkip }: Onboardin
 	};
 
 	return (
-		<div className="flex-1 flex flex-col p-6 pt-16">
+		<div className="flex-1 flex flex-col p-6 pt-[calc(4rem+env(safe-area-inset-top))]">
 			{/* Header */}
 			<div className="text-center mb-8">
 				<h1 className="text-2xl font-bold mb-2">
