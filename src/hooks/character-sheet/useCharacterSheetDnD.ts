@@ -9,7 +9,7 @@ import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
-import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, computeReorderTargetIndex, createSpringController, deriveDragContext, drawerDropTargetKey, isOverTabLaneFor, resolveDrawerDropTarget, resolveInsertPosition, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
+import { MORPH_DESCRIPTORS, SPRING_BACK_KEY, createSpringController, deriveDragContext, drawerDropTargetKey, isOverTabLaneFor, resolveDrawerDropTarget, resolveSpringTarget, resolveTabSpringTarget, shouldForceMorph, springDirection } from '@/lib/utils/dragFeedback';
 import { sheetSectionForItemType } from '@/lib/utils/dnd';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
@@ -29,7 +29,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
-import type { DragContext, DragKind, DragOverZone, DrawerDropTarget, ReorderIndicator, ReorderListId, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
+import type { DragContext, DragKind, DragOverZone, DrawerDropTarget, SpringController, SpringHitArea, SpringTarget } from '@/lib/utils/dragFeedback';
 
 
 
@@ -190,18 +190,6 @@ export function useCharacterSheetDnD() {
    // `over` indicator path so a center-only save never shows a full-row highlight.
    const [drawerDropTarget, setDrawerDropTarget] = useState<DrawerDropTarget | null>(null);
    const drawerDropTargetKeyRef = useRef<string | null>(null);
-   // Single reorder insertion-line indicator. `reorderOverRef` caches the
-   // current same-list reorder target (set in handleDragOver from dnd-kit's `over` + its
-   // measured rect); `handlePointerMove` derives the before/after edge from the live cursor
-   // each move and mirrors it into `reorderIndicator` state ONLY on a key change (so the
-   // line re-renders when the row/edge changes, not per frame). Static layout keeps the
-   // cached rect valid for the whole drag.
-   const [reorderIndicator, setReorderIndicator] = useState<ReorderIndicator | null>(null);
-   const reorderOverRef = useRef<{ listId: ReorderListId; overId: string; rect: { top: number; bottom: number; left: number; right: number }; axis: 'vertical' | 'horizontal' } | null>(null);
-   const reorderIndicatorKeyRef = useRef<string | null>(null);
-   // The latest resolved indicator, read at drop so the persisted reorder lands on the
-   // exact edge the line showed (handleDragEnd is a stable callback; a ref avoids re-binding).
-   const reorderIndicatorRef = useRef<ReorderIndicator | null>(null);
    // The live cursor each move, so a spring nav can anchor the post-nav grace below.
    const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
    // After a spring nav the view reflows under the STATIONARY cursor (e.g. at root the
@@ -368,20 +356,6 @@ export function useCharacterSheetDnD() {
          setDrawerDropTarget(nextDropTarget);
       }
 
-      // Reorder insertion line: derive the before/after edge from the live
-      // cursor vs the cached reorder target's rect (set in handleDragOver), committed only
-      // on a key change.
-      const reorderOver = reorderOverRef.current;
-      const nextReorder: ReorderIndicator | null = reorderOver
-         ? { listId: reorderOver.listId, overId: reorderOver.overId, position: resolveInsertPosition(reorderOver.rect, event.clientX, event.clientY, reorderOver.axis) }
-         : null;
-      reorderIndicatorRef.current = nextReorder;
-      const nextReorderKey = nextReorder ? `${nextReorder.listId}:${nextReorder.overId}:${nextReorder.position}` : null;
-      if (nextReorderKey !== reorderIndicatorKeyRef.current) {
-         reorderIndicatorKeyRef.current = nextReorderKey;
-         setReorderIndicator(nextReorder);
-      }
-
       // The morph context reads the SAME manual signal, so the "drawer-move" cluster
       // lights up full-row (not center-only). Recomputed after the hit-test above.
       updateContext();
@@ -441,12 +415,6 @@ export function useCharacterSheetDnD() {
       if (drawerDropTargetKeyRef.current !== null) {
          drawerDropTargetKeyRef.current = null;
          setDrawerDropTarget(null);
-      }
-      reorderOverRef.current = null;
-      reorderIndicatorRef.current = null;
-      if (reorderIndicatorKeyRef.current !== null) {
-         reorderIndicatorKeyRef.current = null;
-         setReorderIndicator(null);
       }
       navGraceAnchorRef.current = null;
       lastPointerRef.current = null;
@@ -539,31 +507,6 @@ export function useCharacterSheetDnD() {
 
       setOverDragId(over ? over.id.toString() : null);
 
-      // Cache the same-list reorder target for the insertion line: a
-      // drawer item over a sibling item (same folder), or a sheet card/tracker over a
-      // sibling of its kind. Self is excluded; the before/after edge is derived per-move
-      // from the live cursor in handlePointerMove. Folders reorder via their own slots.
-      const reorderActiveType = active.data.current?.type as string | undefined;
-      const reorderOverType = over?.data.current?.type as string | undefined;
-      if (over && over.id !== active.id) {
-         const r = over.rect;
-         const rect = { top: r.top, bottom: r.top + r.height, left: r.left, right: r.left + r.width };
-         if (
-            reorderActiveType === 'drawer-item' && reorderOverType === 'drawer-item' &&
-            (active.data.current?.parentFolderId ?? null) === (over.data.current?.parentFolderId ?? null)
-         ) {
-            reorderOverRef.current = { listId: 'drawer-items', overId: over.id.toString(), rect, axis: 'vertical' };
-         } else if (reorderActiveType === DRAG_TYPES.SHEET_CARD && reorderOverType === DRAG_TYPES.SHEET_CARD) {
-            reorderOverRef.current = { listId: 'sheet-cards', overId: over.id.toString(), rect, axis: 'horizontal' };
-         } else if (reorderActiveType === DRAG_TYPES.SHEET_TRACKER && reorderOverType === DRAG_TYPES.SHEET_TRACKER) {
-            reorderOverRef.current = { listId: 'sheet-trackers', overId: over.id.toString(), rect, axis: 'horizontal' };
-         } else {
-            reorderOverRef.current = null;
-         }
-      } else {
-         reorderOverRef.current = null;
-      }
-
       let isHoveringDrawer = false;
       // The actionable surface under the cursor. The drawer splits into its items
       // area (reorder/land) and its nav area (folders, folder slots, Back). The thin
@@ -631,14 +574,8 @@ export function useCharacterSheetDnD() {
       if (!character) return;
       const oldIndex = character.cards.findIndex(item => item.id === activeId);
       const overIndex = character.cards.findIndex(item => item.id === overId);
-      if (oldIndex !== -1 && overIndex !== -1) {
-         // Land on the insertion line's edge; fall back to the over index.
-         const ind = reorderIndicatorRef.current;
-         const newIndex = ind && ind.listId === 'sheet-cards' && ind.overId === overId
-            ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
-            : overIndex;
-         reorderCards(oldIndex, newIndex);
-      }
+      // Live shuffle: dnd-kit's `over` already reflects the shuffled position, so land on it.
+      if (oldIndex !== -1 && overIndex !== -1) reorderCards(oldIndex, overIndex);
    }, [character, reorderCards]);
 
    /**
@@ -659,25 +596,19 @@ export function useCharacterSheetDnD() {
       const activeId = active.id as string;
       const overId = over.id as string;
 
-      // Land on the insertion line's edge; fall back to the over index.
-      const ind = reorderIndicatorRef.current;
-      const targetIndex = (oldIndex: number, overIndex: number): number =>
-         ind && ind.listId === 'sheet-trackers' && ind.overId === overId
-            ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
-            : overIndex;
-
+      // Live shuffle: dnd-kit's `over` already reflects the shuffled position, so land on it.
       if (activeTracker.trackerType === 'STATUS') {
          const oldIndex = character.trackers.statuses.findIndex(item => item.id === activeId);
          const overIndex = character.trackers.statuses.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && overIndex !== -1) reorderStatuses(oldIndex, targetIndex(oldIndex, overIndex));
+         if (oldIndex !== -1 && overIndex !== -1) reorderStatuses(oldIndex, overIndex);
       } else if (activeTracker.trackerType === 'STORY_TAG') {
          const oldIndex = character.trackers.storyTags.findIndex(item => item.id === activeId);
          const overIndex = character.trackers.storyTags.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && overIndex !== -1) reorderStoryTags(oldIndex, targetIndex(oldIndex, overIndex));
+         if (oldIndex !== -1 && overIndex !== -1) reorderStoryTags(oldIndex, overIndex);
       } else if (activeTracker.trackerType === 'STORY_THEME') {
          const oldIndex = character.trackers.storyThemes.findIndex(item => item.id === activeId);
          const overIndex = character.trackers.storyThemes.findIndex(item => item.id === overId);
-         if (oldIndex !== -1 && overIndex !== -1) reorderStoryThemes(oldIndex, targetIndex(oldIndex, overIndex));
+         if (oldIndex !== -1 && overIndex !== -1) reorderStoryThemes(oldIndex, overIndex);
       }
    }, [character, reorderStatuses, reorderStoryTags, reorderStoryThemes]);
 
@@ -948,19 +879,12 @@ export function useCharacterSheetDnD() {
             // manual geometry resolver above; this block now only handles same-folder
             // item REORDER, which dnd-kit's `over` resolves reliably.
 
-            // Same-folder item REORDER over a sibling row. Land on the exact edge the
-            // insertion line showed: the cursor-resolved before/after, not
-            // dnd-kit's direction-default. Fall back to the over index if no indicator.
+            // Same-folder item REORDER over a sibling row. Live shuffle: dnd-kit's `over`
+            // already reflects the shuffled position, so land on it.
             if (overType === 'drawer-item' && activeIsItem && parentFolderId === (over.data.current?.parentFolderId ?? null)) {
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
                const overIndex = itemsInScope.findIndex(item => item.id === over.id);
-               if (oldIndex !== -1 && overIndex !== -1) {
-                  const ind = reorderIndicatorRef.current;
-                  const newIndex = ind && ind.listId === 'drawer-items' && ind.overId === over.id.toString()
-                     ? computeReorderTargetIndex(oldIndex, overIndex, ind.position)
-                     : overIndex;
-                  void reorderItems(parentFolderId, oldIndex, newIndex);
-               }
+               if (oldIndex !== -1 && overIndex !== -1) void reorderItems(parentFolderId, oldIndex, overIndex);
                return;
             }
          }
@@ -1110,8 +1034,6 @@ export function useCharacterSheetDnD() {
       // Resolved full-row in-drawer drop target, driving the folder nest + items-area
       // highlights so they match the drop.
       drawerDropTarget,
-      // Reorder insertion-line indicator: list + over + before/after.
-      reorderIndicator,
       statusIds,
       storyTagIds,
       storyThemeIds,

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 // -- Other Library Imports --
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import cuid from 'cuid';
 
 // -- Basic UI Imports --
@@ -29,7 +29,6 @@ import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwell
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
-import { DropInsertionLine } from '@/components/molecules/DropInsertionLine';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
@@ -42,7 +41,6 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
-import type { ReorderIndicator } from '@/lib/utils/dragFeedback';
 
 
 const drawerVariants: Variants = {
@@ -64,7 +62,7 @@ const contentVariants: Variants = {
 };
 
 
-export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, reorderIndicator = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, drawerDropTarget?: DrawerDropTarget | null, reorderIndicator?: ReorderIndicator | null, overDragId: string | null; springTargetId?: string | null; }) {
+export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, drawerDropTarget?: DrawerDropTarget | null, overDragId: string | null; springTargetId?: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
 
@@ -258,9 +256,9 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                            >
                               {currentItems.length > 0 ? (
                                  <div className="flex flex-col gap-2">
-                                    {/* Static layout (no live shuffle) + a single horizontal insertion line at
-                                        the hovered row's top/bottom edge. */}
-                                    <SortableContext items={currentItems.map(item => item.id)} strategy={staticListSortingStrategy}>
+                                    {/* Live shuffle: siblings animate aside to open a real gap where the
+                                        dragged item will land. */}
+                                    <SortableContext items={currentItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
                                        {currentItems.map((item) => {
                                           const commonProps = {
                                              item,
@@ -269,18 +267,10 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                              onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: item }),
                                              onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: item }),
                                           };
-                                          const line = reorderIndicator?.listId === 'drawer-items' && reorderIndicator.overId === item.id
-                                             ? reorderIndicator.position : null;
 
-                                          return (
-                                             <div key={item.id} className="relative">
-                                                {line === 'before' && <DropInsertionLine orientation="horizontal" position="before" />}
-                                                {isCompactDrawer
-                                                   ? <DrawerCompactItemEntry {...commonProps} />
-                                                   : <DrawerItemEntry {...commonProps} />}
-                                                {line === 'after' && <DropInsertionLine orientation="horizontal" position="after" />}
-                                             </div>
-                                          );
+                                          return isCompactDrawer
+                                             ? <DrawerCompactItemEntry key={item.id} {...commonProps} />
+                                             : <DrawerItemEntry key={item.id} {...commonProps} />;
                                        })}
                                     </SortableContext>
                                  </div>

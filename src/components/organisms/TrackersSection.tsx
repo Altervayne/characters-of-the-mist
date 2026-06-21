@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext } from '@dnd-kit/sortable';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,9 @@ import { PlusCircle } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
-import { staticListSortingStrategy } from '@/lib/utils/dnd';
 
 // -- DnD Component Imports --
 import { Sortable, DragLayoutWrapper } from '@/components/dnd';
-
-// -- Component Imports --
-import { DropInsertionLine } from '@/components/molecules/DropInsertionLine';
 
 // -- Component Imports --
 import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker';
@@ -29,7 +25,6 @@ import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThem
 
 // -- Type Imports --
 import type { Character, Tracker } from '@/lib/types/character';
-import type { ReorderIndicator } from '@/lib/utils/dragFeedback';
 
 
 
@@ -45,15 +40,15 @@ interface TrackersSectionProps {
    storyThemeIds: string[];
    /** Highlight the section as the landing spot for a compatible tracker-type drawer drag. */
    isDropTarget?: boolean;
-   /** The active reorder insertion line; rendered when it targets a tracker. */
-   reorderIndicator?: ReorderIndicator | null;
 }
 
 /**
  * The character sheet's trackers region: statuses, story tags, and story themes,
- * each in its own SortableContext. Presentational apart from registering its own
- * `tracker-drop-zone` droppable (which must happen inside the DndContext subtree);
- * the memoized id arrays and all handlers arrive from the page.
+ * each in its own SortableContext. Reorder is a live shuffle (`rectSortingStrategy`):
+ * siblings animate aside to open a real gap where the dragged tracker will land.
+ * Presentational apart from registering its own `tracker-drop-zone` droppable (which
+ * must happen inside the DndContext subtree); the memoized id arrays and all handlers
+ * arrive from the page.
  */
 export function TrackersSection({
    character,
@@ -66,14 +61,8 @@ export function TrackersSection({
    storyTagIds,
    storyThemeIds,
    isDropTarget = false,
-   reorderIndicator = null,
 }: TrackersSectionProps) {
    const { t: tTrackers } = useTranslation();
-
-   // A tracker is in a wrapping grid, so its insertion line is VERTICAL (left/right edge).
-   // Helper: does the line target this tracker, and where?
-   const lineFor = (trackerId: string): 'before' | 'after' | null =>
-      reorderIndicator?.listId === 'sheet-trackers' && reorderIndicator.overId === trackerId ? reorderIndicator.position : null;
 
    // Still a droppable (the drop is accepted here / routed by type), but the
    // highlight is driven by `isDropTarget` so only the type-matching section lights up.
@@ -94,33 +83,27 @@ export function TrackersSection({
       >
          <div className="flex-1 min-w-0 space-y-4">
             {/* Statuses Group */}
-            <SortableContext items={statusIds} strategy={staticListSortingStrategy}>
+            <SortableContext items={statusIds} strategy={rectSortingStrategy}>
                <div className="flex flex-wrap gap-4">
-                  {character.trackers.statuses.map(tracker => {
-                     const line = lineFor(tracker.id);
-                     return (
-                     <div key={tracker.id} className="relative">
-                        {line === 'before' && <DropInsertionLine orientation="vertical" position="before" />}
-                        <Sortable
-                           id={tracker.id}
-                           data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
-                        >
-                           {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                              <DragLayoutWrapper isBeingDragged={isBeingDragged}>
-                                 <StatusTrackerCard
-                                    tracker={tracker}
-                                    isEditing={isEditing}
-                                    dragAttributes={dragAttributes}
-                                    dragListeners={dragListeners}
-                                    onExport={() => onExport(tracker)}
-                                 />
-                              </DragLayoutWrapper>
-                           )}
-                        </Sortable>
-                        {line === 'after' && <DropInsertionLine orientation="vertical" position="after" />}
-                     </div>
-                     );
-                  })}
+                  {character.trackers.statuses.map(tracker => (
+                     <Sortable
+                        key={tracker.id}
+                        id={tracker.id}
+                        data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                     >
+                        {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                              <StatusTrackerCard
+                                 tracker={tracker}
+                                 isEditing={isEditing}
+                                 dragAttributes={dragAttributes}
+                                 dragListeners={dragListeners}
+                                 onExport={() => onExport(tracker)}
+                              />
+                           </DragLayoutWrapper>
+                        )}
+                     </Sortable>
+                  ))}
                   {areTrackersEditable && (
                      <Button
                         data-tour="add-status-button"
@@ -139,33 +122,27 @@ export function TrackersSection({
             </SortableContext>
 
             {/* Story Tags Group */}
-            <SortableContext items={storyTagIds} strategy={staticListSortingStrategy}>
+            <SortableContext items={storyTagIds} strategy={rectSortingStrategy}>
                <div className="flex flex-wrap gap-4">
-                  {character.trackers.storyTags.map(tracker => {
-                     const line = lineFor(tracker.id);
-                     return (
-                     <div key={tracker.id} className="relative">
-                        {line === 'before' && <DropInsertionLine orientation="vertical" position="before" />}
-                        <Sortable
-                           id={tracker.id}
-                           data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
-                        >
-                           {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                              <DragLayoutWrapper isBeingDragged={isBeingDragged}>
-                                 <StoryTagTrackerCard
-                                    tracker={tracker}
-                                    isEditing={isEditing}
-                                    dragAttributes={dragAttributes}
-                                    dragListeners={dragListeners}
-                                    onExport={() => onExport(tracker)}
-                                 />
-                              </DragLayoutWrapper>
-                           )}
-                        </Sortable>
-                        {line === 'after' && <DropInsertionLine orientation="vertical" position="after" />}
-                     </div>
-                     );
-                  })}
+                  {character.trackers.storyTags.map(tracker => (
+                     <Sortable
+                        key={tracker.id}
+                        id={tracker.id}
+                        data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                     >
+                        {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                              <StoryTagTrackerCard
+                                 tracker={tracker}
+                                 isEditing={isEditing}
+                                 dragAttributes={dragAttributes}
+                                 dragListeners={dragListeners}
+                                 onExport={() => onExport(tracker)}
+                              />
+                           </DragLayoutWrapper>
+                        )}
+                     </Sortable>
+                  ))}
                   {areTrackersEditable && (
                      <Button
                         data-tour="add-story-tag-button"
@@ -194,33 +171,27 @@ export function TrackersSection({
             }}
          >
             {/* Story Themes Group */}
-            <SortableContext items={storyThemeIds} strategy={staticListSortingStrategy}>
+            <SortableContext items={storyThemeIds} strategy={rectSortingStrategy}>
                <div className="flex flex-wrap justify-end gap-4">
-                  {character.trackers.storyThemes.map(tracker => {
-                     const line = lineFor(tracker.id);
-                     return (
-                     <div key={tracker.id} className="relative">
-                        {line === 'before' && <DropInsertionLine orientation="vertical" position="before" />}
-                        <Sortable
-                           id={tracker.id}
-                           data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
-                        >
-                           {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                              <DragLayoutWrapper isBeingDragged={isBeingDragged}>
-                                 <StoryThemeTrackerCard
-                                    tracker={tracker}
-                                    isEditing={isEditing}
-                                    dragAttributes={dragAttributes}
-                                    dragListeners={dragListeners}
-                                    onExport={() => onExport(tracker)}
-                                 />
-                              </DragLayoutWrapper>
-                           )}
-                        </Sortable>
-                        {line === 'after' && <DropInsertionLine orientation="vertical" position="after" />}
-                     </div>
-                     );
-                  })}
+                  {character.trackers.storyThemes.map(tracker => (
+                     <Sortable
+                        key={tracker.id}
+                        id={tracker.id}
+                        data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                     >
+                        {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                              <StoryThemeTrackerCard
+                                 tracker={tracker}
+                                 isEditing={isEditing}
+                                 dragAttributes={dragAttributes}
+                                 dragListeners={dragListeners}
+                                 onExport={() => onExport(tracker)}
+                              />
+                           </DragLayoutWrapper>
+                        )}
+                     </Sortable>
+                  ))}
                </div>
             </SortableContext>
          </div>

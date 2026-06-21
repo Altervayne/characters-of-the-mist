@@ -84,7 +84,6 @@ function DesktopCharacterSheetPage() {
       overDragId,
       isOverDrawer,
       drawerDropTarget,
-      reorderIndicator,
       statusIds,
       storyTagIds,
       storyThemeIds,
@@ -231,7 +230,6 @@ function DesktopCharacterSheetPage() {
                                  storyTagIds={storyTagIds}
                                  storyThemeIds={storyThemeIds}
                                  isDropTarget={sheetHighlight === 'trackers'}
-                                 reorderIndicator={reorderIndicator}
                               />
 
                               <CardsSection
@@ -243,7 +241,6 @@ function DesktopCharacterSheetPage() {
                                  onAddPortrait={addPortrait}
                                  cardIds={cardIds}
                                  isDropTarget={sheetHighlight === 'cards'}
-                                 reorderIndicator={reorderIndicator}
                               />
                            </SheetMainDropZone>
                         </div>
@@ -271,7 +268,6 @@ function DesktopCharacterSheetPage() {
                      isDragHovering={isOverDrawer}
                      activeDragId={activeDragItem?.id ?? null}
                      drawerDropTarget={drawerDropTarget}
-                     reorderIndicator={reorderIndicator}
                      overDragId={overDragId}
                      springTargetId={springTarget}
                   />

@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- DnD Component Imports --
-import { Sortable, DragLayoutWrapper } from '@/components/dnd';
+import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
 // -- Basic UI Imports --
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -47,7 +47,7 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
          disabled={isPreview}
       >
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
-            <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+            <DragStaticWrapper isBeingDragged={isBeingDragged}>
                <div
                   className={cn(
                      "group flex items-center justify-between gap-2 py-1 pl-1 pr-2 rounded hover:bg-muted data-[state=open]:bg-muted",
@@ -75,7 +75,7 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
                      </DropdownMenu>
                   }
                </div>
-            </DragLayoutWrapper>
+            </DragStaticWrapper>
          )}
       </Sortable>
    );

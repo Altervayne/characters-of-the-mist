@@ -8,13 +8,11 @@ import {
    TAB_LANE_BELOW_PADDING,
    TAB_LANE_SIDE_PADDING,
    createSpringController,
-   computeReorderTargetIndex,
    deriveDragContext,
    drawerDropTargetKey,
    isOverTabLaneFor,
    isWithinTabLane,
    resolveDrawerDropTarget,
-   resolveInsertPosition,
    resolveSpringTarget,
    resolveTabSpringTarget,
    selectMorphGlyph,
@@ -211,52 +209,6 @@ describe('resolveDrawerDropTarget (manual in-drawer drop hit-test)', () => {
    it('returns null when outside the drawer panel entirely', () => {
       expect(resolveDrawerDropTarget(folders, drawerPanel, 100, 900, null)).toBeNull();
       expect(resolveDrawerDropTarget(folders, null, 100, 15, null)).toBeNull();
-   });
-});
-
-describe('resolveInsertPosition (before/after by midpoint)', () => {
-   const rect = { top: 100, bottom: 140, left: 0, right: 200 }; // 40px tall, 200px wide
-
-   it('vertical list: cursor in the top half is before, bottom half is after', () => {
-      expect(resolveInsertPosition(rect, 50, 110, 'vertical')).toBe('before');
-      expect(resolveInsertPosition(rect, 50, 130, 'vertical')).toBe('after');
-      expect(resolveInsertPosition(rect, 50, 120, 'vertical')).toBe('after'); // exactly the midpoint → after
-   });
-
-   it('horizontal grid: cursor in the left half is before, right half is after', () => {
-      expect(resolveInsertPosition(rect, 40, 120, 'horizontal')).toBe('before');
-      expect(resolveInsertPosition(rect, 160, 120, 'horizontal')).toBe('after');
-      expect(resolveInsertPosition(rect, 100, 120, 'horizontal')).toBe('after'); // exactly the midpoint → after
-   });
-
-   it('uses only the axis-relevant coordinate', () => {
-      // vertical ignores X; horizontal ignores Y
-      expect(resolveInsertPosition(rect, 9999, 110, 'vertical')).toBe('before');
-      expect(resolveInsertPosition(rect, 40, 9999, 'horizontal')).toBe('before');
-   });
-});
-
-describe('computeReorderTargetIndex (arrayMove destination honoring before/after)', () => {
-   // Verified against arrayMove on [A,B,C,D] (indices 0..3).
-   it('moving forward lands before/after the target', () => {
-      // move A(0) after C(2) → [B,C,A,D]
-      expect(computeReorderTargetIndex(0, 2, 'after')).toBe(2);
-      // move A(0) before C(2) → [B,A,C,D]
-      expect(computeReorderTargetIndex(0, 2, 'before')).toBe(1);
-   });
-
-   it('moving backward lands before/after the target', () => {
-      // move D(3) before B(1) → [A,D,B,C]
-      expect(computeReorderTargetIndex(3, 1, 'before')).toBe(1);
-      // move D(3) after B(1) → [A,B,D,C]
-      expect(computeReorderTargetIndex(3, 1, 'after')).toBe(2);
-   });
-
-   it('handles adjacent targets', () => {
-      // move B(1) after C(2) → [A,C,B,D]
-      expect(computeReorderTargetIndex(1, 2, 'after')).toBe(2);
-      // move C(2) before B(1) → [A,C,B,D]
-      expect(computeReorderTargetIndex(2, 1, 'before')).toBe(1);
    });
 });
 
