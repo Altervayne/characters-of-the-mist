@@ -20,6 +20,8 @@ import { attachPersistenceHandle, detachPersistenceHandle, discardPersistenceHan
 import { deleteCharacter, getCharacter } from './characterRepository';
 import { readWorkspace, writeWorkspace } from './workspaceSession';
 import { getEffectiveDeviceType } from '@/hooks/useDeviceType';
+import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
+import { createBoard, deleteBoard, loadBoard } from '@/lib/board/boardRepository';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
@@ -41,14 +43,24 @@ import type { Workspace } from './workspaceSession';
  *   opening/creating the next, but never prune `openTabs` (the shared desktop set).
  * Boot is platform-aware (`runCharacterBoot`): desktop hydrates all tabs (active
  * first), mobile hydrates only the active one.
+ *
+ * TAB KINDS: tabs are now either characters or boards. The two kinds live in separate
+ * registries (character + board), but the TabManager owns the single active pointer
+ * across both: exactly one tab is active, and activating one kind parks the other's
+ * registry (a board tab parks the character registry on the menu fallback, so no sheet
+ * shows). Boards are desktop-only; the `mobile*` actions and `bootMobile` never touch
+ * them. No UI creates a board tab yet (board-5), so the board paths are dormant.
  */
 
-/** The kind of a tab. Only characters exist today; Boards/Notes are additive later. */
-export type TabType = 'character';
+/** The kind of a tab. Boards are desktop-only and have no UI entry point yet (board-5). */
+export type TabType = 'character' | 'board';
+
+/** Default name for a freshly created board, until the board UI lets the user rename it. */
+const DEFAULT_BOARD_NAME = 'New Board';
 
 /** A tab in the workspace, in tab order. */
 export interface OpenTab {
-   /** For a character tab, the character id keying its store instance and handle. */
+   /** The id keying the tab's store instance: a character id, or (for a board) its `boards` row id. */
    id: string;
    /** Discriminant for the tab's content type. */
    type: TabType;
@@ -65,7 +77,11 @@ interface TabManagerState {
       createCharacterTab: (game: GameSystem) => void;
       /** Opens an existing/imported `character`; focuses its tab if already open, else appends + activates. */
       openCharacterTab: (character: Character, drawerItemId?: string) => void;
-      /** Closes tab `id` (flush → detach → dispose) and activates a neighbour, or the menu when none remain. */
+      /** Creates a brand-new board, appends it as a tab, hydrates its instance, and activates it. Desktop-only. */
+      createBoardTab: () => Promise<void>;
+      /** Opens board `boardId`; focuses its tab if already open, else hydrates + appends + activates. Desktop-only. */
+      openBoardTab: (boardId: string) => Promise<void>;
+      /** Closes tab `id` (dispose + delete its record) and activates a neighbour, or the menu when none remain. */
       closeTab: (id: string) => void;
       /** Convenience: closes the currently active tab. */
       closeActiveTab: () => void;
@@ -92,13 +108,46 @@ function persistWorkspace(): void {
    writeWorkspace({ openTabs, activeId: activeTabId });
 }
 
+// ==================
+//  Active-pointer coordination (exactly one tab active across both registries)
+// ==================
+
+/** Activates a character: point the character registry at it, clear the board pointer. Pointer-only. */
+function activateCharacterPointers(id: string): void {
+   setActiveInstance(id);
+   setActiveBoardInstance(null);
+}
+
 /**
- * Points the registry active instance at `id`, appends a character tab for it when not
- * already open, marks it active, and persists the workspace. Keep-alive: this never
+ * Activates a board: park the character registry on the menu fallback (so no sheet
+ * shows) and point the board registry at the board. Pointer-only.
+ */
+function activateBoardPointers(id: string): void {
+   getMenuFallbackInstance();
+   setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+   setActiveBoardInstance(id);
+}
+
+/** Points both registries at the menu: character fallback, no board. Pointer-only. */
+function activateMenuPointers(): void {
+   getMenuFallbackInstance();
+   setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+   setActiveBoardInstance(null);
+}
+
+/** Applies the coordination rule for whichever kind `tab` is. Pointer-only. */
+function activatePointersForTab(tab: OpenTab): void {
+   if (tab.type === 'board') activateBoardPointers(tab.id);
+   else activateCharacterPointers(tab.id);
+}
+
+/**
+ * Points the active instance at the character `id`, appends a character tab for it when
+ * not already open, marks it active, and persists the workspace. Keep-alive: this never
  * disposes the previously active instance.
  */
 function appendAndActivate(id: string): void {
-   setActiveInstance(id);
+   activateCharacterPointers(id);
    useTabManagerStore.setState((state) => ({
       openTabs: state.openTabs.some((tab) => tab.id === id)
          ? state.openTabs
@@ -108,14 +157,25 @@ function appendAndActivate(id: string): void {
    persistWorkspace();
 }
 
+/** Board counterpart of {@link appendAndActivate}: appends/focuses a board tab and activates it. */
+function appendAndActivateBoard(id: string): void {
+   activateBoardPointers(id);
+   useTabManagerStore.setState((state) => ({
+      openTabs: state.openTabs.some((tab) => tab.id === id)
+         ? state.openTabs
+         : [...state.openTabs, { id, type: 'board' }],
+      activeTabId: id,
+   }));
+   persistWorkspace();
+}
+
 /**
- * Points the active instance at the menu fallback and nulls `activeTabId`, KEEPING
- * `openTabs` and every live instance. Shared by the desktop `deactivate` action and
- * (after disposing the live character) the mobile return-to-menu.
+ * Points both registries at the menu and nulls `activeTabId`, KEEPING `openTabs` and
+ * every live instance. Shared by the desktop `deactivate` action and (after disposing
+ * the live character) the mobile return-to-menu.
  */
 function deactivateToMenu(): void {
-   getMenuFallbackInstance();
-   setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+   activateMenuPointers();
    useTabManagerStore.setState({ activeTabId: null });
    persistWorkspace();
 }
@@ -163,21 +223,45 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          if (drawerItemId) instance.getState().actions.setHasUnsavedChanges(false);
          appendAndActivate(character.id);
       },
+      createBoardTab: async () => {
+         // The board row must exist before we can key a tab/instance by its id.
+         const board = await createBoard(DEFAULT_BOARD_NAME);
+         const instance = getOrCreateBoardInstance(board.id);
+         await instance.getState().actions.hydrate(board.id);
+         appendAndActivateBoard(board.id);
+      },
+      openBoardTab: async (boardId) => {
+         // Focus-or-add: an already-open board is focused, never re-hydrated.
+         if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === boardId)) {
+            useTabManagerStore.getState().actions.setActiveTab(boardId);
+            return;
+         }
+         const instance = getOrCreateBoardInstance(boardId);
+         await instance.getState().actions.hydrate(boardId);
+         appendAndActivateBoard(boardId);
+      },
       closeTab: (id) => {
          const { openTabs, activeTabId } = useTabManagerStore.getState();
          const index = openTabs.findIndex((tab) => tab.id === id);
          if (index === -1) return;
+         const closing = openTabs[index];
 
-         // Closing is "for good": discard the handle WITHOUT flushing (no point saving
-         // what we delete), dispose the instance, then delete the working record so the
-         // characters store stays in sync with the open tabs. A drawer-saved copy
-         // survives and reopens; an unsaved character is gone. (Desktop only; mobile
-         // keeps the record.)
-         discardPersistenceHandle(id);
-         disposeInstance(id);
-         void deleteCharacter(id).catch((error) => {
-            console.error('Failed to delete closed character record:', error);
-         });
+         // Closing is "for good": dispose the instance and delete the working record so
+         // the store stays in sync with the open tabs. A drawer-saved copy survives and
+         // reopens (boards: board-8); an unsaved one is gone. (Desktop only; mobile keeps it.)
+         if (closing.type === 'board') {
+            disposeBoardInstance(id);
+            void deleteBoard(id).catch((error) => {
+               console.error('Failed to delete closed board record:', error);
+            });
+         } else {
+            // Discard the handle WITHOUT flushing (no point saving what we delete).
+            discardPersistenceHandle(id);
+            disposeInstance(id);
+            void deleteCharacter(id).catch((error) => {
+               console.error('Failed to delete closed character record:', error);
+            });
+         }
 
          const remaining = openTabs.filter((tab) => tab.id !== id);
 
@@ -188,14 +272,14 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
             return;
          }
 
-         // Closed the active tab: activate the right neighbour, else the left, else the menu.
+         // Closed the active tab: activate the right neighbour, else the left, else the
+         // menu - coordinating both pointers for whichever kind the new active tab is.
          const nextTab = openTabs[index + 1] ?? openTabs[index - 1] ?? null;
          if (nextTab) {
-            setActiveInstance(nextTab.id);
+            activatePointersForTab(nextTab);
             useTabManagerStore.setState({ openTabs: remaining, activeTabId: nextTab.id });
          } else {
-            getMenuFallbackInstance();
-            setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+            activateMenuPointers();
             useTabManagerStore.setState({ openTabs: remaining, activeTabId: null });
          }
          persistWorkspace();
@@ -207,8 +291,21 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
       setActiveTab: (id) => {
          const tab = useTabManagerStore.getState().openTabs.find((openTab) => openTab.id === id);
          if (!tab) return;
+
+         if (tab.type === 'board') {
+            const instance = getOrCreateBoardInstance(id);
+            activateBoardPointers(id); // keep-alive: previous active instance is left intact
+            useTabManagerStore.setState({ activeTabId: id });
+            persistWorkspace();
+            // Device-flip safety net: hydrate on demand if this board was never loaded.
+            if (instance.getState().boardId === null) {
+               void instance.getState().actions.hydrate(id);
+            }
+            return;
+         }
+
          const instance = getOrCreateInstance(id);
-         setActiveInstance(id); // keep-alive: previous active instance is left intact
+         activateCharacterPointers(id); // keep-alive: previous active instance is left intact
          useTabManagerStore.setState({ activeTabId: id });
          persistWorkspace();
          // Device-flip safety net: if this tab has no live character (e.g. the user
@@ -288,6 +385,24 @@ async function hydrateInstanceFromStorage(id: string): Promise<boolean> {
 }
 
 /**
+ * Board counterpart of {@link hydrateInstanceFromStorage}: creates the board instance
+ * and loads it from IndexedDB. Boards have no persistence handle (item mutations persist
+ * via commands; the viewport saves inside the store). Returns `false` when no record
+ * exists, so boot prunes a stale board tab.
+ */
+async function hydrateBoardInstanceFromStorage(id: string): Promise<boolean> {
+   if (!(await loadBoard(id))) return false;
+   const instance = getOrCreateBoardInstance(id);
+   await instance.getState().actions.hydrate(id);
+   return true;
+}
+
+/** Hydrates `tab` from storage by kind. Returns `false` when its record is missing. */
+function hydrateTabFromStorage(tab: OpenTab): Promise<boolean> {
+   return tab.type === 'board' ? hydrateBoardInstanceFromStorage(tab.id) : hydrateInstanceFromStorage(tab.id);
+}
+
+/**
  * Resolves the id boot should activate. A `null` stored active is intentional
  * (desktop "Return to Menu" deactivated while keeping tabs) and is preserved
  * as `null` (boot to the menu). A non-null-but-stale active (its tab is gone) falls
@@ -307,33 +422,34 @@ function resolveIntendedActiveId(workspace: Workspace): string | null {
 async function bootDesktop(workspace: Workspace): Promise<void> {
    const tabs = workspace.openTabs;
    const intendedActiveId = resolveIntendedActiveId(workspace);
+   const intendedActiveTab = intendedActiveId !== null ? tabs.find((tab) => tab.id === intendedActiveId) ?? null : null;
 
    const survivors: OpenTab[] = [];
 
-   if (intendedActiveId !== null && (await hydrateInstanceFromStorage(intendedActiveId))) {
-      survivors.push(tabs.find((tab) => tab.id === intendedActiveId)!);
-      setActiveInstance(intendedActiveId);
-      useTabManagerStore.setState({ openTabs: [...survivors], activeTabId: intendedActiveId });
+   if (intendedActiveTab && (await hydrateTabFromStorage(intendedActiveTab))) {
+      survivors.push(intendedActiveTab);
+      // Coordinate both pointers for whichever kind the intended-active tab is.
+      activatePointersForTab(intendedActiveTab);
+      useTabManagerStore.setState({ openTabs: [...survivors], activeTabId: intendedActiveTab.id });
    }
    // Active is ready (or there was nothing to restore): paint now; the rest follow.
    finishBootHydration();
 
    for (const tab of tabs) {
       if (tab.id === intendedActiveId) continue;
-      if (await hydrateInstanceFromStorage(tab.id)) survivors.push(tab);
+      if (await hydrateTabFromStorage(tab)) survivors.push(tab);
    }
    const ordered = tabs.filter((tab) => survivors.some((survivor) => survivor.id === tab.id));
 
    let activeId = useTabManagerStore.getState().activeTabId;
    if (activeId === null) {
       if (intendedActiveId !== null && ordered.length > 0) {
-         // We intended to restore a character but its record was stale → first survivor.
+         // We intended to restore a tab but its record was stale → first survivor.
+         activatePointersForTab(ordered[0]);
          activeId = ordered[0].id;
-         setActiveInstance(activeId);
       } else {
-         // Deactivated (intended the menu), or nothing survived → menu fallback.
-         getMenuFallbackInstance();
-         setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+         // Deactivated (intended the menu), or nothing survived → menu.
+         activateMenuPointers();
       }
    }
    useTabManagerStore.setState({ openTabs: ordered, activeTabId: activeId });
@@ -348,14 +464,16 @@ async function bootDesktop(workspace: Workspace): Promise<void> {
 async function bootMobile(workspace: Workspace): Promise<void> {
    const tabs = workspace.openTabs;
    const intendedActiveId = resolveIntendedActiveId(workspace);
+   const intendedActiveTab = intendedActiveId !== null ? tabs.find((tab) => tab.id === intendedActiveId) ?? null : null;
 
    let activeId: string | null = null;
-   if (intendedActiveId !== null && (await hydrateInstanceFromStorage(intendedActiveId))) {
-      activeId = intendedActiveId;
-      setActiveInstance(activeId);
+   // Boards are desktop-only: never hydrate or activate a board tab on mobile (it stays
+   // a dormant id in `openTabs`). A board intended-active lands on the menu instead.
+   if (intendedActiveTab?.type === 'character' && (await hydrateInstanceFromStorage(intendedActiveTab.id))) {
+      activeId = intendedActiveTab.id;
+      activateCharacterPointers(activeId);
    } else {
-      getMenuFallbackInstance();
-      setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+      activateMenuPointers();
    }
    finishBootHydration();
 

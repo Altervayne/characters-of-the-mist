@@ -15,6 +15,14 @@ import { detachPersistenceHandle, useCharacterBootStore } from './characterPersi
 import { saveCharacter, getCharacter } from './characterRepository';
 import { readWorkspace, writeWorkspace, WORKSPACE_KEY } from './workspaceSession';
 import { ACTIVE_CHARACTER_ID_KEY } from './characterSession';
+import {
+   disposeBoardInstance,
+   getActiveBoardStore,
+   getBoardInstanceIds,
+   getOrCreateBoardInstance,
+   setActiveBoardInstance,
+} from '@/lib/board/boardStoreRegistry';
+import { createBoard, getBoard } from '@/lib/board/boardRepository';
 import * as deviceTypeModule from '@/hooks/useDeviceType';
 
 // -- Type Imports --
@@ -57,6 +65,8 @@ beforeEach(async () => {
    installLocalStorageShim();
    await drawerDatabase.characters.clear();
    await drawerDatabase.meta.clear();
+   await drawerDatabase.boards.clear();
+   await drawerDatabase.boardItems.clear();
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
 });
 
@@ -66,6 +76,8 @@ afterEach(async () => {
       detachPersistenceHandle(id);
       disposeInstance(id);
    });
+   getBoardInstanceIds().forEach((id) => disposeBoardInstance(id));
+   setActiveBoardInstance(null);
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
    await new Promise((resolve) => setTimeout(resolve, 0));
 });
@@ -408,6 +420,128 @@ describe('reorderTabs', () => {
       actions.reorderTabs('A', 'A');
 
       expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B']);
+   });
+});
+
+describe('board tabs (plumbing, no UI)', () => {
+   it('createBoardTab registers + activates a board instance and sets BOTH pointers', async () => {
+      const actions = useTabManagerStore.getState().actions;
+      await actions.createBoardTab();
+
+      const boardId = useTabManagerStore.getState().activeTabId!;
+      const tab = useTabManagerStore.getState().openTabs.find((t) => t.id === boardId)!;
+      expect(tab.type).toBe('board');
+
+      // Board pointer at the new board; character pointer parked on the menu fallback.
+      expect(getActiveBoardStore()).toBe(getOrCreateBoardInstance(boardId));
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
+      expect(getActiveCharacterStore()?.getState().character).toBeNull(); // no sheet under a board tab
+
+      // The board record was created and the instance hydrated.
+      expect(await getBoard(boardId)).toBeDefined();
+      expect(getOrCreateBoardInstance(boardId).getState().boardId).toBe(boardId);
+   });
+
+   it('switching between a character and a board tab coordinates both pointers each way', async () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'));
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance('A'));
+      expect(getActiveBoardStore()).toBeNull(); // a character tab clears the board pointer
+
+      await actions.createBoardTab();
+      const boardId = useTabManagerStore.getState().activeTabId!;
+      expect(getActiveBoardStore()).toBe(getOrCreateBoardInstance(boardId));
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID)); // menu fallback
+
+      actions.setActiveTab('A'); // back to the character
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance('A'));
+      expect(getActiveBoardStore()).toBeNull();
+
+      actions.setActiveTab(boardId); // back to the board
+      expect(getActiveBoardStore()).toBe(getOrCreateBoardInstance(boardId));
+      expect(getActiveCharacterStore()?.getState().character).toBeNull();
+   });
+
+   it('closeTab on a board disposes its instance, deletes its record, and activates the neighbour', async () => {
+      const actions = useTabManagerStore.getState().actions;
+      actions.openCharacterTab(makeCharacter('A'));
+      await actions.createBoardTab(); // openTabs = [A, board]; board active & rightmost
+      const boardId = useTabManagerStore.getState().activeTabId!;
+      const boardInstance = getOrCreateBoardInstance(boardId);
+      expect(await getBoard(boardId)).toBeDefined();
+
+      actions.closeTab(boardId);
+      await new Promise((resolve) => setTimeout(resolve, 0)); // settle the fire-and-forget delete
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('A'); // left neighbour (a character)
+      expect(getOrCreateBoardInstance(boardId)).not.toBe(boardInstance); // disposed (re-created here)
+      expect(await getBoard(boardId)).toBeUndefined(); // record deleted "for good"
+      expect(getActiveBoardStore()).toBeNull(); // back on a character → board pointer cleared
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance('A'));
+      disposeBoardInstance(boardId); // clean up the re-created stub
+   });
+
+   it('closing the only board tab lands on the menu with both pointers cleared', async () => {
+      const actions = useTabManagerStore.getState().actions;
+      await actions.createBoardTab();
+      const boardId = useTabManagerStore.getState().activeTabId!;
+
+      actions.closeTab(boardId);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(useTabManagerStore.getState().openTabs).toEqual([]);
+      expect(useTabManagerStore.getState().activeTabId).toBeNull();
+      expect(getActiveBoardStore()).toBeNull();
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
+   });
+
+   it('desktop boot restores board tabs and prunes a stale one', async () => {
+      vi.spyOn(deviceTypeModule, 'getEffectiveDeviceType').mockReturnValue('desktop');
+      await saveCharacter(makeCharacter('A'));
+      const board = await createBoard('Board One');
+      writeWorkspace({
+         openTabs: [
+            { id: 'A', type: 'character' },
+            { id: board.id, type: 'board' },
+            { id: 'ghost-board', type: 'board' }, // stale: no record
+         ],
+         activeId: board.id,
+      });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
+
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', board.id]); // ghost pruned
+      expect(useTabManagerStore.getState().activeTabId).toBe(board.id);
+      // Intended-active board: hydrated + board pointer set, character parked on the fallback.
+      expect(getOrCreateBoardInstance(board.id).getState().boardId).toBe(board.id);
+      expect(getActiveBoardStore()).toBe(getOrCreateBoardInstance(board.id));
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
+      expect(getCharacterInstanceIds()).toContain('A'); // background character still hydrated (keep-alive)
+   });
+
+   it('mobile boot skips board tabs and lands on the menu when the intended-active is a board', async () => {
+      vi.spyOn(deviceTypeModule, 'getEffectiveDeviceType').mockReturnValue('mobile');
+      await saveCharacter(makeCharacter('A'));
+      const board = await createBoard('Board One');
+      writeWorkspace({
+         openTabs: [
+            { id: 'A', type: 'character' },
+            { id: board.id, type: 'board' },
+         ],
+         activeId: board.id, // a board is intended active
+      });
+      useCharacterBootStore.setState({ isBootHydrating: true });
+
+      await runCharacterBoot();
+
+      // The full list is preserved (the board id stays dormant), but no board is hydrated or active.
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', board.id]);
+      expect(useTabManagerStore.getState().activeTabId).toBeNull(); // mobile cannot show a board → menu
+      expect(getActiveBoardStore()).toBeNull();
+      expect(getBoardInstanceIds()).toEqual([]); // no board instance hydrated
+      expect(getActiveCharacterStore()).toBe(getOrCreateInstance(SINGLE_ACTIVE_INSTANCE_ID));
    });
 });
 

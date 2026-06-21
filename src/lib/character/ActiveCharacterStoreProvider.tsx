@@ -15,19 +15,26 @@ import { useTabManagerStore } from './tabManagerStore';
 
 /**
  * Provides the ACTIVE character store instance to its subtree, following the
- * TabManager's `activeTabId`: the instance for the active tab,
- * or the permanent menu fallback instance when no character tab is open. The value
- * is memoized on `activeTabId` so its reference is stable per active id, supplying
+ * TabManager's `activeTabId`: the instance for the active tab when that tab is a
+ * character, or the permanent menu fallback instance otherwise (no active tab, or an
+ * active BOARD tab - whose id keys a board store, never a character one). The value is
+ * memoized on the active id + type so its reference is stable per active id; supplying
  * a fresh instance each render would thrash all character consumers.
  *
  * @param props.children - The app subtree; every character consumer must be inside it.
  */
 export function ActiveCharacterStoreProvider({ children }: { children: ReactNode }) {
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
+   const activeTabType = useTabManagerStore(
+      (state) => state.openTabs.find((tab) => tab.id === state.activeTabId)?.type ?? null,
+   );
 
    const activeStore = useMemo(
-      () => (activeTabId === null ? getMenuFallbackInstance() : getOrCreateInstance(activeTabId)),
-      [activeTabId],
+      () =>
+         activeTabId === null || activeTabType !== 'character'
+            ? getMenuFallbackInstance()
+            : getOrCreateInstance(activeTabId),
+      [activeTabId, activeTabType],
    );
 
    return (

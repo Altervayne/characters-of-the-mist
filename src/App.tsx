@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
 import { ActiveCharacterStoreProvider } from '@/lib/character/ActiveCharacterStoreProvider';
+import { ActiveBoardStoreProvider } from '@/lib/board/ActiveBoardStoreProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import { router } from '@/router';
@@ -48,11 +49,16 @@ export default function App() {
             useAppTourDriver), so it too must sit inside the provider; this covers
             every character consumer in the app. */}
         <ActiveCharacterStoreProvider>
-          <AppStartManagerProvider>
-            <ErrorBoundary>
-              <AppContent />
-            </ErrorBoundary>
-          </AppStartManagerProvider>
+          {/* Parallel resolution layer for the active board store (board-5+). Inert
+              until a board tab is opened: it resolves null under a character tab or the
+              menu, so the app behaves identically for characters. */}
+          <ActiveBoardStoreProvider>
+            <AppStartManagerProvider>
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </AppStartManagerProvider>
+          </ActiveBoardStoreProvider>
         </ActiveCharacterStoreProvider>
       </ThemeClassManager>
     </ThemeProvider>
