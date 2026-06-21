@@ -393,6 +393,16 @@
       "tutorial": "App Tutorial",
       "tutorialButton": "Launch the Tutorial",
 
+      "storage": {
+         "label": "Storage",
+         "usageUsed": "{{mb}} MB used",
+         "usageUnavailable": "Usage unavailable",
+         "reclaimButton": "Reclaim image space",
+         "reclaimed": "Reclaimed {{count}} images, {{mb}} MB.",
+         "nothing": "Nothing to reclaim.",
+         "failed": "Could not reclaim image space. Please try again."
+      },
+
       "onboarding": "Initial Setup",
       "onboardingButton": "Restart Onboarding",
 

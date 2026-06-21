@@ -32,6 +32,11 @@ import { runCharacterMigrationIfNeeded } from '@/lib/character/runCharacterMigra
 import { runCharacterBoot } from '@/lib/character/tabManagerStore';
 import { ensureMenuFallbackInstance } from '@/lib/character/characterStoreRegistry';
 
+// -- Asset garbage collection --
+import { runSweep } from '@/lib/assets/assetGarbageCollector';
+import { useAssetGarbageCollection } from '@/hooks/useAssetGarbageCollection';
+import { runWhenIdle } from '@/lib/utils/idle';
+
 
 
 type DialogStep = 'legacy' | 'welcome' | 'mobileOnboarding' | 'patchNotes' | null;
@@ -70,6 +75,9 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const { setLegacyDataDialogOpen, setWelcomeDialogOpen, setPatchNotesOpen, setInitialPatchNotesVersion, setSettingsOpen, setDrawerOpen, setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
    const { setSidebarCollapsed } = useAppSettingsActions();
    const { startTour } = useAppTourDriver();
+
+   // Conditional periodic asset sweep, mounted once for the app's lifetime.
+   useAssetGarbageCollection();
 
 
 
@@ -112,6 +120,13 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
             console.error('Character IndexedDB migration failed (will retry next load):', error);
          }
          await runCharacterBoot();
+
+         // Reclaim orphaned image assets once boot has settled, scheduled on idle so it
+         // never blocks first paint. A GC failure must never break boot; swallow it and
+         // let the next trigger retry.
+         runWhenIdle(() => {
+            void runSweep('startup').catch(() => {});
+         });
 
          // One-time transparency notice: shown only when data was actually moved
          // this load (each migration returns 'migrated' exactly once, so the notice

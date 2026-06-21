@@ -343,6 +343,15 @@
       },
       "tutorial": "Tutoriel de l'Appli.",
       "tutorialButton": "Lancer le Tutoriel",
+      "storage": {
+         "label": "[TO COMPLETE]",
+         "usageUsed": "[TO COMPLETE]",
+         "usageUnavailable": "[TO COMPLETE]",
+         "reclaimButton": "[TO COMPLETE]",
+         "reclaimed": "[TO COMPLETE]",
+         "nothing": "[TO COMPLETE]",
+         "failed": "[TO COMPLETE]"
+      },
       "onboarding": "Configuration initiale",
       "onboardingButton": "Relancer l'Accueil",
       "migration": {

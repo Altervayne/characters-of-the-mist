@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 
@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
-import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu } from 'lucide-react';
+import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, HardDrive } from 'lucide-react';
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
@@ -27,6 +27,7 @@ import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/Lega
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
 import { clearAllAssets } from '@/lib/assets/assetRepository';
+import { runSweep, estimateStorageUsage } from '@/lib/assets/assetGarbageCollector';
 import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
@@ -158,6 +159,42 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
       setTimeout(() => window.location.reload(), 500);
       toast.success(t('Notifications.drawer.deleted'));
    }
+
+   // ==================
+   //  Storage usage + reclaim (asset GC)
+   // ==================
+   // `null` means the estimate API is unavailable; the readout shows "unavailable".
+   const [storageUsageBytes, setStorageUsageBytes] = useState<number | null>(null);
+   const [isReclaiming, setIsReclaiming] = useState(false);
+
+   // Refresh the usage readout whenever the dialog opens.
+   useEffect(() => {
+      if (!isOpen) return;
+      let active = true;
+      void estimateStorageUsage().then((usage) => {
+         if (active) setStorageUsageBytes(usage);
+      });
+      return () => { active = false; };
+   }, [isOpen]);
+
+   const formatMegabytes = (bytes: number): string => (bytes / (1024 * 1024)).toFixed(1);
+
+   const handleReclaimImageSpace = async () => {
+      setIsReclaiming(true);
+      try {
+         const { deleted, reclaimedBytes } = await runSweep('manual');
+         setStorageUsageBytes(await estimateStorageUsage());
+         if (deleted > 0) {
+            toast.success(t('SettingsDialog.storage.reclaimed', { count: deleted, mb: formatMegabytes(reclaimedBytes) }));
+         } else {
+            toast(t('SettingsDialog.storage.nothing'));
+         }
+      } catch {
+         toast.error(t('SettingsDialog.storage.failed'));
+      } finally {
+         setIsReclaiming(false);
+      }
+   };
 
    const handleLocaleChange = (newLocale: string) => {
       i18n.changeLanguage(newLocale);
@@ -324,6 +361,27 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <PlayCircle className="mr-2 h-4 w-4 shrink-0" />
                         <span className="truncate">{t('SettingsDialog.tutorialButton')}</span>
                      </Button>
+                  </div>
+
+                  <div className="grid grid-cols-3 items-center gap-4">
+                     <Label className="text-left">{t('SettingsDialog.storage.label')}</Label>
+                     <div className="col-span-2 flex items-center gap-2">
+                        <span className="flex-1 min-w-0 truncate text-sm text-muted-foreground">
+                           {storageUsageBytes === null
+                              ? t('SettingsDialog.storage.usageUnavailable')
+                              : t('SettingsDialog.storage.usageUsed', { mb: formatMegabytes(storageUsageBytes) })}
+                        </span>
+                        <Button
+                           variant="outline"
+                           onClick={handleReclaimImageSpace}
+                           disabled={isReclaiming}
+                           title={t('SettingsDialog.storage.reclaimButton')}
+                           className="cursor-pointer min-w-0"
+                        >
+                           <HardDrive className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.storage.reclaimButton')}</span>
+                        </Button>
+                     </div>
                   </div>
                </div>
 

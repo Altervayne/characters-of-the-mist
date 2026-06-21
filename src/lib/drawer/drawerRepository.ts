@@ -274,6 +274,16 @@ export function getItem(itemId: string): Promise<DrawerItemRecord | undefined> {
 }
 
 /**
+ * Every stored item's `content`, across all folders. Used by the asset garbage
+ * collector to scan drawer-held cards and characters for asset references; returns
+ * the contents only (the GC has no use for placement metadata).
+ */
+export async function listAllItemContents(): Promise<DrawerItemContent[]> {
+   const items = await db.items.toArray();
+   return items.map((item) => item.content);
+}
+
+/**
  * The breadcrumb trail from the drawer root down to `folderId`, by walking the
  * parent chain. Returns `[]` for the root (`null`). If the chain references a
  * missing folder the walk stops and returns what it has resolved; a `visited`

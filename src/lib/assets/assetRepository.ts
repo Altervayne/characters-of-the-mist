@@ -94,9 +94,41 @@ export function deleteAssets(hashes: string[]): Promise<void> {
    });
 }
 
+/**
+ * Sums the `byteSize` of the given assets, for reporting how much a sweep reclaimed.
+ * Reads the candidate rows directly (the sweep calls this only for the small set it
+ * is about to delete); absent hashes contribute nothing.
+ */
+export async function getAssetByteSizes(hashes: string[]): Promise<number> {
+   if (hashes.length === 0) return 0;
+   const rows = await db.assets.bulkGet(hashes);
+   return rows.reduce((total, row) => total + (row?.byteSize ?? 0), 0);
+}
+
 /** Deletes all asset rows (powers "Reset app"), mirroring `clearAllCharacterData`. */
 export function clearAllAssets(): Promise<void> {
    return runWriteTransaction([db.assets], async () => {
       await db.assets.clear();
    });
+}
+
+/** Bookkeeping written after each garbage-collection sweep; gates the periodic check. */
+export interface AssetSweepRecord {
+   /** Epoch ms the sweep ran. */
+   at: number;
+   /** Asset count remaining after the sweep; the periodic gate compares the live count against this. */
+   assetCount: number;
+   /** What triggered the sweep, for debugging. */
+   reason: 'startup' | 'manual' | 'periodic';
+}
+
+/** Reads the last sweep bookkeeping from the `meta` store, or `undefined` if never swept. */
+export async function readLastSweep(): Promise<AssetSweepRecord | undefined> {
+   const row = await db.meta.get('assetsLastSwept');
+   return row?.value as AssetSweepRecord | undefined;
+}
+
+/** Records the outcome of a sweep in the `meta` store, for the periodic pressure gate. */
+export async function writeLastSweep(record: AssetSweepRecord): Promise<void> {
+   await db.meta.put({ key: 'assetsLastSwept', value: record });
 }
