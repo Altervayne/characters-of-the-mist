@@ -6,6 +6,7 @@ import cuid from 'cuid';
 // -- Utils Imports --
 import { createNewCharacter } from '../utils/character';
 import { deepReId } from '../utils/drawer';
+import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '../constants/imageCard';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
@@ -98,6 +99,8 @@ export interface CharacterState {
       addPortrait: () => void;
       /** Sets (or clears, with `null`) a portrait card's image asset. */
       setCardImage: (cardId: string, assetId: string | null) => void;
+      /** Sets a portrait card's display size (px), clamped to the card bounds. */
+      setCardSize: (cardId: string, width: number, height: number) => void;
       deleteCard: (cardId: string) => void;
       updateCardDetails: (cardId: string, newDetails: Partial<CardDetails>) => void;
       reorderCards: (startIndex: number, endIndex: number) => void;
@@ -547,7 +550,13 @@ export function createCharacterStore() {
                         order: state.character.cards.length,
                         isFlipped: false,
                         cardType: 'IMAGE_CARD',
-                        details: { game: state.character.game, assetId: null, fit: 'cover' } as ImageCardDetails,
+                        details: {
+                           game: state.character.game,
+                           assetId: null,
+                           fit: 'cover',
+                           width: DEFAULT_IMAGE_CARD_SIZE.width,
+                           height: DEFAULT_IMAGE_CARD_SIZE.height,
+                        } as ImageCardDetails,
                      };
                      return { character: { ...state.character, cards: [...state.character.cards, newCard] } };
                   });
@@ -559,6 +568,19 @@ export function createCharacterStore() {
                      return updateCardInState(state, cardId, card => {
                         if (card.cardType !== 'IMAGE_CARD') return card;
                         return { ...card, details: { ...card.details, assetId } as CardDetails };
+                     });
+                  });
+               },
+               setCardSize: (cardId, width, height) => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return updateCardInState(state, cardId, card => {
+                        if (card.cardType !== 'IMAGE_CARD') return card;
+                        return {
+                           ...card,
+                           details: { ...card.details, width: clampCardWidth(width), height: clampCardHeight(height) } as CardDetails,
+                        };
                      });
                   });
                },

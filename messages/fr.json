@@ -130,7 +130,13 @@
       "change": "[TO COMPLETE]",
       "remove": "[TO COMPLETE]",
       "download": "[TO COMPLETE]",
-      "uploadFailed": "[TO COMPLETE]"
+      "uploadFailed": "[TO COMPLETE]",
+      "resize": "[TO COMPLETE]",
+      "resizeHandle": "[TO COMPLETE]",
+      "fitToImage": "[TO COMPLETE]",
+      "presetPortrait": "[TO COMPLETE]",
+      "presetSquare": "[TO COMPLETE]",
+      "presetLandscape": "[TO COMPLETE]"
    },
    "CharacterSheetPage": {
       "loading": "Chargement du Personnage...",

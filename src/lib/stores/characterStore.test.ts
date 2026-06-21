@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
 import { createCharacterStore } from './characterStore';
+import { DEFAULT_IMAGE_CARD_SIZE, MAX_CARD_HEIGHT_PX, MAX_CARD_PX, MIN_CARD_PX } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
 import type { Card } from '@/lib/types/character';
@@ -43,7 +44,13 @@ describe('addPortrait', () => {
 
       const portraits = imageCards(store);
       expect(portraits).toHaveLength(1);
-      expect(portraits[0].details).toMatchObject({ assetId: null, fit: 'cover', game: 'LEGENDS' });
+      expect(portraits[0].details).toMatchObject({
+         assetId: null,
+         fit: 'cover',
+         game: 'LEGENDS',
+         width: DEFAULT_IMAGE_CARD_SIZE.width,
+         height: DEFAULT_IMAGE_CARD_SIZE.height,
+      });
    });
 
    it('no-ops when a portrait already exists', () => {
@@ -107,5 +114,37 @@ describe('addImportedCard portrait guard', () => {
       expect(added).toBe(true);
       // Still exactly one character card (replaced, not appended).
       expect(store.getState().character!.cards.filter((c) => c.cardType === 'CHARACTER_CARD')).toHaveLength(1);
+   });
+});
+
+describe('setCardSize', () => {
+   it('sets a portrait card\'s display size', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      const portraitId = imageCards(store)[0].id;
+
+      store.getState().actions.setCardSize(portraitId, 320, 240);
+
+      expect(imageCards(store)[0].details).toMatchObject({ width: 320, height: 240 });
+   });
+
+   it('clamps width and height to the card bounds', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      const portraitId = imageCards(store)[0].id;
+
+      store.getState().actions.setCardSize(portraitId, 10_000, 5);
+
+      expect(imageCards(store)[0].details).toMatchObject({ width: MAX_CARD_PX, height: MIN_CARD_PX });
+   });
+
+   it('caps height at a standard card\'s height (below the width cap)', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      const portraitId = imageCards(store)[0].id;
+
+      store.getState().actions.setCardSize(portraitId, 300, 10_000);
+
+      expect(imageCards(store)[0].details).toMatchObject({ width: 300, height: MAX_CARD_HEIGHT_PX });
    });
 });

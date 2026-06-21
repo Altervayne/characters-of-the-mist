@@ -218,6 +218,10 @@ export interface ImageCardDetails {
    assetId: string | null;
    /** How the image fills the card footprint. */
    fit: 'cover' | 'contain';
+   /** Display width in px (persisted card size, not placement; the Board reuses it). */
+   width: number;
+   /** Display height in px. */
+   height: number;
 }
 
 // All possible card structures

@@ -131,7 +131,13 @@
       "change": "Change image",
       "remove": "Remove image",
       "download": "Download image",
-      "uploadFailed": "Could not process that image. Please try another file."
+      "uploadFailed": "Could not process that image. Please try another file.",
+      "resize": "Resize card",
+      "resizeHandle": "Drag to resize (hold Shift to keep the image's aspect ratio)",
+      "fitToImage": "Fit to image",
+      "presetPortrait": "Portrait",
+      "presetSquare": "Square",
+      "presetLandscape": "Landscape"
    },
 
 

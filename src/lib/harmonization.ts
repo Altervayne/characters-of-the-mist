@@ -1,5 +1,6 @@
 import { APP_VERSION } from "./config";
 import { compare } from 'semver';
+import { LEGACY_IMAGE_CARD_SIZE } from './constants/imageCard';
 import type { GeneralItemType, Drawer, DrawerItem, Folder } from './types/drawer';
 import type { Card, Character, Tag } from './types/character';
 
@@ -67,6 +68,29 @@ const upgradeCharacterCardTagLists = (card: Card): Card => {
    return card;
 };
 
+
+
+/**
+ * Backfills a missing `width`/`height` on an IMAGE_CARD with the legacy 250x600
+ * footprint, so cards created before resizable image cards keep their original look
+ * (only newly added portraits use the saner default). Idempotent and version-
+ * independent: cards that already carry a size pass through unchanged.
+ */
+const ensureImageCardSize = (card: Card): Card => {
+   if (card.cardType !== 'IMAGE_CARD') return card;
+   const details = card.details as unknown as { width?: unknown; height?: unknown };
+   const hasWidth = typeof details.width === 'number';
+   const hasHeight = typeof details.height === 'number';
+   if (hasWidth && hasHeight) return card;
+   return {
+      ...card,
+      details: {
+         ...card.details,
+         width: hasWidth ? (details.width as number) : LEGACY_IMAGE_CARD_SIZE.width,
+         height: hasHeight ? (details.height as number) : LEGACY_IMAGE_CARD_SIZE.height,
+      } as Card['details'],
+   };
+};
 
 
 type MigrationFunction = (data: unknown) => unknown;
@@ -145,6 +169,18 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
             harmonizedData.version = APP_VERSION;
          }
       }
+   }
+
+   // ==================
+   //  STEP 1.5: Backfill image-card sizes (unconditional, idempotent)
+   // ==================
+   // Image cards gained a persisted display size; cards that predate it are filled
+   // with the legacy footprint. This is NOT version-gated (cards carry no version and
+   // saved characters already sit at the current version), so it runs on every load.
+   if (isCharacter(harmonizedData)) {
+      harmonizedData = { ...harmonizedData, cards: harmonizedData.cards.map(ensureImageCardSize) };
+   } else if (isCard(harmonizedData) && dataType === 'IMAGE_CARD') {
+      harmonizedData = ensureImageCardSize(harmonizedData);
    }
 
    // ==================

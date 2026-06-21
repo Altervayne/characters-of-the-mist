@@ -9,9 +9,10 @@ import toast from 'react-hot-toast';
 // -- Basic UI Imports --
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // -- Icon Imports --
-import { Download, Image as ImageIcon, Loader2, Trash2, Upload } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Scaling, Trash2, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -28,6 +29,9 @@ import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 import { processImage } from '@/lib/assets/processImage';
 import { storeAsset } from '@/lib/assets/assetRepository';
 
+// -- Constants --
+import { IMAGE_CARD_PRESETS, LEGACY_IMAGE_CARD_SIZE, MAX_CARD_HEIGHT_PX, MAX_CARD_PX, clampCardHeight, clampCardWidth } from '@/lib/constants/imageCard';
+
 // -- Type Imports --
 import type { Card as CardData, ImageCardDetails } from '@/lib/types/character';
 import type { CardComponentProps } from '@/components/organisms/cards/resolveCardComponent';
@@ -38,8 +42,17 @@ import type { CardComponentProps } from '@/components/organisms/cards/resolveCar
  * (`assetId === null`) is first-class - a persistent placeholder shown in both edit
  * and play mode, doubling as the upload affordance in edit mode. Card-level actions
  * (drag, delete, export) ride the shared ToolbarHandle like any sheet card; the
- * image-specific set/change/remove controls live in the card body.
+ * image-specific set/change/remove/resize controls live in the card body.
+ *
+ * The desktop sheet card renders at its persisted `details.width`/`height` (px); the
+ * user resizes it from the bottom-right corner handle or the preset menu. Mobile and
+ * the drawer preview keep their fixed footprints (custom px never drives them).
  */
+
+interface LiveSize {
+   width: number;
+   height: number;
+}
 
 const ImageCardContent = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
@@ -52,11 +65,25 @@ const ImageCardContent = React.memo(
          const { url, isLoading } = useAssetObjectUrl(details.assetId);
          const [isProcessing, setIsProcessing] = useState(false);
          const fileInputRef = useRef<HTMLInputElement>(null);
+         const imgRef = useRef<HTMLImageElement>(null);
 
          // Static everywhere a snapshot is shown: drag overlay and drawer preview have
          // no controls and never open the picker.
          const interactive = isEditing && !isSnapshot && !isDrawerPreview;
          const showSpinner = isProcessing || (details.assetId !== null && isLoading);
+         // Resizing is a desktop-sheet affordance; mobile keeps its carousel sizing.
+         const canResize = interactive && !isMobile;
+
+         // The committed size (with a legacy fallback for any card that slipped through
+         // harmonization). During a corner drag, `liveSize` holds the in-progress size
+         // for a lag-free preview; it commits to the store once on pointer-up.
+         const [liveSize, setLiveSize] = useState<LiveSize | null>(null);
+         const storedWidth = details.width || LEGACY_IMAGE_CARD_SIZE.width;
+         const storedHeight = details.height || LEGACY_IMAGE_CARD_SIZE.height;
+         // Clamp on read too, so a card stored taller than the current cap (or an
+         // import) still renders within the row's height on the sheet.
+         const cardWidth = liveSize?.width ?? clampCardWidth(storedWidth);
+         const cardHeight = liveSize?.height ?? clampCardHeight(storedHeight);
 
          const openPicker = () => fileInputRef.current?.click();
 
@@ -91,6 +118,71 @@ const ImageCardContent = React.memo(
             document.body.removeChild(link);
          };
 
+         // The loaded image's natural height/width ratio, for Shift-lock + "Fit to image".
+         // Null when no image has decoded yet (Shift-lock becomes a no-op, "Fit" disabled).
+         const naturalRatio = (): number | null => {
+            const img = imgRef.current;
+            if (img && img.naturalWidth > 0 && img.naturalHeight > 0) return img.naturalHeight / img.naturalWidth;
+            return null;
+         };
+
+         // ==================
+         //  Corner resize (custom drag)
+         // ==================
+         // Pointer capture keeps the drag on the handle; `stopPropagation` guards against
+         // it ever starting the reorder drag (which is initiated from the ToolbarHandle).
+         // The live size lives in state for preview and in a ref for a stale-free commit.
+         const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+         const liveSizeRef = useRef<LiveSize | null>(null);
+
+         const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+            if (!canResize) return;
+            event.preventDefault();
+            event.stopPropagation();
+            resizeStartRef.current = { x: event.clientX, y: event.clientY, width: cardWidth, height: cardHeight };
+            const initial = { width: cardWidth, height: cardHeight };
+            liveSizeRef.current = initial;
+            setLiveSize(initial);
+            event.currentTarget.setPointerCapture(event.pointerId);
+         };
+
+         const handleResizePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+            const start = resizeStartRef.current;
+            if (!start) return;
+            event.stopPropagation();
+            const width = clampCardWidth(start.width + (event.clientX - start.x));
+            let height = clampCardHeight(start.height + (event.clientY - start.y));
+            // Shift locks to the image's natural aspect ratio (no-op without an image).
+            if (event.shiftKey) {
+               const ratio = naturalRatio();
+               if (ratio) height = clampCardHeight(width * ratio);
+            }
+            const next = { width, height };
+            liveSizeRef.current = next;
+            setLiveSize(next);
+         };
+
+         const handleResizePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+            if (!resizeStartRef.current) return;
+            event.stopPropagation();
+            event.currentTarget.releasePointerCapture(event.pointerId);
+            const final = liveSizeRef.current;
+            resizeStartRef.current = null;
+            liveSizeRef.current = null;
+            setLiveSize(null);
+            if (final) actions.setCardSize(card.id, final.width, final.height);
+         };
+
+         // Snaps the card to the image's natural ratio, scaled to fit within BOTH the
+         // width and height bounds (never upscaled), so the photo fills with no crop and
+         // the card never exceeds a standard card's height.
+         const handleFitToImage = () => {
+            const img = imgRef.current;
+            if (!img || !img.naturalWidth || !img.naturalHeight) return;
+            const scale = Math.min(MAX_CARD_PX / img.naturalWidth, MAX_CARD_HEIGHT_PX / img.naturalHeight, 1);
+            actions.setCardSize(card.id, img.naturalWidth * scale, img.naturalHeight * scale);
+         };
+
          const imageArea = (
             <div className="relative h-full w-full bg-muted">
                {showSpinner ? (
@@ -99,6 +191,7 @@ const ImageCardContent = React.memo(
                   </div>
                ) : url ? (
                   <img
+                     ref={imgRef}
                      src={url}
                      alt={altText}
                      title={altText}
@@ -124,12 +217,40 @@ const ImageCardContent = React.memo(
                   </div>
                )}
 
-               {/* On-image controls. Change/Remove are edit-only; the raw-image download
-                   is available in play mode too, revealed on hover so it never covers the
-                   art (edit mode keeps them all visible). */}
-               {url && !showSpinner && !isSnapshot && !isDrawerPreview && (interactive || isHovered) && (
+               {/* On-image controls. Resize/change/remove are edit-only; the raw-image
+                   download is available in play mode too, revealed on hover so it never
+                   covers the art (edit mode keeps them all visible). */}
+               {!isSnapshot && !isDrawerPreview && !showSpinner && (interactive || (url && isHovered)) && (
                   <div className="absolute right-2 top-2 flex gap-1">
-                     {interactive && (
+                     {canResize && (
+                        <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                              <Button
+                                 variant="secondary"
+                                 size="icon"
+                                 className="h-8 w-8 cursor-pointer opacity-90"
+                                 title={t('ImageCard.resize')}
+                              >
+                                 <Scaling className="h-4 w-4" />
+                              </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                              <DropdownMenuItem disabled={!url} onClick={handleFitToImage} className="cursor-pointer">
+                                 {t('ImageCard.fitToImage')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => actions.setCardSize(card.id, IMAGE_CARD_PRESETS.portrait.width, IMAGE_CARD_PRESETS.portrait.height)} className="cursor-pointer">
+                                 {t('ImageCard.presetPortrait')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => actions.setCardSize(card.id, IMAGE_CARD_PRESETS.square.width, IMAGE_CARD_PRESETS.square.height)} className="cursor-pointer">
+                                 {t('ImageCard.presetSquare')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => actions.setCardSize(card.id, IMAGE_CARD_PRESETS.landscape.width, IMAGE_CARD_PRESETS.landscape.height)} className="cursor-pointer">
+                                 {t('ImageCard.presetLandscape')}
+                              </DropdownMenuItem>
+                           </DropdownMenuContent>
+                        </DropdownMenu>
+                     )}
+                     {interactive && url && (
                         <Button
                            variant="secondary"
                            size="icon"
@@ -137,10 +258,10 @@ const ImageCardContent = React.memo(
                            title={t('ImageCard.change')}
                            onClick={openPicker}
                         >
-                           <Upload className="h-4 w-4" />
+                           <ImageIcon className="h-4 w-4" />
                         </Button>
                      )}
-                     {interactive && (
+                     {interactive && url && (
                         <Button
                            variant="destructive"
                            size="icon"
@@ -151,19 +272,41 @@ const ImageCardContent = React.memo(
                            <Trash2 className="h-4 w-4" />
                         </Button>
                      )}
-                     <Button
-                        variant="secondary"
-                        size="icon"
-                        className="h-8 w-8 cursor-pointer opacity-90"
-                        title={t('ImageCard.download')}
-                        onClick={handleDownloadImage}
-                     >
-                        <Download className="h-4 w-4" />
-                     </Button>
+                     {url && (
+                        <Button
+                           variant="secondary"
+                           size="icon"
+                           className="h-8 w-8 cursor-pointer opacity-90"
+                           title={t('ImageCard.download')}
+                           onClick={handleDownloadImage}
+                        >
+                           <Upload className="h-4 w-4" />
+                        </Button>
+                     )}
+                  </div>
+               )}
+
+               {/* Bottom-right resize grip: drags the card's size; Shift locks aspect. */}
+               {canResize && (
+                  <div
+                     role="button"
+                     aria-label={t('ImageCard.resizeHandle')}
+                     title={t('ImageCard.resizeHandle')}
+                     onPointerDown={handleResizePointerDown}
+                     onPointerMove={handleResizePointerMove}
+                     onPointerUp={handleResizePointerUp}
+                     className={cn(
+                        'absolute bottom-1 right-1 z-10 flex h-5 w-5 items-center justify-center',
+                        'cursor-nwse-resize touch-none rounded-sm bg-background/70 ring-1 ring-border hover:bg-background',
+                     )}
+                  >
+                     <div className="h-2.5 w-2.5 border-b-2 border-r-2 border-foreground/60" />
                   </div>
                )}
             </div>
          );
+
+         const isFixedFootprint = isMobile || isDrawerPreview;
 
          return (
             <motion.div ref={ref} {...hoverHandlers} className="relative">
@@ -180,11 +323,12 @@ const ImageCardContent = React.memo(
                )}
                <Card
                   className={cn(
-                     isMobile ? 'w-full h-full' : isDrawerPreview ? 'w-62.5 h-30' : 'w-62.5 h-150',
+                     isMobile ? 'w-full h-full' : isDrawerPreview ? 'w-62.5 h-30' : '',
                      'flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0 relative z-0',
                      'border-card-accent card-type-image',
                      { 'shadow-none pointer-events-none border-card-border': isDrawerPreview },
                   )}
+                  style={isFixedFootprint ? undefined : { width: cardWidth, height: cardHeight }}
                >
                   {imageArea}
                </Card>
