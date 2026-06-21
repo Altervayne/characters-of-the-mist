@@ -33,8 +33,11 @@
       }
    },
    "BoardView": {
-      "comingSoon": "[TO COMPLETE]",
-      "itemCount": "[TO COMPLETE]"
+      "addItem": "[TO COMPLETE]",
+      "returnToOrigin": "[TO COMPLETE]",
+      "bringToFront": "[TO COMPLETE]",
+      "sendToBack": "[TO COMPLETE]",
+      "deleteItem": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "Ouvrir dans un nouvel onglet",

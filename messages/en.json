@@ -33,8 +33,11 @@
       }
    },
    "BoardView": {
-      "comingSoon": "The board canvas is coming soon.",
-      "itemCount": "{{count}} items"
+      "addItem": "Add item",
+      "returnToOrigin": "Reset view",
+      "bringToFront": "Bring to front",
+      "sendToBack": "Send to back",
+      "deleteItem": "Delete"
    },
    "DragPuck": {
       "openAsTab": "Open as tab",
