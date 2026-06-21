@@ -71,7 +71,8 @@ export function useCharacterSheetFileImport() {
          // ==================
          //  Compatibility check for individual components
          // ==================
-         if (game !== character.game) {
+         // NEUTRAL items are game-agnostic, so they import onto any character.
+         if (game !== 'NEUTRAL' && game !== character.game) {
             toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
             return;
          }

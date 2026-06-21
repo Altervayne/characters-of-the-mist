@@ -47,7 +47,7 @@ describe('addPortrait', () => {
       expect(portraits[0].details).toMatchObject({
          assetId: null,
          fit: 'cover',
-         game: 'LEGENDS',
+         game: 'NEUTRAL', // game-agnostic, regardless of the character's game
          width: DEFAULT_IMAGE_CARD_SIZE.width,
          height: DEFAULT_IMAGE_CARD_SIZE.height,
       });

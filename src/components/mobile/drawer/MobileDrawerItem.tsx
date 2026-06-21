@@ -162,9 +162,12 @@ export default function MobileDrawerItem({
 											{item.name}
 										</p>
 										<div className="flex items-center gap-2 mt-1">
-											<Badge variant={getGameBadgeVariant(item.game)} className="text-xs">
-												{getGameDisplayName(item.game)}
-											</Badge>
+											{/* NEUTRAL items are game-agnostic: no game badge. */}
+											{item.game !== 'NEUTRAL' && (
+												<Badge variant={getGameBadgeVariant(item.game)} className="text-xs">
+													{getGameDisplayName(item.game)}
+												</Badge>
+											)}
 										</div>
 									</div>
 								</div>

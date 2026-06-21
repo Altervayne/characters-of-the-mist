@@ -71,21 +71,24 @@ const upgradeCharacterCardTagLists = (card: Card): Card => {
 
 
 /**
- * Backfills a missing `width`/`height` on an IMAGE_CARD with the legacy 250x600
- * footprint, so cards created before resizable image cards keep their original look
- * (only newly added portraits use the saner default). Idempotent and version-
- * independent: cards that already carry a size pass through unchanged.
+ * Normalizes an IMAGE_CARD: backfills a missing `width`/`height` with the legacy
+ * 250x600 footprint (so cards created before resizable image cards keep their look),
+ * and normalizes `game` to `'NEUTRAL'` (image cards are game-agnostic; older ones
+ * recorded the game they were created in). Idempotent and version-independent: an
+ * already-normalized card passes through unchanged.
  */
 const ensureImageCardSize = (card: Card): Card => {
    if (card.cardType !== 'IMAGE_CARD') return card;
-   const details = card.details as unknown as { width?: unknown; height?: unknown };
+   const details = card.details as unknown as { width?: unknown; height?: unknown; game?: unknown };
    const hasWidth = typeof details.width === 'number';
    const hasHeight = typeof details.height === 'number';
-   if (hasWidth && hasHeight) return card;
+   const isNeutral = details.game === 'NEUTRAL';
+   if (hasWidth && hasHeight && isNeutral) return card;
    return {
       ...card,
       details: {
          ...card.details,
+         game: 'NEUTRAL',
          width: hasWidth ? (details.width as number) : LEGACY_IMAGE_CARD_SIZE.width,
          height: hasHeight ? (details.height as number) : LEGACY_IMAGE_CARD_SIZE.height,
       } as Card['details'],

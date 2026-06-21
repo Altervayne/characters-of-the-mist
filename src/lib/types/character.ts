@@ -212,8 +212,8 @@ export interface CityRiftDetails {
  * rule is a sheet policy in the store/UI, never baked into the type.
  */
 export interface ImageCardDetails {
-   /** The character's game, carried for parity with other cards; the render ignores it. */
-   game: GameSystem;
+   /** Always `'NEUTRAL'`: an image card is game-agnostic, so it records no origin game. */
+   game: 'NEUTRAL';
    /** The stored asset hash, or `null` for an empty frame. */
    assetId: string | null;
    /** How the image fills the card footprint. */

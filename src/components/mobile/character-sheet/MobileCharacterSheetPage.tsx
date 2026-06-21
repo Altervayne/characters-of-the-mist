@@ -210,7 +210,8 @@ export default function MobileCharacterSheetPage() {
 	};
 
 	const handleAddDrawerItemToCharacter = (item: import('@/lib/types/drawer').DrawerItem) => {
-		if (item.game !== character?.game) {
+		// NEUTRAL items are game-agnostic, so they drop onto any character's sheet.
+		if (item.game !== 'NEUTRAL' && item.game !== character?.game) {
 			toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
 			return;
 		}

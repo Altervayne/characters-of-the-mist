@@ -551,7 +551,8 @@ export function createCharacterStore() {
                         isFlipped: false,
                         cardType: 'IMAGE_CARD',
                         details: {
-                           game: state.character.game,
+                           // Image cards are game-agnostic; they record no origin game.
+                           game: 'NEUTRAL',
                            assetId: null,
                            fit: 'cover',
                            width: DEFAULT_IMAGE_CARD_SIZE.width,

@@ -469,9 +469,11 @@ export function useCharacterSheetDnD() {
          setActiveDragItem(drawerItem);
          setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, untitledLabel }));
          // A component dragged while a character of a DIFFERENT game is loaded can't be
-         // dropped on the sheet, flag it to show the "can't drop here" overlay.
+         // dropped on the sheet, flag it to show the "can't drop here" overlay. NEUTRAL
+         // items are game-agnostic, so they are never incompatible.
          if (
             dragKindRef.current === 'drawer-component' && character &&
+            (drawerItem as DrawerItem).game !== 'NEUTRAL' &&
             (drawerItem as DrawerItem).game !== character.game
          ) {
             setIsIncompatibleComponentDrag(true);
@@ -548,7 +550,8 @@ export function useCharacterSheetDnD() {
          // items neither highlight nor get an action glyph (no possible action).
          if (zone === 'sheet' && activeType === 'drawer-item' && character) {
             const item = active.data.current?.item as DrawerItem | undefined;
-            const compatible = !!item && item.game === character.game;
+            // NEUTRAL items are game-agnostic, so they light the section on any sheet.
+            const compatible = !!item && (item.game === 'NEUTRAL' || item.game === character.game);
             sheetCompatibleRef.current = compatible;
             if (compatible && item) highlight = sheetSectionForItemType(item.type);
          } else {
@@ -916,8 +919,8 @@ export function useCharacterSheetDnD() {
             if (!isTrackerType && !isCardType) return;
 
             // Game mismatch: the drop can't land, tell the user why instead of a silent
-            // no-op. Portraits are game-agnostic, so they skip this gate.
-            if (!isImageCard && draggedItem.game !== character.game) {
+            // no-op. NEUTRAL items are game-agnostic, so they skip this gate.
+            if (draggedItem.game !== 'NEUTRAL' && draggedItem.game !== character.game) {
                toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
                return;
             }
@@ -955,9 +958,8 @@ export function useCharacterSheetDnD() {
             dragSourceCharacterIdRef.current && dragSourceCharacterIdRef.current !== character.id
          ) {
             const info = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
-            const isImageCard = 'cardType' in activeDragItem && activeDragItem.cardType === 'IMAGE_CARD';
-            // Portraits are game-agnostic; every other component must match the sheet's game.
-            if (info && (isImageCard || info[1] === character.game)) {
+            // NEUTRAL items are game-agnostic; every other component must match the sheet's game.
+            if (info && (info[1] === 'NEUTRAL' || info[1] === character.game)) {
                if ('cardType' in activeDragItem) {
                   const added = addImportedCard(activeDragItem as CardData);
                   if (added) {

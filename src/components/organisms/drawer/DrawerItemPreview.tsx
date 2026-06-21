@@ -67,11 +67,11 @@ export function DrawerItemPreview({
    const renderSnapshot = () => {
       const { content, type, game } = item;
 
-      // Only Legends, City, and Otherscape items have previews; the card mapping
-      // is delegated to resolveCardComponent, while trackers and full sheets are
-      // game-independent. Anything outside these games falls through to the
-      // unavailable-preview placeholder below.
-      if (game === 'LEGENDS' || game === 'CITY_OF_MIST' || game === 'OTHERSCAPE') {
+      // Game items (Legends/City/Otherscape) and NEUTRAL items (e.g. a portrait image
+      // card) have previews; the card mapping is delegated to resolveCardComponent,
+      // while trackers and full sheets are game-independent. Anything else falls
+      // through to the unavailable-preview placeholder below.
+      if (game === 'LEGENDS' || game === 'CITY_OF_MIST' || game === 'OTHERSCAPE' || game === 'NEUTRAL') {
          if ('cardType' in content) {
             const Component = resolveCardComponent(type, game);
             if (Component) {
@@ -122,7 +122,9 @@ export function DrawerItemPreview({
          </div>
 
          <p className="w-full text-center font-semibold truncate text-sm mb-2 px-1">
-            <span>{t(`Drawer.Types.${item.game}`)}</span> • <span>{t(`Drawer.Types.${getItemTypeLabelKey(item.game, item.type)}`)}</span>
+            {/* NEUTRAL items are game-agnostic: show just the type, no game segment. */}
+            {item.game !== 'NEUTRAL' && <><span>{t(`Drawer.Types.${item.game}`)}</span> • </>}
+            <span>{t(`Drawer.Types.${getItemTypeLabelKey(item.game, item.type)}`)}</span>
          </p>
       </div>
    );

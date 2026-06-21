@@ -36,9 +36,9 @@ function characterWithImageCard(size?: { width: number; height: number }): Chara
 }
 
 const imageDetails = (character: Character) =>
-   character.cards[0].details as unknown as { width?: number; height?: number };
+   character.cards[0].details as unknown as { width?: number; height?: number; game?: string };
 
-describe('harmonization: image-card size backfill', () => {
+describe('harmonization: image-card normalization', () => {
    it('defaults a sizeless IMAGE_CARD to the legacy 250x600', () => {
       const harmonized = harmonizeData(characterWithImageCard(), 'FULL_CHARACTER_SHEET');
 
@@ -48,10 +48,12 @@ describe('harmonization: image-card size backfill', () => {
       });
    });
 
-   it('leaves an IMAGE_CARD that already has a size untouched', () => {
+   it('normalizes a legacy image card\'s game to NEUTRAL', () => {
+      // Carries a size already, so only the game needs normalizing (proves the
+      // game fix is not gated behind the size backfill).
       const harmonized = harmonizeData(characterWithImageCard({ width: 320, height: 240 }), 'FULL_CHARACTER_SHEET');
 
-      expect(imageDetails(harmonized)).toMatchObject({ width: 320, height: 240 });
+      expect(imageDetails(harmonized)).toMatchObject({ game: 'NEUTRAL', width: 320, height: 240 });
    });
 
    it('backfills a standalone IMAGE_CARD drawer card', () => {
