@@ -163,12 +163,16 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          const migratedContent = harmonizeData(importedData.content, importedData.fileType);
          const { fileType } = importedData;
 
-         const isCardType = fileType === 'CHARACTER_CARD' || fileType === 'CHARACTER_THEME' || fileType === 'GROUP_THEME';
+         const isCardType = fileType === 'CHARACTER_CARD' || fileType === 'CHARACTER_THEME' || fileType === 'GROUP_THEME' || fileType === 'IMAGE_CARD';
          const isTrackerType = fileType === 'STATUS_TRACKER' || fileType === 'STORY_TAG_TRACKER';
 
          if (isCardType) {
-            addImportedCard(migratedContent as CardData);
-            toast.success(tNotifications('Notifications.character.componentImported'));
+            const added = addImportedCard(migratedContent as CardData);
+            if (added) {
+               toast.success(tNotifications('Notifications.character.componentImported'));
+            } else {
+               toast.error(tNotifications('Notifications.character.duplicatePortrait'));
+            }
          } else if (isTrackerType) {
             addImportedTracker(migratedContent as Tracker);
             toast.success(tNotifications('Notifications.character.componentImported'));

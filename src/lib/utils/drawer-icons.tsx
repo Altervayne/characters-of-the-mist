@@ -1,4 +1,4 @@
-import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards } from 'lucide-react';
+import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GeneralItemType } from '@/lib/types/drawer';
 
@@ -23,6 +23,8 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
          return RectangleEllipsis;
       case 'STORY_THEME_TRACKER':
          return WalletCards;
+      case 'IMAGE_CARD':
+         return Image;
       default:
          return FileText;
    }

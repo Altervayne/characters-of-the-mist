@@ -59,6 +59,7 @@
          "reset": "Character sheet successfully reset.",
          "unloaded": "Character has been unloaded successfully.",
          "componentImported": "Component file imported successfully.",
+         "duplicatePortrait": "This character already has a portrait.",
          "linkedItemMissing": "The linked drawer save no longer exists, so the character was saved as a new item.",
          "legacyBackupDownloaded": "Backup downloaded.",
          "legacyBackupRemoved": "Old character backup removed.",
@@ -123,6 +124,15 @@
       }
    },
 
+   "ImageCard": {
+      "alt": "Character portrait",
+      "empty": "No image",
+      "upload": "Add image",
+      "change": "Change image",
+      "remove": "Remove image",
+      "uploadFailed": "Could not process that image. Please try another file."
+   },
+
 
 
    "CharacterSheetPage": {
@@ -132,6 +142,7 @@
       "characterNamePlaceholder": "Character Name...",
 
       "addCard": "Add Card",
+      "addPortrait": "Add Portrait",
       "dropToLoadCharacter": "Drop Character Sheet Item here to load the full character. Be careful, this will replace your currently active character.",
       "dropToImport": "Drop your file here to import the component into your character sheet. If you drop a full character, it will replace your currently active character.",
       "cannotDropWrongGame": "Can't drop here, this component is for a different game system.",
@@ -263,6 +274,7 @@
          "LEGENDS_STATUS_TRACKER": "Status Tracker",
          "LEGENDS_STORY_TAG_TRACKER": "Story Tag Tracker",
          "LEGENDS_STORY_THEME_TRACKER": "Story Theme Tracker",
+         "LEGENDS_IMAGE_CARD": "Portrait",
 
          "CITY_OF_MIST_FULL_CHARACTER_SHEET": "Character Sheet",
          "CITY_OF_MIST_CHARACTER_CARD": "Rift Card",
@@ -271,6 +283,7 @@
          "CITY_OF_MIST_STATUS_TRACKER": "Status Tracker",
          "CITY_OF_MIST_STORY_TAG_TRACKER": "Story Tag Tracker",
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Story Theme Tracker",
+         "CITY_OF_MIST_IMAGE_CARD": "Portrait",
 
          "OTHERSCAPE_FULL_CHARACTER_SHEET": "Character Sheet",
          "OTHERSCAPE_CHARACTER_CARD": "Merc Card",
@@ -280,6 +293,7 @@
          "OTHERSCAPE_STATUS_TRACKER": "Status Tracker",
          "OTHERSCAPE_STORY_TAG_TRACKER": "Story Tag Tracker",
          "OTHERSCAPE_STORY_THEME_TRACKER": "Story Theme Tracker",
+         "OTHERSCAPE_IMAGE_CARD": "Portrait",
 
          "cards": "Card(s)",
          "trackers": "Tracker(s)"

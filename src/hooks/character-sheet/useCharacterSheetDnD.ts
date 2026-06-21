@@ -709,8 +709,12 @@ export function useCharacterSheetDnD() {
       const itemContentCopy = JSON.parse(JSON.stringify(activeDragItem));
       if ('isFlipped' in itemContentCopy) itemContentCopy.isFlipped = false;
 
-      const defaultName = 'title' in activeDragItem ? activeDragItem.title :
-                     'name' in activeDragItem ? activeDragItem.name : 'New Item';
+      const rawName = 'title' in activeDragItem ? activeDragItem.title :
+                     'name' in activeDragItem ? activeDragItem.name : '';
+      // Keep the drawer item from landing blank when the card has no title (a portrait
+      // can be cleared to an empty title).
+      const fallbackName = generalType === 'IMAGE_CARD' ? 'Portrait' : 'New Item';
+      const defaultName = rawName?.trim() ? rawName : fallbackName;
 
       initiateItemDrop({
          game: gameSystem,
@@ -980,14 +984,16 @@ export function useCharacterSheetDnD() {
             if (!draggedItem) return;
 
             const isTrackerType = draggedItem.type === 'STATUS_TRACKER' || draggedItem.type === 'STORY_TAG_TRACKER' || draggedItem.type === 'STORY_THEME_TRACKER';
-            const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME';
+            const isImageCard = draggedItem.type === 'IMAGE_CARD';
+            const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME' || isImageCard;
 
             // Only sheet components add here; a FULL_CHARACTER_SHEET over the sheet is
             // not a failure (it opens a tab via its own zone), so don't toast for it.
             if (!isTrackerType && !isCardType) return;
 
-            // Game mismatch: the drop can't land, tell the user why instead of a silent no-op.
-            if (draggedItem.game !== character.game) {
+            // Game mismatch: the drop can't land, tell the user why instead of a silent
+            // no-op. Portraits are game-agnostic, so they skip this gate.
+            if (!isImageCard && draggedItem.game !== character.game) {
                toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
                return;
             }
@@ -996,8 +1002,12 @@ export function useCharacterSheetDnD() {
                addImportedTracker(draggedItem.content as Tracker);
                toast.success(tNotifications('Notifications.character.componentImported'));
             } else if (isCardType) {
-               addImportedCard(draggedItem.content as CardData);
-               toast.success(tNotifications('Notifications.character.componentImported'));
+               const added = addImportedCard(draggedItem.content as CardData);
+               if (added) {
+                  toast.success(tNotifications('Notifications.character.componentImported'));
+               } else {
+                  toast.error(tNotifications('Notifications.character.duplicatePortrait'));
+               }
             }
             return;
          }
@@ -1021,10 +1031,16 @@ export function useCharacterSheetDnD() {
             dragSourceCharacterIdRef.current && dragSourceCharacterIdRef.current !== character.id
          ) {
             const info = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
-            if (info && info[1] === character.game) {
+            const isImageCard = 'cardType' in activeDragItem && activeDragItem.cardType === 'IMAGE_CARD';
+            // Portraits are game-agnostic; every other component must match the sheet's game.
+            if (info && (isImageCard || info[1] === character.game)) {
                if ('cardType' in activeDragItem) {
-                  addImportedCard(activeDragItem as CardData);
-                  toast.success(tNotifications('Notifications.character.componentImported'));
+                  const added = addImportedCard(activeDragItem as CardData);
+                  if (added) {
+                     toast.success(tNotifications('Notifications.character.componentImported'));
+                  } else {
+                     toast.error(tNotifications('Notifications.character.duplicatePortrait'));
+                  }
                } else if ('trackerType' in activeDragItem) {
                   addImportedTracker(activeDragItem as Tracker);
                   toast.success(tNotifications('Notifications.character.componentImported'));

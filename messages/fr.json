@@ -59,6 +59,7 @@
          "reset": "Fiche de personnage réinitialisée avec succès.",
          "unloaded": "Fiche de personnage déchargée avec succès.",
          "componentImported": "Fichier de composant importé avec succès.",
+         "duplicatePortrait": "[TO COMPLETE]",
          "linkedItemMissing": "Cette Fiche n'a pas été trouvée dans le tiroir. Un nouvel Objet a été créé.",
          "legacyBackupDownloaded": "Backup téléchargé.",
          "legacyBackupRemoved": "Ancien backup du personnage supprimé.",
@@ -122,11 +123,20 @@
          "Global": "Vue accordée aux paramètres globaux"
       }
    },
+   "ImageCard": {
+      "alt": "[TO COMPLETE]",
+      "empty": "[TO COMPLETE]",
+      "upload": "[TO COMPLETE]",
+      "change": "[TO COMPLETE]",
+      "remove": "[TO COMPLETE]",
+      "uploadFailed": "[TO COMPLETE]"
+   },
    "CharacterSheetPage": {
       "loading": "Chargement du Personnage...",
       "newCharacterName": "Nouveau Personnage",
       "characterNamePlaceholder": "Nom du Personnage...",
       "addCard": "Ajouter une Carte",
+      "addPortrait": "[TO COMPLETE]",
       "dropToLoadCharacter": "Déposez un Objet Fiche de Personnage ici pour charger le personnage entier. Soyez prudent, cette action remplacera votre personnage actif.",
       "dropToImport": "Déposez votre fichier ici pour importer le composant dans votre fiche de personnage active. Si le fichier est une fiche de personnage entière, elle remplacera votre personnage actif.",
       "cannotDropWrongGame": "Vous ne pouvez pas déposer cet Objet ici, il appartient à un autre système de jeu.",
@@ -235,6 +245,7 @@
          "LEGENDS_STATUS_TRACKER": "Suivi de Statut",
          "LEGENDS_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "LEGENDS_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
+         "LEGENDS_IMAGE_CARD": "[TO COMPLETE]",
          "CITY_OF_MIST_FULL_CHARACTER_SHEET": "Fiche de Perso.",
          "CITY_OF_MIST_CHARACTER_CARD": "Carte de Réceptacle",
          "CITY_OF_MIST_CHARACTER_THEME": "Thème de Réceptacle",
@@ -242,6 +253,7 @@
          "CITY_OF_MIST_STATUS_TRACKER": "Suivi de Statut",
          "CITY_OF_MIST_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "CITY_OF_MIST_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
+         "CITY_OF_MIST_IMAGE_CARD": "[TO COMPLETE]",
          "OTHERSCAPE_FULL_CHARACTER_SHEET": "Fiche de Perso.",
          "OTHERSCAPE_CHARACTER_CARD": "Carte de Mercenaire",
          "OTHERSCAPE_CHARACTER_THEME": "Thème de Mercenaire",
@@ -250,6 +262,7 @@
          "OTHERSCAPE_STATUS_TRACKER": "Suivi de Statut",
          "OTHERSCAPE_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "OTHERSCAPE_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
+         "OTHERSCAPE_IMAGE_CARD": "[TO COMPLETE]",
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"
       }

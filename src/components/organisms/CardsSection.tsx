@@ -13,6 +13,7 @@ import { Sortable, DragLayoutWrapper } from '@/components/dnd';
 // -- Component Imports --
 import { CardRenderer } from '@/components/organisms/cards/CardRenderer';
 import { AddCardButton } from '@/components/molecules/AddThemeCardButton';
+import { AddPortraitButton } from '@/components/molecules/AddPortraitButton';
 import { DropInsertionLine } from '@/components/molecules/DropInsertionLine';
 
 // -- Type Imports --
@@ -27,6 +28,7 @@ interface CardsSectionProps {
    onExport: (item: CardData) => void;
    onEditCard: (card: CardData) => void;
    onAddCard: () => void;
+   onAddPortrait: () => void;
    cardIds: string[];
    /** Highlight the section as the landing spot for a compatible card-type drawer drag. */
    isDropTarget?: boolean;
@@ -47,10 +49,13 @@ export function CardsSection({
    onExport,
    onEditCard,
    onAddCard,
+   onAddPortrait,
    cardIds,
    isDropTarget = false,
    reorderIndicator = null,
 }: CardsSectionProps) {
+   // Portrait is a sheet singleton: the add button only appears when none exists.
+   const hasPortrait = character.cards.some(c => c.cardType === 'IMAGE_CARD');
    // Still a droppable (the drop is accepted here / routed by type), but the
    // highlight is now driven by `isDropTarget`, only the section matching the
    // dragged item's type lights up, regardless of which sub-zone the cursor is over.
@@ -100,6 +105,7 @@ export function CardsSection({
             })}
          </SortableContext>
          {isEditing && <AddCardButton onClick={onAddCard} />}
+         {isEditing && !hasPortrait && <AddPortraitButton onClick={onAddPortrait} />}
       </div>
    );
 }

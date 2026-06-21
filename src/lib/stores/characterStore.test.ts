@@ -1,0 +1,111 @@
+// -- Library Imports --
+import { describe, expect, it } from 'vitest';
+
+// -- Local Imports --
+import { createCharacterStore } from './characterStore';
+
+// -- Type Imports --
+import type { Card } from '@/lib/types/character';
+
+/*
+ * Unit tests for the portrait/IMAGE_CARD store logic: the addPortrait singleton, the
+ * setCardImage set/clear, and the addImportedCard reject-vs-replace guard. The render
+ * path (ImageCard), the object-URL hook, and the upload pipeline rely on canvas /
+ * object URLs and are browser-verified, not unit-tested here.
+ */
+
+/** A fresh store with a brand-new Legends character (which starts with one CHARACTER_CARD). */
+function makeStore() {
+   const store = createCharacterStore();
+   store.getState().actions.createCharacter('LEGENDS');
+   return store;
+}
+
+/** Builds an importable IMAGE_CARD with the given asset hash. */
+function makeImageCard(assetId: string | null = 'hash-1'): Card {
+   return {
+      id: 'import-img',
+      title: 'Portrait',
+      order: 0,
+      isFlipped: false,
+      cardType: 'IMAGE_CARD',
+      details: { game: 'LEGENDS', assetId, fit: 'cover' },
+   } as unknown as Card;
+}
+
+const imageCards = (store: ReturnType<typeof makeStore>) =>
+   store.getState().character!.cards.filter((c) => c.cardType === 'IMAGE_CARD');
+
+describe('addPortrait', () => {
+   it('appends exactly one empty IMAGE_CARD', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+
+      const portraits = imageCards(store);
+      expect(portraits).toHaveLength(1);
+      expect(portraits[0].details).toMatchObject({ assetId: null, fit: 'cover', game: 'LEGENDS' });
+   });
+
+   it('no-ops when a portrait already exists', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      store.getState().actions.addPortrait();
+
+      expect(imageCards(store)).toHaveLength(1);
+   });
+});
+
+describe('setCardImage', () => {
+   it('sets and clears a portrait\'s asset id', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      const portraitId = imageCards(store)[0].id;
+
+      store.getState().actions.setCardImage(portraitId, 'hash-abc');
+      expect(imageCards(store)[0].details).toMatchObject({ assetId: 'hash-abc' });
+
+      store.getState().actions.setCardImage(portraitId, null);
+      expect(imageCards(store)[0].details).toMatchObject({ assetId: null });
+   });
+});
+
+describe('addImportedCard portrait guard', () => {
+   it('accepts the first imported portrait and returns true', () => {
+      const store = makeStore();
+      const added = store.getState().actions.addImportedCard(makeImageCard('hash-1'));
+
+      expect(added).toBe(true);
+      expect(imageCards(store)).toHaveLength(1);
+   });
+
+   it('rejects a second imported portrait (returns false, no mutation)', () => {
+      const store = makeStore();
+      store.getState().actions.addImportedCard(makeImageCard('hash-1'));
+      const before = store.getState().character!.cards;
+
+      const added = store.getState().actions.addImportedCard(makeImageCard('hash-2'));
+
+      expect(added).toBe(false);
+      expect(imageCards(store)).toHaveLength(1);
+      expect(imageCards(store)[0].details).toMatchObject({ assetId: 'hash-1' }); // unchanged
+      expect(store.getState().character!.cards).toBe(before); // no mutation
+   });
+
+   it('leaves CHARACTER_CARD replace behavior unchanged', () => {
+      const store = makeStore();
+      const characterCardImport = {
+         id: 'import-hero',
+         title: 'Imported Hero',
+         order: 0,
+         isFlipped: false,
+         cardType: 'CHARACTER_CARD',
+         details: { game: 'LEGENDS', characterName: 'Imported' },
+      } as unknown as Card;
+
+      const added = store.getState().actions.addImportedCard(characterCardImport);
+
+      expect(added).toBe(true);
+      // Still exactly one character card (replaced, not appended).
+      expect(store.getState().character!.cards.filter((c) => c.cardType === 'CHARACTER_CARD')).toHaveLength(1);
+   });
+});

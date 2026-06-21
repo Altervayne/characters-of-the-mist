@@ -206,6 +206,20 @@ export interface CityRiftDetails {
 }
 
 
+/**
+ * A character portrait, the first consumer of the assets store. Game-agnostic (the
+ * Board will reuse the type); the "one per sheet, not creatable in the normal flow"
+ * rule is a sheet policy in the store/UI, never baked into the type.
+ */
+export interface ImageCardDetails {
+   /** The character's game, carried for parity with other cards; the render ignores it. */
+   game: GameSystem;
+   /** The stored asset hash, or `null` for an empty frame. */
+   assetId: string | null;
+   /** How the image fills the card footprint. */
+   fit: 'cover' | 'contain';
+}
+
 // All possible card structures
 export type CardDetails =
    | LegendsThemeDetails
@@ -217,6 +231,7 @@ export type CardDetails =
    | OtherscapeCharacterDetails
    | CityThemeDetails
    | CityCrewDetails
+   | ImageCardDetails
    | CityRiftDetails;
 
 // ##############################

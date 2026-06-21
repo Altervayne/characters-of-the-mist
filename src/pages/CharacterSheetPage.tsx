@@ -57,7 +57,7 @@ function DesktopCharacterSheetPage() {
    // ==================
    const character = useCharacterStore((state) => state.character);
    const isBootHydrating = useIsBootHydrating();
-   const { updateCharacterName, addStatus, addStoryTag } = useCharacterActions();
+   const { updateCharacterName, addStatus, addStoryTag, addPortrait } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
 
    // ==================
@@ -240,6 +240,7 @@ function DesktopCharacterSheetPage() {
                                  onExport={handleExportComponent}
                                  onEditCard={handleEditCard}
                                  onAddCard={handleAddCardClick}
+                                 onAddPortrait={addPortrait}
                                  cardIds={cardIds}
                                  isDropTarget={sheetHighlight === 'cards'}
                                  reorderIndicator={reorderIndicator}

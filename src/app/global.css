@@ -254,6 +254,18 @@
    --card-destructive-bg:  hsl(10 79% 83%);
    --card-destructive-fg:  hsl(214 14% 22%);
 }
+.card-type-image {
+   --card-header-bg:       hsl(220 9% 30%);
+   --card-header-fg:       hsl(220 13% 94%);
+   --card-paper-bg:        hsl(220 9% 88%);
+   --card-paper-fg:        hsl(220 14% 22%);
+   --card-accent:          hsl(220 9% 30%);
+   --card-border:          hsl(220 14% 22%);
+   --card-popover-bg:      hsl(220 12% 80%);
+   --card-popover-fg:      hsl(220 14% 22%);
+   --card-destructive-bg:  hsl(10 79% 83%);
+   --card-destructive-fg:  hsl(220 14% 22%);
+}
 .card-type-fellowship {
    --card-header-bg:       hsl(25 45% 25%);
    --card-header-fg:       hsl(220 13% 94%);

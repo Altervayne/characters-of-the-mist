@@ -12,7 +12,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 
 // -- Type Imports --
-import type { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails } from '@/lib/types/character';
+import type { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails, ImageCardDetails } from '@/lib/types/character';
 import type { GeneralItemType, GameSystem } from '../types/drawer';
 import type { CreateCardOptions } from '../types/creation';
 
@@ -92,7 +92,12 @@ export interface CharacterState {
       updateCharacterName: (name: string) => void;
       // Card Actions
       addCard: (options: CreateCardOptions) => string;
-      addImportedCard: (card: Card, index?: number) => void;
+      /** Imports a card onto the sheet. Returns `false` (no mutation) when it would add a second portrait. */
+      addImportedCard: (card: Card, index?: number) => boolean;
+      /** Appends one empty portrait (IMAGE_CARD); no-op if the sheet already has one. */
+      addPortrait: () => void;
+      /** Sets (or clears, with `null`) a portrait card's image asset. */
+      setCardImage: (cardId: string, assetId: string | null) => void;
       deleteCard: (cardId: string) => void;
       updateCardDetails: (cardId: string, newDetails: Partial<CardDetails>) => void;
       reorderCards: (startIndex: number, endIndex: number) => void;
@@ -471,10 +476,20 @@ export function createCharacterStore() {
                   return newCardId;
                },
                addImportedCard: (card, index) => {
+                  let added = false;
                   set((state) => {
                      if (!state.character) return {};
+
+                     // Singleton portrait policy: a sheet holds at most one IMAGE_CARD.
+                     // Unlike the CHARACTER_CARD branch below (replace), a second portrait
+                     // is REJECTED with no mutation so the caller can warn the user.
+                     if (card.cardType === 'IMAGE_CARD' && state.character.cards.some(c => c.cardType === 'IMAGE_CARD')) {
+                        return {};
+                     }
+
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     
+                     added = true;
+
                      const newCardCopy = deepReId(card);
                      let finalCards: Card[];
                      let newCharacterName = state.character.name;
@@ -516,6 +531,35 @@ export function createCharacterStore() {
                            cards: updatedCardsWithEssence,
                         },
                      };
+                  });
+                  return added;
+               },
+               addPortrait: () => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     // Sheet singleton policy: only one portrait per sheet (the add button is
+                     // also hidden once one exists; this is the defensive backstop).
+                     if (state.character.cards.some(c => c.cardType === 'IMAGE_CARD')) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     const newCard: Card = {
+                        id: cuid(),
+                        title: 'Portrait',
+                        order: state.character.cards.length,
+                        isFlipped: false,
+                        cardType: 'IMAGE_CARD',
+                        details: { game: state.character.game, assetId: null, fit: 'cover' } as ImageCardDetails,
+                     };
+                     return { character: { ...state.character, cards: [...state.character.cards, newCard] } };
+                  });
+               },
+               setCardImage: (cardId, assetId) => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return updateCardInState(state, cardId, card => {
+                        if (card.cardType !== 'IMAGE_CARD') return card;
+                        return { ...card, details: { ...card.details, assetId } as CardDetails };
+                     });
                   });
                },
                deleteCard: (cardId) => {

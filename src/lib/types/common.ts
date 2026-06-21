@@ -7,6 +7,7 @@ export type GeneralItemType =
    | 'CHARACTER_THEME'
    | 'GROUP_THEME'
    | 'LOADOUT_THEME'
+   | 'IMAGE_CARD'
    | 'STATUS_TRACKER'
    | 'STORY_TAG_TRACKER'
    | 'STORY_THEME_TRACKER'
