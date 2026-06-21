@@ -136,7 +136,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
    // can scroll; on unmount it slides off its own edge (the strip's `overflow-x-clip`
    // clips it cleanly so it never pokes over the sidebar).
    const arrowClass =
-      'absolute top-0 bottom-0 z-20 my-auto flex size-8 items-center justify-center rounded-md bg-primary/70 backdrop-blur-sm text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground cursor-pointer';
+      'absolute top-0 bottom-0 z-20 my-auto flex size-8 items-center justify-center rounded-md shadow-[3px_3px_10px_3px_#00000075] bg-primary/70 backdrop-blur-sm text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground cursor-pointer';
 
    return (
       <div
@@ -163,7 +163,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
                   onClick={() => scrollByDirection(-1)}
                   aria-label={t('Tabs.scrollLeft')}
                   title={t('Tabs.scrollLeft')}
-                  className={cn(arrowClass, 'left-1')}
+                  className={cn(arrowClass, 'left-2.5')}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -212,7 +212,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
                   onClick={() => scrollByDirection(1)}
                   aria-label={t('Tabs.scrollRight')}
                   title={t('Tabs.scrollRight')}
-                  className={cn(arrowClass, 'right-1')}
+                  className={cn(arrowClass, 'right-2.5')}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
