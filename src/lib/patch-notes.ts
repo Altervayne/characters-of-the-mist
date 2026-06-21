@@ -23,6 +23,9 @@ The drag and drop system was reviewed to feel more intuitive, and allow you to m
 * The drag overlay has been reviewed to be more intuitive. Items in the drawer will collapse into a pill-shaped summary containing their name and an icon showing the type of item. An icon on the left will show you the action you can perform where your cursor is.
 * The folders section has been made more consistent with itself, and should jitter less when dragging.
 * A large warning will now display when dragging an item incompatible with the current character sheet, so you don't try to drop it on there hoping it'll work.
+
+### Images !
+Characters of the Mist now has an assets system that permits the use of Images ! You can now add a portrait for your characters in the form of a savable Image card.
 `
    },
    {
