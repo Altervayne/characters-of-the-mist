@@ -23,7 +23,7 @@ export function AddPortraitButton({ onClick }: AddPortraitButtonProps) {
          data-tour="add-portrait-button"
          onClick={onClick}
          className={cn(
-            "cursor-pointer flex flex-col gap-4 items-center justify-center w-62.5 h-150",
+            "cursor-pointer flex flex-col gap-4 items-center justify-center min-w-62.5 w-62.5 max-h-150 h-150 p-4",
             "rounded-lg border-2 border-dashed border-bg text-bg border-border text-muted-foreground text-center bg-muted/50",
             "hover:text-foreground hover:border-foreground transition-all duration-150"
          )}
