@@ -5,6 +5,7 @@ import { Dexie, type EntityTable } from 'dexie';
 import type { DrawerFolderRecord, DrawerItemRecord, DrawerMetaRecord } from './drawerRecords';
 import type { CharacterRecord } from '@/lib/character/characterRecords';
 import type { AssetRecord } from '@/lib/assets/assetRecords';
+import type { BoardRecord, BoardItemRecord } from '@/lib/board/boardRecords';
 
 /**
  * The Dexie database for the normalized drawer.
@@ -22,6 +23,11 @@ import type { AssetRecord } from '@/lib/assets/assetRecords';
  * - `assets`: one row per content-addressed image, keyed by `hash` (the SHA-256
  *   of the processed webp), indexed on `createdAt` for the GC grace window; the
  *   blob and metadata are stored inline (added in `version(3)`).
+ * - `boards`: one row per board, keyed by `id`, indexed on `updatedAt`; viewport
+ *   stored inline (added in `version(4)`).
+ * - `boardItems`: flat board-item rows, keyed by `id`, indexed on `boardId` and
+ *   the compound `[boardId+z]` (z-ordered load of a board's items); placement and
+ *   `content` stored inline (added in `version(4)`).
  *
  * Despite the database name, it holds both the drawer and the character domains:
  * keeping them in one database lets a save-character-to-drawer update both the
@@ -43,6 +49,10 @@ export class DrawerDatabase extends Dexie {
    characters!: EntityTable<CharacterRecord, 'id'>;
    /** One row per content-addressed image asset, keyed by `hash` (version(3)). */
    assets!: EntityTable<AssetRecord, 'hash'>;
+   /** One row per board, the viewport stored inline (version(4)). */
+   boards!: EntityTable<BoardRecord, 'id'>;
+   /** Flat board-item rows, content stored inline (version(4)). */
+   boardItems!: EntityTable<BoardItemRecord, 'id'>;
 
    constructor() {
       super('CharactersOfTheMistDrawerDatabase');
@@ -67,6 +77,16 @@ export class DrawerDatabase extends Dexie {
       // with no transform of existing data.
       this.version(3).stores({
          assets: 'hash, createdAt',
+      });
+
+      // version(4): purely additive - declares only the NEW `boards` + `boardItems`
+      // stores. `boardItems` indexes `boardId` (load a board's items) and the compound
+      // `[boardId+z]` (load them in z-order); placement and content are stored
+      // unindexed. An existing database upgrades by creating two empty stores with no
+      // transform of existing data.
+      this.version(4).stores({
+         boards: 'id, updatedAt',
+         boardItems: 'id, boardId, [boardId+z]',
       });
    }
 }

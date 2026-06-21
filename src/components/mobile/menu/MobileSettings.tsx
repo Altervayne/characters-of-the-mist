@@ -46,6 +46,7 @@ import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettin
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
 import { clearAllAssets } from '@/lib/assets/assetRepository';
+import { clearAllBoards } from '@/lib/board/boardRepository';
 import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
@@ -90,6 +91,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 	const handleAppReset = async () => {
 		await clearAllCharacterData();
 		await clearAllAssets();
+		await clearAllBoards();
 		clearWorkspace();
 		await clearAllDrawerData();
 		drawerCommandEngine.clear();
