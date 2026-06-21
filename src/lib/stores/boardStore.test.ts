@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
 import * as repository from '@/lib/board/boardRepository';
 import { createBoardStore } from './boardStore';
+import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
 import type { BoardItem } from '@/lib/types/board';
@@ -39,11 +40,22 @@ function makeRecord(id: string, boardId: string, z: number, overrides: Partial<B
    return { ...makeItem(id, z), boardId, ...overrides };
 }
 
-const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+/** Polls `check` until it returns a value, or throws after `timeoutMs` (robust to debounce timing under load). */
+async function waitFor<T>(check: () => Promise<T | undefined> | T | undefined, timeoutMs = 1000): Promise<T> {
+   const deadline = Date.now() + timeoutMs;
+   for (;;) {
+      const value = await check();
+      if (value !== undefined) return value;
+      if (Date.now() > deadline) throw new Error('waitFor timed out');
+      await new Promise((resolve) => setTimeout(resolve, 5));
+   }
+}
 
 beforeEach(async () => {
    await drawerDatabase.boards.clear();
    await drawerDatabase.boardItems.clear();
+   // Start from a non-board last-modified so the assertions below prove a flip.
+   useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
 });
 
 // ==================
@@ -222,9 +234,84 @@ describe('setViewport', () => {
       expect(store.getState().viewport).toEqual({ x: 50, y: 60, zoom: 2 }); // immediate
       expect(store.getState().canUndo).toBe(false); // not a command
 
-      await wait(25);
-      expect((await repository.getBoard(board.id))?.viewport).toEqual({ x: 50, y: 60, zoom: 2 });
+      // Poll for the debounced save rather than a fixed sleep (robust under suite load).
+      const persisted = await waitFor(async () => {
+         const vp = (await repository.getBoard(board.id))?.viewport;
+         return vp && vp.zoom === 2 ? vp : undefined;
+      });
+      expect(persisted).toEqual({ x: 50, y: 60, zoom: 2 });
       expect(store.getState().canUndo).toBe(false); // still nothing to undo
+   });
+
+   it('does not mark the board as last-modified (the viewport is not undoable)', async () => {
+      const board = await repository.createBoard('Board');
+      const store = createBoardStore({ viewportSaveDebounceMs: 5 });
+      await store.getState().actions.hydrate(board.id);
+
+      store.getState().actions.setViewport({ x: 10, y: 10, zoom: 1.5 });
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('drawer'); // unchanged
+   });
+});
+
+// ==================
+//  lastModifiedStore (so Ctrl+Z routes to the board after a board edit)
+// ==================
+
+describe('lastModifiedStore', () => {
+   it('every mutating action marks the board as the last-modified store', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.addItem(makeRecord('seed', board.id, 0));
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      const { actions } = store.getState();
+      const general = useAppGeneralStateStore.getState().actions;
+
+      const reset = () => general.setLastModifiedStore('drawer');
+
+      reset();
+      await actions.addItem(makeItem('a', 1));
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.moveItem('a', { x: 5, y: 5 });
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.resizeItem('a', { width: 60, height: 60 });
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.setItemZ('a', 9);
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.bringToFront('a');
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.sendToBack('a');
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.updateItemContent('a', { kind: 'post-it', text: 'edited' });
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+
+      reset();
+      await actions.deleteItem('a');
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
+   });
+
+   it('undo and redo do not change the last-modified store', async () => {
+      const board = await repository.createBoard('Board');
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      await store.getState().actions.addItem(makeItem('a', 0));
+
+      useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
+      await store.getState().actions.undo();
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('drawer');
+      await store.getState().actions.redo();
+      expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('drawer');
    });
 });
 

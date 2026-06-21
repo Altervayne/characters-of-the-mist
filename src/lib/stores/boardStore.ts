@@ -13,6 +13,9 @@ import {
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 
+// -- Store Imports --
+import { useAppGeneralStateStore } from './appGeneralStateStore';
+
 // -- Type Imports --
 import type { BoardCommand, ResizePatch } from '@/lib/board/boardCommands';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
@@ -88,6 +91,11 @@ const initialState: Pick<
 /** Normalizes a thrown value into the store's `error` message string. */
 function toErrorMessage(error: unknown): string {
    return error instanceof Error ? error.message : String(error);
+}
+
+/** Marks the board as the most recently modified store, so Ctrl/Cmd+Z routes here (not the drawer). */
+function markBoardModified(): void {
+   useAppGeneralStateStore.getState().actions.setLastModifiedStore('board');
 }
 
 /** Projects a flat item record onto the in-memory {@link BoardItem} (drops `boardId`). */
@@ -194,24 +202,29 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             addItem: async (item) => {
                const boardId = get().boardId;
                if (!boardId) return;
+               markBoardModified();
                const record: BoardItemRecord = { ...item, boardId };
                set((state) => ({ items: { ...state.items, [item.id]: item } }));
                await runItemMutation(createAddItemCommand(record));
             },
 
             moveItem: async (id, position) => {
+               markBoardModified();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, x: position.x, y: position.y } } }));
                await runItemMutation(createMoveItemCommand(id, position));
             },
 
             resizeItem: async (id, patch) => {
+               markBoardModified();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, ...patch } } }));
                await runItemMutation(createResizeItemCommand(id, patch));
             },
 
             setItemZ: async (id, z) => {
+               // Also covers bringToFront/sendToBack, which delegate here.
+               markBoardModified();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, z } } }));
                await runItemMutation(createSetItemZCommand(id, z));
@@ -230,12 +243,14 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             },
 
             updateItemContent: async (id, content) => {
+               markBoardModified();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                await runItemMutation(createUpdateItemContentCommand(id, content));
             },
 
             deleteItem: async (id) => {
+               markBoardModified();
                set((state) => {
                   const items = { ...state.items };
                   delete items[id];

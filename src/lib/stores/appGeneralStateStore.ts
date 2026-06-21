@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 
 
-type StoreName = 'character' | 'drawer';
+type StoreName = 'character' | 'drawer' | 'board';
 
 export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 

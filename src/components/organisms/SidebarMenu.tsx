@@ -21,6 +21,7 @@ import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterReposi
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
+import { BoardUndoRedoControls } from '../molecules/BoardUndoRedoControls';
 import { SidebarButton } from '../molecules/SidebarButton';
 
 // -- Store and Hook Imports --
@@ -233,6 +234,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                { activeWindow === 'PLAY_AREA' &&
                   <div className="py-2 border-b-2 border-border">
                      <CharacterUndoRedoControls isCollapsed={isCollapsed} />
+                  </div>
+               }
+
+               { activeWindow === 'BOARD' &&
+                  <div className="py-2 border-b-2 border-border">
+                     <BoardUndoRedoControls isCollapsed={isCollapsed} />
                   </div>
                }
             </motion.section>

@@ -198,7 +198,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
                onClick={() => setIsNewTabDialogOpen(true)}
                aria-label={t('Tabs.newTab')}
                title={t('Tabs.newTab')}
-               className="shrink-0 mb-1.5 mr-1.5 flex items-center justify-center rounded-md px-3 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+               className="shrink-0 mb-2 ml-1 mr-1.5 flex items-center justify-center rounded-md px-2 py-2 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
             >
                <Plus className="h-4 w-4" />
             </button>
