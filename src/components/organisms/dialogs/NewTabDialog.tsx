@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 // -- Basic UI Imports --
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+// -- Icon Imports --
+import { LayoutGrid } from 'lucide-react';
+
 // -- Component Imports --
 import { GameCard } from '@/components/molecules/GameCard';
 
@@ -20,10 +23,10 @@ import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import type { GameSystem } from '@/lib/types/drawer';
 
 /*
- * The New Tab dialog. Framed as a tab-TYPE chooser even though only
- * "Character Sheet" exists today, so Boards/Notes become additional sections later
- * with no change to the tab lifecycle. Choosing a game calls `createCharacterTab(game)`
- * and closes the dialog. The game cards reuse the shared {@link GameCard}.
+ * The New Tab dialog: a tab-TYPE chooser. The Character Sheet section picks a game and
+ * calls `createCharacterTab(game)`; the Board section creates a freeform board via
+ * `createBoardTab()`. Either choice closes the dialog. The cards reuse the shared
+ * {@link GameCard}.
  */
 
 interface NewTabDialogProps {
@@ -40,10 +43,17 @@ interface NewTabDialogProps {
  */
 export function NewTabDialog({ isOpen, onOpenChange }: NewTabDialogProps) {
    const { t } = useTranslation();
-   const { createCharacterTab } = useTabManagerActions();
+   const { createCharacterTab, createBoardTab } = useTabManagerActions();
 
    const handlePickGame = (game: GameSystem) => {
       createCharacterTab(game);
+      onOpenChange(false);
+   };
+
+   const handleNewBoard = () => {
+      // The board row is created asynchronously, but the dialog can close at once: the
+      // tab + placeholder appear when `createBoardTab` resolves.
+      void createBoardTab();
       onOpenChange(false);
    };
 
@@ -56,7 +66,7 @@ export function NewTabDialog({ isOpen, onOpenChange }: NewTabDialogProps) {
             </DialogHeader>
 
             <div className="space-y-3 py-2">
-               {/* Tab type: only Character Sheet today; future types become sibling sections. */}
+               {/* Tab type: a Character Sheet (pick a game) or a Board. */}
                <h3 className="text-sm font-semibold text-muted-foreground">{t('Tabs.newTabDialog.characterSheetType')}</h3>
                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {GAME_CARD_OPTIONS.map(({ game, titleKey, subtitleKey }) => {
@@ -74,6 +84,19 @@ export function NewTabDialog({ isOpen, onOpenChange }: NewTabDialogProps) {
                         />
                      );
                   })}
+               </div>
+
+               <h3 className="text-sm font-semibold text-muted-foreground">{t('Tabs.newTabDialog.boardType')}</h3>
+               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <GameCard
+                     compact
+                     isSelected={false}
+                     onClick={handleNewBoard}
+                     title={t('Tabs.newTabDialog.newBoardTitle')}
+                     subtitle={t('Tabs.newTabDialog.newBoardSubtitle')}
+                     gradient="bg-gradient-to-br from-sky-500 to-indigo-600"
+                     icon={<LayoutGrid className="h-6 w-6 text-sky-500" />}
+                  />
                </div>
             </div>
          </DialogContent>

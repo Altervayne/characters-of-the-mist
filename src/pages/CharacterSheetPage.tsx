@@ -30,6 +30,7 @@ import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
+import { BoardView } from '@/components/organisms/board/BoardView';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
@@ -40,6 +41,7 @@ import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoadin
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 import { useIsBootHydrating } from '@/lib/character/characterPersistence';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -56,6 +58,10 @@ function DesktopCharacterSheetPage() {
    //  Data Stores
    // ==================
    const character = useCharacterStore((state) => state.character);
+   // The active board context is the surface switch: non-null under a board tab, null
+   // under a character tab or the menu. It already answers "is a board active?", so the
+   // page never re-derives the active tab type.
+   const activeBoard = useActiveBoardInstance();
    const isBootHydrating = useIsBootHydrating();
    const { updateCharacterName, addStatus, addStoryTag, addPortrait } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
@@ -189,7 +195,7 @@ function DesktopCharacterSheetPage() {
                isEditing={isEditing}
                isDrawerOpen={isDrawerOpen}
                isCollapsed={isSidebarCollapsed}
-               activeWindow={ character ? 'PLAY_AREA' : 'MAIN_MENU' }
+               activeWindow={ activeBoard ? 'BOARD' : (character ? 'PLAY_AREA' : 'MAIN_MENU') }
                onToggleEditing={() => setIsEditing(!isEditing)}
                onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
                onToggleCollapse={toggleSidebarCollapsed}
@@ -209,7 +215,9 @@ function DesktopCharacterSheetPage() {
                {/* Content area: own positioning context for the absolutely-filled
                    sheet/menu so they sit below the strip rather than over it. */}
                <div className="relative flex-1 min-h-0">
-                  { character ? (
+                  { activeBoard ? (
+                     <BoardView />
+                  ) : character ? (
                      <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
                         <CharacterNameHeader
                            value={localName}

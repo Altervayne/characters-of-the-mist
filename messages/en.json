@@ -7,6 +7,7 @@
    },
    "Tabs": {
       "untitled": "Untitled character",
+      "untitledBoard": "Untitled board",
       "closeTab": "Close tab",
       "newTab": "New tab",
       "scrollLeft": "Scroll tabs left",
@@ -14,14 +15,26 @@
       "newTabDialog": {
          "title": "New tab",
          "description": "Choose what kind of tab to open.",
-         "characterSheetType": "Character Sheet"
+         "characterSheetType": "Character Sheet",
+         "boardType": "Board",
+         "newBoardTitle": "New board",
+         "newBoardSubtitle": "A freeform canvas"
       },
       "closeTabDialog": {
          "title": "Close this tab?",
          "description": "\"{{name}}\" has unsaved changes. Closing this tab discards them for good. Cancel and save it first (Save or Save As) if you want to keep your changes.",
          "closeWithoutSaving": "Close without saving",
          "cancel": "Cancel"
+      },
+      "closeBoardDialog": {
+         "title": "Close this board?",
+         "description": "\"{{name}}\" will be lost. Boards can't be saved yet, so closing this tab discards it for good.",
+         "confirm": "Close and discard"
       }
+   },
+   "BoardView": {
+      "comingSoon": "The board canvas is coming soon.",
+      "itemCount": "{{count}} items"
    },
    "DragPuck": {
       "openAsTab": "Open as tab",

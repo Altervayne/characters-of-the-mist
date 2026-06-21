@@ -36,7 +36,7 @@ import type { Character, Card as CardData, Tracker } from '@/lib/types/character
 
 
 
-type WindowTypes = 'MAIN_MENU' | 'PLAY_AREA';
+type WindowTypes = 'MAIN_MENU' | 'PLAY_AREA' | 'BOARD';
 
 interface SidebarMenuProps {
    isEditing: boolean;
@@ -300,10 +300,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
             {/* Bottom-aligned sub-menu buttons */}
             <div className="flex flex-col shrink-0 w-full">
-               {/* "Open menu" is a navigation action (leave the sheet, go home), set apart
-                   from the meta utilities below by a divider. It has nowhere to go from the
-                   main menu itself, so it only shows in the play area. */}
-               { activeWindow === 'PLAY_AREA' &&
+               {/* "Open menu" is a navigation action (leave the sheet/board, go home), set
+                   apart from the meta utilities below by a divider. It has nowhere to go
+                   from the main menu itself, so it shows in the play area and on a board. */}
+               { (activeWindow === 'PLAY_AREA' || activeWindow === 'BOARD') &&
                   <motion.section layout transition={{ duration: 0.2 }} className={cn(
                      "flex flex-col items-center gap-2 p-2 bg-card border-t-2 border-b border-border"
                   )}>

@@ -7,6 +7,7 @@
    },
    "Tabs": {
       "untitled": "Personnage sans nom",
+      "untitledBoard": "[TO COMPLETE]",
       "closeTab": "Fermer l'onglet",
       "newTab": "Nouvel onglet",
       "scrollLeft": "Défiler à gauche",
@@ -14,14 +15,26 @@
       "newTabDialog": {
          "title": "Nouvel onglet",
          "description": "Sélectionnez le type d'onglet que vous souhaitez ouvrir.",
-         "characterSheetType": "Fiche de Personnage"
+         "characterSheetType": "Fiche de Personnage",
+         "boardType": "[TO COMPLETE]",
+         "newBoardTitle": "[TO COMPLETE]",
+         "newBoardSubtitle": "[TO COMPLETE]"
       },
       "closeTabDialog": {
          "title": "Souhaitez-vous fermer cet onglet ?",
          "description": "\"{{name}}\" a des modifications non enregistrés. Fermer cet onglet sans enregistrer la fiche perdra ces modifications. Si vous souhaitez les préserver, annulez et enregistrez avant de fermer l'onglet.",
          "closeWithoutSaving": "Fermer sans enregistrer",
          "cancel": "Annuler"
+      },
+      "closeBoardDialog": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "confirm": "[TO COMPLETE]"
       }
+   },
+   "BoardView": {
+      "comingSoon": "[TO COMPLETE]",
+      "itemCount": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "Ouvrir dans un nouvel onglet",

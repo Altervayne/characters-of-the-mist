@@ -5,41 +5,45 @@ import { useTranslation } from 'react-i18next';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 /*
- * The close-confirm dialog for a tab with unsaved changes. Closing a tab is
- * destructive (it deletes the working record), so a dirty tab asks first. There is
- * no in-dialog save: the copy points the user at the normal Save / Save As, and the
- * only action here is to discard. A clean tab never opens this; its X closes silently.
+ * The close-confirm dialog for a tab. Closing a tab is destructive (it deletes the
+ * working record), so it asks first. There is no in-dialog save; the only action is to
+ * discard.
+ *
+ * Two flavours by `variant`:
+ * - 'character' (default): a DIRTY character tab confirms before discarding unsaved
+ *   changes (a clean one closes silently and never opens this).
+ * - 'board': a board has no drawer save yet, so closing ALWAYS discards it for good -
+ *   the copy says so plainly.
  */
 
 interface CloseTabDialogProps {
    isOpen: boolean;
    onOpenChange: (isOpen: boolean) => void;
-   /** The character's display name, woven into the warning. */
-   characterName: string;
-   /** Closes the tab and discards the unsaved changes. */
+   /** The tab's display name, woven into the warning. */
+   name: string;
+   /** Which copy to show. Defaults to the character (unsaved-changes) flavour. */
+   variant?: 'character' | 'board';
+   /** Closes the tab and discards it. */
    onConfirm: () => void;
 }
 
 /**
- * Renders the unsaved-changes close-confirm dialog. Cancel keeps the tab open;
- * "Close without saving" discards via {@link CloseTabDialogProps.onConfirm}.
+ * Renders the close-confirm dialog. Cancel keeps the tab open; the action discards via
+ * {@link CloseTabDialogProps.onConfirm}.
  *
- * @param props.isOpen - Whether the dialog is open.
- * @param props.onOpenChange - Open-state setter (Cancel / dismiss closes it).
- * @param props.characterName - The character's name, shown in the warning.
- * @param props.onConfirm - Discards and closes the tab.
+ * @param props - See {@link CloseTabDialogProps}.
  */
-export function CloseTabDialog({ isOpen, onOpenChange, characterName, onConfirm }: CloseTabDialogProps) {
+export function CloseTabDialog({ isOpen, onOpenChange, name, variant = 'character', onConfirm }: CloseTabDialogProps) {
    const { t } = useTranslation();
+   const copy = variant === 'board' ? 'Tabs.closeBoardDialog' : 'Tabs.closeTabDialog';
+   const confirmKey = variant === 'board' ? `${copy}.confirm` : `${copy}.closeWithoutSaving`;
 
    return (
       <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
          <AlertDialogContent>
             <AlertDialogHeader>
-               <AlertDialogTitle>{t('Tabs.closeTabDialog.title')}</AlertDialogTitle>
-               <AlertDialogDescription>
-                  {t('Tabs.closeTabDialog.description', { name: characterName })}
-               </AlertDialogDescription>
+               <AlertDialogTitle>{t(`${copy}.title`)}</AlertDialogTitle>
+               <AlertDialogDescription>{t(`${copy}.description`, { name })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                <AlertDialogCancel className="cursor-pointer">{t('Tabs.closeTabDialog.cancel')}</AlertDialogCancel>
@@ -47,7 +51,7 @@ export function CloseTabDialog({ isOpen, onOpenChange, characterName, onConfirm 
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
                   onClick={onConfirm}
                >
-                  {t('Tabs.closeTabDialog.closeWithoutSaving')}
+                  {t(confirmKey)}
                </AlertDialogAction>
             </AlertDialogFooter>
          </AlertDialogContent>
