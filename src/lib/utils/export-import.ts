@@ -90,6 +90,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
       case "STORY_THEME_TRACKER":
          textType = "Story-Theme-Tracker"
          break;
+
+      case "IMAGE_CARD":
+         textType = "Portrait"
+         break;
    }
 
    const baseName = textGame ? `${textGame}_${textType}` : textType;

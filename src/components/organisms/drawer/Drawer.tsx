@@ -146,7 +146,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                   variants={contentVariants}
                   className="w-full p-0 h-full flex flex-col"
                >
-                     <header className="shrink-0 p-4 h-26 border-b-2 border-border">
+                     <header className="shrink-0 py-2 px-4 h-26 border-b-2 border-border">
                         <div className="flex grow h-8 items-center justify-between my-2">
                            <h2 className="flex-1 text-xl font-bold">{t('Drawer.title')}</h2>
                            <div className="flex-2">
@@ -173,7 +173,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                      </header>
 
                      <div className="grow bg-popover overflow-y-auto flex flex-col">
-                        <motion.div data-tour="drawer-folders" layout transition={{ duration: 0.1 }} className="flex flex-col w-full px-4 py-3 border-b-2 border-border overflow-hidden shrink-0">
+                        <motion.div data-tour="drawer-folders" layout transition={{ duration: 0.1 }} className="flex flex-col w-full p-2 pt-0 border-b-2 border-border overflow-hidden shrink-0">
                            {currentFolderId && (
                               <motion.div
                                  layout
@@ -240,12 +240,12 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                            </motion.div>
                         </motion.div>
 
-                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="flex-1 px-3 py-3 flex flex-col">
+                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="flex-1 p-1 flex flex-col">
                            <div
                               ref={setNodeRef}
                               data-drawer-items-area
                               className={cn(
-                                 "w-full grow min-h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-2",
+                                 "w-full grow min-h-full rounded-md border-2 border-dashed border-transparent transition-all duration-200 ease-in-out p-1",
                                  // Highlight when something is positioned to drop into THIS folder body:
                                  // a sheet item saving in (`isDragHovering`, still dnd-kit-routed) OR a
                                  // drawer move whose resolved target is the current folder (full-row,

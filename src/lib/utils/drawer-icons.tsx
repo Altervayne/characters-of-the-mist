@@ -1,6 +1,6 @@
 import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { GeneralItemType } from '@/lib/types/drawer';
+import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
 /**
  * Returns the lucide icon *component* for a drawer item type, so callers can size
@@ -28,6 +28,15 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
       default:
          return FileText;
    }
+}
+
+/**
+ * Returns the `Drawer.Types` i18n key for an item's type label. Game-specific cards
+ * are keyed `${game}_${type}` (a Legends "Hero Card" vs an Otherscape "Merc Card"),
+ * but IMAGE_CARD is the same in every game, so it has ONE label key, not one per game.
+ */
+export function getItemTypeLabelKey(game: GameSystem, type: GeneralItemType): string {
+   return type === 'IMAGE_CARD' ? 'IMAGE_CARD' : `${game}_${type}`;
 }
 
 /**

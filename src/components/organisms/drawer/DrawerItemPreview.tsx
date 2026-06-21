@@ -15,6 +15,9 @@ import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTra
 import { CharacterSheetPreview } from '@/components/molecules/CharacterSheetPreview';
 import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
 
+// -- Utils Imports --
+import { getItemTypeLabelKey } from '@/lib/utils/drawer-icons';
+
 // -- Type Imports --
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 
@@ -119,7 +122,7 @@ export function DrawerItemPreview({
          </div>
 
          <p className="w-full text-center font-semibold truncate text-sm mb-2 px-1">
-            <span>{t(`Drawer.Types.${item.game}`)}</span> • <span>{t(`Drawer.Types.${item.game}_${item.type}`)}</span>
+            <span>{t(`Drawer.Types.${item.game}`)}</span> • <span>{t(`Drawer.Types.${getItemTypeLabelKey(item.game, item.type)}`)}</span>
          </p>
       </div>
    );
