@@ -14,11 +14,13 @@ import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLef
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { exportCharacterSheet, importFromFile } from '@/lib/utils/export-import';
+import { exportCharacterSheet, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
 import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+import { importBoard, loadBoard } from '@/lib/board/boardRepository';
+import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -35,6 +37,7 @@ import cuid from 'cuid';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
+import type { Board } from '@/lib/types/board';
 
 
 
@@ -64,13 +67,15 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // *different* character (file import) and returning to the menu go through the
    // TabManager.
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, setHasUnsavedChanges } = useCharacterActions();
-   const { openCharacterTab, deactivate } = useTabManagerActions();
+   const { openCharacterTab, openBoardTab, deactivate } = useTabManagerActions();
    const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
    const characterFormRef = useRef<HTMLFormElement>(null);
    const componentImportInputRef = useRef<HTMLInputElement>(null);
    const componentFormRef = useRef<HTMLFormElement>(null);
+   const boardImportInputRef = useRef<HTMLInputElement>(null);
+   const boardFormRef = useRef<HTMLFormElement>(null);
 
 
 
@@ -214,6 +219,48 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       characterFormRef.current?.reset();
    };
 
+   const handleExportBoard = async () => {
+      const store = getActiveBoardStore();
+      if (!store) return;
+      const { boardId } = store.getState();
+      if (!boardId) return;
+      try {
+         // Serialize from the repo (items persist optimistically); the generic export
+         // embeds any board image / card-copy art via collectFromBoard.
+         const aggregate = await loadBoard(boardId);
+         if (!aggregate) return;
+         await exportToFile(aggregate, 'FULL_BOARD', 'NEUTRAL', generateExportFilename('NEUTRAL', 'FULL_BOARD', aggregate.name));
+         toast.success(tNotifications('Notifications.board.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.general.exportError'));
+      }
+   };
+
+   const handleBoardFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+         const importedData = await importFromFile(file);
+         if (importedData.fileType === 'FULL_BOARD') {
+            const migratedContent = harmonizeData(importedData.content, importedData.fileType) as Board;
+            // Fresh, independent identity (connection-safe) so re-importing the same file
+            // never collides with an existing board id.
+            const reIded = reIdBoardAggregate(migratedContent);
+            await importBoard(reIded);
+            await openBoardTab(reIded.id);
+            toast.success(tNotifications('Notifications.board.imported'));
+         } else {
+            toast.error(tNotifications('Notifications.general.importFailed'));
+         }
+      } catch (error) {
+         console.error("Failed to import board file:", error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+
+      boardFormRef.current?.reset();
+   };
+
    const handleComponentFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
@@ -355,6 +402,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardAsToDrawer} Icon={SaveAll}>
                         {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawerAs')}
                      </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={handleExportBoard} Icon={Upload}>
+                        {t('CharacterSheetPage.SidebarMenu.exportBoard')}
+                     </SidebarButton>
                   </motion.section>
                }
 
@@ -365,6 +415,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   )}>
                      <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
                         {t('CharacterSheetPage.SidebarMenu.importCharacter')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={() => boardImportInputRef.current?.click()} Icon={Download}>
+                        {t('CharacterSheetPage.SidebarMenu.importBoard')}
                      </SidebarButton>
                      <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
                         {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
@@ -419,6 +472,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   type="file"
                   ref={componentImportInputRef}
                   onChange={handleComponentFileSelected}
+                  accept=".cotm,application/json"
+               />
+            </form>
+            <form ref={boardFormRef} className="hidden">
+               <input
+                  type="file"
+                  ref={boardImportInputRef}
+                  onChange={handleBoardFileSelected}
                   accept=".cotm,application/json"
                />
             </form>

@@ -100,7 +100,9 @@
       },
       "board": {
          "saved": "Board saved to",
-         "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item."
+         "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item.",
+         "exported": "Board exported to downloads.",
+         "imported": "Board file imported successfully."
       },
       "card": {
          "created": "Card created successfully.",
@@ -204,6 +206,8 @@
          "saveToDrawerAs": "Save Character As...",
          "saveBoardToDrawer": "Save Board",
          "saveBoardToDrawerAs": "Save Board As...",
+         "exportBoard": "Export Board",
+         "importBoard": "Import Board",
          "exportCharacter": "Export Character",
          "importCharacter": "Import Character",
          "importComponent": "Import Component",

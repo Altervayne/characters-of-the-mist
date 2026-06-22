@@ -100,7 +100,9 @@
       },
       "board": {
          "saved": "[TO COMPLETE]",
-         "linkedItemMissing": "[TO COMPLETE]"
+         "linkedItemMissing": "[TO COMPLETE]",
+         "exported": "[TO COMPLETE]",
+         "imported": "[TO COMPLETE]"
       },
       "card": {
          "created": "Carte créée avec succès.",
@@ -194,6 +196,8 @@
          "saveToDrawerAs": "Enregistrer sous... ",
          "saveBoardToDrawer": "[TO COMPLETE]",
          "saveBoardToDrawerAs": "[TO COMPLETE]",
+         "exportBoard": "[TO COMPLETE]",
+         "importBoard": "[TO COMPLETE]",
          "exportCharacter": "Exporter le Perso.",
          "importCharacter": "Importer le Perso.",
          "importComponent": "Importer un Composant",
