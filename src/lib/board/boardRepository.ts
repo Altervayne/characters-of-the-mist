@@ -97,6 +97,7 @@ export function createBoard(name: string): Promise<BoardRecord> {
          name,
          updatedAt: Date.now(),
          viewport: { ...DEFAULT_VIEWPORT },
+         drawerItemId: null,
          schemaVersion: BOARD_SCHEMA_VERSION,
       };
       await db.boards.add(record);
@@ -227,8 +228,101 @@ export function loadBoard(id: string): Promise<Board | undefined> {
          id: record.id,
          name: record.name,
          viewport: record.viewport,
+         drawerItemId: record.drawerItemId ?? null,
          items: items.map(toBoardItem),
       };
+   });
+}
+
+/** Assembles the aggregate for `record` + its `items` (the shared body of `loadBoard` and the save helpers). */
+function assembleBoard(record: BoardRecord, items: BoardItemRecord[]): Board {
+   return {
+      id: record.id,
+      name: record.name,
+      viewport: record.viewport,
+      drawerItemId: record.drawerItemId ?? null,
+      items: items.map(toBoardItem),
+   };
+}
+
+/**
+ * Materializes an aggregate into the normalized tables - the inverse of {@link loadBoard}.
+ * Used when opening a board from its drawer copy: the drawer aggregate is the source of
+ * truth on open, so any existing rows for this board id are replaced. Keeps the same
+ * board id (and item ids) so a reopen focuses-or-restores the same board losslessly.
+ */
+export function importBoard(board: Board): Promise<void> {
+   return runWriteTransaction([db.boards, db.boardItems], async () => {
+      await db.boardItems.where('boardId').equals(board.id).delete();
+      const record: BoardRecord = {
+         id: board.id,
+         name: board.name,
+         updatedAt: Date.now(),
+         viewport: board.viewport,
+         drawerItemId: board.drawerItemId ?? null,
+         schemaVersion: BOARD_SCHEMA_VERSION,
+      };
+      await db.boards.put(record);
+      const records: BoardItemRecord[] = board.items.map((item) => ({
+         id: item.id,
+         boardId: board.id,
+         kind: item.kind,
+         x: item.x,
+         y: item.y,
+         width: item.width,
+         height: item.height,
+         z: item.z,
+         rotation: item.rotation,
+         content: item.content,
+      }));
+      await db.boardItems.bulkPut(records);
+   });
+}
+
+/** Outcome of {@link saveBoardToLinkedDrawerItem} (mirrors {@link SaveCharacterToDrawerResult}). */
+export interface SaveBoardToDrawerResult {
+   /** `true` when the linked drawer item still existed and was updated; `false` -> caller should "Save As". */
+   linkedItemUpdated: boolean;
+}
+
+/**
+ * Explicit "Save Board": in ONE transaction over `boards`/`boardItems`/`items`, flush
+ * the live `viewport` onto the board record, then - when the board is linked to a drawer
+ * `FULL_BOARD` item that still exists - replace that item's content with the freshly
+ * assembled aggregate. Atomic, mirroring `saveCharacterToLinkedDrawerItem`. A dangling
+ * link returns `false` so the caller routes to "Save As".
+ */
+export function saveBoardToLinkedDrawerItem(boardId: string, viewport: Viewport): Promise<SaveBoardToDrawerResult> {
+   return runWriteTransaction([db.boards, db.boardItems, db.items], async () => {
+      const record = await db.boards.get(boardId);
+      if (!record) return { linkedItemUpdated: false };
+      const merged: BoardRecord = { ...record, viewport, updatedAt: Date.now() };
+      await db.boards.put(merged);
+
+      const drawerItemId = merged.drawerItemId ?? null;
+      if (drawerItemId) {
+         const existingItem = await db.items.get(drawerItemId);
+         if (existingItem) {
+            const aggregate = assembleBoard(merged, await orderedItems(boardId));
+            await db.items.update(drawerItemId, { content: aggregate });
+            return { linkedItemUpdated: true };
+         }
+      }
+      return { linkedItemUpdated: false };
+   });
+}
+
+/**
+ * Links the working board to a (new) drawer item id, flushing the live `viewport`, and
+ * returns the aggregate to seed that drawer item's content. Used by "Save Board As".
+ */
+export function linkBoardToDrawerItem(boardId: string, drawerItemId: string, viewport: Viewport): Promise<Board> {
+   return runWriteTransaction([db.boards, db.boardItems], async () => {
+      const record = await db.boards.get(boardId);
+      if (!record) throw new BoardNotFoundError(`Board not found: ${boardId}`);
+      const merged: BoardRecord = { ...record, drawerItemId, viewport, updatedAt: Date.now() };
+      await db.boards.put(merged);
+      return assembleBoard(merged, await orderedItems(boardId));
    });
 }
 

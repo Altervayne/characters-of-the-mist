@@ -6,9 +6,10 @@ import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
 import * as repository from '@/lib/board/boardRepository';
 import { createBoardStore } from './boardStore';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
+import { DRAWER_ROOT_PARENT_ID } from '@/lib/drawer/drawerRecords';
 
 // -- Type Imports --
-import type { BoardItem } from '@/lib/types/board';
+import type { Board, BoardItem } from '@/lib/types/board';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
 
 /*
@@ -54,6 +55,7 @@ async function waitFor<T>(check: () => Promise<T | undefined> | T | undefined, t
 beforeEach(async () => {
    await drawerDatabase.boards.clear();
    await drawerDatabase.boardItems.clear();
+   await drawerDatabase.items.clear();
    // Start from a non-board last-modified so the assertions below prove a flip.
    useAppGeneralStateStore.getState().actions.setLastModifiedStore('drawer');
 });
@@ -88,6 +90,45 @@ describe('hydrate', () => {
       expect(store.getState().error).toMatch(/not found/i);
       expect(store.getState().boardId).toBeNull();
       expect(store.getState().items).toEqual({});
+   });
+});
+
+// ==================
+//  Unsaved-changes flag + drawer save
+// ==================
+
+describe('drawer save (dirty flag + link)', () => {
+   it('starts clean, dirties on a mutation, and a drawer save clears it again', async () => {
+      const board = await repository.createBoard('Dirty');
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+      expect(store.getState().drawerItemId).toBeNull();
+
+      await store.getState().actions.addItem(makeItem('i1', 0));
+      expect(store.getState().hasUnsavedChanges).toBe(true);
+
+      // "Save As": link to a (seeded) drawer item; the link marks the board clean.
+      await drawerDatabase.items.put({
+         id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Dirty',
+         content: { id: board.id, name: 'Dirty', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', items: [] },
+      });
+      const aggregate = await store.getState().actions.linkToDrawerItem('drw');
+      expect(aggregate?.drawerItemId).toBe('drw');
+      expect(store.getState().drawerItemId).toBe('drw');
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+
+      // A further edit re-dirties; "Save" to the linked item clears it and writes the content.
+      await store.getState().actions.addItem(makeItem('i2', 1));
+      expect(store.getState().hasUnsavedChanges).toBe(true);
+
+      const result = await store.getState().actions.saveToDrawer();
+      expect(result?.linkedItemUpdated).toBe(true);
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+
+      const stored = await drawerDatabase.items.get('drw');
+      const content = stored!.content as Board;
+      expect(content.items.map((i) => i.id).sort()).toEqual(['i1', 'i2']);
    });
 });
 

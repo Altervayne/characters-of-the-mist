@@ -11,7 +11,8 @@ export type GeneralItemType =
    | 'STATUS_TRACKER'
    | 'STORY_TAG_TRACKER'
    | 'STORY_THEME_TRACKER'
-   | 'FULL_CHARACTER_SHEET';
+   | 'FULL_CHARACTER_SHEET'
+   | 'FULL_BOARD';
 
 /**
  * Drag-and-drop type utilities

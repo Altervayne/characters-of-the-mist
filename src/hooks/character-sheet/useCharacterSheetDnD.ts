@@ -29,8 +29,10 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 // -- Board Imports --
 import { screenToWorld } from '@/lib/board/boardCoordinates';
 import { embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
+import { importBoard } from '@/lib/board/boardRepository';
 
 // -- Type Imports --
+import type { Board } from '@/lib/types/board';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
@@ -96,7 +98,7 @@ export function useCharacterSheetDnD() {
    const character = useCharacterStore((state) => state.character);
    const { reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker } = useCharacterActions();
-   const { openCharacterTab, reorderTabs, setActiveTab } = useTabManagerActions();
+   const { openCharacterTab, openBoardTab, reorderTabs, setActiveTab } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
@@ -904,15 +906,21 @@ export function useCharacterSheetDnD() {
          }
 
          // ==================
-         //  SCENARIO 1.1b: Dropping a character onto the tab strip (open or focus)
+         //  SCENARIO 1.1b: Dropping a full character / board onto the tab strip (open or focus)
          // ==================
-         // Only FULL_CHARACTER_SHEET items are valid here; anything else is a no-op.
+         // Only FULL_CHARACTER_SHEET / FULL_BOARD items are valid here; anything else is a no-op.
          if (overIdStr === 'tab-strip-drop-zone') {
             const draggedItem = active.data.current?.item as DrawerItem;
             if (draggedItem?.type === 'FULL_CHARACTER_SHEET') {
                const characterData = draggedItem.content as Character;
                openCharacterTab(characterData, draggedItem.id); // append-or-focus
                setContextualGame(characterData.game);
+            } else if (draggedItem?.type === 'FULL_BOARD') {
+               // The drawer copy is the source of truth on open: materialize it into the
+               // working tables, then focus-or-open its tab (by board id) so an already-open
+               // board's live state is never clobbered.
+               const boardData = draggedItem.content as Board;
+               void importBoard(boardData).then(() => openBoardTab(boardData.id));
             }
             return;
          }
@@ -1056,6 +1064,7 @@ export function useCharacterSheetDnD() {
       handleSheetToDrawerDrop,
       saveTabToDrawer,
       openCharacterTab,
+      openBoardTab,
       reorderTabs,
       setContextualGame,
       addImportedTracker,

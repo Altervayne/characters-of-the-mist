@@ -101,8 +101,11 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    }
 
    // ==================
-   //  If dragging a full character sheet
+   //  If dragging a full character sheet or a full board
    // ==================
+   // A saved board joins this branch: like a character it opens onto the tab strip (its
+   // `main-character-drop-zone` collision is a harmless no-op at drop), and it never drops
+   // as a component, so it reuses the same tab-strip-priority + sibling-reorder routing.
    // A saved character is a `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so
    // it needs BOTH its own high-priority targets AND the ordinary sibling reorder.
    // Priority 1 (pointerWithin): load onto the sheet / open as a tab. In-drawer MOVES
@@ -114,7 +117,7 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // is always a different row (handleDragEnd's reorder no-ops on a self drop). This
    // mirrors the regular `drawer-item` branch's reorder, kept LAST so the sheet/tab
    // targets still win.
-   if (draggedItemType === 'FULL_CHARACTER_SHEET') {
+   if (draggedItemType === 'FULL_CHARACTER_SHEET' || draggedItemType === 'FULL_BOARD') {
       const primaryDroppables = args.droppableContainers.filter((container) => (
          container.id === 'main-character-drop-zone' ||
          container.id === 'tab-strip-drop-zone'

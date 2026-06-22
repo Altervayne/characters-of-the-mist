@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 // -- Board Data Layer Imports --
-import { getBoard, listItems, loadBoard, saveBoard, updateItem } from '@/lib/board/boardRepository';
+import { getBoard, linkBoardToDrawerItem, listItems, loadBoard, saveBoard, saveBoardToLinkedDrawerItem, updateItem } from '@/lib/board/boardRepository';
 import { createBoardCommandEngine } from '@/lib/board/boardCommandEngine';
 import {
    createAddItemCommand,
@@ -19,7 +19,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 // -- Type Imports --
 import type { BoardCommand, ResizePatch } from '@/lib/board/boardCommands';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
-import type { BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
+import type { Board, BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
 
 /*
  * Board store - the React-facing, in-memory view of one open board, backed by the
@@ -45,6 +45,10 @@ export interface BoardState {
    boardId: string | null;
    name: string;
    viewport: Viewport;
+   /** The linked drawer `FULL_BOARD` item, or `null` when this board was never saved. */
+   drawerItemId: string | null;
+   /** True when the board differs from its saved drawer copy, or was never saved (mirrors the character flag). */
+   hasUnsavedChanges: boolean;
    /**
     * Items keyed by id for O(1) optimistic updates; the canvas renders them sorted by
     * `z`. Connections are items too (`kind: 'connection'`), in this same map.
@@ -74,6 +78,19 @@ export interface BoardState {
       deleteItem: (id: string) => Promise<void>;
       /** Sets the camera and debounce-persists it. The viewport is never undoable. */
       setViewport: (viewport: Viewport) => void;
+      /** Sets the unsaved-changes flag directly (e.g. a save site marks the board clean). */
+      setHasUnsavedChanges: (value: boolean) => void;
+      /**
+       * Saves the board to its LINKED drawer item (if any), flushing the live viewport.
+       * Marks the board clean on success. Returns the outcome, or `null` when no board is
+       * loaded; `{ linkedItemUpdated: false }` means the caller should "Save As".
+       */
+      saveToDrawer: () => Promise<{ linkedItemUpdated: boolean } | null>;
+      /**
+       * Links the board to a new drawer item id (for "Save As"), flushes the viewport,
+       * marks the board clean, and returns the aggregate to seed that drawer item.
+       */
+      linkToDrawerItem: (drawerItemId: string) => Promise<Board | null>;
       undo: () => Promise<void>;
       redo: () => Promise<void>;
    };
@@ -81,11 +98,13 @@ export interface BoardState {
 
 const initialState: Pick<
    BoardState,
-   'boardId' | 'name' | 'viewport' | 'items' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
+   'boardId' | 'name' | 'viewport' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
 > = {
    boardId: null,
    name: '',
    viewport: { ...DEFAULT_VIEWPORT },
+   drawerItemId: null,
+   hasUnsavedChanges: false,
    items: {},
    canUndo: false,
    canRedo: false,
@@ -183,6 +202,12 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
          await syncItemsFromRepo();
       };
 
+      /** Marks a real edit: routes Ctrl/Cmd+Z here AND flags the board dirty (so close warns). */
+      const markDirty = (): void => {
+         markBoardModified();
+         set({ hasUnsavedChanges: true });
+      };
+
       return {
          ...initialState,
          actions: {
@@ -198,7 +223,9 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   }
                   const items: Record<string, BoardItem> = {};
                   for (const item of board.items) items[item.id] = item;
-                  set({ boardId, name: board.name, viewport: board.viewport, items, isLoading: false, error: null });
+                  // Opened from its records: it matches its saved copy (if any), so it
+                  // starts clean. The first mutation dirties it.
+                  set({ boardId, name: board.name, viewport: board.viewport, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, isLoading: false, error: null });
                } catch (error) {
                   set({ isLoading: false, error: toErrorMessage(error) });
                }
@@ -207,21 +234,21 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             addItem: async (item) => {
                const boardId = get().boardId;
                if (!boardId) return;
-               markBoardModified();
+               markDirty();
                const record: BoardItemRecord = { ...item, boardId };
                set((state) => ({ items: { ...state.items, [item.id]: item } }));
                await runItemMutation(createAddItemCommand(record));
             },
 
             moveItem: async (id, position) => {
-               markBoardModified();
+               markDirty();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, x: position.x, y: position.y } } }));
                await runItemMutation(createMoveItemCommand(id, position));
             },
 
             resizeItem: async (id, patch) => {
-               markBoardModified();
+               markDirty();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, ...patch } } }));
                await runItemMutation(createResizeItemCommand(id, patch));
@@ -229,7 +256,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
 
             setItemZ: async (id, z) => {
                // Also covers bringToFront/sendToBack, which delegate here.
-               markBoardModified();
+               markDirty();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, z } } }));
                await runItemMutation(createSetItemZCommand(id, z));
@@ -248,7 +275,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             },
 
             updateItemContent: async (id, content) => {
-               markBoardModified();
+               markDirty();
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                await runItemMutation(createUpdateItemContentCommand(id, content));
@@ -268,7 +295,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             },
 
             deleteItem: async (id) => {
-               markBoardModified();
+               markDirty();
                set((state) => {
                   const items = { ...state.items };
                   delete items[id];
@@ -281,6 +308,26 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                // Camera state: applied in memory and debounce-saved, never undoable.
                set({ viewport });
                debouncedSaveViewport(viewport);
+            },
+
+            setHasUnsavedChanges: (value) => {
+               set({ hasUnsavedChanges: value });
+            },
+
+            saveToDrawer: async () => {
+               const { boardId, viewport } = get();
+               if (!boardId) return null;
+               const result = await saveBoardToLinkedDrawerItem(boardId, viewport);
+               if (result.linkedItemUpdated) set({ hasUnsavedChanges: false });
+               return result;
+            },
+
+            linkToDrawerItem: async (drawerItemId) => {
+               const { boardId, viewport } = get();
+               if (!boardId) return null;
+               const aggregate = await linkBoardToDrawerItem(boardId, drawerItemId, viewport);
+               set({ drawerItemId, hasUnsavedChanges: false });
+               return aggregate;
             },
 
             undo: async () => {

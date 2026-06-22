@@ -1,12 +1,14 @@
 import type { Card, Tracker, Character, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
 import type { Drawer, DrawerItem, Folder, GameSystem, GeneralItemType } from '../types/drawer';
+import type { Board, BoardItemContent } from '@/lib/types/board';
 import { APP_VERSION } from '../config';
 import { getAsset, storeAsset } from '@/lib/assets/assetRepository';
 import { hashBytes } from '@/lib/assets/processImage';
 import type { ProcessedImage } from '@/lib/assets/processImage';
 
 export type ExportableItemType = GeneralItemType
-export type ExportableContent = Card | Tracker | Character | Folder | Drawer;
+// A board (`FULL_BOARD`) rides the generic export envelope; board IMPORT is not wired yet.
+export type ExportableContent = Card | Tracker | Character | Folder | Drawer | Board;
 
 /** One asset's bytes carried inside an exported file so the file is self-contained. */
 export interface EmbeddedAsset {
@@ -77,6 +79,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
       
       case "FULL_DRAWER":
          textType = "Drawer"
+         break;
+
+      case "FULL_BOARD":
+         textType = "Board"
          break;
 
       case "STATUS_TRACKER":
@@ -187,6 +193,18 @@ function collectFromFolder(folder: Folder, into: Set<string>): void {
    for (const sub of folder.folders) collectFromFolder(sub, into);
 }
 
+/** Walks a board aggregate's items: a native image's `assetId` and any embedded card COPY's art. */
+function collectFromBoard(board: Board, into: Set<string>): void {
+   for (const item of board.items) {
+      const content: BoardItemContent = item.content;
+      if (content.kind === 'image') {
+         if (content.assetId) into.add(content.assetId);
+      } else if (content.kind === 'card' && content.mode === 'copy' && content.data && typeof content.data === 'object' && 'details' in content.data) {
+         collectFromCard(content.data as Card, into);
+      }
+   }
+}
+
 /**
  * Collects every asset hash referenced by `content`, whatever it is: a character, a
  * single card, or a folder/drawer of them. Trackers reference nothing.
@@ -200,6 +218,8 @@ export function collectAssetIdsFromContent(content: ExportableContent): Set<stri
       // Drawer: root items + every folder subtree.
       for (const item of content.rootItems) collectFromItem(item, ids);
       for (const folder of content.folders) collectFromFolder(folder, ids);
+   } else if ('viewport' in content) {
+      collectFromBoard(content as Board, ids); // Board (checked before Folder: both have `items`)
    } else if ('items' in content) {
       collectFromFolder(content, ids); // Folder
    } else if (Array.isArray((content as Character).cards)) {

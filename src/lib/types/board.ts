@@ -107,5 +107,7 @@ export interface Board {
    id: string;
    name: string;
    viewport: Viewport;
+   /** The drawer `FULL_BOARD` item this board is saved to, or null/absent when unsaved (mirrors `character.drawerItemId`). */
+   drawerItemId?: string | null;
    items: BoardItem[];
 }

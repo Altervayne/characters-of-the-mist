@@ -1,4 +1,4 @@
-import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image } from 'lucide-react';
+import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
@@ -25,6 +25,8 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
          return WalletCards;
       case 'IMAGE_CARD':
          return Image;
+      case 'FULL_BOARD':
+         return LayoutGrid;
       default:
          return FileText;
    }
@@ -32,11 +34,11 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
 
 /**
  * Returns the `Drawer.Types` i18n key for an item's type label. Game-specific cards
- * are keyed `${game}_${type}` (a Legends "Hero Card" vs an Otherscape "Merc Card"),
- * but IMAGE_CARD is the same in every game, so it has ONE label key, not one per game.
+ * are keyed `${game}_${type}` (a Legends "Hero Card" vs an Otherscape "Merc Card"), but
+ * game-agnostic NEUTRAL types (IMAGE_CARD, FULL_BOARD) have ONE label key, not one per game.
  */
 export function getItemTypeLabelKey(game: GameSystem, type: GeneralItemType): string {
-   return type === 'IMAGE_CARD' ? 'IMAGE_CARD' : `${game}_${type}`;
+   return type === 'IMAGE_CARD' || type === 'FULL_BOARD' ? type : `${game}_${type}`;
 }
 
 /**

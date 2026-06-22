@@ -24,6 +24,8 @@ export interface BoardRecord {
    updatedAt: number;
    /** Persisted camera (pan offset + zoom). */
    viewport: Viewport;
+   /** The drawer `FULL_BOARD` item this board is linked to, or null when unsaved (mirrors `CharacterRecord.drawerItemId`). */
+   drawerItemId?: string | null;
    /** Per-record schema marker for future record-shape migrations. */
    schemaVersion: number;
 }

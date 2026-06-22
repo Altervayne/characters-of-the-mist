@@ -6,6 +6,7 @@ import { listAllBoardItems } from '@/lib/board/boardRepository';
 // -- Type Imports --
 import type { Card, Character } from '@/lib/types/character';
 import type { DrawerItemContent } from '@/lib/types/drawer';
+import type { Board, BoardItemContent } from '@/lib/types/board';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
 
 /*
@@ -31,10 +32,17 @@ function collectFromCharacter(character: Character, into: Set<string>): void {
    for (const card of character.cards) collectFromCard(card, into);
 }
 
-/** A drawer item's content is a character (has `cards`), a card (has `details`), or a tracker (neither). */
+/**
+ * A drawer item's content is a character (has `cards`), a board (has `viewport` + `items`),
+ * a card (has `details`), or a tracker (none of these). A drawer-saved board is an inline
+ * aggregate - its art is NOT in the normalized `boardItems` table - so it is walked here
+ * (otherwise a saved-then-closed board's images would be reclaimed).
+ */
 function collectFromItemContent(content: DrawerItemContent, into: Set<string>): void {
    if (Array.isArray((content as Character).cards)) {
       collectFromCharacter(content as Character, into);
+   } else if ('viewport' in content && Array.isArray((content as Board).items)) {
+      for (const item of (content as Board).items) collectFromBoardItemContent(item.content, into);
    } else if ('details' in content) {
       collectFromCard(content as Card, into);
    }
@@ -47,8 +55,7 @@ function collectFromItemContent(content: DrawerItemContent, into: Set<string>): 
  * assets, and reference items hold no copy - their source drawer item is scanned
  * separately - so neither contributes here.
  */
-function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
-   const { content } = item;
+function collectFromBoardItemContent(content: BoardItemContent, into: Set<string>): void {
    if (content.kind === 'image') {
       if (content.assetId) into.add(content.assetId);
       return;
@@ -56,6 +63,10 @@ function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
    if (content.kind === 'card' && content.mode === 'copy' && content.data && typeof content.data === 'object' && 'details' in content.data) {
       collectFromCard(content.data as Card, into);
    }
+}
+
+function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
+   collectFromBoardItemContent(item.content, into);
 }
 
 /**

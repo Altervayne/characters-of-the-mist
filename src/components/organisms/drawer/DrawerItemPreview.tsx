@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Folder, GripVertical } from 'lucide-react';
+import { Folder, GripVertical, LayoutGrid } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -20,8 +20,21 @@ import { getItemTypeLabelKey } from '@/lib/utils/drawer-icons';
 
 // -- Type Imports --
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { Board } from '@/lib/types/board';
 
 
+
+/** Cheap board thumbnail: a board glyph + item count (a full board render would be heavy). */
+function BoardPreview({ board }: { board: Board }) {
+   const { t } = useTranslation();
+   const itemCount = board.items.filter((item) => item.kind !== 'connection').length;
+   return (
+      <div className="w-62.5 h-25 flex flex-col items-center justify-center gap-2 bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
+         <LayoutGrid className="h-8 w-8" />
+         <p className="text-xs">{t('Drawer.Types.boardItemCount', { count: itemCount })}</p>
+      </div>
+   );
+}
 
 export function FolderPreview({ folder }: { folder: FolderType }) {
    return (
@@ -93,6 +106,10 @@ export function DrawerItemPreview({
 
          if (type === 'FULL_CHARACTER_SHEET') {
             return <CharacterSheetPreview item={item} />;
+         }
+
+         if (type === 'FULL_BOARD') {
+            return <BoardPreview board={content as Board} />;
          }
       }
 

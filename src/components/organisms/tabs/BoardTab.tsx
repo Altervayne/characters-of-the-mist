@@ -24,8 +24,9 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  * board registry (never the character registry - a board id would mint a junk character
  * instance). It shows a board icon rather than a game crest.
  *
- * Closing is destructive: a board is not drawer-saveable yet (board-8), so `closeTab`
- * deletes the board record "for good". Closing therefore ALWAYS confirms first.
+ * Closing deletes the working board record, but a drawer-saved copy survives and reopens
+ * - so closing is non-destructive once saved. A CLEAN board closes silently; a DIRTY one
+ * shows the unsaved-changes warning first (mirrors the character tab).
  *
  * @param props.tab - The tab descriptor (its `id` is the board id keying the board store).
  * @param props.isActive - Whether this tab is the active one (drives the highlight).
@@ -36,9 +37,14 @@ export function BoardTab({ tab, isActive }: { tab: OpenTab; isActive: boolean })
 
    const instance = useMemo(() => getOrCreateBoardInstance(tab.id), [tab.id]);
    const name = useStore(instance, (state) => state.name);
+   const hasUnsavedChanges = useStore(instance, (state) => state.hasUnsavedChanges);
    const label = name && name.trim().length > 0 ? name : t('Tabs.untitledBoard');
 
    const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+   const handleRequestClose = () => {
+      if (hasUnsavedChanges) setIsCloseDialogOpen(true);
+      else closeTab(tab.id);
+   };
 
    const icon = (
       <span
@@ -57,13 +63,12 @@ export function BoardTab({ tab, isActive }: { tab: OpenTab; isActive: boolean })
             leadingIcon={icon}
             isActive={isActive}
             onActivate={() => setActiveTab(tab.id)}
-            onRequestClose={() => setIsCloseDialogOpen(true)}
+            onRequestClose={handleRequestClose}
          />
          <CloseTabDialog
             isOpen={isCloseDialogOpen}
             onOpenChange={setIsCloseDialogOpen}
             name={label}
-            variant="board"
             onConfirm={() => closeTab(tab.id)}
          />
       </>

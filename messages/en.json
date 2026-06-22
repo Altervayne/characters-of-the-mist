@@ -25,11 +25,6 @@
          "description": "\"{{name}}\" has unsaved changes. Closing this tab discards them for good. Cancel and save it first (Save or Save As) if you want to keep your changes.",
          "closeWithoutSaving": "Close without saving",
          "cancel": "Cancel"
-      },
-      "closeBoardDialog": {
-         "title": "Close this board?",
-         "description": "\"{{name}}\" will be lost. Boards can't be saved yet, so closing this tab discards it for good.",
-         "confirm": "Close and discard"
       }
    },
    "BoardView": {
@@ -102,6 +97,10 @@
          "legacyBackupDownloaded": "Backup downloaded.",
          "legacyBackupRemoved": "Old character backup removed.",
          "legacyBackupExportFailed": "Backup download failed. The old copy was not removed."
+      },
+      "board": {
+         "saved": "Board saved to",
+         "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item."
       },
       "card": {
          "created": "Card created successfully.",
@@ -203,6 +202,8 @@
 
          "saveToDrawer": "Save Character",
          "saveToDrawerAs": "Save Character As...",
+         "saveBoardToDrawer": "Save Board",
+         "saveBoardToDrawerAs": "Save Board As...",
          "exportCharacter": "Export Character",
          "importCharacter": "Import Character",
          "importComponent": "Import Component",
@@ -338,6 +339,8 @@
          "OTHERSCAPE_STORY_THEME_TRACKER": "Story Theme Tracker",
 
          "IMAGE_CARD": "Portrait",
+         "FULL_BOARD": "Board",
+         "boardItemCount": "{{count}} item(s)",
 
          "cards": "Card(s)",
          "trackers": "Tracker(s)"

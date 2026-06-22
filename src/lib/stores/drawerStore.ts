@@ -243,7 +243,11 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             // `deepReId` regenerates `id` fields only, leaving `drawerItemId`
             // intact, so the preset id still matches the stored content.
             const presetId = 'drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined;
-            const freshContent = deepReId(content);
+            // A FULL_BOARD aggregate must NOT be re-ID'd: its item ids are referenced by
+            // connection endpoints (`from`/`to`) and its board id keys the focus-or-open
+            // round-trip, so re-iding would orphan connections and change identity. Other
+            // content stays re-ID'd so the drawer copy is independent of the live source.
+            const freshContent = type === 'FULL_BOARD' ? content : deepReId(content);
             const command = createCreateItemCommand({ id: presetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
             await runMutation(command);
             return command.getCreatedItemId() ?? '';

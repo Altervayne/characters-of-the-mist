@@ -18,6 +18,7 @@ import { exportCharacterSheet, importFromFile } from '@/lib/utils/export-import'
 import { harmonizeData } from '@/lib/harmonization';
 import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
+import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -121,6 +122,60 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          type: 'FULL_CHARACTER_SHEET',
          content: characterWithDrawerId,
          defaultName: character.name,
+         presetId: newItemId,
+         parentFolderId: drawerCurrentFolderId ?? undefined,
+      });
+   };
+
+   const handleSaveBoardToDrawer = async () => {
+      const store = getActiveBoardStore();
+      if (!store) return;
+      const { boardId, drawerItemId } = store.getState();
+      if (!boardId) return;
+
+      if (drawerItemId) {
+         try {
+            // Atomic cross-store save of the linked drawer copy, mirroring the character.
+            const result = await store.getState().actions.saveToDrawer();
+            if (result?.linkedItemUpdated) {
+               await reloadCurrentFolder();
+               const itemPath = await getDrawerItemDisplayPath(drawerItemId);
+               toast.success(`${tNotifications('Notifications.board.saved')} ${itemPath}`);
+            } else {
+               // The linked drawer item was deleted: fall back to Save As + notify.
+               await handleSaveBoardAsToDrawer();
+               toast(tNotifications('Notifications.board.linkedItemMissing'));
+            }
+         } catch {
+            toast.error(tNotifications('Notifications.drawer.actionFailed'));
+         }
+      } else {
+         await handleSaveBoardAsToDrawer();
+      }
+   };
+
+   const handleSaveBoardAsToDrawer = async () => {
+      const store = getActiveBoardStore();
+      if (!store) return;
+      const { boardId, name } = store.getState();
+      if (!boardId) return;
+
+      // Link the working board to a new drawer item id (also flushes the live viewport
+      // and marks the board clean); the returned aggregate seeds the drawer item content.
+      const newItemId = cuid();
+      const aggregate = await store.getState().actions.linkToDrawerItem(newItemId);
+      if (!aggregate) return;
+
+      if (!isDrawerOpen) {
+         onToggleDrawer();
+      }
+
+      // A board is game-agnostic -> a NEUTRAL drawer item; the naming window finalizes it.
+      initiateItemDrop({
+         game: 'NEUTRAL',
+         type: 'FULL_BOARD',
+         content: aggregate,
+         defaultName: name,
          presetId: newItemId,
          parentFolderId: drawerCurrentFolderId ?? undefined,
       });
@@ -288,6 +343,19 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                         </SidebarButton>
                      </motion.section>
                   </>
+               }
+
+               { activeWindow === 'BOARD' &&
+                  <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                     "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
+                  )}>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardToDrawer} Icon={Save}>
+                        {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawer')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardAsToDrawer} Icon={SaveAll}>
+                        {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawerAs')}
+                     </SidebarButton>
+                  </motion.section>
                }
 
                { activeWindow === 'MAIN_MENU' &&

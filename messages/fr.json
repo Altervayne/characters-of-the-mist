@@ -25,11 +25,6 @@
          "description": "\"{{name}}\" a des modifications non enregistrés. Fermer cet onglet sans enregistrer la fiche perdra ces modifications. Si vous souhaitez les préserver, annulez et enregistrez avant de fermer l'onglet.",
          "closeWithoutSaving": "Fermer sans enregistrer",
          "cancel": "Annuler"
-      },
-      "closeBoardDialog": {
-         "title": "[TO COMPLETE]",
-         "description": "[TO COMPLETE]",
-         "confirm": "[TO COMPLETE]"
       }
    },
    "BoardView": {
@@ -102,6 +97,10 @@
          "legacyBackupDownloaded": "Backup téléchargé.",
          "legacyBackupRemoved": "Ancien backup du personnage supprimé.",
          "legacyBackupExportFailed": "Téléchargement du backup échoué. L'ancienne copie n'a pas été supprimée."
+      },
+      "board": {
+         "saved": "[TO COMPLETE]",
+         "linkedItemMissing": "[TO COMPLETE]"
       },
       "card": {
          "created": "Carte créée avec succès.",
@@ -193,6 +192,8 @@
          "closeDrawer": "Fermer le Tiroir",
          "saveToDrawer": "Enregistrer le Perso.",
          "saveToDrawerAs": "Enregistrer sous... ",
+         "saveBoardToDrawer": "[TO COMPLETE]",
+         "saveBoardToDrawerAs": "[TO COMPLETE]",
          "exportCharacter": "Exporter le Perso.",
          "importCharacter": "Importer le Perso.",
          "importComponent": "Importer un Composant",
@@ -306,6 +307,8 @@
          "OTHERSCAPE_STORY_TAG_TRACKER": "Suivi de Trait Narratif",
          "OTHERSCAPE_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
          "IMAGE_CARD": "Image",
+         "FULL_BOARD": "[TO COMPLETE]",
+         "boardItemCount": "[TO COMPLETE]",
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"
       }

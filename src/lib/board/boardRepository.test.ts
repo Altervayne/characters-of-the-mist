@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
 import * as repository from './boardRepository';
 import { BOARD_SCHEMA_VERSION } from './boardRecords';
+import { DRAWER_ROOT_PARENT_ID } from '@/lib/drawer/drawerRecords';
 
 // -- Type Imports --
 import type { BoardItemRecord } from './boardRecords';
+import type { Board, BoardItem } from '@/lib/types/board';
 
 /*
  * Unit tests for the board repository against fake-indexeddb. Covers board CRUD,
@@ -32,9 +34,15 @@ function makeItem(id: string, boardId: string, z: number, overrides: Partial<Boa
    };
 }
 
+/** Builds an assembled board item (no `boardId`) for aggregate fixtures. */
+function makeBoardItem(id: string, overrides: Partial<BoardItem> = {}): BoardItem {
+   return { id, kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: id }, ...overrides };
+}
+
 beforeEach(async () => {
    await drawerDatabase.boards.clear();
    await drawerDatabase.boardItems.clear();
+   await drawerDatabase.items.clear();
 });
 
 describe('board CRUD', () => {
@@ -195,6 +203,77 @@ describe('loadBoard (aggregate read)', () => {
 
    it('returns undefined for a missing board', async () => {
       expect(await repository.loadBoard('nope')).toBeUndefined();
+   });
+});
+
+describe('importBoard / loadBoard round-trip', () => {
+   it('materializes an aggregate losslessly (z-order, items, connections, viewport, link)', async () => {
+      const aggregate: Board = {
+         id: 'board-rt',
+         name: 'Round Trip',
+         viewport: { x: 12, y: 34, zoom: 2 },
+         drawerItemId: 'drawer-1',
+         items: [
+            { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: 'a' } },
+            { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, content: { kind: 'post-it', text: 'b' } },
+            { id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 2, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#f00' } } },
+         ],
+      };
+
+      await repository.importBoard(aggregate);
+      const reloaded = await repository.loadBoard('board-rt');
+
+      expect(reloaded).toEqual(aggregate);
+      // The connection still points at the same item ids (no re-id occurred).
+      const connection = reloaded!.items.find((i) => i.kind === 'connection');
+      expect(connection!.content).toMatchObject({ kind: 'connection', from: 'a', to: 'b' });
+   });
+
+   it('replaces any existing rows for the same board id on import', async () => {
+      await repository.importBoard({ id: 'b1', name: 'v1', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: null, items: [makeBoardItem('old')] });
+      await repository.importBoard({ id: 'b1', name: 'v2', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: null, items: [makeBoardItem('new')] });
+
+      const reloaded = await repository.loadBoard('b1');
+      expect(reloaded!.name).toBe('v2');
+      expect(reloaded!.items.map((i) => i.id)).toEqual(['new']);
+   });
+});
+
+describe('save board to the drawer', () => {
+   it('linkBoardToDrawerItem links the record and returns the aggregate', async () => {
+      const board = await repository.createBoard('Linkable');
+      await repository.addItem(makeItem('i1', board.id, 0));
+
+      const aggregate = await repository.linkBoardToDrawerItem(board.id, 'drawer-xyz', { x: 5, y: 5, zoom: 1 });
+
+      expect(aggregate.drawerItemId).toBe('drawer-xyz');
+      expect(aggregate.viewport).toEqual({ x: 5, y: 5, zoom: 1 });
+      expect((await repository.getBoard(board.id))?.drawerItemId).toBe('drawer-xyz');
+   });
+
+   it('saveBoardToLinkedDrawerItem writes the FULL_BOARD content and reports the update', async () => {
+      const board = await repository.createBoard('Saveable');
+      await repository.addItem(makeItem('i1', board.id, 0));
+      // Seed the linked drawer item, then link the board to it.
+      await drawerDatabase.items.put({ id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Saveable', content: { id: board.id, name: 'stale', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', items: [] } });
+      await repository.linkBoardToDrawerItem(board.id, 'drw', { x: 0, y: 0, zoom: 1 });
+
+      const result = await repository.saveBoardToLinkedDrawerItem(board.id, { x: 99, y: 99, zoom: 3 });
+
+      expect(result.linkedItemUpdated).toBe(true);
+      const stored = await drawerDatabase.items.get('drw');
+      const content = stored!.content as Board;
+      expect(content.viewport).toEqual({ x: 99, y: 99, zoom: 3 });
+      expect(content.items.map((i) => i.id)).toEqual(['i1']);
+   });
+
+   it('reports no update when the linked drawer item is gone (caller falls back to Save As)', async () => {
+      const board = await repository.createBoard('Dangling');
+      await repository.linkBoardToDrawerItem(board.id, 'missing-item', { x: 0, y: 0, zoom: 1 });
+
+      const result = await repository.saveBoardToLinkedDrawerItem(board.id, { x: 1, y: 1, zoom: 1 });
+
+      expect(result.linkedItemUpdated).toBe(false);
    });
 });
 
