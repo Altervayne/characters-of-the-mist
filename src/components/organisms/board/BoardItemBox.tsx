@@ -60,6 +60,8 @@ interface BoardItemBoxProps {
    onMove: (id: string, position: { x: number; y: number }) => void;
    onResize: (id: string, patch: ResizePatch) => void;
    onUpdateContent: (id: string, content: BoardItemContent) => void;
+   /** Direct (non-undoable) cache write for a reference item's last-known snapshot. */
+   onCacheLastKnown: (id: string, content: BoardItemContent) => void;
    onBringToFront: (id: string) => void;
    onSendToBack: (id: string) => void;
    onDelete: (id: string) => void;
@@ -82,6 +84,7 @@ export function BoardItemBox({
    onMove,
    onResize,
    onUpdateContent,
+   onCacheLastKnown,
    onBringToFront,
    onSendToBack,
    onDelete,
@@ -206,6 +209,8 @@ export function BoardItemBox({
                item={item}
                isSelected={isSelected}
                onContentChange={(content) => onUpdateContent(item.id, content)}
+               onCacheLastKnown={onCacheLastKnown}
+               onDelete={onDelete}
                onRequestSelect={() => onSelect(item.id)}
             />
          </div>

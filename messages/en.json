@@ -51,7 +51,11 @@
       "imageRemove": "Remove image",
       "imageToggleFit": "Toggle cover / contain",
       "imageUploadFailed": "Could not process that image.",
-      "embeddedUnavailable": "Preview unavailable"
+      "embeddedUnavailable": "Preview unavailable",
+      "linkedBadge": "Linked to drawer item",
+      "makeReference": "Link to drawer item",
+      "convertToCopy": "Convert to copy",
+      "referenceSourceRemoved": "Source removed"
    },
    "DragPuck": {
       "openAsTab": "Open as tab",

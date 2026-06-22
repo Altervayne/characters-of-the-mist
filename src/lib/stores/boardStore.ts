@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 // -- Board Data Layer Imports --
-import { getBoard, listItems, loadBoard, saveBoard } from '@/lib/board/boardRepository';
+import { getBoard, listItems, loadBoard, saveBoard, updateItem } from '@/lib/board/boardRepository';
 import { createBoardCommandEngine } from '@/lib/board/boardCommandEngine';
 import {
    createAddItemCommand,
@@ -66,6 +66,11 @@ export interface BoardState {
       /** Drops an item below all others (`min(z) - 1` over the live items). */
       sendToBack: (id: string) => Promise<void>;
       updateItemContent: (id: string, content: BoardItemContent) => Promise<void>;
+      /**
+       * Caches a reference item's `lastKnown` snapshot via a DIRECT repo write, never a
+       * command - so a passive source-driven re-read never lands on the board undo stack.
+       */
+      cacheReferenceLastKnown: (id: string, content: BoardItemContent) => Promise<void>;
       deleteItem: (id: string) => Promise<void>;
       /** Sets the camera and debounce-persists it. The viewport is never undoable. */
       setViewport: (viewport: Viewport) => void;
@@ -247,6 +252,19 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                await runItemMutation(createUpdateItemContentCommand(id, content));
+            },
+
+            cacheReferenceLastKnown: async (id, content) => {
+               // NOT a command and NOT markBoardModified: a reference passively mirroring
+               // its source must never pollute the board's undo stack or Ctrl+Z routing.
+               const existing = get().items[id];
+               if (!existing) return;
+               set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
+               try {
+                  await updateItem(id, { content });
+               } catch (error) {
+                  set({ error: toErrorMessage(error) });
+               }
             },
 
             deleteItem: async (id) => {

@@ -51,7 +51,11 @@
       "imageRemove": "[TO COMPLETE]",
       "imageToggleFit": "[TO COMPLETE]",
       "imageUploadFailed": "[TO COMPLETE]",
-      "embeddedUnavailable": "[TO COMPLETE]"
+      "embeddedUnavailable": "[TO COMPLETE]",
+      "linkedBadge": "[TO COMPLETE]",
+      "makeReference": "[TO COMPLETE]",
+      "convertToCopy": "[TO COMPLETE]",
+      "referenceSourceRemoved": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "Ouvrir dans un nouvel onglet",

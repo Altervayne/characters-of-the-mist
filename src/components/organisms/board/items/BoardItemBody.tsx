@@ -21,11 +21,15 @@ interface BoardItemBodyProps {
    isSelected: boolean;
    /** Commits new content for this item (one undoable command per edit session). */
    onContentChange: (content: BoardItemContent) => void;
+   /** Caches a reference's last-known snapshot via a direct (non-undoable) write. */
+   onCacheLastKnown: (id: string, content: BoardItemContent) => void;
+   /** Removes this item (used by a dangling reference's placeholder). */
+   onDelete: (id: string) => void;
    /** Selects this item (used by text fields that stop pointer propagation). */
    onRequestSelect: () => void;
 }
 
-export function BoardItemBody({ item, isSelected, onContentChange, onRequestSelect }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, onContentChange, onCacheLastKnown, onDelete, onRequestSelect }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
@@ -36,9 +40,9 @@ export function BoardItemBody({ item, isSelected, onContentChange, onRequestSele
       case 'image':
          return <ImageItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'card':
-         return <BoardCardItem content={content} />;
+         return <BoardCardItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'tracker':
-         return <BoardTrackerItem content={content} />;
+         return <BoardTrackerItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       default:
          return <GenericItemBody item={item} />;
    }

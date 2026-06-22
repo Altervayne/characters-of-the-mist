@@ -39,12 +39,18 @@ export interface JournalBoardContent {
 
 /**
  * An embedded character card or tracker, in the reference-vs-copy model
- * (board-spec §5.2): a self-contained `copy`, or a live `reference` to a drawer item
- * by id. `data` is loosely typed until the consumer prompt pins the payload down.
+ * (board-spec §5.2). A `copy` is a self-contained snapshot in `data`; a `reference` is a
+ * live, read-only mirror of a drawer item (rendered from the drawer on each read).
+ *
+ * Both carry the originating `sourceDrawerItemId` so an item can be toggled either way:
+ * a copy can become a reference (needs a source), and a reference can detach to a copy.
+ * The optional `lastKnown` caches a reference's last successful read so it can still
+ * convert-to-copy once the source is gone (dangling). `data`/`lastKnown` are loosely
+ * typed - they hold a serialized card/tracker aggregate.
  */
 export type EmbeddedBoardContent<K extends 'card' | 'tracker'> =
-   | { kind: K; mode: 'copy'; data: unknown }
-   | { kind: K; mode: 'reference'; sourceDrawerItemId: string };
+   | { kind: K; mode: 'copy'; sourceDrawerItemId?: string; data: unknown }
+   | { kind: K; mode: 'reference'; sourceDrawerItemId: string; lastKnown?: unknown };
 
 export type CardBoardContent = EmbeddedBoardContent<'card'>;
 export type TrackerBoardContent = EmbeddedBoardContent<'tracker'>;

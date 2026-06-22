@@ -83,6 +83,21 @@ function seedBoardCardCopy(id: string, assetId: string) {
    });
 }
 
+/** Adds an embedded board CARD REFERENCE; its `lastKnown` may carry art, but references are not scanned. */
+function seedBoardCardReference(id: string, sourceDrawerItemId: string, lastKnownAssetId: string) {
+   return drawerDatabase.boardItems.add({
+      id,
+      boardId: 'board-1',
+      kind: 'card',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      z: 0,
+      content: { kind: 'card', mode: 'reference', sourceDrawerItemId, lastKnown: { cardType: 'IMAGE_CARD', details: { assetId: lastKnownAssetId } } },
+   });
+}
+
 beforeEach(async () => {
    await drawerDatabase.characters.clear();
    await drawerDatabase.items.clear();
@@ -156,5 +171,26 @@ describe('collectReferencedAssetHashes', () => {
       const referenced = await collectReferencedAssetHashes();
 
       expect(referenced.has('asset-embed')).toBe(true);
+   });
+
+   it('retains a referenced IMAGE_CARD asset via the DRAWER scan, not the board reference', async () => {
+      // The source drawer item carries the real asset; the board holds a live reference to it.
+      await seedDrawerItem('drawer-img', makeCard('img', 'asset-ref'));
+      await seedBoardCardReference('ref-item', 'drawer-img', 'asset-ref');
+
+      const referenced = await collectReferencedAssetHashes();
+
+      // Kept once, via the drawer item. The board reference itself contributes nothing.
+      expect(referenced.has('asset-ref')).toBe(true);
+   });
+
+   it('does not collect a board reference\'s lastKnown asset when its source is gone', async () => {
+      // No drawer source: a dangling reference's cached art is NOT a live reference, so it
+      // is not retained (the source is the truth; convert-to-copy is the recovery path).
+      await seedBoardCardReference('ref-item', 'missing-drawer', 'asset-stale');
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.has('asset-stale')).toBe(false);
    });
 });

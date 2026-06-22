@@ -19,7 +19,7 @@ function makeDrawerItem(type: GeneralItemType, content: DrawerItemContent): Draw
 }
 
 describe('embeddedSpecForDrawerItem', () => {
-   it('embeds a card type as a deep copy independent of the source', () => {
+   it('embeds a card type as a deep copy independent of the source, recording the source id', () => {
       const source = makeDrawerItem(
          'CHARACTER_THEME',
          { cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS', themeType: 'Origin' } } as unknown as DrawerItemContent,
@@ -28,7 +28,8 @@ describe('embeddedSpecForDrawerItem', () => {
       const spec = embeddedSpecForDrawerItem(source);
       expect(spec).not.toBeNull();
       expect(spec!.kind).toBe('card');
-      expect(spec!.content).toMatchObject({ kind: 'card', mode: 'copy' });
+      // The copy records `sourceDrawerItemId` so it can later be toggled to a reference.
+      expect(spec!.content).toMatchObject({ kind: 'card', mode: 'copy', sourceDrawerItemId: 'item-1' });
 
       // Mutating the source content must not change the board copy.
       (source.content as { details: { themeType: string } }).details.themeType = 'Adventure';

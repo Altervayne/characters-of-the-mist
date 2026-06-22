@@ -210,6 +210,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   onMove={actions.moveItem}
                   onResize={actions.resizeItem}
                   onUpdateContent={actions.updateItemContent}
+                  onCacheLastKnown={actions.cacheReferenceLastKnown}
                   onBringToFront={actions.bringToFront}
                   onSendToBack={actions.sendToBack}
                   onDelete={handleDelete}
