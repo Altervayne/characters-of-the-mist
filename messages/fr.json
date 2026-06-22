@@ -55,7 +55,11 @@
       "linkedBadge": "[TO COMPLETE]",
       "makeReference": "[TO COMPLETE]",
       "convertToCopy": "[TO COMPLETE]",
-      "referenceSourceRemoved": "[TO COMPLETE]"
+      "referenceSourceRemoved": "[TO COMPLETE]",
+      "connect": "[TO COMPLETE]",
+      "lineWidth": "[TO COMPLETE]",
+      "lineColor": "[TO COMPLETE]",
+      "deleteConnection": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "Ouvrir dans un nouvel onglet",

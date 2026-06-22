@@ -55,7 +55,11 @@
       "linkedBadge": "Linked to drawer item",
       "makeReference": "Link to drawer item",
       "convertToCopy": "Convert to copy",
-      "referenceSourceRemoved": "Source removed"
+      "referenceSourceRemoved": "Source removed",
+      "connect": "Draw a connection",
+      "lineWidth": "Line width",
+      "lineColor": "Line color",
+      "deleteConnection": "Delete connection"
    },
    "DragPuck": {
       "openAsTab": "Open as tab",

@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -13,16 +13,19 @@ import { Crosshair, Image as ImageIcon, NotebookText, StickyNote } from 'lucide-
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
+import { DEFAULT_CONNECTION_STYLE, connectionsReferencing } from '@/lib/board/boardConnections';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
+import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { BoardItemContent, Viewport } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
+import type { Point } from '@/lib/board/boardConnections';
 
 /*
  * The board canvas: a pan/zoom world layer over the active board, with freeform move /
@@ -52,6 +55,14 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
       case 'image':
          return { kind: 'image', assetId: null, fit: 'cover' };
    }
+}
+
+/** Rebuilds a connection's content with a new style, preserving its endpoints. */
+function buildConnectionContent(item: BoardItem | undefined, style: { width: number; color: string }): BoardItemContent {
+   const content = item?.content;
+   const from = content?.kind === 'connection' ? content.from : '';
+   const to = content?.kind === 'connection' ? content.to : '';
+   return { kind: 'connection', from, to, style };
 }
 
 /** Wheel-to-zoom sensitivity: a typical notch (~100 deltaY) is a gentle step. */
@@ -96,8 +107,76 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    }, [viewport]);
    const panStart = useRef<{ x: number; y: number; origX: number; origY: number; zoom: number } | null>(null);
 
+   // The in-progress connect drag (preview line follows the cursor in world coords).
+   const [connectPreview, setConnectPreview] = useState<{ fromId: string; cursor: Point } | null>(null);
+
    const sortedItems = Object.values(items).sort((a, b) => a.z - b.z);
-   const frontmostId = sortedItems.length > 0 ? sortedItems[sortedItems.length - 1].id : null;
+   // Connections render in the SVG overlay; everything else renders as a positioned box.
+   const spatialItems = sortedItems.filter((item) => item.kind !== 'connection');
+   const connectionItems = sortedItems.filter((item) => item.kind === 'connection');
+   const frontmostId = spatialItems.length > 0 ? spatialItems[spatialItems.length - 1].id : null;
+
+   /** Converts an absolute cursor point to world coords via the live clip rect + viewport. */
+   const cursorToWorld = useCallback((clientX: number, clientY: number): Point | null => {
+      const el = clipRef.current;
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      return screenToWorld(clientX, clientY, { left: rect.left, top: rect.top }, viewportRef.current);
+   }, []);
+
+   /** Deletes an item and (cascade) every connection referencing it, so no orphan line remains. */
+   const handleDelete = useCallback(
+      (id: string) => {
+         const liveItems = store.getState().items;
+         // Separate undo steps in v1 (the connection deletes, then the item delete).
+         for (const connectionId of connectionsReferencing(liveItems, id)) void actions.deleteItem(connectionId);
+         void actions.deleteItem(id);
+         setSelectedId((current) => (current === id ? null : current));
+      },
+      [store, actions],
+   );
+
+   /**
+    * Starts a connect drag from an item's connect handle: a preview line follows the
+    * cursor, and a release over a different item creates a connection (otherwise cancel).
+    * Custom pointer handling (window listeners), not dnd-kit.
+    */
+   const handleConnectStart = useCallback(
+      (fromId: string, event: ReactPointerEvent) => {
+         const start = cursorToWorld(event.clientX, event.clientY);
+         setConnectPreview({ fromId, cursor: start ?? { x: 0, y: 0 } });
+
+         const onMove = (moveEvent: PointerEvent) => {
+            const world = cursorToWorld(moveEvent.clientX, moveEvent.clientY);
+            if (world) setConnectPreview({ fromId, cursor: world });
+         };
+         const onUp = (upEvent: PointerEvent) => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            setConnectPreview(null);
+
+            const hit = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+            const targetId = hit instanceof Element ? hit.closest('[data-board-item-id]')?.getAttribute('data-board-item-id') ?? null : null;
+            const liveItems = store.getState().items;
+            if (targetId && targetId !== fromId) {
+               const target = liveItems[targetId];
+               if (target && target.kind !== 'connection') {
+                  const zValues = Object.values(liveItems).map((item) => item.z);
+                  const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+                  void actions.addItem({
+                     id: cuid(),
+                     kind: 'connection',
+                     x: 0, y: 0, width: 0, height: 0, z,
+                     content: { kind: 'connection', from: fromId, to: targetId, style: { ...DEFAULT_CONNECTION_STYLE } },
+                  });
+               }
+            }
+         };
+         window.addEventListener('pointermove', onMove);
+         window.addEventListener('pointerup', onUp);
+      },
+      [cursorToWorld, store, actions],
+   );
 
    // ==================
    //  Zoom (native, non-passive wheel so it can preventDefault the page scroll)
@@ -126,12 +205,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          const target = event.target;
          if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
          event.preventDefault();
-         actions.deleteItem(selectedId);
-         setSelectedId(null);
+         handleDelete(selectedId);
       };
       window.addEventListener('keydown', onKeyDown);
       return () => window.removeEventListener('keydown', onKeyDown);
-   }, [selectedId, actions]);
+   }, [selectedId, handleDelete]);
 
    // ==================
    //  Pan (background drag) + background click clears selection
@@ -183,11 +261,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedId(id);
    };
 
-   const handleDelete = (id: string) => {
-      void actions.deleteItem(id);
-      if (selectedId === id) setSelectedId(null);
-   };
-
    return (
       <div
          ref={setClipRefs}
@@ -199,7 +272,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       >
          {/* World layer: a single transform maps world coords to screen. */}
          <div className="absolute left-0 top-0" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`, transformOrigin: '0 0' }}>
-            {sortedItems.map((item) => (
+            {spatialItems.map((item) => (
                <BoardItemBox
                   key={item.id}
                   item={item}
@@ -214,8 +287,21 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   onBringToFront={actions.bringToFront}
                   onSendToBack={actions.sendToBack}
                   onDelete={handleDelete}
+                  onConnectStart={handleConnectStart}
                />
             ))}
+
+            {/* Connections (+ the connect-drag preview) render ABOVE the item boxes. */}
+            <BoardConnectionsLayer
+               items={items}
+               connections={connectionItems}
+               selectedId={selectedId}
+               zoom={viewport.zoom}
+               connectPreview={connectPreview}
+               onSelect={setSelectedId}
+               onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}
+               onDelete={handleDelete}
+            />
          </div>
 
          {/* Floating palette + view controls: stop the pointer from starting a pan. */}

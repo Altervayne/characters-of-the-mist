@@ -65,6 +65,8 @@ interface BoardItemBoxProps {
    onBringToFront: (id: string) => void;
    onSendToBack: (id: string) => void;
    onDelete: (id: string) => void;
+   /** Starts a connect drag from this item's connect handle (not a move). */
+   onConnectStart: (id: string, event: ReactPointerEvent) => void;
 }
 
 /** A live drag rect during a move/resize gesture (world coords); `null` when idle. */
@@ -88,6 +90,7 @@ export function BoardItemBox({
    onBringToFront,
    onSendToBack,
    onDelete,
+   onConnectStart,
 }: BoardItemBoxProps) {
    const { t } = useTranslation();
 
@@ -187,6 +190,7 @@ export function BoardItemBox({
 
    return (
       <div
+         data-board-item-id={item.id}
          className="absolute"
          style={{
             left: rect.x,
@@ -244,6 +248,20 @@ export function BoardItemBox({
                      style={{ width: handleSize, height: handleSize, cursor }}
                   />
                ))}
+
+               {/* Connect handle: a distinct node off the right edge. Pointer-down starts a
+                   connection drag (NOT a move) - the separate target is what tells the two
+                   gestures apart. */}
+               <div
+                  onPointerDown={(event) => {
+                     event.stopPropagation();
+                     onConnectStart(item.id, event);
+                  }}
+                  title={t('BoardView.connect')}
+                  aria-label={t('BoardView.connect')}
+                  className="absolute right-0 top-1/2 rounded-full border-2 border-background bg-sky-500"
+                  style={{ width: handleSize * 1.3, height: handleSize * 1.3, transform: 'translate(160%, -50%)', cursor: 'crosshair' }}
+               />
             </>
          )}
       </div>
