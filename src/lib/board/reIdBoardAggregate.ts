@@ -28,10 +28,13 @@ export function reIdBoardAggregate(board: Board): Board {
 
    const items: BoardItem[] = board.items.map((item) => {
       const id = idMap.get(item.id)!;
+      // A member's zone link must follow its zone's new id; a link to a zone outside this set clears.
+      const zoneId = item.zoneId !== undefined ? idMap.get(item.zoneId) : undefined;
       if (item.content.kind === 'connection') {
          return {
             ...item,
             id,
+            zoneId,
             content: {
                ...item.content,
                // Keep the original endpoint if it somehow points outside this board.
@@ -40,7 +43,7 @@ export function reIdBoardAggregate(board: Board): Board {
             },
          };
       }
-      return { ...item, id };
+      return { ...item, id, zoneId };
    });
 
    return { ...board, id: cuid(), drawerItemId: null, items };

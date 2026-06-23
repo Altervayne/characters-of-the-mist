@@ -81,6 +81,7 @@ function toBoardItem(record: BoardItemRecord): BoardItem {
       height: record.height,
       z: record.z,
       rotation: record.rotation,
+      zoneId: record.zoneId,
       content: record.content,
    };
 }
@@ -277,6 +278,7 @@ export function importBoard(board: Board): Promise<void> {
          height: item.height,
          z: item.z,
          rotation: item.rotation,
+         zoneId: item.zoneId,
          content: item.content,
       }));
       await db.boardItems.bulkPut(records);

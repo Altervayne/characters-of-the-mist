@@ -41,6 +41,8 @@ interface BoardConnectionsLayerProps {
    connections: BoardItem[];
    selectedId: string | null;
    zoom: number;
+   /** The active group move (moving ids + shared world delta), or null - so lines track the live drag. */
+   moving: { ids: Set<string>; delta: { x: number; y: number } } | null;
    /** The in-progress connect drag (source item id + cursor in world coords), or null. */
    connectPreview: { fromId: string; cursor: Point } | null;
    onSelect: (id: string) => void;
@@ -48,8 +50,14 @@ interface BoardConnectionsLayerProps {
    onDelete: (id: string) => void;
 }
 
-export function BoardConnectionsLayer({ items, connections, selectedId, zoom, connectPreview, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
+export function BoardConnectionsLayer({ items, connections, selectedId, zoom, moving, connectPreview, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
    const { t } = useTranslation();
+
+   // While an item is being dragged it renders at its position + the live delta, but the committed
+   // `items` map hasn't moved yet; offset an endpoint that is in the moving set so its line follows
+   // the item smoothly (both ends shift when both move, e.g. a zone carrying its members).
+   const live = (item: BoardItem): BoardItem =>
+      moving && moving.ids.has(item.id) ? { ...item, x: item.x + moving.delta.x, y: item.y + moving.delta.y } : item;
 
    // The selected line's live color while its picker is open: shown on the line before the
    // single committed command on close (so a picker drag never floods undo).
@@ -76,7 +84,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
                // Defensive: a connection to a deleted item draws nothing (no orphan line).
                if (!fromItem || !toItem) return null;
 
-               const { from, to } = connectionEndpoints(fromItem, toItem);
+               const { from, to } = connectionEndpoints(live(fromItem), live(toItem));
                const isSelected = connection.id === selectedId;
                // Show the live picker color on the selected line; otherwise the committed color.
                const effectiveColor = colorPreview?.id === connection.id ? colorPreview.color : content.style.color;
@@ -131,7 +139,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
             const fromItem = items[content.from];
             const toItem = items[content.to];
             if (!fromItem || !toItem) return null;
-            const { from, to } = connectionEndpoints(fromItem, toItem);
+            const { from, to } = connectionEndpoints(live(fromItem), live(toItem));
             const midX = (from.x + to.x) / 2;
             const midY = (from.y + to.y) / 2;
             const effectiveColor = colorPreview?.id === selectedConnection.id ? colorPreview.color : content.style.color;

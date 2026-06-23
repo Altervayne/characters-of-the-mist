@@ -49,7 +49,7 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, onConte
       case 'pin':
          return <PinItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
       case 'zone':
-         return <ZoneItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <ZoneItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'dice-tray':
          return <DiceTrayItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onRequestSelect={onRequestSelect} />;
       case 'card':

@@ -522,6 +522,79 @@ describe('group operations (one undo step each)', () => {
    });
 });
 
+describe('zone membership (move/delete capture)', () => {
+   /** A zone record covering [x, x+w] x [y, y+h]. */
+   function zoneRecord(id: string, boardId: string, z: number, x: number, y: number, w: number, h: number): BoardItemRecord {
+      return { id, boardId, kind: 'zone', x, y, width: w, height: h, z, content: { kind: 'zone', collapsed: false } };
+   }
+
+   it('a move whose center enters a zone sets zoneId, and one undo reverts move + membership together', async () => {
+      const board = await repository.createBoard('Board');
+      // Zone covers 0..400; 'a' (100x100) starts far outside (center 1050,1050).
+      await repository.bulkPutItems([zoneRecord('Z', board.id, 0, 0, 0, 400, 400), makeRecord('a', board.id, 1, { x: 1000, y: 1000 })]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.moveItems(['a'], { x: -900, y: -900 }); // center -> 150,150 (inside Z)
+      expect(await repository.getItem('a')).toMatchObject({ x: 100, y: 100, zoneId: 'Z' });
+
+      await store.getState().actions.undo(); // ONE step
+      const reverted = await repository.getItem('a');
+      expect(reverted).toMatchObject({ x: 1000, y: 1000 });
+      expect(reverted!.zoneId).toBeUndefined();
+   });
+
+   it('dragging a member fully out of its zone clears zoneId', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([zoneRecord('Z', board.id, 0, 0, 0, 400, 400), makeRecord('a', board.id, 1, { x: 100, y: 100, zoneId: 'Z' })]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.moveItems(['a'], { x: 1000, y: 1000 }); // center -> 1150 (outside)
+      expect((await repository.getItem('a'))!.zoneId).toBeUndefined();
+   });
+
+   it('moving a zone carries its members without re-homing them (one undo step)', async () => {
+      const board = await repository.createBoard('Board');
+      // Two adjacent zones; member 'm' belongs to Z1. Moving Z1 right slides m's center into Z2's
+      // rectangle, but because m is carried (not re-evaluated) it must STAY in Z1.
+      await repository.bulkPutItems([
+         zoneRecord('Z1', board.id, 0, 0, 0, 200, 200),
+         zoneRecord('Z2', board.id, 1, 200, 0, 200, 200),
+         makeRecord('m', board.id, 2, { x: 50, y: 50, zoneId: 'Z1' }), // center 100,100 in Z1
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Move Z1 + its member by +150x; reevaluate is empty (members aren't directly moved).
+      await store.getState().actions.moveItems(['Z1', 'm'], { x: 150, y: 0 }, []);
+      expect(await repository.getItem('Z1')).toMatchObject({ x: 150, y: 0 });
+      const member = await repository.getItem('m');
+      expect(member).toMatchObject({ x: 200, y: 50, zoneId: 'Z1' }); // moved along, still in Z1 (not re-homed to Z2)
+
+      await store.getState().actions.undo(); // ONE step
+      expect(await repository.getItem('Z1')).toMatchObject({ x: 0, y: 0 });
+      expect(await repository.getItem('m')).toMatchObject({ x: 50, y: 50, zoneId: 'Z1' });
+   });
+
+   it('deleting a zone frees its members (they remain, zoneId cleared) as one undo step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([zoneRecord('Z', board.id, 0, 0, 0, 400, 400), makeRecord('m', board.id, 1, { x: 100, y: 100, zoneId: 'Z' })]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.deleteItems(['Z']);
+      expect(await repository.getItem('Z')).toBeUndefined();
+      const member = await repository.getItem('m');
+      expect(member).toBeDefined(); // freed, NOT deleted
+      expect(member!.zoneId).toBeUndefined();
+
+      await store.getState().actions.undo(); // ONE step: zone restored AND membership restored
+      expect(await repository.getItem('Z')).toBeDefined();
+      expect((await repository.getItem('m'))!.zoneId).toBe('Z');
+   });
+});
+
 describe('syncItemSize (non-undoable size follow)', () => {
    it('writes the size to memory + repo without a command, leaving the undo stack alone', async () => {
       const board = await repository.createBoard('Board');

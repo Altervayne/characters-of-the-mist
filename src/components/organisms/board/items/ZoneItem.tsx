@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // -- Utils Imports --
@@ -12,11 +13,13 @@ import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopo
 import type { BoardItemContent, ZoneBoardContent } from '@/lib/types/board';
 
 /*
- * A zone's header bar: an editable label (commit on blur) and a color control that opens the
- * shared, portaled color picker. It lives at the top edge of the zone frame; the frame's body
- * is otherwise click-through, so items sitting inside a zone stay interactive - only this bar
+ * A zone's label header: an editable label tab that sits just ABOVE the frame's top-left corner
+ * (the Figma frame-label spot), so it neither floats inside the zone nor blankets the top edge
+ * where an item's toolbar would collide with it. The color control lives in the selection
+ * toolbar's per-kind slot (like the post-it's), not here, so the header holds only the label; the
+ * frame's body is otherwise click-through, so items inside a zone stay interactive - only this tab
  * (and the selection chrome) takes the pointer. Label and color each commit one undoable
- * `updateItemContent`. The collapse toggle joins this bar later.
+ * `updateItemContent`. The collapse toggle joins this tab later.
  */
 
 /** Tint quick-picks for a zone (rendered at low opacity behind the items). */
@@ -25,11 +28,13 @@ const ZONE_PALETTE = ['#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#1
 interface ZoneItemProps {
    content: ZoneBoardContent;
    isSelected: boolean;
+   /** The selection toolbar's action slot; the color control portals here (like the post-it's). */
+   toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
 }
 
-export function ZoneItem({ content, isSelected, onContentChange, onRequestSelect }: ZoneItemProps) {
+export function ZoneItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: ZoneItemProps) {
    const { t } = useTranslation();
 
    const [label, setLabel] = useState(content.label ?? '');
@@ -77,29 +82,33 @@ export function ZoneItem({ content, isSelected, onContentChange, onRequestSelect
    }, [isSelected, commitPendingColor]);
 
    return (
-      <div
-         onPointerDown={(event) => { event.stopPropagation(); onRequestSelect(); }}
-         className="pointer-events-auto absolute inset-x-0 top-0 flex items-center gap-1 rounded-t-lg px-1.5 py-1"
-      >
-         <input
-            type="text"
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            onFocus={onRequestSelect}
-            onBlur={commitLabel}
-            onPointerDown={(event) => event.stopPropagation()}
-            placeholder={t('BoardView.zoneLabelPlaceholder')}
-            className="min-w-0 flex-1 truncate bg-transparent text-xs font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
-         />
+      <>
+         <div
+            onPointerDown={(event) => { event.stopPropagation(); onRequestSelect(); }}
+            className="pointer-events-auto absolute bottom-full left-0 mb-0.5 flex max-w-[16rem] items-center rounded-md px-1 py-0.5"
+         >
+            <input
+               type="text"
+               value={label}
+               onChange={(event) => setLabel(event.target.value)}
+               onFocus={onRequestSelect}
+               onBlur={commitLabel}
+               onPointerDown={(event) => event.stopPropagation()}
+               placeholder={t('BoardView.zoneLabelPlaceholder')}
+               className="w-28 min-w-0 truncate bg-transparent text-xs font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
+            />
+         </div>
 
-         {isSelected && (
+         {/* Color lives in the selection toolbar's slot, like the post-it's - not in the header. */}
+         {isSelected && toolbarSlot && createPortal(
             <ZoneColorControl
                activeColor={swatchColor}
                onPreview={(color) => { pendingRef.current = { color }; setPending({ color }); }}
                onCommit={commitPendingColor}
-            />
+            />,
+            toolbarSlot,
          )}
-      </div>
+      </>
    );
 }
 
@@ -128,7 +137,7 @@ function ZoneColorControl({ activeColor, onPreview, onCommit }: { activeColor: s
                title={t('BoardView.zoneColor')}
                aria-label={t('BoardView.zoneColor')}
                onPointerDown={(event) => event.stopPropagation()}
-               className="h-5 w-5 shrink-0 rounded border border-border"
+               className="flex h-6 w-6 items-center justify-center rounded border border-border"
                style={{ backgroundColor: activeColor ?? 'transparent' }}
             />
          }

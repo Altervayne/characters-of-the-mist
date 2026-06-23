@@ -20,10 +20,11 @@ function makeBoard(): Board {
       viewport: { x: 5, y: 6, zoom: 2 },
       drawerItemId: 'drawer-old',
       items: [
-         { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: 'a' } },
-         { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, content: { kind: 'post-it', text: 'b' } },
+         { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, zoneId: 'zone', content: { kind: 'post-it', text: 'a' } },
+         { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, zoneId: 'ghost', content: { kind: 'post-it', text: 'b' } },
          { id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 2, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#f00' } } },
          { id: 'ref', kind: 'card', x: 20, y: 20, width: 100, height: 100, z: 3, content: { kind: 'card', mode: 'reference', sourceDrawerItemId: 'src-1' } },
+         { id: 'zone', kind: 'zone', x: -50, y: -50, width: 400, height: 400, z: 4, content: { kind: 'zone', collapsed: false } },
       ],
    };
 }
@@ -53,6 +54,19 @@ describe('reIdBoardAggregate', () => {
       expect(itemIds.has(to)).toBe(true);
       expect(from).not.toBe('a');
       expect(to).not.toBe('b');
+   });
+
+   it('remaps a member\'s zoneId to the re-IDed zone (and clears a link to a zone outside the set)', () => {
+      const board = makeBoard();
+      const result = reIdBoardAggregate(board);
+
+      const zone = result.items.find((i) => i.kind === 'zone')!;
+      const memberA = result.items.find((i) => i.content.kind === 'post-it' && i.content.text === 'a')!;
+      const memberB = result.items.find((i) => i.content.kind === 'post-it' && i.content.text === 'b')!;
+      // 'a' followed its zone to the new id; 'b' pointed at a zone not in the set, so it cleared.
+      expect(memberA.zoneId).toBe(zone.id);
+      expect(memberA.zoneId).not.toBe('zone');
+      expect(memberB.zoneId).toBeUndefined();
    });
 
    it('leaves a reference\'s sourceDrawerItemId untouched (it names a drawer item)', () => {

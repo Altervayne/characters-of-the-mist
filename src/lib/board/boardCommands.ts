@@ -239,6 +239,31 @@ export function createUpdateItemContentCommand(id: string, content: BoardItemCon
 }
 
 /**
+ * Set (or clear) an item's zone membership. Captures the previous `zoneId` on first `do()`;
+ * undo restores it. `null` clears membership (the item leaves every zone). Bundled into the
+ * same compound as the move/delete that triggered it, so a membership change reverts as one step.
+ */
+export function createSetItemZoneCommand(id: string, zoneId: string | null): BoardCommand {
+   let previousZoneId: string | null | undefined;
+   let captured = false;
+   return {
+      label: 'set-item-zone',
+      async do() {
+         if (!captured) {
+            const item = await getItem(id);
+            if (!item) throw new BoardNotFoundError(`Board item not found: ${id}`);
+            previousZoneId = item.zoneId;
+            captured = true;
+         }
+         await updateItem(id, { zoneId: zoneId ?? undefined });
+      },
+      async undo() {
+         if (captured) await updateItem(id, { zoneId: previousZoneId ?? undefined });
+      },
+   };
+}
+
+/**
  * Bundles several commands into one undo step: `do()` runs them in order, `undo()`
  * reverts in reverse order. Used for group move/delete/duplicate, where the whole
  * operation must be a single Ctrl+Z. Not coalescible (a group op is one discrete step).

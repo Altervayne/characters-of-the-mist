@@ -44,8 +44,6 @@ interface BoardItemBoxProps {
    isSelected: boolean;
    /** The ONLY selected item: shows the per-item toolbar + resize grip (suppressed in a multi-selection). */
    soleSelected: boolean;
-   /** Whether this item is already the frontmost; a plain click on it then needs no raise. */
-   isFrontmost: boolean;
    /** Current zoom, so screen deltas convert to world deltas and chrome stays screen-constant. */
    zoom: number;
    /** Live world offset during an active group move (null when idle); renders the box at the offset. */
@@ -83,7 +81,6 @@ export function BoardItemBox({
    item,
    isSelected,
    soleSelected,
-   isFrontmost,
    zoom,
    moveDelta,
    isMoving,
@@ -153,16 +150,16 @@ export function BoardItemBox({
    };
 
    // ==================
-   //  Select + raise (body click)
+   //  Select (body click)
    // ==================
 
    const handleBodyPointerDown = (event: ReactPointerEvent) => {
       event.stopPropagation(); // don't start a background pan
       const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+      // Selecting renders the item on top only while selected (a render-only boost in the canvas);
+      // stored z is untouched, so deselect returns it to its layer. Only the toolbar's bring-to-
+      // front / send-to-back change z. In-body text fields stop propagation, so editing never selects.
       onSelect(item.id, additive);
-      // A plain click raises the item (kept from the old body-drag chrome); an additive
-      // toggle must not reorder. In-body text fields stop propagation, so editing never raises.
-      if (!additive && !isFrontmost) onBringToFront(item.id);
    };
 
    // ==================

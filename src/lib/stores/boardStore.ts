@@ -13,9 +13,11 @@ import {
    createMoveItemCommand,
    createResizeItemCommand,
    createSetItemZCommand,
+   createSetItemZoneCommand,
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
+import { zoneContaining } from '@/lib/board/zoneMembership';
 
 // -- Store Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
@@ -69,8 +71,13 @@ export interface BoardState {
       hydrate: (boardId: string) => Promise<void>;
       addItem: (item: BoardItem) => Promise<void>;
       moveItem: (id: string, position: { x: number; y: number }) => Promise<void>;
-      /** Moves several items by a shared world delta as ONE undo step (single-select is a group of one). */
-      moveItems: (ids: string[], delta: { x: number; y: number }) => Promise<void>;
+      /**
+       * Moves several items by a shared world delta as ONE undo step (single-select is a group of
+       * one). `reevaluateIds` (default: all moved ids) are the DIRECTLY-moved non-zone items whose
+       * zone membership is recomputed against the post-move zone rects and folded into the same
+       * compound; members dragged along by a moved zone are excluded so they keep their membership.
+       */
+      moveItems: (ids: string[], delta: { x: number; y: number }, reevaluateIds?: string[]) => Promise<void>;
       /** Deletes several items plus the connections referencing any of them (deduped) as ONE undo step. */
       deleteItems: (ids: string[]) => Promise<void>;
       /**
@@ -86,6 +93,8 @@ export interface BoardState {
        */
       syncItemSize: (id: string, size: { width?: number; height?: number }) => Promise<void>;
       setItemZ: (id: string, z: number) => Promise<void>;
+      /** Sets (or clears with `null`) an item's zone membership as one undo step. */
+      setItemZone: (id: string, zoneId: string | null) => Promise<void>;
       /** Raises an item above all others (`max(z) + 1` over the live items). */
       bringToFront: (id: string) => Promise<void>;
       /** Drops an item below all others (`min(z) - 1` over the live items). */
@@ -159,6 +168,7 @@ function recordToItem(record: BoardItemRecord): BoardItem {
       height: record.height,
       z: record.z,
       rotation: record.rotation,
+      zoneId: record.zoneId,
       content: record.content,
    };
 }
@@ -273,23 +283,47 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                await runItemMutation(createMoveItemCommand(id, position));
             },
 
-            moveItems: async (ids, delta) => {
+            moveItems: async (ids, delta, reevaluateIds = ids) => {
                if (ids.length === 0 || (delta.x === 0 && delta.y === 0)) return;
                markDirty();
                const items = get().items;
+               const moveSet = new Set(ids);
                const moves = ids
                   .map((id) => items[id])
                   .filter((item): item is BoardItem => !!item)
                   .map((item) => ({ id: item.id, position: { x: item.x + delta.x, y: item.y + delta.y } }));
+
+               // Recompute membership for the directly-moved non-zone items against the zones at
+               // their POST-move positions (a zone that moved with them shifts too). Members carried
+               // along by a moved zone are not in `reevaluateIds`, so they keep their membership.
+               const zonesAfter = Object.values(items)
+                  .filter((item) => item.kind === 'zone')
+                  .map((zone) => (moveSet.has(zone.id) ? { ...zone, x: zone.x + delta.x, y: zone.y + delta.y } : zone));
+               const zoneChanges: { id: string; zoneId: string | null }[] = [];
+               for (const id of reevaluateIds) {
+                  const item = items[id];
+                  if (!item || item.kind === 'zone') continue;
+                  const moved = { id: item.id, x: item.x + delta.x, y: item.y + delta.y, width: item.width, height: item.height };
+                  const newZone = zoneContaining(moved, zonesAfter);
+                  if (newZone !== (item.zoneId ?? null)) zoneChanges.push({ id, zoneId: newZone });
+               }
+
                set((state) => {
                   const next = { ...state.items };
                   for (const move of moves) {
                      const existing = next[move.id];
                      if (existing) next[move.id] = { ...existing, x: move.position.x, y: move.position.y };
                   }
+                  for (const change of zoneChanges) {
+                     const existing = next[change.id];
+                     if (existing) next[change.id] = { ...existing, zoneId: change.zoneId ?? undefined };
+                  }
                   return { items: next };
                });
-               await runItemMutation(createCompoundCommand(moves.map((move) => createMoveItemCommand(move.id, move.position))));
+               await runItemMutation(createCompoundCommand([
+                  ...moves.map((move) => createMoveItemCommand(move.id, move.position)),
+                  ...zoneChanges.map((change) => createSetItemZoneCommand(change.id, change.zoneId)),
+               ]));
             },
 
             deleteItems: async (ids) => {
@@ -301,12 +335,28 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const toDelete = new Set<string>(ids);
                for (const id of ids) for (const connectionId of connectionsReferencing(items, id)) toDelete.add(connectionId);
                const finalIds = [...toDelete];
+               // Deleting a zone FREES its members (clears their zoneId) rather than deleting them;
+               // a freed member that is itself being deleted needs no clear.
+               const freedMembers: string[] = [];
+               for (const id of finalIds) {
+                  if (items[id]?.kind !== 'zone') continue;
+                  for (const member of Object.values(items)) {
+                     if (member.zoneId === id && !toDelete.has(member.id)) freedMembers.push(member.id);
+                  }
+               }
                set((state) => {
                   const next = { ...state.items };
                   for (const id of finalIds) delete next[id];
+                  for (const id of freedMembers) {
+                     const existing = next[id];
+                     if (existing) next[id] = { ...existing, zoneId: undefined };
+                  }
                   return { items: next };
                });
-               await runItemMutation(createCompoundCommand(finalIds.map((id) => createDeleteItemCommand(id))));
+               await runItemMutation(createCompoundCommand([
+                  ...finalIds.map((id) => createDeleteItemCommand(id)),
+                  ...freedMembers.map((id) => createSetItemZoneCommand(id, null)),
+               ]));
             },
 
             duplicateItems: async (ids) => {
@@ -379,6 +429,13 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, z } } }));
                await runItemMutation(createSetItemZCommand(id, z));
+            },
+
+            setItemZone: async (id, zoneId) => {
+               markDirty();
+               const existing = get().items[id];
+               if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, zoneId: zoneId ?? undefined } } }));
+               await runItemMutation(createSetItemZoneCommand(id, zoneId));
             },
 
             bringToFront: async (id) => {

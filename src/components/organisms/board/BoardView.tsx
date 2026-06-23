@@ -14,6 +14,7 @@ import { Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid,
 import { cn } from '@/lib/utils';
 import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
+import { zoneContaining } from '@/lib/board/zoneMembership';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -186,7 +187,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // render in between, so they sit on top of a zone but under its chrome.
    const zoneItems = spatialItems.filter((item) => item.kind === 'zone');
    const nonZoneItems = spatialItems.filter((item) => item.kind !== 'zone');
-   const frontmostId = nonZoneItems.length > 0 ? nonZoneItems[nonZoneItems.length - 1].id : null;
 
    // The behind-items DOM node zones portal their tinted backgrounds into (first child of the
    // world layer, so it paints behind the item boxes). State-backed like the toolbar slots.
@@ -235,8 +235,19 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     */
    const handleMoveStart = useCallback(
       (id: string, event: ReactPointerEvent) => {
-         const ids = selectedIds.has(id) ? new Set(selectedIds) : new Set([id]);
-         if (!selectedIds.has(id)) setSelectedIds(ids);
+         const base = selectedIds.has(id) ? new Set(selectedIds) : new Set([id]);
+         if (!selectedIds.has(id)) setSelectedIds(base);
+
+         // Expand the move set with every member of any zone in it, so a zone carries its contents.
+         // `reevaluate` is the directly-grabbed non-zone items (their membership is recomputed on
+         // release); members pulled in by a moved zone are excluded so they stay in the zone.
+         const liveItems = store.getState().items;
+         const ids = new Set(base);
+         for (const baseId of base) {
+            if (liveItems[baseId]?.kind !== 'zone') continue;
+            for (const candidate of Object.values(liveItems)) if (candidate.zoneId === baseId) ids.add(candidate.id);
+         }
+         const reevaluate = [...base].filter((baseId) => liveItems[baseId] && liveItems[baseId].kind !== 'zone');
 
          const startX = event.clientX;
          const startY = event.clientY;
@@ -253,13 +264,13 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
             setGroupDrag(null);
-            if (moved) void actions.moveItems([...ids], delta);
+            if (moved) void actions.moveItems([...ids], delta, reevaluate);
          };
          window.addEventListener('pointermove', onMove);
          window.addEventListener('pointerup', onUp);
          setGroupDrag({ ids, delta });
       },
-      [actions, selectedIds],
+      [actions, selectedIds, store],
    );
 
    /**
@@ -408,14 +419,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = ITEM_SIZE[kind];
       const id = cuid();
+      const placement = { id, x: center.x - size.width / 2, y: center.y - size.height / 2, width: size.width, height: size.height };
+      // A non-zone item created over a zone joins it (same center-in-rectangle rule as a drop).
+      const zoneId = kind === 'zone' ? undefined : zoneContaining(placement, zoneItems) ?? undefined;
       void actions.addItem({
-         id,
+         ...placement,
          kind,
-         x: center.x - size.width / 2,
-         y: center.y - size.height / 2,
-         width: size.width,
-         height: size.height,
          z,
+         zoneId,
          content: emptyContent(kind),
       });
       setSelectedIds(new Set([id]));
@@ -458,6 +469,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       return count >= 2 ? { x: minX, y: minY, width: maxX - minX, height: maxY - minY } : null;
    })();
 
+   // A selected item renders full front-row: above other items AND above the connection layer, so
+   // no string crosses its face while the user works on it. We split the non-zone items by
+   // selection and render the selected ones in a pass AFTER the connections (the unselected pass
+   // stays before them). Render-only - stored z is untouched - so deselect drops the item back
+   // below the connections at its real layer. Both lists keep z order (filtering a z-sorted list).
+   const nonZoneUnselected = nonZoneItems.filter((item) => !selectedIds.has(item.id));
+   const nonZoneSelected = nonZoneItems.filter((item) => selectedIds.has(item.id));
+
    /** Renders one item box. Shared by the non-zone and zone passes; zones use `backLayer` for their background. */
    const renderBox = (item: BoardItem) => (
       <BoardItemBox
@@ -465,7 +484,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          item={item}
          isSelected={selectedIds.has(item.id)}
          soleSelected={item.id === soleSelectedId}
-         isFrontmost={item.id === frontmostId}
          zoom={viewport.zoom}
          moveDelta={moveDeltaFor(item.id)}
          isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
@@ -513,9 +531,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                 paints behind every item box). Inert itself; the rectangles handle their own clicks. */}
             <div ref={setBackLayer} className="absolute left-0 top-0" />
 
-            {/* Non-zone items, then zones on top: a zone's box renders only its header + chrome
-                (its background is in the back layer), so its chrome floats above the items. */}
-            {nonZoneItems.map(renderBox)}
+            {/* Unselected non-zone items, then zones on top: a zone's box renders only its header +
+                chrome (its background is in the back layer), so its chrome floats above the items.
+                The SELECTED items render later, after the connection layer below. */}
+            {nonZoneUnselected.map(renderBox)}
             {zoneItems.map(renderBox)}
 
             {/* Group toolbar over the multi-selection's bounding box (per-item bars suppressed). */}
@@ -541,11 +560,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                connections={connectionItems}
                selectedId={soleSelectedId}
                zoom={viewport.zoom}
+               moving={groupDrag}
                connectPreview={connectPreview}
                onSelect={(id) => handleSelect(id, false)}
                onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}
                onDelete={handleDelete}
             />
+
+            {/* Selected non-zone items render LAST - above the connection layer - so a string to a
+                selected item runs behind its face (still anchored to its edge). Render-only; on
+                deselect the item rejoins the unselected pass below the connections. */}
+            {nonZoneSelected.map(renderBox)}
          </div>
 
          {/* Marquee rectangle: a screen-space overlay (not the world layer), drawn while a

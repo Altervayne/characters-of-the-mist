@@ -64,6 +64,8 @@ export interface BoardItemRecord {
    z: number;
    /** Optional rotation in degrees. */
    rotation?: number;
+   /** The zone this item belongs to (geometric membership, captured on drop), or absent when in none. */
+   zoneId?: string;
    /** The serialized, kind-discriminated payload; stored inline, opaque to the repo. */
    content: BoardItemContent;
 }

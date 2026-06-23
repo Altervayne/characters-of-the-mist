@@ -28,6 +28,7 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 
 // -- Board Imports --
 import { screenToWorld } from '@/lib/board/boardCoordinates';
+import { zoneContaining } from '@/lib/board/zoneMembership';
 import { embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { importBoard } from '@/lib/board/boardRepository';
 
@@ -879,14 +880,15 @@ export function useCharacterSheetDnD() {
 
             const zValues = Object.values(items).map((boardItem) => boardItem.z);
             const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+            const id = cuid();
+            const placement = { id, x: world.x - spec.width / 2, y: world.y - spec.height / 2, width: spec.width, height: spec.height };
+            // A card/tracker dropped over a zone joins it (same center-in-rectangle rule).
+            const zoneId = zoneContaining(placement, Object.values(items).filter((boardItem) => boardItem.kind === 'zone')) ?? undefined;
             void boardStore.getState().actions.addItem({
-               id: cuid(),
+               ...placement,
                kind: spec.kind,
-               x: world.x - spec.width / 2,
-               y: world.y - spec.height / 2,
-               width: spec.width,
-               height: spec.height,
                z,
+               zoneId,
                content: spec.content,
             });
             return;

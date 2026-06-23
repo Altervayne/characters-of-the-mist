@@ -184,6 +184,8 @@ export interface BoardItem {
    height: number;
    z: number;
    rotation?: number;
+   /** The zone this item is a member of (set when it lands inside one), or absent when in no zone. */
+   zoneId?: string;
    content: BoardItemContent;
 }
 

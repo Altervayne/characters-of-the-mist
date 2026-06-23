@@ -14,8 +14,9 @@ import { cn } from '@/lib/utils';
  * actions, delete). The body is left for content alone - move is the grip here, not a
  * body drag, so text items can be edited without a move stealing the pointer.
  *
- * The whole bar counter-scales by 1/zoom so it stays a constant on-screen size; the gap
- * above the item lives inside the scaled wrapper, so it stays constant too.
+ * The whole bar counter-scales by 1/zoom so it stays a constant on-screen size, and is
+ * centered over the item (translateX(-50%) composed with the scale, origin center-bottom);
+ * the gap above the item lives inside the scaled wrapper, so it stays constant too.
  */
 
 interface BoardItemToolbarProps {
@@ -37,8 +38,8 @@ export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, 
 
    return (
       <div
-         className="absolute left-0"
-         style={{ bottom: '100%', transformOrigin: '0 100%', transform: `scale(${1 / zoom})` }}
+         className="absolute left-1/2"
+         style={{ bottom: '100%', transformOrigin: '50% 100%', transform: `translateX(-50%) scale(${1 / zoom})` }}
       >
          {/* The padding is the screen-constant gap above the item (it scales with the bar). */}
          <div className="pb-2">
