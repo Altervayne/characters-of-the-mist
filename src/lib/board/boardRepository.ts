@@ -4,7 +4,7 @@ import cuid from 'cuid';
 
 // -- Local Imports --
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
-import { BOARD_SCHEMA_VERSION } from './boardRecords';
+import { BOARD_SCHEMA_VERSION, DEFAULT_BOARD_GRID } from './boardRecords';
 import { BoardNotFoundError, BoardTransactionError } from './boardErrors';
 
 // -- Type Imports --
@@ -98,6 +98,7 @@ export function createBoard(name: string): Promise<BoardRecord> {
          updatedAt: Date.now(),
          viewport: { ...DEFAULT_VIEWPORT },
          drawerItemId: null,
+         grid: { ...DEFAULT_BOARD_GRID },
          schemaVersion: BOARD_SCHEMA_VERSION,
       };
       await db.boards.add(record);
@@ -229,6 +230,7 @@ export function loadBoard(id: string): Promise<Board | undefined> {
          name: record.name,
          viewport: record.viewport,
          drawerItemId: record.drawerItemId ?? null,
+         grid: record.grid ?? { ...DEFAULT_BOARD_GRID },
          items: items.map(toBoardItem),
       };
    });
@@ -241,6 +243,7 @@ function assembleBoard(record: BoardRecord, items: BoardItemRecord[]): Board {
       name: record.name,
       viewport: record.viewport,
       drawerItemId: record.drawerItemId ?? null,
+      grid: record.grid ?? { ...DEFAULT_BOARD_GRID },
       items: items.map(toBoardItem),
    };
 }
@@ -260,6 +263,7 @@ export function importBoard(board: Board): Promise<void> {
          updatedAt: Date.now(),
          viewport: board.viewport,
          drawerItemId: board.drawerItemId ?? null,
+         grid: board.grid ?? { ...DEFAULT_BOARD_GRID },
          schemaVersion: BOARD_SCHEMA_VERSION,
       };
       await db.boards.put(record);

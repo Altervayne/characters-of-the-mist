@@ -1,5 +1,5 @@
 // -- Type Imports --
-import type { BoardItemContent, BoardItemKind, Viewport } from '@/lib/types/board';
+import type { BoardGrid, BoardItemContent, BoardItemKind, Viewport } from '@/lib/types/board';
 
 /**
  * The per-record schema version for board rows, written to
@@ -8,6 +8,9 @@ import type { BoardItemContent, BoardItemKind, Viewport } from '@/lib/types/boar
  * when the record shape itself changes.
  */
 export const BOARD_SCHEMA_VERSION = 1;
+
+/** The grid a new board gets, and the fallback for boards saved before grids existed. */
+export const DEFAULT_BOARD_GRID: BoardGrid = { type: 'dots' };
 
 /**
  * One row per board in the `boards` store. The board's items are NOT embedded - they
@@ -26,6 +29,8 @@ export interface BoardRecord {
    viewport: Viewport;
    /** The drawer `FULL_BOARD` item this board is linked to, or null when unsaved (mirrors `CharacterRecord.drawerItemId`). */
    drawerItemId?: string | null;
+   /** Background grid style. Absent on pre-grid boards - defaulted to dots on read. */
+   grid?: BoardGrid;
    /** Per-record schema marker for future record-shape migrations. */
    schemaVersion: number;
 }

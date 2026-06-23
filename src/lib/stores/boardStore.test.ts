@@ -407,3 +407,42 @@ describe('per-instance isolation', () => {
       expect(storeB.getState().canUndo).toBe(false);
    });
 });
+
+describe('grid + rename (immediate persist, dirty, not undoable)', () => {
+   it('setGrid updates state, persists to the record, dirties the board, and stays off the undo stack', async () => {
+      const board = await repository.createBoard('Board');
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      expect(store.getState().grid).toEqual({ type: 'dots' }); // the default
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+
+      await store.getState().actions.setGrid({ type: 'lines' });
+
+      expect(store.getState().grid).toEqual({ type: 'lines' });
+      expect(store.getState().hasUnsavedChanges).toBe(true);
+      expect((await repository.getBoard(board.id))?.grid).toEqual({ type: 'lines' });
+      expect(store.getState().canUndo).toBe(false); // a discrete choice, never undoable
+   });
+
+   it('renameBoard updates state + record, dirties the board, and is not undoable', async () => {
+      const board = await repository.createBoard('Old name');
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.renameBoard('New name');
+
+      expect(store.getState().name).toBe('New name');
+      expect(store.getState().hasUnsavedChanges).toBe(true);
+      expect((await repository.getBoard(board.id))?.name).toBe('New name');
+      expect(store.getState().canUndo).toBe(false);
+   });
+
+   it('an old board with no stored grid hydrates to the dots default', async () => {
+      const board = await repository.createBoard('Legacy');
+      // Simulate a pre-grid record by stripping the field on disk.
+      await drawerDatabase.boards.update(board.id, { grid: undefined });
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      expect(store.getState().grid).toEqual({ type: 'dots' });
+   });
+});

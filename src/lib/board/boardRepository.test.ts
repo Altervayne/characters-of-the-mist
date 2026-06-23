@@ -213,6 +213,7 @@ describe('importBoard / loadBoard round-trip', () => {
          name: 'Round Trip',
          viewport: { x: 12, y: 34, zoom: 2 },
          drawerItemId: 'drawer-1',
+         grid: { type: 'lines' },
          items: [
             { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: 'a' } },
             { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, content: { kind: 'post-it', text: 'b' } },

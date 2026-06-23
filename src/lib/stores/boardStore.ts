@@ -2,7 +2,8 @@
 import { create } from 'zustand';
 
 // -- Board Data Layer Imports --
-import { getBoard, linkBoardToDrawerItem, listItems, loadBoard, saveBoard, saveBoardToLinkedDrawerItem, updateItem } from '@/lib/board/boardRepository';
+import { getBoard, linkBoardToDrawerItem, listItems, loadBoard, renameBoard as renameBoardRecord, saveBoard, saveBoardToLinkedDrawerItem, updateItem } from '@/lib/board/boardRepository';
+import { DEFAULT_BOARD_GRID } from '@/lib/board/boardRecords';
 import { createBoardCommandEngine } from '@/lib/board/boardCommandEngine';
 import {
    createAddItemCommand,
@@ -19,7 +20,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 // -- Type Imports --
 import type { BoardCommand, ResizePatch } from '@/lib/board/boardCommands';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
-import type { Board, BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
+import type { Board, BoardGrid, BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
 
 /*
  * Board store - the React-facing, in-memory view of one open board, backed by the
@@ -45,6 +46,8 @@ export interface BoardState {
    boardId: string | null;
    name: string;
    viewport: Viewport;
+   /** The background grid style for this board (persisted on the board record). */
+   grid: BoardGrid;
    /** The linked drawer `FULL_BOARD` item, or `null` when this board was never saved. */
    drawerItemId: string | null;
    /** True when the board differs from its saved drawer copy, or was never saved (mirrors the character flag). */
@@ -78,6 +81,10 @@ export interface BoardState {
       deleteItem: (id: string) => Promise<void>;
       /** Sets the camera and debounce-persists it. The viewport is never undoable. */
       setViewport: (viewport: Viewport) => void;
+      /** Sets the background grid, persisting it immediately. Marks the board dirty; not undoable. */
+      setGrid: (grid: BoardGrid) => Promise<void>;
+      /** Renames the board, persisting immediately. Marks the board dirty; not undoable (the tab label is bound to `name`). */
+      renameBoard: (name: string) => Promise<void>;
       /** Sets the unsaved-changes flag directly (e.g. a save site marks the board clean). */
       setHasUnsavedChanges: (value: boolean) => void;
       /**
@@ -98,11 +105,12 @@ export interface BoardState {
 
 const initialState: Pick<
    BoardState,
-   'boardId' | 'name' | 'viewport' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
+   'boardId' | 'name' | 'viewport' | 'grid' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
 > = {
    boardId: null,
    name: '',
    viewport: { ...DEFAULT_VIEWPORT },
+   grid: { ...DEFAULT_BOARD_GRID },
    drawerItemId: null,
    hasUnsavedChanges: false,
    items: {},
@@ -225,7 +233,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   for (const item of board.items) items[item.id] = item;
                   // Opened from its records: it matches its saved copy (if any), so it
                   // starts clean. The first mutation dirties it.
-                  set({ boardId, name: board.name, viewport: board.viewport, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, isLoading: false, error: null });
+                  set({ boardId, name: board.name, viewport: board.viewport, grid: board.grid ?? { ...DEFAULT_BOARD_GRID }, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, isLoading: false, error: null });
                } catch (error) {
                   set({ isLoading: false, error: toErrorMessage(error) });
                }
@@ -308,6 +316,27 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                // Camera state: applied in memory and debounce-saved, never undoable.
                set({ viewport });
                debouncedSaveViewport(viewport);
+            },
+
+            setGrid: async (grid) => {
+               const boardId = get().boardId;
+               if (!boardId) return;
+               // A discrete choice: apply, persist immediately (with the live camera, so an
+               // in-flight viewport debounce isn't clobbered), and dirty the board. Not undoable.
+               set({ grid });
+               markDirty();
+               const record = await getBoard(boardId);
+               if (record) await saveBoard({ ...record, grid, viewport: get().viewport });
+            },
+
+            renameBoard: async (name) => {
+               const boardId = get().boardId;
+               if (!boardId) return;
+               // The tab label is bound to `name`, so this updates the tab live. Persisted
+               // directly (name only), dirtying the board; not undoable, like the viewport.
+               set({ name });
+               markDirty();
+               await renameBoardRecord(boardId, name);
             },
 
             setHasUnsavedChanges: (value) => {

@@ -1,5 +1,5 @@
 // -- Type Imports --
-import type { Viewport } from '@/lib/types/board';
+import type { BoardItem, Viewport } from '@/lib/types/board';
 
 /*
  * Pure world<->screen math for the board canvas. The world layer is rendered with
@@ -42,6 +42,68 @@ export function screenToWorld(screenX: number, screenY: number, origin: ClipOrig
  */
 export function screenDeltaToWorld(deltaX: number, deltaY: number, zoom: number): { x: number; y: number } {
    return { x: deltaX / zoom, y: deltaY / zoom };
+}
+
+/**
+ * The on-screen grid spacing band: the adaptive helper keeps a cell within these px so the
+ * grid never turns to mush zoomed out or sparse zoomed in.
+ */
+const GRID_MIN_SCREEN = 16;
+const GRID_MAX_SCREEN = 80;
+/** The "nice" mantissas a world grid cell snaps to, per decade (graph-paper feel). */
+const GRID_NICE_STEPS = [1, 2, 5];
+
+/**
+ * Returns the grid's on-screen cell size (px) for `zoom`, snapping the underlying WORLD
+ * spacing to a nice 1/2/5 x 10^n number whose screen size lands in the comfortable band.
+ * The band's ratio (5x) exceeds the largest gap between nice numbers (2.5x), so a value
+ * always exists; the clamp is just a guard against absurd zooms.
+ */
+export function gridSpacing(zoom: number): number {
+   for (let power = -2; power <= 7; power++) {
+      for (const step of GRID_NICE_STEPS) {
+         const screen = step * 10 ** power * zoom;
+         if (screen >= GRID_MIN_SCREEN && screen <= GRID_MAX_SCREEN) return screen;
+      }
+   }
+   return Math.min(GRID_MAX_SCREEN, Math.max(GRID_MIN_SCREEN, 40 * zoom));
+}
+
+/**
+ * Returns the viewport that frames every spatial item (connections, being zero-size, are
+ * skipped) centered in a clip of `clipSize`, with `padding` screen px of margin and the
+ * zoom clamped to the allowed range. An empty board (or a zero clip) returns the origin
+ * viewport, so an empty bbox never yields NaN.
+ */
+export function fitViewport(items: BoardItem[], clipSize: { width: number; height: number }, padding: number): Viewport {
+   const spatial = items.filter((item) => item.kind !== 'connection');
+   if (spatial.length === 0 || clipSize.width <= 0 || clipSize.height <= 0) return { x: 0, y: 0, zoom: 1 };
+
+   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+   for (const item of spatial) {
+      minX = Math.min(minX, item.x);
+      minY = Math.min(minY, item.y);
+      maxX = Math.max(maxX, item.x + item.width);
+      maxY = Math.max(maxY, item.y + item.height);
+   }
+
+   const contentWidth = maxX - minX;
+   const contentHeight = maxY - minY;
+   const availWidth = Math.max(1, clipSize.width - 2 * padding);
+   const availHeight = Math.max(1, clipSize.height - 2 * padding);
+
+   // A degenerate (zero-extent) bbox can't drive a zoom; keep 1 rather than dividing by 0.
+   const fitZoom = contentWidth > 0 && contentHeight > 0 ? Math.min(availWidth / contentWidth, availHeight / contentHeight) : 1;
+   const zoom = clampZoom(fitZoom);
+
+   // Place the content's world center at the clip's screen center.
+   const centerX = (minX + maxX) / 2;
+   const centerY = (minY + maxY) / 2;
+   return {
+      zoom,
+      x: clipSize.width / 2 - centerX * zoom,
+      y: clipSize.height / 2 - centerY * zoom,
+   };
 }
 
 /**

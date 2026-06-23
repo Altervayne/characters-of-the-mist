@@ -2,10 +2,15 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { MAX_ZOOM, MIN_ZOOM, clampZoom, screenDeltaToWorld, screenToWorld, zoomToCursor } from './boardCoordinates';
+import { MAX_ZOOM, MIN_ZOOM, clampZoom, fitViewport, gridSpacing, screenDeltaToWorld, screenToWorld, zoomToCursor } from './boardCoordinates';
 
 // -- Type Imports --
-import type { Viewport } from '@/lib/types/board';
+import type { BoardItem, Viewport } from '@/lib/types/board';
+
+/** A minimal spatial board item for fit tests (content irrelevant to the geometry). */
+function spatial(id: string, x: number, y: number, width: number, height: number): BoardItem {
+   return { id, kind: 'post-it', x, y, width, height, z: 0, content: { kind: 'post-it', text: '' } };
+}
 
 /*
  * Tests for the pure board coordinate math. These pin down the two failure modes the
@@ -73,5 +78,66 @@ describe('zoomToCursor', () => {
       const worldAfter = screenToWorld(screenX, screenY, ORIGIN, result);
       expect(worldAfter.x).toBeCloseTo(worldBefore.x, 10);
       expect(worldAfter.y).toBeCloseTo(worldBefore.y, 10);
+   });
+});
+
+describe('gridSpacing', () => {
+   it('keeps the on-screen cell within the comfortable band across the whole zoom range', () => {
+      for (let zoom = MIN_ZOOM; zoom <= MAX_ZOOM + 0.001; zoom += 0.01) {
+         const spacing = gridSpacing(zoom);
+         expect(spacing).toBeGreaterThanOrEqual(16);
+         expect(spacing).toBeLessThanOrEqual(80);
+      }
+   });
+
+   it('stays in band at extreme zooms too (guards the fallback)', () => {
+      for (const zoom of [0.01, 0.05, 5, 50]) {
+         const spacing = gridSpacing(zoom);
+         expect(spacing).toBeGreaterThanOrEqual(16);
+         expect(spacing).toBeLessThanOrEqual(80);
+      }
+   });
+
+   it('snaps the underlying world spacing to a nice 1/2/5 x 10^n number', () => {
+      const worldUnits = gridSpacing(1) / 1; // screen / zoom, with zoom 1
+      const mantissa = worldUnits / 10 ** Math.floor(Math.log10(worldUnits));
+      expect([1, 2, 5]).toContain(Math.round(mantissa));
+   });
+});
+
+describe('fitViewport', () => {
+   const clip = { width: 800, height: 600 };
+
+   it('returns the origin viewport for an empty board', () => {
+      expect(fitViewport([], clip, 40)).toEqual({ x: 0, y: 0, zoom: 1 });
+   });
+
+   it('returns the origin viewport for a zero-size clip', () => {
+      expect(fitViewport([spatial('a', 0, 0, 100, 100)], { width: 0, height: 0 }, 40)).toEqual({ x: 0, y: 0, zoom: 1 });
+   });
+
+   it('frames items centered, padded, and zoom-clamped', () => {
+      // Two items spanning world x:[0,1000], y:[0,500]; clip 800x600, padding 40.
+      const items = [spatial('a', 0, 0, 100, 100), spatial('b', 900, 400, 100, 100)];
+      const vp = fitViewport(items, clip, 40);
+
+      // Fit zoom = min((800-80)/1000, (600-80)/500) = min(0.72, 1.04) = 0.72, in range.
+      expect(vp.zoom).toBeCloseTo(0.72, 5);
+      // The content center (500, 250) lands at the clip center (400, 300).
+      expect(500 * vp.zoom + vp.x).toBeCloseTo(400, 5);
+      expect(250 * vp.zoom + vp.y).toBeCloseTo(300, 5);
+   });
+
+   it('clamps the fit zoom to the allowed range for a tiny board', () => {
+      // A single small item would fit at a huge zoom; it clamps to MAX_ZOOM.
+      const vp = fitViewport([spatial('a', 0, 0, 10, 10)], clip, 40);
+      expect(vp.zoom).toBe(MAX_ZOOM);
+   });
+
+   it('skips connections (zero-size) when computing the bounds', () => {
+      const connection: BoardItem = { id: 'c', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 0, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 1, color: '#000' } } };
+      const withConn = fitViewport([spatial('a', 100, 100, 100, 100), connection], clip, 40);
+      const without = fitViewport([spatial('a', 100, 100, 100, 100)], clip, 40);
+      expect(withConn).toEqual(without);
    });
 });

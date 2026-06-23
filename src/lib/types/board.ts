@@ -15,6 +15,18 @@ export interface Viewport {
    zoom: number;
 }
 
+/** The background grid styles a board can show behind its items. */
+export type BoardGridType = 'dots' | 'lines' | 'none';
+
+/**
+ * A board's background grid. `color` is optional - absent means a subtle theme default;
+ * full color customization rides the ported color picker later (board-spec).
+ */
+export interface BoardGrid {
+   type: BoardGridType;
+   color?: string;
+}
+
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
 export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection';
 
@@ -109,5 +121,7 @@ export interface Board {
    viewport: Viewport;
    /** The drawer `FULL_BOARD` item this board is saved to, or null/absent when unsaved (mirrors `character.drawerItemId`). */
    drawerItemId?: string | null;
+   /** Background grid style. Absent on boards created before grids existed - defaulted on read. */
+   grid?: BoardGrid;
    items: BoardItem[];
 }

@@ -8,11 +8,11 @@ import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Image as ImageIcon, NotebookText, StickyNote } from 'lucide-react';
+import { Crosshair, Grid3x3, Grip, Image as ImageIcon, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
+import { fitViewport, gridSpacing, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { DEFAULT_CONNECTION_STYLE, connectionsReferencing } from '@/lib/board/boardConnections';
 
 // -- Component Imports --
@@ -22,9 +22,12 @@ import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 
+// -- React Imports --
+import type { CSSProperties } from 'react';
+
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
+import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
 import type { Point } from '@/lib/board/boardConnections';
 
 /*
@@ -70,6 +73,38 @@ const ZOOM_SENSITIVITY = 0.0015;
 /** The store's default viewport, reused by return-to-origin. */
 const ORIGIN_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 
+/** Screen-px margin fit-to-content leaves around the framed items. */
+const FIT_PADDING = 64;
+/** The grid styles the toolbar control cycles through, in order. */
+const GRID_CYCLE: BoardGridType[] = ['dots', 'lines', 'none'];
+
+/**
+ * Builds the screen-space CSS background for the grid layer: position tracks the pan,
+ * size is the adaptive spacing, and the color falls back to `currentColor` (set subtle
+ * on the layer) so the grid reads on both themes. `none` draws nothing.
+ */
+function gridBackground(grid: BoardGrid, spacing: number, viewport: Viewport): CSSProperties {
+   if (grid.type === 'none') return {};
+   const color = grid.color ?? 'currentColor';
+   const position = `${viewport.x}px ${viewport.y}px`;
+   const size = `${spacing}px ${spacing}px`;
+   if (grid.type === 'dots') {
+      return { backgroundImage: `radial-gradient(circle, ${color} 1px, transparent 1.5px)`, backgroundSize: size, backgroundPosition: position };
+   }
+   return {
+      backgroundImage: `linear-gradient(to right, ${color} 1px, transparent 1px), linear-gradient(to bottom, ${color} 1px, transparent 1px)`,
+      backgroundSize: size,
+      backgroundPosition: position,
+   };
+}
+
+/** The toolbar icon for the current grid style (the button cycles to the next). */
+function gridIcon(type: BoardGridType) {
+   if (type === 'dots') return <Grip className="h-4 w-4" />;
+   if (type === 'lines') return <Grid3x3 className="h-4 w-4" />;
+   return <Square className="h-4 w-4" />;
+}
+
 /** The canvas; renders nothing when no board tab is active. */
 export function BoardView() {
    const instance = useActiveBoardInstance();
@@ -80,6 +115,8 @@ export function BoardView() {
 function BoardCanvas({ store }: { store: BoardStore }) {
    const { t } = useTranslation();
    const viewport = useStore(store, (state) => state.viewport);
+   const grid = useStore(store, (state) => state.grid);
+   const name = useStore(store, (state) => state.name);
    const items = useStore(store, (state) => state.items);
    const actions = useStore(store, (state) => state.actions);
 
@@ -261,6 +298,20 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedId(id);
    };
 
+   /** Frames every spatial item, centered and zoom-clamped (origin when the board is empty). */
+   const handleFitToContent = () => {
+      const el = clipRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      actions.setViewport(fitViewport(Object.values(items), { width: rect.width, height: rect.height }, FIT_PADDING));
+   };
+
+   /** Cycles the background grid: dots -> lines -> none. */
+   const handleCycleGrid = () => {
+      const next = GRID_CYCLE[(GRID_CYCLE.indexOf(grid.type) + 1) % GRID_CYCLE.length];
+      void actions.setGrid({ ...grid, type: next });
+   };
+
    return (
       <div
          ref={setClipRefs}
@@ -270,6 +321,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          onPointerUp={handleBackgroundPointerUp}
          className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : 'cursor-grab')}
       >
+         {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
+             so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
+         <div className="pointer-events-none absolute inset-0 text-foreground/15" style={gridBackground(grid, gridSpacing(viewport.zoom), viewport)} />
+
          {/* World layer: a single transform maps world coords to screen. */}
          <div className="absolute left-0 top-0" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`, transformOrigin: '0 0' }}>
             {spatialItems.map((item) => (
@@ -319,12 +374,67 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <ImageIcon className="h-4 w-4" />
             </ToolbarButton>
             <div className="mx-0.5 h-5 w-px bg-border" />
+            <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
+               {gridIcon(grid.type)}
+            </ToolbarButton>
+            <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
+               <Maximize className="h-4 w-4" />
+            </ToolbarButton>
             <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport({ ...ORIGIN_VIEWPORT })}>
                <Crosshair className="h-4 w-4" />
             </ToolbarButton>
             <span className="px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
          </div>
+
+         {/* Editable board name, top-center; stops the pointer so editing it never pans. */}
+         <div onPointerDown={(event) => event.stopPropagation()} className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
+            <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
+         </div>
       </div>
+   );
+}
+
+/** Maps a grid type to its i18n key suffix (`gridDots` / `gridLines` / `gridNone`). */
+function gridTypeKey(type: BoardGridType): string {
+   return type === 'dots' ? 'Dots' : type === 'lines' ? 'Lines' : 'None';
+}
+
+/**
+ * The on-canvas board name: click to edit, commit on blur/Enter, revert on Escape. Mirrors
+ * the character name field's controlled-input feel; the buffer resyncs when `name` changes
+ * externally (undo elsewhere, a fresh hydrate) via adjust-state-during-render.
+ */
+function BoardNameField({ name, placeholder, onCommit }: { name: string; placeholder: string; onCommit: (value: string) => void }) {
+   const [text, setText] = useState(name);
+   const [synced, setSynced] = useState(name);
+   if (name !== synced) {
+      setSynced(name);
+      setText(name);
+   }
+
+   const commit = () => {
+      const trimmed = text.trim();
+      if (trimmed && trimmed !== name) onCommit(trimmed);
+      else setText(name); // empty or unchanged -> revert to the stored name
+   };
+
+   return (
+      <input
+         type="text"
+         value={text}
+         placeholder={placeholder}
+         onChange={(event) => setText(event.target.value)}
+         onPointerDown={(event) => event.stopPropagation()}
+         onBlur={commit}
+         onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur();
+            else if (event.key === 'Escape') {
+               setText(name);
+               event.currentTarget.blur();
+            }
+         }}
+         className="pointer-events-auto w-64 max-w-[60vw] truncate rounded-md border border-transparent bg-card/80 px-3 py-1 text-center text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm hover:border-border focus:border-border focus:bg-card focus:outline-none"
+      />
    );
 }
 
