@@ -152,6 +152,8 @@ export function BoardItemBox({
    // ==================
 
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
+   // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
+   const isPin = item.kind === 'pin';
 
    return (
       <div
@@ -168,8 +170,12 @@ export function BoardItemBox({
          <div
             onPointerDown={handleBodyPointerDown}
             className={cn(
-               'h-full w-full select-none overflow-hidden rounded-md border shadow-sm',
-               isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50',
+               'h-full w-full select-none overflow-hidden',
+               // A pin is its own visual: a round, borderless dot with a circular ring. Every
+               // other kind is a bordered card with a square ring.
+               isPin
+                  ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
+                  : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
             )}
          >
             <BoardItemBody
@@ -198,14 +204,17 @@ export function BoardItemBox({
                   slotRef={setToolbarSlot}
                />
 
-               {/* Single bottom-right resize grip, counter-scaled to a constant on-screen size. */}
-               <div
-                  onPointerDown={handleResizePointerDown}
-                  onPointerMove={handleResizePointerMove}
-                  onPointerUp={handleResizePointerUp}
-                  className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 rounded-sm border border-background bg-primary"
-                  style={{ width: gripSize, height: gripSize, cursor: 'nwse-resize' }}
-               />
+               {/* Single bottom-right resize grip, counter-scaled to a constant on-screen size.
+                   A pin is a fixed-size dot, so it has no grip. */}
+               {!isPin && (
+                  <div
+                     onPointerDown={handleResizePointerDown}
+                     onPointerMove={handleResizePointerMove}
+                     onPointerUp={handleResizePointerUp}
+                     className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 rounded-sm border border-background bg-primary"
+                     style={{ width: gripSize, height: gripSize, cursor: 'nwse-resize' }}
+                  />
+               )}
             </>
          )}
       </div>

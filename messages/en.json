@@ -31,6 +31,8 @@
       "addPostIt": "Add post-it",
       "addJournal": "Add journal",
       "addImage": "Add image",
+      "addPin": "Add pin",
+      "pinColor": "Pin color",
       "returnToOrigin": "Reset view",
       "fitToContent": "Fit to content",
       "gridDots": "Grid: dots",

@@ -8,7 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Grid3x3, Grip, Image as ImageIcon, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
+import { Crosshair, Grid3x3, Grip, Image as ImageIcon, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -40,13 +40,17 @@ import type { Point } from '@/lib/board/boardConnections';
  */
 
 /** The board-native item kinds the palette can create. */
-type CreatableKind = 'post-it' | 'journal' | 'image';
+type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin';
 
-/** Default size (world units) per creatable kind. */
+/** A fresh pin's color (classic corkboard red). */
+const DEFAULT_PIN_COLOR = '#ef4444';
+
+/** Default size (world units) per creatable kind. A pin is a small fixed dot. */
 const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
    'post-it': { width: 180, height: 180 },
    journal: { width: 260, height: 320 },
    image: { width: 240, height: 180 },
+   pin: { width: 28, height: 28 },
 };
 
 /** A fresh, empty content payload for a new item of `kind`. */
@@ -58,6 +62,8 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
          return { kind: 'journal', pages: [''] };
       case 'image':
          return { kind: 'image', assetId: null, fit: 'cover' };
+      case 'pin':
+         return { kind: 'pin', color: DEFAULT_PIN_COLOR };
    }
 }
 
@@ -531,6 +537,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             </ToolbarButton>
             <ToolbarButton title={t('BoardView.addImage')} onClick={() => handleAddItem('image')}>
                <ImageIcon className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton title={t('BoardView.addPin')} onClick={() => handleAddItem('pin')}>
+               <MapPin className="h-4 w-4" />
             </ToolbarButton>
             <div className="mx-0.5 h-5 w-px bg-border" />
             <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>

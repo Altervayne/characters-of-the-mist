@@ -2,6 +2,7 @@
 import { PostItItem } from './PostItItem';
 import { JournalItem } from './JournalItem';
 import { ImageItem } from './ImageItem';
+import { PinItem } from './PinItem';
 import { BoardCardItem } from './BoardCardItem';
 import { BoardTrackerItem } from './BoardTrackerItem';
 
@@ -41,6 +42,8 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, onContentChange, 
          return <JournalItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'image':
          return <ImageItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+      case 'pin':
+         return <PinItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
       case 'card':
          return <BoardCardItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'tracker':

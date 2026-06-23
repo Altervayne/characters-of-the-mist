@@ -28,7 +28,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -69,6 +69,13 @@ export type EmbeddedBoardContent<K extends 'card' | 'tracker'> =
 export type CardBoardContent = EmbeddedBoardContent<'card'>;
 export type TrackerBoardContent = EmbeddedBoardContent<'tracker'>;
 
+/** A small corkboard pin: a freestanding dot, mainly an anchor to connect lines to/from. */
+export interface PinBoardContent {
+   kind: 'pin';
+   /** Dot color (hex). */
+   color: string;
+}
+
 /** A user-styled line between two board items (endpoints are board-item ids). */
 export interface ConnectionBoardContent {
    kind: 'connection';
@@ -95,7 +102,8 @@ export type BoardItemContent =
    | CardBoardContent
    | TrackerBoardContent
    | ConnectionBoardContent
-   | ThreatBoardContent;
+   | ThreatBoardContent
+   | PinBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.
