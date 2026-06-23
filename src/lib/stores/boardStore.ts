@@ -79,6 +79,12 @@ export interface BoardState {
        */
       duplicateItems: (ids: string[]) => Promise<string[]>;
       resizeItem: (id: string, patch: ResizePatch) => Promise<void>;
+      /**
+       * Writes an item's width/height WITHOUT a command (no undo entry) - for the auto-height
+       * follow, where the box measures its content and syncs the true height. User resizes
+       * still go through the undoable {@link resizeItem}.
+       */
+      syncItemSize: (id: string, size: { width?: number; height?: number }) => Promise<void>;
       setItemZ: (id: string, z: number) => Promise<void>;
       /** Raises an item above all others (`max(z) + 1` over the live items). */
       bringToFront: (id: string) => Promise<void>;
@@ -347,6 +353,24 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, ...patch } } }));
                await runItemMutation(createResizeItemCommand(id, patch));
+            },
+
+            syncItemSize: async (id, size) => {
+               // Passive, like the lastKnown / viewport caches: a measurement-driven size
+               // follow must not enter the undo stack or flag the board dirty (or merely
+               // opening a board could mark it changed). Persisted so it survives reload/export.
+               const existing = get().items[id];
+               if (!existing) return;
+               const patch: { width?: number; height?: number } = {};
+               if (size.width != null && size.width !== existing.width) patch.width = size.width;
+               if (size.height != null && size.height !== existing.height) patch.height = size.height;
+               if (patch.width === undefined && patch.height === undefined) return;
+               set((state) => ({ items: { ...state.items, [id]: { ...existing, ...patch } } }));
+               try {
+                  await updateItem(id, patch);
+               } catch (error) {
+                  set({ error: toErrorMessage(error) });
+               }
             },
 
             setItemZ: async (id, z) => {

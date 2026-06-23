@@ -521,3 +521,30 @@ describe('group operations (one undo step each)', () => {
       expect((await repository.listItems(board.id)).filter((item) => item.kind === 'connection')).toHaveLength(1);
    });
 });
+
+describe('syncItemSize (non-undoable size follow)', () => {
+   it('writes the size to memory + repo without a command, leaving the undo stack alone', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.addItem(makeRecord('a', board.id, 0, { height: 100 }));
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      expect(store.getState().canUndo).toBe(false);
+
+      await store.getState().actions.syncItemSize('a', { height: 240 });
+
+      expect(store.getState().items['a'].height).toBe(240); // in-memory updated
+      expect((await repository.getItem('a'))?.height).toBe(240); // persisted
+      expect(store.getState().canUndo).toBe(false); // NOT on the command stack
+   });
+
+   it('is a no-op when the size is unchanged', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.addItem(makeRecord('a', board.id, 0, { width: 200, height: 100 }));
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.syncItemSize('a', { height: 100, width: 200 });
+      expect(store.getState().canUndo).toBe(false);
+      expect(store.getState().items['a']).toMatchObject({ width: 200, height: 100 });
+   });
+});

@@ -8,7 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
+import { Crosshair, Dices, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -40,7 +40,7 @@ import type { Point } from '@/lib/board/boardConnections';
  */
 
 /** The board-native item kinds the palette can create. */
-type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin';
+type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray';
 
 /** A fresh pin's color (classic corkboard red). */
 const DEFAULT_PIN_COLOR = '#ef4444';
@@ -51,6 +51,7 @@ const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
    journal: { width: 260, height: 320 },
    image: { width: 240, height: 180 },
    pin: { width: 28, height: 28 },
+   'dice-tray': { width: 220, height: 260 },
 };
 
 /** A fresh, empty content payload for a new item of `kind`. */
@@ -64,6 +65,8 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
          return { kind: 'image', assetId: null, fit: 'cover' };
       case 'pin':
          return { kind: 'pin', color: DEFAULT_PIN_COLOR };
+      case 'dice-tray':
+         return { kind: 'dice-tray', title: '', dice: [{ id: cuid(), sides: 6 }, { id: cuid(), sides: 6 }], modifiers: [] };
    }
 }
 
@@ -482,6 +485,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   onSelect={handleSelect}
                   onMoveStart={handleMoveStart}
                   onResize={actions.resizeItem}
+                  onSyncSize={actions.syncItemSize}
                   onUpdateContent={actions.updateItemContent}
                   onCacheLastKnown={actions.cacheReferenceLastKnown}
                   onBringToFront={actions.bringToFront}
@@ -551,6 +555,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             </ToolbarButton>
             <ToolbarButton title={t('BoardView.addPin')} onClick={() => handleAddItem('pin')}>
                <MapPin className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton title={t('BoardView.addDiceTray')} onClick={() => handleAddItem('dice-tray')}>
+               <Dices className="h-4 w-4" />
             </ToolbarButton>
             <div className="mx-0.5 h-5 w-px bg-border" />
             <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>

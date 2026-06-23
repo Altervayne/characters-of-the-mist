@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -10,7 +10,7 @@ import { BoardItemBody } from './items/BoardItemBody';
 import { BoardItemToolbar } from './BoardItemToolbar';
 
 // -- Type Imports --
-import type { BoardItem, BoardItemContent } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent, BoardItemKind } from '@/lib/types/board';
 import type { ResizePatch } from '@/lib/board/boardCommands';
 
 /*
@@ -29,6 +29,10 @@ import type { ResizePatch } from '@/lib/board/boardCommands';
 const MIN_ITEM_SIZE = 40;
 /** Resize-grip hit size in screen px (counter-scaled by zoom so it stays constant on screen). */
 const HANDLE_SCREEN_SIZE = 14;
+
+/** Kinds whose height follows their content (no internal scroll): the box auto-fits + width-only resizes. */
+const AUTO_HEIGHT_KINDS = new Set<BoardItemKind>(['dice-tray']);
+const isAutoHeight = (kind: BoardItemKind): boolean => AUTO_HEIGHT_KINDS.has(kind);
 
 interface BoardItemBoxProps {
    item: BoardItem;
@@ -49,6 +53,8 @@ interface BoardItemBoxProps {
    /** Pointer-down on the move grip; the canvas owns the (group-aware) move gesture. */
    onMoveStart: (id: string, event: ReactPointerEvent) => void;
    onResize: (id: string, patch: ResizePatch) => void;
+   /** Non-undoable size write for the auto-height follow (measured content height). */
+   onSyncSize: (id: string, size: { width?: number; height?: number }) => void;
    onUpdateContent: (id: string, content: BoardItemContent) => void;
    /** Direct (non-undoable) cache write for a reference item's last-known snapshot. */
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
@@ -78,6 +84,7 @@ export function BoardItemBox({
    onSelect,
    onMoveStart,
    onResize,
+   onSyncSize,
    onUpdateContent,
    onCacheLastKnown,
    onBringToFront,
@@ -94,6 +101,27 @@ export function BoardItemBox({
    // The toolbar's per-kind slot, state-backed so the body re-renders to portal into it
    // once it mounts (and portals nothing while the item is unselected and the bar is gone).
    const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
+
+   const autoHeight = isAutoHeight(item.kind);
+   // For an auto-height item the body's own layout height drives the stored height; measure it
+   // and sync (non-undoable). offsetHeight is layout px, unaffected by the world-layer scale,
+   // so it equals the world height.
+   const bodyRef = useRef<HTMLDivElement | null>(null);
+   useEffect(() => {
+      if (!autoHeight) return;
+      const el = bodyRef.current;
+      if (!el) return;
+      const sync = () => {
+         const measured = Math.round(el.offsetHeight);
+         // Only write on a real change; with the container at height:auto, writing item.height
+         // never reflows the body, so there is no observer feedback loop.
+         if (measured > 0 && measured !== item.height) onSyncSize(item.id, { height: measured });
+      };
+      sync();
+      const observer = new ResizeObserver(sync);
+      observer.observe(el);
+      return () => observer.disconnect();
+   }, [autoHeight, item.id, item.height, onSyncSize]);
 
    // The rect to render: a live resize wins, else the base rect plus any active group-move offset.
    const rect: DragRect = resizeRect ?? {
@@ -133,7 +161,11 @@ export function BoardItemBox({
       const start = resizeStart.current;
       if (!start) return;
       const delta = screenDeltaToWorld(event.clientX - start.x, event.clientY - start.y, zoom);
-      const next = computeResize(start.orig, delta);
+      // An auto-height item resizes width only; its height follows the content, so a vertical
+      // drag must not fight the measured height.
+      const next = autoHeight
+         ? { ...start.orig, width: Math.max(MIN_ITEM_SIZE, start.orig.width + delta.x) }
+         : computeResize(start.orig, delta);
       start.rect = next;
       setResizeRect(next);
    };
@@ -142,8 +174,9 @@ export function BoardItemBox({
       const start = resizeStart.current;
       resizeStart.current = null;
       event.currentTarget.releasePointerCapture(event.pointerId);
-      // Bottom-right only grows width/height; x/y never move, so the patch carries neither.
-      if (start) onResize(item.id, { width: start.rect.width, height: start.rect.height });
+      // Bottom-right only grows the size; x/y never move. Auto-height keeps its current height
+      // (the measure-sync owns it); fixed items commit both.
+      if (start) onResize(item.id, { width: start.rect.width, height: autoHeight ? item.height : start.rect.height });
       setResizeRect(null);
    };
 
@@ -163,14 +196,18 @@ export function BoardItemBox({
             left: rect.x,
             top: rect.y,
             width: rect.width,
-            height: rect.height,
+            // Auto-height items fit their content; the measured height syncs to the store so
+            // chrome + connections still use a real value.
+            height: autoHeight ? 'auto' : rect.height,
             transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
          }}
       >
          <div
+            ref={bodyRef}
             onPointerDown={handleBodyPointerDown}
             className={cn(
-               'h-full w-full select-none overflow-hidden',
+               'w-full select-none overflow-hidden',
+               autoHeight ? '' : 'h-full',
                // A pin is its own visual: a round, borderless dot with a circular ring. Every
                // other kind is a bordered card with a square ring.
                isPin

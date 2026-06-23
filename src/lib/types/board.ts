@@ -28,7 +28,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -76,6 +76,40 @@ export interface PinBoardContent {
    color: string;
 }
 
+/** The standard polyhedral die faces a dice tray can hold. */
+export type DieSides = 4 | 6 | 8 | 10 | 12 | 20 | 100;
+
+/** One die in a tray: a stable id (so a cached roll maps to it) and its face count. */
+export interface DiceTrayDie {
+   id: string;
+   sides: DieSides;
+}
+
+/** One labeled modifier on a tray: an optional label and a signed value (config, undoable). */
+export interface DiceTrayModifier {
+   id: string;
+   label?: string;
+   value: number;
+}
+
+/**
+ * A persistent preset roller: a list of individual dice plus a list of labeled modifiers
+ * (and an optional title). The CONFIG (dice / modifiers / title) is undoable; the `lastRoll`
+ * is the CACHED last result, written via the non-undoable cache path so it survives reload +
+ * save/export without ever landing on the undo stack or spamming the board with commands.
+ */
+export interface DiceTrayBoardContent {
+   kind: 'dice-tray';
+   /** Optional label, e.g. "Attack". */
+   title?: string;
+   /** The individual dice (config, undoable). */
+   dice: DiceTrayDie[];
+   /** The labeled modifiers added to the dice subtotal (config, undoable). */
+   modifiers: DiceTrayModifier[];
+   /** The last roll: each die's face by id, the modifier breakdown at roll time, and the total. Cached, not undoable. */
+   lastRoll?: { faces: Record<string, number>; modifiers: { label?: string; value: number }[]; total: number };
+}
+
 /** A user-styled line between two board items (endpoints are board-item ids). */
 export interface ConnectionBoardContent {
    kind: 'connection';
@@ -103,7 +137,8 @@ export type BoardItemContent =
    | TrackerBoardContent
    | ConnectionBoardContent
    | ThreatBoardContent
-   | PinBoardContent;
+   | PinBoardContent
+   | DiceTrayBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.
