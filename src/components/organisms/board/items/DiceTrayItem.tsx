@@ -144,7 +144,7 @@ export function DiceTrayItem({ item, content, isSelected, onContentChange, onCac
    const displayModifiers = liveFaces ? modifiers.map((m) => ({ label: m.label, value: m.value })) : tray.lastRoll?.modifiers ?? [];
 
    return (
-      <div className="flex w-full flex-col bg-card text-card-foreground">
+      <div className="flex min-h-0 w-full flex-1 flex-col bg-card text-card-foreground">
          <input
             type="text"
             value={title}
@@ -243,6 +243,11 @@ export function DiceTrayItem({ item, content, isSelected, onContentChange, onCac
                </div>
             </div>
          </div>
+
+         {/* Flexible slack: when the tray is dragged taller than its content, the extra space
+             lands here so the Roll footer stays pinned to the bottom (the box reads the floor as
+             its height minus this spacer). */}
+         <div data-board-fill-spacer className="min-h-0 flex-1" />
 
          {/* Roll + the breakdown + total. */}
          <div className="flex shrink-0 flex-col gap-1 border-t border-border p-2">

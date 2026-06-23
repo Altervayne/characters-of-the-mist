@@ -45,10 +45,24 @@ export interface PostItBoardContent {
    color?: string;
 }
 
-/** Paged notes. Minimal for now; richer structure lands with its consumer. */
+/** One journal page: a stable id (so bookmarks reference it, not an index) and its text. */
+export interface JournalPage {
+   id: string;
+   text: string;
+}
+
+/** A bookmark on a journal: references a page by id and an optional tab label. */
+export interface JournalBookmark {
+   id: string;
+   pageId: string;
+   label?: string;
+}
+
+/** Paged notes with id'd pages and bookmarks (side tabs that jump to a page). */
 export interface JournalBoardContent {
    kind: 'journal';
-   pages: string[];
+   pages: JournalPage[];
+   bookmarks: JournalBookmark[];
 }
 
 /**

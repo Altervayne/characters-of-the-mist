@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { screenDeltaToWorld } from '@/lib/board/boardCoordinates';
+import { MIN_ITEM_SIZE, computeResize, effectiveHeight } from '@/lib/board/boardResize';
 
 // -- Component Imports --
 import { BoardItemBody } from './items/BoardItemBody';
@@ -25,14 +26,16 @@ import type { ResizePatch } from '@/lib/board/boardCommands';
  * Screen deltas divide by zoom so the box tracks the cursor at any zoom.
  */
 
-/** Smallest a box may be resized to, in world units. */
-const MIN_ITEM_SIZE = 40;
 /** Resize-grip hit size in screen px (counter-scaled by zoom so it stays constant on screen). */
 const HANDLE_SCREEN_SIZE = 14;
 
-/** Kinds whose height follows their content (no internal scroll): the box auto-fits + width-only resizes. */
-const AUTO_HEIGHT_KINDS = new Set<BoardItemKind>(['dice-tray']);
-const isAutoHeight = (kind: BoardItemKind): boolean => AUTO_HEIGHT_KINDS.has(kind);
+/**
+ * Kinds whose content height is the MINIMUM height (no internal scroll): the box measures its
+ * content as a floor - it can be dragged taller (2D resize) but never shorter than the content,
+ * and auto-grows when the content exceeds the current height. (Reusable by future form-like kinds.)
+ */
+const MIN_HEIGHT_KINDS = new Set<BoardItemKind>(['dice-tray']);
+const isMinHeight = (kind: BoardItemKind): boolean => MIN_HEIGHT_KINDS.has(kind);
 
 interface BoardItemBoxProps {
    item: BoardItem;
@@ -101,27 +104,41 @@ export function BoardItemBox({
    // The toolbar's per-kind slot, state-backed so the body re-renders to portal into it
    // once it mounts (and portals nothing while the item is unselected and the bar is gone).
    const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
+   // A non-clipped slot anchored to the box's right edge (outside the body's overflow-hidden),
+   // for chrome that must protrude past the box - the journal's bookmark tabs. Always present
+   // (tabs show when unselected too); state-backed like the toolbar slot.
+   const [sideSlot, setSideSlot] = useState<HTMLDivElement | null>(null);
 
-   const autoHeight = isAutoHeight(item.kind);
-   // For an auto-height item the body's own layout height drives the stored height; measure it
-   // and sync (non-undoable). offsetHeight is layout px, unaffected by the world-layer scale,
-   // so it equals the world height.
-   const bodyRef = useRef<HTMLDivElement | null>(null);
+   const minHeight = isMinHeight(item.kind);
+   // For a min-height item the content height is the floor. The measure wrapper fills the body and
+   // grows with content (min-h-full); the content's natural height is its height MINUS any flexible
+   // fill spacer (a kind that pins a footer marks the spacer with data-board-fill-spacer, and the
+   // slack lives in the spacer, not below the content). offsetHeight is layout px = world units,
+   // regardless of the world-layer scale. The floor drives the render height and, when content
+   // exceeds the stored height, bumps it up via the non-undoable sync; the user can still drag it
+   // taller (resizeItem).
+   const measureRef = useRef<HTMLDivElement | null>(null);
+   const [contentHeight, setContentHeight] = useState(0);
    useEffect(() => {
-      if (!autoHeight) return;
-      const el = bodyRef.current;
+      if (!minHeight) return;
+      const el = measureRef.current;
       if (!el) return;
-      const sync = () => {
-         const measured = Math.round(el.offsetHeight);
-         // Only write on a real change; with the container at height:auto, writing item.height
-         // never reflows the body, so there is no observer feedback loop.
-         if (measured > 0 && measured !== item.height) onSyncSize(item.id, { height: measured });
+      // The observer fires on observe(), so the first measure runs without a synchronous setState
+      // in the effect body. The spacer is observed too: when content grows inside an already-tall
+      // box the wrapper's own size doesn't change, but the spacer shrinks - that must re-measure.
+      const measure = () => {
+         const spacer = el.querySelector<HTMLElement>('[data-board-fill-spacer]');
+         const measured = Math.round(el.offsetHeight - (spacer?.offsetHeight ?? 0));
+         if (measured <= 0) return;
+         setContentHeight(measured);
+         if (measured > item.height) onSyncSize(item.id, { height: measured });
       };
-      sync();
-      const observer = new ResizeObserver(sync);
+      const observer = new ResizeObserver(measure);
       observer.observe(el);
+      const spacer = el.querySelector('[data-board-fill-spacer]');
+      if (spacer) observer.observe(spacer);
       return () => observer.disconnect();
-   }, [autoHeight, item.id, item.height, onSyncSize]);
+   }, [minHeight, item.id, item.height, onSyncSize]);
 
    // The rect to render: a live resize wins, else the base rect plus any active group-move offset.
    const rect: DragRect = resizeRect ?? {
@@ -161,11 +178,9 @@ export function BoardItemBox({
       const start = resizeStart.current;
       if (!start) return;
       const delta = screenDeltaToWorld(event.clientX - start.x, event.clientY - start.y, zoom);
-      // An auto-height item resizes width only; its height follows the content, so a vertical
-      // drag must not fight the measured height.
-      const next = autoHeight
-         ? { ...start.orig, width: Math.max(MIN_ITEM_SIZE, start.orig.width + delta.x) }
-         : computeResize(start.orig, delta);
+      // 2D resize; a min-height item floors its height at the live content height (can't be
+      // dragged shorter than its content, which would clip/scroll).
+      const next = computeResize(start.orig, delta, minHeight ? Math.max(MIN_ITEM_SIZE, contentHeight) : MIN_ITEM_SIZE);
       start.rect = next;
       setResizeRect(next);
    };
@@ -173,11 +188,12 @@ export function BoardItemBox({
    const handleResizePointerUp = (event: ReactPointerEvent) => {
       const start = resizeStart.current;
       resizeStart.current = null;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      // Bottom-right only grows the size; x/y never move. Auto-height keeps its current height
-      // (the measure-sync owns it); fixed items commit both.
-      if (start) onResize(item.id, { width: start.rect.width, height: autoHeight ? item.height : start.rect.height });
+      // Commit (and clear the live rect) before releasing capture, so the resize can't be lost
+      // if the release throws. Bottom-right only grows the size; x/y never move. The dragged
+      // height is the user's (undoable) choice; a min-height item's move already floored it.
+      if (start) onResize(item.id, { width: start.rect.width, height: start.rect.height });
       setResizeRect(null);
+      event.currentTarget.releasePointerCapture(event.pointerId);
    };
 
    // ==================
@@ -187,6 +203,21 @@ export function BoardItemBox({
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
+   // A min-height item never renders below its content (the floor); other kinds use their rect.
+   const renderHeight = minHeight ? effectiveHeight(rect.height, contentHeight) : rect.height;
+
+   const body = (
+      <BoardItemBody
+         item={item}
+         isSelected={isSelected}
+         toolbarSlot={toolbarSlot}
+         sideSlot={sideSlot}
+         onContentChange={(content) => onUpdateContent(item.id, content)}
+         onCacheLastKnown={onCacheLastKnown}
+         onDelete={onDelete}
+         onRequestSelect={() => onSelect(item.id, false)}
+      />
+   );
 
    return (
       <div
@@ -196,18 +227,20 @@ export function BoardItemBox({
             left: rect.x,
             top: rect.y,
             width: rect.width,
-            // Auto-height items fit their content; the measured height syncs to the store so
-            // chrome + connections still use a real value.
-            height: autoHeight ? 'auto' : rect.height,
+            height: renderHeight,
             transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
          }}
       >
+         {/* Non-clipped anchor at the box's right edge, for the journal's bookmark tabs to
+             protrude into. Rendered BEFORE the body so the tabs tuck behind the page edge: the
+             body (positioned, later sibling) paints over their attach point and the selection
+             halo stays unbroken; only the protruding part shows. Zero-size, never grabs clicks. */}
+         <div ref={setSideSlot} className="absolute left-full top-0" />
+
          <div
-            ref={bodyRef}
             onPointerDown={handleBodyPointerDown}
             className={cn(
-               'w-full select-none overflow-hidden',
-               autoHeight ? '' : 'h-full',
+               'relative h-full w-full select-none overflow-hidden',
                // A pin is its own visual: a round, borderless dot with a circular ring. Every
                // other kind is a bordered card with a square ring.
                isPin
@@ -215,15 +248,9 @@ export function BoardItemBox({
                   : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
             )}
          >
-            <BoardItemBody
-               item={item}
-               isSelected={isSelected}
-               toolbarSlot={toolbarSlot}
-               onContentChange={(content) => onUpdateContent(item.id, content)}
-               onCacheLastKnown={onCacheLastKnown}
-               onDelete={onDelete}
-               onRequestSelect={() => onSelect(item.id, false)}
-            />
+            {/* A min-height kind fills the body via a flex column (so a pinned footer can sit at
+                the bottom and the slack lands in its fill spacer); others render the body plain. */}
+            {minHeight ? <div ref={measureRef} className="flex min-h-full w-full flex-col">{body}</div> : body}
          </div>
 
          {/* Per-item chrome only for the sole selection; a multi-selection uses the group
@@ -256,14 +283,4 @@ export function BoardItemBox({
          )}
       </div>
    );
-}
-
-/** Applies a bottom-right resize delta (width/height grow, x/y fixed), enforcing the min size. */
-function computeResize(orig: DragRect, delta: { x: number; y: number }): DragRect {
-   return {
-      x: orig.x,
-      y: orig.y,
-      width: Math.max(MIN_ITEM_SIZE, orig.width + delta.x),
-      height: Math.max(MIN_ITEM_SIZE, orig.height + delta.y),
-   };
 }

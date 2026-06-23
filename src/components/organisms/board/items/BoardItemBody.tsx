@@ -23,6 +23,8 @@ interface BoardItemBodyProps {
    isSelected: boolean;
    /** The selection toolbar's per-kind action slot; a kind portals its actions here. Null when unselected. */
    toolbarSlot: HTMLElement | null;
+   /** A non-clipped slot at the box's right edge (outside overflow-hidden); the journal portals its tabs here. */
+   sideSlot: HTMLElement | null;
    /** Commits new content for this item (one undoable command per edit session). */
    onContentChange: (content: BoardItemContent) => void;
    /** Caches a reference's last-known snapshot via a direct (non-undoable) write. */
@@ -33,14 +35,14 @@ interface BoardItemBodyProps {
    onRequestSelect: () => void;
 }
 
-export function BoardItemBody({ item, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete, onRequestSelect }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, onContentChange, onCacheLastKnown, onDelete, onRequestSelect }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
       case 'post-it':
          return <PostItItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'journal':
-         return <JournalItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <JournalItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} sideSlot={sideSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'image':
          return <ImageItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'pin':

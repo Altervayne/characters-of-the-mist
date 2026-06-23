@@ -60,7 +60,7 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
       case 'post-it':
          return { kind: 'post-it', text: '' };
       case 'journal':
-         return { kind: 'journal', pages: [''] };
+         return { kind: 'journal', pages: [{ id: cuid(), text: '' }], bookmarks: [] };
       case 'image':
          return { kind: 'image', assetId: null, fit: 'cover' };
       case 'pin':
