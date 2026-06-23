@@ -33,6 +33,8 @@
       "addImage": "Add image",
       "addPin": "Add pin",
       "pinColor": "Pin color",
+      "emptyTitle": "This board is empty",
+      "emptyHint": "Add items from the palette, or drag a card or tracker from the drawer",
       "returnToOrigin": "Reset view",
       "fitToContent": "Fit to content",
       "gridDots": "Grid: dots",

@@ -8,7 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Grid3x3, Grip, Image as ImageIcon, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
+import { Crosshair, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -455,6 +455,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
          <div className="pointer-events-none absolute inset-0 text-foreground/15" style={gridBackground(grid, gridSpacing(viewport.zoom), viewport)} />
+
+         {/* Empty-board cue: a quiet, screen-centered hint so a blank canvas reads as "ready",
+             not "broken". Screen-space (not the world layer), so it stays put under pan/zoom, and
+             inert so it never eats a pan, a background click, or a drawer drop. Gone at one item. */}
+         {Object.keys(items).length === 0 && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+               <LayoutGrid className="h-10 w-10 opacity-50" />
+               <p className="text-sm font-medium">{t('BoardView.emptyTitle')}</p>
+               <p className="max-w-xs text-xs opacity-80">{t('BoardView.emptyHint')}</p>
+            </div>
+         )}
 
          {/* World layer: a single transform maps world coords to screen. */}
          <div className="absolute left-0 top-0" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`, transformOrigin: '0 0' }}>
