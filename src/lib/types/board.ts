@@ -28,7 +28,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -124,6 +124,19 @@ export interface DiceTrayBoardContent {
    lastRoll?: { faces: Record<string, number>; modifiers: { label?: string; value: number }[]; total: number };
 }
 
+/**
+ * A labeled, resizable background frame that groups items (a Figma-style zone). Renders BEHIND
+ * its members; its rectangle is the item's x/y/w/h. Membership + move-with-contents + collapse
+ * are later prompts - this is the frame. `color` is an optional hex tint (default a subtle theme
+ * tint); `collapsed` is reserved for the later collapse toggle.
+ */
+export interface ZoneBoardContent {
+   kind: 'zone';
+   label?: string;
+   color?: string;
+   collapsed: boolean;
+}
+
 /** A user-styled line between two board items (endpoints are board-item ids). */
 export interface ConnectionBoardContent {
    kind: 'connection';
@@ -152,7 +165,8 @@ export type BoardItemContent =
    | ConnectionBoardContent
    | ThreatBoardContent
    | PinBoardContent
-   | DiceTrayBoardContent;
+   | DiceTrayBoardContent
+   | ZoneBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.

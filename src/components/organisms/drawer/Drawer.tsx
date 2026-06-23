@@ -182,7 +182,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                  data-drawer-back
                                  onClick={() => navigateToFolder(parentFolderId)}
                                  className={cn(
-                                    'relative flex h-10 items-center gap-2 p-2 bg-card rounded hover:bg-muted cursor-pointer mb-2 transition-colors',
+                                    'relative flex h-10 items-center gap-2 p-2 bg-card rounded hover:bg-muted cursor-pointer mt-2 transition-colors',
                                     { 'bg-muted': isOverBackButton && activeDragId }
                                  )}
                                  role="button"

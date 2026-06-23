@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -66,6 +67,8 @@ interface BoardItemBoxProps {
    onDelete: (id: string) => void;
    /** Starts a connect drag from this item's connect handle (not a move). */
    onConnectStart: (id: string, event: ReactPointerEvent) => void;
+   /** The behind-items layer a zone portals its tinted background rectangle into (null for non-zones). */
+   backLayer?: HTMLElement | null;
 }
 
 /** A live drag rect during a move/resize gesture (world coords); `null` when idle. */
@@ -94,6 +97,7 @@ export function BoardItemBox({
    onSendToBack,
    onDelete,
    onConnectStart,
+   backLayer,
 }: BoardItemBoxProps) {
    // Live resize rect (full rect during a resize); the commit reads from the ref so it
    // never depends on a stale closure. The group move offset is owned by the canvas and
@@ -203,6 +207,11 @@ export function BoardItemBox({
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
+   // A zone is a background frame: its tinted rectangle portals BEHIND the items (into `backLayer`),
+   // and the box here renders only the on-top header + chrome - click-through everywhere else so the
+   // items sitting inside it stay interactive. Selecting the empty interior is the background's job.
+   const isZone = item.kind === 'zone';
+   const zoneColor = item.content.kind === 'zone' ? item.content.color : undefined;
    // A min-height item never renders below its content (the floor); other kinds use their rect.
    const renderHeight = minHeight ? effectiveHeight(rect.height, contentHeight) : rect.height;
 
@@ -222,7 +231,7 @@ export function BoardItemBox({
    return (
       <div
          data-board-item-id={item.id}
-         className="absolute"
+         className={cn('absolute', isZone && 'pointer-events-none')}
          style={{
             left: rect.x,
             top: rect.y,
@@ -231,6 +240,24 @@ export function BoardItemBox({
             transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
          }}
       >
+         {/* A zone's tinted rectangle, portaled into the behind-items back layer so members sit on
+             top. It tracks the live rect (move/resize), and a pointer-down on its empty interior or
+             border selects the zone - items on top capture their own clicks first (they paint above). */}
+         {isZone && backLayer && createPortal(
+            <div
+               onPointerDown={(event) => { event.stopPropagation(); onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey); }}
+               className={cn('absolute cursor-pointer rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
+               style={{
+                  left: rect.x,
+                  top: rect.y,
+                  width: rect.width,
+                  height: renderHeight,
+                  ...(zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : {}),
+               }}
+            />,
+            backLayer,
+         )}
+
          {/* Non-clipped anchor at the box's right edge, for the journal's bookmark tabs to
              protrude into. Rendered BEFORE the body so the tabs tuck behind the page edge: the
              body (positioned, later sibling) paints over their attach point and the selection
@@ -240,12 +267,16 @@ export function BoardItemBox({
          <div
             onPointerDown={handleBodyPointerDown}
             className={cn(
-               'relative h-full w-full select-none overflow-hidden',
-               // A pin is its own visual: a round, borderless dot with a circular ring. Every
-               // other kind is a bordered card with a square ring.
-               isPin
-                  ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
-                  : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
+               'relative h-full w-full select-none',
+               !isZone && 'overflow-hidden',
+               // A zone's body is click-through (the tinted rect + header carry the visuals); only the
+               // selection ring outlines the rectangle on top. A pin is a round borderless dot; every
+               // other kind is a bordered card. Each draws a square/round ring when selected.
+               isZone
+                  ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
+                  : isPin
+                     ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
+                     : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
             )}
          >
             {/* A min-height kind fills the body via a flex column (so a pinned footer can sit at
@@ -254,9 +285,10 @@ export function BoardItemBox({
          </div>
 
          {/* Per-item chrome only for the sole selection; a multi-selection uses the group
-             toolbar (rendered by the canvas) to avoid clutter, keeping only the rings. */}
+             toolbar (rendered by the canvas) to avoid clutter, keeping only the rings. The
+             wrapper re-enables pointer events for a zone (whose box is click-through). */}
          {soleSelected && (
-            <>
+            <div className={cn(isZone && 'pointer-events-auto')}>
                <BoardItemToolbar
                   zoom={zoom}
                   isMoving={isMoving}
@@ -279,7 +311,7 @@ export function BoardItemBox({
                      style={{ width: gripSize, height: gripSize, cursor: 'nwse-resize' }}
                   />
                )}
-            </>
+            </div>
          )}
       </div>
    );

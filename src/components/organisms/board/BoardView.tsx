@@ -8,7 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Dices, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
+import { Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -40,7 +40,7 @@ import type { Point } from '@/lib/board/boardConnections';
  */
 
 /** The board-native item kinds the palette can create. */
-type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray';
+type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zone';
 
 /** A fresh pin's color (classic corkboard red). */
 const DEFAULT_PIN_COLOR = '#ef4444';
@@ -52,6 +52,7 @@ const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
    image: { width: 240, height: 180 },
    pin: { width: 28, height: 28 },
    'dice-tray': { width: 220, height: 260 },
+   zone: { width: 360, height: 280 },
 };
 
 /** A fresh, empty content payload for a new item of `kind`. */
@@ -67,6 +68,8 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
          return { kind: 'pin', color: DEFAULT_PIN_COLOR };
       case 'dice-tray':
          return { kind: 'dice-tray', title: '', dice: [{ id: cuid(), sides: 6 }, { id: cuid(), sides: 6 }], modifiers: [] };
+      case 'zone':
+         return { kind: 'zone', collapsed: false };
    }
 }
 
@@ -178,7 +181,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // Connections render in the SVG overlay; everything else renders as a positioned box.
    const spatialItems = sortedItems.filter((item) => item.kind !== 'connection');
    const connectionItems = sortedItems.filter((item) => item.kind === 'connection');
-   const frontmostId = spatialItems.length > 0 ? spatialItems[spatialItems.length - 1].id : null;
+   // Zones are background frames: their tinted rectangles render in a back layer (behind every
+   // other item) while their header + chrome render in a front pass (on top). Non-zone items
+   // render in between, so they sit on top of a zone but under its chrome.
+   const zoneItems = spatialItems.filter((item) => item.kind === 'zone');
+   const nonZoneItems = spatialItems.filter((item) => item.kind !== 'zone');
+   const frontmostId = nonZoneItems.length > 0 ? nonZoneItems[nonZoneItems.length - 1].id : null;
+
+   // The behind-items DOM node zones portal their tinted backgrounds into (first child of the
+   // world layer, so it paints behind the item boxes). State-backed like the toolbar slots.
+   const [backLayer, setBackLayer] = useState<HTMLDivElement | null>(null);
 
    /** Converts an absolute cursor point to world coords via the live clip rect + viewport. */
    const cursorToWorld = useCallback((clientX: number, clientY: number): Point | null => {
@@ -446,6 +458,31 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       return count >= 2 ? { x: minX, y: minY, width: maxX - minX, height: maxY - minY } : null;
    })();
 
+   /** Renders one item box. Shared by the non-zone and zone passes; zones use `backLayer` for their background. */
+   const renderBox = (item: BoardItem) => (
+      <BoardItemBox
+         key={item.id}
+         item={item}
+         isSelected={selectedIds.has(item.id)}
+         soleSelected={item.id === soleSelectedId}
+         isFrontmost={item.id === frontmostId}
+         zoom={viewport.zoom}
+         moveDelta={moveDeltaFor(item.id)}
+         isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
+         onSelect={handleSelect}
+         onMoveStart={handleMoveStart}
+         onResize={actions.resizeItem}
+         onSyncSize={actions.syncItemSize}
+         onUpdateContent={actions.updateItemContent}
+         onCacheLastKnown={actions.cacheReferenceLastKnown}
+         onBringToFront={actions.bringToFront}
+         onSendToBack={actions.sendToBack}
+         onDelete={handleDelete}
+         onConnectStart={handleConnectStart}
+         backLayer={backLayer}
+      />
+   );
+
    return (
       <div
          ref={setClipRefs}
@@ -472,28 +509,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
          {/* World layer: a single transform maps world coords to screen. */}
          <div className="absolute left-0 top-0" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`, transformOrigin: '0 0' }}>
-            {spatialItems.map((item) => (
-               <BoardItemBox
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedIds.has(item.id)}
-                  soleSelected={item.id === soleSelectedId}
-                  isFrontmost={item.id === frontmostId}
-                  zoom={viewport.zoom}
-                  moveDelta={moveDeltaFor(item.id)}
-                  isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
-                  onSelect={handleSelect}
-                  onMoveStart={handleMoveStart}
-                  onResize={actions.resizeItem}
-                  onSyncSize={actions.syncItemSize}
-                  onUpdateContent={actions.updateItemContent}
-                  onCacheLastKnown={actions.cacheReferenceLastKnown}
-                  onBringToFront={actions.bringToFront}
-                  onSendToBack={actions.sendToBack}
-                  onDelete={handleDelete}
-                  onConnectStart={handleConnectStart}
-               />
-            ))}
+            {/* Behind-items layer: zones portal their tinted rectangles here (first child, so it
+                paints behind every item box). Inert itself; the rectangles handle their own clicks. */}
+            <div ref={setBackLayer} className="absolute left-0 top-0" />
+
+            {/* Non-zone items, then zones on top: a zone's box renders only its header + chrome
+                (its background is in the back layer), so its chrome floats above the items. */}
+            {nonZoneItems.map(renderBox)}
+            {zoneItems.map(renderBox)}
 
             {/* Group toolbar over the multi-selection's bounding box (per-item bars suppressed). */}
             {groupBbox && (
@@ -558,6 +581,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             </ToolbarButton>
             <ToolbarButton title={t('BoardView.addDiceTray')} onClick={() => handleAddItem('dice-tray')}>
                <Dices className="h-4 w-4" />
+            </ToolbarButton>
+            <ToolbarButton title={t('BoardView.addZone')} onClick={() => handleAddItem('zone')}>
+               <Frame className="h-4 w-4" />
             </ToolbarButton>
             <div className="mx-0.5 h-5 w-px bg-border" />
             <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>

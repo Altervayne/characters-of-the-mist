@@ -1,5 +1,6 @@
 // -- Component Imports --
 import { PostItItem } from './PostItItem';
+import { ZoneItem } from './ZoneItem';
 import { JournalItem } from './JournalItem';
 import { ImageItem } from './ImageItem';
 import { PinItem } from './PinItem';
@@ -47,6 +48,8 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, onConte
          return <ImageItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'pin':
          return <PinItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
+      case 'zone':
+         return <ZoneItem content={content} isSelected={isSelected} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'dice-tray':
          return <DiceTrayItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onRequestSelect={onRequestSelect} />;
       case 'card':
