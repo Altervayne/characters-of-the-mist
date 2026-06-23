@@ -446,3 +446,78 @@ describe('grid + rename (immediate persist, dirty, not undoable)', () => {
       expect(store.getState().grid).toEqual({ type: 'dots' });
    });
 });
+
+describe('group operations (one undo step each)', () => {
+   /** A connection record between two items, for cascade / remap fixtures. */
+   function connectionRecord(id: string, boardId: string, z: number, from: string, to: string): BoardItemRecord {
+      return { id, boardId, kind: 'connection', x: 0, y: 0, width: 0, height: 0, z, content: { kind: 'connection', from, to, style: { width: 2, color: '#000' } } };
+   }
+
+   it('moveItems shifts every id by a shared delta and undoes as one step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([makeRecord('a', board.id, 0, { x: 0, y: 0 }), makeRecord('b', board.id, 1, { x: 50, y: 50 })]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.moveItems(['a', 'b'], { x: 10, y: 20 });
+      expect(await repository.getItem('a')).toMatchObject({ x: 10, y: 20 });
+      expect(await repository.getItem('b')).toMatchObject({ x: 60, y: 70 });
+
+      await store.getState().actions.undo(); // ONE undo reverts the whole group
+      expect(await repository.getItem('a')).toMatchObject({ x: 0, y: 0 });
+      expect(await repository.getItem('b')).toMatchObject({ x: 50, y: 50 });
+   });
+
+   it('deleteItems cascades referencing connections, dedupes a shared one, and undoes as one step', async () => {
+      const board = await repository.createBoard('Board');
+      // Two items joined by a single connection that BOTH reference (the dedupe case).
+      await repository.bulkPutItems([makeRecord('a', board.id, 0), makeRecord('b', board.id, 1), connectionRecord('conn', board.id, 2, 'a', 'b')]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.deleteItems(['a', 'b']); // must not double-delete 'conn'
+      expect(await repository.getItem('a')).toBeUndefined();
+      expect(await repository.getItem('b')).toBeUndefined();
+      expect(await repository.getItem('conn')).toBeUndefined();
+
+      await store.getState().actions.undo(); // ONE undo restores items + the cascaded connection
+      expect(await repository.getItem('a')).toBeDefined();
+      expect(await repository.getItem('b')).toBeDefined();
+      expect(await repository.getItem('conn')).toBeDefined();
+   });
+
+   it('duplicateItems offsets copies, remaps in-selection connections, and undoes as one step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([makeRecord('a', board.id, 0, { x: 0, y: 0 }), makeRecord('b', board.id, 1, { x: 100, y: 0 }), connectionRecord('conn', board.id, 2, 'a', 'b')]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      const newIds = await store.getState().actions.duplicateItems(['a', 'b']);
+      expect(newIds).toHaveLength(2);
+
+      // Copies are offset by +16,+16 from their originals (a was at 0,0).
+      const copyA = await repository.getItem(newIds[0]);
+      expect(copyA).toMatchObject({ x: 16, y: 16 });
+
+      // The connection is duplicated, pointing at the NEW ids, never the originals.
+      const connections = (await repository.listItems(board.id)).filter((item) => item.kind === 'connection');
+      expect(connections).toHaveLength(2);
+      const copyConn = connections.find((item) => item.id !== 'conn');
+      expect(copyConn!.content).toMatchObject({ kind: 'connection', from: newIds[0], to: newIds[1] });
+
+      await store.getState().actions.undo(); // ONE undo removes every copy
+      expect(await repository.getItem(newIds[0])).toBeUndefined();
+      expect((await repository.listItems(board.id)).filter((item) => item.kind === 'connection')).toHaveLength(1);
+   });
+
+   it('duplicateItems drops a connection with one endpoint outside the selection', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([makeRecord('a', board.id, 0), makeRecord('b', board.id, 1), connectionRecord('conn', board.id, 2, 'a', 'b')]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Only 'a' is duplicated; the a<->b connection must NOT be copied (b has no copy).
+      await store.getState().actions.duplicateItems(['a']);
+      expect((await repository.listItems(board.id)).filter((item) => item.kind === 'connection')).toHaveLength(1);
+   });
+});

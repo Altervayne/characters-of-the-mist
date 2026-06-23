@@ -12,12 +12,13 @@ import { Crosshair, Grid3x3, Grip, Image as ImageIcon, Maximize, NotebookText, S
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { fitViewport, gridSpacing, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
-import { DEFAULT_CONNECTION_STYLE, connectionsReferencing } from '@/lib/board/boardConnections';
+import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
+import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
 import { BoardConnectionsLayer } from './BoardConnectionsLayer';
+import { BoardGroupToolbar } from './BoardGroupToolbar';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -120,9 +121,26 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const items = useStore(store, (state) => state.items);
    const actions = useStore(store, (state) => state.actions);
 
-   // Selection is ephemeral: local only, never persisted or routed through commands.
-   const [selectedId, setSelectedId] = useState<string | null>(null);
+   // Selection is ephemeral: a local set, never persisted or routed through commands.
+   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
    const [isPanning, setIsPanning] = useState(false);
+   // A Shift+background marquee (null when idle); a plain drag pans instead. Corners are in
+   // client coords; the clip origin is captured at start so the overlay + world math never
+   // read a ref during render.
+   const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number; clipLeft: number; clipTop: number } | null>(null);
+   // The live group move: the moving id set + a shared world delta (null when idle).
+   const [groupDrag, setGroupDrag] = useState<{ ids: Set<string>; delta: { x: number; y: number } } | null>(null);
+
+   /** Selects an item: `additive` (Shift/Ctrl) toggles it in/out of the set, else it replaces the set. */
+   const handleSelect = useCallback((id: string, additive: boolean) => {
+      setSelectedIds((prev) => {
+         if (!additive) return new Set([id]);
+         const next = new Set(prev);
+         if (next.has(id)) next.delete(id);
+         else next.add(id);
+         return next;
+      });
+   }, []);
 
    // Cross-surface drop target for dragging a drawer card/tracker onto the canvas. Only
    // mounted on a board tab (BoardView renders nothing otherwise), so it never competes
@@ -161,16 +179,66 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       return screenToWorld(clientX, clientY, { left: rect.left, top: rect.top }, viewportRef.current);
    }, []);
 
-   /** Deletes an item and (cascade) every connection referencing it, so no orphan line remains. */
+   /** Deletes one item plus the connections referencing it (cascade + dedupe), as one undo step. */
    const handleDelete = useCallback(
       (id: string) => {
-         const liveItems = store.getState().items;
-         // Separate undo steps in v1 (the connection deletes, then the item delete).
-         for (const connectionId of connectionsReferencing(liveItems, id)) void actions.deleteItem(connectionId);
-         void actions.deleteItem(id);
-         setSelectedId((current) => (current === id ? null : current));
+         void actions.deleteItems([id]);
+         setSelectedIds((prev) => {
+            if (!prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+         });
       },
-      [store, actions],
+      [actions],
+   );
+
+   /** Deletes the whole selection (with connection cascade) as one undo step, then clears it. */
+   const handleDeleteSelection = useCallback(() => {
+      if (selectedIds.size === 0) return;
+      void actions.deleteItems([...selectedIds]);
+      setSelectedIds(new Set());
+   }, [actions, selectedIds]);
+
+   /** Duplicates the selection (copies + in-selection connections, offset), then selects the copies. */
+   const handleDuplicateSelection = useCallback(async () => {
+      if (selectedIds.size === 0) return;
+      const newIds = await actions.duplicateItems([...selectedIds]);
+      setSelectedIds(new Set(newIds));
+   }, [actions, selectedIds]);
+
+   /**
+    * Starts a group move from an item's move grip (canvas-owned, like the connect drag).
+    * The whole selection moves if the grabbed item is in it; otherwise it selects just that
+    * item and moves it alone. A shared world delta renders live; one compound command on release.
+    */
+   const handleMoveStart = useCallback(
+      (id: string, event: ReactPointerEvent) => {
+         const ids = selectedIds.has(id) ? new Set(selectedIds) : new Set([id]);
+         if (!selectedIds.has(id)) setSelectedIds(ids);
+
+         const startX = event.clientX;
+         const startY = event.clientY;
+         const zoom = viewportRef.current.zoom;
+         let delta = { x: 0, y: 0 };
+         let moved = false;
+
+         const onMove = (moveEvent: PointerEvent) => {
+            delta = screenDeltaToWorld(moveEvent.clientX - startX, moveEvent.clientY - startY, zoom);
+            if (delta.x !== 0 || delta.y !== 0) moved = true;
+            setGroupDrag({ ids, delta });
+         };
+         const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            setGroupDrag(null);
+            if (moved) void actions.moveItems([...ids], delta);
+         };
+         window.addEventListener('pointermove', onMove);
+         window.addEventListener('pointerup', onUp);
+         setGroupDrag({ ids, delta });
+      },
+      [actions, selectedIds],
    );
 
    /**
@@ -233,26 +301,38 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    }, [actions]);
 
    // ==================
-   //  Delete the selected item via the keyboard
+   //  Keyboard: delete / duplicate the selection (ignored while editing text)
    // ==================
    useEffect(() => {
-      if (selectedId === null) return;
+      if (selectedIds.size === 0) return;
       const onKeyDown = (event: KeyboardEvent) => {
-         if (event.key !== 'Delete' && event.key !== 'Backspace') return;
          const target = event.target;
          if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
-         event.preventDefault();
-         handleDelete(selectedId);
+         if (event.key === 'Delete' || event.key === 'Backspace') {
+            event.preventDefault();
+            handleDeleteSelection();
+         } else if ((event.ctrlKey || event.metaKey) && (event.key === 'd' || event.key === 'D')) {
+            event.preventDefault();
+            void handleDuplicateSelection();
+         }
       };
       window.addEventListener('keydown', onKeyDown);
       return () => window.removeEventListener('keydown', onKeyDown);
-   }, [selectedId, handleDelete]);
+   }, [selectedIds, handleDeleteSelection, handleDuplicateSelection]);
 
    // ==================
    //  Pan (background drag) + background click clears selection
    // ==================
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
-      setSelectedId(null);
+      if (event.shiftKey) {
+         // Shift+drag is a marquee, not a pan; it keeps the current selection (additive).
+         const clip = event.currentTarget.getBoundingClientRect();
+         setMarquee({ x0: event.clientX, y0: event.clientY, x1: event.clientX, y1: event.clientY, clipLeft: clip.left, clipTop: clip.top });
+         event.currentTarget.setPointerCapture(event.pointerId);
+         return;
+      }
+      // A plain background drag pans and clears the selection.
+      setSelectedIds(new Set());
       const vp = viewportRef.current;
       panStart.current = { x: event.clientX, y: event.clientY, origX: vp.x, origY: vp.y, zoom: vp.zoom };
       setIsPanning(true);
@@ -260,6 +340,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    const handleBackgroundPointerMove = (event: ReactPointerEvent) => {
+      if (marquee) {
+         setMarquee((current) => (current ? { ...current, x1: event.clientX, y1: event.clientY } : null));
+         return;
+      }
       const start = panStart.current;
       if (!start) return;
       // Pan is in raw screen px (the world translate is applied before the scale).
@@ -267,9 +351,27 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    const handleBackgroundPointerUp = (event: ReactPointerEvent) => {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (marquee) {
+         // Ignore a tiny shift-click (no real drag) so it never selects under the point.
+         const dragged = Math.abs(marquee.x1 - marquee.x0) >= 3 || Math.abs(marquee.y1 - marquee.y0) >= 3;
+         if (dragged) {
+            const origin = { left: marquee.clipLeft, top: marquee.clipTop };
+            const a = screenToWorld(marquee.x0, marquee.y0, origin, viewportRef.current);
+            const b = screenToWorld(marquee.x1, marquee.y1, origin, viewportRef.current);
+            const hits = itemsInMarquee(Object.values(store.getState().items), {
+               minX: Math.min(a.x, b.x),
+               minY: Math.min(a.y, b.y),
+               maxX: Math.max(a.x, b.x),
+               maxY: Math.max(a.y, b.y),
+            });
+            setSelectedIds((prev) => new Set([...prev, ...hits]));
+         }
+         setMarquee(null);
+         return;
+      }
       panStart.current = null;
       setIsPanning(false);
-      event.currentTarget.releasePointerCapture(event.pointerId);
    };
 
    // ==================
@@ -295,7 +397,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          z,
          content: emptyContent(kind),
       });
-      setSelectedId(id);
+      setSelectedIds(new Set([id]));
    };
 
    /** Frames every spatial item, centered and zoom-clamped (origin when the board is empty). */
@@ -311,6 +413,29 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const next = GRID_CYCLE[(GRID_CYCLE.indexOf(grid.type) + 1) % GRID_CYCLE.length];
       void actions.setGrid({ ...grid, type: next });
    };
+
+   // Derived selection chrome. One selected -> the per-item toolbar; the live group-move
+   // delta applies to every item in the active drag.
+   const soleSelectedId = selectedIds.size === 1 ? [...selectedIds][0] : null;
+   const moveDeltaFor = (id: string) => (groupDrag && groupDrag.ids.has(id) ? groupDrag.delta : null);
+
+   // Two+ selected spatial items -> a group toolbar over their bounding box (shifted live
+   // during a group move). Connections (zero-size) don't anchor it.
+   const groupBbox = (() => {
+      if (selectedIds.size < 2) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, count = 0;
+      for (const id of selectedIds) {
+         const item = items[id];
+         if (!item || item.kind === 'connection') continue;
+         const delta = moveDeltaFor(id) ?? { x: 0, y: 0 };
+         minX = Math.min(minX, item.x + delta.x);
+         minY = Math.min(minY, item.y + delta.y);
+         maxX = Math.max(maxX, item.x + item.width + delta.x);
+         maxY = Math.max(maxY, item.y + item.height + delta.y);
+         count++;
+      }
+      return count >= 2 ? { x: minX, y: minY, width: maxX - minX, height: maxY - minY } : null;
+   })();
 
    return (
       <div
@@ -331,11 +456,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <BoardItemBox
                   key={item.id}
                   item={item}
-                  isSelected={item.id === selectedId}
+                  isSelected={selectedIds.has(item.id)}
+                  soleSelected={item.id === soleSelectedId}
                   isFrontmost={item.id === frontmostId}
                   zoom={viewport.zoom}
-                  onSelect={setSelectedId}
-                  onMove={actions.moveItem}
+                  moveDelta={moveDeltaFor(item.id)}
+                  isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
+                  onSelect={handleSelect}
+                  onMoveStart={handleMoveStart}
                   onResize={actions.resizeItem}
                   onUpdateContent={actions.updateItemContent}
                   onCacheLastKnown={actions.cacheReferenceLastKnown}
@@ -346,18 +474,49 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                />
             ))}
 
-            {/* Connections (+ the connect-drag preview) render ABOVE the item boxes. */}
+            {/* Group toolbar over the multi-selection's bounding box (per-item bars suppressed). */}
+            {groupBbox && (
+               <div className="absolute" style={{ left: groupBbox.x, top: groupBbox.y, width: groupBbox.width, height: groupBbox.height }}>
+                  <BoardGroupToolbar
+                     zoom={viewport.zoom}
+                     isMoving={!!groupDrag}
+                     onMoveStart={(event) => {
+                        const anchor = [...selectedIds][0];
+                        if (anchor) handleMoveStart(anchor, event);
+                     }}
+                     onDuplicate={() => void handleDuplicateSelection()}
+                     onDelete={handleDeleteSelection}
+                  />
+               </div>
+            )}
+
+            {/* Connections (+ the connect-drag preview) render ABOVE the item boxes. A connection
+                is highlighted only when it is the sole selection (groups are about spatial items). */}
             <BoardConnectionsLayer
                items={items}
                connections={connectionItems}
-               selectedId={selectedId}
+               selectedId={soleSelectedId}
                zoom={viewport.zoom}
                connectPreview={connectPreview}
-               onSelect={setSelectedId}
+               onSelect={(id) => handleSelect(id, false)}
                onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}
                onDelete={handleDelete}
             />
          </div>
+
+         {/* Marquee rectangle: a screen-space overlay (not the world layer), drawn while a
+             Shift+background drag is in progress. Inert so it never interferes with the drag. */}
+         {marquee && (
+            <div
+               className="pointer-events-none absolute border border-primary bg-primary/10"
+               style={{
+                  left: Math.min(marquee.x0, marquee.x1) - marquee.clipLeft,
+                  top: Math.min(marquee.y0, marquee.y1) - marquee.clipTop,
+                  width: Math.abs(marquee.x1 - marquee.x0),
+                  height: Math.abs(marquee.y1 - marquee.y0),
+               }}
+            />
+         )}
 
          {/* Floating palette + view controls: stop the pointer from starting a pan. */}
          <div

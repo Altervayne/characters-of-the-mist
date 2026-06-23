@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { MAX_ZOOM, MIN_ZOOM, clampZoom, fitViewport, gridSpacing, screenDeltaToWorld, screenToWorld, zoomToCursor } from './boardCoordinates';
+import { MAX_ZOOM, MIN_ZOOM, clampZoom, fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from './boardCoordinates';
 
 // -- Type Imports --
 import type { BoardItem, Viewport } from '@/lib/types/board';
@@ -139,5 +139,32 @@ describe('fitViewport', () => {
       const withConn = fitViewport([spatial('a', 100, 100, 100, 100), connection], clip, 40);
       const without = fitViewport([spatial('a', 100, 100, 100, 100)], clip, 40);
       expect(withConn).toEqual(without);
+   });
+});
+
+describe('itemsInMarquee', () => {
+   const items: BoardItem[] = [
+      spatial('a', 0, 0, 100, 100), // top-left
+      spatial('b', 300, 300, 100, 100), // bottom-right
+      spatial('c', 50, 50, 100, 100), // overlaps the box edge
+   ];
+
+   it('returns items whose bounds intersect the rect (overlap, not containment)', () => {
+      // A box covering the top-left region grazes 'a' and 'c' but not 'b'.
+      const hits = itemsInMarquee(items, { minX: -10, minY: -10, maxX: 120, maxY: 120 });
+      expect(hits.sort()).toEqual(['a', 'c']);
+   });
+
+   it('returns nothing for a rect clear of every item', () => {
+      expect(itemsInMarquee(items, { minX: 1000, minY: 1000, maxX: 1100, maxY: 1100 })).toEqual([]);
+   });
+
+   it('skips connections even when the rect covers their (zero-size) origin', () => {
+      const withConn: BoardItem[] = [
+         ...items,
+         { id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 0, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 1, color: '#000' } } },
+      ];
+      const hits = itemsInMarquee(withConn, { minX: -10, minY: -10, maxX: 500, maxY: 500 });
+      expect(hits).not.toContain('conn');
    });
 });

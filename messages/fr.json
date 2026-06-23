@@ -41,6 +41,8 @@
       "bringToFront": "[TO COMPLETE]",
       "sendToBack": "[TO COMPLETE]",
       "deleteItem": "[TO COMPLETE]",
+      "duplicateSelection": "[TO COMPLETE]",
+      "deleteSelection": "[TO COMPLETE]",
       "postItPlaceholder": "[TO COMPLETE]",
       "journalPlaceholder": "[TO COMPLETE]",
       "prevPage": "[TO COMPLETE]",

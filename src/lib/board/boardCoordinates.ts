@@ -69,6 +69,32 @@ export function gridSpacing(zoom: number): number {
    return Math.min(GRID_MAX_SCREEN, Math.max(GRID_MIN_SCREEN, 40 * zoom));
 }
 
+/** A world-space axis-aligned rectangle (e.g. a marquee), as min/max corners. */
+export interface WorldRect {
+   minX: number;
+   minY: number;
+   maxX: number;
+   maxY: number;
+}
+
+/**
+ * Returns the ids of every spatial item whose world bounds INTERSECT `rect` (connections,
+ * being zero-size, are skipped). Overlap, not containment, so grazing an item selects it -
+ * the expected marquee feel.
+ */
+export function itemsInMarquee(items: BoardItem[], rect: WorldRect): string[] {
+   return items
+      .filter(
+         (item) =>
+            item.kind !== 'connection' &&
+            item.x < rect.maxX &&
+            item.x + item.width > rect.minX &&
+            item.y < rect.maxY &&
+            item.y + item.height > rect.minY,
+      )
+      .map((item) => item.id);
+}
+
 /**
  * Returns the viewport that frames every spatial item (connections, being zero-size, are
  * skipped) centered in a clip of `clipSize`, with `padding` screen px of margin and the

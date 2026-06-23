@@ -1,5 +1,6 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
+import cuid from 'cuid';
 
 // -- Board Data Layer Imports --
 import { getBoard, linkBoardToDrawerItem, listItems, loadBoard, renameBoard as renameBoardRecord, saveBoard, saveBoardToLinkedDrawerItem, updateItem } from '@/lib/board/boardRepository';
@@ -7,12 +8,14 @@ import { DEFAULT_BOARD_GRID } from '@/lib/board/boardRecords';
 import { createBoardCommandEngine } from '@/lib/board/boardCommandEngine';
 import {
    createAddItemCommand,
+   createCompoundCommand,
    createDeleteItemCommand,
    createMoveItemCommand,
    createResizeItemCommand,
    createSetItemZCommand,
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
+import { connectionsReferencing } from '@/lib/board/boardConnections';
 
 // -- Store Imports --
 import { useAppGeneralStateStore } from './appGeneralStateStore';
@@ -66,6 +69,15 @@ export interface BoardState {
       hydrate: (boardId: string) => Promise<void>;
       addItem: (item: BoardItem) => Promise<void>;
       moveItem: (id: string, position: { x: number; y: number }) => Promise<void>;
+      /** Moves several items by a shared world delta as ONE undo step (single-select is a group of one). */
+      moveItems: (ids: string[], delta: { x: number; y: number }) => Promise<void>;
+      /** Deletes several items plus the connections referencing any of them (deduped) as ONE undo step. */
+      deleteItems: (ids: string[]) => Promise<void>;
+      /**
+       * Duplicates the spatial items in `ids` (offset, fresh ids) plus any connection whose
+       * BOTH endpoints were duplicated (remapped), as ONE undo step. Returns the new spatial ids.
+       */
+      duplicateItems: (ids: string[]) => Promise<string[]>;
       resizeItem: (id: string, patch: ResizePatch) => Promise<void>;
       setItemZ: (id: string, z: number) => Promise<void>;
       /** Raises an item above all others (`max(z) + 1` over the live items). */
@@ -253,6 +265,81 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, x: position.x, y: position.y } } }));
                await runItemMutation(createMoveItemCommand(id, position));
+            },
+
+            moveItems: async (ids, delta) => {
+               if (ids.length === 0 || (delta.x === 0 && delta.y === 0)) return;
+               markDirty();
+               const items = get().items;
+               const moves = ids
+                  .map((id) => items[id])
+                  .filter((item): item is BoardItem => !!item)
+                  .map((item) => ({ id: item.id, position: { x: item.x + delta.x, y: item.y + delta.y } }));
+               set((state) => {
+                  const next = { ...state.items };
+                  for (const move of moves) {
+                     const existing = next[move.id];
+                     if (existing) next[move.id] = { ...existing, x: move.position.x, y: move.position.y };
+                  }
+                  return { items: next };
+               });
+               await runItemMutation(createCompoundCommand(moves.map((move) => createMoveItemCommand(move.id, move.position))));
+            },
+
+            deleteItems: async (ids) => {
+               if (ids.length === 0) return;
+               markDirty();
+               const items = get().items;
+               // Expand with the connection cascade for every deleted item, deduped (two
+               // selected items sharing a line must not delete it twice).
+               const toDelete = new Set<string>(ids);
+               for (const id of ids) for (const connectionId of connectionsReferencing(items, id)) toDelete.add(connectionId);
+               const finalIds = [...toDelete];
+               set((state) => {
+                  const next = { ...state.items };
+                  for (const id of finalIds) delete next[id];
+                  return { items: next };
+               });
+               await runItemMutation(createCompoundCommand(finalIds.map((id) => createDeleteItemCommand(id))));
+            },
+
+            duplicateItems: async (ids) => {
+               const boardId = get().boardId;
+               if (!boardId || ids.length === 0) return [];
+               markDirty();
+               const items = get().items;
+               const OFFSET = 16; // small world nudge so the copies don't hide under the originals
+
+               // Copy each selected SPATIAL item with a fresh id; the map remaps connections.
+               const spatial = ids.map((id) => items[id]).filter((item): item is BoardItem => !!item && item.kind !== 'connection');
+               const idMap = new Map<string, string>();
+               for (const item of spatial) idMap.set(item.id, cuid());
+               let z = Object.values(items).reduce((max, item) => Math.max(max, item.z), 0) + 1;
+
+               const newRecords: BoardItemRecord[] = [];
+               const newSpatialIds: string[] = [];
+               for (const item of spatial) {
+                  const id = idMap.get(item.id)!;
+                  newSpatialIds.push(id);
+                  newRecords.push({ ...item, id, boardId, x: item.x + OFFSET, y: item.y + OFFSET, z: z++ });
+               }
+               // A connection is duplicated only when BOTH its endpoints were duplicated; the
+               // copy points at the new ids (never the originals). One-endpoint-outside is skipped.
+               for (const item of Object.values(items)) {
+                  if (item.content.kind !== 'connection') continue;
+                  const from = idMap.get(item.content.from);
+                  const to = idMap.get(item.content.to);
+                  if (!from || !to) continue;
+                  newRecords.push({ ...item, id: cuid(), boardId, z: z++, content: { ...item.content, from, to } });
+               }
+
+               set((state) => {
+                  const next = { ...state.items };
+                  for (const record of newRecords) next[record.id] = recordToItem(record);
+                  return { items: next };
+               });
+               await runItemMutation(createCompoundCommand(newRecords.map((record) => createAddItemCommand(record))));
+               return newSpatialIds;
             },
 
             resizeItem: async (id, patch) => {

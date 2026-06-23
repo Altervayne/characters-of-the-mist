@@ -239,6 +239,23 @@ export function createUpdateItemContentCommand(id: string, content: BoardItemCon
 }
 
 /**
+ * Bundles several commands into one undo step: `do()` runs them in order, `undo()`
+ * reverts in reverse order. Used for group move/delete/duplicate, where the whole
+ * operation must be a single Ctrl+Z. Not coalescible (a group op is one discrete step).
+ */
+export function createCompoundCommand(commands: BoardCommand[]): BoardCommand {
+   return {
+      label: 'compound',
+      async do() {
+         for (const command of commands) await command.do();
+      },
+      async undo() {
+         for (let i = commands.length - 1; i >= 0; i--) await commands[i].undo();
+      },
+   };
+}
+
+/**
  * Delete an item (any kind, including connection). Captures the full record before
  * deleting; undo re-adds it verbatim (id-stable), and redo deletes it again.
  */

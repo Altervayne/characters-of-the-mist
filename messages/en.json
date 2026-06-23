@@ -41,6 +41,8 @@
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
       "deleteItem": "Delete",
+      "duplicateSelection": "Duplicate",
+      "deleteSelection": "Delete selection",
       "postItPlaceholder": "Write a note…",
       "journalPlaceholder": "Write…",
       "prevPage": "Previous page",

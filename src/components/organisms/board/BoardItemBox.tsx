@@ -32,13 +32,22 @@ const HANDLE_SCREEN_SIZE = 14;
 
 interface BoardItemBoxProps {
    item: BoardItem;
+   /** In the selection set (draws the ring). */
    isSelected: boolean;
+   /** The ONLY selected item: shows the per-item toolbar + resize grip (suppressed in a multi-selection). */
+   soleSelected: boolean;
    /** Whether this item is already the frontmost; a plain click on it then needs no raise. */
    isFrontmost: boolean;
    /** Current zoom, so screen deltas convert to world deltas and chrome stays screen-constant. */
    zoom: number;
-   onSelect: (id: string) => void;
-   onMove: (id: string, position: { x: number; y: number }) => void;
+   /** Live world offset during an active group move (null when idle); renders the box at the offset. */
+   moveDelta: { x: number; y: number } | null;
+   /** Whether this item is part of the active group move (drives the grip cursor). */
+   isMoving: boolean;
+   /** Selects this item; `additive` (Shift/Ctrl) toggles it in/out of the set instead of replacing. */
+   onSelect: (id: string, additive: boolean) => void;
+   /** Pointer-down on the move grip; the canvas owns the (group-aware) move gesture. */
+   onMoveStart: (id: string, event: ReactPointerEvent) => void;
    onResize: (id: string, patch: ResizePatch) => void;
    onUpdateContent: (id: string, content: BoardItemContent) => void;
    /** Direct (non-undoable) cache write for a reference item's last-known snapshot. */
@@ -61,10 +70,13 @@ interface DragRect {
 export function BoardItemBox({
    item,
    isSelected,
+   soleSelected,
    isFrontmost,
    zoom,
+   moveDelta,
+   isMoving,
    onSelect,
-   onMove,
+   onMoveStart,
    onResize,
    onUpdateContent,
    onCacheLastKnown,
@@ -73,55 +85,22 @@ export function BoardItemBox({
    onDelete,
    onConnectStart,
 }: BoardItemBoxProps) {
-   // Live gesture state for rendering; the commit reads from refs (below) so it never
-   // depends on a stale handler closure. `moveOffset` is a world-space delta during a
-   // move; `resizeRect` is the full live rect during a resize. Only one is active.
-   const [moveOffset, setMoveOffset] = useState<{ x: number; y: number } | null>(null);
+   // Live resize rect (full rect during a resize); the commit reads from the ref so it
+   // never depends on a stale closure. The group move offset is owned by the canvas and
+   // arrives as `moveDelta`.
    const [resizeRect, setResizeRect] = useState<DragRect | null>(null);
-   const moveStart = useRef<{ x: number; y: number; moved: boolean; offset: { x: number; y: number } } | null>(null);
    const resizeStart = useRef<{ x: number; y: number; orig: DragRect; rect: DragRect } | null>(null);
 
    // The toolbar's per-kind slot, state-backed so the body re-renders to portal into it
    // once it mounts (and portals nothing while the item is unselected and the bar is gone).
    const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
 
-   // The rect to render: a live resize wins, else the base rect plus any move offset.
+   // The rect to render: a live resize wins, else the base rect plus any active group-move offset.
    const rect: DragRect = resizeRect ?? {
-      x: item.x + (moveOffset?.x ?? 0),
-      y: item.y + (moveOffset?.y ?? 0),
+      x: item.x + (moveDelta?.x ?? 0),
+      y: item.y + (moveDelta?.y ?? 0),
       width: item.width,
       height: item.height,
-   };
-
-   // ==================
-   //  Move (from the toolbar grip)
-   // ==================
-
-   const handleMovePointerDown = (event: ReactPointerEvent) => {
-      event.stopPropagation(); // don't start a background pan
-      onSelect(item.id);
-      moveStart.current = { x: event.clientX, y: event.clientY, moved: false, offset: { x: 0, y: 0 } };
-      setMoveOffset({ x: 0, y: 0 });
-      event.currentTarget.setPointerCapture(event.pointerId);
-   };
-
-   const handleMovePointerMove = (event: ReactPointerEvent) => {
-      const start = moveStart.current;
-      if (!start) return;
-      const delta = screenDeltaToWorld(event.clientX - start.x, event.clientY - start.y, zoom);
-      if (delta.x !== 0 || delta.y !== 0) start.moved = true;
-      start.offset = delta;
-      setMoveOffset(delta);
-   };
-
-   const handleMovePointerUp = (event: ReactPointerEvent) => {
-      const start = moveStart.current;
-      moveStart.current = null;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      // One drag = one command, dispatched only on release (offset from the ref, never a
-      // stale closure). A grip click without movement is a no-op.
-      if (start?.moved) onMove(item.id, { x: item.x + start.offset.x, y: item.y + start.offset.y });
-      setMoveOffset(null);
    };
 
    // ==================
@@ -130,10 +109,11 @@ export function BoardItemBox({
 
    const handleBodyPointerDown = (event: ReactPointerEvent) => {
       event.stopPropagation(); // don't start a background pan
-      onSelect(item.id);
-      // Click-raises-to-front, kept from the old body-drag chrome. In-body text fields stop
-      // propagation, so editing never raises (and never reaches here).
-      if (!isFrontmost) onBringToFront(item.id);
+      const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+      onSelect(item.id, additive);
+      // A plain click raises the item (kept from the old body-drag chrome); an additive
+      // toggle must not reorder. In-body text fields stop propagation, so editing never raises.
+      if (!additive && !isFrontmost) onBringToFront(item.id);
    };
 
    // ==================
@@ -142,7 +122,7 @@ export function BoardItemBox({
 
    const handleResizePointerDown = (event: ReactPointerEvent) => {
       event.stopPropagation();
-      onSelect(item.id);
+      onSelect(item.id, false);
       const orig = { x: item.x, y: item.y, width: item.width, height: item.height };
       resizeStart.current = { x: event.clientX, y: event.clientY, orig, rect: orig };
       setResizeRect(orig);
@@ -199,16 +179,18 @@ export function BoardItemBox({
                onContentChange={(content) => onUpdateContent(item.id, content)}
                onCacheLastKnown={onCacheLastKnown}
                onDelete={onDelete}
-               onRequestSelect={() => onSelect(item.id)}
+               onRequestSelect={() => onSelect(item.id, false)}
             />
          </div>
 
-         {isSelected && (
+         {/* Per-item chrome only for the sole selection; a multi-selection uses the group
+             toolbar (rendered by the canvas) to avoid clutter, keeping only the rings. */}
+         {soleSelected && (
             <>
                <BoardItemToolbar
                   zoom={zoom}
-                  isMoving={moveOffset !== null}
-                  moveHandle={{ onPointerDown: handleMovePointerDown, onPointerMove: handleMovePointerMove, onPointerUp: handleMovePointerUp }}
+                  isMoving={isMoving}
+                  onMoveStart={(event) => onMoveStart(item.id, event)}
                   onConnectStart={(event) => onConnectStart(item.id, event)}
                   onBringToFront={() => onBringToFront(item.id)}
                   onSendToBack={() => onSendToBack(item.id)}

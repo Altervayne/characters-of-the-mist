@@ -18,18 +18,12 @@ import { cn } from '@/lib/utils';
  * above the item lives inside the scaled wrapper, so it stays constant too.
  */
 
-/** Pointer handlers the box wires to the move grip (the move gesture lives in the box). */
-interface MoveHandleProps {
-   onPointerDown: (event: ReactPointerEvent) => void;
-   onPointerMove: (event: ReactPointerEvent) => void;
-   onPointerUp: (event: ReactPointerEvent) => void;
-}
-
 interface BoardItemToolbarProps {
    zoom: number;
    /** Drives the grip cursor (grab vs grabbing) during a move. */
    isMoving: boolean;
-   moveHandle: MoveHandleProps;
+   /** Pointer-down on the grip; the move gesture itself is owned by the canvas (group-aware). */
+   onMoveStart: (event: ReactPointerEvent) => void;
    onConnectStart: (event: ReactPointerEvent) => void;
    onBringToFront: () => void;
    onSendToBack: () => void;
@@ -38,7 +32,7 @@ interface BoardItemToolbarProps {
    slotRef: (node: HTMLDivElement | null) => void;
 }
 
-export function BoardItemToolbar({ zoom, isMoving, moveHandle, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef }: BoardItemToolbarProps) {
+export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef }: BoardItemToolbarProps) {
    const { t } = useTranslation();
 
    return (
@@ -52,7 +46,10 @@ export function BoardItemToolbar({ zoom, isMoving, moveHandle, onConnectStart, o
                {/* Move grip: owns the move gesture. A separate element from connect so the two
                    drags never get confused. */}
                <div
-                  {...moveHandle}
+                  onPointerDown={(event) => {
+                     event.stopPropagation();
+                     onMoveStart(event);
+                  }}
                   title={t('BoardView.moveItem')}
                   aria-label={t('BoardView.moveItem')}
                   className={cn('flex items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted', isMoving ? 'cursor-grabbing' : 'cursor-grab')}
