@@ -1,3 +1,6 @@
+// -- Local Imports --
+import { MIN_ITEM_SIZE } from './boardResize';
+
 // -- Type Imports --
 import type { BoardItem } from '@/lib/types/board';
 
@@ -39,4 +42,21 @@ export function zoneContaining(item: Placed, zones: BoardItem[]): string | null 
       }
    }
    return bestId;
+}
+
+/**
+ * The smallest a zone may be resized to: from its origin to the farthest member right/bottom edge,
+ * so the frame never shrinks out from under its contents. Resize is bottom-right with x/y pinned, so
+ * only the right/bottom extent constrains it; each axis floors at {@link MIN_ITEM_SIZE}, and a zone
+ * with no members floors at {@link MIN_ITEM_SIZE} on both. `members` are the items whose `zoneId`
+ * is this zone's id.
+ */
+export function zoneContentMinSize(zone: { x: number; y: number }, members: BoardItem[]): { width: number; height: number } {
+   let width = MIN_ITEM_SIZE;
+   let height = MIN_ITEM_SIZE;
+   for (const member of members) {
+      width = Math.max(width, member.x + member.width - zone.x);
+      height = Math.max(height, member.y + member.height - zone.y);
+   }
+   return { width, height };
 }

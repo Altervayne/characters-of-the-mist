@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { screenDeltaToWorld } from '@/lib/board/boardCoordinates';
 import { MIN_ITEM_SIZE, computeResize, effectiveHeight } from '@/lib/board/boardResize';
 import { COLLAPSED_BAR_HEIGHT, COLLAPSED_BAR_WIDTH } from '@/lib/board/zoneCollapse';
+import { ZONE_TITLE_BAR_HEIGHT } from './items/ZoneItem';
 
 // -- Component Imports --
 import { BoardItemBody } from './items/BoardItemBody';
@@ -70,6 +71,8 @@ interface BoardItemBoxProps {
    onConnectStart: (id: string, event: ReactPointerEvent) => void;
    /** The behind-items layer a zone portals its tinted background rectangle into (null for non-zones). */
    backLayer?: HTMLElement | null;
+   /** Lower bound for the resize (a zone passes its member extent); each axis defaults to MIN_ITEM_SIZE. */
+   resizeMin?: { width: number; height: number };
 }
 
 /** A live drag rect during a move/resize gesture (world coords); `null` when idle. */
@@ -99,6 +102,7 @@ export function BoardItemBox({
    onDelete,
    onConnectStart,
    backLayer,
+   resizeMin,
 }: BoardItemBoxProps) {
    // Live resize rect (full rect during a resize); the commit reads from the ref so it
    // never depends on a stale closure. The group move offset is owned by the canvas and
@@ -183,9 +187,12 @@ export function BoardItemBox({
       const start = resizeStart.current;
       if (!start) return;
       const delta = screenDeltaToWorld(event.clientX - start.x, event.clientY - start.y, zoom);
-      // 2D resize; a min-height item floors its height at the live content height (can't be
-      // dragged shorter than its content, which would clip/scroll).
-      const next = computeResize(start.orig, delta, minHeight ? Math.max(MIN_ITEM_SIZE, contentHeight) : MIN_ITEM_SIZE);
+      // 2D resize; a min-height item floors its height at the live content height, and a zone floors
+      // both axes at `resizeMin` (its member extent), so neither can be dragged smaller than it holds.
+      const next = computeResize(start.orig, delta, {
+         width: resizeMin?.width ?? MIN_ITEM_SIZE,
+         height: minHeight ? Math.max(MIN_ITEM_SIZE, contentHeight) : resizeMin?.height ?? MIN_ITEM_SIZE,
+      });
       start.rect = next;
       setResizeRect(next);
    };
@@ -303,6 +310,8 @@ export function BoardItemBox({
                <BoardItemToolbar
                   zoom={zoom}
                   isMoving={isMoving}
+                  // An expanded zone's title bar sits above the frame too; lift the toolbar above it.
+                  extraBottom={isZone && !isCollapsedZone ? ZONE_TITLE_BAR_HEIGHT + 4 : 0}
                   onMoveStart={(event) => onMoveStart(item.id, event)}
                   onConnectStart={(event) => onConnectStart(item.id, event)}
                   onBringToFront={() => onBringToFront(item.id)}

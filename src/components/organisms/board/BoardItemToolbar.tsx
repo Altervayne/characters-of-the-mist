@@ -31,15 +31,17 @@ interface BoardItemToolbarProps {
    onDelete: () => void;
    /** Mount point for the selected item's own actions (the per-kind slot). */
    slotRef: (node: HTMLDivElement | null) => void;
+   /** Extra world-px lift above the item's top edge (a zone passes its title-bar height so the bar shows). */
+   extraBottom?: number;
 }
 
-export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef }: BoardItemToolbarProps) {
+export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef, extraBottom = 0 }: BoardItemToolbarProps) {
    const { t } = useTranslation();
 
    return (
       <div
          className="absolute left-1/2"
-         style={{ bottom: '100%', transformOrigin: '50% 100%', transform: `translateX(-50%) scale(${1 / zoom})` }}
+         style={{ bottom: extraBottom ? `calc(100% + ${extraBottom}px)` : '100%', transformOrigin: '50% 100%', transform: `translateX(-50%) scale(${1 / zoom})` }}
       >
          {/* The padding is the screen-constant gap above the item (it scales with the bar). */}
          <div className="pb-2">

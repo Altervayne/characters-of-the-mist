@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 // -- Utils Imports --
+import { cn } from '@/lib/utils';
 import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 
 // -- Component Imports --
@@ -26,6 +27,9 @@ import type { BoardItemContent, ZoneBoardContent } from '@/lib/types/board';
 
 /** Tint quick-picks for a zone (rendered at low opacity behind the items). */
 const ZONE_PALETTE = ['#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981', '#14b8a6', '#3b82f6', '#64748b'] as const;
+
+/** The expanded title bar's height (world units); the box lifts the selection toolbar above it. */
+export const ZONE_TITLE_BAR_HEIGHT = 26;
 
 interface ZoneItemProps {
    content: ZoneBoardContent;
@@ -132,9 +136,16 @@ export function ZoneItem({ content, isSelected, toolbarSlot, memberCount, onCont
                )}
             </div>
          ) : (
+            // A full-width title bar just ABOVE the frame (the proven spot that doesn't steal the
+            // interior items' toolbars). Tinted by the zone color (echoing the frame fill) so it
+            // reads as a bar; the label fills the rest and ellipsizes when it overflows.
             <div
                onPointerDown={(event) => { event.stopPropagation(); onRequestSelect(); }}
-               className="pointer-events-auto absolute bottom-full left-0 mb-0.5 flex max-w-[16rem] items-center gap-0.5 rounded-md px-1 py-0.5"
+               style={{ height: ZONE_TITLE_BAR_HEIGHT, ...(swatchColor ? { backgroundColor: `${swatchColor}1f`, borderColor: swatchColor } : {}) }}
+               className={cn(
+                  'pointer-events-auto absolute inset-x-0 bottom-full mb-0.5 flex items-center gap-0.5 rounded-md border px-1.5',
+                  !swatchColor && 'border-border bg-card/80',
+               )}
             >
                {chevron}
                {labelInput}

@@ -1,8 +1,8 @@
 /*
  * Pure resize math for the board item box. The bottom-right grip grows width/height with
- * x/y pinned. Min-height kinds (e.g. the dice tray) pass their live content height as the
- * height floor, so a drag can make the box TALLER but never shorter than its content (which
- * is the scroll/clip the user rejected).
+ * x/y pinned. Some kinds floor an axis higher than {@link MIN_ITEM_SIZE}: the dice tray passes
+ * its live content height (can grow TALLER but never shorter than its content), and a zone passes
+ * the extent of its members (can't shrink so small it stops enclosing them).
  */
 
 /** Smallest a box may be resized to, in world units. */
@@ -15,17 +15,23 @@ export interface SizeRect {
    height: number;
 }
 
+/** Per-axis lower bounds for a resize; an omitted axis floors at {@link MIN_ITEM_SIZE}. */
+export interface SizeFloor {
+   width?: number;
+   height?: number;
+}
+
 /**
- * Applies a bottom-right resize delta to `orig` (width/height grow, x/y fixed). Width floors
- * at {@link MIN_ITEM_SIZE}; height floors at `minHeight` (default {@link MIN_ITEM_SIZE}) - pass
- * the content height for a min-height item so it can't be dragged shorter than its content.
+ * Applies a bottom-right resize delta to `orig` (width/height grow, x/y fixed). Each axis floors
+ * at the matching `min` value, defaulting to {@link MIN_ITEM_SIZE} - pass a higher floor for a
+ * min-content kind (the dice tray's content height, a zone's member extent).
  */
-export function computeResize(orig: SizeRect, delta: { x: number; y: number }, minHeight: number = MIN_ITEM_SIZE): SizeRect {
+export function computeResize(orig: SizeRect, delta: { x: number; y: number }, min: SizeFloor = {}): SizeRect {
    return {
       x: orig.x,
       y: orig.y,
-      width: Math.max(MIN_ITEM_SIZE, orig.width + delta.x),
-      height: Math.max(minHeight, orig.height + delta.y),
+      width: Math.max(min.width ?? MIN_ITEM_SIZE, orig.width + delta.x),
+      height: Math.max(min.height ?? MIN_ITEM_SIZE, orig.height + delta.y),
    };
 }
 

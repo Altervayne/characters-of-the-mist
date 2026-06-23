@@ -14,7 +14,7 @@ import { Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid,
 import { cn } from '@/lib/utils';
 import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
-import { zoneContaining } from '@/lib/board/zoneMembership';
+import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -481,29 +481,35 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const nonZoneSelected = nonZoneItems.filter((item) => selectedIds.has(item.id));
 
    /** Renders one item box. Shared by the non-zone and zone passes; zones use `backLayer` for their background. */
-   const renderBox = (item: BoardItem) => (
-      <BoardItemBox
-         key={item.id}
-         item={item}
-         isSelected={selectedIds.has(item.id)}
-         soleSelected={item.id === soleSelectedId}
-         memberCount={item.kind === 'zone' ? Object.values(items).filter((other) => other.zoneId === item.id).length : undefined}
-         zoom={viewport.zoom}
-         moveDelta={moveDeltaFor(item.id)}
-         isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
-         onSelect={handleSelect}
-         onMoveStart={handleMoveStart}
-         onResize={actions.resizeItem}
-         onSyncSize={actions.syncItemSize}
-         onUpdateContent={actions.updateItemContent}
-         onCacheLastKnown={actions.cacheReferenceLastKnown}
-         onBringToFront={actions.bringToFront}
-         onSendToBack={actions.sendToBack}
-         onDelete={handleDelete}
-         onConnectStart={handleConnectStart}
-         backLayer={backLayer}
-      />
-   );
+   const renderBox = (item: BoardItem) => {
+      // A zone carries its member count (collapsed-bar badge) and a resize floor (the extent of its
+      // members), so it can't be dragged smaller than it encloses; other kinds floor at MIN_ITEM_SIZE.
+      const members = item.kind === 'zone' ? Object.values(items).filter((other) => other.zoneId === item.id) : null;
+      return (
+         <BoardItemBox
+            key={item.id}
+            item={item}
+            isSelected={selectedIds.has(item.id)}
+            soleSelected={item.id === soleSelectedId}
+            memberCount={members?.length}
+            resizeMin={members ? zoneContentMinSize(item, members) : undefined}
+            zoom={viewport.zoom}
+            moveDelta={moveDeltaFor(item.id)}
+            isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
+            onSelect={handleSelect}
+            onMoveStart={handleMoveStart}
+            onResize={actions.resizeItem}
+            onSyncSize={actions.syncItemSize}
+            onUpdateContent={actions.updateItemContent}
+            onCacheLastKnown={actions.cacheReferenceLastKnown}
+            onBringToFront={actions.bringToFront}
+            onSendToBack={actions.sendToBack}
+            onDelete={handleDelete}
+            onConnectStart={handleConnectStart}
+            backLayer={backLayer}
+         />
+      );
+   };
 
    return (
       <div
@@ -675,7 +681,7 @@ function BoardNameField({ name, placeholder, onCommit }: { name: string; placeho
                event.currentTarget.blur();
             }
          }}
-         className="pointer-events-auto w-64 max-w-[60vw] truncate rounded-md border border-transparent bg-card/80 px-3 py-1 text-center text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm hover:border-border focus:border-border focus:bg-card focus:outline-none"
+         className="pointer-events-auto w-96 max-w-[60vw] truncate rounded-md border border-transparent bg-card/80 px-3 py-1 text-center text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm hover:border-border focus:border-border focus:bg-card focus:outline-none"
       />
    );
 }

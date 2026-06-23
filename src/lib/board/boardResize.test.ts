@@ -25,13 +25,25 @@ describe('computeResize', () => {
    it('clamps height to the content floor: a min-height item cannot be dragged shorter than its content', () => {
       const contentHeight = 130;
       // A big negative vertical drag stops at the content height, not at MIN_ITEM_SIZE.
-      const result = computeResize(orig, { x: 0, y: -1000 }, contentHeight);
+      const result = computeResize(orig, { x: 0, y: -1000 }, { height: contentHeight });
       expect(result.height).toBe(contentHeight);
    });
 
    it('lets a min-height item be dragged taller than its content', () => {
-      const result = computeResize(orig, { x: 0, y: 90 }, 130);
+      const result = computeResize(orig, { x: 0, y: 90 }, { height: 130 });
       expect(result.height).toBe(240); // 150 + 90, above the floor
+   });
+
+   it('clamps width to a custom floor (a zone cannot shrink below its member extent)', () => {
+      const result = computeResize(orig, { x: -1000, y: -1000 }, { width: 160, height: 120 });
+      expect(result.width).toBe(160);
+      expect(result.height).toBe(120);
+   });
+
+   it('still floors the other axis at MIN_ITEM_SIZE when only one is given', () => {
+      const result = computeResize(orig, { x: -1000, y: -1000 }, { width: 160 });
+      expect(result.width).toBe(160);
+      expect(result.height).toBe(MIN_ITEM_SIZE);
    });
 });
 
