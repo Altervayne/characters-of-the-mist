@@ -27,7 +27,8 @@ interface ColorPickerPopoverProps {
    palette: readonly string[];
    recent: readonly string[];
    recentLabel: string;
-   removeLabel: string;
+   /** Omit to hide the remove action (e.g. a connection always keeps a color). */
+   removeLabel?: string;
    onApply: (color: string | undefined) => void;
 }
 

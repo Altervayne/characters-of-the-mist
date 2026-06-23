@@ -1,5 +1,5 @@
 // -- React Imports --
-import { type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
@@ -8,6 +8,10 @@ import { Trash2 } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { connectionEndpoints } from '@/lib/board/boardConnections';
+import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
+
+// -- Component Imports --
+import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 
 // -- Type Imports --
 import type { BoardItem, ConnectionBoardContent } from '@/lib/types/board';
@@ -20,13 +24,17 @@ import type { Point } from '@/lib/board/boardConnections';
  * wide transparent stroke makes a thin line easy to click). Lines are read live from the
  * endpoint items each render, so they follow movement/resize; a connection whose
  * endpoint is missing draws nothing (no orphan line). The selected line's width/color
- * are edited via discrete presets/swatches - each click is one undoable command.
+ * are edited from the midpoint toolbar - each change is one undoable command.
  */
 
 /** Line-width presets (world units), thin -> thick. */
 const WIDTH_PRESETS = [2, 4, 8];
-/** Colour swatches, chosen to read on both light and dark boards. */
-const COLOR_SWATCHES = ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#a855f7', '#64748b', '#0f172a', '#f8fafc'];
+/**
+ * The connection's curated palette: vivid colors chosen to read on light + dark boards.
+ * Deliberately distinct from the post-it pastels - the picker and recents are shared, the
+ * palette is per-context. A pick from here is NOT a "custom" color, so it never joins recents.
+ */
+const CONNECTION_PALETTE = ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#a855f7', '#f97316', '#64748b', '#0f172a', '#f8fafc'] as const;
 
 interface BoardConnectionsLayerProps {
    items: Record<string, BoardItem>;
@@ -42,6 +50,10 @@ interface BoardConnectionsLayerProps {
 
 export function BoardConnectionsLayer({ items, connections, selectedId, zoom, connectPreview, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
    const { t } = useTranslation();
+
+   // The selected line's live color while its picker is open: shown on the line before the
+   // single committed command on close (so a picker drag never floods undo).
+   const [colorPreview, setColorPreview] = useState<{ id: string; color: string } | null>(null);
 
    // The live preview line during a connect drag: source edge -> cursor (a free end).
    const previewLine = (() => {
@@ -66,6 +78,8 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
 
                const { from, to } = connectionEndpoints(fromItem, toItem);
                const isSelected = connection.id === selectedId;
+               // Show the live picker color on the selected line; otherwise the committed color.
+               const effectiveColor = colorPreview?.id === connection.id ? colorPreview.color : content.style.color;
 
                return (
                   <g key={connection.id}>
@@ -80,7 +94,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
                      )}
                      <line
                         x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                        stroke={content.style.color}
+                        stroke={effectiveColor}
                         strokeWidth={content.style.width}
                         strokeLinecap="round"
                      />
@@ -120,6 +134,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
             const { from, to } = connectionEndpoints(fromItem, toItem);
             const midX = (from.x + to.x) / 2;
             const midY = (from.y + to.y) / 2;
+            const effectiveColor = colorPreview?.id === selectedConnection.id ? colorPreview.color : content.style.color;
 
             return (
                <div
@@ -147,21 +162,13 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
 
                      <div className="h-5 w-px bg-border" />
 
-                     <div className="flex items-center gap-1" title={t('BoardView.lineColor')}>
-                        {COLOR_SWATCHES.map((color) => (
-                           <button
-                              key={color}
-                              type="button"
-                              aria-label={`${t('BoardView.lineColor')} ${color}`}
-                              onClick={() => onUpdateStyle(selectedConnection.id, { width: content.style.width, color })}
-                              className={cn(
-                                 'h-5 w-5 rounded-full border border-border cursor-pointer',
-                                 content.style.color === color && 'ring-2 ring-primary ring-offset-1 ring-offset-card',
-                              )}
-                              style={{ backgroundColor: color }}
-                           />
-                        ))}
-                     </div>
+                     <ConnectionColorControl
+                        connectionId={selectedConnection.id}
+                        style={content.style}
+                        effectiveColor={effectiveColor}
+                        onPreview={(color) => setColorPreview(color == null ? null : { id: selectedConnection.id, color })}
+                        onUpdateStyle={onUpdateStyle}
+                     />
 
                      <div className="h-5 w-px bg-border" />
 
@@ -179,5 +186,81 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, co
             );
          })()}
       </>
+   );
+}
+
+/**
+ * The connection's color control in the midpoint toolbar: a swatch trigger opening the
+ * shared (portaled) color popover. The full picker previews live on the line and commits a
+ * single `onUpdateStyle` on close; a curated/recent swatch commits once. Custom colors join
+ * the shared recents; curated ones do not. A line always keeps a color, so there is no
+ * remove (the popover hides it when no remove label is given).
+ */
+function ConnectionColorControl({
+   connectionId,
+   style,
+   effectiveColor,
+   onPreview,
+   onUpdateStyle,
+}: {
+   connectionId: string;
+   style: { width: number; color: string };
+   effectiveColor: string;
+   onPreview: (color: string | null) => void;
+   onUpdateStyle: (id: string, style: { width: number; color: string }) => void;
+}) {
+   const { t } = useTranslation();
+   const [open, setOpen] = useState(false);
+
+   // The commit reads from refs so it is correct from any close path (swatch / outside / Escape
+   // / unmount) and unaffected by stale closures.
+   const pendingRef = useRef<string | null>(null);
+   const styleRef = useRef(style);
+   useEffect(() => { styleRef.current = style; });
+
+   const commit = useCallback(() => {
+      const next = pendingRef.current;
+      if (next === null) return;
+      const current = styleRef.current;
+      if (next !== current.color) {
+         onUpdateStyle(connectionId, { width: current.width, color: next });
+         // Only colors from the full picker (not a curated vivid) join the shared recents.
+         if (!(CONNECTION_PALETTE as readonly string[]).includes(next)) pushRecentColor(next);
+      }
+      pendingRef.current = null;
+      onPreview(null);
+   }, [connectionId, onUpdateStyle, onPreview]);
+
+   // Commit any pending color if the control unmounts (the connection is deselected) before
+   // the popover's own dismiss fires.
+   const commitRef = useRef(commit);
+   useEffect(() => { commitRef.current = commit; });
+   useEffect(() => () => { commitRef.current(); }, []);
+
+   return (
+      <ColorPickerPopover
+         open={open}
+         onOpenChange={(next) => { if (!next) commit(); setOpen(next); }}
+         activeColor={effectiveColor}
+         palette={CONNECTION_PALETTE}
+         recent={readRecentColors()}
+         recentLabel={t('BoardView.recentColors')}
+         onApply={(color) => {
+            // A line always has a color; an (unused) remove resolves to the first palette entry.
+            const resolved = color ?? CONNECTION_PALETTE[0];
+            pendingRef.current = resolved;
+            onPreview(resolved);
+         }}
+         trigger={
+            <button
+               type="button"
+               title={t('BoardView.lineColor')}
+               aria-label={t('BoardView.lineColor')}
+               onPointerDown={(event) => event.stopPropagation()}
+               className="h-5 w-5 cursor-pointer rounded-full border border-border"
+               style={{ backgroundColor: effectiveColor }}
+            />
+         }
+      />
    );
 }

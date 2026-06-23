@@ -19,8 +19,8 @@ interface ColorPopoverProps {
    recent: readonly string[];
    /** Localised label for the recents row. */
    recentLabel: string;
-   /** Localised label for the remove action. */
-   removeLabel: string;
+   /** Localised label for the remove action. Omit to hide remove (e.g. a line always has a color). */
+   removeLabel?: string;
    /** Apply a color (undefined removes it). Does not close. */
    onApply: (color: string | undefined) => void;
    /** Close the popover (used by the discrete swatch / remove actions). */
@@ -58,16 +58,18 @@ export function ColorPopover({ activeColor, palette, recent, recentLabel, remove
             <ColorPicker value={activeColor ?? palette[0]} onChange={(color) => onApply(color)} />
          </div>
 
-         {/* Remove color */}
-         <div className="border-t border-border px-2 py-1.5">
-            <button
-               type="button"
-               onClick={() => { onApply(undefined); onClose(); }}
-               className="w-full cursor-pointer rounded px-1 py-0.5 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-               {removeLabel}
-            </button>
-         </div>
+         {/* Remove color (hidden when no label is supplied - e.g. a connection always has a color) */}
+         {removeLabel && (
+            <div className="border-t border-border px-2 py-1.5">
+               <button
+                  type="button"
+                  onClick={() => { onApply(undefined); onClose(); }}
+                  className="w-full cursor-pointer rounded px-1 py-0.5 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+               >
+                  {removeLabel}
+               </button>
+            </div>
+         )}
       </div>
    );
 }
