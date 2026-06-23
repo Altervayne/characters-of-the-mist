@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
@@ -22,11 +23,13 @@ import type { BoardItemContent, JournalBoardContent } from '@/lib/types/board';
 interface JournalItemProps {
    content: JournalBoardContent;
    isSelected: boolean;
+   /** The selection toolbar's action slot; add/remove-page portal here, page nav stays in the body. */
+   toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
 }
 
-export function JournalItem({ content, isSelected, onContentChange, onRequestSelect }: JournalItemProps) {
+export function JournalItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: JournalItemProps) {
    const { t } = useTranslation();
    // A journal always has at least one page; tolerate an empty array defensively.
    const pages = content.pages.length > 0 ? content.pages : [''];
@@ -79,22 +82,24 @@ export function JournalItem({ content, isSelected, onContentChange, onRequestSel
 
    return (
       <div className="flex h-full w-full flex-col bg-card text-card-foreground">
-         {/* Controls bar (the bar itself is a drag region; the buttons stop propagation). */}
-         <div className="flex shrink-0 items-center justify-between gap-1 border-b border-border px-1.5 py-1 text-xs">
-            <div className="flex items-center gap-0.5">
-               <ControlButton title={t('BoardView.prevPage')} disabled={pageIndex === 0} onPointerDown={stopDrag} onClick={goPrev}>
-                  <ChevronLeft className="h-3.5 w-3.5" />
-               </ControlButton>
-               <span className="px-1 tabular-nums text-muted-foreground">
-                  {pageIndex + 1} / {pages.length}
-               </span>
-               <ControlButton title={t('BoardView.nextPage')} disabled={pageIndex === pages.length - 1} onPointerDown={stopDrag} onClick={goNext}>
-                  <ChevronRight className="h-3.5 w-3.5" />
-               </ControlButton>
-            </div>
-            <div className="flex items-center gap-0.5">
+         {/* Page navigation stays in the body, beside the pages it pages through; the
+             structural add/remove-page actions live in the selection toolbar. */}
+         <div className="flex shrink-0 items-center justify-center gap-0.5 border-b border-border px-1.5 py-1 text-xs">
+            <ControlButton title={t('BoardView.prevPage')} disabled={pageIndex === 0} onPointerDown={stopDrag} onClick={goPrev}>
+               <ChevronLeft className="h-3.5 w-3.5" />
+            </ControlButton>
+            <span className="px-1 tabular-nums text-muted-foreground">
+               {pageIndex + 1} / {pages.length}
+            </span>
+            <ControlButton title={t('BoardView.nextPage')} disabled={pageIndex === pages.length - 1} onPointerDown={stopDrag} onClick={goNext}>
+               <ChevronRight className="h-3.5 w-3.5" />
+            </ControlButton>
+         </div>
+
+         {isSelected && toolbarSlot && createPortal(
+            <>
                <ControlButton title={t('BoardView.addPage')} onPointerDown={stopDrag} onClick={addPage}>
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                </ControlButton>
                <ControlButton
                   title={t('BoardView.removePage')}
@@ -102,10 +107,11 @@ export function JournalItem({ content, isSelected, onContentChange, onRequestSel
                   onPointerDown={stopDrag}
                   onClick={removePage}
                >
-                  <Minus className="h-3.5 w-3.5" />
+                  <Minus className="h-4 w-4" />
                </ControlButton>
-            </div>
-         </div>
+            </>,
+            toolbarSlot,
+         )}
 
          <textarea
             value={text}

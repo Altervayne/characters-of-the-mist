@@ -32,6 +32,7 @@
       "addJournal": "Add journal",
       "addImage": "Add image",
       "returnToOrigin": "Reset view",
+      "moveItem": "Move",
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
       "deleteItem": "Delete",

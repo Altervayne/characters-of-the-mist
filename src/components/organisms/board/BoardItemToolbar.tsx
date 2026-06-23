@@ -1,0 +1,112 @@
+// -- React Imports --
+import { useTranslation } from 'react-i18next';
+import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
+
+// -- Icon Imports --
+import { ArrowDownToLine, ArrowUpToLine, GripVertical, Spline, Trash2 } from 'lucide-react';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
+/*
+ * The floating action bar for a selected board item: a frosted row that pops up offset
+ * above the item, holding every action (move, connect, raise/lower, the item's own
+ * actions, delete). The body is left for content alone - move is the grip here, not a
+ * body drag, so text items can be edited without a move stealing the pointer.
+ *
+ * The whole bar counter-scales by 1/zoom so it stays a constant on-screen size; the gap
+ * above the item lives inside the scaled wrapper, so it stays constant too.
+ */
+
+/** Pointer handlers the box wires to the move grip (the move gesture lives in the box). */
+interface MoveHandleProps {
+   onPointerDown: (event: ReactPointerEvent) => void;
+   onPointerMove: (event: ReactPointerEvent) => void;
+   onPointerUp: (event: ReactPointerEvent) => void;
+}
+
+interface BoardItemToolbarProps {
+   zoom: number;
+   /** Drives the grip cursor (grab vs grabbing) during a move. */
+   isMoving: boolean;
+   moveHandle: MoveHandleProps;
+   onConnectStart: (event: ReactPointerEvent) => void;
+   onBringToFront: () => void;
+   onSendToBack: () => void;
+   onDelete: () => void;
+   /** Mount point for the selected item's own actions (the per-kind slot). */
+   slotRef: (node: HTMLDivElement | null) => void;
+}
+
+export function BoardItemToolbar({ zoom, isMoving, moveHandle, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef }: BoardItemToolbarProps) {
+   const { t } = useTranslation();
+
+   return (
+      <div
+         className="absolute left-0"
+         style={{ bottom: '100%', transformOrigin: '0 100%', transform: `scale(${1 / zoom})` }}
+      >
+         {/* The padding is the screen-constant gap above the item (it scales with the bar). */}
+         <div className="pb-2">
+            <div className="flex items-center gap-0.5 rounded-lg border border-border bg-popover/90 p-1 shadow-md backdrop-blur-sm">
+               {/* Move grip: owns the move gesture. A separate element from connect so the two
+                   drags never get confused. */}
+               <div
+                  {...moveHandle}
+                  title={t('BoardView.moveItem')}
+                  aria-label={t('BoardView.moveItem')}
+                  className={cn('flex items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted', isMoving ? 'cursor-grabbing' : 'cursor-grab')}
+               >
+                  <GripVertical className="h-4 w-4" />
+               </div>
+
+               {/* Connect handle: pointer-down starts a connection drag (not a move). */}
+               <div
+                  onPointerDown={(event) => {
+                     event.stopPropagation();
+                     onConnectStart(event);
+                  }}
+                  title={t('BoardView.connect')}
+                  aria-label={t('BoardView.connect')}
+                  className="flex cursor-crosshair items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted"
+               >
+                  <Spline className="h-4 w-4" />
+               </div>
+
+               <ToolbarButton title={t('BoardView.bringToFront')} onClick={onBringToFront}>
+                  <ArrowUpToLine className="h-4 w-4" />
+               </ToolbarButton>
+               <ToolbarButton title={t('BoardView.sendToBack')} onClick={onSendToBack}>
+                  <ArrowDownToLine className="h-4 w-4" />
+               </ToolbarButton>
+
+               {/* Per-kind action slot: the selected item portals its own actions in here. */}
+               <div ref={slotRef} className="flex items-center gap-0.5" />
+
+               <ToolbarButton title={t('BoardView.deleteItem')} destructive onClick={onDelete}>
+                  <Trash2 className="h-4 w-4" />
+               </ToolbarButton>
+            </div>
+         </div>
+      </div>
+   );
+}
+
+/** A frosted icon button in the bar; stops the pointer from starting a move/pan, click still fires. */
+function ToolbarButton({ title, destructive = false, onClick, children }: { title: string; destructive?: boolean; onClick: () => void; children: ReactNode }) {
+   return (
+      <button
+         type="button"
+         title={title}
+         aria-label={title}
+         onPointerDown={(event) => event.stopPropagation()}
+         onClick={onClick}
+         className={cn(
+            'flex cursor-pointer items-center justify-center rounded p-1',
+            destructive ? 'text-destructive hover:bg-destructive/15' : 'text-popover-foreground hover:bg-muted',
+         )}
+      >
+         {children}
+      </button>
+   );
+}

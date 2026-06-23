@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -31,11 +32,13 @@ import type { BoardItemContent, ImageBoardContent } from '@/lib/types/board';
 interface ImageItemProps {
    content: ImageBoardContent;
    isSelected: boolean;
+   /** The selection toolbar's action slot; the fit/change/remove controls portal here. */
+   toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
 }
 
-export function ImageItem({ content, isSelected, onContentChange, onRequestSelect }: ImageItemProps) {
+export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: ImageItemProps) {
    const { t } = useTranslation();
    const { url, isLoading } = useAssetObjectUrl(content.assetId);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -90,19 +93,21 @@ export function ImageItem({ content, isSelected, onContentChange, onRequestSelec
             </div>
          )}
 
-         {/* On-image controls, shown only when the item is selected. */}
-         {url && !showSpinner && isSelected && (
-            <div className="absolute right-1 top-1 flex gap-1">
+         {/* Image actions live in the selection toolbar (the body is content only). They
+             portal into the bar's slot so their logic stays co-located with this item. */}
+         {url && !showSpinner && isSelected && toolbarSlot && createPortal(
+            <>
                <ImageControl title={t('BoardView.imageToggleFit')} onClick={toggleFit}>
-                  <Scaling className="h-3.5 w-3.5" />
+                  <Scaling className="h-4 w-4" />
                </ImageControl>
                <ImageControl title={t('BoardView.imageChange')} onClick={openPicker}>
-                  <ImageIcon className="h-3.5 w-3.5" />
+                  <ImageIcon className="h-4 w-4" />
                </ImageControl>
                <ImageControl title={t('BoardView.imageRemove')} destructive onClick={removeImage}>
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-4 w-4" />
                </ImageControl>
-            </div>
+            </>,
+            toolbarSlot,
          )}
 
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
@@ -110,7 +115,7 @@ export function ImageItem({ content, isSelected, onContentChange, onRequestSelec
    );
 }
 
-/** A small on-image control; stops the drag so the click lands reliably under pointer capture. */
+/** An image action button in the selection toolbar; stops the drag so the click lands reliably. */
 function ImageControl({
    title,
    destructive = false,
@@ -130,8 +135,8 @@ function ImageControl({
          onPointerDown={(event: ReactPointerEvent) => event.stopPropagation()}
          onClick={onClick}
          className={cn(
-            'flex items-center justify-center rounded p-1 opacity-90 shadow-sm cursor-pointer',
-            destructive ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+            'flex cursor-pointer items-center justify-center rounded p-1',
+            destructive ? 'text-destructive hover:bg-destructive/15' : 'text-popover-foreground hover:bg-muted',
          )}
       >
          {children}
