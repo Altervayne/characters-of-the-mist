@@ -8,6 +8,7 @@ import { Trash2 } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { connectionEndpoints } from '@/lib/board/boardConnections';
+import { collapsedBarRect, isConnectionCollapsedAway, resolveEndpointAnchor } from '@/lib/board/zoneCollapse';
 import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 
 // -- Component Imports --
@@ -15,7 +16,7 @@ import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopo
 
 // -- Type Imports --
 import type { BoardItem, ConnectionBoardContent } from '@/lib/types/board';
-import type { Point } from '@/lib/board/boardConnections';
+import type { Point, RectLike } from '@/lib/board/boardConnections';
 
 /*
  * The connection overlay: one SVG inside the world layer (so it shares the pan/zoom
@@ -43,6 +44,8 @@ interface BoardConnectionsLayerProps {
    zoom: number;
    /** The active group move (moving ids + shared world delta), or null - so lines track the live drag. */
    moving: { ids: Set<string>; delta: { x: number; y: number } } | null;
+   /** Zones currently collapsed: a line to a hidden member of one re-anchors to that zone's bar. */
+   collapsedZoneIds: ReadonlySet<string>;
    /** The in-progress connect drag (source item id + cursor in world coords), or null. */
    connectPreview: { fromId: string; cursor: Point } | null;
    onSelect: (id: string) => void;
@@ -50,7 +53,7 @@ interface BoardConnectionsLayerProps {
    onDelete: (id: string) => void;
 }
 
-export function BoardConnectionsLayer({ items, connections, selectedId, zoom, moving, connectPreview, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
+export function BoardConnectionsLayer({ items, connections, selectedId, zoom, moving, collapsedZoneIds, connectPreview, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
    const { t } = useTranslation();
 
    // While an item is being dragged it renders at its position + the live delta, but the committed
@@ -58,6 +61,15 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
    // the item smoothly (both ends shift when both move, e.g. a zone carrying its members).
    const live = (item: BoardItem): BoardItem =>
       moving && moving.ids.has(item.id) ? { ...item, x: item.x + moving.delta.x, y: item.y + moving.delta.y } : item;
+
+   // The geometry an endpoint anchors to: a hidden member of a collapsed zone (or that zone itself)
+   // ends on the zone's bar - which follows the bar's own drag; everything else uses the item's live
+   // rect. Render-only - the connection's from/to data is untouched.
+   const endpointRect = (item: BoardItem): RectLike => {
+      const { anchor, isBar } = resolveEndpointAnchor(item, items, collapsedZoneIds);
+      const moved = live(anchor);
+      return isBar ? collapsedBarRect(moved) : moved;
+   };
 
    // The selected line's live color while its picker is open: shown on the line before the
    // single committed command on close (so a picker drag never floods undo).
@@ -68,7 +80,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
       if (!connectPreview) return null;
       const source = items[connectPreview.fromId];
       if (!source) return null;
-      return connectionEndpoints(source, { x: connectPreview.cursor.x, y: connectPreview.cursor.y, width: 0, height: 0 });
+      return connectionEndpoints(endpointRect(source), { x: connectPreview.cursor.x, y: connectPreview.cursor.y, width: 0, height: 0 });
    })();
 
    const selectedConnection = connections.find((connection) => connection.id === selectedId);
@@ -83,8 +95,10 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
                const toItem = items[content.to];
                // Defensive: a connection to a deleted item draws nothing (no orphan line).
                if (!fromItem || !toItem) return null;
+               // Both ends collapse to the same zone's bar -> the line is a dot; don't draw it.
+               if (isConnectionCollapsedAway(fromItem, toItem, items, collapsedZoneIds)) return null;
 
-               const { from, to } = connectionEndpoints(live(fromItem), live(toItem));
+               const { from, to } = connectionEndpoints(endpointRect(fromItem), endpointRect(toItem));
                const isSelected = connection.id === selectedId;
                // Show the live picker color on the selected line; otherwise the committed color.
                const effectiveColor = colorPreview?.id === connection.id ? colorPreview.color : content.style.color;
@@ -139,7 +153,8 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
             const fromItem = items[content.from];
             const toItem = items[content.to];
             if (!fromItem || !toItem) return null;
-            const { from, to } = connectionEndpoints(live(fromItem), live(toItem));
+            if (isConnectionCollapsedAway(fromItem, toItem, items, collapsedZoneIds)) return null;
+            const { from, to } = connectionEndpoints(endpointRect(fromItem), endpointRect(toItem));
             const midX = (from.x + to.x) / 2;
             const midY = (from.y + to.y) / 2;
             const effectiveColor = colorPreview?.id === selectedConnection.id ? colorPreview.color : content.style.color;

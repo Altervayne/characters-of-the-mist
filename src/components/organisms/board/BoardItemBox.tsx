@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { screenDeltaToWorld } from '@/lib/board/boardCoordinates';
 import { MIN_ITEM_SIZE, computeResize, effectiveHeight } from '@/lib/board/boardResize';
+import { COLLAPSED_BAR_HEIGHT, COLLAPSED_BAR_WIDTH } from '@/lib/board/zoneCollapse';
 
 // -- Component Imports --
 import { BoardItemBody } from './items/BoardItemBody';
@@ -44,6 +45,8 @@ interface BoardItemBoxProps {
    isSelected: boolean;
    /** The ONLY selected item: shows the per-item toolbar + resize grip (suppressed in a multi-selection). */
    soleSelected: boolean;
+   /** A zone's member count, for its collapsed-bar badge (undefined for non-zones). */
+   memberCount?: number;
    /** Current zoom, so screen deltas convert to world deltas and chrome stays screen-constant. */
    zoom: number;
    /** Live world offset during an active group move (null when idle); renders the box at the offset. */
@@ -81,6 +84,7 @@ export function BoardItemBox({
    item,
    isSelected,
    soleSelected,
+   memberCount,
    zoom,
    moveDelta,
    isMoving,
@@ -209,8 +213,13 @@ export function BoardItemBox({
    // items sitting inside it stay interactive. Selecting the empty interior is the background's job.
    const isZone = item.kind === 'zone';
    const zoneColor = item.content.kind === 'zone' ? item.content.color : undefined;
+   // A collapsed zone paints as a compact bar at its origin (frame hidden, members hidden, resize
+   // off); its stored width/height are preserved for when it expands.
+   const isCollapsedZone = isZone && item.content.kind === 'zone' && item.content.collapsed;
    // A min-height item never renders below its content (the floor); other kinds use their rect.
    const renderHeight = minHeight ? effectiveHeight(rect.height, contentHeight) : rect.height;
+   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : rect.width;
+   const boxHeight = isCollapsedZone ? COLLAPSED_BAR_HEIGHT : renderHeight;
 
    const body = (
       <BoardItemBody
@@ -218,6 +227,7 @@ export function BoardItemBox({
          isSelected={isSelected}
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
+         memberCount={memberCount}
          onContentChange={(content) => onUpdateContent(item.id, content)}
          onCacheLastKnown={onCacheLastKnown}
          onDelete={onDelete}
@@ -228,19 +238,20 @@ export function BoardItemBox({
    return (
       <div
          data-board-item-id={item.id}
-         className={cn('absolute', isZone && 'pointer-events-none')}
+         className={cn('absolute', isZone && !isCollapsedZone && 'pointer-events-none')}
          style={{
             left: rect.x,
             top: rect.y,
-            width: rect.width,
-            height: renderHeight,
+            width: boxWidth,
+            height: boxHeight,
             transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
          }}
       >
          {/* A zone's tinted rectangle, portaled into the behind-items back layer so members sit on
              top. It tracks the live rect (move/resize), and a pointer-down on its empty interior or
-             border selects the zone - items on top capture their own clicks first (they paint above). */}
-         {isZone && backLayer && createPortal(
+             border selects the zone - items on top capture their own clicks first (they paint above).
+             A collapsed zone hides its frame (it's the bar below instead). */}
+         {isZone && !isCollapsedZone && backLayer && createPortal(
             <div
                onPointerDown={(event) => { event.stopPropagation(); onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey); }}
                className={cn('absolute cursor-pointer rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
@@ -266,14 +277,17 @@ export function BoardItemBox({
             className={cn(
                'relative h-full w-full select-none',
                !isZone && 'overflow-hidden',
-               // A zone's body is click-through (the tinted rect + header carry the visuals); only the
-               // selection ring outlines the rectangle on top. A pin is a round borderless dot; every
-               // other kind is a bordered card. Each draws a square/round ring when selected.
-               isZone
-                  ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
-                  : isPin
-                     ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
-                     : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
+               // A collapsed zone IS a solid, clickable bar (the frame is hidden). An expanded zone's
+               // body is click-through - the tinted rect + header carry the visuals - with only the
+               // selection ring outlining the rectangle. A pin is a round borderless dot; every other
+               // kind is a bordered card. Each draws a square/round ring when selected.
+               isCollapsedZone
+                  ? cn('overflow-hidden rounded-md border bg-card shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50')
+                  : isZone
+                     ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
+                     : isPin
+                        ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
+                        : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
             )}
          >
             {/* A min-height kind fills the body via a flex column (so a pinned footer can sit at
@@ -298,8 +312,9 @@ export function BoardItemBox({
                />
 
                {/* Single bottom-right resize grip, counter-scaled to a constant on-screen size.
-                   A pin is a fixed-size dot, so it has no grip. */}
-               {!isPin && (
+                   A pin is a fixed-size dot, and a collapsed zone is bar-sized (expand to resize), so
+                   neither has a grip. */}
+               {!isPin && !isCollapsedZone && (
                   <div
                      onPointerDown={handleResizePointerDown}
                      onPointerMove={handleResizePointerMove}

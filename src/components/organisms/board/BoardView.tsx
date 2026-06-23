@@ -186,7 +186,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // other item) while their header + chrome render in a front pass (on top). Non-zone items
    // render in between, so they sit on top of a zone but under its chrome.
    const zoneItems = spatialItems.filter((item) => item.kind === 'zone');
-   const nonZoneItems = spatialItems.filter((item) => item.kind !== 'zone');
+   // Collapsed zones shrink to a bar and hide their members: members keep their store position but
+   // aren't painted, and connections touching them re-anchor to the bar (handled in the layer).
+   const collapsedZoneIds = new Set(zoneItems.filter((item) => item.content.kind === 'zone' && item.content.collapsed).map((item) => item.id));
+   const nonZoneItems = spatialItems.filter((item) => item.kind !== 'zone' && !(item.zoneId && collapsedZoneIds.has(item.zoneId)));
 
    // The behind-items DOM node zones portal their tinted backgrounds into (first child of the
    // world layer, so it paints behind the item boxes). State-backed like the toolbar slots.
@@ -484,6 +487,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          item={item}
          isSelected={selectedIds.has(item.id)}
          soleSelected={item.id === soleSelectedId}
+         memberCount={item.kind === 'zone' ? Object.values(items).filter((other) => other.zoneId === item.id).length : undefined}
          zoom={viewport.zoom}
          moveDelta={moveDeltaFor(item.id)}
          isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
@@ -561,6 +565,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                selectedId={soleSelectedId}
                zoom={viewport.zoom}
                moving={groupDrag}
+               collapsedZoneIds={collapsedZoneIds}
                connectPreview={connectPreview}
                onSelect={(id) => handleSelect(id, false)}
                onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}

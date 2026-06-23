@@ -21,6 +21,8 @@ interface Placed {
  * The id of the zone containing `item`'s center, or `null` if none. When several zones overlap the
  * center, the topmost (highest `z`) wins - matching what the user sees on top. A zone never contains
  * itself, and zones are never members of zones (no nesting), so zone items are skipped as candidates.
+ * A COLLAPSED zone is skipped too: it has no open interior (it renders as a bar), so nothing can be
+ * dropped into it - membership is only captured against expanded frames.
  */
 export function zoneContaining(item: Placed, zones: BoardItem[]): string | null {
    const cx = item.x + item.width / 2;
@@ -29,6 +31,7 @@ export function zoneContaining(item: Placed, zones: BoardItem[]): string | null 
    let bestZ = -Infinity;
    for (const zone of zones) {
       if (zone.kind !== 'zone' || zone.id === item.id) continue;
+      if (zone.content.kind === 'zone' && zone.content.collapsed) continue;
       const inside = cx >= zone.x && cx <= zone.x + zone.width && cy >= zone.y && cy <= zone.y + zone.height;
       if (inside && zone.z > bestZ) {
          bestZ = zone.z;
