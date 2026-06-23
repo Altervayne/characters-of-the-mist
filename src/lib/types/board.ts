@@ -41,6 +41,8 @@ export interface ImageBoardContent {
 export interface PostItBoardContent {
    kind: 'post-it';
    text: string;
+   /** Background color (hex). Absent on notes created before colors existed - defaulted to amber on read. */
+   color?: string;
 }
 
 /** Paged notes. Minimal for now; richer structure lands with its consumer. */

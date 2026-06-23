@@ -1,9 +1,15 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { readableTextColor } from '@/lib/color';
+import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
+
+// -- Component Imports --
+import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 
 // -- Type Imports --
 import type { BoardItemContent, PostItBoardContent } from '@/lib/types/board';
@@ -11,22 +17,32 @@ import type { BoardItemContent, PostItBoardContent } from '@/lib/types/board';
 /*
  * A sticky-note board item: a single editable text field filling the box. The text is
  * held locally while editing and committed once on blur (one undoable command per edit
- * session - `updateItemContent` is not coalescible, so per-keystroke commits would
- * flood undo and the repo).
+ * session - `updateItemContent` is not coalescible, so per-keystroke commits would flood
+ * undo and the repo).
  *
- * The textarea only takes pointer events when the item is selected, so an unselected
- * note drags/selects from anywhere; when selected it stops pointer propagation so
- * typing/selecting text never starts a canvas move.
+ * The background color is per-note (default amber). Text color is derived from the
+ * background's luminance so a note stays readable on any color.
+ *
+ * The textarea only takes pointer events when the item is selected, so an unselected note
+ * drags/selects from anywhere; when selected it stops pointer propagation so typing never
+ * starts a canvas move.
  */
+
+/** The original amber, used when a note has no explicit color (keeps pre-color notes unchanged). */
+const DEFAULT_POSTIT_COLOR = '#fde68a';
+/** Curated pastel quick-picks. A pick from here is NOT a "custom" color, so it never joins recents. */
+const PASTEL_PALETTE = ['#fde68a', '#fecaca', '#fbcfe8', '#ddd6fe', '#bfdbfe', '#a7f3d0', '#fed7aa', '#e2e8f0', '#a5f3fc'] as const;
 
 interface PostItItemProps {
    content: PostItBoardContent;
    isSelected: boolean;
+   /** The selection toolbar's action slot; the color control portals here. */
+   toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
 }
 
-export function PostItItem({ content, isSelected, onContentChange, onRequestSelect }: PostItItemProps) {
+export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: PostItItemProps) {
    const { t } = useTranslation();
    const [text, setText] = useState(content.text);
    // Re-sync from the store on an external change (undo/redo) using React's
@@ -38,24 +54,103 @@ export function PostItItem({ content, isSelected, onContentChange, onRequestSele
       setText(content.text);
    }
 
-   const commit = () => {
-      if (text !== content.text) onContentChange({ kind: 'post-it', text });
+   // The in-progress color while the picker is open (so the box previews live before the
+   // single undoable commit). `color: undefined` previews a removal back to amber.
+   const [pending, setPending] = useState<{ color: string | undefined } | null>(null);
+   const background = pending ? pending.color ?? DEFAULT_POSTIT_COLOR : content.color ?? DEFAULT_POSTIT_COLOR;
+   const textColor = readableTextColor(background);
+
+   // The commit reads everything it needs from refs, so it is correct whether it fires from
+   // the popover (Escape / swatch / remove / outside click) or from the deselect effect below
+   // - and unaffected by stale closures or a same-tick apply-and-close.
+   const pendingRef = useRef<{ color: string | undefined } | null>(null);
+   const contentRef = useRef(content);
+   const textRef = useRef(text);
+   useEffect(() => { contentRef.current = content; textRef.current = text; });
+
+   const commitPendingColor = useCallback(() => {
+      const change = pendingRef.current;
+      if (!change) return;
+      const next = change.color;
+      const current = contentRef.current;
+      if (next !== current.color) {
+         onContentChange(next ? { kind: 'post-it', text: textRef.current, color: next } : { kind: 'post-it', text: textRef.current });
+         // Only colors picked from the full picker (not a curated pastel) join recents.
+         if (next && next !== DEFAULT_POSTIT_COLOR && !PASTEL_PALETTE.includes(next as (typeof PASTEL_PALETTE)[number])) pushRecentColor(next);
+      }
+      pendingRef.current = null;
+      setPending(null);
+   }, [onContentChange]);
+
+   // Clicking the canvas to dismiss the popover also deselects the note (unmounting the
+   // control); commit any pending color here so the pick is never lost to that race.
+   useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- commit (and clear) a pending color after the deselect render
+      if (!isSelected) commitPendingColor();
+   }, [isSelected, commitPendingColor]);
+
+   const commitText = () => {
+      if (text !== content.text) onContentChange({ ...content, text });
    };
 
    return (
-      <div className="h-full w-full bg-amber-200 p-2.5 text-amber-950">
+      <div className="h-full w-full p-2.5" style={{ backgroundColor: background, color: textColor }}>
          <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
             onFocus={onRequestSelect}
-            onBlur={commit}
+            onBlur={commitText}
             onPointerDown={(event) => event.stopPropagation()}
             placeholder={t('BoardView.postItPlaceholder')}
+            style={{ color: textColor }}
             className={cn(
-               'h-full w-full resize-none border-0 bg-transparent text-sm leading-snug outline-none placeholder:text-amber-700/50',
+               'h-full w-full resize-none border-0 bg-transparent text-sm leading-snug outline-none placeholder:opacity-50',
                isSelected ? 'pointer-events-auto cursor-text' : 'pointer-events-none',
             )}
          />
+
+         {isSelected && toolbarSlot && createPortal(
+            <PostItColorControl
+               activeColor={content.color ?? DEFAULT_POSTIT_COLOR}
+               onPreview={(color) => { pendingRef.current = { color }; setPending({ color }); }}
+               onCommit={commitPendingColor}
+            />,
+            toolbarSlot,
+         )}
       </div>
+   );
+}
+
+/**
+ * The post-it color control that lives in the selection toolbar: a swatch button that opens
+ * the shared color popover (portaled, so it floats above the canvas). Picking previews live;
+ * any close (Escape, outside click, or a discrete swatch/remove) commits the single
+ * undoable change via `onOpenChange(false)`.
+ */
+function PostItColorControl({ activeColor, onPreview, onCommit }: { activeColor: string; onPreview: (color: string | undefined) => void; onCommit: () => void }) {
+   const { t } = useTranslation();
+   const [open, setOpen] = useState(false);
+
+   return (
+      <ColorPickerPopover
+         open={open}
+         onOpenChange={(next) => { if (!next) onCommit(); setOpen(next); }}
+         activeColor={activeColor}
+         palette={PASTEL_PALETTE}
+         recent={readRecentColors()}
+         recentLabel={t('BoardView.recentColors')}
+         removeLabel={t('BoardView.removeColor')}
+         onApply={onPreview}
+         trigger={
+            <button
+               type="button"
+               title={t('BoardView.postItColor')}
+               aria-label={t('BoardView.postItColor')}
+               onPointerDown={(event) => event.stopPropagation()}
+               className="flex h-6 w-6 items-center justify-center rounded border border-border"
+               style={{ backgroundColor: activeColor }}
+            />
+         }
+      />
    );
 }
