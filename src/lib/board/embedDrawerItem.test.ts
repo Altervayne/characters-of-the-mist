@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem, EMBEDDED_CARD_SIZE } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES } from './embedDrawerItem';
 import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
@@ -38,12 +38,16 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(copied.data.details.themeType).toBe('Origin');
    });
 
-   it('embeds a tracker type as a copy', () => {
+   it('embeds a tracker type as a copy, sized to its native footprint', () => {
       const source = makeDrawerItem('STATUS_TRACKER', { trackerType: 'STATUS', name: 'Wounded' } as unknown as DrawerItemContent);
 
       const spec = embeddedSpecForDrawerItem(source);
       expect(spec!.kind).toBe('tracker');
       expect(spec!.content).toMatchObject({ kind: 'tracker', mode: 'copy' });
+      expect(spec).toMatchObject(EMBEDDED_TRACKER_SIZES.STATUS);
+
+      const theme = embeddedSpecForDrawerItem(makeDrawerItem('STORY_THEME_TRACKER', { trackerType: 'STORY_THEME', name: 'Theme' } as unknown as DrawerItemContent));
+      expect(theme).toMatchObject(EMBEDDED_TRACKER_SIZES.STORY_THEME);
    });
 
    it('returns null for non-embeddable types (full sheets, etc.)', () => {

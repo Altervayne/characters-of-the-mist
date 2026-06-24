@@ -75,8 +75,9 @@ export function InteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit
             // Selected: stop the pointer here so editing never bubbles into a canvas move; the
             // child controls still receive it. Unselected: pe-none lets a click reach the box (select).
             onPointerDown={(event) => { if (isSelected) event.stopPropagation(); }}
+            // No background here: the card/tracker carries its own, so the embed reads as a bare item.
             className={cn(
-               'flex h-full w-full items-center justify-center overflow-auto bg-card',
+               'flex h-full w-full items-center justify-center overflow-auto',
                isSelected ? 'pointer-events-auto' : 'pointer-events-none',
             )}
          >

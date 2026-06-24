@@ -217,6 +217,10 @@ export function BoardItemBox({
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
+   // A card/tracker embed IS its own item: it carries its own border, background, and shape, so the
+   // box adds no chrome (no second border/shadow, no grip) - just a selection ring. Fixed at the
+   // native size set on drop; overflow is the card's own internal scroll, not a wrapper resize.
+   const isEmbed = item.kind === 'card' || item.kind === 'tracker';
    // A zone is a background frame: its tinted rectangle portals BEHIND the items (into `backLayer`),
    // and the box here renders only the on-top header + chrome - click-through everywhere else so the
    // items sitting inside it stay interactive. Selecting the empty interior is the background's job.
@@ -288,11 +292,13 @@ export function BoardItemBox({
             style={isCollapsedZone && zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
             className={cn(
                'relative h-full w-full select-none',
-               !isZone && 'overflow-hidden',
+               // An embed brings its own rounded border, so the box neither clips (which would
+               // double-round and crop the flip's back face) nor draws chrome.
+               !isZone && !isEmbed && 'overflow-hidden',
                // A collapsed zone IS a solid, clickable bar (the frame is hidden). An expanded zone's
                // body is click-through - the tinted rect + header carry the visuals - with only the
-               // selection ring outlining the rectangle. A pin is a round borderless dot; every other
-               // kind is a bordered card. Each draws a square/round ring when selected.
+               // selection ring outlining the rectangle. A pin is a round borderless dot; a card/tracker
+               // embed is bare (its own visuals) with just a ring; every other kind is a bordered card.
                isCollapsedZone
                   ? cn(
                        'overflow-hidden cursor-pointer rounded-md border shadow-sm',
@@ -304,7 +310,10 @@ export function BoardItemBox({
                      ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
                      : isPin
                         ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
-                        : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
+                        : isEmbed
+                           // Match the ring radius to the embed's own corners: a card is rounded-xl, a tracker rounded-lg.
+                           ? cn(item.kind === 'card' ? 'rounded-xl' : 'rounded-lg', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
+                           : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
             )}
          >
             {/* A min-height kind fills the body via a flex column (so a pinned footer can sit at
@@ -331,9 +340,9 @@ export function BoardItemBox({
                />
 
                {/* Single bottom-right resize grip, counter-scaled to a constant on-screen size.
-                   A pin is a fixed-size dot, and a collapsed zone is bar-sized (expand to resize), so
-                   neither has a grip. */}
-               {!isPin && !isCollapsedZone && (
+                   A pin is a fixed-size dot, a collapsed zone is bar-sized (expand to resize), and a
+                   card/tracker embed is fixed at its native size, so none of them has a grip. */}
+               {!isPin && !isCollapsedZone && !isEmbed && (
                   <div
                      onPointerDown={handleResizePointerDown}
                      onPointerMove={handleResizePointerMove}

@@ -72,11 +72,10 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
       onCacheLastKnown(item.id, toReferenceContent(content, sourceId, liveContent));
    }, [isReference, sourceId, status, liveContent, content, item.id, onCacheLastKnown]);
 
+   // A copy can no longer become a reference - only a full character sheet has the save-back
+   // round-trip that justifies a live link (a future, separate capability). The reference type
+   // and machinery stay dormant for that case; an existing reference still detaches to a copy.
    const detach = (): void => onContentChange(detachToCopy(content, liveContent));
-   const makeReference = (): void => {
-      if (!content.sourceDrawerItemId) return;
-      onContentChange(toReferenceContent(content, content.sourceDrawerItemId));
-   };
 
    // Dangling reference: never error or vanish - offer convert-to-copy (if recoverable) / remove.
    if (isReference && status === 'dangling') {
@@ -118,7 +117,8 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
                onCommit: (next) => onContentChange({ ...content, data: next } as BoardItemContent),
             })
          ) : data != null ? (
-            <div className="flex h-full w-full items-center justify-center overflow-hidden bg-card pointer-events-none">
+            // Bare: the card/tracker supplies its own background (a reference is read-only here).
+            <div className="flex h-full w-full items-center justify-center overflow-hidden pointer-events-none">
                {renderSnapshot(data)}
             </div>
          ) : (
@@ -136,18 +136,12 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
             </span>
          )}
 
-         {/* Copy<->reference toggle, shown when selected. */}
-         {isSelected && (
+         {/* Convert-to-copy, shown when a (pre-existing) reference is selected; copies have no toggle. */}
+         {isSelected && isReference && (
             <div className="absolute right-1 top-1 flex gap-1">
-               {isReference ? (
-                  <EmbeddedControl title={t('BoardView.convertToCopy')} onClick={detach}>
-                     <Unlink className="h-3.5 w-3.5" />
-                  </EmbeddedControl>
-               ) : content.sourceDrawerItemId ? (
-                  <EmbeddedControl title={t('BoardView.makeReference')} onClick={makeReference}>
-                     <Link2 className="h-3.5 w-3.5" />
-                  </EmbeddedControl>
-               ) : null}
+               <EmbeddedControl title={t('BoardView.convertToCopy')} onClick={detach}>
+                  <Unlink className="h-3.5 w-3.5" />
+               </EmbeddedControl>
             </div>
          )}
       </div>
