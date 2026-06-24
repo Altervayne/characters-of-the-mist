@@ -14,34 +14,58 @@ export interface Point {
    y: number;
 }
 
-/** The minimal placement a connection endpoint reads from an item. */
+/**
+ * The minimal placement a connection endpoint reads from an item. `radius` is the corner radius
+ * (world units) so the anchor lands on the straight part of a rounded outline, not in the corner
+ * gap; `circle` marks a circular kind (the pin) so the anchor meets the dot exactly. Both optional:
+ * absent radius is a sharp box (back-compat); the free end (cursor) passes a zero-size rect.
+ */
 export interface RectLike {
    x: number;
    y: number;
    width: number;
    height: number;
+   radius?: number;
+   circle?: boolean;
 }
 
-/** Default styling for a freshly drawn connection (visible on both light and dark). */
+/** The default corner radius (world units) for the connection anchor clamp on rounded kinds. */
+export const CONNECTION_CORNER_RADIUS = 8;
+
+/** Default styling for a freshly drawn connection (visible on both light and dark; solid by default). */
 export const DEFAULT_CONNECTION_STYLE = { width: 3, color: '#3b82f6' } as const;
 
 /**
- * The point on the boundary of a box (centre `cx,cy`, half-extents `hw,hh`) along the
- * ray `(dx,dy)` from its centre. Returns the centre for a zero direction (degenerate).
+ * The point on an item's visible outline (centre `cx,cy`, half-extents `hw,hh`) along the ray
+ * `(dx,dy)` from its centre. A circular kind meets its circle; a rounded rect clamps the exit's
+ * off-axis coordinate onto the straight part of the edge by the corner radius `r`, so a near-corner
+ * ray never lands in the rounded-off gap (which left the old box edge overhanging into space).
  */
-function boxEdgePoint(cx: number, cy: number, hw: number, hh: number, dx: number, dy: number): Point {
+function edgePoint(cx: number, cy: number, hw: number, hh: number, dx: number, dy: number, r: number, circle: boolean): Point {
    if (dx === 0 && dy === 0) return { x: cx, y: cy };
+   if (circle) {
+      const radius = Math.min(hw, hh);
+      const len = Math.hypot(dx, dy);
+      return { x: cx + (dx / len) * radius, y: cy + (dy / len) * radius };
+   }
+   const clamp = Math.max(0, Math.min(r, hw, hh)); // corner radius, never beyond the half-extents
    // Scale the ray so it just reaches the nearer of the vertical / horizontal edges.
    const tx = dx !== 0 ? hw / Math.abs(dx) : Infinity;
    const ty = dy !== 0 ? hh / Math.abs(dy) : Infinity;
    const t = Math.min(tx, ty);
-   return { x: cx + dx * t, y: cy + dy * t };
+   let x = cx + dx * t;
+   let y = cy + dy * t;
+   // Exits a left/right edge -> pull its y onto the straight span; exits a top/bottom edge -> pull x.
+   // A corner exit (tx === ty) clamps both, landing where the rounded corner begins.
+   if (tx <= ty) { const lim = hh - clamp; y = Math.max(cy - lim, Math.min(cy + lim, y)); }
+   if (ty <= tx) { const lim = hw - clamp; x = Math.max(cx - lim, Math.min(cx + lim, x)); }
+   return { x, y };
 }
 
 /**
  * The two endpoints of a connection between `fromItem` and `toItem`: each is where the
- * centre-to-centre line crosses that item's box edge, so the line runs edge-to-edge.
- * Pass a zero-size rect for a free end (the connect-drag preview to the cursor).
+ * centre-to-centre line meets that item's visible outline, so the line runs edge-to-edge without
+ * overhanging a rounded corner. Pass a zero-size rect for a free end (the connect-drag preview).
  */
 export function connectionEndpoints(fromItem: RectLike, toItem: RectLike): { from: Point; to: Point } {
    const aCx = fromItem.x + fromItem.width / 2;
@@ -51,8 +75,8 @@ export function connectionEndpoints(fromItem: RectLike, toItem: RectLike): { fro
    const dx = bCx - aCx;
    const dy = bCy - aCy;
    return {
-      from: boxEdgePoint(aCx, aCy, fromItem.width / 2, fromItem.height / 2, dx, dy),
-      to: boxEdgePoint(bCx, bCy, toItem.width / 2, toItem.height / 2, -dx, -dy),
+      from: edgePoint(aCx, aCy, fromItem.width / 2, fromItem.height / 2, dx, dy, fromItem.radius ?? 0, fromItem.circle ?? false),
+      to: edgePoint(bCx, bCy, toItem.width / 2, toItem.height / 2, -dx, -dy, toItem.radius ?? 0, toItem.circle ?? false),
    };
 }
 

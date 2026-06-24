@@ -7,7 +7,7 @@ import { Trash2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { connectionEndpoints } from '@/lib/board/boardConnections';
+import { CONNECTION_CORNER_RADIUS, connectionEndpoints } from '@/lib/board/boardConnections';
 import { collapsedBarRect, isConnectionCollapsedAway, resolveEndpointAnchor } from '@/lib/board/zoneCollapse';
 import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 
@@ -15,7 +15,7 @@ import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 
 // -- Type Imports --
-import type { BoardItem, ConnectionBoardContent } from '@/lib/types/board';
+import type { BoardItem, ConnectionBoardContent, ConnectionDash, ConnectionStyle } from '@/lib/types/board';
 import type { Point, RectLike } from '@/lib/board/boardConnections';
 
 /*
@@ -29,7 +29,17 @@ import type { Point, RectLike } from '@/lib/board/boardConnections';
  */
 
 /** Line-width presets (world units), thin -> thick. */
-const WIDTH_PRESETS = [2, 4, 8];
+const WIDTH_PRESETS = [1, 2, 3, 5, 8];
+/** Line dash-style presets, in toolbar order. */
+const DASH_PRESETS: ConnectionDash[] = ['solid', 'dashed', 'dotted'];
+
+/** The SVG `strokeDasharray` for a dash style at width `w` (world units); solid -> no array. */
+function dashArrayFor(dash: ConnectionDash | undefined, w: number): string | undefined {
+   if (dash === 'dashed') return `${w * 2.5} ${w * 2}`;
+   if (dash === 'dotted') return `0.01 ${w * 2}`; // round-capped zero dashes read as dots
+   return undefined;
+}
+
 /**
  * The connection's curated palette: vivid colors chosen to read on light + dark boards.
  * Deliberately distinct from the post-it pastels - the picker and recents are shared, the
@@ -49,7 +59,7 @@ interface BoardConnectionsLayerProps {
    /** The in-progress connect drag (source item id + cursor in world coords), or null. */
    connectPreview: { fromId: string; cursor: Point } | null;
    onSelect: (id: string) => void;
-   onUpdateStyle: (id: string, style: { width: number; color: string }) => void;
+   onUpdateStyle: (id: string, style: ConnectionStyle) => void;
    onDelete: (id: string) => void;
 }
 
@@ -68,7 +78,11 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
    const endpointRect = (item: BoardItem): RectLike => {
       const { anchor, isBar } = resolveEndpointAnchor(item, items, collapsedZoneIds);
       const moved = live(anchor);
-      return isBar ? collapsedBarRect(moved) : moved;
+      // Carry the shape so the anchor lands on the visible outline: a pin meets its circle, every
+      // other (rounded) kind - including the collapsed-zone bar - clamps to its corner radius.
+      const base = isBar ? collapsedBarRect(moved) : { x: moved.x, y: moved.y, width: moved.width, height: moved.height };
+      if (!isBar && moved.kind === 'pin') return { ...base, circle: true };
+      return { ...base, radius: CONNECTION_CORNER_RADIUS };
    };
 
    // The selected line's live color while its picker is open: shown on the line before the
@@ -102,6 +116,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
                const isSelected = connection.id === selectedId;
                // Show the live picker color on the selected line; otherwise the committed color.
                const effectiveColor = colorPreview?.id === connection.id ? colorPreview.color : content.style.color;
+               const dashArray = dashArrayFor(content.style.dash, content.style.width);
 
                return (
                   <g key={connection.id}>
@@ -119,8 +134,9 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
                         stroke={effectiveColor}
                         strokeWidth={content.style.width}
                         strokeLinecap="round"
+                        strokeDasharray={dashArray}
                      />
-                     {/* Wide transparent hit path so a thin line is still easy to click. */}
+                     {/* Wide transparent hit path (always SOLID, so a dotted/dashed line stays clickable). */}
                      <line
                         x1={from.x} y1={from.y} x2={to.x} y2={to.y}
                         stroke="transparent"
@@ -172,13 +188,33 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
                               key={width}
                               type="button"
                               aria-label={`${t('BoardView.lineWidth')} ${width}`}
-                              onClick={() => onUpdateStyle(selectedConnection.id, { width, color: content.style.color })}
+                              onClick={() => onUpdateStyle(selectedConnection.id, { ...content.style, width })}
                               className={cn(
                                  'flex h-6 w-6 items-center justify-center rounded hover:bg-muted cursor-pointer',
                                  content.style.width === width && 'bg-muted ring-1 ring-primary',
                               )}
                            >
                               <span className="rounded-full bg-foreground" style={{ width: width + 2, height: width + 2 }} />
+                           </button>
+                        ))}
+                     </div>
+
+                     <div className="h-5 w-px bg-border" />
+
+                     {/* Solid / dashed / dotted, each previewing its own pattern. */}
+                     <div className="flex items-center gap-1" title={t('BoardView.lineStyle')}>
+                        {DASH_PRESETS.map((dash) => (
+                           <button
+                              key={dash}
+                              type="button"
+                              aria-label={t(`BoardView.lineStyle${dash[0].toUpperCase()}${dash.slice(1)}`)}
+                              onClick={() => onUpdateStyle(selectedConnection.id, { ...content.style, dash })}
+                              className={cn(
+                                 'flex h-6 w-6 items-center justify-center rounded text-foreground hover:bg-muted cursor-pointer',
+                                 (content.style.dash ?? 'solid') === dash && 'bg-muted ring-1 ring-primary',
+                              )}
+                           >
+                              <DashPreview dash={dash} />
                            </button>
                         ))}
                      </div>
@@ -227,10 +263,10 @@ function ConnectionColorControl({
    onUpdateStyle,
 }: {
    connectionId: string;
-   style: { width: number; color: string };
+   style: ConnectionStyle;
    effectiveColor: string;
    onPreview: (color: string | null) => void;
-   onUpdateStyle: (id: string, style: { width: number; color: string }) => void;
+   onUpdateStyle: (id: string, style: ConnectionStyle) => void;
 }) {
    const { t } = useTranslation();
    const [open, setOpen] = useState(false);
@@ -246,7 +282,7 @@ function ConnectionColorControl({
       if (next === null) return;
       const current = styleRef.current;
       if (next !== current.color) {
-         onUpdateStyle(connectionId, { width: current.width, color: next });
+         onUpdateStyle(connectionId, { ...current, color: next });
          // Only colors from the full picker (not a curated vivid) join the shared recents.
          if (!(CONNECTION_PALETTE as readonly string[]).includes(next)) pushRecentColor(next);
       }
@@ -280,10 +316,20 @@ function ConnectionColorControl({
                title={t('BoardView.lineColor')}
                aria-label={t('BoardView.lineColor')}
                onPointerDown={(event) => event.stopPropagation()}
-               className="h-5 w-5 cursor-pointer rounded-full border border-border"
+               className="h-6 w-6 cursor-pointer rounded border border-border"
                style={{ backgroundColor: effectiveColor }}
             />
          }
       />
+   );
+}
+
+/** A tiny horizontal line preview of a dash style, for the toolbar buttons (uses the button's color). */
+function DashPreview({ dash }: { dash: ConnectionDash }) {
+   const stroke = dash === 'dashed' ? { strokeDasharray: '4 3' } : dash === 'dotted' ? { strokeDasharray: '0.5 3', strokeLinecap: 'round' as const } : {};
+   return (
+      <svg width="16" height="6" viewBox="0 0 16 6" aria-hidden>
+         <line x1="1" y1="3" x2="15" y2="3" stroke="currentColor" strokeWidth="2" {...stroke} />
+      </svg>
    );
 }

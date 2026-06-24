@@ -55,6 +55,34 @@ describe('connectionEndpoints', () => {
       expect(a).toEqual({ x: 100, y: 50 }); // still clipped to `from`'s edge
       expect(b).toEqual({ x: 300, y: 50 }); // the cursor itself
    });
+
+   it('pulls a corner exit onto the straight part of a rounded outline (no overhang in the corner gap)', () => {
+      const from = { x: 0, y: 0, width: 100, height: 100, radius: 20 }; // centre (50,50)
+      const to = { x: 200, y: 200, width: 100, height: 100, radius: 20 }; // centre (250,250)
+
+      const { from: a, to: b } = connectionEndpoints(from, to);
+
+      // A sharp box would land at the corners (100,100)/(200,200); the radius clamps each axis in by 20.
+      expect(a).toEqual({ x: 80, y: 80 });
+      expect(b).toEqual({ x: 220, y: 220 });
+   });
+
+   it('clamps an off-centre edge exit that strays into the corner region, but leaves a mid-edge exit alone', () => {
+      const box = { x: 0, y: 0, width: 100, height: 100, radius: 20 }; // centre (50,50); straight span y in [20,80]
+      // Exits the right edge at y=85 (in the corner region) -> clamped to 80.
+      expect(connectionEndpoints(box, { x: 150, y: 120, width: 0, height: 0 }).from).toEqual({ x: 100, y: 80 });
+      // Exits the right edge at y=65 (on the straight part) -> unchanged.
+      expect(connectionEndpoints(box, { x: 150, y: 80, width: 0, height: 0 }).from).toEqual({ x: 100, y: 65 });
+   });
+
+   it('anchors a circular kind (pin) to its circle, not its box corner', () => {
+      const pin = { x: 0, y: 0, width: 28, height: 28, circle: true }; // centre (14,14), r=14
+      // Diagonal approach: the box corner (28,28) would overhang; the circle point sits on the dot.
+      const { from } = connectionEndpoints(pin, { x: 114, y: 114, width: 0, height: 0 });
+      expect(Math.hypot(from.x - 14, from.y - 14)).toBeCloseTo(14); // exactly on the circle
+      expect(from.x).toBeCloseTo(14 + 14 / Math.SQRT2);
+      expect(from.y).toBeCloseTo(14 + 14 / Math.SQRT2);
+   });
 });
 
 /** Minimal board-item factory for the cascade lookup. */

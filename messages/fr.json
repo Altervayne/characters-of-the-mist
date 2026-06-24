@@ -92,6 +92,10 @@
       "connect": "[TO COMPLETE]",
       "lineWidth": "[TO COMPLETE]",
       "lineColor": "[TO COMPLETE]",
+      "lineStyle": "[TO COMPLETE]",
+      "lineStyleSolid": "[TO COMPLETE]",
+      "lineStyleDashed": "[TO COMPLETE]",
+      "lineStyleDotted": "[TO COMPLETE]",
       "deleteConnection": "[TO COMPLETE]"
    },
    "DragPuck": {

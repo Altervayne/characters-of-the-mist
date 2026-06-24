@@ -31,7 +31,7 @@ import type { CSSProperties } from 'react';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
+import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, ConnectionStyle, Viewport } from '@/lib/types/board';
 import type { Point } from '@/lib/board/boardConnections';
 
 /*
@@ -86,8 +86,9 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
    }
 }
 
-/** Rebuilds a connection's content with a new style, preserving its endpoints. */
-function buildConnectionContent(item: BoardItem | undefined, style: { width: number; color: string }): BoardItemContent {
+/** Rebuilds a connection's content with a new style, preserving its endpoints. The style carries
+ *  the full set (width + color + dash), so any single-facet edit keeps the others. */
+function buildConnectionContent(item: BoardItem | undefined, style: ConnectionStyle): BoardItemContent {
    const content = item?.content;
    const from = content?.kind === 'connection' ? content.from : '';
    const to = content?.kind === 'connection' ? content.to : '';

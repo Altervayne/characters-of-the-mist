@@ -137,12 +137,22 @@ export interface ZoneBoardContent {
    collapsed: boolean;
 }
 
+/** A connection's line dash pattern. Optional on the style - absent reads as `solid` (back-compat). */
+export type ConnectionDash = 'solid' | 'dashed' | 'dotted';
+
+/** A connection's visual style: stroke width + color, plus an optional dash pattern. */
+export interface ConnectionStyle {
+   width: number;
+   color: string;
+   dash?: ConnectionDash;
+}
+
 /** A user-styled line between two board items (endpoints are board-item ids). */
 export interface ConnectionBoardContent {
    kind: 'connection';
    from: string;
    to: string;
-   style: { width: number; color: string };
+   style: ConnectionStyle;
 }
 
 /**

@@ -92,6 +92,10 @@
       "connect": "Draw a connection",
       "lineWidth": "Line width",
       "lineColor": "Line color",
+      "lineStyle": "Line style",
+      "lineStyleSolid": "Solid",
+      "lineStyleDashed": "Dashed",
+      "lineStyleDotted": "Dotted",
       "deleteConnection": "Delete connection"
    },
    "DragPuck": {
