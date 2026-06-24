@@ -26,7 +26,7 @@ import type { CreateCardOptions, ThemeTypeUnion } from '@/lib/types/creation';
 import type { GameSystem } from '@/lib/types/drawer';
 
 
-type CardTypeSelection = 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME';
+type CardTypeSelection = 'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME' | 'CHARACTER_CARD';
 
 interface CreateCardDialogProps {
   isOpen: boolean;
@@ -36,16 +36,18 @@ interface CreateCardDialogProps {
   cardData?: CardData;
   modal?: boolean;
   game: GameSystem;
+  /** Board-only: also offer the game's character card (Hero/Merc/Rift). A sheet keeps its one-per-sheet rule. */
+  allowCharacterCard?: boolean;
 }
 
 
 
-export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardData, modal = true, game }: CreateCardDialogProps) {
+export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardData, modal = true, game, allowCharacterCard = false }: CreateCardDialogProps) {
    const { t: t } = useTranslation();
    const { t: tTypes } = useTranslation();
    const { t: tTheme } = useTranslation();
 
-   const [cardType, setCardType] = useState<'CHARACTER_THEME' | 'GROUP_THEME' | 'LOADOUT_THEME' | ''>('');
+   const [cardType, setCardType] = useState<CardTypeSelection | ''>('');
    const [themeType, setThemeType] = useState<ThemeTypeUnion>(
       game === 'LEGENDS' ? 'Origin' : game === 'OTHERSCAPE' ? 'Mythos' : 'Mythos'
    );
@@ -172,6 +174,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
                         {game === 'CITY_OF_MIST' && <SelectItem value="GROUP_THEME">{t('CreateCardDialog.crewCard')}</SelectItem>}
                         {game === 'OTHERSCAPE' && <SelectItem value="GROUP_THEME">{t('CreateCardDialog.otherscapeCrewCard')}</SelectItem>}
                         {game === 'OTHERSCAPE' && <SelectItem value="LOADOUT_THEME">{t('CreateCardDialog.otherscapeLoadoutCard')}</SelectItem>}
+                        {allowCharacterCard && <SelectItem value="CHARACTER_CARD">{game === 'OTHERSCAPE' ? t('CreateCardDialog.mercCard') : game === 'CITY_OF_MIST' ? t('CreateCardDialog.riftCard') : t('CreateCardDialog.heroCard')}</SelectItem>}
                      </SelectContent>
                   </Select>
                </div>
@@ -245,7 +248,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
 
 
                {
-                  mode === 'create' && <>
+                  mode === 'create' && cardType !== 'CHARACTER_CARD' && <>
                                           <span className="mt-6 font-bold">{t("CreateCardDialog.startingTagsLabel")}</span>
                                           <div className="grid grid-cols-3 items-center gap-4">
                                              <Label htmlFor="power-tags" className="text-right">{cardType === 'LOADOUT_THEME' ? t('CreateCardDialog.gearTagCountLabel') : t('CreateCardDialog.powerTagCountLabel')}</Label>

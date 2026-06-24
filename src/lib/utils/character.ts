@@ -105,6 +105,23 @@ export function deriveCardTitle(card: Card, t: TFunction): string {
  * Initializes with appropriate default cards - Hero Card for Legend, Character Card for City/Otherscape.
  * Empty trackers to start, ready for you to build your character!
  */
+/**
+ * The empty CHARACTER_CARD details for a game (Hero / Merc / Rift). Shared by new-character creation
+ * and the board's card builder, so the per-game schema lives in one place. `characterName` is empty
+ * for a board-native card (no character behind it).
+ */
+export function emptyCharacterCardDetails(game: GameSystem, characterName: string): LegendsHeroDetails | OtherscapeCharacterDetails | CityRiftDetails {
+   switch (game) {
+      case 'CITY_OF_MIST':
+         return { game: 'CITY_OF_MIST', characterName, mythos: '', logos: '', crewMembers: [], buildup: 0, nemeses: [] };
+      case 'OTHERSCAPE':
+         return { game: 'OTHERSCAPE', characterName, essence: { mythos: 0, self: 0, noise: 0 }, crewRelationships: [], specials: [] };
+      case 'LEGENDS':
+      default:
+         return { game: 'LEGENDS', characterName, fellowshipRelationships: [], promise: 0, quintessences: [], backpack: [] };
+   }
+}
+
 export function createNewCharacter(name: string, game: GameSystem): Character {
    const baseCharacter: Omit<Character, 'cards' | 'game'> = {
       id: cuid(),
@@ -119,84 +136,32 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
 
 
    switch (game) {
-      case 'CITY_OF_MIST': {
-         const riftCardId = cuid();
+      case 'CITY_OF_MIST':
          return {
             ...baseCharacter,
             game: 'CITY_OF_MIST',
             cards: [
-               {
-                  id: riftCardId,
-                  cardType: 'CHARACTER_CARD',
-                  title: 'Character Card',
-                  order: 0,
-                  isFlipped: false,
-                  details: {
-                     game: 'CITY_OF_MIST',
-                     characterName: name,
-                     mythos: '',
-                     logos: '',
-                     crewMembers: [],
-                     buildup: 0,
-                     nemeses: [],
-                  } as CityRiftDetails,
-               },
+               { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Character Card', order: 0, isFlipped: false, details: emptyCharacterCardDetails('CITY_OF_MIST', name) },
             ],
          };
-      }
 
-      case 'OTHERSCAPE': {
-         const characterCardId = cuid();
+      case 'OTHERSCAPE':
          return {
             ...baseCharacter,
             game: 'OTHERSCAPE',
             cards: [
-               {
-                  id: characterCardId,
-                  cardType: 'CHARACTER_CARD',
-                  title: 'Character Card',
-                  order: 0,
-                  isFlipped: false,
-                  details: {
-                     game: 'OTHERSCAPE',
-                     characterName: name,
-                     essence: {
-                        mythos: 0,
-                        self: 0,
-                        noise: 0,
-                     },
-                     crewRelationships: [],
-                     specials: [],
-                  } as OtherscapeCharacterDetails,
-               },
+               { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Character Card', order: 0, isFlipped: false, details: emptyCharacterCardDetails('OTHERSCAPE', name) },
             ],
          };
-      }
 
       case 'LEGENDS':
-      default: {
-         const heroCardId = cuid();
+      default:
          return {
             ...baseCharacter,
             game: 'LEGENDS',
             cards: [
-               {
-                  id: heroCardId,
-                  cardType: 'CHARACTER_CARD',
-                  title: 'Hero Card',
-                  order: 0,
-                  isFlipped: false,
-                  details: {
-                     game: 'LEGENDS',
-                     characterName: name,
-                     fellowshipRelationships: [],
-                     promise: 0,
-                     quintessences: [],
-                     backpack: [],
-                  } as LegendsHeroDetails,
-               },
+               { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Hero Card', order: 0, isFlipped: false, details: emptyCharacterCardDetails('LEGENDS', name) },
             ],
          };
-      }
    }
 }

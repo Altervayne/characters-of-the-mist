@@ -7,6 +7,7 @@ import cuid from 'cuid';
 import { createNewCharacter } from '../utils/character';
 import { deepReId } from '../utils/drawer';
 import { emptyTracker } from '@/lib/trackers/emptyTracker';
+import { buildCard } from '@/lib/cards/buildCard';
 import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '../constants/imageCard';
 
 // -- Store and Hook Imports --
@@ -14,7 +15,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 
 // -- Type Imports --
-import type { Character, Card, Tag, LegendsThemeDetails, CityThemeDetails, CityCrewDetails, OtherscapeThemeDetails, OtherscapeCrewDetails, OtherscapeLoadoutDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails, ImageCardDetails } from '@/lib/types/character';
+import type { Character, Card, Tag, LegendsThemeDetails, OtherscapeThemeDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails, ImageCardDetails } from '@/lib/types/character';
 import type { GeneralItemType, GameSystem } from '../types/drawer';
 import type { CreateCardOptions } from '../types/creation';
 
@@ -315,153 +316,17 @@ export function createCharacterStore() {
                },
                // Card Actions
                addCard: (options) => {
-                  const newCardId = cuid();
+                  let newCardId = '';
                   set((state) => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
 
-                     let newCard: Card | null = null;
-                     const baseCard = {
-                        id: newCardId,
-                        order: state.character.cards.length,
-                        isFlipped: false,
-                     };
-                     const createTags = (count: number): Tag[] => Array.from({ length: count }, () => ({ id: cuid(), name: '', isActive: false, isScratched: false }));
-
-                     if (state.character.game === 'LEGENDS') {
-                        switch (options.cardType) {
-                           case 'GROUP_THEME':
-                              newCard = {
-                                 ...baseCard,
-                                 cardType: 'GROUP_THEME',
-                                 title: `${state.character.name}'s Fellowship Theme Card`,
-                                 details: {
-                                    game: 'LEGENDS',
-                                    milestone: 0,
-                                    abandon: 0,
-                                    improve: 0,
-                                    mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
-                                    powerTags: createTags(options.powerTagsCount),
-                                    weaknessTags: createTags(options.weaknessTagsCount),
-                                    quest: '',
-                                    improvements: [],
-                                 } as LegendsFellowshipDetails
-                              };
-                              break;
-
-                           case 'CHARACTER_THEME':
-                              newCard = {
-                                 ...baseCard,
-                                 cardType: 'CHARACTER_THEME',
-                                 title: `${state.character.name}'s Theme Card - ${options.themebook ? options.themebook + '/' : ''}${options.themeType}`,
-                                 details: {
-                                    game: 'LEGENDS',
-                                    themebook: options.themebook || '',
-                                    themeType: options.themeType || 'Origin',
-                                    milestone: 0,
-                                    abandon: 0,
-                                    improve: 0,
-                                    mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
-                                    powerTags: createTags(options.powerTagsCount),
-                                    weaknessTags: createTags(options.weaknessTagsCount),
-                                    quest: '',
-                                    improvements: [],
-                                 } as LegendsThemeDetails,
-                              };
-                              break;
-                        }
-                     } else if (state.character.game === 'CITY_OF_MIST') {
-                        if (options.cardType === 'CHARACTER_THEME') {
-                           newCard = {
-                              ...baseCard,
-                              cardType: 'CHARACTER_THEME',
-                              title: `${state.character.name}'s Theme Card - ${options.themebook ? options.themebook + '/' : ''}${options.themeType}`,
-                              details: {
-                                 game: 'CITY_OF_MIST',
-                                 themebook: options.themebook || '',
-                                 themeType: options.themeType || 'Mythos',
-                                 attention: 0,
-                                 fadeOrCrack: 0,
-                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
-                                 powerTags: createTags(options.powerTagsCount),
-                                 weaknessTags: createTags(options.weaknessTagsCount),
-                                 mystery: null,
-                                 improvements: [],
-                              } as CityThemeDetails,
-                           };
-                        } else if (options.cardType === 'GROUP_THEME') {
-                           newCard = {
-                              ...baseCard,
-                              cardType: 'GROUP_THEME',
-                              title: `Crew Theme`,
-                              details: {
-                                 game: 'CITY_OF_MIST',
-                                 attention: 0,
-                                 crack: 0,
-                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
-                                 powerTags: createTags(options.powerTagsCount),
-                                 weaknessTags: createTags(options.weaknessTagsCount),
-                                 identity: null,
-                                 improvements: [],
-                              } as CityCrewDetails,
-                           };
-                        }
-                     } else if (state.character.game === 'OTHERSCAPE') {
-                        if (options.cardType === 'CHARACTER_THEME') {
-                           newCard = {
-                              ...baseCard,
-                              cardType: 'CHARACTER_THEME',
-                              title: `${state.character.name}'s Theme Card - ${options.themebook ? options.themebook + '/' : ''}${options.themeType}`,
-                              details: {
-                                 game: 'OTHERSCAPE',
-                                 themebook: options.themebook || '',
-                                 themeType: options.themeType || 'Mythos',
-                                 attention: 0,
-                                 fadeOrCrack: 0,
-                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
-                                 powerTags: createTags(options.powerTagsCount),
-                                 weaknessTags: createTags(options.weaknessTagsCount),
-                                 mystery: null,
-                                 improvements: [],
-                              } as OtherscapeThemeDetails,
-                           };
-                        } else if (options.cardType === 'GROUP_THEME') {
-                           newCard = {
-                              ...baseCard,
-                              cardType: 'GROUP_THEME',
-                              title: `Crew Theme`,
-                              details: {
-                                 game: 'OTHERSCAPE',
-                                 attention: 0,
-                                 crack: 0,
-                                 mainTag: { id: cuid(), name: options.mainTagName || '', isActive: false, isScratched: false },
-                                 powerTags: createTags(options.powerTagsCount),
-                                 weaknessTags: createTags(options.weaknessTagsCount),
-                                 identity: null,
-                                 improvements: [],
-                              } as OtherscapeCrewDetails,
-                           };
-                        } else if (options.cardType === 'LOADOUT_THEME') {
-                           newCard = {
-                              ...baseCard,
-                              cardType: 'LOADOUT_THEME',
-                              title: `Loadout`,
-                              details: {
-                                 game: 'OTHERSCAPE',
-                                 attention: 0,
-                                 crack: 0,
-                                 mainTag: { id: cuid(), name: '', isActive: false, isScratched: false }, // Not displayed but kept for consistency
-                                 powerTags: createTags(options.powerTagsCount), // Gear items
-                                 weaknessTags: createTags(options.weaknessTagsCount), // Flaws
-                                 description: null,
-                                 improvements: [],
-                                 wildcardSlots: options.wildcardSlots || 0,
-                              } as OtherscapeLoadoutDetails,
-                           };
-                        }
-                     }
-
-                     if (!newCard) return {};
+                     // The card construction lives in the shared `buildCard` factory; the sheet keeps its
+                     // familiar "<name>'s ..." titles by passing the character name, and its insertion order.
+                     const built = buildCard(state.character.game, options, state.character.name);
+                     if (!built) return {};
+                     const newCard: Card = { ...built, order: state.character.cards.length };
+                     newCardId = newCard.id;
 
                      const updatedCards = [...state.character.cards, newCard];
 

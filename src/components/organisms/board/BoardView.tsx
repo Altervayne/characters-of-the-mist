@@ -9,21 +9,23 @@ import { AnimatePresence, motion } from 'framer-motion';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Activity, ChevronLeft, ChevronRight, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, Sparkles, Square, StickyNote, Tag, Trash2 } from 'lucide-react';
+import { Activity, Building2, ChevronLeft, ChevronRight, CircuitBoard, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, ScrollText, Sparkles, Square, StickyNote, Tag, Trash2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
-import { EMBEDDED_TRACKER_SIZES } from '@/lib/board/embedDrawerItem';
+import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE } from '@/lib/board/embedDrawerItem';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
+import { buildCard } from '@/lib/cards/buildCard';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
 import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
+import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -35,6 +37,8 @@ import type { CSSProperties } from 'react';
 import type { BoardStore } from '@/lib/stores/boardStore';
 import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, ConnectionStyle, Viewport } from '@/lib/types/board';
 import type { Point } from '@/lib/board/boardConnections';
+import type { GameSystem } from '@/lib/types/drawer';
+import type { CreateCardOptions } from '@/lib/types/creation';
 
 /*
  * The board canvas: a pan/zoom world layer over the active board, with freeform move /
@@ -236,6 +240,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // The open right-click radial menu: the cursor's screen point (positions the ring) + its world
    // point (where a create action drops the new item). Null when closed.
    const [radial, setRadial] = useState<{ screen: { x: number; y: number }; world: Point } | null>(null);
+
+   // A pending board card creation: the chosen game + the world point to drop at, while the creation
+   // dialog is open. Null when closed.
+   const [pendingCard, setPendingCard] = useState<{ game: GameSystem; world: Point } | null>(null);
 
    // ==================
    //  Top bar overflow scroll UX (mirrors the tab strip: wheel scrolls, hidden scrollbar, edge arrows)
@@ -537,6 +545,24 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedIds(new Set([id]));
    };
 
+   /**
+    * Creates a card from the dialog's options at `worldCenter`: a board-native COPY (no drawer source)
+    * of the chosen game, sized to the card's native footprint, then selects it. The embed host seeds
+    * the synthetic character with the card's own game, so it themes by that game (not NEUTRAL).
+    */
+   const createCardAt = (game: GameSystem, options: CreateCardOptions, worldCenter: Point) => {
+      const card = buildCard(game, options);
+      if (!card) return;
+      const zValues = sortedItems.map((item) => item.z);
+      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+      const { width, height } = EMBEDDED_CARD_SIZE;
+      const id = cuid();
+      const placement = { id, x: worldCenter.x - width / 2, y: worldCenter.y - height / 2, width, height };
+      const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+      void actions.addItem({ ...placement, kind: 'card', z, zoneId, content: { kind: 'card', mode: 'copy', data: card } });
+      setSelectedIds(new Set([id]));
+   };
+
    /** Palette add: drop the new item centered in the current view (the radial uses the cursor point). */
    const handleAddItem = (kind: CreatableKind) => {
       const el = clipRef.current;
@@ -668,6 +694,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                        { id: 'story-tag', icon: <Tag className="h-5 w-5" />, label: t('Trackers.addStoryTag'), onSelect: () => createTrackerAt('STORY_TAG', radial.world) },
                        { id: 'story-theme', icon: <Sparkles className="h-5 w-5" />, label: t('Trackers.addStoryTheme'), onSelect: () => createTrackerAt('STORY_THEME', radial.world) },
                     ],
+                 },
+                 {
+                    id: 'cards',
+                    icon: <LayoutGrid className="h-5 w-5" />,
+                    label: t('BoardView.radialCards'),
+                    children: ([
+                       ['LEGENDS', ScrollText],
+                       ['CITY_OF_MIST', Building2],
+                       ['OTHERSCAPE', CircuitBoard],
+                    ] as const).map(([game, Icon]) => ({
+                       id: `card-${game}`,
+                       icon: <Icon className="h-5 w-5" />,
+                       label: t(`Drawer.Types.${game}`),
+                       // Open the (reused) creation dialog for that game; the drop happens on confirm.
+                       onSelect: () => setPendingCard({ game, world: radial.world }),
+                    })),
                  },
               ],
            },
@@ -863,6 +905,19 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
          {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
+
+         {/* Card creation: the reused dialog for the chosen game (with the board-only character-card
+             option); on confirm it drops a fresh interactive card at the pending world point. */}
+         {pendingCard && (
+            <CreateCardDialog
+               isOpen
+               mode="create"
+               game={pendingCard.game}
+               allowCharacterCard
+               onConfirm={(options) => createCardAt(pendingCard.game, options, pendingCard.world)}
+               onOpenChange={(open) => { if (!open) setPendingCard(null); }}
+            />
+         )}
       </div>
    );
 }

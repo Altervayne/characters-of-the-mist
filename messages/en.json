@@ -64,6 +64,7 @@
       "radialNewBoardElement": "New Board Element...",
       "radialNewSheetElement": "New Sheet Element...",
       "radialTrackers": "Trackers",
+      "radialCards": "Cards",
       "moveItem": "Move",
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
@@ -428,6 +429,9 @@
       "otherscapeThemeCard": "Merc Theme",
       "otherscapeCrewCard": "Crew Theme",
       "otherscapeLoadoutCard": "Loadout Theme",
+      "heroCard": "Hero Card",
+      "mercCard": "Merc Card",
+      "riftCard": "Rift Card",
 
       "selectThemeTypePlaceholder": "Select theme type...",
       "themeTypeLabel": "Theme Type",
