@@ -110,8 +110,10 @@ export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, 
          />
 
          {isSelected && toolbarSlot && createPortal(
+            // Pass the PENDING-aware color (like the zone's), so the picker's `value` tracks the live
+            // pick instead of the committed color - otherwise a custom drag snaps back each emit.
             <PostItColorControl
-               activeColor={content.color ?? DEFAULT_POSTIT_COLOR}
+               activeColor={background}
                onPreview={(color) => { pendingRef.current = { color }; setPending({ color }); }}
                onCommit={commitPendingColor}
             />,

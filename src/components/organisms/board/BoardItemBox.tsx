@@ -283,6 +283,9 @@ export function BoardItemBox({
 
          <div
             onPointerDown={handleBodyPointerDown}
+            // A collapsed zone's bar carries the zone's tint (matching the expanded frame) so the
+            // color survives collapse; an uncolored zone keeps the neutral card bar.
+            style={isCollapsedZone && zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
             className={cn(
                'relative h-full w-full select-none',
                !isZone && 'overflow-hidden',
@@ -291,7 +294,12 @@ export function BoardItemBox({
                // selection ring outlining the rectangle. A pin is a round borderless dot; every other
                // kind is a bordered card. Each draws a square/round ring when selected.
                isCollapsedZone
-                  ? cn('overflow-hidden rounded-md border bg-card shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50')
+                  ? cn(
+                       'overflow-hidden cursor-pointer rounded-md border shadow-sm',
+                       !zoneColor && 'bg-card',
+                       isSelected ? 'ring-2 ring-primary' : 'hover:border-primary/50',
+                       !zoneColor && (isSelected ? 'border-primary' : 'border-border'),
+                    )
                   : isZone
                      ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
                      : isPin

@@ -34,7 +34,10 @@ interface ColorPickerPopoverProps {
 
 export function ColorPickerPopover({ open, onOpenChange, trigger, activeColor, palette, recent, recentLabel, removeLabel, onApply }: ColorPickerPopoverProps) {
    return (
-      <Popover open={open} onOpenChange={onOpenChange}>
+      // Modal so a dismissing outside-click is consumed by Radix (close + commit-on-close) and never
+      // reaches the canvas to deselect the host - which would force-unmount the popover before its
+      // onOpenChange fires, dropping a pending custom color. The board is inert while it's open.
+      <Popover open={open} modal onOpenChange={onOpenChange}>
          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
          <PopoverContent align="center" sideOffset={6} className="w-62 overflow-hidden p-0">
             <ColorPopover

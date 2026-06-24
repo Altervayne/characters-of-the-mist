@@ -210,6 +210,24 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // point (where a create action drops the new item). Null when closed.
    const [radial, setRadial] = useState<{ screen: { x: number; y: number }; world: Point } | null>(null);
 
+   // The top-left toolbar's live width: the centered board name reserves this (plus a gap) on BOTH
+   // sides so it stays board-centered yet can never reach into the toolbar at any viewport width.
+   const toolbarRef = useRef<HTMLDivElement | null>(null);
+   const [toolbarWidth, setToolbarWidth] = useState(0);
+   const [clipWidth, setClipWidth] = useState(0);
+   useEffect(() => {
+      const toolbar = toolbarRef.current;
+      const clip = clipRef.current;
+      if (!toolbar || !clip) return;
+      const observer = new ResizeObserver(() => {
+         setToolbarWidth(toolbar.getBoundingClientRect().width);
+         setClipWidth(clip.getBoundingClientRect().width);
+      });
+      observer.observe(toolbar);
+      observer.observe(clip);
+      return () => observer.disconnect();
+   }, []);
+
    /** Converts an absolute cursor point to world coords via the live clip rect + viewport. */
    const cursorToWorld = useCallback((clientX: number, clientY: number): Point | null => {
       const el = clipRef.current;
@@ -660,6 +678,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
          {/* Floating palette + view controls: stop the pointer from starting a pan. */}
          <div
+            ref={toolbarRef}
             onPointerDown={(event) => event.stopPropagation()}
             className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm"
          >
@@ -694,10 +713,21 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             <span className="px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
          </div>
 
-         {/* Editable board name, top-center; stops the pointer so editing it never pans. */}
-         <div onPointerDown={(event) => event.stopPropagation()} className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
-            <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
-         </div>
+         {/* Editable board name, top-center; stops the pointer so editing it never pans. The container
+             is inset by the toolbar's reach (its left inset + width + a gap) on BOTH sides, so it spans
+             only the clear band between the toolbar and a mirrored reserve - the field (max-w-full)
+             stays board-centered yet can never reach the toolbar; truncate gives the ellipsis. If the
+             band is too narrow to hold the field (toolbar wider than the centered space), the name is
+             hidden rather than forced to overlap - it returns once there's room. */}
+         {clipWidth - 2 * (toolbarWidth + 24) >= 48 && (
+            <div
+               onPointerDown={(event) => event.stopPropagation()}
+               style={{ left: toolbarWidth + 24, right: toolbarWidth + 24 }}
+               className="pointer-events-none absolute top-3 flex justify-center"
+            >
+               <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
+            </div>
+         )}
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
          {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
@@ -744,7 +774,7 @@ function BoardNameField({ name, placeholder, onCommit }: { name: string; placeho
                event.currentTarget.blur();
             }
          }}
-         className="pointer-events-auto w-96 max-w-[60vw] truncate rounded-md border border-transparent bg-card/80 px-3 py-1 text-center text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm hover:border-border focus:border-border focus:bg-card focus:outline-none"
+         className="pointer-events-auto w-96 min-w-0 max-w-full truncate rounded-md border border-transparent bg-card/80 px-3 py-1 text-center text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm hover:border-border focus:border-border focus:bg-card focus:outline-none"
       />
    );
 }
