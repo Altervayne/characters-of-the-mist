@@ -9,13 +9,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Plus, Square, StickyNote, Trash2 } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, Sparkles, Square, StickyNote, Tag, Trash2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
+import { EMBEDDED_TRACKER_SIZES } from '@/lib/board/embedDrawerItem';
+import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -519,6 +521,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedIds(new Set([id]));
    };
 
+   /**
+    * Creates a fresh, game-agnostic tracker at `worldCenter`: a board-native COPY (no drawer source),
+    * sized to the tracker's native footprint, then selects it. It renders through the interactive
+    * embed host (a NEUTRAL synthetic character), so it's app-themed and editable with no extra wiring.
+    */
+   const createTrackerAt = (trackerType: TrackerType, worldCenter: Point) => {
+      const zValues = sortedItems.map((item) => item.z);
+      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+      const size = EMBEDDED_TRACKER_SIZES[trackerType];
+      const id = cuid();
+      const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
+      const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+      void actions.addItem({ ...placement, kind: 'tracker', z, zoneId, content: { kind: 'tracker', mode: 'copy', data: emptyTracker(trackerType) } });
+      setSelectedIds(new Set([id]));
+   };
+
    /** Palette add: drop the new item centered in the current view (the radial uses the cursor point). */
    const handleAddItem = (kind: CreatableKind) => {
       const el = clipRef.current;
@@ -626,15 +644,32 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const radialRoot: RadialNode[] = radial
       ? [
            {
-              id: 'new',
+              id: 'new-board',
               icon: <Plus className="h-5 w-5" />,
-              label: t('BoardView.radialNew'),
+              label: t('BoardView.radialNewBoardElement'),
               children: RADIAL_CREATE.map(({ kind, Icon, labelKey }) => ({
                  id: kind,
                  icon: <Icon className="h-5 w-5" />,
                  label: t(`BoardView.${labelKey}`),
                  onSelect: () => createItemAt(kind, radial.world),
               })),
+           },
+           {
+              id: 'new-sheet',
+              icon: <FilePlus2 className="h-5 w-5" />,
+              label: t('BoardView.radialNewSheetElement'),
+              children: [
+                 {
+                    id: 'trackers',
+                    icon: <ListChecks className="h-5 w-5" />,
+                    label: t('BoardView.radialTrackers'),
+                    children: [
+                       { id: 'status', icon: <Activity className="h-5 w-5" />, label: t('Trackers.addStatus'), onSelect: () => createTrackerAt('STATUS', radial.world) },
+                       { id: 'story-tag', icon: <Tag className="h-5 w-5" />, label: t('Trackers.addStoryTag'), onSelect: () => createTrackerAt('STORY_TAG', radial.world) },
+                       { id: 'story-theme', icon: <Sparkles className="h-5 w-5" />, label: t('Trackers.addStoryTheme'), onSelect: () => createTrackerAt('STORY_THEME', radial.world) },
+                    ],
+                 },
+              ],
            },
            ...(selectedIds.size > 0
               ? [

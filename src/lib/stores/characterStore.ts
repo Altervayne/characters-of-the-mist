@@ -6,6 +6,7 @@ import cuid from 'cuid';
 // -- Utils Imports --
 import { createNewCharacter } from '../utils/character';
 import { deepReId } from '../utils/drawer';
+import { emptyTracker } from '@/lib/trackers/emptyTracker';
 import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '../constants/imageCard';
 
 // -- Store and Hook Imports --
@@ -795,7 +796,7 @@ export function createCharacterStore() {
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newStatus: StatusTracker = { id: cuid(), name: name || '', trackerType: 'STATUS', tiers: Array(6).fill(false) };
+                     const newStatus: StatusTracker = { ...emptyTracker('STATUS'), name: name || '' };
                      return {
                         character: {
                            ...state.character,
@@ -814,7 +815,7 @@ export function createCharacterStore() {
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newStoryTag: StoryTagTracker = { id: cuid(), name: name || '', trackerType: 'STORY_TAG', isScratched: false };
+                     const newStoryTag: StoryTagTracker = { ...emptyTracker('STORY_TAG'), name: name || '' };
                      return {
                         character: {
                            ...state.character,
@@ -833,14 +834,7 @@ export function createCharacterStore() {
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newStoryTheme: StoryThemeTracker = {
-                        id: cuid(),
-                        name: name || '',
-                        trackerType: 'STORY_THEME',
-                        mainTag: { id: cuid(), name: '', isActive: false, isScratched: false },
-                        powerTags: [],
-                        weaknessTags: [],
-                     };
+                     const newStoryTheme: StoryThemeTracker = { ...emptyTracker('STORY_THEME'), name: name || '' };
                      return {
                         character: {
                            ...state.character,
