@@ -1220,6 +1220,7 @@
       "moreOptions": "Plus d'options",
       "done": "Valider",
       "back": "Retour",
-      "name": "Nom"
+      "name": "Nom",
+      "close": "[TO COMPLETE]"
    }
 }

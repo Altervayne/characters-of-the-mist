@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Activity, Building2, ChevronLeft, ChevronRight, CircuitBoard, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, ScrollText, Sparkles, Square, StickyNote, Tag, Trash2 } from 'lucide-react';
+import { Activity, Building2, ChevronLeft, ChevronRight, CircuitBoard, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, ScrollText, Sparkles, Square, StickyNote, Tag, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -25,7 +25,8 @@ import { BoardItemBox } from './BoardItemBox';
 import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
-import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
+import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -200,22 +201,26 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    }, [viewport]);
    const panStart = useRef<{ x: number; y: number; origX: number; origY: number; zoom: number } | null>(null);
 
-   // The clip's live size, so the corner readout can derive the view-center world point. The observer
-   // fires on observe(), so the first measure lands without a synchronous setState in the effect body.
-   const [clipSize, setClipSize] = useState({ width: 0, height: 0 });
+   // The clip's live box (size + viewport offset), so the corner readout and the card popover read it
+   // from state, never via the ref during render. The observer captures the rect (in its callback, not
+   // the effect body) and fires on observe(), so the first measure lands without a synchronous setState.
+   const [clipRect, setClipRect] = useState({ left: 0, top: 0, width: 0, height: 0 });
    useEffect(() => {
       const el = clipRef.current;
       if (!el) return;
-      const observer = new ResizeObserver(() => setClipSize({ width: el.clientWidth, height: el.clientHeight }));
+      const observer = new ResizeObserver(() => {
+         const box = el.getBoundingClientRect();
+         setClipRect({ left: box.left, top: box.top, width: box.width, height: box.height });
+      });
       observer.observe(el);
       return () => observer.disconnect();
    }, []);
    // The world point at the clip's center, for the corner readout. Origin cancels for the centre, so
    // it derives from the live viewport + clip size alone (no layout read during render).
-   const viewCenter = screenToWorld(clipSize.width / 2, clipSize.height / 2, { left: 0, top: 0 }, viewport);
+   const viewCenter = screenToWorld(clipRect.width / 2, clipRect.height / 2, { left: 0, top: 0 }, viewport);
    // Reset-view places the world origin at the clip's center (so the readout reads 0, 0), not the
    // top-left corner that a zero offset would give.
-   const originViewport = (): Viewport => ({ x: clipSize.width / 2, y: clipSize.height / 2, zoom: 1 });
+   const originViewport = (): Viewport => ({ x: clipRect.width / 2, y: clipRect.height / 2, zoom: 1 });
 
    // The in-progress connect drag (preview line follows the cursor in world coords).
    const [connectPreview, setConnectPreview] = useState<{ fromId: string; cursor: Point } | null>(null);
@@ -241,9 +246,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // point (where a create action drops the new item). Null when closed.
    const [radial, setRadial] = useState<{ screen: { x: number; y: number }; world: Point } | null>(null);
 
-   // A pending board card creation: the chosen game + the world point to drop at, while the creation
-   // dialog is open. Null when closed.
-   const [pendingCard, setPendingCard] = useState<{ game: GameSystem; world: Point } | null>(null);
+   // A pending board card creation: the chosen game, the world point to drop at, and the cursor screen
+   // point the creation popover anchors to. Null when closed.
+   const [pendingCard, setPendingCard] = useState<{ game: GameSystem; world: Point; screen: { x: number; y: number } } | null>(null);
 
    // ==================
    //  Top bar overflow scroll UX (mirrors the tab strip: wheel scrolls, hidden scrollbar, edge arrows)
@@ -707,8 +712,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                        id: `card-${game}`,
                        icon: <Icon className="h-5 w-5" />,
                        label: t(`Drawer.Types.${game}`),
-                       // Open the (reused) creation dialog for that game; the drop happens on confirm.
-                       onSelect: () => setPendingCard({ game, world: radial.world }),
+                       // Open the creation popover for that game; the drop happens on confirm.
+                       onSelect: () => setPendingCard({ game, world: radial.world, screen: radial.screen }),
                     })),
                  },
               ],
@@ -723,6 +728,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       : [];
 
    return (
+      <>
       <div
          ref={setClipRefs}
          data-board-clip
@@ -905,20 +911,69 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
          {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
-
-         {/* Card creation: the reused dialog for the chosen game (with the board-only character-card
-             option); on confirm it drops a fresh interactive card at the pending world point. */}
-         {pendingCard && (
-            <CreateCardDialog
-               isOpen
-               mode="create"
-               game={pendingCard.game}
-               allowCharacterCard
-               onConfirm={(options) => createCardAt(pendingCard.game, options, pendingCard.world)}
-               onOpenChange={(open) => { if (!open) setPendingCard(null); }}
-            />
-         )}
       </div>
+
+      {/* Card creation: a popover "window" anchored at the cursor. It lives OUTSIDE the clip div, so a
+          pointer-down on its controls does NOT bubble (in the React tree) to the canvas pan handler -
+          the actual fix for the click-through. `modal` consumes the dismissing outside-click; Escape /
+          the close button cancel; confirm drops the card at the pending world point. */}
+      {pendingCard && (() => {
+         // Clamp the anchor to the board's own rect so a panel grown downward (collision avoidance
+         // off, see below) stays over the board. Read the clip's live box, not window dims, so it's
+         // correct regardless of the host's viewport reporting.
+         const MARGIN = 16;
+         const PANEL_WIDTH = 384; // w-96
+         // The clip's box from state (never the ref during render); falls back to the raw point.
+         const hasBounds = clipRect.width > 0 && clipRect.height > 0;
+         const left = clipRect.left;
+         const right = hasBounds ? clipRect.left + clipRect.width : pendingCard.screen.x + PANEL_WIDTH;
+         const top = clipRect.top;
+         const bottom = hasBounds ? clipRect.top + clipRect.height : pendingCard.screen.y + 320;
+         const anchorX = Math.min(Math.max(pendingCard.screen.x, left + MARGIN), Math.max(left + MARGIN, right - PANEL_WIDTH - MARGIN));
+         const anchorY = Math.min(Math.max(pendingCard.screen.y, top + MARGIN), Math.max(top + MARGIN, bottom - 160));
+         return (
+            <Popover open modal onOpenChange={(open) => { if (!open) setPendingCard(null); }}>
+               <PopoverAnchor asChild>
+                  <div className="pointer-events-none fixed" style={{ left: anchorX, top: anchorY, width: 0, height: 0 }} />
+               </PopoverAnchor>
+               <PopoverContent
+                  align="start"
+                  side="bottom"
+                  sideOffset={8}
+                  // Anchor once and grow DOWNWARD: collision avoidance would re-solve the position on
+                  // every height change (picking a card type adds rows) and make the panel jump.
+                  avoidCollisions={false}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="flex max-h-(--radix-popover-content-available-height) w-96 flex-col overflow-hidden rounded-lg border border-border bg-popover/95 p-0 shadow-lg backdrop-blur-sm"
+               >
+                  {/* Header styled from app tokens only, so it follows the chosen theme palette (the card
+                      you make keeps its game look; this creation chrome does not). */}
+                  <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5">
+                     <span className="text-sm font-semibold text-foreground">{t('CreateCardDialog.title')}</span>
+                     <button
+                        type="button"
+                        title={t('Common.close')}
+                        aria-label={t('Common.close')}
+                        onClick={() => setPendingCard(null)}
+                        className="flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                     >
+                        <X className="h-4 w-4" />
+                     </button>
+                  </div>
+                  {/* A tall form scrolls inside the panel (height capped to the space below the anchor). */}
+                  <div className="min-h-0 overflow-y-auto px-4 pb-3">
+                     <CardCreationForm
+                        game={pendingCard.game}
+                        mode="create"
+                        allowCharacterCard
+                        onConfirm={(options) => { createCardAt(pendingCard.game, options, pendingCard.world); setPendingCard(null); }}
+                     />
+                  </div>
+               </PopoverContent>
+            </Popover>
+         );
+      })()}
+      </>
    );
 }
 

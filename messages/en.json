@@ -1385,6 +1385,7 @@
       "moreOptions": "More options",
       "done": "Done",
       "back": "Back",
-      "name": "Name"
+      "name": "Name",
+      "close": "Close"
    }
 }
