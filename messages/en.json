@@ -150,7 +150,8 @@
          "saved": "Board saved to",
          "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item.",
          "exported": "Board exported to downloads.",
-         "imported": "Board file imported successfully."
+         "imported": "Board file imported successfully.",
+         "cleared": "Board cleared."
       },
       "card": {
          "created": "Card created successfully.",
@@ -265,6 +266,12 @@
          "resetConfirmDescription": "This action is destructive. Your active character will be deleted and replaced with a blank character. If you don't reload the app, you can still recover your old character with the undo functionality.",
          "resetConfirmCancelButton": "Cancel",
          "resetConfirmButton": "Reset the Character",
+
+         "clearBoard": "Clear Board",
+         "clearBoardConfirmTitle": "Are you sure you want to clear the board?",
+         "clearBoardConfirmDescription": "This removes every item from the board. The board's name, position, and grid are kept, and you can bring the items back with the undo functionality (as long as you don't reload the app).",
+         "clearBoardConfirmCancelButton": "Cancel",
+         "clearBoardConfirmButton": "Clear the Board",
 
          "openMenu": "Open main menu",
          "returnToMenu": "Return to main menu",

@@ -150,7 +150,8 @@
          "saved": "[TO COMPLETE]",
          "linkedItemMissing": "[TO COMPLETE]",
          "exported": "[TO COMPLETE]",
-         "imported": "[TO COMPLETE]"
+         "imported": "[TO COMPLETE]",
+         "cleared": "[TO COMPLETE]"
       },
       "card": {
          "created": "Carte créée avec succès.",
@@ -254,6 +255,12 @@
          "resetConfirmDescription": "Cette action est destructive. Votre personnage actif sera supprimé et remplacé par une fiche de personnage vierge. Tant que vous n'actualisez pas l'application, vous pouvez revenir en arrière avec la fonction Undo.",
          "resetConfirmCancelButton": "Annuler",
          "resetConfirmButton": "Réinitialiser le Perso.",
+
+         "clearBoard": "[TO COMPLETE]",
+         "clearBoardConfirmTitle": "[TO COMPLETE]",
+         "clearBoardConfirmDescription": "[TO COMPLETE]",
+         "clearBoardConfirmCancelButton": "[TO COMPLETE]",
+         "clearBoardConfirmButton": "[TO COMPLETE]",
          "openMenu": "Ouvrir le menu principal",
          "returnToMenu": "Retourner au menu principal",
          "unloadConfirmTitle": "Êtes vous certain de vouloir retourner au Menu?",

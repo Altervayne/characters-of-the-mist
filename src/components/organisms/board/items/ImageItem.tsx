@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { Image as ImageIcon, Loader2, Scaling, Trash2, Upload } from 'lucide-react';
+import { Image as ImageIcon, ImageOff, Loader2, Scaling, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -104,7 +104,7 @@ export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, o
                   <ImageIcon className="h-4 w-4" />
                </ImageControl>
                <ImageControl title={t('BoardView.imageRemove')} destructive onClick={removeImage}>
-                  <Trash2 className="h-4 w-4" />
+                  <ImageOff className="h-4 w-4" />
                </ImageControl>
             </>,
             toolbarSlot,

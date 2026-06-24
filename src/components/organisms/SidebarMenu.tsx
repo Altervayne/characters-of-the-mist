@@ -26,6 +26,7 @@ import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
 import { BoardUndoRedoControls } from '../molecules/BoardUndoRedoControls';
 import { SidebarButton } from '../molecules/SidebarButton';
+import { ClearBoardControl } from '../molecules/ClearBoardControl';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
@@ -393,19 +394,37 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                }
 
                { activeWindow === 'BOARD' &&
-                  <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                     "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
-                  )}>
-                     <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardToDrawer} Icon={Save}>
-                        {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawer')}
-                     </SidebarButton>
-                     <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardAsToDrawer} Icon={SaveAll}>
-                        {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawerAs')}
-                     </SidebarButton>
-                     <SidebarButton isCollapsed={isCollapsed} onClick={handleExportBoard} Icon={Upload}>
-                        {t('CharacterSheetPage.SidebarMenu.exportBoard')}
-                     </SidebarButton>
-                  </motion.section>
+                  <>
+                     {/* View control above the save/export group, mirroring how the play area leads with its toggles. */}
+                     <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                        "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
+                        isCollapsed ? "px-0" : "px-2"
+                     )}>
+                        <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
+                           {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
+                        </SidebarButton>
+                     </motion.section>
+
+                     <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                        "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
+                     )}>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardToDrawer} Icon={Save}>
+                           {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawer')}
+                        </SidebarButton>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardAsToDrawer} Icon={SaveAll}>
+                           {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawerAs')}
+                        </SidebarButton>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={handleExportBoard} Icon={Upload}>
+                           {t('CharacterSheetPage.SidebarMenu.exportBoard')}
+                        </SidebarButton>
+                     </motion.section>
+
+                     <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                        "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
+                     )}>
+                        <ClearBoardControl isCollapsed={isCollapsed} />
+                     </motion.section>
+                  </>
                }
 
                { activeWindow === 'MAIN_MENU' &&
