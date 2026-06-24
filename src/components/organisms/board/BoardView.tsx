@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -8,7 +8,7 @@ import { useDroppable } from '@dnd-kit/core';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Square, StickyNote } from 'lucide-react';
+import { Copy, Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Plus, Square, StickyNote, Trash2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BoardItemBox } from './BoardItemBox';
 import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
+import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -45,6 +46,16 @@ type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zo
 
 /** A fresh pin's color (classic corkboard red). */
 const DEFAULT_PIN_COLOR = '#ef4444';
+
+/** The create actions, in ring order: each kind's palette icon + label key (reused by the radial). */
+const RADIAL_CREATE: { kind: CreatableKind; Icon: typeof StickyNote; labelKey: string }[] = [
+   { kind: 'post-it', Icon: StickyNote, labelKey: 'addPostIt' },
+   { kind: 'journal', Icon: NotebookText, labelKey: 'addJournal' },
+   { kind: 'image', Icon: ImageIcon, labelKey: 'addImage' },
+   { kind: 'pin', Icon: MapPin, labelKey: 'addPin' },
+   { kind: 'dice-tray', Icon: Dices, labelKey: 'addDiceTray' },
+   { kind: 'zone', Icon: Frame, labelKey: 'addZone' },
+];
 
 /** Default size (world units) per creatable kind. A pin is a small fixed dot. */
 const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
@@ -195,6 +206,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // world layer, so it paints behind the item boxes). State-backed like the toolbar slots.
    const [backLayer, setBackLayer] = useState<HTMLDivElement | null>(null);
 
+   // The open right-click radial menu: the cursor's screen point (positions the ring) + its world
+   // point (where a create action drops the new item). Null when closed.
+   const [radial, setRadial] = useState<{ screen: { x: number; y: number }; world: Point } | null>(null);
+
    /** Converts an absolute cursor point to world coords via the live clip rect + viewport. */
    const cursorToWorld = useCallback((clientX: number, clientY: number): Point | null => {
       const el = clipRef.current;
@@ -238,6 +253,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     */
    const handleMoveStart = useCallback(
       (id: string, event: ReactPointerEvent) => {
+         if (event.button !== 0) return; // right-click is for the radial menu, not a move
          const base = selectedIds.has(id) ? new Set(selectedIds) : new Set([id]);
          if (!selectedIds.has(id)) setSelectedIds(base);
 
@@ -283,6 +299,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     */
    const handleConnectStart = useCallback(
       (fromId: string, event: ReactPointerEvent) => {
+         if (event.button !== 0) return; // right-click is for the radial menu, not a connect drag
          const start = cursorToWorld(event.clientX, event.clientY);
          setConnectPreview({ fromId, cursor: start ?? { x: 0, y: 0 } });
 
@@ -359,6 +376,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    //  Pan (background drag) + background click clears selection
    // ==================
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
+      // Only the primary button pans/marquees; a right-click is reserved for the radial menu.
+      if (event.button !== 0) return;
       if (event.shiftKey) {
          // Shift+drag is a marquee, not a pan; it keeps the current selection (additive).
          const clip = event.currentTarget.getBoundingClientRect();
@@ -412,27 +431,42 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // ==================
    //  Toolbar actions
    // ==================
-   const handleAddItem = (kind: CreatableKind) => {
-      const el = clipRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      // Place the new item centered in the current view (screen center -> world).
-      const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
+   /** Creates a new item of `kind` centered on `worldCenter`, joining a zone it lands in, then selects it. */
+   const createItemAt = (kind: CreatableKind, worldCenter: Point) => {
       const zValues = sortedItems.map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = ITEM_SIZE[kind];
       const id = cuid();
-      const placement = { id, x: center.x - size.width / 2, y: center.y - size.height / 2, width: size.width, height: size.height };
+      const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
       // A non-zone item created over a zone joins it (same center-in-rectangle rule as a drop).
       const zoneId = kind === 'zone' ? undefined : zoneContaining(placement, zoneItems) ?? undefined;
-      void actions.addItem({
-         ...placement,
-         kind,
-         z,
-         zoneId,
-         content: emptyContent(kind),
-      });
+      void actions.addItem({ ...placement, kind, z, zoneId, content: emptyContent(kind) });
       setSelectedIds(new Set([id]));
+   };
+
+   /** Palette add: drop the new item centered in the current view (the radial uses the cursor point). */
+   const handleAddItem = (kind: CreatableKind) => {
+      const el = clipRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
+      createItemAt(kind, center);
+   };
+
+   /**
+    * Right-click opens the radial menu at the cursor (create-at-cursor + selection actions). Over a
+    * text field it does nothing, leaving the native edit menu; right-clicking an unselected item
+    * selects it first so the selection actions target it (empty canvas keeps the current selection).
+    */
+   const handleContextMenu = (event: ReactMouseEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      event.preventDefault();
+      const itemId = target instanceof Element ? target.closest('[data-board-item-id]')?.getAttribute('data-board-item-id') ?? null : null;
+      if (itemId && !selectedIds.has(itemId)) setSelectedIds(new Set([itemId]));
+      const world = cursorToWorld(event.clientX, event.clientY);
+      if (!world) return;
+      setRadial({ screen: { x: event.clientX, y: event.clientY }, world });
    };
 
    /** Frames every spatial item, centered and zoom-clamped (origin when the board is empty). */
@@ -511,6 +545,31 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       );
    };
 
+   // The radial's node tree: a "New" submenu holding the per-kind create leaves (each placed at the
+   // click), plus duplicate + delete leaves at the root when something is selected. Built only while
+   // the menu is open. The root stays lean - it grows later via the same tree.
+   const radialRoot: RadialNode[] = radial
+      ? [
+           {
+              id: 'new',
+              icon: <Plus className="h-5 w-5" />,
+              label: t('BoardView.radialNew'),
+              children: RADIAL_CREATE.map(({ kind, Icon, labelKey }) => ({
+                 id: kind,
+                 icon: <Icon className="h-5 w-5" />,
+                 label: t(`BoardView.${labelKey}`),
+                 onSelect: () => createItemAt(kind, radial.world),
+              })),
+           },
+           ...(selectedIds.size > 0
+              ? [
+                   { id: 'duplicate', icon: <Copy className="h-5 w-5" />, label: t('BoardView.duplicateSelection'), onSelect: () => void handleDuplicateSelection() },
+                   { id: 'delete', icon: <Trash2 className="h-5 w-5" />, label: t('BoardView.deleteSelection'), destructive: true, onSelect: handleDeleteSelection },
+                ]
+              : []),
+        ]
+      : [];
+
    return (
       <div
          ref={setClipRefs}
@@ -518,6 +577,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          onPointerDown={handleBackgroundPointerDown}
          onPointerMove={handleBackgroundPointerMove}
          onPointerUp={handleBackgroundPointerUp}
+         onContextMenu={handleContextMenu}
          className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : 'cursor-grab')}
       >
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
@@ -638,6 +698,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          <div onPointerDown={(event) => event.stopPropagation()} className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
             <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
          </div>
+
+         {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
+         {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
       </div>
    );
 }

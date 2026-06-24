@@ -162,6 +162,7 @@ export function BoardItemBox({
    // ==================
 
    const handleBodyPointerDown = (event: ReactPointerEvent) => {
+      if (event.button !== 0) return; // right-click selection + menu is handled by the canvas
       event.stopPropagation(); // don't start a background pan
       const additive = event.shiftKey || event.ctrlKey || event.metaKey;
       // Selecting renders the item on top only while selected (a render-only boost in the canvas);
@@ -175,6 +176,7 @@ export function BoardItemBox({
    // ==================
 
    const handleResizePointerDown = (event: ReactPointerEvent) => {
+      if (event.button !== 0) return; // right-click is for the radial menu, not a resize
       event.stopPropagation();
       onSelect(item.id, false);
       const orig = { x: item.x, y: item.y, width: item.width, height: item.height };

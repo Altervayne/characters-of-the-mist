@@ -58,6 +58,7 @@
       "gridLines": "Grid: lines",
       "gridNone": "Grid: off",
       "boardNamePlaceholder": "Untitled board",
+      "radialNew": "New",
       "moveItem": "Move",
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
