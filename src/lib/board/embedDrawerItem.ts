@@ -3,14 +3,15 @@ import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '@/lib/
 
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
-import type { CardBoardContent, TrackerBoardContent } from '@/lib/types/board';
+import type { CardBoardContent, TrackerBoardContent, ImageBoardContent } from '@/lib/types/board';
+import type { ImageCardDetails } from '@/lib/types/character';
 
 /*
- * Turns a dragged drawer card/tracker into the spec for an embedded board item. The drop
- * defaults to a COPY: the content is deep-copied so the board item is self-contained and
- * a later drawer edit can never mutate it. It also records `sourceDrawerItemId` so the
- * copy can later be toggled into a live reference. Full sheets, full boards, and folders
- * are not embeddable here and return `null` (the caller no-ops without a toast).
+ * Turns a dragged drawer card/tracker into the spec for a board item. A card/tracker drops as a
+ * COPY: the content is deep-copied so the board item is self-contained and a later drawer edit can
+ * never mutate it, and it records `sourceDrawerItemId`. An IMAGE_CARD is just an image, so it drops
+ * as the board's NATIVE image item (no embed, no copy/reference). Full sheets, full boards, and
+ * folders are not droppable here and return `null` (the caller no-ops without a toast).
  */
 
 /**
@@ -29,23 +30,9 @@ const DEFAULT_TRACKER_SIZE = { width: 220, height: 100 } as const;
 /** Native footprint of a theme / character card (the sheet's `w-62.5 h-150`); the embed renders at this size. */
 export const EMBEDDED_CARD_SIZE = { width: 250, height: 600 } as const;
 
-const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME', 'IMAGE_CARD']);
+// An IMAGE_CARD is NOT here: it drops as a native image item, not an embedded card.
+const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME']);
 const TRACKER_TYPES = new Set<GeneralItemType>(['STATUS_TRACKER', 'STORY_TAG_TRACKER', 'STORY_THEME_TRACKER']);
-
-/**
- * The native footprint for an embedded card. Theme / character cards use the fixed sheet size; an
- * image card uses its own stored dimensions (clamped) so the box matches the portrait it renders.
- */
-function cardEmbedSize(item: DrawerItem): { width: number; height: number } {
-   if (item.type === 'IMAGE_CARD') {
-      const details = (item.content as { details?: { width?: number; height?: number } }).details;
-      return {
-         width: details?.width ? clampCardWidth(details.width) : DEFAULT_IMAGE_CARD_SIZE.width,
-         height: details?.height ? clampCardHeight(details.height) : DEFAULT_IMAGE_CARD_SIZE.height,
-      };
-   }
-   return { width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height };
-}
 
 /** The native footprint for an embedded tracker, by its `trackerType`. */
 function trackerEmbedSize(item: DrawerItem): { width: number; height: number } {
@@ -53,27 +40,34 @@ function trackerEmbedSize(item: DrawerItem): { width: number; height: number } {
    return (trackerType && EMBEDDED_TRACKER_SIZES[trackerType]) || DEFAULT_TRACKER_SIZE;
 }
 
-/** The spec for an embedded board item built from a drawer item: its kind, default size, and copy content. */
+/** The spec for a board item built from a drawer item: its kind, default size, and content. */
 export interface EmbeddedBoardSpec {
-   kind: 'card' | 'tracker';
+   kind: 'card' | 'tracker' | 'image';
    width: number;
    height: number;
-   content: CardBoardContent | TrackerBoardContent;
+   content: CardBoardContent | TrackerBoardContent | ImageBoardContent;
 }
 
 /**
- * Builds the embedded-item spec for `item`, or `null` when the item is not an
- * embeddable card/tracker. The content is a deep copy of the drawer item's content,
- * independent of the source, and records the source id so it can be toggled to a
- * reference later.
+ * Builds the board-item spec for `item`, or `null` when the item is not droppable. A card/tracker
+ * becomes an embedded COPY (deep-copied content, recording the source id); an image card becomes a
+ * native image item carrying its asset, fit, and stored size (no embed).
  */
 export function embeddedSpecForDrawerItem(item: DrawerItem): EmbeddedBoardSpec | null {
+   if (item.type === 'IMAGE_CARD') {
+      const details = (item.content as { details?: ImageCardDetails }).details;
+      return {
+         kind: 'image',
+         width: details?.width ? clampCardWidth(details.width) : DEFAULT_IMAGE_CARD_SIZE.width,
+         height: details?.height ? clampCardHeight(details.height) : DEFAULT_IMAGE_CARD_SIZE.height,
+         content: { kind: 'image', assetId: details?.assetId ?? null, fit: details?.fit ?? 'cover' },
+      };
+   }
    if (CARD_TYPES.has(item.type)) {
-      const size = cardEmbedSize(item);
       return {
          kind: 'card',
-         width: size.width,
-         height: size.height,
+         width: EMBEDDED_CARD_SIZE.width,
+         height: EMBEDDED_CARD_SIZE.height,
          content: { kind: 'card', mode: 'copy', sourceDrawerItemId: item.id, data: structuredClone(item.content) },
       };
    }

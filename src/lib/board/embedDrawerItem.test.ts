@@ -61,15 +61,19 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(spec).toMatchObject({ width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
    });
 
-   it('sizes an image card to its own stored dimensions, defaulting when unset', () => {
+   it('drops an image card as a NATIVE image item (not an embed), carrying asset/fit/size', () => {
       const withSize = embeddedSpecForDrawerItem(
-         makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'LEGENDS', width: 320, height: 240 } } as unknown as DrawerItemContent),
+         makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'NEUTRAL', assetId: 'hash-1', fit: 'contain', width: 320, height: 240 } } as unknown as DrawerItemContent),
       );
-      expect(withSize).toMatchObject({ width: 320, height: 240 });
+      expect(withSize).toMatchObject({ kind: 'image', width: 320, height: 240, content: { kind: 'image', assetId: 'hash-1', fit: 'contain' } });
+      // A native image item has no embed machinery.
+      expect(withSize!.content).not.toHaveProperty('sourceDrawerItemId');
+      expect(withSize!.content).not.toHaveProperty('mode');
 
-      const noSize = embeddedSpecForDrawerItem(
-         makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'LEGENDS' } } as unknown as DrawerItemContent),
+      // An empty frame (null asset) maps to a null-asset native image, defaulting size + fit.
+      const empty = embeddedSpecForDrawerItem(
+         makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'NEUTRAL', assetId: null } } as unknown as DrawerItemContent),
       );
-      expect(noSize).toMatchObject({ width: DEFAULT_IMAGE_CARD_SIZE.width, height: DEFAULT_IMAGE_CARD_SIZE.height });
+      expect(empty).toMatchObject({ kind: 'image', width: DEFAULT_IMAGE_CARD_SIZE.width, height: DEFAULT_IMAGE_CARD_SIZE.height, content: { kind: 'image', assetId: null, fit: 'cover' } });
    });
 });
