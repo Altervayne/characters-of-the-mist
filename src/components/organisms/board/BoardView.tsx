@@ -97,8 +97,6 @@ function buildConnectionContent(item: BoardItem | undefined, style: ConnectionSt
 
 /** Wheel-to-zoom sensitivity: a typical notch (~100 deltaY) is a gentle step. */
 const ZOOM_SENSITIVITY = 0.0015;
-/** The store's default viewport, reused by return-to-origin. */
-const ORIGIN_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 
 /** Screen-px margin fit-to-content leaves around the framed items. */
 const FIT_PADDING = 64;
@@ -195,6 +193,23 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       viewportRef.current = viewport;
    }, [viewport]);
    const panStart = useRef<{ x: number; y: number; origX: number; origY: number; zoom: number } | null>(null);
+
+   // The clip's live size, so the corner readout can derive the view-center world point. The observer
+   // fires on observe(), so the first measure lands without a synchronous setState in the effect body.
+   const [clipSize, setClipSize] = useState({ width: 0, height: 0 });
+   useEffect(() => {
+      const el = clipRef.current;
+      if (!el) return;
+      const observer = new ResizeObserver(() => setClipSize({ width: el.clientWidth, height: el.clientHeight }));
+      observer.observe(el);
+      return () => observer.disconnect();
+   }, []);
+   // The world point at the clip's center, for the corner readout. Origin cancels for the centre, so
+   // it derives from the live viewport + clip size alone (no layout read during render).
+   const viewCenter = screenToWorld(clipSize.width / 2, clipSize.height / 2, { left: 0, top: 0 }, viewport);
+   // Reset-view places the world origin at the clip's center (so the readout reads 0, 0), not the
+   // top-left corner that a zero offset would give.
+   const originViewport = (): Viewport => ({ x: clipSize.width / 2, y: clipSize.height / 2, zoom: 1 });
 
    // The in-progress connect drag (preview line follows the cursor in world coords).
    const [connectPreview, setConnectPreview] = useState<{ fromId: string; cursor: Point } | null>(null);
@@ -777,7 +792,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
                      <Maximize className="h-4 w-4" />
                   </ToolbarButton>
-                  <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport({ ...ORIGIN_VIEWPORT })}>
+                  <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport(originViewport())}>
                      <Crosshair className="h-4 w-4" />
                   </ToolbarButton>
                   <span className="shrink-0 px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
@@ -802,6 +817,13 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   </motion.button>
                )}
             </AnimatePresence>
+         </div>
+
+         {/* View-center coordinate readout: where the clip is centered in world space, to orient on a
+             large board. Screen-space, bottom-right, inert (never eats a pan/click), tabular so the
+             digits don't jump on negative or large values. Kept out of the scrolling top bar. */}
+         <div className="pointer-events-none absolute bottom-2 right-2 select-none rounded bg-card/85 px-2 py-1 font-mono text-sm font-medium tabular-nums text-foreground/80 shadow-sm backdrop-blur-sm">
+            x {Math.round(viewCenter.x)}, y {Math.round(viewCenter.y)}
          </div>
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}

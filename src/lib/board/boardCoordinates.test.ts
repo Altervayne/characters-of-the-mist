@@ -44,6 +44,7 @@ describe('screenDeltaToWorld', () => {
 describe('clampZoom', () => {
    it('clamps to the allowed range', () => {
       expect(clampZoom(0.1)).toBe(MIN_ZOOM);
+      expect(clampZoom(0.05)).toBe(MIN_ZOOM); // below the floor clamps up
       expect(clampZoom(5)).toBe(MAX_ZOOM);
       expect(clampZoom(1)).toBe(1);
    });

@@ -10,7 +10,7 @@ import type { BoardItem, Viewport } from '@/lib/types/board';
  */
 
 /** The clamped zoom range for the canvas. */
-export const MIN_ZOOM = 0.25;
+export const MIN_ZOOM = 0.1;
 export const MAX_ZOOM = 2;
 
 /** The minimal screen-space offset (left/top) of the clip layer, from its bounding rect. */
