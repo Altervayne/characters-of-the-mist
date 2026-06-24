@@ -5,10 +5,11 @@ import { useTranslation } from 'react-i18next';
 // -- Other Library Imports --
 import { useStore } from 'zustand';
 import { useDroppable } from '@dnd-kit/core';
+import { AnimatePresence, motion } from 'framer-motion';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Copy, Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Plus, Square, StickyNote, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, Dices, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, MapPin, Maximize, NotebookText, Plus, Square, StickyNote, Trash2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -102,6 +103,14 @@ const ORIGIN_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 const FIT_PADDING = 64;
 /** The grid styles the toolbar control cycles through, in order. */
 const GRID_CYCLE: BoardGridType[] = ['dots', 'lines', 'none'];
+
+/**
+ * The top-bar scroll arrow: a frosted square overlaid on a scroll edge so the bar's contents slide
+ * underneath it. Centered vertically via `my-auto` (not a transform) so framer-motion owns `x` for
+ * the slide-in/out; the side (`left-0.5`/`right-0.5`) is appended per arrow.
+ */
+const BAR_ARROW_CLASS =
+   'absolute top-0 bottom-0 z-10 my-auto flex size-7 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
 
 /**
  * Builds the screen-space CSS background for the grid layer: position tracks the pan,
@@ -210,22 +219,54 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // point (where a create action drops the new item). Null when closed.
    const [radial, setRadial] = useState<{ screen: { x: number; y: number }; world: Point } | null>(null);
 
-   // The top-left toolbar's live width: the centered board name reserves this (plus a gap) on BOTH
-   // sides so it stays board-centered yet can never reach into the toolbar at any viewport width.
-   const toolbarRef = useRef<HTMLDivElement | null>(null);
-   const [toolbarWidth, setToolbarWidth] = useState(0);
-   const [clipWidth, setClipWidth] = useState(0);
+   // ==================
+   //  Top bar overflow scroll UX (mirrors the tab strip: wheel scrolls, hidden scrollbar, edge arrows)
+   // ==================
+   const barScrollRef = useRef<HTMLDivElement | null>(null);
+   const barContentRef = useRef<HTMLDivElement | null>(null);
+   const [barCanScrollLeft, setBarCanScrollLeft] = useState(false);
+   const [barCanScrollRight, setBarCanScrollRight] = useState(false);
+
+   /** Recomputes whether the bar overflows left/right, to drive the edge arrows. */
+   const updateBarScroll = useCallback(() => {
+      const el = barScrollRef.current;
+      if (!el) return;
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setBarCanScrollLeft(scrollLeft > 0);
+      setBarCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth); // ceil: ignore sub-pixel rounding
+   }, []);
+
+   // A vertical wheel scrolls the bar horizontally (only when it overflows, so the page/canvas keeps
+   // its wheel otherwise). Native listener so it can preventDefault (React's onWheel is passive). The
+   // arrows track scrolling, the bar resizing, and the title/content growing (observe both elements).
    useEffect(() => {
-      const toolbar = toolbarRef.current;
-      const clip = clipRef.current;
-      if (!toolbar || !clip) return;
-      const observer = new ResizeObserver(() => {
-         setToolbarWidth(toolbar.getBoundingClientRect().width);
-         setClipWidth(clip.getBoundingClientRect().width);
-      });
-      observer.observe(toolbar);
-      observer.observe(clip);
-      return () => observer.disconnect();
+      const el = barScrollRef.current;
+      if (!el) return;
+      updateBarScroll();
+      const onWheel = (event: WheelEvent) => {
+         // The bar consumes the wheel (never lets it reach the canvas zoom), and scrolls itself
+         // horizontally when it overflows.
+         event.stopPropagation();
+         if (el.scrollWidth <= el.clientWidth) return;
+         el.scrollLeft += event.deltaY;
+         event.preventDefault();
+      };
+      el.addEventListener('scroll', updateBarScroll, { passive: true });
+      el.addEventListener('wheel', onWheel, { passive: false });
+      const observer = new ResizeObserver(updateBarScroll);
+      observer.observe(el);
+      if (barContentRef.current) observer.observe(barContentRef.current);
+      return () => {
+         el.removeEventListener('scroll', updateBarScroll);
+         el.removeEventListener('wheel', onWheel);
+         observer.disconnect();
+      };
+   }, [updateBarScroll]);
+
+   /** Scrolls the bar toward one side by ~80% of its visible width. */
+   const scrollBarBy = useCallback((direction: -1 | 1) => {
+      const el = barScrollRef.current;
+      if (el) el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' });
    }, []);
 
    /** Converts an absolute cursor point to world coords via the live clip rect + viewport. */
@@ -676,58 +717,91 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             />
          )}
 
-         {/* Floating palette + view controls: stop the pointer from starting a pan. */}
+         {/* Single top-left bar: the board name leads, then the palette + view controls. It grows to
+             fit the title and, when its contents exceed the canvas, scrolls horizontally inside (capped
+             at the canvas width minus its margins) - the wheel scrolls it, the scrollbar is hidden, and
+             edge arrows appear per side (like the tab strip). Stops the pointer so editing the title or
+             scrolling the bar never pans. `overflow-x-clip` clips a slide-out arrow at the card edge. */}
          <div
-            ref={toolbarRef}
             onPointerDown={(event) => event.stopPropagation()}
-            className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm"
+            className="absolute left-3 top-3 flex w-fit max-w-[calc(100%-1.5rem)] items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm"
          >
-            <ToolbarButton title={t('BoardView.addPostIt')} onClick={() => handleAddItem('post-it')}>
-               <StickyNote className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.addJournal')} onClick={() => handleAddItem('journal')}>
-               <NotebookText className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.addImage')} onClick={() => handleAddItem('image')}>
-               <ImageIcon className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.addPin')} onClick={() => handleAddItem('pin')}>
-               <MapPin className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.addDiceTray')} onClick={() => handleAddItem('dice-tray')}>
-               <Dices className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.addZone')} onClick={() => handleAddItem('zone')}>
-               <Frame className="h-4 w-4" />
-            </ToolbarButton>
-            <div className="mx-0.5 h-5 w-px bg-border" />
-            <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
-               {gridIcon(grid.type)}
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
-               <Maximize className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport({ ...ORIGIN_VIEWPORT })}>
-               <Crosshair className="h-4 w-4" />
-            </ToolbarButton>
-            <span className="px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
-         </div>
+            <AnimatePresence>
+               {barCanScrollLeft && (
+                  <motion.button
+                     key="bar-scroll-left"
+                     type="button"
+                     onClick={() => scrollBarBy(-1)}
+                     aria-label={t('BoardView.scrollLeft')}
+                     title={t('BoardView.scrollLeft')}
+                     className={cn(BAR_ARROW_CLASS, 'left-0.5')}
+                     initial={{ opacity: 0, x: -12 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, x: -12 }}
+                     transition={{ duration: 0.18, ease: 'easeOut' }}
+                  >
+                     <ChevronLeft className="h-4 w-4" />
+                  </motion.button>
+               )}
+            </AnimatePresence>
 
-         {/* Editable board name, top-center; stops the pointer so editing it never pans. The container
-             is inset by the toolbar's reach (its left inset + width + a gap) on BOTH sides, so it spans
-             only the clear band between the toolbar and a mirrored reserve - the field (max-w-full)
-             stays board-centered yet can never reach the toolbar; truncate gives the ellipsis. If the
-             band is too narrow to hold the field (toolbar wider than the centered space), the name is
-             hidden rather than forced to overlap - it returns once there's room. */}
-         {clipWidth - 2 * (toolbarWidth + 24) >= 48 && (
-            <div
-               onPointerDown={(event) => event.stopPropagation()}
-               style={{ left: toolbarWidth + 24, right: toolbarWidth + 24 }}
-               className="pointer-events-none absolute top-3 flex justify-center"
-            >
-               <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
+            {/* The only scrollable element: capped to the card width (min-w-0) and scrolls; the wheel
+                handler maps a vertical wheel to horizontal scroll, so the hidden scrollbar shows nothing. */}
+            <div ref={barScrollRef} className="min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide">
+               <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
+                  <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
+                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+                  <ToolbarButton title={t('BoardView.addPostIt')} onClick={() => handleAddItem('post-it')}>
+                     <StickyNote className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.addJournal')} onClick={() => handleAddItem('journal')}>
+                     <NotebookText className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.addImage')} onClick={() => handleAddItem('image')}>
+                     <ImageIcon className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.addPin')} onClick={() => handleAddItem('pin')}>
+                     <MapPin className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.addDiceTray')} onClick={() => handleAddItem('dice-tray')}>
+                     <Dices className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.addZone')} onClick={() => handleAddItem('zone')}>
+                     <Frame className="h-4 w-4" />
+                  </ToolbarButton>
+                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+                  <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
+                     {gridIcon(grid.type)}
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
+                     <Maximize className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport({ ...ORIGIN_VIEWPORT })}>
+                     <Crosshair className="h-4 w-4" />
+                  </ToolbarButton>
+                  <span className="shrink-0 px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
+               </div>
             </div>
-         )}
+
+            <AnimatePresence>
+               {barCanScrollRight && (
+                  <motion.button
+                     key="bar-scroll-right"
+                     type="button"
+                     onClick={() => scrollBarBy(1)}
+                     aria-label={t('BoardView.scrollRight')}
+                     title={t('BoardView.scrollRight')}
+                     className={cn(BAR_ARROW_CLASS, 'right-0.5')}
+                     initial={{ opacity: 0, x: 12 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, x: 12 }}
+                     transition={{ duration: 0.18, ease: 'easeOut' }}
+                  >
+                     <ChevronRight className="h-4 w-4" />
+                  </motion.button>
+               )}
+            </AnimatePresence>
+         </div>
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
          {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
@@ -741,9 +815,11 @@ function gridTypeKey(type: BoardGridType): string {
 }
 
 /**
- * The on-canvas board name: click to edit, commit on blur/Enter, revert on Escape. Mirrors
- * the character name field's controlled-input feel; the buffer resyncs when `name` changes
- * externally (undo elsewhere, a fresh hydrate) via adjust-state-during-render.
+ * The board name, living as the leading element of the top-left bar: click to edit, commit on
+ * blur/Enter, revert on Escape. Controlled, with the buffer resyncing when `name` changes externally
+ * (undo elsewhere, a fresh hydrate) via adjust-state-during-render. It auto-sizes to its content - a
+ * hidden mirror span (same font/padding) measures the text (or placeholder when empty) and drives the
+ * input width - so the title always shows fully and the bar grows to fit it; no truncation.
  */
 function BoardNameField({ name, placeholder, onCommit }: { name: string; placeholder: string; onCommit: (value: string) => void }) {
    const [text, setText] = useState(name);
@@ -760,22 +836,26 @@ function BoardNameField({ name, placeholder, onCommit }: { name: string; placeho
    };
 
    return (
-      <input
-         type="text"
-         value={text}
-         placeholder={placeholder}
-         onChange={(event) => setText(event.target.value)}
-         onPointerDown={(event) => event.stopPropagation()}
-         onBlur={commit}
-         onKeyDown={(event) => {
-            if (event.key === 'Enter') event.currentTarget.blur();
-            else if (event.key === 'Escape') {
-               setText(name);
-               event.currentTarget.blur();
-            }
-         }}
-         className="pointer-events-auto w-96 min-w-0 max-w-full truncate rounded-md border border-transparent bg-card/80 px-3 py-1 text-center text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm hover:border-border focus:border-border focus:bg-card focus:outline-none"
-      />
+      <div className="relative shrink-0">
+         {/* Invisible mirror: its width (text or the placeholder when empty) sizes the field. */}
+         <span aria-hidden className="invisible block whitespace-pre px-2 text-sm font-semibold">{text || placeholder}</span>
+         <input
+            type="text"
+            value={text}
+            placeholder={placeholder}
+            onChange={(event) => setText(event.target.value)}
+            onPointerDown={(event) => event.stopPropagation()}
+            onBlur={commit}
+            onKeyDown={(event) => {
+               if (event.key === 'Enter') event.currentTarget.blur();
+               else if (event.key === 'Escape') {
+                  setText(name);
+                  event.currentTarget.blur();
+               }
+            }}
+            className="pointer-events-auto absolute inset-0 h-full w-full rounded bg-transparent px-2 text-sm font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/60 hover:bg-muted/60 focus:bg-muted/50"
+         />
+      </div>
    );
 }
 
@@ -787,7 +867,7 @@ function ToolbarButton({ title, onClick, children }: { title: string; onClick: (
          onClick={onClick}
          title={title}
          aria-label={title}
-         className="flex items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
+         className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
       >
          {children}
       </button>

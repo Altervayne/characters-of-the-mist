@@ -54,6 +54,8 @@
       "emptyHint": "Add items from the palette, or drag a card or tracker from the drawer",
       "returnToOrigin": "Reset view",
       "fitToContent": "Fit to content",
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right",
       "gridDots": "Grid: dots",
       "gridLines": "Grid: lines",
       "gridNone": "Grid: off",

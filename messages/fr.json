@@ -54,6 +54,8 @@
       "emptyHint": "[TO COMPLETE]",
       "returnToOrigin": "[TO COMPLETE]",
       "fitToContent": "[TO COMPLETE]",
+      "scrollLeft": "[TO COMPLETE]",
+      "scrollRight": "[TO COMPLETE]",
       "gridDots": "[TO COMPLETE]",
       "gridLines": "[TO COMPLETE]",
       "gridNone": "[TO COMPLETE]",
