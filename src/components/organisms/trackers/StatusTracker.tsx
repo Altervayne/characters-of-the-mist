@@ -34,6 +34,8 @@ interface StatusTrackerCardProps {
    tracker: StatusTracker;
    isEditing?: boolean;
    isDrawerPreview?: boolean;
+   /** Live, interactive board embed: no sheet chrome (the board toolbar carries the actions). */
+   isBoardEmbed?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onExport?: () => void;
@@ -41,7 +43,7 @@ interface StatusTrackerCardProps {
 
 
 
-export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, dragAttributes, dragListeners, onExport }: StatusTrackerCardProps) {
+export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, isBoardEmbed=false, dragAttributes, dragListeners, onExport }: StatusTrackerCardProps) {
    const { t: t } = useTranslation();
    const { updateStatus, removeStatus } = useCharacterActions();
    const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
@@ -82,7 +84,7 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, d
          {...hoverHandlers}
          className="relative"
       >
-         {!isDrawerPreview && (
+         {!isDrawerPreview && !isBoardEmbed && (
             <ToolbarHandle
                isEditing={isEffectivelyEditing}
                isHovered={isHovered}

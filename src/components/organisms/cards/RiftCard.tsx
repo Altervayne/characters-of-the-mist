@@ -40,6 +40,7 @@ interface RiftCardProps {
    isEditing?: boolean;
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
+   isBoardEmbed?: boolean;
    isMobile?: boolean;
    useVerticalStack?: boolean;
    dragAttributes?: DraggableAttributes;
@@ -51,7 +52,7 @@ interface RiftCardProps {
 
 const RiftCardContent = React.memo(
    React.forwardRef<HTMLDivElement, RiftCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isBoardEmbed=false, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tNemesis } = useTranslation();
       const actions = useCharacterActions();
@@ -295,6 +296,7 @@ const RiftCardContent = React.memo(
             ref={ref}
             effectiveViewMode={effectiveViewMode}
             isDrawerPreview={isDrawerPreview ?? false}
+            isBoardEmbed={isBoardEmbed}
             isSnapshot={isSnapshot}
             useVerticalStack={useVerticalStack}
             card={card}

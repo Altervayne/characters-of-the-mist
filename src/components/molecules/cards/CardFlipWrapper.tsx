@@ -16,6 +16,8 @@ import type { ToolbarHoverHandlers } from '@/hooks/useToolbarHover';
 interface CardFlipWrapperProps {
   effectiveViewMode: 'FLIP' | 'SIDE_BY_SIDE';
   isDrawerPreview: boolean;
+  /** Board embed: forced FLIP (stable footprint) and no sheet chrome - the board toolbar carries the actions. */
+  isBoardEmbed?: boolean;
   isSnapshot?: boolean;
   isMobile?: boolean;
   useVerticalStack?: boolean;
@@ -69,11 +71,14 @@ interface CardFlipWrapperProps {
  * ```
  */
 export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperProps>(
-  ({ effectiveViewMode, isDrawerPreview, useVerticalStack, card, isHovered, hoverHandlers,
+  ({ effectiveViewMode, isDrawerPreview, isBoardEmbed = false, useVerticalStack, card, isHovered, hoverHandlers,
      isEditing, dragAttributes, dragListeners, cardTheme, onExport, onCycleViewMode,
      onFlip, onDelete, onEditCard, cardFront, cardBack }, ref) => {
 
-    if (effectiveViewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
+    // Board embeds are FLIP only (stable footprint); side-by-side would double the width.
+    const viewMode = isBoardEmbed ? 'FLIP' : effectiveViewMode;
+
+    if (viewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
       return (
         <motion.div ref={ref} {...hoverHandlers} className="relative">
           <ToolbarHandle
@@ -110,7 +115,7 @@ export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperP
           animate={{ rotateY: card.isFlipped ? 180 : 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         >
-          {!isDrawerPreview && (
+          {!isDrawerPreview && !isBoardEmbed && (
             <ToolbarHandle
               isEditing={isEditing}
               isHovered={isHovered}

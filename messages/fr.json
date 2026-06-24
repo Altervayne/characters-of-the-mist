@@ -65,6 +65,8 @@
       "bringToFront": "[TO COMPLETE]",
       "sendToBack": "[TO COMPLETE]",
       "deleteItem": "[TO COMPLETE]",
+      "editEmbed": "[TO COMPLETE]",
+      "flipEmbed": "[TO COMPLETE]",
       "duplicateSelection": "[TO COMPLETE]",
       "deleteSelection": "[TO COMPLETE]",
       "postItColor": "[TO COMPLETE]",

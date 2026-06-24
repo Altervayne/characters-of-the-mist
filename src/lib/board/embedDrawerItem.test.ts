@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, EMBEDDED_CARD_SIZE } from './embedDrawerItem';
+import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
@@ -47,5 +48,24 @@ describe('embeddedSpecForDrawerItem', () => {
 
    it('returns null for non-embeddable types (full sheets, etc.)', () => {
       expect(embeddedSpecForDrawerItem(makeDrawerItem('FULL_CHARACTER_SHEET', {} as DrawerItemContent))).toBeNull();
+   });
+
+   it('sizes a theme/character card to the native sheet footprint', () => {
+      const spec = embeddedSpecForDrawerItem(
+         makeDrawerItem('CHARACTER_THEME', { cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } } as unknown as DrawerItemContent),
+      );
+      expect(spec).toMatchObject({ width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
+   });
+
+   it('sizes an image card to its own stored dimensions, defaulting when unset', () => {
+      const withSize = embeddedSpecForDrawerItem(
+         makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'LEGENDS', width: 320, height: 240 } } as unknown as DrawerItemContent),
+      );
+      expect(withSize).toMatchObject({ width: 320, height: 240 });
+
+      const noSize = embeddedSpecForDrawerItem(
+         makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'LEGENDS' } } as unknown as DrawerItemContent),
+      );
+      expect(noSize).toMatchObject({ width: DEFAULT_IMAGE_CARD_SIZE.width, height: DEFAULT_IMAGE_CARD_SIZE.height });
    });
 });

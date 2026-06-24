@@ -8,6 +8,7 @@ import { reIdBoardAggregate } from './reIdBoardAggregate';
 import * as assets from '@/lib/assets/assetRepository';
 import { hashBytes } from '@/lib/assets/processImage';
 import { blobToBase64, collectAssetIdsFromContent, rehydrateEmbeddedAssets } from '@/lib/utils/export-import';
+import { collectReferencedAssetHashes } from '@/lib/assets/collectReferencedAssetHashes';
 
 // -- Type Imports --
 import type { Board } from '@/lib/types/board';
@@ -70,6 +71,50 @@ describe('board export -> import round-trip', () => {
       // Image asset reference preserved
       const image = reloaded.items.find((i) => i.content.kind === 'image')!;
       expect((image.content as { assetId: string }).assetId).toBe('asset-h');
+   });
+
+   it('preserves edited embed copies (card flip/tags, tracker tiers, image asset) through export/import', async () => {
+      const board = await repo.createBoard('Embeds');
+      await repo.saveBoard(board);
+
+      // An embed's edits live in `content.data`: a flipped, renamed theme card; an image card
+      // re-pointed at a freshly edited asset; a status tracker with toggled tiers.
+      const themeCard = {
+         id: 'inner-theme', cardType: 'CHARACTER_THEME', title: 'Theme', order: 0, isFlipped: true,
+         details: { game: 'LEGENDS', themeType: 'Origin', mainTag: { id: 'm', name: 'Edited Name' }, powerTags: [{ id: 'p', name: 'added tag' }], weaknessTags: [], improvements: [], quest: 'Q' },
+      };
+      const imageCard = { id: 'inner-img', cardType: 'IMAGE_CARD', title: 'Art', order: 1, details: { game: 'LEGENDS', assetId: 'edited-hash', width: 280, height: 360 } };
+      const statusTracker = { id: 'inner-trk', trackerType: 'STATUS', name: 'Hurt', game: 'CITY_OF_MIST', tiers: [true, false, false] };
+
+      await repo.bulkPutItems([
+         rec('card-embed', board.id, 0, { kind: 'card', content: { kind: 'card', mode: 'copy', data: themeCard } }),
+         rec('img-embed', board.id, 1, { kind: 'card', content: { kind: 'card', mode: 'copy', data: imageCard } }),
+         rec('trk-embed', board.id, 2, { kind: 'tracker', content: { kind: 'tracker', mode: 'copy', data: statusTracker } }),
+      ]);
+
+      const fileContent = JSON.parse(JSON.stringify((await repo.loadBoard(board.id))!)) as Board;
+      // The edited image embed's asset is collected for export (referenced, not GC'd).
+      expect(collectAssetIdsFromContent(fileContent).has('edited-hash')).toBe(true);
+
+      await drawerDatabase.boards.clear();
+      await drawerDatabase.boardItems.clear();
+
+      const reIded = reIdBoardAggregate(fileContent);
+      await repo.importBoard(reIded);
+      const reloaded = (await repo.loadBoard(reIded.id))!;
+
+      type CardEmbed = { data: { cardType: string; isFlipped: boolean; details: { mainTag: { name: string }; powerTags: { name: string }[] } } };
+      const theme = reloaded.items.find((i) => i.content.kind === 'card' && (i.content as unknown as CardEmbed).data.cardType === 'CHARACTER_THEME')!;
+      const td = (theme.content as unknown as CardEmbed).data;
+      expect(td.isFlipped).toBe(true);
+      expect(td.details.mainTag.name).toBe('Edited Name');
+      expect(td.details.powerTags[0].name).toBe('added tag');
+
+      const trk = reloaded.items.find((i) => i.content.kind === 'tracker')!;
+      expect((trk.content as unknown as { data: { tiers: boolean[] } }).data.tiers).toEqual([true, false, false]);
+
+      // The GC mark walks the imported board items and still references the edited image's asset.
+      expect((await collectReferencedAssetHashes()).has('edited-hash')).toBe(true);
    });
 });
 

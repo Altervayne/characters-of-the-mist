@@ -42,6 +42,7 @@ interface HeroCardProps {
   isEditing?: boolean;
   isSnapshot?: boolean;
   isDrawerPreview?: boolean;
+  isBoardEmbed?: boolean;
   isMobile?: boolean;
   useVerticalStack?: boolean;
   dragAttributes?: DraggableAttributes;
@@ -53,7 +54,7 @@ interface HeroCardProps {
 
 const HeroCardContent = React.memo(
    React.forwardRef<HTMLDivElement, HeroCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isBoardEmbed=false, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onExport }, ref) => {
       const { t: t } = useTranslation();
       const { t: tBackpack } = useTranslation();
       const actions = useCharacterActions();
@@ -216,6 +217,7 @@ const HeroCardContent = React.memo(
             ref={ref}
             effectiveViewMode={effectiveViewMode}
             isDrawerPreview={isDrawerPreview ?? false}
+            isBoardEmbed={isBoardEmbed}
             isSnapshot={isSnapshot}
             useVerticalStack={useVerticalStack}
             card={card}

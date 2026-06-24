@@ -27,6 +27,8 @@ interface EmbeddedItemProps {
    item: BoardItem;
    content: CardBoardContent | TrackerBoardContent;
    isSelected: boolean;
+   /** The selection toolbar's per-kind slot, forwarded to an interactive copy's own chrome. */
+   toolbarSlot?: HTMLElement | null;
    /** Commits a content change as an undoable command (the toggle uses this). */
    onContentChange: (content: BoardItemContent) => void;
    /** Caches a reference's last-known snapshot via a direct write (not undoable). */
@@ -34,6 +36,17 @@ interface EmbeddedItemProps {
    onDelete: (id: string) => void;
    /** Renders the resolved card/tracker data as its real component (snapshot, read-only). */
    renderSnapshot: (data: unknown) => ReactNode;
+   /**
+    * Renders a COPY's body as a live, interactive embed (a reference stays the read-only snapshot).
+    * When omitted, a copy also uses the static snapshot.
+    */
+   renderInteractive?: (args: {
+      data: unknown;
+      isSelected: boolean;
+      toolbarSlot: HTMLElement | null;
+      itemId: string;
+      onCommit: (next: unknown) => void;
+   }) => ReactNode;
 }
 
 /** Stable serialization for change detection (undefined stays undefined so an unset cache differs from any value). */
@@ -41,7 +54,7 @@ function serialize(value: unknown): string | undefined {
    return value === undefined ? undefined : JSON.stringify(value);
 }
 
-export function EmbeddedItem({ item, content, isSelected, onContentChange, onCacheLastKnown, onDelete, renderSnapshot }: EmbeddedItemProps) {
+export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, onContentChange, onCacheLastKnown, onDelete, renderSnapshot, renderInteractive }: EmbeddedItemProps) {
    const { t } = useTranslation();
 
    const isReference = content.mode === 'reference';
@@ -95,7 +108,16 @@ export function EmbeddedItem({ item, content, isSelected, onContentChange, onCac
 
    return (
       <div className="relative h-full w-full">
-         {data != null ? (
+         {content.mode === 'copy' && renderInteractive ? (
+            // A copy is the live, editable item; edits commit back to its own `content.data`.
+            renderInteractive({
+               data: content.data,
+               isSelected,
+               toolbarSlot,
+               itemId: item.id,
+               onCommit: (next) => onContentChange({ ...content, data: next } as BoardItemContent),
+            })
+         ) : data != null ? (
             <div className="flex h-full w-full items-center justify-center overflow-hidden bg-card pointer-events-none">
                {renderSnapshot(data)}
             </div>

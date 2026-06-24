@@ -65,6 +65,8 @@
       "bringToFront": "Bring to front",
       "sendToBack": "Send to back",
       "deleteItem": "Delete",
+      "editEmbed": "Edit",
+      "flipEmbed": "Flip",
       "duplicateSelection": "Duplicate",
       "deleteSelection": "Delete selection",
       "postItColor": "Note color",

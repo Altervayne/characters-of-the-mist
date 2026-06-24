@@ -45,6 +45,7 @@ interface ThemeCardProps {
    isEditing?: boolean;
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
+   isBoardEmbed?: boolean;
    isMobile?: boolean;
    useVerticalStack?: boolean;
    dragAttributes?: DraggableAttributes;
@@ -57,7 +58,7 @@ interface ThemeCardProps {
 
 export const LegendsThemeCard = React.memo(
    React.forwardRef<HTMLDivElement, ThemeCardProps>(
-      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+      ({ card, isEditing=false, isSnapshot, isDrawerPreview, isBoardEmbed=false, isMobile=false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
       const { t: t } = useTranslation();
       const actions = useCharacterActions();
       const details = card.details as LegendsThemeDetails | LegendsFellowshipDetails;
@@ -255,6 +256,7 @@ export const LegendsThemeCard = React.memo(
             ref={ref}
             effectiveViewMode={effectiveViewMode}
             isDrawerPreview={isDrawerPreview ?? false}
+            isBoardEmbed={isBoardEmbed}
             isSnapshot={isSnapshot}
             useVerticalStack={useVerticalStack}
             card={card}

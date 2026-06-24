@@ -377,7 +377,9 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                for (const item of spatial) {
                   const id = idMap.get(item.id)!;
                   newSpatialIds.push(id);
-                  newRecords.push({ ...item, id, boardId, x: item.x + OFFSET, y: item.y + OFFSET, z: z++ });
+                  // Deep-copy the content so an embed copy is fully independent of its original (its own
+                  // `content.data`, so the two per-embed stores never share an object). Matches the drop.
+                  newRecords.push({ ...item, id, boardId, x: item.x + OFFSET, y: item.y + OFFSET, z: z++, content: structuredClone(item.content) });
                }
                // A connection is duplicated only when BOTH its endpoints were duplicated; the
                // copy points at the new ids (never the originals). One-endpoint-outside is skipped.

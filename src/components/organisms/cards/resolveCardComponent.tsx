@@ -28,6 +28,8 @@ export interface CardComponentProps {
    isEditing?: boolean;
    isSnapshot?: boolean;
    isDrawerPreview?: boolean;
+   /** Live, interactive board embed: native size, no card chrome (the board toolbar carries the actions), FLIP only. */
+   isBoardEmbed?: boolean;
    // Mobile-relevant optional props accepted by the card organisms: `isMobile`
    // flags mobile rendering tweaks, `useVerticalStack` stacks card sections
    // vertically for narrow viewports (used by the mobile card carousel).

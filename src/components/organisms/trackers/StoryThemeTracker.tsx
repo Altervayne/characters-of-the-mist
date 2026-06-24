@@ -37,6 +37,8 @@ interface StoryThemeTrackerCardProps {
    tracker: StoryThemeTracker;
    isEditing?: boolean;
    isDrawerPreview?: boolean;
+   /** Live, interactive board embed: no sheet chrome (the board toolbar carries the actions). */
+   isBoardEmbed?: boolean;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    onExport?: () => void;
@@ -44,7 +46,7 @@ interface StoryThemeTrackerCardProps {
 
 
 
-export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPreview = false, dragAttributes, dragListeners, onExport }: StoryThemeTrackerCardProps) {
+export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPreview = false, isBoardEmbed = false, dragAttributes, dragListeners, onExport }: StoryThemeTrackerCardProps) {
    const { t: tThemeCard } = useTranslation();
    const actions = useCharacterActions();
    const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
@@ -82,7 +84,7 @@ export function StoryThemeTrackerCard({ tracker, isEditing = false, isDrawerPrev
          {...hoverHandlers}
          className="relative"
       >
-         { !isDrawerPreview &&
+         { !isDrawerPreview && !isBoardEmbed &&
             <ToolbarHandle
                isEditing={isEffectivelyEditing}
                isHovered={isHovered}

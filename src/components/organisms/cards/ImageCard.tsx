@@ -56,7 +56,7 @@ interface LiveSize {
 
 const ImageCardContent = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
-      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isMobile = false, dragAttributes, dragListeners, onExport }, ref) => {
+      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, dragAttributes, dragListeners, onExport }, ref) => {
          const { t } = useTranslation();
          const actions = useCharacterActions();
          const details = card.details as ImageCardDetails;
@@ -310,7 +310,7 @@ const ImageCardContent = React.memo(
 
          return (
             <motion.div ref={ref} {...hoverHandlers} className="relative">
-               {!isDrawerPreview && !isSnapshot && (
+               {!isDrawerPreview && !isSnapshot && !isBoardEmbed && (
                   <ToolbarHandle
                      isEditing={isEditing}
                      isHovered={isHovered}
