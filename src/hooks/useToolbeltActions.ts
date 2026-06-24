@@ -373,7 +373,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 						exportToFile(
 							tracker,
 							'STATUS_TRACKER',
-							tracker.game,
+							'NEUTRAL',
 							`status-${tracker.id}.cotm`
 						);
 					},
@@ -431,7 +431,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 						exportToFile(
 							tracker,
 							'STORY_TAG_TRACKER',
-							tracker.game,
+							'NEUTRAL',
 							`story-tag-${tracker.id}.cotm`
 						);
 					},
@@ -477,7 +477,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 						exportToFile(
 							tracker,
 							'STORY_THEME_TRACKER',
-							tracker.game,
+							'NEUTRAL',
 							`story-theme-${tracker.id}.cotm`
 						);
 					},

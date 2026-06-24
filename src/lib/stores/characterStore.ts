@@ -795,7 +795,7 @@ export function createCharacterStore() {
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newStatus: StatusTracker = { id: cuid(), name: name || '', game: state.character.game, trackerType: 'STATUS', tiers: Array(6).fill(false) };
+                     const newStatus: StatusTracker = { id: cuid(), name: name || '', trackerType: 'STATUS', tiers: Array(6).fill(false) };
                      return {
                         character: {
                            ...state.character,
@@ -814,7 +814,7 @@ export function createCharacterStore() {
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newStoryTag: StoryTagTracker = { id: cuid(), name: name || '', game: state.character.game, trackerType: 'STORY_TAG', isScratched: false };
+                     const newStoryTag: StoryTagTracker = { id: cuid(), name: name || '', trackerType: 'STORY_TAG', isScratched: false };
                      return {
                         character: {
                            ...state.character,
@@ -836,7 +836,6 @@ export function createCharacterStore() {
                      const newStoryTheme: StoryThemeTracker = {
                         id: cuid(),
                         name: name || '',
-                        game: state.character.game,
                         trackerType: 'STORY_THEME',
                         mainTag: { id: cuid(), name: '', isActive: false, isScratched: false },
                         powerTags: [],
@@ -859,10 +858,6 @@ export function createCharacterStore() {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
 
                      const newTrackerCopy = deepReId(tracker);
-
-                     if (!newTrackerCopy.game) {
-                        newTrackerCopy.game = state.character.game;
-                     }
 
                      const newTrackers = { ...state.character.trackers };
                      if (newTrackerCopy.trackerType === 'STATUS') {
@@ -1043,7 +1038,6 @@ export function createCharacterStore() {
                      const newStoryTheme: StoryThemeTracker = {
                         id: cuid(),
                         name: originalTag.name,
-                        game: originalTag.game,
                         trackerType: 'STORY_THEME',
                         mainTag: {
                            id: cuid(),
@@ -1079,7 +1073,6 @@ export function createCharacterStore() {
                      const newStoryTag: StoryTagTracker = {
                         id: cuid(),
                         name: originalTheme.mainTag.name,
-                        game: originalTheme.game,
                         trackerType: 'STORY_TAG',
                         isScratched: originalTheme.mainTag.isScratched,
                      };

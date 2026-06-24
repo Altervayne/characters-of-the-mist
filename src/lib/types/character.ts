@@ -19,10 +19,11 @@ export interface BlandTag {
    name: string;
 }
 
+// A tracker carries no `game`: it is theme-agnostic and renders from its context character's game
+// (the app theme when that context is NEUTRAL / absent, e.g. on the board). `trackerType` is the kind.
 export interface StatusTracker {
    id: string;
    name: string;
-   game: GameSystem;
    trackerType: 'STATUS';
    tiers: boolean[];
 }
@@ -30,7 +31,6 @@ export interface StatusTracker {
 export interface StoryTagTracker {
    id: string;
    name: string;
-   game: GameSystem;
    trackerType: 'STORY_TAG';
    isScratched: boolean;
    isWeakness?: boolean;
@@ -39,7 +39,6 @@ export interface StoryTagTracker {
 export interface StoryThemeTracker {
   id: string;
   name: string;
-  game: GameSystem;
   trackerType: 'STORY_THEME';
   mainTag: Tag;
   powerTags: Tag[];

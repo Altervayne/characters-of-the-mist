@@ -96,6 +96,37 @@ const ensureImageCardSize = (card: Card): Card => {
 };
 
 
+/**
+ * Drops the defunct `game` from a tracker: trackers are theme-agnostic now and render from their
+ * context character's game (the app theme when there is none), so a stored `game` is dead weight.
+ * Idempotent - a tracker without the field passes through unchanged.
+ */
+const stripTrackerGame = (tracker: unknown): unknown => {
+   if (!tracker || typeof tracker !== 'object' || !('game' in tracker)) return tracker;
+   const rest = { ...(tracker as Record<string, unknown>) };
+   delete rest.game;
+   return rest;
+};
+
+/** Drops `game` from every tracker on a character (all three lists). */
+const stripCharacterTrackerGames = (character: Character): Character => {
+   const trackers = character.trackers;
+   if (!trackers) return character;
+   return {
+      ...character,
+      trackers: {
+         ...trackers,
+         statuses: (trackers.statuses ?? []).map(stripTrackerGame) as Character['trackers']['statuses'],
+         storyTags: (trackers.storyTags ?? []).map(stripTrackerGame) as Character['trackers']['storyTags'],
+         storyThemes: (trackers.storyThemes ?? []).map(stripTrackerGame) as Character['trackers']['storyThemes'],
+      },
+   };
+};
+
+/** The drawer-item types whose content IS a single tracker. */
+const TRACKER_ITEM_TYPES: ReadonlySet<GeneralItemType> = new Set(['STATUS_TRACKER', 'STORY_TAG_TRACKER', 'STORY_THEME_TRACKER']);
+
+
 type MigrationFunction = (data: unknown) => unknown;
 
 const MIGRATIONS: Record<string, Partial<Record<GeneralItemType, MigrationFunction>>> = {
@@ -182,8 +213,12 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
    // saved characters already sit at the current version), so it runs on every load.
    if (isCharacter(harmonizedData)) {
       harmonizedData = { ...harmonizedData, cards: harmonizedData.cards.map(ensureImageCardSize) };
+      harmonizedData = stripCharacterTrackerGames(harmonizedData as Character);
    } else if (isCard(harmonizedData) && dataType === 'IMAGE_CARD') {
       harmonizedData = ensureImageCardSize(harmonizedData);
+   } else if (TRACKER_ITEM_TYPES.has(dataType)) {
+      // A standalone tracker saved in the drawer: its content IS the tracker; drop its dead `game`.
+      harmonizedData = stripTrackerGame(harmonizedData);
    }
 
    // ==================

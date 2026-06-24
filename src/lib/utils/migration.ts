@@ -188,7 +188,6 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
    const deconstructedTrackers: StatusTracker[] = legacyData.statuses.map(status => ({
       id: cuid(),
       name: status.name,
-      game: 'LEGENDS',
       trackerType: 'STATUS',
       tiers: status.level,
    }));
@@ -305,7 +304,6 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
    const deconstructedTrackers: StatusTracker[] = legacyData.statuses.map(status => ({
       id: cuid(),
       name: status.name,
-      game: 'CITY_OF_MIST',
       trackerType: 'STATUS',
       tiers: status.level,
    }));

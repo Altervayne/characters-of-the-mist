@@ -74,3 +74,31 @@ describe('harmonization: image-card normalization', () => {
       });
    });
 });
+
+describe('harmonization: tracker game strip', () => {
+   it('drops the defunct game from every tracker on a character', () => {
+      const character = {
+         id: 'char-1', name: 'Hero', game: 'CITY_OF_MIST', version: '2.0.0', cards: [],
+         trackers: {
+            statuses: [{ id: 's1', name: 'Hurt', game: 'CITY_OF_MIST', trackerType: 'STATUS', tiers: [false] }],
+            storyTags: [{ id: 't1', name: 'Tag', game: 'CITY_OF_MIST', trackerType: 'STORY_TAG', isScratched: false }],
+            storyThemes: [{ id: 'h1', name: 'Theme', game: 'CITY_OF_MIST', trackerType: 'STORY_THEME', mainTag: { id: 'm', name: '', isActive: false, isScratched: false }, powerTags: [], weaknessTags: [] }],
+         },
+      } as unknown as Character;
+
+      const harmonized = harmonizeData(character, 'FULL_CHARACTER_SHEET');
+
+      expect(harmonized.trackers.statuses[0]).not.toHaveProperty('game');
+      expect(harmonized.trackers.storyTags[0]).not.toHaveProperty('game');
+      expect(harmonized.trackers.storyThemes[0]).not.toHaveProperty('game');
+      // The character's own game is untouched.
+      expect(harmonized.game).toBe('CITY_OF_MIST');
+   });
+
+   it('drops game from a standalone tracker drawer item', () => {
+      const tracker = { id: 's1', name: 'Hurt', game: 'LEGENDS', trackerType: 'STATUS', tiers: [false] };
+      const harmonized = harmonizeData(tracker, 'STATUS_TRACKER') as typeof tracker;
+      expect(harmonized).not.toHaveProperty('game');
+      expect(harmonized).toMatchObject({ trackerType: 'STATUS', name: 'Hurt' });
+   });
+});

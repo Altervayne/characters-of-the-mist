@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { ToolbarHandle } from '@/components/molecules/ToolbarHandle';
 
 // -- Store and Hook Imports --
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
@@ -51,12 +51,18 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, i
    const isTrackersAlwaysEditable = useAppSettingsStore((s) => s.isTrackersAlwaysEditable);
    const isEffectivelyEditing = isEditing || isTrackersAlwaysEditable;
 
-   // Determine card theme based on game system
-   const cardTheme = tracker.game === 'CITY_OF_MIST'
-      ? 'card-type-tracker-city'
-      : tracker.game === 'OTHERSCAPE'
-         ? 'card-type-tracker-otherscape'
-         : 'card-type-tracker-legends';
+   // Theme from the CONTEXT character's game (a tracker carries none): a sheet keeps its game vibe.
+   // A drawer preview is inherently context-less (it renders inside whatever character is active), so
+   // it forces the app tokens - matching the board embed, which is wrapped in a NEUTRAL synthetic store.
+   const contextGame = useCharacterStore((state) => state.character?.game);
+   const cardTheme = isDrawerPreview ? '' : (
+      contextGame === 'CITY_OF_MIST'
+         ? 'card-type-tracker-city'
+         : contextGame === 'OTHERSCAPE'
+            ? 'card-type-tracker-otherscape'
+            : contextGame === 'LEGENDS'
+               ? 'card-type-tracker-legends'
+               : '');
 
    const handleTierClick = (tierIndex: number) => {
       if (isDrawerPreview) return;

@@ -30,10 +30,14 @@ function serialize(value: unknown): string {
    return JSON.stringify(value ?? null);
 }
 
-/** The embed item carries its own game (a tracker on `game`, a card on `details.game`); seed something valid. */
+/**
+ * The game the synthetic host character is seeded with: a card carries its own (`details.game`),
+ * but a tracker is game-agnostic, so it seeds NEUTRAL - which themes a board tracker by the app
+ * tokens, not a game accent.
+ */
 function embedGame(data: unknown): GameSystem {
-   const d = data as { game?: GameSystem; details?: { game?: GameSystem } };
-   return d.game ?? d.details?.game ?? 'CITY_OF_MIST';
+   const d = data as { details?: { game?: GameSystem } };
+   return d.details?.game ?? 'NEUTRAL';
 }
 
 /** A synthetic character holding only this embed's item in the right slot (everything else empty). */

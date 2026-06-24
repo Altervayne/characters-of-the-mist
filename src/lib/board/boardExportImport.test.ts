@@ -84,7 +84,7 @@ describe('board export -> import round-trip', () => {
          details: { game: 'LEGENDS', themeType: 'Origin', mainTag: { id: 'm', name: 'Edited Name' }, powerTags: [{ id: 'p', name: 'added tag' }], weaknessTags: [], improvements: [], quest: 'Q' },
       };
       const imageCard = { id: 'inner-img', cardType: 'IMAGE_CARD', title: 'Art', order: 1, details: { game: 'LEGENDS', assetId: 'edited-hash', width: 280, height: 360 } };
-      const statusTracker = { id: 'inner-trk', trackerType: 'STATUS', name: 'Hurt', game: 'CITY_OF_MIST', tiers: [true, false, false] };
+      const statusTracker = { id: 'inner-trk', trackerType: 'STATUS', name: 'Hurt', tiers: [true, false, false] };
 
       await repo.bulkPutItems([
          rec('card-embed', board.id, 0, { kind: 'card', content: { kind: 'card', mode: 'copy', data: themeCard } }),

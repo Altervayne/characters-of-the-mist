@@ -11,7 +11,7 @@ import type { StatusTracker, Card } from '@/lib/types/character';
  */
 
 function makeStatus(overrides: Partial<StatusTracker> = {}): StatusTracker {
-   return { id: 'st-1', name: 'Wounded', game: 'CITY_OF_MIST', trackerType: 'STATUS', tiers: [false, false, false], ...overrides };
+   return { id: 'st-1', name: 'Wounded', trackerType: 'STATUS', tiers: [false, false, false], ...overrides };
 }
 
 function makeHost() {
@@ -29,9 +29,9 @@ describe('seedCharacter / readEmbedItem', () => {
       expect(readEmbedItem('statuses', character)).toEqual(status);
    });
 
-   it('seeds a valid game from the item itself', () => {
-      const character = seedCharacter('statuses', makeStatus({ game: 'OTHERSCAPE' }));
-      expect(character.game).toBe('OTHERSCAPE');
+   it('seeds a tracker host as NEUTRAL (a tracker is game-agnostic)', () => {
+      const character = seedCharacter('statuses', makeStatus());
+      expect(character.game).toBe('NEUTRAL');
    });
 });
 

@@ -92,6 +92,23 @@
    --ring:                    hsl(212.7 26.8% 83.9%);
 }
 
+/* Fallback card tokens, mapped to the app surface, for an element that uses the card-* paper
+   palette WITHOUT a game card-type class - a game-agnostic tracker (e.g. on the board) themed by
+   its NEUTRAL context. The card-type-* classes still override these, so sheet cards are unchanged.
+   var()-based, so they follow the active light/dark/app theme automatically. */
+:root {
+   --card-header-bg:       var(--muted);
+   --card-header-fg:       var(--foreground);
+   --card-paper-bg:        var(--card);
+   --card-paper-fg:        var(--card-foreground);
+   --card-accent:          var(--border);
+   --card-border:          var(--border);
+   --card-popover-bg:      var(--popover);
+   --card-popover-fg:      var(--popover-foreground);
+   --card-destructive-bg:  var(--destructive);
+   --card-destructive-fg:  var(--destructive-foreground);
+}
+
 
 
 /* ###################################### */

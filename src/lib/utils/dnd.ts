@@ -26,7 +26,8 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
       }
    }
    if ('trackerType' in item) {
-      const game: GameSystem = item.game;
+      // A tracker is game-agnostic: it saves to the drawer as NEUTRAL (no game segment, app theme).
+      const game: GameSystem = 'NEUTRAL';
       switch (item.trackerType) {
          case 'STATUS': return ['STATUS_TRACKER', game];
          case 'STORY_TAG': return ['STORY_TAG_TRACKER', game];
