@@ -95,8 +95,11 @@ function ThemeRow({ row, game }: { row: CondensedThemeRow; game: Character['game
       ? t('BoardView.overviewGearFlaws', { gear: row.powerCount, flaws: row.weaknessCount })
       : t('BoardView.overviewPowerWeakness', { power: row.powerCount, weakness: row.weaknessCount });
 
-   // The primary line is the themebook (themes); groups/loadouts have none, so the type name stands in.
-   const primaryLabel = row.themebook || typeLabel;
+   // A loadout has no main tag, so its type name ("Loadout") becomes the main line with nothing beneath.
+   // Otherwise the main line is the tag, and the sub-line is the themebook (or the type name for a group).
+   const isLoadout = row.rowKind === 'loadout';
+   const mainLine = isLoadout ? typeLabel : (row.mainTagName || t('BoardView.overviewUnnamedTag'));
+   const subLine = isLoadout ? '' : (row.themebook || typeLabel);
 
    return (
       <div className="flex min-w-0 items-stretch gap-2 p-1.5">
@@ -115,13 +118,13 @@ function ThemeRow({ row, game }: { row: CondensedThemeRow; game: Character['game
             <ThemeRowGlyph game={game} row={row} />
          </span>
          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-            {/* The main tag, prominent (bold) and truncating - an active tag reads bolder still. */}
+            {/* The main tag (or "Loadout" for a loadout), prominent (bold) and truncating - an active tag reads bolder still. */}
             <span className={cn('truncate text-xs font-semibold text-card-paper-fg', row.mainTagScratched && 'line-through', row.mainTagActive && 'font-bold')}>
-               {row.mainTagName || t('BoardView.overviewUnnamedTag')}
+               {mainLine}
             </span>
-            {/* The themebook (or the type name), regular and muted, with its power/weakness (or gear/flaws) counts. */}
+            {/* The themebook (or the type name; empty for a loadout), regular and muted, with its power/weakness (or gear/flaws) counts. */}
             <div className="flex min-w-0 items-center justify-between gap-2">
-               <span className="truncate text-[11px] font-normal text-card-paper-fg/70">{primaryLabel}</span>
+               <span className="truncate text-[11px] font-normal text-card-paper-fg/70">{subLine}</span>
                <span className="shrink-0 rounded bg-card-paper-fg/10 px-1.5 py-0.5 text-[10px] tabular-nums text-card-paper-fg/70">{counts}</span>
             </div>
          </div>
