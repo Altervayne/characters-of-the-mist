@@ -141,6 +141,21 @@ describe('migration flatten correctness', () => {
       expect(await drawerDatabase.items.count()).toBe(3);
    });
 
+   it('stamps every migrated item with one shared migration date-time (createdAt === updatedAt)', async () => {
+      seedLegacyBlob(makeLegacyDrawer());
+      vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+
+      await runDrawerMigrationIfNeeded();
+
+      const items = await drawerDatabase.items.toArray();
+      expect(items).toHaveLength(3);
+      // History is unguessable, so all migrated items share the single migratedAt on both fields.
+      for (const item of items) {
+         expect(item.createdAt).toBe(1_700_000_000_000);
+         expect(item.updatedAt).toBe(1_700_000_000_000);
+      }
+   });
+
    it('sets the schema version, completion flag, and retention marker, and leaves the blob in place', async () => {
       seedLegacyBlob(makeLegacyDrawer());
 

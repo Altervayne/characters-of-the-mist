@@ -27,9 +27,9 @@ export function DrawerMoveItemNavigator({ action, onConfirm, onClose }: { action
    const [childFolders, setChildFolders] = useState<DrawerFolderRecord[]>([]);
    const [breadcrumbPath, setBreadcrumbPath] = useState<DrawerFolderRecord[]>([]);
 
-   // The action target is a flat record carrying its own parent id - no tree walk
-   // needed. Records carry `order`; a pending item does not.
-   const itemToMove = action.target && 'order' in action.target ? action.target : null;
+   // The action target is a flat record (or a content-free search summary) carrying its own parent id
+   // - no tree walk needed. Folders/items/summaries all carry `name`; a pending dropped item does not.
+   const itemToMove = action.target && 'name' in action.target ? action.target : null;
    const parentOfItemToMoveId = itemToMove
       ? (itemToMove.parentFolderId === DRAWER_ROOT_PARENT_ID ? null : itemToMove.parentFolderId)
       : null;

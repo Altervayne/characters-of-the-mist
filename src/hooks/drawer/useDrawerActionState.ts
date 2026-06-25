@@ -11,14 +11,18 @@ import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 
 // -- Type Imports --
 import type { PendingDrawerItem } from '@/lib/stores/drawerStore';
+import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 
 
 
 export type ActionType = 'add-folder' | 'rename-folder' | 'delete-folder' | 'add-item' | 'rename-item' | 'delete-item' | 'move-item' | 'move-folder';
 
-/** The target of an action: a flat folder/item record, or a pending dropped item. */
-export type ActiveActionTarget = DrawerFolderRecord | DrawerItemRecord | PendingDrawerItem;
+/**
+ * The target of an action: a flat folder/item record, a pending dropped item, or a content-free
+ * search-result summary (the item actions only need its `id`/`name`, so a summary works too).
+ */
+export type ActiveActionTarget = DrawerFolderRecord | DrawerItemRecord | PendingDrawerItem | DrawerItemSummary;
 
 export interface ActiveAction {
    id: string;
@@ -35,6 +39,15 @@ function isFolderTarget(target: ActiveActionTarget | undefined): target is Drawe
 /** An item record carries both `content` and `order` (a pending item has `content` but no `order`). */
 function isItemTarget(target: ActiveActionTarget | undefined): target is DrawerItemRecord {
    return !!target && 'content' in target && 'order' in target;
+}
+
+/**
+ * A search-result summary: dated but content-free and orderless (an item record has both `content`
+ * and `order`; a folder has `order` but no `updatedAt`; a pending item has `defaultName`). Item
+ * actions accept it because they only need its `id`/`name`.
+ */
+function isItemSummaryTarget(target: ActiveActionTarget | undefined): target is DrawerItemSummary {
+   return !!target && 'updatedAt' in target && !('order' in target) && !('content' in target);
 }
 
 /** A pending dropped item carries `defaultName`. */
@@ -137,14 +150,14 @@ export function useDrawerActionState(currentFolderId: string | null) {
                break;
 
             case 'rename-item':
-               if (isItemTarget(target) && value) {
+               if ((isItemTarget(target) || isItemSummaryTarget(target)) && value) {
                   await renameItem(target.id, value);
                   toast.success(tNotifications('Notifications.drawer.itemRenamed'));
                }
                break;
 
             case 'delete-item':
-               if (isItemTarget(target)) {
+               if (isItemTarget(target) || isItemSummaryTarget(target)) {
                   await deleteItem(target.id);
                   toast.success(tNotifications('Notifications.drawer.itemDeleted'));
                }
@@ -160,7 +173,7 @@ export function useDrawerActionState(currentFolderId: string | null) {
                break;
 
             case 'move-item':
-               if (isItemTarget(target)) {
+               if (isItemTarget(target) || isItemSummaryTarget(target)) {
                   await moveItem(target.id, value);
                   toast.success(tNotifications('Notifications.drawer.itemMoved'));
                }

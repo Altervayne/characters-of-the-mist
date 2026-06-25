@@ -256,7 +256,7 @@ describe('save board to the drawer', () => {
       const board = await repository.createBoard('Saveable');
       await repository.addItem(makeItem('i1', board.id, 0));
       // Seed the linked drawer item, then link the board to it.
-      await drawerDatabase.items.put({ id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Saveable', content: { id: board.id, name: 'stale', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', items: [] } });
+      await drawerDatabase.items.put({ id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Saveable', createdAt: 0, updatedAt: 0, content: { id: board.id, name: 'stale', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', items: [] } });
       await repository.linkBoardToDrawerItem(board.id, 'drw', { x: 0, y: 0, zoom: 1 });
 
       const result = await repository.saveBoardToLinkedDrawerItem(board.id, { x: 99, y: 99, zoom: 3 });

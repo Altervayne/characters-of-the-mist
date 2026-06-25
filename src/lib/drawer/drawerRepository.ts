@@ -1,5 +1,5 @@
 // -- Library Imports --
-import { Dexie, type Table } from 'dexie';
+import { Dexie, type Table, type Collection, type IndexableType, type InsertType } from 'dexie';
 import cuid from 'cuid';
 
 // -- Utils Imports --
@@ -185,6 +185,8 @@ async function writeFolderSubtree(folder: Folder, storedParentId: string, order:
    await db.folders.add({ id: folder.id, name: folder.name, parentFolderId: storedParentId, order });
 
    if (folder.items.length > 0) {
+      // An imported subtree is fresh copies, so each item is created now.
+      const now = Date.now();
       await db.items.bulkAdd(
          folder.items.map((item, index) => ({
             id: item.id,
@@ -193,6 +195,8 @@ async function writeFolderSubtree(folder: Folder, storedParentId: string, order:
             order: index,
             game: item.game,
             type: item.type,
+            createdAt: now,
+            updatedAt: now,
             content: item.content,
          })),
       );
@@ -458,6 +462,7 @@ export function createItem(input: {
    const storedParentId = toStoredParentId(input.parentFolderId);
    return runWriteTransaction([db.items], async () => {
       const order = await db.items.where('parentFolderId').equals(storedParentId).count();
+      const now = Date.now();
       const record: DrawerItemRecord = {
          id: input.id ?? cuid(),
          name: input.name,
@@ -465,6 +470,8 @@ export function createItem(input: {
          order,
          game: input.game,
          type: input.type,
+         createdAt: now,
+         updatedAt: now,
          content: input.content,
       };
       await db.items.add(record);
@@ -475,7 +482,8 @@ export function createItem(input: {
 /** Renames an item. Throws {@link DrawerNotFoundError} if it does not exist. */
 export function renameItem(itemId: string, newName: string): Promise<void> {
    return runWriteTransaction([db.items], async () => {
-      const updated = await db.items.update(itemId, { name: newName });
+      // A rename is a content/name edit, so it bumps `updatedAt` ("last edited").
+      const updated = await db.items.update(itemId, { name: newName, updatedAt: Date.now() });
       if (updated === 0) throw new DrawerNotFoundError(`Drawer item not found: ${itemId}`);
    });
 }
@@ -513,7 +521,9 @@ export function deleteItem(itemId: string): Promise<void> {
  */
 export function updateItemContent(itemId: string, content: DrawerItemContent, name?: string): Promise<void> {
    return runWriteTransaction([db.items], async () => {
-      const changes = name === undefined ? { content } : { content, name };
+      // A content (and optional name) edit bumps `updatedAt` ("last edited").
+      const updatedAt = Date.now();
+      const changes = name === undefined ? { content, updatedAt } : { content, name, updatedAt };
       const updated = await db.items.update(itemId, changes);
       if (updated === 0) throw new DrawerNotFoundError(`Drawer item not found: ${itemId}`);
    });
@@ -710,5 +720,148 @@ export function getFolderSubtreeRecords(
 
       await collect(rootFolder);
       return { folderRecords, itemRecords };
+   });
+}
+
+// ==================
+//  Query API (multi-criteria filter / search / sort)
+// ==================
+// The engine behind the search/filter UI: every provided criterion ANDs together,
+// scoped to a folder's SUBTREE or the whole drawer, returning content-FREE summaries
+// (the result list shows name/type/game/dates; a card lazy-loads its own content via
+// `getItem` when it scrolls into view). Dexie can only narrow by ONE index, so we pick
+// the most selective indexable criterion as the primary `where()` and predicate the rest
+// in JS. Building a summary loads the row (content read and discarded) - the accepted
+// cost for realistic drawers; the content-free API leaves room for a denormalized
+// summary store to back the same contract later, without changing callers.
+
+/** Multi-criteria item query: all provided fields AND together. */
+export interface DrawerItemQuery {
+   /** Name contains, case-insensitive. */
+   text?: string;
+   /** Any-of these item types. */
+   types?: GeneralItemType[];
+   /** Any-of these game systems. */
+   games?: GameSystem[];
+   /** Inclusive `createdAt` range `[from, to]` (epoch ms). */
+   createdBetween?: [number, number];
+   /** Inclusive `updatedAt` range `[from, to]` (epoch ms). */
+   updatedBetween?: [number, number];
+   /** Limit to this folder's SUBTREE (the folder + every descendant); absent = whole drawer. */
+   scope?: { folderId: string };
+   /** Sort key + direction; defaults to `updatedAt` descending ("last edited"). */
+   sort?: { by: 'name' | 'createdAt' | 'updatedAt' | 'type'; direction: 'asc' | 'desc' };
+}
+
+/** A content-free item projection for the result list (the card loads content lazily). */
+export interface DrawerItemSummary {
+   id: string;
+   name: string;
+   type: GeneralItemType;
+   game: GameSystem;
+   /** `null` for a root item (the storage sentinel is translated away); powers "Jump to". */
+   parentFolderId: string | null;
+   createdAt: number;
+   updatedAt: number;
+}
+
+/** Drops the storage fields (`content`/`order`) and translates the root sentinel back to `null`. */
+function toItemSummary(record: DrawerItemRecord): DrawerItemSummary {
+   return {
+      id: record.id,
+      name: record.name,
+      type: record.type,
+      game: record.game,
+      parentFolderId: record.parentFolderId === DRAWER_ROOT_PARENT_ID ? null : record.parentFolderId,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+   };
+}
+
+/**
+ * Returns the records matching every criterion (unsorted). Narrows by ONE primary index
+ * - scope ids, else games, else types, else a date range, else the whole table - and runs
+ * the remaining criteria as a JS predicate over that narrowed collection. Must run inside
+ * an active read transaction (it reads `folders` for the scope subtree + `items`).
+ */
+async function collectMatchingItemRecords(query: DrawerItemQuery): Promise<DrawerItemRecord[]> {
+   const { text, types, games, createdBetween, updatedBetween, scope } = query;
+
+   // Empty arrays read as "no constraint", not "match nothing" (the UI omits a cleared facet).
+   const typeSet = types && types.length > 0 ? new Set(types) : null;
+   const gameSet = games && games.length > 0 ? new Set(games) : null;
+   const needle = text ? text.toLowerCase() : null;
+   const subtreeIds = scope ? await collectSubtreeFolderIds(scope.folderId) : null;
+
+   // Choose the primary index; mark which criterion it consumed so it isn't predicated twice. The key
+   // type widens to IndexableType because a date-range primary keys on a number, the others on strings.
+   let collection: Collection<DrawerItemRecord, IndexableType, InsertType<DrawerItemRecord, 'id'>>;
+   let primaryGame = false;
+   let primaryType = false;
+   let primaryCreated = false;
+   let primaryUpdated = false;
+
+   if (subtreeIds) {
+      collection = db.items.where('parentFolderId').anyOf(subtreeIds);
+   } else if (gameSet) {
+      collection = db.items.where('game').anyOf([...gameSet]);
+      primaryGame = true;
+   } else if (typeSet) {
+      collection = db.items.where('type').anyOf([...typeSet]);
+      primaryType = true;
+   } else if (createdBetween) {
+      collection = db.items.where('createdAt').between(createdBetween[0], createdBetween[1], true, true);
+      primaryCreated = true;
+   } else if (updatedBetween) {
+      collection = db.items.where('updatedAt').between(updatedBetween[0], updatedBetween[1], true, true);
+      primaryUpdated = true;
+   } else {
+      collection = db.items.toCollection();
+   }
+
+   const predicates: ((record: DrawerItemRecord) => boolean)[] = [];
+   if (needle) predicates.push((record) => record.name.toLowerCase().includes(needle));
+   if (typeSet && !primaryType) predicates.push((record) => typeSet.has(record.type));
+   if (gameSet && !primaryGame) predicates.push((record) => gameSet.has(record.game));
+   if (createdBetween && !primaryCreated) predicates.push((record) => record.createdAt >= createdBetween[0] && record.createdAt <= createdBetween[1]);
+   if (updatedBetween && !primaryUpdated) predicates.push((record) => record.updatedAt >= updatedBetween[0] && record.updatedAt <= updatedBetween[1]);
+
+   if (predicates.length > 0) {
+      collection = collection.filter((record) => predicates.every((matches) => matches(record)));
+   }
+   return collection.toArray();
+}
+
+/** Sorts matched records in memory by the query's key + direction (default `updatedAt` desc). */
+function sortItemRecords(records: DrawerItemRecord[], sort: DrawerItemQuery['sort']): DrawerItemRecord[] {
+   const by = sort?.by ?? 'updatedAt';
+   const factor = (sort?.direction ?? 'desc') === 'asc' ? 1 : -1;
+   const compare = (a: DrawerItemRecord, b: DrawerItemRecord): number => {
+      switch (by) {
+         case 'name': return a.name.localeCompare(b.name);
+         case 'type': return a.type.localeCompare(b.type);
+         case 'createdAt': return a.createdAt - b.createdAt;
+         case 'updatedAt': return a.updatedAt - b.updatedAt;
+      }
+   };
+   return [...records].sort((a, b) => compare(a, b) * factor);
+}
+
+/**
+ * Filters, searches, and sorts items by multiple criteria at once, returning content-free
+ * {@link DrawerItemSummary} rows. All provided criteria AND together; absent ones are ignored.
+ */
+export function queryItems(query: DrawerItemQuery): Promise<DrawerItemSummary[]> {
+   return runReadTransaction([db.folders, db.items], async () => {
+      const matched = await collectMatchingItemRecords(query);
+      return sortItemRecords(matched, query.sort).map(toItemSummary);
+   });
+}
+
+/** Counts the items matching `query` (same rules as {@link queryItems}), without materializing summaries. */
+export function countItems(query: DrawerItemQuery): Promise<number> {
+   return runReadTransaction([db.folders, db.items], async () => {
+      const matched = await collectMatchingItemRecords(query);
+      return matched.length;
    });
 }

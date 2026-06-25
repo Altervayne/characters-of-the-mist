@@ -6,7 +6,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { deepReId } from '../utils/drawer';
 
 // -- Drawer Data Layer Imports --
-import { getBreadcrumbPath, getChildCountsForFolders, getFolderChildren } from '@/lib/drawer/drawerRepository';
+import { getBreadcrumbPath, getChildCountsForFolders, getFolderChildren, queryItems } from '@/lib/drawer/drawerRepository';
 import {
    createCreateFolderCommand,
    createCreateItemCommand,
@@ -29,6 +29,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
 import type { DrawerCommand } from '@/lib/drawer/drawerCommandEngine';
+import type { DrawerItemQuery, DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 import type { Drawer, Folder, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
 
@@ -79,6 +80,11 @@ export interface DrawerState {
    pendingItem: PendingDrawerItem | null;
    canUndo: boolean;
    canRedo: boolean;
+   // Search runs parallel to the browse view (it's left untouched, so clearing search returns to the
+   // same folder). `searchResults` are content-free summaries; a card lazy-loads content later.
+   searchCriteria: DrawerItemQuery | null;
+   searchResults: DrawerItemSummary[] | null;
+   isSearching: boolean;
    actions: {
       // Drawer-level
       importDrawerAsFolder: (newDrawer: Drawer, folderName: string) => Promise<void>;
@@ -103,6 +109,11 @@ export interface DrawerState {
       // Navigation + view
       setDrawerCurrentFolderId: (id: string | null) => Promise<void>;
       reloadCurrentFolder: () => Promise<void>;
+      // Search (parallel to browse; runs the phase-2 query layer)
+      applySearch: (criteria: DrawerItemQuery) => Promise<void>;
+      /** Merges `partial` into the active criteria (null = empty) and re-runs the search. */
+      updateSearchCriteria: (partial: Partial<DrawerItemQuery>) => Promise<void>;
+      clearSearch: () => void;
       // Undo / redo (drive the command engine; mirrored into canUndo/canRedo)
       undoDrawer: () => Promise<void>;
       redoDrawer: () => Promise<void>;
@@ -111,7 +122,7 @@ export interface DrawerState {
 
 const initialState: Pick<
    DrawerState,
-   'currentFolderId' | 'currentFolderView' | 'breadcrumbPath' | 'parentFolderId' | 'isLoading' | 'error' | 'pendingItem' | 'canUndo' | 'canRedo'
+   'currentFolderId' | 'currentFolderView' | 'breadcrumbPath' | 'parentFolderId' | 'isLoading' | 'error' | 'pendingItem' | 'canUndo' | 'canRedo' | 'searchCriteria' | 'searchResults' | 'isSearching'
 > = {
    currentFolderId: null,
    currentFolderView: null,
@@ -122,6 +133,9 @@ const initialState: Pick<
    pendingItem: null,
    canUndo: false,
    canRedo: false,
+   searchCriteria: null,
+   searchResults: null,
+   isSearching: false,
 };
 
 /** Normalizes a thrown value into the store's `{ code, message }` error shape. */
@@ -174,6 +188,22 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          throw error;
       }
       await loadView(get().currentFolderId);
+      // Keep an active search in sync after a mutation (a rename/delete/move from a result row must
+      // reflect in the flat list, which the browse reload above does not touch).
+      await refreshSearchIfActive();
+   };
+
+   /** Re-runs the active search (if any) so the results reflect the latest data; no-op when not searching. */
+   const refreshSearchIfActive = async (): Promise<void> => {
+      const criteria = get().searchCriteria;
+      if (!criteria) return;
+      try {
+         const results = await queryItems(criteria);
+         // Guard against a stale resolve overwriting a newer search.
+         if (get().searchCriteria === criteria) set({ searchResults: results });
+      } catch (error) {
+         set({ error: toStoreError(error) });
+      }
    };
 
    return {
@@ -318,6 +348,27 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          },
 
          // ==================
+         //  Search (parallel to browse)
+         // ==================
+         applySearch: async (criteria) => {
+            set({ searchCriteria: criteria, isSearching: true });
+            try {
+               const results = await queryItems(criteria);
+               // Only apply if these are still the active criteria (a newer search may have superseded).
+               if (get().searchCriteria === criteria) set({ searchResults: results, isSearching: false });
+            } catch (error) {
+               if (get().searchCriteria === criteria) set({ isSearching: false, error: toStoreError(error) });
+            }
+         },
+         updateSearchCriteria: async (partial) => {
+            const merged = { ...(get().searchCriteria ?? {}), ...partial };
+            await get().actions.applySearch(merged);
+         },
+         clearSearch: () => {
+            set({ searchCriteria: null, searchResults: null, isSearching: false });
+         },
+
+         // ==================
          //  Undo / redo (engine-backed, navigation-independent)
          // ==================
          undoDrawer: async () => {
@@ -331,6 +382,26 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
       },
    };
 });
+
+/**
+ * The active FILTER facets in a search query (text / types / games / created / updated). `sort` is NOT
+ * a filter - it only orders results a filter produced - so a sort-only query is not "active".
+ */
+export function activeSearchFilters(criteria: DrawerItemQuery | null): ('text' | 'types' | 'games' | 'createdBetween' | 'updatedBetween')[] {
+   if (!criteria) return [];
+   const active: ('text' | 'types' | 'games' | 'createdBetween' | 'updatedBetween')[] = [];
+   if (criteria.text?.trim()) active.push('text');
+   if (criteria.types?.length) active.push('types');
+   if (criteria.games?.length) active.push('games');
+   if (criteria.createdBetween) active.push('createdBetween');
+   if (criteria.updatedBetween) active.push('updatedBetween');
+   return active;
+}
+
+/** Whether a search is active (any filter present); drives the browse-vs-results body branch. */
+export function isSearchFilterActive(criteria: DrawerItemQuery | null): boolean {
+   return activeSearchFilters(criteria).length > 0;
+}
 
 /** Selector for the drawer action bag (stable reference). */
 export const useDrawerActions = () => useDrawerStore((state) => state.actions);

@@ -15,7 +15,7 @@ import type { DrawerItemContent } from '@/lib/types/drawer';
  */
 
 function seedDrawerItem(id: string, content: DrawerItemContent) {
-   return drawerDatabase.items.add({ id, name: id, parentFolderId: 'root', order: 0, game: 'LEGENDS', type: 'STATUS_TRACKER', content });
+   return drawerDatabase.items.add({ id, name: id, parentFolderId: 'root', order: 0, game: 'LEGENDS', type: 'STATUS_TRACKER', createdAt: 0, updatedAt: 0, content });
 }
 
 beforeEach(async () => {

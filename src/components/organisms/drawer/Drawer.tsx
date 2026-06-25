@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -10,9 +10,11 @@ import cuid from 'cuid';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 // -- Icon Imports --
-import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Rows, PanelRightClose } from 'lucide-react';
+import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Rows, PanelRightClose, Search, X, SlidersHorizontal } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -27,6 +29,9 @@ import { DrawerItemEntry } from '@/components/molecules/drawer/DrawerItemEntry';
 import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerCompactItemEntry';
 import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwellAffordance';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
+import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSearchResultEntry';
+import { DrawerFiltersPanel } from '@/components/molecules/drawer/DrawerFiltersPanel';
+import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
@@ -34,6 +39,7 @@ import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoCon
 // -- Store and Hook Imports --
 import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
+import { useDrawerSearch } from '@/hooks/drawer/useDrawerSearch';
 import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -94,6 +100,19 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
       handleAnimationComplete,
    } = useDrawerActionState(currentFolderId);
 
+   // Search swaps the browse view for a flat results list; the browse view is left loaded underneath,
+   // so clearing search returns to the same folder.
+   const { text: searchText, setText: setSearchText, clear: clearSearchField, isSearchActive, results: searchResults, resultCount, activeFilterCount } = useDrawerSearch();
+
+   // The filters panel expands inline under the search row (narrow drawer - an inline panel, not a popover).
+   const [filtersOpen, setFiltersOpen] = useState(false);
+
+   // A result's "Jump to": navigate to its folder (null = root), then exit search.
+   const handleJumpToResult = (parentFolderId: string | null) => {
+      navigateToFolder(parentFolderId);
+      clearSearchField();
+   };
+
    const {
       getRootProps,
       isDragActive,
@@ -146,7 +165,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                   variants={contentVariants}
                   className="w-full p-0 h-full flex flex-col"
                >
-                     <header className="shrink-0 py-2 px-4 h-26 border-b-2 border-border">
+                     <header className="shrink-0 py-2 px-4 min-h-26 border-b-2 border-border">
                         <div className="flex grow h-8 items-center justify-between my-2">
                            <h2 className="flex-1 text-xl font-bold">{t('Drawer.title')}</h2>
                            <div className="flex-2">
@@ -162,7 +181,46 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                            </div>
                         </div>
 
-                        {breadcrumbPath.length > 0 && (
+                        {/* Search field (always visible) + a Filters toggle. A non-empty value (debounced) or
+                            any active filter swaps the body to a flat results list; clearing returns to browse. */}
+                        <div className="mt-1 flex items-center gap-1">
+                           <div className="relative flex-1">
+                              <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                 value={searchText}
+                                 onChange={(event) => setSearchText(event.target.value)}
+                                 placeholder={t('Drawer.search.placeholder')}
+                                 className="h-9 pl-8 pr-20"
+                              />
+                              {isSearchActive && (
+                                 <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                                    <span className="text-[11px] tabular-nums text-muted-foreground">{t('Drawer.search.resultCount', { count: resultCount })}</span>
+                                    <button type="button" onClick={clearSearchField} className="rounded p-1 hover:bg-muted cursor-pointer" aria-label={t('Drawer.search.clear')}>
+                                       <X className="h-4 w-4" />
+                                    </button>
+                                 </div>
+                              )}
+                           </div>
+                           <Button
+                              variant={filtersOpen ? 'secondary' : 'ghost'}
+                              size="icon"
+                              className="relative h-9 w-9 shrink-0 cursor-pointer"
+                              aria-label={t('Drawer.filters.title')}
+                              title={t('Drawer.filters.title')}
+                              onClick={() => setFiltersOpen((open) => !open)}
+                           >
+                              <SlidersHorizontal className="h-4 w-4" />
+                              {activeFilterCount > 0 && (
+                                 <Badge className="absolute -right-1 -top-1 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] tabular-nums">{activeFilterCount}</Badge>
+                              )}
+                           </Button>
+                        </div>
+
+                        {/* The inline filters panel (type / game / date ranges), expanded on demand. */}
+                        {filtersOpen && <DrawerFiltersPanel />}
+
+                        {/* The breadcrumb is browse-only - hidden while searching (you are not in a folder). */}
+                        {!isSearchActive && breadcrumbPath.length > 0 && (
                            <div className="flex items-center gap-2 mt-2">
                               <div onClick={() => navigateToFolder(null)} className="rounded p-1 hover:bg-muted cursor-pointer shrink-0" role="button" aria-label={t('Drawer.backToRoot')}>
                                  <ArrowUpToLine className="h-4 w-4" />
@@ -173,6 +231,32 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                      </header>
 
                      <div className="grow bg-popover overflow-y-auto flex flex-col">
+                        {isSearchActive ? (
+                           /* Flat results: a light row per matching item; the browse chrome (back / folders /
+                              add-folder / items) is absent, not overlaid. Results are not draggable/reorderable. */
+                           <div className="flex flex-1 flex-col gap-2 p-2">
+                              {/* Sort control: ordering is frequently changed, so it sits at the results header. */}
+                              <DrawerSortControl />
+                              {searchResults && searchResults.length > 0 ? (
+                                 searchResults.map((summary) => (
+                                    <DrawerSearchResultEntry
+                                       key={summary.id}
+                                       summary={summary}
+                                       onJumpTo={() => handleJumpToResult(summary.parentFolderId)}
+                                       onRename={() => setActiveAction({ id: cuid(), type: 'rename-item', target: summary })}
+                                       onDelete={() => setActiveAction({ id: cuid(), type: 'delete-item', target: summary })}
+                                       onMove={() => setActiveAction({ id: cuid(), type: 'move-item', target: summary })}
+                                    />
+                                 ))
+                              ) : (
+                                 <div className="flex h-full flex-col items-center justify-center py-8 text-center">
+                                    <Inbox className="mx-auto h-16 w-16 text-muted-foreground" />
+                                    <p className="mt-2 text-lg text-muted-foreground">{t('Drawer.search.noMatches')}</p>
+                                 </div>
+                              )}
+                           </div>
+                        ) : (
+                        <>
                         <motion.div data-tour="drawer-folders" layout transition={{ duration: 0.1 }} className="flex flex-col w-full p-2 pt-0 border-b-2 border-border overflow-hidden shrink-0">
                            {currentFolderId && (
                               <motion.div
@@ -284,6 +368,8 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                               )}
                            </div>
                         </motion.div>
+                        </>
+                        )}
                      </div>
 
                      <div className="flex flex-col shrink-0 p-2 mt-auto gap-2 bg-card border-t-2 border-border">

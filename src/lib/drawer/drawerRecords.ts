@@ -56,6 +56,10 @@ export interface DrawerItemRecord {
    game: GameSystem;
    /** Concrete kind of the stored content (indexed for future filtering). */
    type: GeneralItemType;
+   /** When the item was first created (epoch ms; indexed for sort/range). */
+   createdAt: number;
+   /** When the item's content/name was last edited - NOT a move/reorder (epoch ms; indexed for "last edited" sort). */
+   updatedAt: number;
    /** The serialized aggregate this item wraps (card, tracker, or character). */
    content: DrawerItemContent;
 }

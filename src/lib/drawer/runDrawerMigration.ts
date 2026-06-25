@@ -89,8 +89,12 @@ function extractDrawerFromBlob(rawBlob: string): Drawer {
    return { folders: [], rootItems: [] };
 }
 
-/** Maps a nested item to a flat record under `parentFolderId`, preserving its id. */
-function toItemRecord(item: DrawerItem, parentFolderId: string, order: number): DrawerItemRecord {
+/**
+ * Maps a nested item to a flat record under `parentFolderId`, preserving its id. Every migrated item
+ * is stamped with the single `migratedAt` (its real history is unguessable), so post-migration the
+ * write path takes over with real per-edit dates.
+ */
+function toItemRecord(item: DrawerItem, parentFolderId: string, order: number, migratedAt: number): DrawerItemRecord {
    return {
       id: item.id,
       name: item.name,
@@ -98,6 +102,8 @@ function toItemRecord(item: DrawerItem, parentFolderId: string, order: number): 
       order,
       game: item.game,
       type: item.type,
+      createdAt: migratedAt,
+      updatedAt: migratedAt,
       content: item.content,
    };
 }
@@ -111,16 +117,18 @@ function toItemRecord(item: DrawerItem, parentFolderId: string, order: number): 
 function flattenDrawer(drawer: Drawer): { folderRecords: DrawerFolderRecord[]; itemRecords: DrawerItemRecord[] } {
    const folderRecords: DrawerFolderRecord[] = [];
    const itemRecords: DrawerItemRecord[] = [];
+   // One timestamp per migration run: history is unguessable, so every migrated item shares it.
+   const migratedAt = Date.now();
 
    drawer.rootItems.forEach((item, index) => {
-      itemRecords.push(toItemRecord(item, DRAWER_ROOT_PARENT_ID, index));
+      itemRecords.push(toItemRecord(item, DRAWER_ROOT_PARENT_ID, index, migratedAt));
    });
 
    const walkFolders = (folders: Folder[], parentFolderId: string): void => {
       folders.forEach((folder, folderIndex) => {
          folderRecords.push({ id: folder.id, name: folder.name, parentFolderId, order: folderIndex });
          folder.items.forEach((item, itemIndex) => {
-            itemRecords.push(toItemRecord(item, folder.id, itemIndex));
+            itemRecords.push(toItemRecord(item, folder.id, itemIndex, migratedAt));
          });
          walkFolders(folder.folders, folder.id);
       });

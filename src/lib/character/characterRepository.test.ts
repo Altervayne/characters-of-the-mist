@@ -110,6 +110,8 @@ describe('saveCharacterToLinkedDrawerItem (cross-store atomic save)', () => {
          order: 0,
          game: content.game,
          type: 'FULL_CHARACTER_SHEET',
+         createdAt: 0,
+         updatedAt: 0,
          content,
       });
    }

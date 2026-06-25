@@ -49,6 +49,8 @@ function seedDrawerItem(id: string, content: DrawerItemContent) {
       order: 0,
       game: 'LEGENDS',
       type: 'CHARACTER_CARD',
+      createdAt: 0,
+      updatedAt: 0,
       content,
    });
 }

@@ -7,6 +7,7 @@ import { reorderList } from '@/lib/utils/drawer';
 // -- Local Imports --
 import { drawerDatabase } from './drawerDatabase';
 import { DRAWER_ROOT_PARENT_ID } from './drawerRecords';
+import type { DrawerItemRecord } from './drawerRecords';
 import { DrawerInvalidOperationError, DrawerNotFoundError, DrawerTransactionError } from './drawerErrors';
 import * as repository from './drawerRepository';
 
@@ -372,6 +373,76 @@ describe('tree / bulk operations', () => {
 });
 
 // ==================
+//  Item dates (createdAt / updatedAt)
+// ==================
+
+describe('item dates', () => {
+   // A monotonic fake clock so each write lands a distinct, ordered timestamp (no wall-clock flake).
+   let clock = 1000;
+   beforeEach(() => {
+      clock = 1000;
+      vi.spyOn(Date, 'now').mockImplementation(() => clock);
+   });
+   const tick = (): number => (clock += 1000);
+
+   const newItem = (parentFolderId: string | null = null) =>
+      repository.createItem({ name: 'N', game: 'LEGENDS', type: 'CHARACTER_CARD', content: ITEM_CONTENT, parentFolderId });
+
+   it('createItem stamps both dates to the creation time', async () => {
+      const item = await newItem();
+      const stored = await repository.getItem(item.id);
+      expect(stored?.createdAt).toBe(1000);
+      expect(stored?.updatedAt).toBe(1000);
+   });
+
+   it('renameItem and updateItemContent bump updatedAt but leave createdAt', async () => {
+      const item = await newItem(); // created at 1000
+
+      tick(); // 2000
+      await repository.renameItem(item.id, 'Renamed');
+      let stored = await repository.getItem(item.id);
+      expect(stored?.createdAt).toBe(1000);
+      expect(stored?.updatedAt).toBe(2000);
+
+      tick(); // 3000
+      await repository.updateItemContent(item.id, ITEM_CONTENT);
+      stored = await repository.getItem(item.id);
+      expect(stored?.createdAt).toBe(1000);
+      expect(stored?.updatedAt).toBe(3000);
+   });
+
+   it('moveItem and reorderItems change neither date (position-only)', async () => {
+      const folder = await repository.createFolder({ name: 'F', parentFolderId: null });
+      const a = await newItem(); // 1000
+      const b = await newItem(); // 1000
+
+      tick(); // 2000
+      await repository.reorderItems(null, 0, 1);
+      tick(); // 3000
+      await repository.moveItem(a.id, folder.id);
+
+      const storedA = await repository.getItem(a.id);
+      const storedB = await repository.getItem(b.id);
+      expect(storedA?.createdAt).toBe(1000);
+      expect(storedA?.updatedAt).toBe(1000); // a move never bumps "last edited"
+      expect(storedB?.createdAt).toBe(1000);
+      expect(storedB?.updatedAt).toBe(1000); // a reorder never bumps "last edited"
+   });
+
+   it('restoreRecords preserves the captured dates verbatim (undo fidelity)', async () => {
+      const captured: DrawerItemRecord = {
+         id: 'restored', name: 'R', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0,
+         game: 'LEGENDS', type: 'CHARACTER_CARD', createdAt: 111, updatedAt: 222, content: ITEM_CONTENT,
+      };
+      tick(); // advance the clock; restore must NOT use it
+      await repository.restoreRecords([], [captured]);
+      const stored = await repository.getItem('restored');
+      expect(stored?.createdAt).toBe(111);
+      expect(stored?.updatedAt).toBe(222);
+   });
+});
+
+// ==================
 //  Transaction atomicity
 // ==================
 
@@ -393,5 +464,112 @@ describe('transaction atomicity', () => {
       expect(items).toHaveLength(0);
 
       bulkAddSpy.mockRestore();
+   });
+});
+
+// ==================
+//  Query API (filter / search / sort)
+// ==================
+
+describe('query API', () => {
+   /** Seeds an item record directly, so dates / type / game / parent are set precisely per test. */
+   const seed = (over: Partial<DrawerItemRecord> & Pick<DrawerItemRecord, 'id'>): Promise<unknown> =>
+      drawerDatabase.items.add({
+         id: over.id,
+         name: over.name ?? over.id,
+         parentFolderId: over.parentFolderId ?? DRAWER_ROOT_PARENT_ID,
+         order: over.order ?? 0,
+         game: over.game ?? 'LEGENDS',
+         type: over.type ?? 'CHARACTER_CARD',
+         createdAt: over.createdAt ?? 1000,
+         updatedAt: over.updatedAt ?? 1000,
+         content: ITEM_CONTENT,
+      });
+
+   const ids = (summaries: { id: string }[]): string[] => summaries.map((s) => s.id);
+
+   it('matches text by case-insensitive name-contains', async () => {
+      await seed({ id: 'a', name: 'Wizard' });
+      await seed({ id: 'b', name: 'wizardry' });
+      await seed({ id: 'c', name: 'Knight' });
+      expect(ids(await repository.queryItems({ text: 'WIZ' })).sort()).toEqual(['a', 'b']);
+   });
+
+   it('matches types and games any-of', async () => {
+      await seed({ id: 'card', type: 'CHARACTER_CARD' });
+      await seed({ id: 'status', type: 'STATUS_TRACKER' });
+      await seed({ id: 'board', type: 'FULL_BOARD' });
+      expect(ids(await repository.queryItems({ types: ['STATUS_TRACKER', 'FULL_BOARD'] })).sort()).toEqual(['board', 'status']);
+
+      await drawerDatabase.items.clear();
+      await seed({ id: 'leg', game: 'LEGENDS' });
+      await seed({ id: 'com', game: 'CITY_OF_MIST' });
+      await seed({ id: 'os', game: 'OTHERSCAPE' });
+      expect(ids(await repository.queryItems({ games: ['CITY_OF_MIST', 'OTHERSCAPE'] })).sort()).toEqual(['com', 'os']);
+   });
+
+   it('matches createdBetween and updatedBetween inclusively', async () => {
+      await seed({ id: 'early', createdAt: 100, updatedAt: 100 });
+      await seed({ id: 'mid', createdAt: 200, updatedAt: 200 });
+      await seed({ id: 'late', createdAt: 300, updatedAt: 300 });
+      expect(ids(await repository.queryItems({ createdBetween: [150, 250] }))).toEqual(['mid']);
+      expect(ids(await repository.queryItems({ createdBetween: [100, 200] })).sort()).toEqual(['early', 'mid']); // inclusive ends
+      expect(ids(await repository.queryItems({ updatedBetween: [250, 999] }))).toEqual(['late']);
+   });
+
+   it('ANDs multiple criteria together', async () => {
+      await seed({ id: 'hit', name: 'Detective', game: 'CITY_OF_MIST', type: 'STATUS_TRACKER' });
+      await seed({ id: 'wrongGame', name: 'Detective', game: 'LEGENDS', type: 'STATUS_TRACKER' });
+      await seed({ id: 'wrongType', name: 'Detective', game: 'CITY_OF_MIST', type: 'CHARACTER_CARD' });
+      await seed({ id: 'wrongText', name: 'Soldier', game: 'CITY_OF_MIST', type: 'STATUS_TRACKER' });
+      const result = await repository.queryItems({ text: 'detective', games: ['CITY_OF_MIST'], types: ['STATUS_TRACKER'] });
+      expect(ids(result)).toEqual(['hit']);
+   });
+
+   it('scopes to a folder SUBTREE (descendants included, outsiders excluded)', async () => {
+      const parent = await repository.createFolder({ name: 'P', parentFolderId: null });
+      const child = await repository.createFolder({ name: 'C', parentFolderId: parent.id });
+      await seed({ id: 'inParent', parentFolderId: parent.id });
+      await seed({ id: 'inChild', parentFolderId: child.id }); // nested deep
+      await seed({ id: 'outside', parentFolderId: DRAWER_ROOT_PARENT_ID });
+      expect(ids(await repository.queryItems({ scope: { folderId: parent.id } })).sort()).toEqual(['inChild', 'inParent']);
+   });
+
+   it('sorts by each key in both directions, defaulting to updatedAt desc', async () => {
+      await seed({ id: 'a', name: 'Bravo', type: 'STATUS_TRACKER', createdAt: 200, updatedAt: 300 });
+      await seed({ id: 'b', name: 'Alpha', type: 'CHARACTER_CARD', createdAt: 300, updatedAt: 100 });
+      await seed({ id: 'c', name: 'Charlie', type: 'FULL_BOARD', createdAt: 100, updatedAt: 200 });
+
+      expect(ids(await repository.queryItems({}))).toEqual(['a', 'c', 'b']); // default: updatedAt desc (300,200,100)
+      expect(ids(await repository.queryItems({ sort: { by: 'updatedAt', direction: 'asc' } }))).toEqual(['b', 'c', 'a']);
+      expect(ids(await repository.queryItems({ sort: { by: 'name', direction: 'asc' } }))).toEqual(['b', 'a', 'c']); // Alpha,Bravo,Charlie
+      expect(ids(await repository.queryItems({ sort: { by: 'name', direction: 'desc' } }))).toEqual(['c', 'a', 'b']);
+      expect(ids(await repository.queryItems({ sort: { by: 'createdAt', direction: 'asc' } }))).toEqual(['c', 'a', 'b']); // 100,200,300
+   });
+
+   it('returns an empty list for no matches, and the whole drawer when unscoped', async () => {
+      await seed({ id: 'a' });
+      await seed({ id: 'b' });
+      expect(await repository.queryItems({ text: 'nothing-matches' })).toEqual([]);
+      expect(ids(await repository.queryItems({})).sort()).toEqual(['a', 'b']);
+   });
+
+   it('projects parentFolderId as null for a root item, the folder id otherwise (no content leaked)', async () => {
+      const folder = await repository.createFolder({ name: 'F', parentFolderId: null });
+      await seed({ id: 'root', parentFolderId: DRAWER_ROOT_PARENT_ID });
+      await seed({ id: 'nested', parentFolderId: folder.id });
+      const byId = new Map((await repository.queryItems({})).map((s) => [s.id, s]));
+      expect(byId.get('root')?.parentFolderId).toBeNull();
+      expect(byId.get('nested')?.parentFolderId).toBe(folder.id);
+      expect(byId.get('root')).not.toHaveProperty('content');
+   });
+
+   it('countItems returns the match count under the same rules', async () => {
+      await seed({ id: 'a', game: 'CITY_OF_MIST' });
+      await seed({ id: 'b', game: 'CITY_OF_MIST' });
+      await seed({ id: 'c', game: 'LEGENDS' });
+      expect(await repository.countItems({ games: ['CITY_OF_MIST'] })).toBe(2);
+      expect(await repository.countItems({})).toBe(3);
+      expect(await repository.countItems({ text: 'none' })).toBe(0);
    });
 });

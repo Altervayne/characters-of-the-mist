@@ -35,12 +35,14 @@ vi.mock('@/lib/drawer/drawerRepository', () => ({
    getFolderChildren: vi.fn().mockResolvedValue({ folders: [], items: [] }),
    getBreadcrumbPath: vi.fn().mockResolvedValue([]),
    getChildCountsForFolders: vi.fn().mockResolvedValue(new Map()),
+   queryItems: vi.fn().mockResolvedValue([]),
 }));
 
 // -- Local Imports (after the mocks so the store binds the mocked deps) --
-import { useDrawerStore } from './drawerStore';
+import { useDrawerStore, activeSearchFilters, isSearchFilterActive } from './drawerStore';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
-import { getFolderChildren } from '@/lib/drawer/drawerRepository';
+import { getFolderChildren, queryItems } from '@/lib/drawer/drawerRepository';
+import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 
 const item = (id: string) => ({ id, name: id, parentFolderId: 'root', order: 0 }) as unknown as DrawerItemRecord;
@@ -92,5 +94,83 @@ describe('drawerStore optimistic reorder/move', () => {
 
       expect(ids(useDrawerStore.getState().currentFolderView?.items)).toEqual(['a', 'b', 'c']);
       expect(useDrawerStore.getState().error).not.toBeNull();
+   });
+});
+
+describe('drawerStore search', () => {
+   const summary = (id: string): DrawerItemSummary => ({
+      id, name: id, type: 'CHARACTER_CARD', game: 'LEGENDS', parentFolderId: null, createdAt: 0, updatedAt: 0,
+   });
+
+   beforeEach(() => {
+      vi.clearAllMocks();
+      (queryItems as Mock).mockResolvedValue([]);
+      useDrawerStore.setState({ searchCriteria: null, searchResults: null, isSearching: false });
+   });
+
+   it('applySearch runs the query, stores results, and clears the loading flag', async () => {
+      (queryItems as Mock).mockResolvedValueOnce([summary('a'), summary('b')]);
+      await useDrawerStore.getState().actions.applySearch({ text: 'a' });
+
+      expect(queryItems).toHaveBeenCalledWith({ text: 'a' });
+      expect(useDrawerStore.getState().searchCriteria).toEqual({ text: 'a' });
+      expect(ids(useDrawerStore.getState().searchResults ?? undefined)).toEqual(['a', 'b']);
+      expect(useDrawerStore.getState().isSearching).toBe(false);
+   });
+
+   it('applySearch leaves the browse view untouched (clearing search returns to the same folder)', async () => {
+      seedItems([item('x'), item('y')]);
+      const before = useDrawerStore.getState().currentFolderView;
+      (queryItems as Mock).mockResolvedValueOnce([summary('a')]);
+      await useDrawerStore.getState().actions.applySearch({ text: 'a' });
+
+      expect(useDrawerStore.getState().currentFolderView).toBe(before); // same reference: browse untouched
+   });
+
+   it('clearSearch nulls the criteria and results', async () => {
+      (queryItems as Mock).mockResolvedValueOnce([summary('a')]);
+      await useDrawerStore.getState().actions.applySearch({ text: 'a' });
+      useDrawerStore.getState().actions.clearSearch();
+
+      expect(useDrawerStore.getState().searchCriteria).toBeNull();
+      expect(useDrawerStore.getState().searchResults).toBeNull();
+   });
+
+   it('updateSearchCriteria merges a partial into the active criteria and re-applies', async () => {
+      await useDrawerStore.getState().actions.applySearch({ text: 'detective' });
+      (queryItems as Mock).mockClear();
+
+      await useDrawerStore.getState().actions.updateSearchCriteria({ games: ['CITY_OF_MIST'] });
+
+      // The text is preserved and the games filter is added (merge, not replace).
+      expect(queryItems).toHaveBeenCalledWith({ text: 'detective', games: ['CITY_OF_MIST'] });
+      expect(useDrawerStore.getState().searchCriteria).toEqual({ text: 'detective', games: ['CITY_OF_MIST'] });
+   });
+
+   it('updateSearchCriteria merges into an empty (null) criteria', async () => {
+      useDrawerStore.setState({ searchCriteria: null });
+      await useDrawerStore.getState().actions.updateSearchCriteria({ types: ['STATUS_TRACKER'] });
+      expect(useDrawerStore.getState().searchCriteria).toEqual({ types: ['STATUS_TRACKER'] });
+   });
+});
+
+describe('active-filter helpers', () => {
+   it('isSearchFilterActive is true for any filter, false for null / empty / sort-only', () => {
+      expect(isSearchFilterActive(null)).toBe(false);
+      expect(isSearchFilterActive({})).toBe(false);
+      expect(isSearchFilterActive({ text: '   ' })).toBe(false); // whitespace-only is not active
+      expect(isSearchFilterActive({ types: [] })).toBe(false); // empty array = no constraint
+      expect(isSearchFilterActive({ sort: { by: 'name', direction: 'asc' } })).toBe(false); // sort alone
+
+      expect(isSearchFilterActive({ text: 'a' })).toBe(true);
+      expect(isSearchFilterActive({ types: ['FULL_BOARD'] })).toBe(true);
+      expect(isSearchFilterActive({ games: ['LEGENDS'] })).toBe(true);
+      expect(isSearchFilterActive({ createdBetween: [0, 1] })).toBe(true);
+      expect(isSearchFilterActive({ updatedBetween: [0, 1] })).toBe(true);
+   });
+
+   it('activeSearchFilters lists the active facets (for the count badge), excluding sort', () => {
+      expect(activeSearchFilters({ text: 'a', games: ['LEGENDS'], sort: { by: 'name', direction: 'asc' } })).toEqual(['text', 'games']);
+      expect(activeSearchFilters(null)).toEqual([]);
    });
 });

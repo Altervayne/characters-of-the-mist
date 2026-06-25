@@ -290,6 +290,46 @@
    },
    "Drawer": {
       "title": "Tiroir",
+      "search": {
+         "placeholder": "[TO COMPLETE]",
+         "clear": "[TO COMPLETE]",
+         "resultCount_one": "[TO COMPLETE]",
+         "resultCount_other": "[TO COMPLETE]",
+         "noMatches": "[TO COMPLETE]",
+         "jumpTo": "[TO COMPLETE]",
+         "created": "[TO COMPLETE]",
+         "updated": "[TO COMPLETE]"
+      },
+      "filters": {
+         "title": "[TO COMPLETE]",
+         "type": "[TO COMPLETE]",
+         "game": "[TO COMPLETE]",
+         "created": "[TO COMPLETE]",
+         "updated": "[TO COMPLETE]",
+         "from": "[TO COMPLETE]",
+         "to": "[TO COMPLETE]",
+         "clearAll": "[TO COMPLETE]",
+         "sortBy": "[TO COMPLETE]",
+         "sortAsc": "[TO COMPLETE]",
+         "sortDesc": "[TO COMPLETE]",
+         "sort": {
+            "updatedAt": "[TO COMPLETE]",
+            "createdAt": "[TO COMPLETE]",
+            "name": "[TO COMPLETE]",
+            "type": "[TO COMPLETE]"
+         },
+         "itemType": {
+            "FULL_CHARACTER_SHEET": "[TO COMPLETE]",
+            "CHARACTER_CARD": "[TO COMPLETE]",
+            "CHARACTER_THEME": "[TO COMPLETE]",
+            "GROUP_THEME": "[TO COMPLETE]",
+            "STATUS_TRACKER": "[TO COMPLETE]",
+            "STORY_TAG_TRACKER": "[TO COMPLETE]",
+            "STORY_THEME_TRACKER": "[TO COMPLETE]",
+            "IMAGE_CARD": "[TO COMPLETE]",
+            "FULL_BOARD": "[TO COMPLETE]"
+         }
+      },
       "toggleView": "Change la vue des Objets du tiroir entre prévisualisation riche et liste simple",
       "compactView": "Basculer vers le mode liste compacte pour les Objets du Tiroir",
       "close": "Fermer le tiroir",
@@ -355,6 +395,7 @@
          "LEGENDS": "Legend in the Mist",
          "OTHERSCAPE": "Otherscape",
          "CITY_OF_MIST": "City of Mist",
+         "NEUTRAL": "[TO COMPLETE]",
          "LEGENDS_FULL_CHARACTER_SHEET": "Fiche de Perso.",
          "LEGENDS_CHARACTER_CARD": "Carte de Héros",
          "LEGENDS_CHARACTER_THEME": "Thème de Héros",

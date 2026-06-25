@@ -88,6 +88,20 @@ export class DrawerDatabase extends Dexie {
          boards: 'id, updatedAt',
          boardItems: 'id, boardId, [boardId+z]',
       });
+
+      // version(5): re-declares ONLY the `items` store to append `createdAt`/`updatedAt`
+      // indexes (a re-declaration replaces the store's whole index list, so the prior
+      // indexes are repeated). The upgrade backfills already-stored rows, which predate
+      // the fields, so they sort/range cleanly - defaulting to "when the data landed",
+      // the same rule the migration uses. Idempotent and content-free.
+      this.version(5).stores({
+         items: 'id, parentFolderId, [parentFolderId+order], game, type, createdAt, updatedAt',
+      }).upgrade(async (tx) => {
+         await tx.table('items').toCollection().modify((item) => {
+            if (typeof item.createdAt !== 'number') item.createdAt = Date.now();
+            if (typeof item.updatedAt !== 'number') item.updatedAt = item.createdAt;
+         });
+      });
    }
 }
 

@@ -303,6 +303,46 @@
    },
    "Drawer": {
       "title": "Drawer",
+      "search": {
+         "placeholder": "Search items…",
+         "clear": "Clear search",
+         "resultCount_one": "{{count}} result",
+         "resultCount_other": "{{count}} results",
+         "noMatches": "No items match your search.",
+         "jumpTo": "Jump to folder",
+         "created": "Created {{date}}",
+         "updated": "Updated {{date}}"
+      },
+      "filters": {
+         "title": "Filters",
+         "type": "Type",
+         "game": "Game",
+         "created": "Created",
+         "updated": "Updated",
+         "from": "From",
+         "to": "to",
+         "clearAll": "Clear all",
+         "sortBy": "Sort by",
+         "sortAsc": "Ascending",
+         "sortDesc": "Descending",
+         "sort": {
+            "updatedAt": "Last edited",
+            "createdAt": "Created",
+            "name": "Name",
+            "type": "Type"
+         },
+         "itemType": {
+            "FULL_CHARACTER_SHEET": "Character sheet",
+            "CHARACTER_CARD": "Character card",
+            "CHARACTER_THEME": "Theme",
+            "GROUP_THEME": "Group theme",
+            "STATUS_TRACKER": "Status",
+            "STORY_TAG_TRACKER": "Story tag",
+            "STORY_THEME_TRACKER": "Story theme",
+            "IMAGE_CARD": "Image",
+            "FULL_BOARD": "Board"
+         }
+      },
       "toggleView": "Toggle view mode between rich preview and list entry for Drawer Items",
       "compactView": "Switch to the compact list view for Drawer Items",
       "close": "Close drawer",
@@ -383,6 +423,7 @@
          "LEGENDS": "Legend in the Mist",
          "OTHERSCAPE": "Otherscape",
          "CITY_OF_MIST": "City of Mist",
+         "NEUTRAL": "Game-agnostic",
 
          "LEGENDS_FULL_CHARACTER_SHEET": "Character Sheet",
          "LEGENDS_CHARACTER_CARD": "Hero Card",
