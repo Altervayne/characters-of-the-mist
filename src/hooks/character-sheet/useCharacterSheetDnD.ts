@@ -920,6 +920,16 @@ export function useCharacterSheetDnD() {
                const characterData = draggedItem.content as Character;
                openCharacterTab(characterData, draggedItem.id);
                setContextualGame(characterData.game);
+            } else if (draggedItem?.type === 'FULL_BOARD') {
+               // A board dropped on the workspace opens like a character: focus its tab if already
+               // open (don't re-import, so live unsaved edits aren't clobbered), else materialize the
+               // drawer copy into the working tables and open it by id.
+               const boardData = draggedItem.content as Board;
+               if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === boardData.id)) {
+                  setActiveTab(boardData.id);
+               } else {
+                  void importBoard(boardData).then(() => openBoardTab(boardData.id));
+               }
             }
             return;
          }
@@ -1085,6 +1095,7 @@ export function useCharacterSheetDnD() {
       openCharacterTab,
       openBoardTab,
       reorderTabs,
+      setActiveTab,
       setContextualGame,
       addImportedTracker,
       addImportedCard,

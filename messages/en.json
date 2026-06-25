@@ -250,6 +250,7 @@
       "addCard": "Add Card",
       "addPortrait": "Add Portrait",
       "dropToLoadCharacter": "Drop Character Sheet Item here to load the full character. Be careful, this will replace your currently active character.",
+      "dropToOpenBoard": "Drop to open board",
       "dropToImport": "Drop your file here to import the component into your character sheet. If you drop a full character, it will replace your currently active character.",
       "cannotDropWrongGame": "Can't drop here, this component is for a different game system.",
 

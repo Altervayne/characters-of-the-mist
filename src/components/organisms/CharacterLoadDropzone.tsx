@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 
 // -- Icon Imports --
-import { Upload } from 'lucide-react';
+import { LayoutGrid, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -41,12 +41,16 @@ interface CharacterLoadDropZoneProps {
 export function CharacterLoadDropZone({ activeDragItem, isBoardActive = false }: CharacterLoadDropZoneProps) {
    const { t: t } = useTranslation();
 
-   const isCharacterLoadDragActive =
-      !isBoardActive && activeDragItem && 'content' in activeDragItem && activeDragItem.type === 'FULL_CHARACTER_SHEET';
+   const dragType = activeDragItem && 'content' in activeDragItem ? activeDragItem.type : null;
+   // A character loads to a tab here, but is disabled on a board (the board makes an element instead).
+   // A board always opens its tab - it is never embedded - so the zone is active in every window.
+   const isCharacterDrag = dragType === 'FULL_CHARACTER_SHEET' && !isBoardActive;
+   const isBoardDrag = dragType === 'FULL_BOARD';
+   const isActive = isCharacterDrag || isBoardDrag;
 
    const { setNodeRef, isOver } = useDroppable({
       id: 'main-character-drop-zone',
-      disabled: !isCharacterLoadDragActive
+      disabled: !isActive
    });
 
 
@@ -57,17 +61,17 @@ export function CharacterLoadDropZone({ activeDragItem, isBoardActive = false }:
          className="relative w-full h-full inset-0 flex items-center justify-center p-3 bg-secondary/60 backdrop-blur-sm"
          variants={overlayVariants}
          initial="inactive"
-         animate={isCharacterLoadDragActive ? 'active' : 'inactive'}
+         animate={isActive ? 'active' : 'inactive'}
       >
-         {isCharacterLoadDragActive && (
+         {isActive && (
             <div
                className={cn(
                   'flex flex-col items-center justify-center w-full h-full text-center p-36 border-4 border-dashed border-primary/30 transition-colors',
                   { 'bg-primary/10': isOver }
                )}
             >
-               <Upload className="mx-auto h-12 w-12" />
-               <p className="mt-2 font-semibold">{t('CharacterSheetPage.dropToLoadCharacter')}</p>
+               {isBoardDrag ? <LayoutGrid className="mx-auto h-12 w-12" /> : <Upload className="mx-auto h-12 w-12" />}
+               <p className="mt-2 font-semibold">{t(isBoardDrag ? 'CharacterSheetPage.dropToOpenBoard' : 'CharacterSheetPage.dropToLoadCharacter')}</p>
             </div>
          )}
       </motion.div>
