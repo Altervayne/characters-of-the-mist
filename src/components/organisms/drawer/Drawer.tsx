@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -10,11 +10,9 @@ import cuid from 'cuid';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 
 // -- Icon Imports --
-import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Rows, PanelRightClose, Search, X, SlidersHorizontal } from 'lucide-react';
+import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Rows, PanelRightClose, Maximize2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -30,16 +28,15 @@ import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerComp
 import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwellAffordance';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSearchResultEntry';
-import { DrawerFiltersPanel } from '@/components/molecules/drawer/DrawerFiltersPanel';
+import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
 
 // -- Store and Hook Imports --
-import { useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions, useDrawerStore, isSearchFilterActive } from '@/lib/stores/drawerStore';
 import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
-import { useDrawerSearch } from '@/hooks/drawer/useDrawerSearch';
 import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
 import { useDrawerFileImport } from '@/hooks/drawer/useDrawerFileImport';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -100,17 +97,15 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
       handleAnimationComplete,
    } = useDrawerActionState(currentFolderId);
 
-   // Search swaps the browse view for a flat results list; the browse view is left loaded underneath,
-   // so clearing search returns to the same folder.
-   const { text: searchText, setText: setSearchText, clear: clearSearchField, isSearchActive, results: searchResults, resultCount, activeFilterCount } = useDrawerSearch();
-
-   // The filters panel expands inline under the search row (narrow drawer - an inline panel, not a popover).
-   const [filtersOpen, setFiltersOpen] = useState(false);
+   // The flat results + active flag come from the shared store (the search bar owns the input).
+   const searchResults = useDrawerStore((state) => state.searchResults);
+   const isSearchActive = useDrawerStore((state) => isSearchFilterActive(state.searchCriteria));
+   const { clearSearch } = useDrawerActions();
 
    // A result's "Jump to": navigate to its folder (null = root), then exit search.
    const handleJumpToResult = (parentFolderId: string | null) => {
       navigateToFolder(parentFolderId);
-      clearSearchField();
+      clearSearch();
    };
 
    const {
@@ -125,7 +120,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
 
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
    const { toggleCompactDrawer } = useAppSettingsActions();
-   const { setDrawerOpen } = useAppGeneralStateActions();
+   const { setDrawerOpen, expandDrawer } = useAppGeneralStateActions();
 
 
    const folderIds = useMemo(() => currentFolders.map(f => f.id), [currentFolders]);
@@ -175,49 +170,20 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                               <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.toggleView')} data-tour="drawer-rich-view-toggle">
                                  {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
                               </div>
+                              {/* Expand into the full-area library view (the workspace stays mounted behind it). */}
+                              <div onClick={expandDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.expand')} title={t('Drawer.expand')}>
+                                 <Maximize2 className="h-6 w-6" />
+                              </div>
                               <div onClick={() => setDrawerOpen(false)} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.close')}>
                                  <PanelRightClose className="h-6 w-6" />
                               </div>
                            </div>
                         </div>
 
-                        {/* Search field (always visible) + a Filters toggle. A non-empty value (debounced) or
-                            any active filter swaps the body to a flat results list; clearing returns to browse. */}
-                        <div className="mt-1 flex items-center gap-1">
-                           <div className="relative flex-1">
-                              <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                              <Input
-                                 value={searchText}
-                                 onChange={(event) => setSearchText(event.target.value)}
-                                 placeholder={t('Drawer.search.placeholder')}
-                                 className="h-9 pl-8 pr-20"
-                              />
-                              {isSearchActive && (
-                                 <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                                    <span className="text-[11px] tabular-nums text-muted-foreground">{t('Drawer.search.resultCount', { count: resultCount })}</span>
-                                    <button type="button" onClick={clearSearchField} className="rounded p-1 hover:bg-muted cursor-pointer" aria-label={t('Drawer.search.clear')}>
-                                       <X className="h-4 w-4" />
-                                    </button>
-                                 </div>
-                              )}
-                           </div>
-                           <Button
-                              variant={filtersOpen ? 'secondary' : 'ghost'}
-                              size="icon"
-                              className="relative h-9 w-9 shrink-0 cursor-pointer"
-                              aria-label={t('Drawer.filters.title')}
-                              title={t('Drawer.filters.title')}
-                              onClick={() => setFiltersOpen((open) => !open)}
-                           >
-                              <SlidersHorizontal className="h-4 w-4" />
-                              {activeFilterCount > 0 && (
-                                 <Badge className="absolute -right-1 -top-1 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] tabular-nums">{activeFilterCount}</Badge>
-                              )}
-                           </Button>
+                        {/* Shared search bar (field + filters), the same core the Expanded view uses. */}
+                        <div className="mt-1">
+                           <DrawerSearchBar />
                         </div>
-
-                        {/* The inline filters panel (type / game / date ranges), expanded on demand. */}
-                        {filtersOpen && <DrawerFiltersPanel />}
 
                         {/* The breadcrumb is browse-only - hidden while searching (you are not in a folder). */}
                         {!isSearchActive && breadcrumbPath.length > 0 && (

@@ -33,12 +33,14 @@ interface AppGeneralState {
    // Edit Mode
    isEditing: boolean;
 
-   // Drawer
+   // Drawer. Three modes: Collapsed (!isDrawerOpen), Open (open + !expanded), Expanded (open + expanded).
+   // `isDrawerExpanded` is only meaningful while open; closing clears it.
    isDrawerOpen: boolean;
+   isDrawerExpanded: boolean;
 
    // Mobile Drawer
    mobileDrawerSnapPoint: MobileDrawerSnapPoint;
-   
+
    actions: {
       // Undo/Redo Context
       setLastModifiedStore: (storeName: StoreName) => void;
@@ -70,6 +72,9 @@ interface AppGeneralState {
       // Drawer
       setDrawerOpen: (isOpen: boolean) => void;
       toggleDrawer: () => void;
+      setDrawerExpanded: (isExpanded: boolean) => void;
+      expandDrawer: () => void;
+      contractDrawer: () => void;
 
       // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint: MobileDrawerSnapPoint) => void;
@@ -106,6 +111,7 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
 
    // Drawer
    isDrawerOpen: false,
+   isDrawerExpanded: false,
 
    // Mobile Drawer
    mobileDrawerSnapPoint: 'closed',
@@ -138,9 +144,12 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setIsEditing: (isEditing) => set({ isEditing }),
       toggleIsEditing: () => set((state) => ({ isEditing: !state.isEditing })),
 
-      // Drawer
-      setDrawerOpen: (isOpen) => set({ isDrawerOpen: isOpen }),
-      toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
+      // Drawer. Closing always drops Expanded too (it's only meaningful while open).
+      setDrawerOpen: (isOpen) => set(isOpen ? { isDrawerOpen: true } : { isDrawerOpen: false, isDrawerExpanded: false }),
+      toggleDrawer: () => set((state) => (state.isDrawerOpen ? { isDrawerOpen: false, isDrawerExpanded: false } : { isDrawerOpen: true })),
+      setDrawerExpanded: (isExpanded) => set({ isDrawerExpanded: isExpanded }),
+      expandDrawer: () => set({ isDrawerOpen: true, isDrawerExpanded: true }),
+      contractDrawer: () => set({ isDrawerExpanded: false }),
 
       // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint) => set({ mobileDrawerSnapPoint: snapPoint }),

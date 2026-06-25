@@ -27,6 +27,7 @@ import { FileDragOverlay } from '@/components/molecules/FileDragOverlay';
 import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
 import { Drawer } from '@/components/organisms/drawer/Drawer';
+import { ExpandedDrawer } from '@/components/organisms/drawer/ExpandedDrawer';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
@@ -71,6 +72,7 @@ function DesktopCharacterSheetPage() {
    // ==================
    const isTrackersAlwaysEditable = useAppSettingsStore((state) => state.isTrackersAlwaysEditable)
    const isDrawerOpen = useAppGeneralStateStore((state) => state.isDrawerOpen);
+   const isDrawerExpanded = useAppGeneralStateStore((state) => state.isDrawerExpanded);
    const isSidebarCollapsed = useAppSettingsStore((state) => state.isSidebarCollapsed);
    const isEditing = useAppGeneralStateStore((state) => state.isEditing);
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
@@ -267,11 +269,15 @@ function DesktopCharacterSheetPage() {
                   {/* File Drop Zone */}
                   <FileDragOverlay isDragActive={isFileDragActive} />
                </div>
+
+               {/* Expanded drawer: an overlay over the workspace area (TabStrip + sheet/board stay mounted
+                   behind it; the sidebar is outside this column, so it stays visible). */}
+               {isDrawerExpanded && <ExpandedDrawer />}
             </div>
 
-            {/* Drawer */}
+            {/* Drawer (Open side panel). Hidden while Expanded - the takeover renders in the workspace column. */}
             <AnimatePresence>
-               {isDrawerOpen &&
+               {isDrawerOpen && !isDrawerExpanded &&
                   <Drawer
                      isDragHovering={isOverDrawer}
                      activeDragId={activeDragItem?.id ?? null}
