@@ -9,57 +9,23 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 // -- Component Imports --
-import { GameCard } from '@/components/molecules/GameCard';
+import { TabTypeChooser } from '@/components/molecules/TabTypeChooser';
 
 // -- Icon Imports --
-import { Plus, FolderOpen } from 'lucide-react';
-
-// -- Utils Imports --
-import { cn } from '@/lib/utils';
+import { FolderOpen } from 'lucide-react';
 
 // -- Store and Hook Imports --
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useTabManagerActions } from '@/lib/character/tabManagerStore';
-import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-
-// -- Constants --
-import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
-
-// -- Type Imports --
-import type { GameSystem } from '@/lib/types/drawer';
 
 
 
 const MainMenu: React.FC = () => {
    const { t: t } = useTranslation();
-   const { contextualGame } = useAppSettingsStore();
-   const { createCharacterTab } = useTabManagerActions();
-   const { setContextualGame } = useAppSettingsActions();
    const { setDrawerOpen } = useAppGeneralStateActions();
-
-   const handleCreateCharacter = () => {
-      createCharacterTab(contextualGame);
-   };
-
-   const handleGameSelect = (game: GameSystem) => {
-      setContextualGame(game);
-   };
 
    const handleOpenDrawer = () => {
       setDrawerOpen(true);
    };
-
-   const gameOptions = GAME_CARD_OPTIONS.map(({ game, titleKey, subtitleKey }) => {
-      const { Icon, accentText, gradient } = GAME_VISUALS[game];
-      return {
-         game,
-         title: t(titleKey),
-         subtitle: t(subtitleKey),
-         icon: <Icon className={cn('h-6 w-6', accentText)} />,
-         gradient,
-      };
-   });
 
    return (
       <main className="absolute flex h-full w-full flex-col items-center justify-center bg-linear-to-br from-background via-background to-muted/20 overflow-hidden">
@@ -141,41 +107,23 @@ const MainMenu: React.FC = () => {
                </p>
             </div>
 
-            {/* Game Selection Cards */}
-            <div data-tour="main-menu-game-selection" className="flex flex-wrap justify-center gap-6">
-               {gameOptions.map((option, index) => (
-                  <motion.div
-                     key={option.game}
-                     initial={{ opacity: 0, y: 20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ delay: 0.1 * (index + 1) }}
-                     data-tour={option.game === 'LEGENDS' ? 'main-menu-legends-card' : undefined}
-                  >
-                     <GameCard
-                        {...option}
-                        isSelected={contextualGame === option.game}
-                        onClick={() => handleGameSelect(option.game)}
-                     />
-                  </motion.div>
-               ))}
-            </div>
+            {/* The shared tab-type chooser: one click on a game card or the board card creates that tab. */}
+            <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.3 }}
+               className="w-full max-w-3xl"
+            >
+               <TabTypeChooser />
+            </motion.div>
 
-            {/* Action Buttons */}
+            {/* Open drawer (the only standing action; tab creation is the chooser's job now). */}
             <motion.div
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                transition={{ delay: 0.5 }}
                className="flex flex-col sm:flex-row gap-4"
             >
-               <Button
-                  data-tour="main-menu-create-button"
-                  onClick={handleCreateCharacter}
-                  size="lg"
-                  className="cursor-pointer gap-2 px-8 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
-               >
-                  <Plus className="h-5 w-5" />
-                  {t('MainMenu.createButton')}
-               </Button>
                <Button
                   onClick={handleOpenDrawer}
                   variant="outline"

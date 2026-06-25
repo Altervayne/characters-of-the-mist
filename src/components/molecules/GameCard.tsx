@@ -11,10 +11,9 @@ import { Feather } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /*
- * Shared game-selection card, used by both the MainMenu picker and the New Tab
- * dialog so the two stay visually identical. Extracted from MainMenu's previously
- * local `GameCard`; the default size reproduces the MainMenu look, and `compact`
- * scales it down to fit inside a dialog.
+ * Shared game-selection card, used by the tab-type chooser (the MainMenu landing + the New Tab
+ * dialog) so the two stay visually identical. It fills its container width (the chooser lays the
+ * character cards in a 3-up grid and the board card full-width), at a fixed height.
  */
 
 interface GameCardProps {
@@ -30,8 +29,6 @@ interface GameCardProps {
    onClick: () => void;
    /** Tailwind gradient classes for the faded background wash. */
    gradient: string;
-   /** Smaller footprint for dialogs (fills its grid cell instead of a fixed width). */
-   compact?: boolean;
 }
 
 /**
@@ -40,13 +37,13 @@ interface GameCardProps {
  *
  * @param props - See {@link GameCardProps}.
  */
-export const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSelected, onClick, gradient, compact = false }) => {
+export const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSelected, onClick, gradient }) => {
    return (
       <motion.button
          onClick={onClick}
          className={cn(
             'relative overflow-hidden rounded-xl text-left transition-all cursor-pointer border-2 bg-card hover:shadow-xl',
-            compact ? 'w-full h-36 p-4' : 'w-72 h-48 p-6',
+            'w-full h-36 p-4',
             isSelected ? 'border-primary shadow-lg ring-4 ring-primary/20' : 'border-border hover:border-primary/50',
          )}
       >
@@ -67,8 +64,8 @@ export const GameCard: React.FC<GameCardProps> = ({ title, subtitle, icon, isSel
             </div>
 
             <div>
-               <h3 className={cn('font-bold text-foreground mb-1', compact ? 'text-lg' : 'text-xl')}>{title}</h3>
-               <p className={cn('text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>{subtitle}</p>
+               <h3 className="font-bold text-foreground mb-1 text-xl">{title}</h3>
+               <p className="text-muted-foreground text-sm">{subtitle}</p>
             </div>
          </div>
       </motion.button>

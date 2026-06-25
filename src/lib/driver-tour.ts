@@ -7,52 +7,20 @@ import 'driver.js/dist/driver.css';
 interface TourActions {
    setIsEditing: (isEditing: boolean) => void;
    setDrawerOpen: (isOpen: boolean) => void;
-   setContextualGame: (game: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL') => void;
-   createCharacter: (game: 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL') => void;
 }
 
 
 
 export const getTourSteps = (t: (key: string) => string, actions: TourActions): DriveStep[] => {
-   const { setIsEditing, setDrawerOpen, setContextualGame, createCharacter } = actions;
+   const { setIsEditing, setDrawerOpen } = actions;
 
+   // The MainMenu intro steps were dropped with the tab-type-chooser revamp (their anchors are gone);
+   // a full tour rewrite is a separate task, so the interim tour simply starts past the landing.
    return [
       {
          popover: {
             title: t('Tutorial.welcome_title'),
             description: t('Tutorial.welcome_content'),
-         },
-      },
-      {
-         element: '[data-tour="main-menu-game-selection"]',
-         popover: {
-            title: t('Tutorial.mainMenuGames_title'),
-            description: t('Tutorial.mainMenuGames_content'),
-            side: 'bottom',
-         },
-      },
-      {
-         element: '[data-tour="main-menu-legends-card"]',
-         popover: {
-            title: t('Tutorial.mainMenuLegends_title'),
-            description: t('Tutorial.mainMenuLegends_content'),
-            side: 'bottom',
-            onNextClick: (_element, _step, { driver }) => {
-               setContextualGame('LEGENDS');
-               driver.moveNext();
-            },
-         },
-      },
-      {
-         element: '[data-tour="main-menu-create-button"]',
-         popover: {
-            title: t('Tutorial.mainMenuCreate_title'),
-            description: t('Tutorial.mainMenuCreate_content'),
-            side: 'bottom',
-            onNextClick: (_element, _step, { driver }) => {
-               createCharacter('LEGENDS');
-               driver.moveNext();
-            },
          },
       },
       {
