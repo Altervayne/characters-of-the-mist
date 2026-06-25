@@ -32,15 +32,17 @@ const overlayVariants: Variants = {
 
 interface CharacterLoadDropZoneProps {
    activeDragItem: CardData | Tracker | DrawerItem | FolderType | null;
+   /** A board is the active window: the board owns a character drop (it makes an element), so this load-to-tab zone steps aside. */
+   isBoardActive?: boolean;
 }
 
 
 
-export function CharacterLoadDropZone({ activeDragItem }: CharacterLoadDropZoneProps) {
+export function CharacterLoadDropZone({ activeDragItem, isBoardActive = false }: CharacterLoadDropZoneProps) {
    const { t: t } = useTranslation();
 
    const isCharacterLoadDragActive =
-      activeDragItem && 'content' in activeDragItem && activeDragItem.type === 'FULL_CHARACTER_SHEET';
+      !isBoardActive && activeDragItem && 'content' in activeDragItem && activeDragItem.type === 'FULL_CHARACTER_SHEET';
 
    const { setNodeRef, isOver } = useDroppable({
       id: 'main-character-drop-zone',

@@ -28,7 +28,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -82,6 +82,22 @@ export type EmbeddedBoardContent<K extends 'card' | 'tracker'> =
 
 export type CardBoardContent = EmbeddedBoardContent<'card'>;
 export type TrackerBoardContent = EmbeddedBoardContent<'tracker'>;
+
+/**
+ * A live, read-only mirror of a saved character (`FULL_CHARACTER_SHEET`). Reference-only - editing is
+ * the character tab's job - so there is no copy variant. When the character is open in a tab the
+ * element shows that LIVE instance (keyed by `characterId`, which tabs are keyed by), so unsaved edits
+ * show; when it is closed it falls back to the saved drawer entry (`sourceDrawerItemId`). `lastKnown`
+ * caches the last successful read so a dangling element (closed + source deleted) can still show its
+ * name, mirroring the embed reference.
+ */
+export interface CharacterBoardContent {
+   kind: 'character';
+   sourceDrawerItemId: string;
+   /** The referenced character's id, keying the open-tab lookup for the live-or-saved choice. */
+   characterId: string;
+   lastKnown?: unknown;
+}
 
 /** A small corkboard pin: a freestanding dot, mainly an anchor to connect lines to/from. */
 export interface PinBoardContent {
@@ -176,7 +192,8 @@ export type BoardItemContent =
    | ThreatBoardContent
    | PinBoardContent
    | DiceTrayBoardContent
-   | ZoneBoardContent;
+   | ZoneBoardContent
+   | CharacterBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.

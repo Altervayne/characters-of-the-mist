@@ -94,6 +94,17 @@ describe('deriveDragContext (kind + over-zone → action)', () => {
       expect(deriveDragContext('drawer-component', 'sheet', false)).toBe('add-to-sheet');
    });
 
+   it('a tab or a character over the board → add-to-board', () => {
+      expect(deriveDragContext('tab', 'board', false)).toBe('add-to-board');
+      expect(deriveDragContext('drawer-character', 'board', false)).toBe('add-to-board');
+   });
+
+   it('other kinds over the board → null (only a tab or a character become an element)', () => {
+      expect(deriveDragContext('drawer-component', 'board', false)).toBeNull();
+      expect(deriveDragContext('drawer-folder', 'board', false)).toBeNull();
+      expect(deriveDragContext('sheet-item', 'board', false)).toBeNull();
+   });
+
    it('a sheet item over the drawer → save-to-drawer (items or nav area)', () => {
       expect(deriveDragContext('sheet-item', 'drawer-items', false)).toBe('save-to-drawer');
       expect(deriveDragContext('sheet-item', 'drawer-nav', false)).toBe('save-to-drawer');
@@ -257,7 +268,7 @@ describe('resolveTabSpringTarget (tab auto-nav hit-test)', () => {
 });
 
 describe('MORPH_DESCRIPTORS (context → descriptor)', () => {
-   const contexts: NonNullable<DragContext>[] = ['open-tab', 'open', 'add-to-sheet', 'save-to-drawer', 'drawer-move'];
+   const contexts: NonNullable<DragContext>[] = ['open-tab', 'open', 'add-to-sheet', 'add-to-board', 'save-to-drawer', 'drawer-move'];
 
    it('resolves every drag context to a descriptor with an icon + label', () => {
       for (const context of contexts) {

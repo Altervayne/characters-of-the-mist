@@ -24,6 +24,7 @@ function makeBoard(): Board {
          { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, zoneId: 'ghost', content: { kind: 'post-it', text: 'b' } },
          { id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 2, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#f00' } } },
          { id: 'ref', kind: 'card', x: 20, y: 20, width: 100, height: 100, z: 3, content: { kind: 'card', mode: 'reference', sourceDrawerItemId: 'src-1' } },
+         { id: 'char', kind: 'character', x: 30, y: 30, width: 280, height: 132, z: 5, content: { kind: 'character', sourceDrawerItemId: 'char-src', characterId: 'char-instance' } },
          { id: 'zone', kind: 'zone', x: -50, y: -50, width: 400, height: 400, z: 4, content: { kind: 'zone', collapsed: false } },
       ],
    };
@@ -75,6 +76,14 @@ describe('reIdBoardAggregate', () => {
 
       const reference = result.items.find((i) => i.content.kind === 'card');
       expect(reference!.content).toMatchObject({ mode: 'reference', sourceDrawerItemId: 'src-1' });
+   });
+
+   it('leaves a character element\'s sourceDrawerItemId untouched (it names a drawer item, not a board id)', () => {
+      const board = makeBoard();
+      const result = reIdBoardAggregate(board);
+
+      const character = result.items.find((i) => i.content.kind === 'character');
+      expect(character!.content).toMatchObject({ kind: 'character', sourceDrawerItemId: 'char-src', characterId: 'char-instance' });
    });
 
    it('clears the drawer link and preserves the viewport', () => {

@@ -9,7 +9,7 @@
  */
 
 // -- Icon Imports (descriptor data only) --
-import { Download, ExternalLink, Move, Plus, Save } from 'lucide-react';
+import { Download, ExternalLink, LayoutGrid, Move, Plus, Save } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /** What is being dragged, classified once at drag start. */
@@ -27,10 +27,10 @@ export type DragKind =
  * **nav** area (folder rows, folder reorder slots, Back) so a dragged drawer item
  * can keep its full card overlay in the items area while morphing elsewhere.
  */
-export type DragOverZone = 'play-area' | 'sheet' | 'drawer-items' | 'drawer-nav' | null;
+export type DragOverZone = 'play-area' | 'sheet' | 'board' | 'drawer-items' | 'drawer-nav' | null;
 
 /** The action a drop would perform right now; drives the morph cluster (null = hidden). */
-export type DragContext = 'open-tab' | 'open' | 'add-to-sheet' | 'save-to-drawer' | 'drawer-move' | null;
+export type DragContext = 'open-tab' | 'open' | 'add-to-sheet' | 'add-to-board' | 'save-to-drawer' | 'drawer-move' | null;
 
 /** The directional hint shown in the morph cluster (null = no arrow). */
 export type MorphArrow = 'in' | 'up' | null;
@@ -140,6 +140,7 @@ export function deriveDragContext(
 ): DragContext {
    if (kind === 'drawer-character') {
       if (isOverTabLane) return 'open-tab';
+      if (overZone === 'board') return 'add-to-board';
       if (overZone === 'play-area') return 'open';
       if (overZone === 'drawer-nav') return 'drawer-move';
       // 'drawer-items' → null: the item keeps its full overlay for precise reordering.
@@ -156,6 +157,10 @@ export function deriveDragContext(
    }
    if (kind === 'sheet-item') {
       return overZone === 'drawer-nav' || overZone === 'drawer-items' ? 'save-to-drawer' : null;
+   }
+   if (kind === 'tab') {
+      // A tab carries no drawer/sheet action; over the board it adds a character element.
+      return overZone === 'board' ? 'add-to-board' : null;
    }
    return null;
 }
@@ -191,6 +196,7 @@ export const MORPH_DESCRIPTORS: Record<NonNullable<DragContext>, MorphDescriptor
    'open-tab': { Icon: Plus, labelKey: 'DragPuck.openAsTab', arrow: 'up' },
    open: { Icon: ExternalLink, labelKey: 'DragPuck.open' },
    'add-to-sheet': { Icon: Download, labelKey: 'DragPuck.addToSheet' },
+   'add-to-board': { Icon: LayoutGrid, labelKey: 'DragPuck.addToBoard' },
    'save-to-drawer': { Icon: Save, labelKey: 'DragPuck.saveToDrawer' },
    'drawer-move': { Icon: Move, labelKey: 'DragPuck.move' },
 };

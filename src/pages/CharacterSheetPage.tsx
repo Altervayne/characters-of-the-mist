@@ -259,7 +259,7 @@ function DesktopCharacterSheetPage() {
 
 
                   {/* Character from Drawer Drop Zone */}
-                  <CharacterLoadDropZone activeDragItem={activeDragItem} />
+                  <CharacterLoadDropZone activeDragItem={activeDragItem} isBoardActive={!!activeBoard} />
 
                   {/* "Can't drop here" overlay for an incompatible (wrong-game) component */}
                   <CannotDropOverlay active={isIncompatibleComponentDrag} />

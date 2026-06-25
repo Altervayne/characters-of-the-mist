@@ -29,11 +29,12 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 // -- Board Imports --
 import { screenToWorld } from '@/lib/board/boardCoordinates';
 import { zoneContaining } from '@/lib/board/zoneMembership';
-import { embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
+import { embeddedSpecForDrawerItem, characterElementSpec } from '@/lib/board/embedDrawerItem';
 import { importBoard } from '@/lib/board/boardRepository';
 
 // -- Type Imports --
 import type { Board } from '@/lib/types/board';
+import type { BoardStore } from '@/lib/stores/boardStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 import type { OpenTab } from '@/lib/character/tabManagerStore';
@@ -67,6 +68,23 @@ function classifyDrag(active: DragStartEvent['active']): DragKind {
    }
    if (typeof type === 'string' && type.startsWith('sheet-')) return 'sheet-item';
    return null;
+}
+
+/**
+ * The placement (id, world rect centred on the drop, top z, joined zone) for a new board item of
+ * `size` dropped at `dropPointer`. Falls back to the viewport centre when the cursor/clip is missing.
+ * Shared by every board drop (a dragged drawer item, a dragged tab).
+ */
+function boardDropPlacement(boardStore: BoardStore, dropPointer: { x: number; y: number } | null, size: { width: number; height: number }) {
+   const { viewport, items } = boardStore.getState();
+   const clip = document.querySelector('[data-board-clip]') as HTMLElement | null;
+   const rect = clip?.getBoundingClientRect() ?? null;
+   const screenPoint = dropPointer && rect ? dropPointer : rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : null;
+   const world = rect && screenPoint ? screenToWorld(screenPoint.x, screenPoint.y, { left: rect.left, top: rect.top }, viewport) : { x: 0, y: 0 };
+   const z = Object.values(items).reduce((max, item) => Math.max(max, item.z), -1) + 1;
+   const placement = { id: cuid(), x: world.x - size.width / 2, y: world.y - size.height / 2, width: size.width, height: size.height };
+   const zoneId = zoneContaining(placement, Object.values(items).filter((item) => item.kind === 'zone')) ?? undefined;
+   return { ...placement, z, zoneId };
 }
 
 
@@ -539,6 +557,8 @@ export function useCharacterSheetDnD() {
 
          if (overId === 'main-character-drop-zone') {
             zone = 'play-area';
+         } else if (overId === 'board-drop-zone') {
+            zone = 'board';
          } else if (
             overId === 'character-sheet-main-drop-zone' || overId === 'tracker-drop-zone' || overId === 'card-drop-zone'
          ) {
@@ -574,7 +594,7 @@ export function useCharacterSheetDnD() {
       // Only the NON-drawer zones come from dnd-kit's `over`; the in-drawer zones are
       // owned by the manual geometry target (set in handlePointerMove → updateContext),
       // which is reliable full-row where dnd-kit's collision is center-only.
-      overZoneRef.current = zone === 'play-area' || zone === 'sheet' ? zone : null;
+      overZoneRef.current = zone === 'play-area' || zone === 'sheet' || zone === 'board' ? zone : null;
       updateContext();
    }, [updateContext, character]);
 
@@ -841,6 +861,22 @@ export function useCharacterSheetDnD() {
             reorderTabs(String(active.id), String(over.id));
          } else if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
             saveTabToDrawer(tabId, overIdStr, overType, over);
+         } else if (overIdStr === 'board-drop-zone') {
+            // A tab dropped on the board adds a character element. Only a SAVED character can - the
+            // element is a drawer reference; an unsaved one has no source, so prompt to save first.
+            const boardStore = getActiveBoardStore();
+            const character = getOrCreateInstance(tabId).getState().character;
+            if (!boardStore) return;
+            const spec = characterElementSpec(character);
+            if (!spec) {
+               toast(tNotifications('Notifications.board.saveCharacterFirst'));
+               return;
+            }
+            void boardStore.getState().actions.addItem({
+               ...boardDropPlacement(boardStore, dropPointer, spec),
+               kind: spec.kind,
+               content: spec.content,
+            });
          }
          return;
       }
@@ -853,10 +889,10 @@ export function useCharacterSheetDnD() {
          // ==================
          //  SCENARIO 1.0: Dropping a card/tracker onto the board canvas
          // ==================
-         // Board-only target (the zone exists solely on a board tab). A board is
-         // game-agnostic, so there is NO game gate. The item becomes a self-contained
-         // COPY at the drop point (or the viewport center as a fallback). Non-embeddable
-         // drags (folder, full sheet, full board) are a silent no-op.
+         // Board-only target (the zone exists solely on a board tab). A board is game-agnostic, so
+         // there is NO game gate. A card/tracker becomes a self-contained COPY, an image a native
+         // image, and a saved character a read-only reference element - all at the drop point. A
+         // folder / full board has no spec and no-ops.
          if (overIdStr === 'board-drop-zone') {
             const boardStore = getActiveBoardStore();
             const draggedItem = active.data.current?.item as DrawerItem | undefined;
@@ -864,31 +900,9 @@ export function useCharacterSheetDnD() {
             const spec = embeddedSpecForDrawerItem(draggedItem);
             if (!spec) return;
 
-            const { viewport, items } = boardStore.getState();
-            const clip = document.querySelector('[data-board-clip]') as HTMLElement | null;
-            const rect = clip?.getBoundingClientRect() ?? null;
-            // Drop at the cursor when we have both the pointer and the canvas rect; else
-            // fall back to the viewport center.
-            const screenPoint = dropPointer && rect
-               ? dropPointer
-               : rect
-                  ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-                  : null;
-            const world = rect && screenPoint
-               ? screenToWorld(screenPoint.x, screenPoint.y, { left: rect.left, top: rect.top }, viewport)
-               : { x: 0, y: 0 };
-
-            const zValues = Object.values(items).map((boardItem) => boardItem.z);
-            const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
-            const id = cuid();
-            const placement = { id, x: world.x - spec.width / 2, y: world.y - spec.height / 2, width: spec.width, height: spec.height };
-            // A card/tracker dropped over a zone joins it (same center-in-rectangle rule).
-            const zoneId = zoneContaining(placement, Object.values(items).filter((boardItem) => boardItem.kind === 'zone')) ?? undefined;
             void boardStore.getState().actions.addItem({
-               ...placement,
+               ...boardDropPlacement(boardStore, dropPointer, spec),
                kind: spec.kind,
-               z,
-               zoneId,
                content: spec.content,
             });
             return;

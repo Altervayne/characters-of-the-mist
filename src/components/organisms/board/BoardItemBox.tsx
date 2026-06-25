@@ -37,7 +37,7 @@ const HANDLE_SCREEN_SIZE = 14;
  * content as a floor - it can be dragged taller (2D resize) but never shorter than the content,
  * and auto-grows when the content exceeds the current height. (Reusable by future form-like kinds.)
  */
-const MIN_HEIGHT_KINDS = new Set<BoardItemKind>(['dice-tray']);
+const MIN_HEIGHT_KINDS = new Set<BoardItemKind>(['dice-tray', 'character']);
 const isMinHeight = (kind: BoardItemKind): boolean => MIN_HEIGHT_KINDS.has(kind);
 
 interface BoardItemBoxProps {
@@ -217,10 +217,10 @@ export function BoardItemBox({
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
-   // A card/tracker embed IS its own item: it carries its own border, background, and shape, so the
-   // box adds no chrome (no second border/shadow, no grip) - just a selection ring. Fixed at the
-   // native size set on drop; overflow is the card's own internal scroll, not a wrapper resize.
-   const isEmbed = item.kind === 'card' || item.kind === 'tracker';
+   // A card/tracker embed, and a character reference, ARE their own panels: each carries its own
+   // border, background, and shape, so the box adds no chrome (no second border/shadow, no grip) -
+   // just a selection ring. Fixed at the size set on drop; the panel owns any internal overflow.
+   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character';
    // A zone is a background frame: its tinted rectangle portals BEHIND the items (into `backLayer`),
    // and the box here renders only the on-top header + chrome - click-through everywhere else so the
    // items sitting inside it stay interactive. Selecting the empty interior is the background's job.

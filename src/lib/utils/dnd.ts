@@ -85,6 +85,12 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // drawer target. Prioritise drawer drop zones, then folders / back-buttons
    // (pointerWithin), and otherwise resolve the tab sortables for reordering.
    if (activeDataType === 'tab') {
+      // Dropping a tab onto the board canvas adds a character element (board tab only, so the
+      // zone is absent elsewhere and never competes with the drawer/tab targets below).
+      const boardDroppables = args.droppableContainers.filter((container) => container.id === 'board-drop-zone');
+      const boardCollisions = pointerWithin({ ...args, droppableContainers: boardDroppables });
+      if (boardCollisions.length > 0) return boardCollisions;
+
       const drawerZoneDroppables = args.droppableContainers.filter((container) =>
          container.id.toString().startsWith('drawer-drop-zone-'),
       );
@@ -119,6 +125,15 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // mirrors the regular `drawer-item` branch's reorder, kept LAST so the sheet/tab
    // targets still win.
    if (draggedItemType === 'FULL_CHARACTER_SHEET' || draggedItemType === 'FULL_BOARD') {
+      // A drawer character over the board canvas adds an element (board tab only, so the
+      // zone is absent elsewhere and never competes below). A board never drops onto a
+      // board, so FULL_BOARD skips this and keeps its tab-strip routing.
+      if (draggedItemType === 'FULL_CHARACTER_SHEET') {
+         const boardDroppables = args.droppableContainers.filter((container) => container.id === 'board-drop-zone');
+         const boardCollisions = pointerWithin({ ...args, droppableContainers: boardDroppables });
+         if (boardCollisions.length > 0) return boardCollisions;
+      }
+
       const primaryDroppables = args.droppableContainers.filter((container) => (
          container.id === 'main-character-drop-zone' ||
          container.id === 'tab-strip-drop-zone'

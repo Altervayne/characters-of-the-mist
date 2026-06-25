@@ -10,8 +10,10 @@ import type { Board, BoardItem } from '@/lib/types/board';
  * independently, so a `connection`'s `from`/`to` (which are item-id references, not `id`
  * fields) would no longer match the new ids of the items they point at. This builds one
  * old->new id map and rewrites both the item ids AND the connection endpoints through it,
- * so the lines still resolve. A reference's `sourceDrawerItemId` is left untouched - it
- * names a DRAWER item, not a board item (a missing source dangles by design, board-10).
+ * so the lines still resolve. A reference's `sourceDrawerItemId` and a character element's
+ * `characterId` are left untouched - they name a DRAWER item and a character, not board items
+ * (a missing source dangles by design, board-10). Both ride the `...item`/`...item.content`
+ * spread, so they survive without special handling.
  */
 
 /**

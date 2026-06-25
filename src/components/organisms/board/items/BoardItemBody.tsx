@@ -7,6 +7,7 @@ import { PinItem } from './PinItem';
 import { DiceTrayItem } from './DiceTrayItem';
 import { BoardCardItem } from './BoardCardItem';
 import { BoardTrackerItem } from './BoardTrackerItem';
+import { CharacterBoardItem } from './CharacterBoardItem';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent } from '@/lib/types/board';
@@ -58,6 +59,8 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
          return <BoardCardItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'tracker':
          return <BoardTrackerItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+      case 'character':
+         return <CharacterBoardItem item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       default:
          return <GenericItemBody item={item} />;
    }

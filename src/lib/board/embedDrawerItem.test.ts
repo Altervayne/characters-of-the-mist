@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES } from './embedDrawerItem';
 import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
@@ -50,8 +50,28 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(theme).toMatchObject(EMBEDDED_TRACKER_SIZES.STORY_THEME);
    });
 
-   it('returns null for non-embeddable types (full sheets, etc.)', () => {
-      expect(embeddedSpecForDrawerItem(makeDrawerItem('FULL_CHARACTER_SHEET', {} as DrawerItemContent))).toBeNull();
+   it('returns null for non-droppable types (folders, boards)', () => {
+      expect(embeddedSpecForDrawerItem(makeDrawerItem('FOLDER', {} as DrawerItemContent))).toBeNull();
+   });
+
+   it('drops a saved character sheet as a read-only character REFERENCE (no copy, records source + character ids)', () => {
+      // The content is the Character; its id keys the open-tab lookup, the drawer id is the saved source.
+      const spec = embeddedSpecForDrawerItem(makeDrawerItem('FULL_CHARACTER_SHEET', { id: 'char-1', name: 'Aria' } as unknown as DrawerItemContent));
+      expect(spec).toMatchObject({ kind: 'character', content: { kind: 'character', sourceDrawerItemId: 'item-1', characterId: 'char-1' } });
+      // Reference-only: no copy `data`, no `mode`.
+      expect(spec!.content).not.toHaveProperty('data');
+      expect(spec!.content).not.toHaveProperty('mode');
+   });
+
+   it('builds a character element for a SAVED tab character, but not an unsaved one', () => {
+      // Saved (has a drawer link) -> a reference element recording both the drawer source and the character id.
+      expect(characterElementSpec({ id: 'char-9', drawerItemId: 'drw-9' })).toMatchObject({
+         kind: 'character',
+         content: { kind: 'character', sourceDrawerItemId: 'drw-9', characterId: 'char-9' },
+      });
+      // Unsaved (no link) or absent -> null (the caller prompts to save first).
+      expect(characterElementSpec({ id: 'char-9' })).toBeNull();
+      expect(characterElementSpec(null)).toBeNull();
    });
 
    it('sizes a theme/character card to the native sheet footprint', () => {
