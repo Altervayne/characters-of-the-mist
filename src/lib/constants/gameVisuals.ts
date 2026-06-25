@@ -1,5 +1,5 @@
 // -- Icon Imports --
-import { ScrollText, Building2, Bot, Dices } from 'lucide-react';
+import { ScrollText, Building2, CircuitBoard, Dices } from 'lucide-react';
 
 // -- Type Imports --
 import type { LucideIcon } from 'lucide-react';
@@ -42,7 +42,7 @@ export const GAME_VISUALS: Record<GameSystem, GameVisual> = {
       gradient: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600',
    },
    OTHERSCAPE: {
-      Icon: Bot,
+      Icon: CircuitBoard,
       accentText: 'text-cyan-500',
       solidBg: 'bg-cyan-500',
       gradient: 'bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600',

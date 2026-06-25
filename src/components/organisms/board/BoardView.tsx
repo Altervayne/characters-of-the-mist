@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Activity, Building2, ChevronLeft, ChevronRight, CircuitBoard, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, ScrollText, Sparkles, Square, StickyNote, Tag, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, Square, StickyNote, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -20,6 +20,8 @@ import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex }
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE } from '@/lib/board/embedDrawerItem';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
+import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
+import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -39,7 +41,7 @@ import type { CSSProperties } from 'react';
 import type { BoardStore } from '@/lib/stores/boardStore';
 import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, ConnectionStyle, Viewport } from '@/lib/types/board';
 import type { Point } from '@/lib/board/boardConnections';
-import type { GameSystem } from '@/lib/types/drawer';
+import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 import type { CreateCardOptions } from '@/lib/types/creation';
 
 /*
@@ -64,6 +66,17 @@ const RADIAL_CREATE: { kind: CreatableKind; Icon: typeof StickyNote; labelKey: s
    { kind: 'pin', Icon: MapPin, labelKey: 'addPin' },
    { kind: 'dice-tray', Icon: Dices, labelKey: 'addDiceTray' },
    { kind: 'zone', Icon: Frame, labelKey: 'addZone' },
+];
+
+/**
+ * The tracker create actions, in ring order. `itemType` maps each `TrackerType` to its drawer item
+ * type so the radial pulls the SAME glyph as the drawer list view (via `getItemTypeIconComponent`),
+ * rather than its own ad-hoc icons.
+ */
+const RADIAL_TRACKERS: { id: string; trackerType: TrackerType; itemType: GeneralItemType; labelKey: string }[] = [
+   { id: 'status', trackerType: 'STATUS', itemType: 'STATUS_TRACKER', labelKey: 'Trackers.addStatus' },
+   { id: 'story-tag', trackerType: 'STORY_TAG', itemType: 'STORY_TAG_TRACKER', labelKey: 'Trackers.addStoryTag' },
+   { id: 'story-theme', trackerType: 'STORY_THEME', itemType: 'STORY_THEME_TRACKER', labelKey: 'Trackers.addStoryTheme' },
 ];
 
 /** Default size (world units) per creatable kind. A pin is a small fixed dot. */
@@ -696,27 +709,25 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                     id: 'trackers',
                     icon: <ListChecks className="h-5 w-5" />,
                     label: t('BoardView.radialTrackers'),
-                    children: [
-                       { id: 'status', icon: <Activity className="h-5 w-5" />, label: t('Trackers.addStatus'), onSelect: () => createTrackerAt('STATUS', radial.world) },
-                       { id: 'story-tag', icon: <Tag className="h-5 w-5" />, label: t('Trackers.addStoryTag'), onSelect: () => createTrackerAt('STORY_TAG', radial.world) },
-                       { id: 'story-theme', icon: <Sparkles className="h-5 w-5" />, label: t('Trackers.addStoryTheme'), onSelect: () => createTrackerAt('STORY_THEME', radial.world) },
-                    ],
+                    children: RADIAL_TRACKERS.map(({ id, trackerType, itemType, labelKey }) => {
+                       const Icon = getItemTypeIconComponent(itemType);
+                       return { id, icon: <Icon className="h-5 w-5" />, label: t(labelKey), onSelect: () => createTrackerAt(trackerType, radial.world) };
+                    }),
                  },
                  {
                     id: 'cards',
                     icon: <LayoutGrid className="h-5 w-5" />,
                     label: t('BoardView.radialCards'),
-                    children: ([
-                       ['LEGENDS', ScrollText],
-                       ['CITY_OF_MIST', Building2],
-                       ['OTHERSCAPE', CircuitBoard],
-                    ] as const).map(([game, Icon]) => ({
-                       id: `card-${game}`,
-                       icon: <Icon className="h-5 w-5" />,
-                       label: t(`Drawer.Types.${game}`),
-                       // Open the creation popover for that game; the drop happens on confirm.
-                       onSelect: () => setPendingCard({ game, world: radial.world, screen: radial.screen }),
-                    })),
+                    children: GAME_CARD_OPTIONS.map(({ game }) => {
+                       const { Icon } = GAME_VISUALS[game];
+                       return {
+                          id: `card-${game}`,
+                          icon: <Icon className="h-5 w-5" />,
+                          label: t(`Drawer.Types.${game}`),
+                          // Open the creation popover for that game; the drop happens on confirm.
+                          onSelect: () => setPendingCard({ game, world: radial.world, screen: radial.screen }),
+                       };
+                    }),
                  },
               ],
            },

@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button';
 import { MobileMainMenuGameCard } from '@/components/mobile/menu/MobileMainMenuGameCard';
 
 // -- Icon Imports --
-import { ScrollText, Building2, Bot, Plus, FolderOpen } from 'lucide-react';
+import { Plus, FolderOpen } from 'lucide-react';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
+// -- Constants --
+import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 
 // -- Store and Hook Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -37,29 +43,18 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 		setContextualGame(game);
 	};
 
-	const gameOptions = [
-		{
-			game: 'LEGENDS' as GameSystem,
-			title: t('MainMenu.games.legends.title'),
-			subtitle: t('MainMenu.games.legends.subtitle'),
-			icon: <ScrollText className="h-6 w-6 text-amber-500" />,
-			gradient: 'bg-gradient-to-br from-amber-500 via-orange-400 to-rose-500'
-		},
-		{
-			game: 'CITY_OF_MIST' as GameSystem,
-			title: t('MainMenu.games.cityOfMist.title'),
-			subtitle: t('MainMenu.games.cityOfMist.subtitle'),
-			icon: <Building2 className="h-6 w-6 text-purple-500" />,
-			gradient: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600'
-		},
-		{
-			game: 'OTHERSCAPE' as GameSystem,
-			title: t('MainMenu.games.otherscape.title'),
-			subtitle: t('MainMenu.games.otherscape.subtitle'),
-			icon: <Bot className="h-6 w-6 text-cyan-500" />,
-			gradient: 'bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600'
-		}
-	];
+	// Icon/color/gradient come from the shared GAME_VISUALS, the same source the desktop menu uses,
+	// so every surface stays in sync (and Otherscape is the circuit board).
+	const gameOptions = GAME_CARD_OPTIONS.map(({ game, titleKey, subtitleKey }) => {
+		const { Icon, accentText, gradient } = GAME_VISUALS[game];
+		return {
+			game,
+			title: t(titleKey),
+			subtitle: t(subtitleKey),
+			icon: <Icon className={cn('h-6 w-6', accentText)} />,
+			gradient,
+		};
+	});
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden pt-safe bg-gradient-to-b from-background via-background to-muted/10">
