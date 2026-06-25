@@ -39,3 +39,22 @@ export function computeResize(orig: SizeRect, delta: { x: number; y: number }, m
 export function effectiveHeight(storedHeight: number, contentHeight: number): number {
    return Math.max(storedHeight, contentHeight);
 }
+
+/** Slack (world px) before a measured content height is written back, so the sync settles, not thrashes. */
+export const HEIGHT_SYNC_EPSILON = 1;
+
+/**
+ * Whether a freshly measured content height should be synced to the stored height, by behaviour:
+ * - `'fit'` tracks the content EXACTLY (grow AND shrink), so it writes back whenever the measure
+ *   differs by more than `epsilon` - the element hugs its content as cards are added or removed.
+ * - `'min'` is a grow-only floor (the dice tray): it writes back only when content exceeds the
+ *   stored height, never shrinking below the user's chosen size.
+ */
+export function shouldSyncMeasuredHeight(mode: 'fit' | 'min', measured: number, stored: number, epsilon: number = HEIGHT_SYNC_EPSILON): boolean {
+   return mode === 'fit' ? Math.abs(measured - stored) > epsilon : measured > stored;
+}
+
+/** The height a fit-content item renders at: its measured content exactly, or the stored height until measured. */
+export function fitContentHeight(storedHeight: number, contentHeight: number): number {
+   return contentHeight > 0 ? contentHeight : storedHeight;
+}

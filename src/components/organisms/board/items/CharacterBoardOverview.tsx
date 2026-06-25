@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { ExternalLink, User } from 'lucide-react';
+import { Crosshair, Crown, ExternalLink, Leaf, Sparkles, Swords, User, Users } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -11,16 +11,18 @@ import { cn } from '@/lib/utils';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 
 // -- Board Imports --
-import { condensedThemeRows, characterPortraitAssetId, trackerCounts, type CondensedThemeRow } from '@/lib/board/characterOverview';
+import { condensedThemeRows, characterPortraitAssetId, overviewPanelCardClass, rowCardTypeClass, trackerCounts, type CondensedThemeRow } from '@/lib/board/characterOverview';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
 
 /*
- * The read-only character overview shown by a board character element: an app-themed panel (app
- * tokens only - the game is a label, theme type is a label, nothing fixed-colour) with an identity
- * header (portrait + name + game + open) and a condensed row per theme card. It grows with its rows
- * via the box's min-height measure; the deeper stats live in the character tab.
+ * The read-only character overview shown by a board character element. Unlike the board's chrome
+ * (which is app-themed), this element is game CONTENT - a representation of a specific game's
+ * character - so it carries that game's look: the panel uses the game card-theme palette (`--card-*`),
+ * and each theme row is tinted by its own card type (a Mythos theme vs the Fellowship reads at a
+ * glance via a colored, icon-led type badge). An identity header (portrait + name + game + open) tops
+ * a condensed row per theme card; it grows AND shrinks to fit its rows via the box's measure.
  */
 
 interface CharacterBoardOverviewProps {
@@ -35,17 +37,17 @@ export function CharacterBoardOverview({ character, onOpen }: CharacterBoardOver
    const trackers = trackerCounts(character);
 
    return (
-      <div className="flex w-full flex-1 flex-col overflow-hidden rounded-lg border border-border bg-popover/95 shadow-lg backdrop-blur-sm">
+      <div className={cn(overviewPanelCardClass(character.game), 'flex w-full flex-1 flex-col overflow-hidden rounded-lg border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg')}>
          {/* Identity header (stands in for the character card; its deep stats stay in the tab). */}
-         <div className="relative flex shrink-0 items-center gap-3 border-b border-border p-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
+         <div className="relative flex shrink-0 items-center gap-3 border-b border-card-accent bg-card-header-bg p-1 text-card-header-fg">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-card-accent bg-card-paper-bg">
                {portrait.url
                   ? <img src={portrait.url} alt="" className="h-full w-full object-cover" />
-                  : <User className="h-6 w-6 text-muted-foreground" />}
+                  : <User className="h-6 w-6 text-card-paper-fg/50" />}
             </div>
             <div className="flex min-w-0 flex-col pr-6">
-               <span className="truncate text-sm font-semibold text-foreground">{character.name || t('BoardView.referenceSourceRemoved')}</span>
-               <span className="truncate text-xs text-muted-foreground">{t(`Drawer.Types.${character.game}`)}</span>
+               <span className="truncate text-sm font-semibold">{character.name || t('BoardView.referenceSourceRemoved')}</span>
+               <span className="truncate text-xs text-card-header-fg/80">{t(`Drawer.Types.${character.game}`)}</span>
             </div>
             <button
                type="button"
@@ -53,7 +55,7 @@ export function CharacterBoardOverview({ character, onOpen }: CharacterBoardOver
                aria-label={t('BoardView.openCharacter')}
                onPointerDown={(event) => event.stopPropagation()}
                onClick={onOpen}
-               className="absolute right-1.5 top-1.5 flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+               className="absolute right-1.5 top-1.5 flex cursor-pointer items-center justify-center rounded p-1 text-card-header-fg/80 hover:bg-card-paper-bg/20 hover:text-card-header-fg"
             >
                <ExternalLink className="h-4 w-4" />
             </button>
@@ -61,16 +63,16 @@ export function CharacterBoardOverview({ character, onOpen }: CharacterBoardOver
 
          {/* Condensed theme rows. */}
          {rows.length === 0 ? (
-            <div className="px-3 py-2 text-xs italic text-muted-foreground">{t('BoardView.overviewNoThemes')}</div>
+            <div className="px-3 py-2 text-xs italic text-card-paper-fg/70">{t('BoardView.overviewNoThemes')}</div>
          ) : (
-            <div className="flex flex-col divide-y divide-border">
+            <div className="flex flex-col divide-y divide-card-accent/40">
                {rows.map((row) => <ThemeRow key={row.id} row={row} game={character.game} />)}
             </div>
          )}
 
          {/* Light tracker footer (only when the character has trackers). */}
          {trackers.total > 0 && (
-            <div className="mt-auto shrink-0 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-auto shrink-0 border-t border-card-accent bg-card-popover-bg px-3 py-1.5 text-[11px] text-card-popover-fg">
                {t('BoardView.overviewTrackers', { statuses: trackers.statuses, tags: trackers.tags, themes: trackers.themes })}
             </div>
          )}
@@ -78,32 +80,90 @@ export function CharacterBoardOverview({ character, onOpen }: CharacterBoardOver
    );
 }
 
-/** One condensed theme row: a type/themebook line, the main tag, and a power/weakness (or gear/flaws) count. */
+/** One condensed theme row: a type-colored icon badge, the themebook, and the main tag + counts. */
 function ThemeRow({ row, game }: { row: CondensedThemeRow; game: Character['game'] }) {
    const { t } = useTranslation();
 
-   // The type line: a real theme shows "<type> · <themebook>"; a group reads as Fellowship/Crew; a loadout as Loadout.
-   const typeLine = row.rowKind === 'group'
+   // The type name: a real theme shows its type; a group reads as Fellowship/Crew; a loadout as Loadout.
+   const typeLabel = row.rowKind === 'group'
       ? (game === 'LEGENDS' ? t('BoardView.themeRowFellowship') : t('BoardView.themeRowCrew'))
       : row.rowKind === 'loadout'
          ? t('BoardView.themeRowLoadout')
-         : [row.themeType ? t(row.themeType) : null, row.themebook].filter(Boolean).join(' · ');
+         : (row.themeType ? t(row.themeType) : t('BoardView.themeRowFellowship'));
 
    const counts = row.rowKind === 'loadout'
       ? t('BoardView.overviewGearFlaws', { gear: row.powerCount, flaws: row.weaknessCount })
       : t('BoardView.overviewPowerWeakness', { power: row.powerCount, weakness: row.weaknessCount });
 
+   // The primary line is the themebook (themes); groups/loadouts have none, so the type name stands in.
+   const primaryLabel = row.themebook || typeLabel;
+
    return (
-      <div className="flex min-w-0 flex-col gap-0.5 px-3 py-1.5">
-         {/* Line 1: the identifying type / themebook, prominent and truncating (never crushed). */}
-         {typeLine && <span className="truncate text-xs font-medium text-foreground">{typeLine}</span>}
-         {/* Line 2: the main tag with its power/weakness counts. */}
-         <div className="flex min-w-0 items-center justify-between gap-2">
-            <span className={cn('truncate text-[11px] text-muted-foreground', row.mainTagScratched && 'line-through', row.mainTagActive && 'font-semibold text-foreground')}>
+      <div className="flex min-w-0 items-stretch gap-2 p-1.5">
+         {/* Type cue: the card's own theme-type icon on its header color - the same identity glyph the
+             full card carries, so a row reads as its type at a glance. The type's card-theme class is
+             scoped to THIS badge only (not the whole row), so it colors the badge without recoloring
+             the row text - the panel's paper palette stays in force, which keeps the text legible
+             (an Otherscape theme's own palette is a DARK-card one: light text that would vanish on the
+             panel's light paper). An absent type falls back to the panel's game palette. The badge
+             stretches near-full row height for visibility. */}
+         <span
+            title={typeLabel}
+            aria-label={typeLabel}
+            className={cn(rowCardTypeClass(game, row), 'flex aspect-square shrink-0 items-center justify-center self-stretch rounded-md bg-card-header-bg text-card-header-fg')}
+         >
+            <ThemeRowGlyph game={game} row={row} />
+         </span>
+         <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+            {/* The main tag, prominent (bold) and truncating - an active tag reads bolder still. */}
+            <span className={cn('truncate text-xs font-semibold text-card-paper-fg', row.mainTagScratched && 'line-through', row.mainTagActive && 'font-bold')}>
                {row.mainTagName || t('BoardView.overviewUnnamedTag')}
             </span>
-            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">{counts}</span>
+            {/* The themebook (or the type name), regular and muted, with its power/weakness (or gear/flaws) counts. */}
+            <div className="flex min-w-0 items-center justify-between gap-2">
+               <span className="truncate text-[11px] font-normal text-card-paper-fg/70">{primaryLabel}</span>
+               <span className="shrink-0 rounded bg-card-paper-fg/10 px-1.5 py-0.5 text-[10px] tabular-nums text-card-paper-fg/70">{counts}</span>
+            </div>
          </div>
       </div>
+   );
+}
+
+/**
+ * The identity glyph for a theme row: the card's own theme-type icon where one exists (Legends use
+ * Lucide; City/Otherscape use the theme SVGs, rendered in the badge's foreground like the cards), plus
+ * our own picks for the non-theme cards - a group of people for a fellowship/crew, a reticle for a
+ * loadout. Falls back to a generic mark for an unknown type.
+ */
+function ThemeRowGlyph({ game, row }: { game: Character['game']; row: CondensedThemeRow }) {
+   const iconClass = 'h-6 w-6';
+   if (row.rowKind === 'group') return <Users className={iconClass} />;
+   if (row.rowKind === 'loadout') return <Crosshair className={iconClass} />;
+
+   if (game === 'OTHERSCAPE') {
+      const file = row.themeType === 'Self' ? 'os_self' : row.themeType === 'Noise' ? 'os_noise' : row.themeType === 'Mythos' ? 'os_mythos' : null;
+      if (file) return <ThemeSvgGlyph file={file} />;
+   } else if (game === 'CITY_OF_MIST') {
+      const file = row.themeType === 'Mythos' ? 'com_mythos' : row.themeType === 'Logos' ? 'com_logos' : null;
+      if (file) return <ThemeSvgGlyph file={file} />;
+   } else {
+      if (row.themeType === 'Origin') return <Leaf className={iconClass} strokeWidth={2.5} />;
+      if (row.themeType === 'Adventure') return <Swords className={iconClass} strokeWidth={2.5} />;
+      if (row.themeType === 'Greatness') return <Crown className={iconClass} strokeWidth={2.5} />;
+   }
+   return <Sparkles className={iconClass} />;
+}
+
+/** A theme SVG icon, recolored to the badge's foreground (the same invert the cards' corner icons use). */
+function ThemeSvgGlyph({ file }: { file: string }) {
+   return (
+      <img
+         src={`/icons/Themes/${file}.svg`}
+         alt=""
+         width={20}
+         height={20}
+         className="h-6 w-6"
+         style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+      />
    );
 }

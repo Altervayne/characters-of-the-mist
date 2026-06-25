@@ -75,6 +75,38 @@ export function characterPortraitAssetId(character: Character | null): string | 
    return (portrait?.details as { assetId?: string | null } | undefined)?.assetId ?? null;
 }
 
+/**
+ * The game card-theme class for the overview PANEL, mirroring the character card the element stands
+ * in for (Legends hero / City character / Otherscape character). This is game CONTENT, so it keeps
+ * its game look (the `--card-*` paper palette), not the app palette.
+ */
+export function overviewPanelCardClass(game: Character['game']): string {
+   switch (game) {
+      case 'CITY_OF_MIST': return 'card-type-character-com';
+      case 'OTHERSCAPE': return 'card-type-character-otherscape';
+      default: return 'card-type-hero';
+   }
+}
+
+/**
+ * The card-theme class for one theme ROW, matching the type's own card (so a row reads as "a Mythos
+ * theme" or "the Fellowship" at a glance via that card-type's palette). Mirrors each theme card's own
+ * class derivation; an absent theme type yields no class (the row stays on the panel palette).
+ */
+export function rowCardTypeClass(game: Character['game'], row: CondensedThemeRow): string {
+   if (row.rowKind === 'group') {
+      return game === 'CITY_OF_MIST' ? 'card-type-crew-com' : game === 'OTHERSCAPE' ? 'card-type-crew-otherscape' : 'card-type-fellowship';
+   }
+   if (row.rowKind === 'loadout') return 'card-type-loadout-otherscape'; // loadout is Otherscape-only
+   const slug = row.themeType?.toLowerCase().replace(/\s+/g, '-');
+   if (!slug) return '';
+   switch (game) {
+      case 'CITY_OF_MIST': return `card-type-${slug}-com`;
+      case 'OTHERSCAPE': return `card-type-${slug}-otherscape`;
+      default: return `card-type-${slug}`;
+   }
+}
+
 /** Tracker counts for the light footer line. */
 export function trackerCounts(character: Character): { statuses: number; tags: number; themes: number; total: number } {
    const statuses = character.trackers?.statuses.length ?? 0;

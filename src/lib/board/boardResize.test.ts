@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { MIN_ITEM_SIZE, computeResize, effectiveHeight } from './boardResize';
+import { MIN_ITEM_SIZE, computeResize, effectiveHeight, fitContentHeight, shouldSyncMeasuredHeight } from './boardResize';
 
 /*
  * Resize math: the bottom-right grip grows width/height with x/y pinned, and a min-height item
@@ -54,5 +54,37 @@ describe('effectiveHeight', () => {
 
    it('keeps the larger stored height when the user dragged it taller than the content', () => {
       expect(effectiveHeight(300, 220)).toBe(300);
+   });
+});
+
+describe('shouldSyncMeasuredHeight', () => {
+   it('fit-content tracks the content exactly: it syncs when content GROWS', () => {
+      expect(shouldSyncMeasuredHeight('fit', 260, 132)).toBe(true);
+   });
+
+   it('fit-content tracks the content exactly: it syncs when content SHRINKS (removing a card)', () => {
+      expect(shouldSyncMeasuredHeight('fit', 132, 260)).toBe(true);
+   });
+
+   it('fit-content does not thrash within the epsilon', () => {
+      expect(shouldSyncMeasuredHeight('fit', 200, 200)).toBe(false);
+      expect(shouldSyncMeasuredHeight('fit', 200.5, 200)).toBe(false); // sub-epsilon jitter
+      expect(shouldSyncMeasuredHeight('fit', 202, 200)).toBe(true);    // beyond epsilon
+   });
+
+   it('min-height grows but never shrinks (the dice tray keeps the user size)', () => {
+      expect(shouldSyncMeasuredHeight('min', 260, 132)).toBe(true);  // content overflows -> grow
+      expect(shouldSyncMeasuredHeight('min', 132, 260)).toBe(false); // content smaller -> stay (no shrink)
+   });
+});
+
+describe('fitContentHeight', () => {
+   it('renders at the measured content height', () => {
+      expect(fitContentHeight(132, 260)).toBe(260);
+      expect(fitContentHeight(300, 180)).toBe(180); // shrinks below the stored height too
+   });
+
+   it('falls back to the stored height until the content is measured', () => {
+      expect(fitContentHeight(132, 0)).toBe(132);
    });
 });
