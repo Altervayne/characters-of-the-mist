@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { condensedThemeRow, condensedThemeRows, trackerCounts } from './characterOverview';
+import { characterElementSource, condensedThemeRow, condensedThemeRows, trackerCounts } from './characterOverview';
 import type { Card, Character } from '@/lib/types/character';
 
 /*
@@ -13,6 +13,21 @@ const tag = (name: string, over: Partial<{ isActive: boolean; isScratched: boole
 function card(over: Partial<Card> & Pick<Card, 'cardType' | 'details'>): Card {
    return { id: 'c', title: '', order: 0, isFlipped: false, ...over } as Card;
 }
+
+describe('characterElementSource', () => {
+   it('an OPEN character reads live - saved or unsaved alike', () => {
+      expect(characterElementSource({ sourceDrawerItemId: 'drw-1' }, true)).toBe('live');
+      expect(characterElementSource({}, true)).toBe('live'); // unsaved, but open -> live
+   });
+
+   it('a CLOSED character with a saved source reads from the drawer', () => {
+      expect(characterElementSource({ sourceDrawerItemId: 'drw-1' }, false)).toBe('drawer');
+   });
+
+   it('a CLOSED character with no source was never persisted -> removed-without-saving', () => {
+      expect(characterElementSource({}, false)).toBe('unsaved-removed');
+   });
+});
 
 describe('condensedThemeRow', () => {
    it('reads a Legends CHARACTER_THEME: type + themebook + main tag + counts', () => {

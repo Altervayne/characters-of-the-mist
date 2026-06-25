@@ -52,18 +52,18 @@ export interface EmbeddedBoardSpec {
 }
 
 /**
- * The character reference element for a character dragged from a TAB onto the board, or `null` when
- * the character is unsaved (no `drawerItemId`) - the element is a drawer reference, so an unsaved
- * character can't make one (the caller prompts to save first).
+ * The character reference element for a character dragged from a TAB onto the board, or `null` only
+ * when there is no character. It works for a saved OR an unsaved character: the element keys on the
+ * character's id (the live open-tab lookup), and records the saved drawer source when there is one (an
+ * unsaved character has none - the element then reads live while the tab is open).
  */
 export function characterElementSpec(character: { id: string; drawerItemId?: string } | null): EmbeddedBoardSpec | null {
-   const sourceDrawerItemId = character?.drawerItemId;
-   if (!character || !sourceDrawerItemId) return null;
+   if (!character) return null;
    return {
       kind: 'character',
       width: CHARACTER_ELEMENT_SIZE.width,
       height: CHARACTER_ELEMENT_SIZE.height,
-      content: { kind: 'character', sourceDrawerItemId, characterId: character.id },
+      content: { kind: 'character', characterId: character.id, sourceDrawerItemId: character.drawerItemId ?? undefined },
    };
 }
 

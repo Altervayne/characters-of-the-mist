@@ -104,6 +104,7 @@
       "makeReference": "[TO COMPLETE]",
       "convertToCopy": "[TO COMPLETE]",
       "referenceSourceRemoved": "[TO COMPLETE]",
+      "referenceUnsavedRemoved": "[TO COMPLETE]",
       "connect": "[TO COMPLETE]",
       "lineWidth": "[TO COMPLETE]",
       "lineColor": "[TO COMPLETE]",
@@ -161,8 +162,7 @@
          "linkedItemMissing": "[TO COMPLETE]",
          "exported": "[TO COMPLETE]",
          "imported": "[TO COMPLETE]",
-         "cleared": "[TO COMPLETE]",
-         "saveCharacterFirst": "[TO COMPLETE]"
+         "cleared": "[TO COMPLETE]"
       },
       "card": {
          "created": "Carte créée avec succès.",

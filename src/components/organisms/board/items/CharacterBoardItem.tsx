@@ -5,6 +5,7 @@ import { useStore } from 'zustand';
 
 // -- Store and Hook Imports --
 import { useReferencedDrawerItem } from '@/lib/board/useReferencedDrawerItem';
+import { characterElementSource } from '@/lib/board/characterOverview';
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabManagerStore';
 
@@ -16,13 +17,13 @@ import type { BoardItem, BoardItemContent, CharacterBoardContent } from '@/lib/t
 import type { Character } from '@/lib/types/character';
 
 /*
- * A read-only board element mirroring a saved character (never a copy - editing is the character tab's
- * job). It shows the LIVE open-tab instance when the character is open (so unsaved edits show), else
- * the saved drawer entry. Both feed the same {@link CharacterBoardOverview} and navigate to the tab.
- *
- * The live-or-saved choice is a clean hooks split: the parent reads only the open-check, then mounts
- * ONE of two source children. The live child only mounts when the character is open, so its instance
- * already exists - it never materializes a closed character.
+ * A read-only board element mirroring a character (never a copy - editing is the character tab's job).
+ * It resolves, in order: the LIVE open-tab instance (works for a saved OR an unsaved character, so
+ * unsaved edits show); else the saved drawer entry (`sourceDrawerItemId`), with dangling handling;
+ * else - an unsaved character whose tab was closed, so it was never persisted - a "removed without
+ * being saved" placeholder. The live-or-saved choice is a clean hooks split: the parent reads only the
+ * open-check, then mounts ONE source child (the live child only mounts when open, so its instance
+ * already exists - it never materializes a closed character).
  */
 
 /** Stable serialization for the cache change-check (undefined stays undefined). */
@@ -39,20 +40,27 @@ interface CharacterBoardItemProps {
 }
 
 export function CharacterBoardItem({ item, content, onCacheLastKnown, onDelete }: CharacterBoardItemProps) {
+   const { t } = useTranslation();
    // Open in a tab? Show the live instance. Tabs are keyed by `character.id`, so this needs no drawer
-   // read and still resolves an open-but-deleted-source character.
+   // read and resolves a saved OR an unsaved (never-persisted) character alike.
    const isOpen = useTabManagerStore((state) => state.openTabs.some((tab) => tab.id === content.characterId));
 
-   return isOpen
-      ? <LiveCharacterSource characterId={content.characterId} sourceDrawerItemId={content.sourceDrawerItemId} />
-      : <DrawerCharacterSource item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+   switch (characterElementSource(content, isOpen)) {
+      case 'live':
+         return <LiveCharacterSource characterId={content.characterId} sourceDrawerItemId={content.sourceDrawerItemId} />;
+      case 'drawer':
+         return <DrawerCharacterSource item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+      default:
+         // Closed AND no source: an unsaved character whose tab was closed - it was never persisted anywhere.
+         return <MissingCharacterPanel message={t('BoardView.referenceUnsavedRemoved')} onDelete={() => onDelete(item.id)} />;
+   }
 }
 
 /**
  * The live source: subscribes to the open character's store instance, so an edit in its tab updates
  * the element immediately. Only mounted when the character is open, so the instance already exists.
  */
-function LiveCharacterSource({ characterId, sourceDrawerItemId }: { characterId: string; sourceDrawerItemId: string }) {
+function LiveCharacterSource({ characterId, sourceDrawerItemId }: { characterId: string; sourceDrawerItemId?: string }) {
    const { openCharacterTab } = useTabManagerActions();
    const character = useStore(getOrCreateInstance(characterId), (state) => state.character);
 
@@ -63,13 +71,13 @@ function LiveCharacterSource({ characterId, sourceDrawerItemId }: { characterId:
 }
 
 /**
- * The saved source: the live read-only mirror of the drawer item, used when the character is not open.
- * Caches each read as `lastKnown` so a deleted source degrades to a placeholder.
+ * The saved source: the live read-only mirror of the drawer item, used when the character is not open
+ * but has a saved source. Caches each read as `lastKnown` so a deleted source degrades to a placeholder.
  */
 function DrawerCharacterSource({ item, content, onCacheLastKnown, onDelete }: CharacterBoardItemProps) {
    const { t } = useTranslation();
    const { openCharacterTab } = useTabManagerActions();
-   const { content: liveContent, status } = useReferencedDrawerItem(content.sourceDrawerItemId);
+   const { content: liveContent, status } = useReferencedDrawerItem(content.sourceDrawerItemId ?? null);
 
    // Live read while present, else the last cached one (so a dangling element still has a name).
    const character = (liveContent ?? content.lastKnown ?? null) as Character | null;
@@ -79,26 +87,13 @@ function DrawerCharacterSource({ item, content, onCacheLastKnown, onDelete }: Ch
    useEffect(() => {
       if (status !== 'live' || liveContent == null) return;
       if (serialize(liveContent) === serialize(content.lastKnown)) return;
-      onCacheLastKnown(item.id, { kind: 'character', sourceDrawerItemId: content.sourceDrawerItemId, characterId: content.characterId, lastKnown: liveContent });
+      onCacheLastKnown(item.id, { kind: 'character', characterId: content.characterId, sourceDrawerItemId: content.sourceDrawerItemId, lastKnown: liveContent });
    }, [status, liveContent, content.lastKnown, content.sourceDrawerItemId, content.characterId, item.id, onCacheLastKnown]);
 
    // Dangling: closed AND the source character was deleted. A placeholder (name from the last read) + remove.
    if (status === 'dangling') {
       const name = (content.lastKnown as Character | undefined)?.name;
-      return (
-         <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-popover/95 p-3 text-center shadow-lg backdrop-blur-sm">
-            <span className="text-sm font-medium text-foreground">{name || t('BoardView.referenceSourceRemoved')}</span>
-            {name && <span className="text-xs text-muted-foreground">{t('BoardView.referenceSourceRemoved')}</span>}
-            <button
-               type="button"
-               onPointerDown={(event) => event.stopPropagation()}
-               onClick={() => onDelete(item.id)}
-               className="cursor-pointer rounded bg-destructive px-2 py-0.5 text-xs text-destructive-foreground hover:bg-destructive/90"
-            >
-               {t('BoardView.deleteItem')}
-            </button>
-         </div>
-      );
+      return <MissingCharacterPanel name={name} message={t('BoardView.referenceSourceRemoved')} onDelete={() => onDelete(item.id)} />;
    }
 
    // Not yet loaded (first read in flight, no cache): a quiet app-themed panel placeholder.
@@ -110,4 +105,27 @@ function DrawerCharacterSource({ item, content, onCacheLastKnown, onDelete }: Ch
 /** A quiet app-themed placeholder shown while the source character is not yet resolved. */
 function LoadingPanel() {
    return <div className="h-full w-full rounded-lg border border-border bg-popover/95 shadow-lg backdrop-blur-sm" />;
+}
+
+/**
+ * The placeholder for a character the element can no longer show: a deleted drawer source (with the
+ * last-known name) or an unsaved character whose tab was closed. App-themed (no character to game-tint)
+ * + a remove button.
+ */
+function MissingCharacterPanel({ name, message, onDelete }: { name?: string; message: string; onDelete: () => void }) {
+   const { t } = useTranslation();
+   return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-popover/95 p-3 text-center shadow-lg backdrop-blur-sm">
+         <span className="text-sm font-medium text-foreground">{name || message}</span>
+         {name && <span className="text-xs text-muted-foreground">{message}</span>}
+         <button
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={onDelete}
+            className="cursor-pointer rounded bg-destructive px-2 py-0.5 text-xs text-destructive-foreground hover:bg-destructive/90"
+         >
+            {t('BoardView.deleteItem')}
+         </button>
+      </div>
+   );
 }

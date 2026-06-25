@@ -104,6 +104,7 @@
       "makeReference": "Link to drawer item",
       "convertToCopy": "Convert to copy",
       "referenceSourceRemoved": "Source removed",
+      "referenceUnsavedRemoved": "Data was removed without being saved",
       "connect": "Draw a connection",
       "lineWidth": "Line width",
       "lineColor": "Line color",
@@ -161,8 +162,7 @@
          "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item.",
          "exported": "Board exported to downloads.",
          "imported": "Board file imported successfully.",
-         "cleared": "Board cleared.",
-         "saveCharacterFirst": "Save the character first to add it to a board."
+         "cleared": "Board cleared."
       },
       "card": {
          "created": "Card created successfully.",

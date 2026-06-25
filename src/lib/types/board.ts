@@ -84,18 +84,20 @@ export type CardBoardContent = EmbeddedBoardContent<'card'>;
 export type TrackerBoardContent = EmbeddedBoardContent<'tracker'>;
 
 /**
- * A live, read-only mirror of a saved character (`FULL_CHARACTER_SHEET`). Reference-only - editing is
- * the character tab's job - so there is no copy variant. When the character is open in a tab the
- * element shows that LIVE instance (keyed by `characterId`, which tabs are keyed by), so unsaved edits
- * show; when it is closed it falls back to the saved drawer entry (`sourceDrawerItemId`). `lastKnown`
- * caches the last successful read so a dangling element (closed + source deleted) can still show its
- * name, mirroring the embed reference.
+ * A live, read-only mirror of a character (`FULL_CHARACTER_SHEET`). Reference-only - editing is the
+ * character tab's job - so there is no copy variant. `characterId` is the primary key (tabs are keyed
+ * by it): when the character is open in a tab the element shows that LIVE instance, so unsaved edits
+ * show - this works for a saved AND an unsaved character. When it is closed it falls back to the saved
+ * drawer entry (`sourceDrawerItemId`), which is OPTIONAL: an unsaved character has none, so a closed
+ * one with no source reads as "removed without being saved". `lastKnown` caches the last successful
+ * read so a dangling element (closed + source deleted) can still show its name.
  */
 export interface CharacterBoardContent {
    kind: 'character';
-   sourceDrawerItemId: string;
-   /** The referenced character's id, keying the open-tab lookup for the live-or-saved choice. */
+   /** The referenced character's id, keying the open-tab lookup for the live-or-saved choice. Always set. */
    characterId: string;
+   /** The saved drawer item's id, when the character is saved; absent for an unsaved (tab-only) character. */
+   sourceDrawerItemId?: string;
    lastKnown?: unknown;
 }
 

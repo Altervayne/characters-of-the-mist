@@ -862,16 +862,14 @@ export function useCharacterSheetDnD() {
          } else if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
             saveTabToDrawer(tabId, overIdStr, overType, over);
          } else if (overIdStr === 'board-drop-zone') {
-            // A tab dropped on the board adds a character element. Only a SAVED character can - the
-            // element is a drawer reference; an unsaved one has no source, so prompt to save first.
+            // A tab dropped on the board adds a character element - saved or unsaved. The element keys
+            // on the character id and reads live while the tab is open; a saved one also links its
+            // drawer source for when the tab is closed.
             const boardStore = getActiveBoardStore();
             const character = getOrCreateInstance(tabId).getState().character;
             if (!boardStore) return;
             const spec = characterElementSpec(character);
-            if (!spec) {
-               toast(tNotifications('Notifications.board.saveCharacterFirst'));
-               return;
-            }
+            if (!spec) return;
             void boardStore.getState().actions.addItem({
                ...boardDropPlacement(boardStore, dropPointer, spec),
                kind: spec.kind,

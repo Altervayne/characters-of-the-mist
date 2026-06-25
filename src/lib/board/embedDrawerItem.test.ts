@@ -63,14 +63,19 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(spec!.content).not.toHaveProperty('mode');
    });
 
-   it('builds a character element for a SAVED tab character, but not an unsaved one', () => {
-      // Saved (has a drawer link) -> a reference element recording both the drawer source and the character id.
+   it('builds a character element for a SAVED tab character (links the drawer source)', () => {
       expect(characterElementSpec({ id: 'char-9', drawerItemId: 'drw-9' })).toMatchObject({
          kind: 'character',
          content: { kind: 'character', sourceDrawerItemId: 'drw-9', characterId: 'char-9' },
       });
-      // Unsaved (no link) or absent -> null (the caller prompts to save first).
-      expect(characterElementSpec({ id: 'char-9' })).toBeNull();
+   });
+
+   it('builds a character element for an UNSAVED tab character too (keyed by id, no source)', () => {
+      const spec = characterElementSpec({ id: 'char-9' });
+      expect(spec).toMatchObject({ kind: 'character', content: { kind: 'character', characterId: 'char-9' } });
+      // No drawer link yet - it reads live while the tab is open, then "removed without saving" once closed.
+      expect(spec!.content).toMatchObject({ sourceDrawerItemId: undefined });
+      // Only an absent character yields null.
       expect(characterElementSpec(null)).toBeNull();
    });
 

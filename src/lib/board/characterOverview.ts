@@ -7,6 +7,21 @@ import type { Card, Character, Tag } from '@/lib/types/character';
  * translates. The deep card stats stay in the character tab - this is the scannable summary.
  */
 
+/**
+ * Which source a character element reads from: the LIVE open tab (saved or unsaved), the saved DRAWER
+ * entry, or - a never-persisted character whose tab was closed - nothing (`unsaved-removed`).
+ */
+export type CharacterElementSource = 'live' | 'drawer' | 'unsaved-removed';
+
+/**
+ * Resolves a character element's source: an open tab always wins (live); else a saved source reads the
+ * drawer; else (closed + no source) the character was unsaved and is gone.
+ */
+export function characterElementSource(content: { sourceDrawerItemId?: string }, isOpen: boolean): CharacterElementSource {
+   if (isOpen) return 'live';
+   return content.sourceDrawerItemId ? 'drawer' : 'unsaved-removed';
+}
+
 /** How a theme card reads on a row: a proper theme (themebook + type), a group (fellowship/crew), or a loadout. */
 export type ThemeRowKind = 'theme' | 'group' | 'loadout';
 
