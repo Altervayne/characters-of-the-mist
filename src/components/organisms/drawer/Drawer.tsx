@@ -201,13 +201,15 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                      themselves stay free for spring-nav (dwell) and nest. */}
                                  {currentFolders.map((folder, index) => (
                                     <React.Fragment key={folder.id}>
-                                       {/* No-op when inserting before the dragged folder (its own slot) or
-                                           before the folder right after it; those leave it in place. */}
+                                       {/* These slots reorder FOLDERS, so they expand only during a folder drag
+                                           (an item/card/tracker drag never expands them). No-op when inserting
+                                           before the dragged folder (its own slot) or before the folder right
+                                           after it; those leave it in place. */}
                                        <FolderDropZone
                                           id={`drop-zone-before-${folder.id}`}
                                           activeId={activeDragId}
                                           overId={overDragId}
-                                          canExpand={activeFolderIndex === -1 || (index !== activeFolderIndex && index !== activeFolderIndex + 1)}
+                                          canExpand={activeFolderIndex !== -1 && index !== activeFolderIndex && index !== activeFolderIndex + 1}
                                           data={{ type: 'drawer-drop-zone', targetId: folder.id, position: 'before' }}
                                        />
                                        <DrawerFolderEntry
@@ -222,12 +224,12 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                        />
                                     </React.Fragment>
                                  ))}
-                                 {/* No-op when the dragged folder is already last. */}
+                                 {/* Folder-drag only; no-op when the dragged folder is already last. */}
                                  <FolderDropZone
                                     id={`drop-zone-after-last`}
                                     activeId={activeDragId}
                                     overId={overDragId}
-                                    canExpand={activeFolderIndex === -1 || activeFolderIndex !== currentFolders.length - 1}
+                                    canExpand={activeFolderIndex !== -1 && activeFolderIndex !== currentFolders.length - 1}
                                     data={{ type: 'drawer-drop-zone', targetId: 'last', position: 'after' }}
                                  />
                               </SortableContext>
