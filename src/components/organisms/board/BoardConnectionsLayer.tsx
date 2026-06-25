@@ -58,12 +58,14 @@ interface BoardConnectionsLayerProps {
    collapsedZoneIds: ReadonlySet<string>;
    /** The in-progress connect drag (source item id + cursor in world coords), or null. */
    connectPreview: { fromId: string; cursor: Point } | null;
+   /** The connection band's z-index: above every unselected item, below every selected one. */
+   zIndex: number;
    onSelect: (id: string) => void;
    onUpdateStyle: (id: string, style: ConnectionStyle) => void;
    onDelete: (id: string) => void;
 }
 
-export function BoardConnectionsLayer({ items, connections, selectedId, zoom, moving, collapsedZoneIds, connectPreview, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
+export function BoardConnectionsLayer({ items, connections, selectedId, zoom, moving, collapsedZoneIds, connectPreview, zIndex, onSelect, onUpdateStyle, onDelete }: BoardConnectionsLayerProps) {
    const { t } = useTranslation();
 
    // While an item is being dragged it renders at its position + the live delta, but the committed
@@ -101,8 +103,10 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
 
    return (
       <>
-         {/* The SVG itself is inert; only the lines below opt back into pointer events. */}
-         <svg className="absolute left-0 top-0" style={{ width: 1, height: 1, overflow: 'visible', pointerEvents: 'none' }}>
+         {/* The SVG itself is inert; only the lines below opt back into pointer events. The band sits
+             above every unselected item and below every selected one (so a string runs behind a
+             selected face). */}
+         <svg className="absolute left-0 top-0" style={{ width: 1, height: 1, overflow: 'visible', pointerEvents: 'none', zIndex }}>
             {connections.map((connection) => {
                const content = connection.content as ConnectionBoardContent;
                const fromItem = items[content.from];
@@ -178,7 +182,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
             return (
                <div
                   className="absolute"
-                  style={{ left: midX, top: midY, transform: `translate(-50%, -50%) scale(${1 / zoom})` }}
+                  style={{ left: midX, top: midY, zIndex, transform: `translate(-50%, -50%) scale(${1 / zoom})` }}
                   onPointerDown={(event) => event.stopPropagation()}
                >
                   <div className="flex items-center gap-2 rounded-md border border-border bg-card/95 p-1.5 shadow-md backdrop-blur-sm">

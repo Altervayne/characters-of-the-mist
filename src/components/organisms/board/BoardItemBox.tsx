@@ -84,6 +84,8 @@ interface BoardItemBoxProps {
    backLayer?: HTMLElement | null;
    /** Lower bound for the resize (a zone passes its member extent); each axis defaults to MIN_ITEM_SIZE. */
    resizeMin?: { width: number; height: number };
+   /** Stacking band for this box: selection raises it via z-index, NOT a DOM re-order (no remount). */
+   zIndex?: number;
 }
 
 /** A live drag rect during a move/resize gesture (world coords); `null` when idle. */
@@ -114,6 +116,7 @@ export function BoardItemBox({
    onConnectStart,
    backLayer,
    resizeMin,
+   zIndex,
 }: BoardItemBoxProps) {
    // Live resize rect (full rect during a resize); the commit reads from the ref so it
    // never depends on a stale closure. The group move offset is owned by the canvas and
@@ -277,6 +280,7 @@ export function BoardItemBox({
             top: rect.y,
             width: boxWidth,
             height: boxHeight,
+            zIndex,
             transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
          }}
       >

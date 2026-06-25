@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
+import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE } from '@/lib/board/embedDrawerItem';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
@@ -630,13 +631,13 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       return count >= 2 ? { x: minX, y: minY, width: maxX - minX, height: maxY - minY } : null;
    })();
 
-   // A selected item renders full front-row: above other items AND above the connection layer, so
-   // no string crosses its face while the user works on it. We split the non-zone items by
-   // selection and render the selected ones in a pass AFTER the connections (the unselected pass
-   // stays before them). Render-only - stored z is untouched - so deselect drops the item back
-   // below the connections at its real layer. Both lists keep z order (filtering a z-sorted list).
-   const nonZoneUnselected = nonZoneItems.filter((item) => !selectedIds.has(item.id));
-   const nonZoneSelected = nonZoneItems.filter((item) => selectedIds.has(item.id));
+   // Every non-connection item renders in ONE stable pass; selection raises an item via z-index, not
+   // a DOM re-order, so its React instance is preserved (no remount -> edits commit on blur, images
+   // don't reload). A selected item still renders full front-row (above other items AND the connection
+   // layer) - here that's a z-index band, not a later pass. `rank` is the item's index in stored-z
+   // order, feeding the disjoint bands in `boardLayering`. Render-only: stored z is untouched.
+   const layerRank = new Map(spatialItems.map((item, index) => [item.id, index]));
+   const layerCount = spatialItems.length;
 
    /** Renders one item box. Shared by the non-zone and zone passes; zones use `backLayer` for their background. */
    const renderBox = (item: BoardItem) => {
@@ -649,6 +650,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             item={item}
             isSelected={selectedIds.has(item.id)}
             soleSelected={item.id === soleSelectedId}
+            zIndex={itemZIndex(layerRank.get(item.id) ?? 0, selectedIds.has(item.id), layerCount)}
             memberCount={members?.length}
             resizeMin={members ? zoneContentMinSize(item, members) : undefined}
             zoom={viewport.zoom}
@@ -755,19 +757,20 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
          {/* World layer: a single transform maps world coords to screen. */}
          <div className="absolute left-0 top-0" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`, transformOrigin: '0 0' }}>
-            {/* Behind-items layer: zones portal their tinted rectangles here (first child, so it
-                paints behind every item box). Inert itself; the rectangles handle their own clicks. */}
-            <div ref={setBackLayer} className="absolute left-0 top-0" />
+            {/* Behind-items layer: zones portal their tinted rectangles here. An explicit z-index 0
+                keeps it behind every item box (which sit at band 1+). Inert; the rects handle clicks. */}
+            <div ref={setBackLayer} className="absolute left-0 top-0" style={{ zIndex: BACK_LAYER_Z_INDEX }} />
 
-            {/* Unselected non-zone items, then zones on top: a zone's box renders only its header +
-                chrome (its background is in the back layer), so its chrome floats above the items.
-                The SELECTED items render later, after the connection layer below. */}
-            {nonZoneUnselected.map(renderBox)}
+            {/* All non-connection items in ONE pass (never split by selection - no remount). Each box
+                carries its z-index band: unselected below the connection layer, selected above it.
+                Zones share the same banding (their tinted rect stays behind in the back layer). */}
+            {nonZoneItems.map(renderBox)}
             {zoneItems.map(renderBox)}
 
-            {/* Group toolbar over the multi-selection's bounding box (per-item bars suppressed). */}
+            {/* Group toolbar over the multi-selection's bounding box (per-item bars suppressed). It
+                tops every band so it floats above its members and the connection layer. */}
             {groupBbox && (
-               <div className="absolute" style={{ left: groupBbox.x, top: groupBbox.y, width: groupBbox.width, height: groupBbox.height }}>
+               <div className="absolute" style={{ left: groupBbox.x, top: groupBbox.y, width: groupBbox.width, height: groupBbox.height, zIndex: groupToolbarZIndex(layerCount) }}>
                   <BoardGroupToolbar
                      zoom={viewport.zoom}
                      isMoving={!!groupDrag}
@@ -781,8 +784,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                </div>
             )}
 
-            {/* Connections (+ the connect-drag preview) render ABOVE the item boxes. A connection
-                is highlighted only when it is the sole selection (groups are about spatial items). */}
+            {/* Connections (+ the connect-drag preview) sit at the connection band (z N+1): above every
+                unselected item, below every selected one - so a string to a selected item runs behind
+                its face. Highlighted only when it is the sole selection (groups are about spatial items). */}
             <BoardConnectionsLayer
                items={items}
                connections={connectionItems}
@@ -791,15 +795,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                moving={groupDrag}
                collapsedZoneIds={collapsedZoneIds}
                connectPreview={connectPreview}
+               zIndex={connectionsZIndex(layerCount)}
                onSelect={(id) => handleSelect(id, false)}
                onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}
                onDelete={handleDelete}
             />
-
-            {/* Selected non-zone items render LAST - above the connection layer - so a string to a
-                selected item runs behind its face (still anchored to its edge). Render-only; on
-                deselect the item rejoins the unselected pass below the connections. */}
-            {nonZoneSelected.map(renderBox)}
          </div>
 
          {/* Marquee rectangle: a screen-space overlay (not the world layer), drawn while a
