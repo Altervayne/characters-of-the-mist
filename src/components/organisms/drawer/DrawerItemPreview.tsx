@@ -17,21 +17,104 @@ import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThem
 
 // -- Utils Imports --
 import { getItemTypeLabelKey } from '@/lib/utils/drawer-icons';
+import { boardContentBounds, itemCenter } from '@/lib/board/boardMiniMap';
 
 // -- Type Imports --
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
-import type { Board } from '@/lib/types/board';
+import type { Board, ConnectionBoardContent, PinBoardContent, PostItBoardContent, ZoneBoardContent } from '@/lib/types/board';
 
 
 
-/** Cheap board thumbnail: a board glyph + item count (a full board render would be heavy). */
+/** The board's default note color, mirrored from the post-it item (a color-less note reads amber). */
+const SCHEMATIC_POSTIT_COLOR = '#fde68a';
+
+/**
+ * Cheap board thumbnail: a schematic mini-map. Each item is a small block at its scaled board position
+ * (the SVG viewBox IS the content bbox, so a wide board fills the width and a tall one centers as a
+ * column), zones are faint regions behind their members, connections are hairlines between block
+ * centers. Pure render - no item components, no asset loads - so the LAYOUT is the signal. The item
+ * count survives as a subtle corner badge; an empty board keeps the glyph + count.
+ */
 function BoardPreview({ board }: { board: Board }) {
    const { t } = useTranslation();
    const itemCount = board.items.filter((item) => item.kind !== 'connection').length;
+   const bounds = boardContentBounds(board.items);
+
+   // Empty board: an empty SVG reads as broken, so keep the glyph + count.
+   if (!bounds) {
+      return (
+         <div className="w-62.5 h-25 flex flex-col items-center justify-center gap-2 bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
+            <LayoutGrid className="h-8 w-8" />
+            <p className="text-xs">{t('Drawer.Types.boardItemCount', { count: itemCount })}</p>
+         </div>
+      );
+   }
+
+   const byId = new Map(board.items.map((item) => [item.id, item]));
+   const zones = board.items.filter((item) => item.kind === 'zone');
+   const connections = board.items.filter((item) => item.kind === 'connection');
+   const blocks = board.items.filter((item) => item.kind !== 'zone' && item.kind !== 'connection');
+
    return (
-      <div className="w-62.5 h-25 flex flex-col items-center justify-center gap-2 bg-popover/50 text-muted-foreground rounded-lg p-4 text-center">
-         <LayoutGrid className="h-8 w-8" />
-         <p className="text-xs">{t('Drawer.Types.boardItemCount', { count: itemCount })}</p>
+      <div className="relative w-62.5 h-25 overflow-hidden rounded-lg bg-popover/50 p-1 text-foreground">
+         <svg
+            viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="h-full w-full"
+         >
+            {/* Zones behind: a faint region in the stored color, or a subtle theme tint when color-less. */}
+            {zones.map((zone) => {
+               const color = (zone.content as ZoneBoardContent).color;
+               return (
+                  <rect
+                     key={zone.id}
+                     x={zone.x} y={zone.y} width={zone.width} height={zone.height} rx={2}
+                     fill={color ?? 'currentColor'} fillOpacity={color ? 0.2 : 0.07}
+                     stroke={color ?? 'currentColor'} strokeOpacity={0.35} strokeWidth={1}
+                     vectorEffect="non-scaling-stroke"
+                  />
+               );
+            })}
+
+            {/* Connections: a hairline from center to center, skipping a deleted endpoint. */}
+            {connections.map((conn) => {
+               const content = conn.content as ConnectionBoardContent;
+               const from = byId.get(content.from);
+               const to = byId.get(content.to);
+               if (!from || !to) return null;
+               const a = itemCenter(from);
+               const b = itemCenter(to);
+               return (
+                  <line
+                     key={conn.id}
+                     x1={a.cx} y1={a.cy} x2={b.cx} y2={b.cy}
+                     stroke={content.style.color} strokeOpacity={0.7} strokeWidth={1}
+                     vectorEffect="non-scaling-stroke"
+                  />
+               );
+            })}
+
+            {/* Every other item: a block in its content color (post-it / pin) or a neutral theme block. */}
+            {blocks.map((item) => {
+               const ownColor = item.kind === 'post-it'
+                  ? (item.content as PostItBoardContent).color ?? SCHEMATIC_POSTIT_COLOR
+                  : item.kind === 'pin'
+                     ? (item.content as PinBoardContent).color
+                     : null;
+               return (
+                  <rect
+                     key={item.id}
+                     x={item.x} y={item.y} width={item.width} height={item.height} rx={2}
+                     fill={ownColor ?? 'currentColor'} fillOpacity={ownColor ? 1 : 0.25}
+                  />
+               );
+            })}
+         </svg>
+
+         {/* Subtle count badge over the map (app-themed), so the count survives the revamp. */}
+         <span className="absolute bottom-1 right-1 rounded bg-popover/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {t('Drawer.Types.boardItemCount', { count: itemCount })}
+         </span>
       </div>
    );
 }
