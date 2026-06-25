@@ -530,6 +530,11 @@ export function useCharacterSheetDnD() {
          // tab save INTO a folder still works via the dnd-kit `over` at drop).
          const overId = over?.id.toString();
          setIsOverDrawer(overId?.startsWith('drawer-drop-zone-') ?? false);
+         // Over the board, a tab morphs to the "add to board" glyph (like a drawer character):
+         // feed the board over-zone so updateContext derives 'add-to-board'; elsewhere it carries
+         // no zone (reorder / drawer-save show no morph).
+         overZoneRef.current = overId === 'board-drop-zone' ? 'board' : null;
+         updateContext();
          return;
       }
 
