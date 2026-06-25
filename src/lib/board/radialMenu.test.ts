@@ -68,4 +68,18 @@ describe('ringRadius', () => {
    it('never grows beyond the cap', () => {
       expect(ringRadius(40)).toBeLessThanOrEqual(110);
    });
+
+   it('keeps a tight, cohesive cluster for the realistic menu sizes (no scatter)', () => {
+      // The "Board Elements" submenu has 6 options; its ring should be snug, not flung wide.
+      expect(ringRadius(6)).toBeLessThanOrEqual(56);
+   });
+
+   it('never overlaps the 40px buttons at any realistic count', () => {
+      const BUTTON_SIZE = 40;
+      for (let n = 2; n <= 12; n++) {
+         // The chord between two adjacent buttons must stay at least a button wide (centers apart).
+         const chord = 2 * ringRadius(n) * Math.sin(Math.PI / n);
+         expect(chord).toBeGreaterThanOrEqual(BUTTON_SIZE);
+      }
+   });
 });

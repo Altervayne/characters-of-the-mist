@@ -15,8 +15,12 @@ export function radialOffset(i: number, n: number, radius: number, angleOffsetDe
    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
 }
 
-/** Target chord (px) between adjacent buttons, and the radius clamp the spacing is held within. */
-const TARGET_CHORD = 72;
+/**
+ * Target chord (px) between adjacent buttons, and the radius clamp the spacing is held within. The
+ * chord sits a little above the 40px button so a ring reads as one tight cluster with a small gap,
+ * never scattered and never overlapping.
+ */
+const TARGET_CHORD = 52;
 const MIN_RADIUS = 48;
 const MAX_RADIUS = 110;
 
