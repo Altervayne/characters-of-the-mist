@@ -366,7 +366,9 @@ export function useCharacterSheetDnD() {
       ).flatMap((el) => (el.dataset.folderId ? [{ id: el.dataset.folderId, rect: el.getBoundingClientRect() }] : []));
       const itemsAreaEl = document.querySelector('[data-drawer-items-area]');
       const itemsAreaRect = itemsAreaEl ? itemsAreaEl.getBoundingClientRect() : null;
-      const drawerPanelEl = document.querySelector('[data-tour="drawer"]');
+      // Either drawer surface (the side panel or the Expanded Library) counts as the in-drawer panel for
+      // the current-folder catch-all; only one is mounted at a time.
+      const drawerPanelEl = document.querySelector('[data-drawer-panel]');
       const drawerPanelRect = drawerPanelEl ? drawerPanelEl.getBoundingClientRect() : null;
 
       const drawerTarget = resolveSpringTarget(
@@ -1028,10 +1030,8 @@ export function useCharacterSheetDnD() {
             // NOTE: moves INTO a folder / Back / the items body of a different folder, and
             // ALL folder slot placements (reorder + cross-folder insert), are handled by the
             // manual geometry resolver above; this block now only handles same-folder
-            // item REORDER, which dnd-kit's `over` resolves reliably.
-
-            // Same-folder item REORDER over a sibling row. Live shuffle: dnd-kit's `over`
-            // already reflects the shuffled position, so land on it.
+            // item REORDER. The `over` is resolved from live row geometry (customCollisionDetection),
+            // so the live-shuffle lands on the right sibling - reliable at the edges and in place.
             if (overType === 'drawer-item' && activeIsItem && parentFolderId === (over.data.current?.parentFolderId ?? null)) {
                const oldIndex = itemsInScope.findIndex(item => item.id === active.id);
                const overIndex = itemsInScope.findIndex(item => item.id === over.id);

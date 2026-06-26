@@ -12,7 +12,7 @@ import cuid from 'cuid';
 import { Button } from '@/components/ui/button';
 
 // -- Icon Imports --
-import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, LayoutGrid, Rows, PanelRightClose, Maximize2 } from 'lucide-react';
+import { Plus, ArrowLeft, Inbox, ArrowUpToLine, Download, Upload, Maximize2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -29,11 +29,10 @@ import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwell
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSearchResultEntry';
 import { DrawerSearchResultCard } from '@/components/molecules/drawer/DrawerSearchResultCard';
-import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
-import { DrawerUndoRedoControls } from '@/components/molecules/DrawerUndoRedoControls';
+import { DrawerHeader } from '@/components/molecules/drawer/DrawerHeader';
 
 // -- Store and Hook Imports --
 import { useDrawerActions, useDrawerStore, isSearchFilterActive } from '@/lib/stores/drawerStore';
@@ -148,10 +147,14 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
    return (
       <motion.aside
          data-tour="drawer"
+         data-drawer-panel
          variants={drawerVariants}
          initial="initial"
          animate="animate"
          exit="exit"
+         // Same easing/duration as the Library grow/shrink, so open/expand/contract/close read as one
+         // right-anchored drawer.
+         transition={{ duration: 0.3, ease: 'easeInOut' }}
          className="bg-card border-l-2 border-border h-full flex flex-col overflow-hidden"
       >
          <div {...getRootProps()} className="relative w-100 h-full">
@@ -161,32 +164,16 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                   variants={contentVariants}
                   className="w-full p-0 h-full flex flex-col"
                >
-                     <header className="shrink-0 py-2 px-4 min-h-26 border-b-2 border-border">
-                        {/* Control row: modest title left; one right cluster of undo/redo + a divider +
-                            view/expand/close - so undo/redo sits with the chrome, not floating centre. */}
-                        <div className="flex items-center justify-between gap-2 my-2">
-                           <h2 className="text-lg font-semibold">{t('Drawer.title')}</h2>
-                           <div className="flex items-center gap-1">
-                              <DrawerUndoRedoControls compact />
-                              <div className="mx-1 h-6 w-px shrink-0 bg-border" />
-                              <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.toggleView')} data-tour="drawer-rich-view-toggle">
-                                 {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
-                              </div>
-                              {/* Expand into the full-area library view (the workspace stays mounted behind it). */}
-                              <div onClick={expandDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.expand')} title={t('Drawer.expand')}>
-                                 <Maximize2 className="h-6 w-6" />
-                              </div>
-                              <div onClick={() => setDrawerOpen(false)} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.close')}>
-                                 <PanelRightClose className="h-6 w-6" />
-                              </div>
-                           </div>
-                        </div>
-
-                        {/* Shared search bar (field + filters), the same core the Expanded view uses. */}
-                        <div className="mt-1">
-                           <DrawerSearchBar />
-                        </div>
-
+                     {/* Shared header (identical to the Library's) - only the mode button differs: Expand here. */}
+                     <DrawerHeader
+                        title={t('Drawer.title')}
+                        isCompactDrawer={isCompactDrawer}
+                        onToggleView={toggleCompactDrawer}
+                        modeIcon={<Maximize2 className="h-6 w-6" />}
+                        modeLabel={t('Drawer.expand')}
+                        onMode={expandDrawer}
+                        onClose={() => setDrawerOpen(false)}
+                     >
                         {/* The breadcrumb is browse-only - hidden while searching (you are not in a folder). */}
                         {!isSearchActive && breadcrumbPath.length > 0 && (
                            <div className="flex items-center gap-2 mt-2">
@@ -196,7 +183,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                               <Breadcrumb path={breadcrumbPath} onNavigate={navigateToFolder} />
                            </div>
                         )}
-                     </header>
+                     </DrawerHeader>
 
                      <div className="grow bg-popover overflow-y-auto flex flex-col">
                         {isSearchActive ? (
@@ -314,7 +301,8 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                               {currentItems.length > 0 ? (
                                  <div className="flex flex-col gap-2">
                                     {/* Live shuffle: siblings animate aside to open a real gap where the
-                                        dragged item will land. */}
+                                        dragged item will land. The `over` is resolved by live geometry in
+                                        customCollisionDetection, so the shuffle lands correctly. */}
                                     <SortableContext items={currentItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
                                        {currentItems.map((item) => {
                                           const commonProps = {

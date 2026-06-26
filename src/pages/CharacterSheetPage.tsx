@@ -300,13 +300,17 @@ function DesktopCharacterSheetPage() {
 
             {/* Expanded drawer: an overlay over this whole region (TabStrip + sheet/board + side-panel
                 region stay behind it; the sidebar is outside it, so it stays visible). It grows in from
-                the right and recedes for See-Workspace - kept MOUNTED throughout so a live drag survives. */}
-            <AnimatePresence>
+                the right and recedes for See-Workspace - kept MOUNTED throughout so a live drag survives.
+                `custom={isDrawerOpen}` drives the dynamic exit: contract (still open) hands back to the side
+                panel; close (not open) slides off the right. */}
+            <AnimatePresence custom={isDrawerOpen}>
                {isDrawerExpanded &&
                   <ExpandedDrawer
                      key="expanded-drawer"
                      isItemDragActive={isDrawerItemDragActive}
                      workspaceDwellKey={workspaceDwellKey}
+                     activeDragId={activeDragItem?.id ?? null}
+                     overDragId={overDragId}
                   />
                }
             </AnimatePresence>

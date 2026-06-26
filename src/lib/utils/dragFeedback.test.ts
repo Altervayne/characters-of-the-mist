@@ -13,6 +13,8 @@ import {
    isOverTabLaneFor,
    isWithinTabLane,
    resolveDrawerDropTarget,
+   resolveSortableOverId,
+   resolveSortableOverId2D,
    resolveSpringTarget,
    resolveTabSpringTarget,
    selectMorphGlyph,
@@ -220,6 +222,73 @@ describe('resolveDrawerDropTarget (manual in-drawer drop hit-test)', () => {
    it('returns null when outside the drawer panel entirely', () => {
       expect(resolveDrawerDropTarget(folders, drawerPanel, 100, 900, null)).toBeNull();
       expect(resolveDrawerDropTarget(folders, null, 100, 15, null)).toBeNull();
+   });
+});
+
+describe('resolveSortableOverId (live-geometry over, clamped at edges)', () => {
+   // Three 20px rows stacked from y=100, intentionally out of order to prove the sort.
+   const rows = [
+      { id: 'b', top: 120, bottom: 140 },
+      { id: 'a', top: 100, bottom: 120 },
+      { id: 'c', top: 140, bottom: 160 },
+   ];
+
+   it('cursor above the first row -> the first row', () => {
+      expect(resolveSortableOverId(rows, 50)).toBe('a');
+      expect(resolveSortableOverId(rows, 100)).toBe('a');
+   });
+
+   it('cursor below the last row -> the last row', () => {
+      expect(resolveSortableOverId(rows, 160)).toBe('c');
+      expect(resolveSortableOverId(rows, 9999)).toBe('c');
+   });
+
+   it('cursor within a row -> that row', () => {
+      expect(resolveSortableOverId(rows, 110)).toBe('a');
+      expect(resolveSortableOverId(rows, 150)).toBe('c');
+   });
+
+   it('single item: any cursor -> that item', () => {
+      const one = [{ id: 'only', top: 0, bottom: 40 }];
+      expect(resolveSortableOverId(one, -10)).toBe('only');
+      expect(resolveSortableOverId(one, 999)).toBe('only');
+   });
+
+   it('a gap between rows resolves to the nearest by midpoint', () => {
+      // Two rows with a gap 120..200; 130 is nearest the first (mid 110), 190 the second (mid 210).
+      const gapped = [{ id: 'top', top: 100, bottom: 120 }, { id: 'bot', top: 200, bottom: 220 }];
+      expect(resolveSortableOverId(gapped, 130)).toBe('top');
+      expect(resolveSortableOverId(gapped, 195)).toBe('bot');
+   });
+
+   it('empty -> null', () => {
+      expect(resolveSortableOverId([], 50)).toBeNull();
+   });
+});
+
+describe('resolveSortableOverId2D (grid over by live geometry)', () => {
+   // A 2x2 grid: two columns (x 0-100, 110-210), two rows (y 0-100, 110-210).
+   const cells = [
+      { id: 'tl', left: 0, top: 0, right: 100, bottom: 100 },
+      { id: 'tr', left: 110, top: 0, right: 210, bottom: 100 },
+      { id: 'bl', left: 0, top: 110, right: 100, bottom: 210 },
+      { id: 'br', left: 110, top: 110, right: 210, bottom: 210 },
+   ];
+
+   it('cursor within a cell -> that cell', () => {
+      expect(resolveSortableOverId2D(cells, 50, 50)).toBe('tl');
+      expect(resolveSortableOverId2D(cells, 160, 160)).toBe('br');
+      expect(resolveSortableOverId2D(cells, 160, 50)).toBe('tr');
+   });
+
+   it('cursor in a gap -> the nearest cell by center', () => {
+      expect(resolveSortableOverId2D(cells, 105, 50)).toBe('tl'); // gap between columns, top row, slightly left
+      expect(resolveSortableOverId2D(cells, 300, 300)).toBe('br'); // far past the grid -> nearest is br
+   });
+
+   it('single cell / empty', () => {
+      expect(resolveSortableOverId2D([{ id: 'only', left: 0, top: 0, right: 10, bottom: 10 }], 999, 999)).toBe('only');
+      expect(resolveSortableOverId2D([], 5, 5)).toBeNull();
    });
 });
 

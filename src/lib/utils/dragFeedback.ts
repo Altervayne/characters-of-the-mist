@@ -379,6 +379,82 @@ export function drawerDropTargetKey(target: DrawerDropTarget | null): string | n
    return target.kind === 'folder' ? `folder:${target.id}` : 'current-folder';
 }
 
+/** A sortable item row's id + vertical extent, for resolving the `over` row from live geometry. */
+export interface SortableRowRect {
+   id: string;
+   top: number;
+   bottom: number;
+}
+
+/**
+ * Resolves which sortable item row the cursor is "over" from the rows' LIVE rects, replacing dnd-kit's
+ * measured-rect collision (those desync in the drawer's scrollable / layout-animated context, the same
+ * reason folders use a geometry resolver). Clamped at the edges so the hard cases land: cursor above the
+ * first row -> the first row, below the last -> the last row, within a row -> that row, in a gap between
+ * rows -> the nearest by midpoint. The live-shuffle then opens the gap at the right place.
+ *
+ * @param rows - The sortable rows' ids + live rects (any order).
+ * @param cursorY - Cursor clientY.
+ * @returns The over row's id, or null when there are no rows.
+ */
+export function resolveSortableOverId(rows: SortableRowRect[], cursorY: number): string | null {
+   if (rows.length === 0) return null;
+   const sorted = [...rows].sort((a, b) => a.top - b.top);
+   if (cursorY <= sorted[0].top) return sorted[0].id;
+   const last = sorted[sorted.length - 1];
+   if (cursorY >= last.bottom) return last.id;
+   for (const row of sorted) {
+      if (cursorY >= row.top && cursorY <= row.bottom) return row.id;
+   }
+   // In a gap between rows: the nearest row by midpoint.
+   let best = sorted[0];
+   let bestDistance = Infinity;
+   for (const row of sorted) {
+      const distance = Math.abs(cursorY - (row.top + row.bottom) / 2);
+      if (distance < bestDistance) {
+         bestDistance = distance;
+         best = row;
+      }
+   }
+   return best.id;
+}
+
+/** A sortable grid cell's id + rect, for resolving the `over` cell from live geometry in a 2D grid. */
+export interface SortableCellRect {
+   id: string;
+   left: number;
+   top: number;
+   right: number;
+   bottom: number;
+}
+
+/**
+ * The 2D analogue of {@link resolveSortableOverId} for a grid (the Expanded Library): the cell the cursor
+ * is within, else the nearest by cell center. Reads LIVE rects so the desync of dnd-kit's measured rects
+ * (in the scrollable/animated Library) doesn't pick the wrong cell - or the workspace behind the overlay.
+ *
+ * @param cells - The grid cells' ids + live rects.
+ * @param x - Cursor clientX.
+ * @param y - Cursor clientY.
+ * @returns The over cell's id, or null when there are no cells.
+ */
+export function resolveSortableOverId2D(cells: SortableCellRect[], x: number, y: number): string | null {
+   if (cells.length === 0) return null;
+   for (const cell of cells) {
+      if (x >= cell.left && x <= cell.right && y >= cell.top && y <= cell.bottom) return cell.id;
+   }
+   let best = cells[0];
+   let bestDistance = Infinity;
+   for (const cell of cells) {
+      const distance = Math.hypot(x - (cell.left + cell.right) / 2, y - (cell.top + cell.bottom) / 2);
+      if (distance < bestDistance) {
+         bestDistance = distance;
+         best = cell;
+      }
+   }
+   return best.id;
+}
+
 /**
  * Options for {@link createSpringController}. Generic over the target type so the same dwell mechanism
  * drives both the folder/tab/back nav (default {@link SpringTarget}) and other dwells (e.g. the

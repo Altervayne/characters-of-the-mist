@@ -1,8 +1,10 @@
 import { closestCenter, pointerWithin } from "@dnd-kit/core";
-import type { CollisionDetection } from "@dnd-kit/core";
+import type { Collision, CollisionDetection } from "@dnd-kit/core";
 import type { DrawerItem, GameSystem, GeneralItemType } from "../types/drawer";
 import type { Card, Tracker } from "../types/character";
 import type { SortingStrategy } from "@dnd-kit/sortable";
+import { resolveSortableOverId, resolveSortableOverId2D } from "./dragFeedback";
+import { useAppGeneralStateStore } from "../stores/appGeneralStateStore";
 
 
 // ==================
@@ -73,10 +75,60 @@ export function sheetSectionForItemType(type: GeneralItemType): 'cards' | 'track
  * Handles complex drop logic for character sheets, drawer items, folders, and trackers.
  * Makes sure you can only drop items where it actually makes sense to drop them!
  */
+/**
+ * The Expanded Library's reorder allowlist for a drawer-item drag. The workspace is mounted BEHIND the
+ * overlay (for See-Workspace), so its drop zones must NOT win the collision while reordering: resolve the
+ * over among the Library's OWN items by live 2D geometry and return ONLY that (or `[]` when over the
+ * Library but not a cell, so the workspace never wins). Returns null when not applicable (not Expanded, or
+ * receded - where the workspace IS the intended target). Gated on the DRAG type by the caller, so it
+ * covers EVERY item type (regular, character, board) the same.
+ */
+function resolveExpandedLibraryItemOver(args: Parameters<CollisionDetection>[0]): Collision[] | null {
+   const general = useAppGeneralStateStore.getState();
+   if (!general.isDrawerExpanded || general.isDrawerReceded) return null;
+
+   const pointer = args.pointerCoordinates;
+   const gridRect = typeof document !== 'undefined'
+      ? (document.querySelector('[data-drawer-items-area]')?.getBoundingClientRect() ?? null)
+      : null;
+   const overGrid = !!pointer && !!gridRect &&
+      pointer.x >= gridRect.left && pointer.x <= gridRect.right &&
+      pointer.y >= gridRect.top && pointer.y <= gridRect.bottom;
+   if (pointer && overGrid) {
+      const cells = args.droppableContainers.flatMap((container) => {
+         if (container.data.current?.type !== 'drawer-item') return [];
+         const node = container.node?.current;
+         if (!node) return [];
+         const rect = node.getBoundingClientRect();
+         // Subtract the live shuffle transform so cells read at their STATIC slots (the grid uses
+         // rectSortingStrategy; reading shuffled rects would feed back, as in the side panel).
+         const transform = getComputedStyle(node).transform;
+         const matrix = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform) : null;
+         const tx = matrix?.m41 ?? 0;
+         const ty = matrix?.m42 ?? 0;
+         return [{ id: String(container.id), left: rect.left - tx, top: rect.top - ty, right: rect.right - tx, bottom: rect.bottom - ty }];
+      });
+      const overId = resolveSortableOverId2D(cells, pointer.x, pointer.y);
+      if (overId) return [{ id: overId }];
+   }
+   // Over the Library but not a cell (folder nav / header / empty): no collision, so the workspace
+   // behind never wins. A move INTO a folder / the current folder is the live-geometry resolver's job.
+   return [];
+}
+
 export const customCollisionDetection: CollisionDetection = (args) => {
    const activeData = args.active.data.current;
    const activeDataType = args.active.data.current?.type as string;
    const draggedItemType = (activeData?.item as DrawerItem)?.type;
+
+   // Expanded Library reorder short-circuits EVERY drawer-item drag - regular, character, AND board -
+   // into the Library's own items, BEFORE the type branches below whose workspace zones would otherwise
+   // hijack a character/board (those branch on item.type). Gated on the DRAG type, so item.type can't
+   // mis-route it. Skipped (null) when not Expanded / when receded (See-Workspace wants the workspace).
+   if (activeDataType === 'drawer-item') {
+      const libraryOver = resolveExpandedLibraryItemOver(args);
+      if (libraryOver) return libraryOver;
+   }
 
    // ==================
    //  If dragging a tab (the desktop tab strip shares the sheet's DndContext)
@@ -173,6 +225,8 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // (dropping the item onto the sheet), then same-folder item REORDER over the nearest
    // sibling row (`closestCenter`, resolved by `handleDragEnd`'s reorder path).
    if (activeDataType === 'drawer-item') {
+      // (Expanded-Library reorder was already short-circuited at the top of this function.)
+
       // Sheet drop zones (character tab) plus the board drop zone (board tab). The board
       // zone exists only when a board is active, so it never competes with the sheet
       // zones, and vice versa - exactly one of them is mounted at a time.
@@ -183,6 +237,35 @@ export const customCollisionDetection: CollisionDetection = (args) => {
       const surfaceZoneCollisions = pointerWithin({ ...args, droppableContainers: surfaceZoneDroppables });
       if (surfaceZoneCollisions.length > 0) {
          return surfaceZoneCollisions;
+      }
+
+      // Same-folder REORDER: resolve the `over` sibling from the rows' LIVE rects, not dnd-kit's measured
+      // droppable rects (those desync in the scrollable/animated drawer - the reorder jank). Clamped at
+      // the edges so dropping past the first/last row still lands. Scoped to the items body, so hovering
+      // folders/the sheet falls through to the center-based path below. Live DOM only; no DOM -> fallback.
+      const pointer = args.pointerCoordinates;
+      const itemsAreaRect = typeof document !== 'undefined'
+         ? (document.querySelector('[data-drawer-items-area]')?.getBoundingClientRect() ?? null)
+         : null;
+      const overItemsBody = !!pointer && !!itemsAreaRect &&
+         pointer.x >= itemsAreaRect.left && pointer.x <= itemsAreaRect.right &&
+         pointer.y >= itemsAreaRect.top && pointer.y <= itemsAreaRect.bottom;
+      if (pointer && overItemsBody) {
+         const itemRows = args.droppableContainers.flatMap((container) => {
+            if (container.data.current?.type !== 'drawer-item') return [];
+            const node = container.node?.current;
+            if (!node) return [];
+            const rect = node.getBoundingClientRect();
+            // Subtract the row's live sort transform so it reads at its STATIC slot, not its mid-shuffle
+            // position - the shuffle is driven BY this `over`, so reading the shuffled rect feeds back
+            // (the dragged row tracks the cursor and would always resolve to itself). With static slots
+            // the held item anchors at its own row, so dropping in place stays a true no-op.
+            const transform = getComputedStyle(node).transform;
+            const translateY = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform).m42 : 0;
+            return [{ id: String(container.id), top: rect.top - translateY, bottom: rect.bottom - translateY }];
+         });
+         const overId = resolveSortableOverId(itemRows, pointer.y);
+         if (overId) return [{ id: overId }];
       }
 
       const itemDroppables = args.droppableContainers.filter((container) => {

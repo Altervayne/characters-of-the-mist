@@ -1,25 +1,27 @@
 // -- React Imports --
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { AnimatePresence, motion } from 'framer-motion';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import cuid from 'cuid';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
 
 // -- Icon Imports --
-import { ArrowLeft, ArrowUpToLine, ChevronsUp, Eye, Inbox, LayoutGrid, Minimize2, Plus, PanelRightClose, Rows } from 'lucide-react';
+import { ArrowLeft, ArrowUpToLine, ChevronsUp, Eye, Inbox, Minimize2, Plus } from 'lucide-react';
 
 // -- Component Imports --
 import { DrawerFolderEntry } from '@/components/molecules/drawer/DrawerFolderEntry';
+import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerItemEntry } from '@/components/molecules/drawer/DrawerItemEntry';
 import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerCompactItemEntry';
 import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSearchResultEntry';
 import { DrawerSearchResultCard } from '@/components/molecules/drawer/DrawerSearchResultCard';
-import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
+import { DrawerHeader } from '@/components/molecules/drawer/DrawerHeader';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 
@@ -32,6 +34,7 @@ import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSett
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { staticListSortingStrategy } from '@/lib/utils/dnd';
 import { SPRING_HOLD_MS } from '@/lib/utils/dragFeedback';
 
 /*
@@ -52,9 +55,12 @@ interface ExpandedDrawerProps {
    isItemDragActive: boolean;
    /** Which recede dwell is in progress ('see-workspace' | 'reexpand' | null), for the progress cue. */
    workspaceDwellKey: string | null;
+   /** The dragged item/folder id + the dnd-kit `over` id, for the folder reorder slots (as in the side panel). */
+   activeDragId: string | null;
+   overDragId: string | null;
 }
 
-export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: ExpandedDrawerProps) {
+export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDragId, overDragId }: ExpandedDrawerProps) {
    const { t } = useTranslation();
    // Receded = slid aside to reveal the workspace (set by the DnD layer's dwell); only true mid-drag.
    const isReceded = useAppGeneralStateStore((state) => state.isDrawerReceded);
@@ -75,6 +81,14 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
 
    const searchResults = useDrawerStore((state) => state.searchResults);
    const isSearchActive = useDrawerStore((state) => isSearchFilterActive(state.searchCriteria));
+
+   // Reorder scaffolding, mirroring the side panel: folder ids for the SortableContext, and the dragged
+   // folder's index so the two no-op slots flanking it don't expand.
+   const folderIds = useMemo(() => currentFolders.map((f) => f.id), [currentFolders]);
+   const activeFolderIndex = useMemo(
+      () => (activeDragId ? currentFolders.findIndex((f) => f.id === activeDragId) : -1),
+      [activeDragId, currentFolders],
+   );
 
    const {
       activeAction,
@@ -125,37 +139,33 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
          className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
          initial={{ width: '25rem' }}
          animate={{ width: fullWidth ?? '100%' }}
-         exit={{ width: '25rem' }}
+         // Exit depends on WHY it left (AnimatePresence's custom = isDrawerOpen at exit): CONTRACT (still
+         // open) shrinks back toward the side-panel width, handing off to the entering side panel; CLOSE
+         // (no longer open) slides fully off the right edge, revealing the workspace as it goes. Both are
+         // right-anchored, matching the open/expand/contract motions - one drawer growing/shrinking/sliding.
+         variants={{ exit: (open: boolean) => (open ? { width: '25rem' } : { x: '100%' }) }}
+         exit="exit"
          transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
          {/* The Library surface. When receded it slides DOWN (clipped by the overlay above, so off-screen
              with no page scroll) and goes pointer-transparent, but STAYS MOUNTED so the live drag is never
-             cancelled and the cursor reaches the revealed workspace. */}
-         <div className={cn(
+             cancelled and the cursor reaches the revealed workspace. `data-drawer-panel` makes the in-drawer
+             drop resolver treat the Library as the drawer panel (folder / current-folder targets), exactly
+             as it does the side panel; receded slides it off-screen so the resolver stops matching it. */}
+         <div data-drawer-panel className={cn(
             'pointer-events-auto relative flex h-full w-full flex-col bg-card transition-transform duration-300 ease-in-out',
             isReceded && 'translate-y-full',
          )}>
-         {/* Header: title, the shared search bar, contract + close. */}
-         <header className="shrink-0 border-b-2 border-border p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-               <h2 className="text-xl font-bold">{t('Drawer.expandedTitle')}</h2>
-               <div className="flex items-center gap-1">
-                  <div onClick={toggleCompactDrawer} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.toggleView')} title={t('Drawer.toggleView')}>
-                     {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
-                  </div>
-                  <Button variant="ghost" size="sm" className="cursor-pointer gap-2" onClick={contractDrawer} title={t('Drawer.contract')}>
-                     <Minimize2 className="h-5 w-5" />
-                     {t('Drawer.contract')}
-                  </Button>
-                  <div onClick={() => setDrawerOpen(false)} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.close')}>
-                     <PanelRightClose className="h-6 w-6" />
-                  </div>
-               </div>
-            </div>
-            <div className="mx-auto max-w-2xl">
-               <DrawerSearchBar />
-            </div>
-         </header>
+         {/* Shared header (identical to the side panel's) - only the mode button differs: Contract here. */}
+         <DrawerHeader
+            title={t('Drawer.title')}
+            isCompactDrawer={isCompactDrawer}
+            onToggleView={toggleCompactDrawer}
+            modeIcon={<Minimize2 className="h-6 w-6" />}
+            modeLabel={t('Drawer.contract')}
+            onMode={contractDrawer}
+            onClose={() => setDrawerOpen(false)}
+         />
 
          <div className="flex min-h-0 flex-1">
             {/* Folder side-nav. */}
@@ -176,18 +186,39 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
                   </div>
                )}
 
-               {currentFolders.map((folder) => (
-                  <DrawerFolderEntry
-                     key={folder.id}
-                     folder={folder}
-                     parentFolderId={currentFolderId}
-                     isOver={false}
-                     onNavigate={navigateToFolder}
-                     onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
-                     onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}
-                     onMove={() => setActiveAction({ id: cuid(), type: 'move-folder', target: folder })}
-                  />
-               ))}
+               {currentFolders.length > 0 && (
+                  // Folders reorder via the same expanding-slot mechanism as the side panel (static rows,
+                  // a thin constant gap between them that becomes the drop target during a folder drag).
+                  <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
+                     {currentFolders.map((folder, index) => (
+                        <React.Fragment key={folder.id}>
+                           <FolderDropZone
+                              id={`drop-zone-before-${folder.id}`}
+                              activeId={activeDragId}
+                              overId={overDragId}
+                              canExpand={activeFolderIndex !== -1 && index !== activeFolderIndex && index !== activeFolderIndex + 1}
+                              data={{ type: 'drawer-drop-zone', targetId: folder.id, position: 'before' }}
+                           />
+                           <DrawerFolderEntry
+                              folder={folder}
+                              parentFolderId={currentFolderId}
+                              isOver={false}
+                              onNavigate={navigateToFolder}
+                              onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
+                              onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}
+                              onMove={() => setActiveAction({ id: cuid(), type: 'move-folder', target: folder })}
+                           />
+                        </React.Fragment>
+                     ))}
+                     <FolderDropZone
+                        id={`drop-zone-after-last`}
+                        activeId={activeDragId}
+                        overId={overDragId}
+                        canExpand={activeFolderIndex !== -1 && activeFolderIndex !== currentFolders.length - 1}
+                        data={{ type: 'drawer-drop-zone', targetId: 'last', position: 'after' }}
+                     />
+                  </SortableContext>
+               )}
 
                <div className="mt-1 rounded border-2 border-dashed border-border bg-card">
                   <Button variant="ghost" className="w-full cursor-pointer justify-start" onClick={handleAddFolder}>
@@ -224,20 +255,24 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
                   </div>
                ) : currentItems.length > 0 ? (
                   // Rich -> a grid of uniform cards; List -> a single column of rows (same toggle as the side panel).
-                  <div className={isCompactDrawer ? 'flex flex-col gap-1' : 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3'}>
-                     {currentItems.map((item) => {
-                        const commonProps = {
-                           item,
-                           parentFolderId: currentFolderId,
-                           onRename: () => setActiveAction({ id: cuid(), type: 'rename-item', target: item }),
-                           onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: item }),
-                           onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: item }),
-                        };
-                        return isCompactDrawer
-                           ? <DrawerCompactItemEntry key={item.id} {...commonProps} />
-                           : <DrawerItemEntry key={item.id} {...commonProps} />;
-                     })}
-                  </div>
+                  // Items reorder via the grid live-shuffle (rectSortingStrategy); the `over` is resolved from
+                  // live geometry in customCollisionDetection so the workspace behind never intercepts.
+                  <SortableContext items={currentItems.map((item) => item.id)} strategy={rectSortingStrategy}>
+                     <div data-drawer-items-area className={isCompactDrawer ? 'flex flex-col gap-1' : 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3'}>
+                        {currentItems.map((item) => {
+                           const commonProps = {
+                              item,
+                              parentFolderId: currentFolderId,
+                              onRename: () => setActiveAction({ id: cuid(), type: 'rename-item', target: item }),
+                              onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: item }),
+                              onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: item }),
+                           };
+                           return isCompactDrawer
+                              ? <DrawerCompactItemEntry key={item.id} {...commonProps} />
+                              : <DrawerItemEntry key={item.id} {...commonProps} />;
+                        })}
+                     </div>
+                  </SortableContext>
                ) : (
                   <EmptyState message={t('Drawer.emptyFolder')} />
                )}
