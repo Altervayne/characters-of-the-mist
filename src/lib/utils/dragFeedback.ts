@@ -339,20 +339,21 @@ export type DrawerDropTarget = { kind: 'folder'; id: string } | { kind: 'current
  * remounting context, so its collision only fires near a folder's center; this reads
  * `getBoundingClientRect()` against the cursor so a drop anywhere on a row lands.
  *
- * A folder ROW (excluding the dragged folder) drops INTO that folder; anywhere else
- * inside the drawer panel, the Back button, the items body, headers, gaps, drops
- * into the CURRENT folder. Folder rows are checked first so they win over the panel.
+ * A folder ROW (excluding the dragged folder) drops INTO that folder; the items body
+ * (where the items live, or the empty-folder placeholder) drops into the CURRENT
+ * folder. Chrome - the header, breadcrumb, search, folder-nav - is NOT a target, so
+ * hovering it shows no glyph. Folder rows are checked first so they win over the body.
  *
  * @param folders - The visible folder rows with their measured rects.
- * @param drawerPanel - The whole drawer panel's rect (the "current folder" catch-all).
+ * @param itemsArea - The items-body rect (the "current folder" catch-all); chrome is excluded.
  * @param x - Cursor clientX.
  * @param y - Cursor clientY.
  * @param draggedFolderId - The folder being dragged (excluded as a target), or null.
- * @returns The drop target under the cursor, or null when outside the drawer.
+ * @returns The drop target under the cursor, or null over chrome / outside the drawer.
  */
 export function resolveDrawerDropTarget(
    folders: SpringHitArea[],
-   drawerPanel: LaneRect | null,
+   itemsArea: LaneRect | null,
    x: number,
    y: number,
    draggedFolderId: string | null,
@@ -361,7 +362,7 @@ export function resolveDrawerDropTarget(
       if (folder.id === draggedFolderId) continue;
       if (pointInRect(folder.rect, x, y)) return { kind: 'folder', id: folder.id };
    }
-   if (drawerPanel && pointInRect(drawerPanel, x, y)) return { kind: 'current-folder' };
+   if (itemsArea && pointInRect(itemsArea, x, y)) return { kind: 'current-folder' };
    return null;
 }
 

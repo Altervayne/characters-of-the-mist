@@ -311,6 +311,8 @@ function DesktopCharacterSheetPage() {
                      workspaceDwellKey={workspaceDwellKey}
                      activeDragId={activeDragItem?.id ?? null}
                      overDragId={overDragId}
+                     drawerDropTarget={drawerDropTarget}
+                     springTargetId={springTarget}
                   />
                }
             </AnimatePresence>

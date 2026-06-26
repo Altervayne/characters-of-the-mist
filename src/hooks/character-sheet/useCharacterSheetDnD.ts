@@ -351,7 +351,13 @@ export function useCharacterSheetDnD() {
       lastPointerRef.current = { x: event.clientX, y: event.clientY };
 
       const rect = tabStripElRef.current?.getBoundingClientRect() ?? null;
-      const overLane = isOverTabLaneFor(dragKindRef.current, rect, event.clientX, event.clientY);
+      // The expanded Library overlays the tab strip, so the strip is unreachable - its generous "open as
+      // tab" lane must NOT engage, or a character dragged over the Library header / breadcrumb (which sit
+      // within that lane) falsely reads as "open as tab" (a stray + glyph). When receded for See-Workspace
+      // the strip is revealed again, so the lane is only suppressed while the Library actually covers it.
+      const generalState = useAppGeneralStateStore.getState();
+      const tabStripCovered = generalState.isDrawerExpanded && !generalState.isDrawerReceded;
+      const overLane = !tabStripCovered && isOverTabLaneFor(dragKindRef.current, rect, event.clientX, event.clientY);
       if (overLane !== isOverTabLaneRef.current) {
          isOverTabLaneRef.current = overLane;
          setIsOverTabLane(overLane);
@@ -390,16 +396,17 @@ export function useCharacterSheetDnD() {
 
       // The instantaneous in-drawer drop target (NOT the dwell target): the source of
       // truth for an in-drawer move at drop, replacing dnd-kit's center-only collision.
-      // Back is NOT a drop target, over it (or anywhere in the drawer that isn't a
-      // folder row) resolves to the current folder, read live at drop. During the
-      // post-nav grace, force the current folder so a row that reflowed under the
-      // stationary cursor (Back vanishing at root) isn't an accidental target.
+      // A folder row nests; the items body resolves to the current folder; chrome (the
+      // header, breadcrumb, search, folder-nav) resolves to nothing - so no glyph there.
+      // During the post-nav grace, force the current folder (anywhere in the panel) so a
+      // row that reflowed under the stationary cursor (Back vanishing at root) isn't an
+      // accidental target, and a dwell-Back-then-release still lands in the new folder.
       const inDrawerPanel = !!drawerPanelRect &&
          event.clientX >= drawerPanelRect.left && event.clientX <= drawerPanelRect.right &&
          event.clientY >= drawerPanelRect.top && event.clientY <= drawerPanelRect.bottom;
       hoveredDrawerTargetRef.current = navGraceAnchorRef.current
          ? (inDrawerPanel ? { kind: 'current-folder' } : null)
-         : resolveDrawerDropTarget(folders, drawerPanelRect, event.clientX, event.clientY, draggedFolderIdRef.current);
+         : resolveDrawerDropTarget(folders, itemsAreaRect, event.clientX, event.clientY, draggedFolderIdRef.current);
 
       // Mirror the resolved target into reactive state for the drop indicators, scoped to
       // the resolver-driven drags (drawer moves) and committed only when the target's key

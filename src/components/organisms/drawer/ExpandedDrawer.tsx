@@ -33,10 +33,16 @@ import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
+// -- Component Imports (drag feedback) --
+import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwellAffordance';
+
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
-import { SPRING_HOLD_MS } from '@/lib/utils/dragFeedback';
+import { SPRING_HOLD_MS, SPRING_BACK_KEY } from '@/lib/utils/dragFeedback';
+
+// -- Type Imports --
+import type { DrawerDropTarget } from '@/lib/utils/dragFeedback';
 
 /*
  * The Expanded drawer: a roomy library that takes over the workspace area (the TabStrip + sheet/board
@@ -59,9 +65,13 @@ interface ExpandedDrawerProps {
    /** The dragged item/folder id + the dnd-kit `over` id, for the folder reorder slots (as in the side panel). */
    activeDragId: string | null;
    overDragId: string | null;
+   /** The resolved in-drawer drop target, for the folder-row highlight (same prop chain the side panel gets). */
+   drawerDropTarget?: DrawerDropTarget | null;
+   /** The active spring-dwell target key, for the folder + Back dwell affordance cues. */
+   springTargetId?: string | null;
 }
 
-export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDragId, overDragId }: ExpandedDrawerProps) {
+export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDragId, overDragId, drawerDropTarget = null, springTargetId = null }: ExpandedDrawerProps) {
    const { t } = useTranslation();
    // Receded = slid aside to reveal the workspace (set by the DnD layer's dwell); only true mid-drag.
    const isReceded = useAppGeneralStateStore((state) => state.isDrawerReceded);
@@ -193,9 +203,12 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                )}
 
                {currentFolderId && (
-                  <div onClick={() => navigateToFolder(parentFolderId)} className="relative flex h-10 cursor-pointer items-center gap-2 rounded bg-card p-2 mt-2 hover:bg-muted transition-colors" role="button">
+                  // `data-drawer-back` makes this a Back hit-area for the drag dwell (read live by the
+                  // pointer-move resolver), so dwelling it spring-navigates up - exactly like the side panel.
+                  <div data-drawer-back onClick={() => navigateToFolder(parentFolderId)} className="relative flex h-10 cursor-pointer items-center gap-2 rounded bg-card p-2 mt-2 hover:bg-muted transition-colors" role="button">
                      <ArrowLeft className="h-5 w-5" />
                      <span className="text-sm font-medium">{t('Drawer.Actions.moveUp')}</span>
+                     <SpringDwellAffordance active={springTargetId === SPRING_BACK_KEY} />
                   </div>
                )}
 
@@ -216,7 +229,8 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                            <DrawerFolderEntry
                               folder={folder}
                               parentFolderId={currentFolderId}
-                              isOver={false}
+                              isOver={drawerDropTarget?.kind === 'folder' && drawerDropTarget.id === folder.id}
+                              isSpringTarget={springTargetId === folder.id}
                               onNavigate={navigateToFolder}
                               onRename={() => setActiveAction({ id: cuid(), type: 'rename-folder', target: folder })}
                               onDelete={() => setActiveAction({ id: cuid(), type: 'delete-folder', target: folder })}
@@ -267,7 +281,12 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                         <EmptyState message={t('Drawer.search.noMatches')} />
                      )}
                   </div>
-               ) : isContentLoading ? (
+               ) : (
+                  // The whole browse item region - grid, loading skeleton, or the empty placeholder - is
+                  // the current-folder drop target (matching the side panel), so a drop in the body lands
+                  // here while the header / breadcrumb / folder-nav chrome stays inert (no glyph).
+                  <div data-drawer-items-area className="min-h-full">
+                  {isContentLoading ? (
                   // Navigating to a new folder: a grid of card placeholders instead of the stale items.
                   <DrawerGridSkeleton compact={isCompactDrawer} />
                ) : currentItems.length > 0 ? (
@@ -275,7 +294,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                   // Items reorder via the grid live-shuffle (rectSortingStrategy); the `over` is resolved from
                   // live geometry in customCollisionDetection so the workspace behind never intercepts.
                   <SortableContext items={currentItems.map((item) => item.id)} strategy={rectSortingStrategy}>
-                     <div data-drawer-items-area className={isCompactDrawer ? 'flex flex-col gap-1' : 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3'}>
+                     <div className={isCompactDrawer ? 'flex flex-col gap-1' : 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3'}>
                         {currentItems.map((item) => {
                            const commonProps = {
                               item,
@@ -292,6 +311,8 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                   </SortableContext>
                ) : (
                   <EmptyState message={t('Drawer.emptyFolder')} />
+               )}
+                  </div>
                )}
             </main>
          </motion.div>
