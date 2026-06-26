@@ -284,8 +284,16 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                ) : (
                   // The whole browse item region - grid, loading skeleton, or the empty placeholder - is
                   // the current-folder drop target (matching the side panel), so a drop in the body lands
-                  // here while the header / breadcrumb / folder-nav chrome stays inert (no glyph).
-                  <div data-drawer-items-area className="min-h-full">
+                  // here while the header / breadcrumb / folder-nav chrome stays inert (no glyph). It shows
+                  // the same dropzone cue as the side panel when a drawer move resolves to the viewed folder
+                  // (the transparent border is always reserved, so lighting up never shifts the grid).
+                  <div
+                     data-drawer-items-area
+                     className={cn(
+                        'min-h-full rounded-md border-2 border-dashed border-transparent p-1 transition-all duration-200 ease-in-out',
+                        drawerDropTarget?.kind === 'current-folder' && 'border-primary bg-primary/10',
+                     )}
+                  >
                   {isContentLoading ? (
                   // Navigating to a new folder: a grid of card placeholders instead of the stale items.
                   <DrawerGridSkeleton compact={isCompactDrawer} />

@@ -857,7 +857,7 @@ export function useCharacterSheetDnD() {
       // through to the dnd-kit reorder path below.
       const activeIsDrawerMove =
          dragKind === 'drawer-character' || dragKind === 'drawer-component' || dragKind === 'drawer-folder';
-      if (activeIsDrawerMove && manualDrawerTarget) {
+      if (activeIsDrawerMove) {
          const draggedId = active.id.toString();
          const isFolderDrag = dragKind === 'drawer-folder';
 
@@ -865,7 +865,9 @@ export function useCharacterSheetDnD() {
          // folder-row / current-folder handling so the user lands where the highlighted slot
          // shows. When the dragged folder is already in this view it is a pure reorder; when
          // it arrived via a spring navigation it is moved into the current folder and then
-         // slotted into place (an append + reorder, hence two undo steps).
+         // slotted into place (an append + reorder, hence two undo steps). Driven by dnd-kit's
+         // `over` (the drop-zone droppable), so it must run independently of the geometry resolver:
+         // the slots sit in the folder-nav region the resolver excludes, so its target is null there.
          if (isFolderDrag && over?.data.current?.type === 'drawer-drop-zone') {
             const destParentId = useDrawerStore.getState().currentFolderId ?? null;
             // Folder scope comes from the folder-tree cache (the store no longer carries folders).
@@ -895,29 +897,34 @@ export function useCharacterSheetDnD() {
             return;
          }
 
-         if (manualDrawerTarget.kind === 'folder') {
-            if (manualDrawerTarget.id !== draggedId) {
-               if (isFolderDrag) void moveFolder(draggedId, manualDrawerTarget.id);
-               else void moveItem(draggedId, manualDrawerTarget.id);
+         // The remaining in-drawer drops need the geometry-resolved target: nest onto a folder ROW, or
+         // move into the VIEWED folder (the items body / Back). When it is null - the cursor is over
+         // chrome (header / breadcrumb / search) - there is nothing more to do here.
+         if (manualDrawerTarget) {
+            if (manualDrawerTarget.kind === 'folder') {
+               if (manualDrawerTarget.id !== draggedId) {
+                  if (isFolderDrag) void moveFolder(draggedId, manualDrawerTarget.id);
+                  else void moveItem(draggedId, manualDrawerTarget.id);
+               }
+               return;
             }
-            return;
+            // current-folder: move into the folder being VIEWED, unless the dragged item is
+            // ALREADY a child of it (then fall through to reorder). The source of truth is
+            // the loaded current-folder view, NOT the drag data's `parentFolderId`, which is
+            // stale/null after a spring navigation (it reported ROOT for an item dragged from
+            // a folder, making a real cross-folder drop look like a same-folder no-op).
+            const currentFolderId = useDrawerStore.getState().currentFolderId ?? null;
+            const view = useDrawerStore.getState().currentFolderView;
+            const alreadyInCurrentFolder = isFolderDrag
+               ? getChildFolders(currentFolderId).some((f) => f.id === draggedId)
+               : (view?.items ?? []).some((i) => i.id === draggedId);
+            if (!alreadyInCurrentFolder) {
+               if (isFolderDrag) void moveFolder(draggedId, currentFolderId ?? undefined);
+               else void moveItem(draggedId, currentFolderId ?? undefined);
+               return;
+            }
+            // Already in the current folder → fall through to the dnd-kit reorder path below.
          }
-         // current-folder: move into the folder being VIEWED, unless the dragged item is
-         // ALREADY a child of it (then fall through to reorder). The source of truth is
-         // the loaded current-folder view, NOT the drag data's `parentFolderId`, which is
-         // stale/null after a spring navigation (it reported ROOT for an item dragged from
-         // a folder, making a real cross-folder drop look like a same-folder no-op).
-         const currentFolderId = useDrawerStore.getState().currentFolderId ?? null;
-         const view = useDrawerStore.getState().currentFolderView;
-         const alreadyInCurrentFolder = isFolderDrag
-            ? getChildFolders(currentFolderId).some((f) => f.id === draggedId)
-            : (view?.items ?? []).some((i) => i.id === draggedId);
-         if (!alreadyInCurrentFolder) {
-            if (isFolderDrag) void moveFolder(draggedId, currentFolderId ?? undefined);
-            else void moveItem(draggedId, currentFolderId ?? undefined);
-            return;
-         }
-         // Already in the current folder → fall through to the dnd-kit reorder path below.
       }
 
       if (!over || active.id === over.id) {
