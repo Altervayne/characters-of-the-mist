@@ -16,6 +16,7 @@ import { CharacterSheetPreview } from '@/components/molecules/CharacterSheetPrev
 import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
 import { FitToBox } from '@/components/molecules/drawer/FitToBox';
 import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
+import { IconTooltip } from '@/components/molecules/drawer/IconTooltip';
 
 // -- Utils Imports --
 import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
@@ -216,6 +217,9 @@ export function DrawerItemPreview({
       );
    };
 
+   // The game glyph (null for NEUTRAL items, which carry no game badge).
+   const glyph = gameGlyph(item.game);
+
    return (
       // Uniform card: a FIXED preview area (every type's preview is fit into it), then the name, then a
       // meta row (type glyph + game glyph + date). Same footprint regardless of type.
@@ -231,10 +235,11 @@ export function DrawerItemPreview({
             {headerAction}
          </div>
 
-         {/* Meta: app-themed chrome (the game glyph is content's color via the icon, but the row is muted). */}
+         {/* Meta: app-themed chrome (the game glyph is content's color via the icon, but the row is muted).
+             Each indicator icon gets a hover label naming it - the type and the game - so they're not a guess. */}
          <div className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
-            {getItemTypeIcon(item.type)}
-            {gameGlyph(item.game)}
+            <IconTooltip label={t(`Drawer.filters.itemType.${item.type}`)}>{getItemTypeIcon(item.type)}</IconTooltip>
+            {glyph && <IconTooltip label={t(`Drawer.Types.${item.game}`)}>{glyph}</IconTooltip>}
             <ItemDateLabel type={item.type} createdAt={item.createdAt} updatedAt={item.updatedAt} className="truncate" />
          </div>
       </div>

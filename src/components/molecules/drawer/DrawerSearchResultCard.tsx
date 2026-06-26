@@ -18,6 +18,7 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
 import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
+import { IconTooltip } from '@/components/molecules/drawer/IconTooltip';
 import { DrawerResultMenu } from '@/components/molecules/drawer/DrawerResultMenu';
 
 // -- Type Imports --
@@ -53,6 +54,7 @@ function gameGlyph(game: GameSystem): ReactElement | null {
  */
 function ResultCardShell({ summary, menu, removed = false }: { summary: DrawerItemSummary; menu: ReactNode; removed?: boolean }) {
    const { t } = useTranslation();
+   const glyph = gameGlyph(summary.game);
    return (
       <div className="relative flex flex-col gap-2 rounded-md border-2 border-border bg-card/75 p-2">
          <div className="flex aspect-[19/10] w-full items-center justify-center overflow-hidden rounded-md bg-popover/30">
@@ -64,8 +66,9 @@ function ResultCardShell({ summary, menu, removed = false }: { summary: DrawerIt
          <p className="min-w-0 truncate px-1 text-sm font-semibold">{summary.name}</p>
 
          <div className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
-            {getItemTypeIcon(summary.type)}
-            {gameGlyph(summary.game)}
+            {/* Hover labels name the indicator icons (type + game), so they aren't a guess. */}
+            <IconTooltip label={t(`Drawer.filters.itemType.${summary.type}`)}>{getItemTypeIcon(summary.type)}</IconTooltip>
+            {glyph && <IconTooltip label={t(`Drawer.Types.${summary.game}`)}>{glyph}</IconTooltip>}
             <ItemDateLabel type={summary.type} createdAt={summary.createdAt} updatedAt={summary.updatedAt} className="truncate" />
          </div>
 

@@ -1,5 +1,6 @@
 // -- React Imports --
 import type { ReactElement, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -21,11 +22,14 @@ import type { GeneralItemType, GameSystem } from '@/lib/types/drawer';
  * those slots can hover-reveal (`group-hover/row:opacity-100`) without reflow.
  */
 
-/** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
-function gameGlyph(game: GameSystem): ReactElement | null {
+/**
+ * The game glyph element (resolved in this module helper, not in render); neutral items have none. The
+ * dense rows use a native `title` (a lightweight hover label, no per-row tooltip machinery) to name it.
+ */
+function gameGlyph(game: GameSystem, title: string): ReactElement | null {
    if (game === 'NEUTRAL') return null;
    const Icon = getGameVisual(game).Icon;
-   return <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />;
+   return <span title={title} className="inline-flex shrink-0"><Icon className="h-4 w-4 shrink-0 text-muted-foreground" /></span>;
 }
 
 interface DrawerListRowProps {
@@ -42,12 +46,14 @@ interface DrawerListRowProps {
 }
 
 export function DrawerListRow({ type, name, game, createdAt, updatedAt, leading, trailing, className }: DrawerListRowProps) {
+   const { t } = useTranslation();
    return (
       <div className={cn('group/row flex min-h-8 items-center gap-2 rounded py-1 pl-1 pr-2 hover:bg-muted data-[state=open]:bg-muted', className)}>
          {leading}
-         {getItemTypeIcon(type)}
+         {/* Native title hover labels name the otherwise-unlabelled indicator icons (type + game). */}
+         <span title={t(`Drawer.filters.itemType.${type}`)} className="inline-flex shrink-0">{getItemTypeIcon(type)}</span>
          <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
-         {gameGlyph(game)}
+         {gameGlyph(game, t(`Drawer.Types.${game}`))}
          <ItemDateLabel
             type={type}
             createdAt={createdAt}
