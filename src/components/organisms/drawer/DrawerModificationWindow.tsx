@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
 // -- Icon Imports --
 import { X } from 'lucide-react';
 
@@ -23,10 +26,13 @@ interface DrawerModificationWindowProps {
    action: ActiveAction;
    onClose: () => void;
    onConfirm: (value?: string) => void;
+   // 'slideUp' (side panel, default) keeps the top border for the bottom sheet; 'modal' (Library) drops
+   // it so it doesn't double up the centered card's own chrome, which the wrapper owns.
+   variant?: 'slideUp' | 'modal';
 };
 
 export const DrawerModificationWindow = React.forwardRef<HTMLInputElement, DrawerModificationWindowProps>(
-   function DrawerModificationWindow({ action, onClose, onConfirm }, ref) {
+   function DrawerModificationWindow({ action, onClose, onConfirm, variant = 'slideUp' }, ref) {
       const { t } = useTranslation();
 
       const handleSubmit = (e: React.FormEvent) => {
@@ -107,7 +113,7 @@ export const DrawerModificationWindow = React.forwardRef<HTMLInputElement, Drawe
 
 
       return (
-         <div className="bg-background border-t p-4">
+         <div className={cn('bg-background p-4', variant === 'slideUp' && 'border-t')}>
             <div className="flex justify-between items-center mb-4">
                <h3 className="font-semibold">{title}</h3>
                <Button variant="ghost" size="icon" className="h-6 w-6 cursor-pointer" onClick={onClose}>

@@ -296,25 +296,34 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
             </main>
          </motion.div>
 
-         {/* The modification window (rename / delete / move / add-folder), as in the side panel. */}
+         {/* The modification window (rename / delete / move / add-folder). On this full-screen surface it
+             reads as a centered modal over the backdrop, not the side panel's narrow bottom slide-up. */}
          {activeAction && <div className="absolute inset-0 bg-black/40" />}
          <AnimatePresence>
             {activeAction && (
                <motion.div
                   key={activeAction.id}
-                  initial={{ y: '100%' }}
-                  animate={{ y: 0 }}
-                  exit={{ y: '100%' }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
                   onAnimationComplete={handleAnimationComplete}
-                  className="absolute inset-x-0 bottom-0 z-10 mx-auto max-w-md"
+                  className="absolute inset-0 z-10 flex items-center justify-center p-4"
                >
-                  <DrawerModificationWindow
-                     ref={inputRef}
-                     action={activeAction}
-                     onClose={handleCloseModificationWindow}
-                     onConfirm={handleConfirmAction}
-                  />
+                  {/* The card chrome lives here, so the inner content drops its slide-up border. Move gets a
+                      touch more width - its folder navigator is cramped at the rename/delete size. */}
+                  <div className={cn(
+                     'w-full overflow-hidden rounded-lg border-2 border-border bg-card shadow-xl',
+                     activeAction.type === 'move-item' || activeAction.type === 'move-folder' ? 'max-w-lg' : 'max-w-md',
+                  )}>
+                     <DrawerModificationWindow
+                        ref={inputRef}
+                        action={activeAction}
+                        onClose={handleCloseModificationWindow}
+                        onConfirm={handleConfirmAction}
+                        variant="modal"
+                     />
+                  </div>
                </motion.div>
             )}
          </AnimatePresence>
