@@ -194,19 +194,30 @@ function DesktopCharacterSheetPage() {
 
    return (
       <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
-         <div className="flex bg-background text-foreground" style={{ height: '100dvh', width: '100dvw' }}>
-            <SidebarMenu 
-               isEditing={isEditing}
-               isDrawerOpen={isDrawerOpen}
-               isCollapsed={isSidebarCollapsed}
-               activeWindow={ activeBoard ? 'BOARD' : (character ? 'PLAY_AREA' : 'MAIN_MENU') }
-               onToggleEditing={() => setIsEditing(!isEditing)}
-               onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
-               onToggleCollapse={toggleSidebarCollapsed}
-               onOpenSettings={() => setSettingsOpen(true)}
-               onOpenInfo={() => setInfoOpen(true)}
-               onOpenPatchNotes={() => setPatchNotesOpen(true)}
-            />
+         {/* The shell is a fixed viewport: `relative` anchors the Expanded overlay, `overflow-hidden`
+             clips its recede off-screen so no state ever scrolls the page. */}
+         <div className="relative flex overflow-hidden bg-background text-foreground" style={{ height: '100dvh', width: '100dvw' }}>
+            {/* Raised above the Expanded overlay so the sidebar always stays exposed (the overlay's left
+                edge tucks behind it). */}
+            <div className="relative z-40 flex">
+               <SidebarMenu
+                  isEditing={isEditing}
+                  isDrawerOpen={isDrawerOpen}
+                  isCollapsed={isSidebarCollapsed}
+                  activeWindow={ activeBoard ? 'BOARD' : (character ? 'PLAY_AREA' : 'MAIN_MENU') }
+                  onToggleEditing={() => setIsEditing(!isEditing)}
+                  onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
+                  onToggleCollapse={toggleSidebarCollapsed}
+                  onOpenSettings={() => setSettingsOpen(true)}
+                  onOpenInfo={() => setInfoOpen(true)}
+                  onOpenPatchNotes={() => setPatchNotesOpen(true)}
+               />
+            </div>
+
+            {/* Everything right of the sidebar: the workspace column + the side panel, and the Expanded
+                overlay that covers exactly this region (so it starts at the sidebar's right edge, never
+                under it). `overflow-hidden` clips the overlay's recede off-screen - no page scroll. */}
+            <div className="relative flex flex-1 min-w-0 overflow-hidden">
 
             {/* Character Sheet Area. `min-w-0` caps this flex item to its allocation so
                 the tab strip scrolls instead of growing the item and pushing the
@@ -272,12 +283,9 @@ function DesktopCharacterSheetPage() {
                   <FileDragOverlay isDragActive={isFileDragActive} />
                </div>
 
-               {/* Expanded drawer: an overlay over the workspace area (TabStrip + sheet/board stay mounted
-                   behind it; the sidebar is outside this column, so it stays visible). */}
-               {isDrawerExpanded && <ExpandedDrawer isItemDragActive={isDrawerItemDragActive} workspaceDwellKey={workspaceDwellKey} />}
             </div>
 
-            {/* Drawer (Open side panel). Hidden while Expanded - the takeover renders in the workspace column. */}
+            {/* Drawer (Open side panel). Hidden while Expanded - the takeover renders over the whole row. */}
             <AnimatePresence>
                {isDrawerOpen && !isDrawerExpanded &&
                   <Drawer
@@ -289,6 +297,20 @@ function DesktopCharacterSheetPage() {
                   />
                }
             </AnimatePresence>
+
+            {/* Expanded drawer: an overlay over this whole region (TabStrip + sheet/board + side-panel
+                region stay behind it; the sidebar is outside it, so it stays visible). It grows in from
+                the right and recedes for See-Workspace - kept MOUNTED throughout so a live drag survives. */}
+            <AnimatePresence>
+               {isDrawerExpanded &&
+                  <ExpandedDrawer
+                     key="expanded-drawer"
+                     isItemDragActive={isDrawerItemDragActive}
+                     workspaceDwellKey={workspaceDwellKey}
+                  />
+               }
+            </AnimatePresence>
+            </div>
          </div>
 
 

@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -99,16 +99,42 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
    const isDwellingStrip = workspaceDwellKey === 'see-workspace';
    const isDwellingEdge = workspaceDwellKey === 'reexpand';
 
+   // The right-anchored grow animates width to the parent's measured PIXEL width: framer can't tween
+   // width between mixed units (25rem -> 100%), so it snaps; a px target tweens cleanly. Tracked live so
+   // a sidebar collapse / viewport resize keeps the full extent correct.
+   const overlayRef = useRef<HTMLDivElement>(null);
+   const [fullWidth, setFullWidth] = useState<number | null>(null);
+   useLayoutEffect(() => {
+      const parent = overlayRef.current?.parentElement;
+      if (!parent) return;
+      const measure = () => setFullWidth(parent.clientWidth);
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(parent);
+      return () => observer.disconnect();
+   }, []);
+
    return (
-      <>
-      {/* Overlay covering the main content area (the workspace stays mounted behind it). One DndContext
-          (the page's) still spans everything - this adds none. When receded it slides DOWN and goes
-          pointer-transparent but STAYS MOUNTED, so the live drag (its source node inside) is never
-          cancelled and the cursor reaches the revealed workspace drop zones. */}
-      <div className={cn(
-         'absolute inset-0 z-30 flex flex-col bg-background transition-transform duration-300 ease-in-out',
-         isReceded && 'pointer-events-none translate-y-full',
-      )}>
+      // The Library overlay sits over the whole top row (the workspace stays mounted behind it; the
+      // sidebar is raised above it, so only the sidebar stays exposed). It GROWS IN from the right -
+      // a continuous right-anchored expansion of the side drawer, so the side panel's removal and the
+      // column reflow happen unseen beneath it, with no pop. One DndContext (the page's) spans
+      // everything; this adds none. overflow-hidden clips the recede off-screen (no page scroll).
+      <motion.div
+         ref={overlayRef}
+         className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
+         initial={{ width: '25rem' }}
+         animate={{ width: fullWidth ?? '100%' }}
+         exit={{ width: '25rem' }}
+         transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
+         {/* The Library surface. When receded it slides DOWN (clipped by the overlay above, so off-screen
+             with no page scroll) and goes pointer-transparent, but STAYS MOUNTED so the live drag is never
+             cancelled and the cursor reaches the revealed workspace. */}
+         <div className={cn(
+            'pointer-events-auto relative flex h-full w-full flex-col bg-background transition-transform duration-300 ease-in-out',
+            isReceded && 'translate-y-full',
+         )}>
          {/* Header: title, the shared search bar, contract + close. */}
          <header className="shrink-0 border-b-2 border-border p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
@@ -258,26 +284,26 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
                <span className="relative">{t('Drawer.seeWorkspace')}</span>
             </div>
          )}
-      </div>
-
-      {/* Re-expand edge: a SIBLING of the overlay (not inside it), so it stays put + interactive while
-          the overlay is slid away. Dwelling it re-expands without dropping - the out for an accidental
-          recede. Only present while receded (which only happens mid-drag). */}
-      {isReceded && (
-         <div
-            data-reexpand-drawer
-            className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex h-12 items-center justify-center gap-2 overflow-hidden border-t-2 border-primary/50 bg-background/95 text-sm font-semibold text-foreground"
-         >
-            <span
-               aria-hidden
-               className="absolute inset-y-0 left-0 bg-primary/25 ease-linear"
-               style={{ width: isDwellingEdge ? '100%' : '0%', transition: `width ${isDwellingEdge ? SPRING_HOLD_MS : 0}ms linear` }}
-            />
-            <ChevronsUp className="relative h-5 w-5" />
-            <span className="relative">{t('Drawer.reexpand')}</span>
          </div>
-      )}
-      </>
+
+         {/* Re-expand edge: a SIBLING of the recede surface (NOT transformed), so it stays put +
+             interactive at the bottom while the Library slides away. Dwelling it re-expands without
+             dropping - the out for an accidental recede. Only present while receded (mid-drag). */}
+         {isReceded && (
+            <div
+               data-reexpand-drawer
+               className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex h-12 items-center justify-center gap-2 overflow-hidden border-t-2 border-primary/50 bg-background/95 text-sm font-semibold text-foreground"
+            >
+               <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 bg-primary/25 ease-linear"
+                  style={{ width: isDwellingEdge ? '100%' : '0%', transition: `width ${isDwellingEdge ? SPRING_HOLD_MS : 0}ms linear` }}
+               />
+               <ChevronsUp className="relative h-5 w-5" />
+               <span className="relative">{t('Drawer.reexpand')}</span>
+            </div>
+         )}
+      </motion.div>
    );
 }
 
