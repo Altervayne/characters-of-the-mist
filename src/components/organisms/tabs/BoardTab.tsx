@@ -16,6 +16,12 @@ import { CloseTabDialog } from '@/components/organisms/dialogs/CloseTabDialog';
 import { getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 
+// -- Constants --
+import { BOARD_VISUAL } from '@/lib/constants/gameVisuals';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
 
@@ -49,7 +55,7 @@ export function BoardTab({ tab, isActive }: { tab: OpenTab; isActive: boolean })
    const icon = (
       <span
          aria-hidden
-         className="flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25 bg-gradient-to-br from-sky-500 to-indigo-600"
+         className={cn('flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25', BOARD_VISUAL.gradient)}
       >
          <LayoutGrid className="h-4 w-4 text-white" />
       </span>

@@ -16,7 +16,7 @@ import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
 
 // -- Constants --
-import { getGameVisual } from '@/lib/constants/gameVisuals';
+import { getGameVisual, BOARD_VISUAL } from '@/lib/constants/gameVisuals';
 
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
@@ -88,7 +88,7 @@ function BoardTabPreview({ tab }: { tab: OpenTab }) {
          icon={
             <div
                aria-hidden
-               className="ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25 bg-gradient-to-br from-sky-500 to-indigo-600"
+               className={cn('ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25', BOARD_VISUAL.gradient)}
             >
                <LayoutGrid className="h-4 w-4 text-white" />
             </div>

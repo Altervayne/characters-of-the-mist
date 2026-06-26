@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 
 // -- Constants --
-import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
+import { GAME_VISUALS, GAME_CARD_OPTIONS, BOARD_VISUAL } from '@/lib/constants/gameVisuals';
 
 // -- Type Imports --
 import type { GameSystem } from '@/lib/types/drawer';
@@ -76,8 +76,8 @@ export function TabTypeChooser({ onChoose }: TabTypeChooserProps) {
                onClick={pickBoard}
                title={t('Tabs.newTabDialog.newBoardTitle')}
                subtitle={t('Tabs.newTabDialog.newBoardSubtitle')}
-               gradient="bg-gradient-to-br from-sky-500 to-indigo-600"
-               icon={<LayoutGrid className="h-6 w-6 text-sky-500" />}
+               gradient={BOARD_VISUAL.gradient}
+               icon={<LayoutGrid className={cn('h-6 w-6', BOARD_VISUAL.accentText)} />}
             />
          </section>
       </div>

@@ -60,6 +60,19 @@ export function getGameVisual(game: GameSystem | undefined | null): GameVisual {
    return GAME_VISUALS[game ?? 'NEUTRAL'];
 }
 
+/**
+ * The Board's fixed identity accent - emerald/green, deliberately outside the games' palette (Legends
+ * amber, City purple, Otherscape cyan) so a board tab never reads as an Otherscape one. A
+ * feature-identity colour like the game brands above, NOT a theme token. Shared by the board tab badge,
+ * its drag clone, and the New Tab "New Board" card so the three can't drift.
+ */
+export const BOARD_VISUAL = {
+   /** Coloured icon on a card (the New Tab board card's glyph). */
+   accentText: 'text-emerald-500',
+   /** The solid wash behind a white board glyph (the tab badge + its drag clone, the chooser card). */
+   gradient: 'bg-gradient-to-br from-emerald-500 to-green-600',
+} as const;
+
 /** A selectable game in the MainMenu / New Tab pickers, with its translation keys. */
 export interface GameCardOption {
    game: GameSystem;
