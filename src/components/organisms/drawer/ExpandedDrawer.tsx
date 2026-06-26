@@ -137,13 +137,13 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
       <motion.div
          ref={overlayRef}
          className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
-         initial={{ width: '25rem' }}
+         initial={{ width: '22rem' }}
          animate={{ width: fullWidth ?? '100%' }}
          // Exit depends on WHY it left (AnimatePresence's custom = isDrawerOpen at exit): CONTRACT (still
          // open) shrinks back toward the side-panel width, handing off to the entering side panel; CLOSE
          // (no longer open) slides fully off the right edge, revealing the workspace as it goes. Both are
          // right-anchored, matching the open/expand/contract motions - one drawer growing/shrinking/sliding.
-         variants={{ exit: (open: boolean) => (open ? { width: '25rem' } : { x: '100%' }) }}
+         variants={{ exit: (open: boolean) => (open ? { width: '22rem' } : { x: '100%' }) }}
          exit="exit"
          transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
@@ -168,10 +168,12 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
          />
 
          <div className="flex min-h-0 flex-1">
-            {/* Folder side-nav. */}
-            <aside className="flex w-64 shrink-0 flex-col gap-1 overflow-y-auto border-r-2 border-border bg-popover p-3">
+            {/* Folder side-nav. Internal spacing/padding mirrors the side-panel Drawer's folder section
+                (p-2 pt-0; the inter-folder rhythm comes from the reorder slots, not a flat gap), so the
+                two read identically; only the column chrome (w-64, border, bg-popover) is Library-specific. */}
+            <aside className="flex w-64 shrink-0 flex-col overflow-y-auto border-r-2 border-border bg-popover p-2 pt-0">
                {breadcrumbPath.length > 0 && (
-                  <div className="mb-1 flex items-center gap-2">
+                  <div className="mt-2 mb-1 flex items-center gap-2">
                      <div onClick={() => navigateToFolder(null)} className="shrink-0 cursor-pointer rounded p-1 hover:bg-muted" role="button" aria-label={t('Drawer.backToRoot')}>
                         <ArrowUpToLine className="h-4 w-4" />
                      </div>
@@ -180,7 +182,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                )}
 
                {currentFolderId && (
-                  <div onClick={() => navigateToFolder(parentFolderId)} className="flex h-10 cursor-pointer items-center gap-2 rounded bg-card p-2 hover:bg-muted" role="button">
+                  <div onClick={() => navigateToFolder(parentFolderId)} className="relative flex h-10 cursor-pointer items-center gap-2 rounded bg-card p-2 mt-2 hover:bg-muted transition-colors" role="button">
                      <ArrowLeft className="h-5 w-5" />
                      <span className="text-sm font-medium">{t('Drawer.Actions.moveUp')}</span>
                   </div>

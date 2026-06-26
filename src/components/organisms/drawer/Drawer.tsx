@@ -51,7 +51,9 @@ const drawerVariants: Variants = {
       width: 0,
    },
    animate: {
-      width: "25rem",
+      // Side-panel width. A touch narrower than before so the fixed-aspect Rich cards are shorter and a
+      // couple more fit; List view stays the high-density surface. Keep in sync with the `w-88` inner panels.
+      width: "22rem",
    },
    exit: {
       width: 0,
@@ -157,9 +159,9 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
          transition={{ duration: 0.3, ease: 'easeInOut' }}
          className="bg-card border-l-2 border-border h-full flex flex-col overflow-hidden"
       >
-         <div {...getRootProps()} className="relative w-100 h-full">
+         <div {...getRootProps()} className="relative w-88 h-full">
 
-            <div className="relative w-100 h-full">
+            <div className="relative w-88 h-full">
                <motion.div
                   variants={contentVariants}
                   className="w-full p-0 h-full flex flex-col"

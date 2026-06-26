@@ -72,7 +72,7 @@ export function DrawerFolderEntry({ folder, parentFolderId, isOver, isSpringTarg
                   >
                      <SpringDwellAffordance active={isSpringTarget} />
                      <div
-                        className="flex h-8 items-center gap-2 truncate"
+                        className="flex min-h-8 min-w-0 items-center gap-2"
                         onClick={() => onNavigate(folder.id)}
                      >
                         <GripVertical
@@ -81,7 +81,9 @@ export function DrawerFolderEntry({ folder, parentFolderId, isOver, isSpringTarg
                            {...dragListeners}
                         />
                         <Folder className="h-6 w-6 shrink-0 text-muted-foreground"/>
-                        <span className="truncate hover:text-wrap font-medium text-sm">{folder.name}</span>
+                        {/* A long name wraps to two lines (then ellipsis) rather than truncating on one; the
+                            row grows to fit. Full name on hover. Short names are unaffected. */}
+                        <span title={folder.name} className="min-w-0 line-clamp-2 font-medium text-sm">{folder.name}</span>
                      </div>
 
                      <DropdownMenu>
