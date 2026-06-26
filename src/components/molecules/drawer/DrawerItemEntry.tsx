@@ -24,7 +24,7 @@ import type { DrawerItem } from '@/lib/types/drawer';
 
 
 
-export function DrawerItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item: DrawerItem, parentFolderId: string | null, onRename: () => void, onDelete: () => void, onMove: () => void }) {
+export function DrawerItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item: DrawerItem & { createdAt?: number; updatedAt?: number }, parentFolderId: string | null, onRename: () => void, onDelete: () => void, onMove: () => void }) {
    const { t } = useTranslation();
 
    const handleExport = async (e: React.MouseEvent) => {

@@ -14,7 +14,7 @@ const actions = () => useAppGeneralStateStore.getState().actions;
 
 describe('appGeneralStateStore drawer modes', () => {
    beforeEach(() => {
-      useAppGeneralStateStore.setState({ isDrawerOpen: false, isDrawerExpanded: false });
+      useAppGeneralStateStore.setState({ isDrawerOpen: false, isDrawerExpanded: false, isDrawerReceded: false });
    });
 
    it('opens to the side panel (open, not expanded)', () => {
@@ -54,5 +54,42 @@ describe('appGeneralStateStore drawer modes', () => {
       actions().setDrawerExpanded(false);
       expect(get().isDrawerExpanded).toBe(false);
       expect(get().isDrawerOpen).toBe(true);
+   });
+});
+
+describe('appGeneralStateStore See-Workspace recede', () => {
+   beforeEach(() => {
+      useAppGeneralStateStore.setState({ isDrawerOpen: false, isDrawerExpanded: false, isDrawerReceded: false });
+   });
+
+   it('setDrawerReceded recedes (dwell) and re-expands (the out / drag end)', () => {
+      actions().expandDrawer();
+      actions().setDrawerReceded(true);
+      expect(get().isDrawerReceded).toBe(true);
+      actions().setDrawerReceded(false); // dwelling the re-expand edge, or drag end / cancel
+      expect(get().isDrawerReceded).toBe(false);
+   });
+
+   it('contracting clears a recede left over from a drag', () => {
+      actions().expandDrawer();
+      actions().setDrawerReceded(true);
+      actions().contractDrawer();
+      expect(get().isDrawerReceded).toBe(false);
+      expect(get().isDrawerExpanded).toBe(false);
+   });
+
+   it('closing clears a recede', () => {
+      actions().expandDrawer();
+      actions().setDrawerReceded(true);
+      actions().setDrawerOpen(false);
+      expect(get().isDrawerReceded).toBe(false);
+   });
+
+   it('a fresh expand never starts receded', () => {
+      actions().expandDrawer();
+      actions().setDrawerReceded(true);
+      actions().contractDrawer();
+      actions().expandDrawer();
+      expect(get().isDrawerReceded).toBe(false);
    });
 });

@@ -1,0 +1,123 @@
+// -- React Imports --
+import { useTranslation } from 'react-i18next';
+import type { ReactElement, ReactNode } from 'react';
+
+// -- DnD Imports --
+import { useDraggable } from '@dnd-kit/core';
+import { DragStaticWrapper } from '@/components/dnd';
+
+// -- Hook Imports --
+import { useInView } from '@/hooks/useInView';
+import { useDrawerItemContent } from '@/hooks/drawer/useDrawerItemContent';
+
+// -- Utils Imports --
+import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
+import { getGameVisual } from '@/lib/constants/gameVisuals';
+import { DRAG_TYPES } from '@/lib/constants/dragDrop';
+
+// -- Component Imports --
+import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
+import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
+import { DrawerResultMenu } from '@/components/molecules/drawer/DrawerResultMenu';
+
+// -- Type Imports --
+import type { GameSystem } from '@/lib/types/drawer';
+import type { DrawerItemRecord } from '@/lib/drawer/drawerRecords';
+import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
+import type { DrawerSearchResultEntryProps } from '@/components/molecules/drawer/DrawerSearchResultEntry';
+
+/*
+ * The rich, lazy search result - where the content-free summary and the on-demand content loader meet.
+ * The card stays a skeleton (its name/meta drawn from the summary, available immediately) until it
+ * scrolls into view; only then does it mount the content fetch, so a 100-result search loads previews
+ * only for what the user actually sees. A deleted item settles to an unavailable card, not a spinner.
+ *
+ * A LOADED card is draggable OUT to the workspace, carrying the same DRAWER_ITEM drag data a browse item
+ * does (its content is in hand), so the existing cross-surface drop handlers embed it unchanged. A
+ * skeleton / missing card is NOT draggable (no content to embed), and results never reorder among
+ * themselves (a plain draggable, not a SortableContext member).
+ */
+
+/** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
+function gameGlyph(game: GameSystem): ReactElement | null {
+   if (game === 'NEUTRAL') return null;
+   const Icon = getGameVisual(game).Icon;
+   return <Icon className="h-4 w-4 shrink-0" />;
+}
+
+/**
+ * A card-footprint placeholder matching {@link DrawerItemPreview}: the preview area shimmers (or shows a
+ * removed note), while the name + meta come from the summary - so loading only fills the preview area,
+ * with no layout pop. The menu floats in the corner (as on a loaded card), so it doesn't shift on load.
+ * Not draggable: a skeleton / missing card has no content to embed.
+ */
+function ResultCardShell({ summary, menu, removed = false }: { summary: DrawerItemSummary; menu: ReactNode; removed?: boolean }) {
+   const { t } = useTranslation();
+   return (
+      <div className="relative flex flex-col gap-2 rounded-md border-2 border-border bg-card/75 p-2">
+         <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-md bg-popover/30">
+            {removed
+               ? <p className="px-4 text-center text-xs text-muted-foreground">{t('Drawer.search.unavailable')}</p>
+               : <div className="h-full w-full animate-pulse rounded-md bg-muted/40" />}
+         </div>
+
+         <p className="min-w-0 truncate px-1 text-sm font-semibold">{summary.name}</p>
+
+         <div className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
+            {getItemTypeIcon(summary.type)}
+            {gameGlyph(summary.game)}
+            <ItemDateLabel type={summary.type} createdAt={summary.createdAt} updatedAt={summary.updatedAt} className="truncate" />
+         </div>
+
+         <div className="absolute right-1 top-1 z-10">{menu}</div>
+      </div>
+   );
+}
+
+/**
+ * The loaded card, draggable OUT to the workspace. A plain {@link useDraggable} (NOT in a
+ * SortableContext, so no reorder); the data MATCHES a browse item's exactly, so the existing drop
+ * handlers embed it onto a board/sheet with no change. The card body carries the drag listeners; the
+ * menu is a sibling overlay (not a descendant), so the menu never starts a drag.
+ */
+function DraggableResultCard({ summary, item, menu }: { summary: DrawerItemSummary; item: DrawerItemRecord; menu: ReactNode }) {
+   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+      id: summary.id,
+      data: { type: DRAG_TYPES.DRAWER_ITEM, item, parentFolderId: summary.parentFolderId, isDrawer: true },
+   });
+
+   return (
+      <DragStaticWrapper isBeingDragged={isDragging}>
+         <div ref={setNodeRef} className="relative">
+            <div {...attributes} {...listeners} className="cursor-grab">
+               <DrawerItemPreview item={item} />
+            </div>
+            <div className="absolute right-1 top-1 z-10">{menu}</div>
+         </div>
+      </DragStaticWrapper>
+   );
+}
+
+/** Mounted only once visible, so the content fetch never fires for an off-screen card. */
+function LoadedResultCard({ summary, onJumpTo, onRename, onDelete, onMove }: DrawerSearchResultEntryProps) {
+   const { item, isMissing } = useDrawerItemContent(summary.id);
+   const menu = <DrawerResultMenu onJumpTo={onJumpTo} onRename={onRename} onMove={onMove} onDelete={onDelete} />;
+
+   // Loaded -> the draggable rich card; loading -> shimmer; settled-missing -> the removed card.
+   if (item) return <DraggableResultCard summary={summary} item={item} menu={menu} />;
+   return <ResultCardShell summary={summary} menu={menu} removed={isMissing} />;
+}
+
+export function DrawerSearchResultCard(props: DrawerSearchResultEntryProps) {
+   const { summary, onJumpTo, onRename, onDelete, onMove } = props;
+   const { ref, hasBeenVisible } = useInView<HTMLDivElement>();
+   const menu = <DrawerResultMenu onJumpTo={onJumpTo} onRename={onRename} onMove={onMove} onDelete={onDelete} />;
+
+   return (
+      <div ref={ref}>
+         {hasBeenVisible
+            ? <LoadedResultCard {...props} />
+            : <ResultCardShell summary={summary} menu={menu} />}
+      </div>
+   );
+}

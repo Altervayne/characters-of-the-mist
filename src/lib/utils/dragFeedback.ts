@@ -379,20 +379,26 @@ export function drawerDropTargetKey(target: DrawerDropTarget | null): string | n
    return target.kind === 'folder' ? `folder:${target.id}` : 'current-folder';
 }
 
-/** Options for {@link createSpringController}. */
-export interface SpringControllerOptions {
+/**
+ * Options for {@link createSpringController}. Generic over the target type so the same dwell mechanism
+ * drives both the folder/tab/back nav (default {@link SpringTarget}) and other dwells (e.g. the
+ * See-Workspace recede), which supply their own `keyOf`.
+ */
+export interface SpringControllerOptions<T = SpringTarget> {
    /** Dwell duration; defaults to {@link SPRING_HOLD_MS}. */
    holdMs?: number;
    /** Fired when the dwell completes on a target (perform the navigation here). */
-   onNavigate: (target: SpringTarget) => void;
+   onNavigate: (target: T) => void;
    /** Fired whenever the active target key changes (drive the progress affordance). */
    onTargetChange?: (key: string | null) => void;
+   /** Stable key for a target; defaults to {@link springTargetKey}. */
+   keyOf?: (target: T | null) => string | null;
 }
 
 /** The dwell timer state machine returned by {@link createSpringController}. */
-export interface SpringController {
+export interface SpringController<T = SpringTarget> {
    /** Feed the current hit-test result each pointer move (null = no target). */
-   setTarget(target: SpringTarget | null): void;
+   setTarget(target: T | null): void;
    /** Abort any pending dwell and clear the affordance (drop / drag end / cancel). */
    cancel(): void;
 }
@@ -407,8 +413,9 @@ export interface SpringController {
  * @param options - Navigation + affordance callbacks and the optional hold time.
  * @returns A controller with `setTarget` / `cancel`.
  */
-export function createSpringController(options: SpringControllerOptions): SpringController {
+export function createSpringController<T = SpringTarget>(options: SpringControllerOptions<T>): SpringController<T> {
    const holdMs = options.holdMs ?? SPRING_HOLD_MS;
+   const keyOf = options.keyOf ?? (springTargetKey as (target: T | null) => string | null);
    let currentKey: string | null = null;
    let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -421,7 +428,7 @@ export function createSpringController(options: SpringControllerOptions): Spring
 
    return {
       setTarget(target) {
-         const key = springTargetKey(target);
+         const key = keyOf(target);
          if (key === currentKey) return; // same target: let the running timer continue
          clearTimer();
          currentKey = key;

@@ -10,12 +10,14 @@ import cuid from 'cuid';
 import { Button } from '@/components/ui/button';
 
 // -- Icon Imports --
-import { ArrowLeft, ArrowUpToLine, Inbox, Minimize2, Plus, PanelRightClose } from 'lucide-react';
+import { ArrowLeft, ArrowUpToLine, ChevronsUp, Eye, Inbox, LayoutGrid, Minimize2, Plus, PanelRightClose, Rows } from 'lucide-react';
 
 // -- Component Imports --
 import { DrawerFolderEntry } from '@/components/molecules/drawer/DrawerFolderEntry';
 import { DrawerItemEntry } from '@/components/molecules/drawer/DrawerItemEntry';
+import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerCompactItemEntry';
 import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSearchResultEntry';
+import { DrawerSearchResultCard } from '@/components/molecules/drawer/DrawerSearchResultCard';
 import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
@@ -25,18 +27,37 @@ import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import { useDrawerActions, useDrawerStore, isSearchFilterActive } from '@/lib/stores/drawerStore';
 import { useDrawerNavigation } from '@/hooks/drawer/useDrawerNavigation';
 import { useDrawerActionState } from '@/hooks/drawer/useDrawerActionState';
-import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+import { SPRING_HOLD_MS } from '@/lib/utils/dragFeedback';
 
 /*
  * The Expanded drawer: a roomy library that takes over the workspace area (the TabStrip + sheet/board
- * stay mounted behind it - phase 5's "See Workspace" recedes this overlay). Folder nav down the side,
- * items in a GRID, over the SAME drawerStore + search as the Open side panel (shared search bar / sort
- * / entries - this is a second layout, not a second drawer). Browse / search / navigate only; drag is
- * deferred (a reused item entry's reorder is inert here). "Contract" returns to Open, "close" to Collapsed.
+ * stay mounted behind it). Folder nav down the side, items in a GRID, over the SAME drawerStore + search
+ * as the Open side panel (shared search bar / sort / entries - this is a second layout, not a second
+ * drawer). "Contract" returns to Open, "close" to Collapsed.
+ *
+ * See-Workspace: the workspace is hidden behind this overlay, so a drawer-item drag can't reach a
+ * board/sheet. Dwelling the bottom strip RECEDES the overlay (slides it down, STAYS MOUNTED + pointer-
+ * transparent) to reveal the workspace; the drop lands there; on drag end it slides back. The overlay
+ * must never UNMOUNT mid-drag (dnd-kit cancels the drag if the dragged item's source node unmounts), so
+ * the recede is a transform, not a conditional render. The re-expand edge is the out (dwell to return).
  */
 
-export function ExpandedDrawer() {
+interface ExpandedDrawerProps {
+   /** A drawer ITEM (not folder) is being dragged: show the See-Workspace strip. */
+   isItemDragActive: boolean;
+   /** Which recede dwell is in progress ('see-workspace' | 'reexpand' | null), for the progress cue. */
+   workspaceDwellKey: string | null;
+}
+
+export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: ExpandedDrawerProps) {
    const { t } = useTranslation();
+   // Receded = slid aside to reveal the workspace (set by the DnD layer's dwell); only true mid-drag.
+   const isReceded = useAppGeneralStateStore((state) => state.isDrawerReceded);
    const {
       currentFolderId,
       navigateToFolder,
@@ -48,6 +69,9 @@ export function ExpandedDrawer() {
 
    const { reloadCurrentFolder, clearSearch } = useDrawerActions();
    const { contractDrawer, setDrawerOpen } = useAppGeneralStateActions();
+   // The Library honors the SAME Rich/List toggle as the side panel (one shared setting, not a new flag).
+   const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
+   const { toggleCompactDrawer } = useAppSettingsActions();
 
    const searchResults = useDrawerStore((state) => state.searchResults);
    const isSearchActive = useDrawerStore((state) => isSearchFilterActive(state.searchCriteria));
@@ -72,15 +96,27 @@ export function ExpandedDrawer() {
       clearSearch();
    };
 
+   const isDwellingStrip = workspaceDwellKey === 'see-workspace';
+   const isDwellingEdge = workspaceDwellKey === 'reexpand';
+
    return (
-      // Overlay covering the main content area (the workspace stays mounted behind it). One DndContext
-      // (the page's) still spans everything - this adds none.
-      <div className="absolute inset-0 z-30 flex flex-col bg-background">
+      <>
+      {/* Overlay covering the main content area (the workspace stays mounted behind it). One DndContext
+          (the page's) still spans everything - this adds none. When receded it slides DOWN and goes
+          pointer-transparent but STAYS MOUNTED, so the live drag (its source node inside) is never
+          cancelled and the cursor reaches the revealed workspace drop zones. */}
+      <div className={cn(
+         'absolute inset-0 z-30 flex flex-col bg-background transition-transform duration-300 ease-in-out',
+         isReceded && 'pointer-events-none translate-y-full',
+      )}>
          {/* Header: title, the shared search bar, contract + close. */}
          <header className="shrink-0 border-b-2 border-border p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
                <h2 className="text-xl font-bold">{t('Drawer.expandedTitle')}</h2>
                <div className="flex items-center gap-1">
+                  <div onClick={toggleCompactDrawer} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.toggleView')} title={t('Drawer.toggleView')}>
+                     {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
+                  </div>
                   <Button variant="ghost" size="sm" className="cursor-pointer gap-2" onClick={contractDrawer} title={t('Drawer.contract')}>
                      <Minimize2 className="h-5 w-5" />
                      {t('Drawer.contract')}
@@ -141,34 +177,40 @@ export function ExpandedDrawer() {
                   <div className="flex flex-col gap-3">
                      <DrawerSortControl />
                      {searchResults && searchResults.length > 0 ? (
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
-                           {searchResults.map((summary) => (
-                              <DrawerSearchResultEntry
-                                 key={summary.id}
-                                 summary={summary}
-                                 onJumpTo={() => handleJumpToResult(summary.parentFolderId)}
-                                 onRename={() => setActiveAction({ id: cuid(), type: 'rename-item', target: summary })}
-                                 onDelete={() => setActiveAction({ id: cuid(), type: 'delete-item', target: summary })}
-                                 onMove={() => setActiveAction({ id: cuid(), type: 'move-item', target: summary })}
-                              />
-                           ))}
+                        // Rich -> a grid of lazy rich cards; List -> a single column of light rows.
+                        <div className={isCompactDrawer ? 'flex flex-col gap-2' : 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3'}>
+                           {searchResults.map((summary) => {
+                              const resultProps = {
+                                 summary,
+                                 onJumpTo: () => handleJumpToResult(summary.parentFolderId),
+                                 onRename: () => setActiveAction({ id: cuid(), type: 'rename-item', target: summary }),
+                                 onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: summary }),
+                                 onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: summary }),
+                              };
+                              return isCompactDrawer
+                                 ? <DrawerSearchResultEntry key={summary.id} {...resultProps} />
+                                 : <DrawerSearchResultCard key={summary.id} {...resultProps} />;
+                           })}
                         </div>
                      ) : (
                         <EmptyState message={t('Drawer.search.noMatches')} />
                      )}
                   </div>
                ) : currentItems.length > 0 ? (
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
-                     {currentItems.map((item) => (
-                        <DrawerItemEntry
-                           key={item.id}
-                           item={item}
-                           parentFolderId={currentFolderId}
-                           onRename={() => setActiveAction({ id: cuid(), type: 'rename-item', target: item })}
-                           onDelete={() => setActiveAction({ id: cuid(), type: 'delete-item', target: item })}
-                           onMove={() => setActiveAction({ id: cuid(), type: 'move-item', target: item })}
-                        />
-                     ))}
+                  // Rich -> a grid of uniform cards; List -> a single column of rows (same toggle as the side panel).
+                  <div className={isCompactDrawer ? 'flex flex-col gap-1' : 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3'}>
+                     {currentItems.map((item) => {
+                        const commonProps = {
+                           item,
+                           parentFolderId: currentFolderId,
+                           onRename: () => setActiveAction({ id: cuid(), type: 'rename-item', target: item }),
+                           onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: item }),
+                           onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: item }),
+                        };
+                        return isCompactDrawer
+                           ? <DrawerCompactItemEntry key={item.id} {...commonProps} />
+                           : <DrawerItemEntry key={item.id} {...commonProps} />;
+                     })}
                   </div>
                ) : (
                   <EmptyState message={t('Drawer.emptyFolder')} />
@@ -198,7 +240,44 @@ export function ExpandedDrawer() {
                </motion.div>
             )}
          </AnimatePresence>
+
+         {/* See-Workspace strip: appears at the bottom only during a drawer-item drag (not yet receded).
+             Dwelling it recedes the overlay (handled by the DnD layer's geometry dwell). The fill grows
+             over the hold while dwelling - the progress cue. */}
+         {isItemDragActive && !isReceded && (
+            <div
+               data-see-workspace
+               className="absolute inset-x-0 bottom-0 z-40 flex h-16 items-center justify-center gap-2 overflow-hidden border-t-2 border-primary/50 bg-primary/10 text-sm font-semibold text-foreground"
+            >
+               <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 bg-primary/25 ease-linear"
+                  style={{ width: isDwellingStrip ? '100%' : '0%', transition: `width ${isDwellingStrip ? SPRING_HOLD_MS : 0}ms linear` }}
+               />
+               <Eye className="relative h-5 w-5" />
+               <span className="relative">{t('Drawer.seeWorkspace')}</span>
+            </div>
+         )}
       </div>
+
+      {/* Re-expand edge: a SIBLING of the overlay (not inside it), so it stays put + interactive while
+          the overlay is slid away. Dwelling it re-expands without dropping - the out for an accidental
+          recede. Only present while receded (which only happens mid-drag). */}
+      {isReceded && (
+         <div
+            data-reexpand-drawer
+            className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex h-12 items-center justify-center gap-2 overflow-hidden border-t-2 border-primary/50 bg-background/95 text-sm font-semibold text-foreground"
+         >
+            <span
+               aria-hidden
+               className="absolute inset-y-0 left-0 bg-primary/25 ease-linear"
+               style={{ width: isDwellingEdge ? '100%' : '0%', transition: `width ${isDwellingEdge ? SPRING_HOLD_MS : 0}ms linear` }}
+            />
+            <ChevronsUp className="relative h-5 w-5" />
+            <span className="relative">{t('Drawer.reexpand')}</span>
+         </div>
+      )}
+      </>
    );
 }
 

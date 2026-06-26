@@ -23,7 +23,7 @@ import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabMan
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
-import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 
 // -- Board Imports --
@@ -49,6 +49,13 @@ import type { DragContext, DragKind, DragOverZone, DrawerDropTarget, SpringContr
  * (e.g. at root, where the Back button vanishes) is never an accidental target.
  */
 const NAV_GRACE_PX = 24;
+
+/**
+ * The See-Workspace dwell targets in the Expanded drawer: the bottom strip recedes the overlay to
+ * reveal the workspace; the re-expand edge (shown while receded) brings it back. The dwell reuses the
+ * spring-nav timer; these are its targets, keyed by their own string value.
+ */
+type WorkspaceDwellTarget = 'see-workspace' | 'reexpand';
 
 /**
  * Classifies a drag's source ONCE at start, so the drag-scoped `pointermove`
@@ -123,7 +130,7 @@ export function useCharacterSheetDnD() {
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
    const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems, setDrawerCurrentFolderId } = useDrawerActions();
    const { setContextualGame } = useAppSettingsActions();
-   const { setDrawerOpen } = useAppGeneralStateActions();
+   const { setDrawerOpen, setDrawerReceded } = useAppGeneralStateActions();
 
    // ==================
    //  Utility & Library States
@@ -200,6 +207,14 @@ export function useCharacterSheetDnD() {
    // the held folder; `springNavigatingRef` guards against re-firing while a (async)
    // navigation is in flight. The controller owns the dwell timer (see dragFeedback).
    const [springTarget, setSpringTarget] = useState<string | null>(null);
+   // ==================
+   //  See-Workspace recede (Expanded only)
+   // ==================
+   // `isDrawerItemDragActive` gates the strip's appearance (a drawer ITEM drag, not a folder);
+   // `workspaceDwellKey` ('see-workspace' | 'reexpand' | null) drives the strip/edge dwell-progress cue.
+   // The recede itself lives in appGeneralStateStore; the dwell reuses the spring timer (own controller).
+   const [isDrawerItemDragActive, setIsDrawerItemDragActive] = useState(false);
+   const [workspaceDwellKey, setWorkspaceDwellKey] = useState<string | null>(null);
    const draggedFolderIdRef = useRef<string | null>(null);
    const springNavigatingRef = useRef(false);
    // The in-drawer drop target under the cursor, resolved by live geometry each move.
@@ -267,6 +282,22 @@ export function useCharacterSheetDnD() {
       const controller = springControllerRef.current;
       return () => controller.cancel();
    }, [handleSpringNavigate]);
+
+   // The See-Workspace dwell: a SECOND instance of the same spring timer (same hold/affordance), keyed by
+   // its own string target, so dwelling the strip recedes the overlay and dwelling the edge re-expands it.
+   const handleWorkspaceDwell = useCallback((target: WorkspaceDwellTarget) => {
+      setDrawerReceded(target === 'see-workspace');
+   }, [setDrawerReceded]);
+   const workspaceDwellControllerRef = useRef<SpringController<WorkspaceDwellTarget> | null>(null);
+   useEffect(() => {
+      workspaceDwellControllerRef.current = createSpringController<WorkspaceDwellTarget>({
+         keyOf: (target) => target,
+         onTargetChange: setWorkspaceDwellKey,
+         onNavigate: handleWorkspaceDwell,
+      });
+      const controller = workspaceDwellControllerRef.current;
+      return () => controller.cancel();
+   }, [handleWorkspaceDwell]);
 
    // Feed the morph engine a single resolved signal whenever the derived context or
    // the spring target changes. The arrow mirrors springDirection() for
@@ -411,6 +442,28 @@ export function useCharacterSheetDnD() {
          forceMorphRef.current = nextForce;
          setForceMorph(nextForce);
       }
+
+      // See-Workspace recede dwell: only while Expanded and dragging a drawer ITEM. Hit-test the strip
+      // (when shown) or the re-expand edge (when receded) by live geometry, like the folder nav, and
+      // feed the workspace dwell timer; the actual drop lands on the revealed workspace zone behind.
+      const general = useAppGeneralStateStore.getState();
+      const kindNow = dragKindRef.current;
+      const isItemDrag = kindNow === 'drawer-character' || kindNow === 'drawer-component';
+      let workspaceTarget: WorkspaceDwellTarget | null = null;
+      if (general.isDrawerExpanded && isItemDrag) {
+         const within = (selector: string) => {
+            const rect = document.querySelector(selector)?.getBoundingClientRect() ?? null;
+            return !!rect &&
+               event.clientX >= rect.left && event.clientX <= rect.right &&
+               event.clientY >= rect.top && event.clientY <= rect.bottom;
+         };
+         if (general.isDrawerReceded) {
+            if (within('[data-reexpand-drawer]')) workspaceTarget = 'reexpand';
+         } else if (within('[data-see-workspace]')) {
+            workspaceTarget = 'see-workspace';
+         }
+      }
+      workspaceDwellControllerRef.current?.setTarget(workspaceTarget);
    }, [updateContext, setCursor]);
 
    /**
@@ -450,9 +503,15 @@ export function useCharacterSheetDnD() {
       }
       setSheetHighlight(null);
       setIsIncompatibleComponentDrag(false);
+      // See-Workspace: abort the dwell and re-expand on EVERY drag end/cancel, so a dropped or
+      // Escape-cancelled drag never strands the user looking at the receded workspace.
+      workspaceDwellControllerRef.current?.cancel();
+      setWorkspaceDwellKey(null);
+      setIsDrawerItemDragActive(false);
+      if (useAppGeneralStateStore.getState().isDrawerReceded) setDrawerReceded(false);
       // Clear the morph feedback (clone funnel + cursor cluster).
       resetMorph();
-   }, [handlePointerMove, resetMorph]);
+   }, [handlePointerMove, resetMorph, setDrawerReceded]);
 
    // Safety net: never leak the window listener if the sheet unmounts mid-drag.
    useEffect(() => () => window.removeEventListener('pointermove', handlePointerMove), [handlePointerMove]);
@@ -463,6 +522,8 @@ export function useCharacterSheetDnD() {
       // Arm the drag-feedback layer for every drag: classify the source, cache the
       // strip element for the lane test, and attach the move listener.
       dragKindRef.current = classifyDrag(active);
+      // A drawer ITEM drag (not a folder) gets the See-Workspace strip while Expanded.
+      setIsDrawerItemDragActive(dragKindRef.current === 'drawer-character' || dragKindRef.current === 'drawer-component');
       tabStripElRef.current = document.querySelector<HTMLElement>('[data-tab-strip]');
       isOverTabLaneRef.current = false;
       overZoneRef.current = null;
@@ -1138,6 +1199,10 @@ export function useCharacterSheetDnD() {
       // The active dwell target id (folder id or the Back sentinel), for the static
       // row/Back highlight.
       springTarget,
+      // See-Workspace: whether to show the strip (a drawer-item drag) and which recede dwell is
+      // in progress ('see-workspace' | 'reexpand' | null), for the strip/edge progress cue.
+      isDrawerItemDragActive,
+      workspaceDwellKey,
       // Content-aware sheet highlight: which section to light up.
       sheetHighlight,
       // True while a game-incompatible component is dragged with a character loaded,

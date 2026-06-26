@@ -14,14 +14,25 @@ import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker
 import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTracker';
 import { CharacterSheetPreview } from '@/components/molecules/CharacterSheetPreview';
 import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
+import { FitToBox } from '@/components/molecules/drawer/FitToBox';
+import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
 
 // -- Utils Imports --
-import { getItemTypeLabelKey } from '@/lib/utils/drawer-icons';
+import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
+import { getGameVisual } from '@/lib/constants/gameVisuals';
 import { boardContentBounds, itemCenter } from '@/lib/board/boardMiniMap';
 
 // -- Type Imports --
-import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
+import type { ReactElement } from 'react';
+import type { DrawerItem, Folder as FolderType, GameSystem } from '@/lib/types/drawer';
 import type { Board, ConnectionBoardContent, PinBoardContent, PostItBoardContent, ZoneBoardContent } from '@/lib/types/board';
+
+/** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
+function gameGlyph(game: GameSystem): ReactElement | null {
+   if (game === 'NEUTRAL') return null;
+   const Icon = getGameVisual(game).Icon;
+   return <Icon className="h-4 w-4 shrink-0" />;
+}
 
 
 
@@ -154,7 +165,9 @@ export function DrawerItemPreview({
    headerAction,
    headerActionLeft = false,
 }: {
-   item: DrawerItem;
+   // Browse passes a dated `DrawerItemRecord`; the drag overlay / mobile may pass a nested item without
+   // dates (the date label then renders nothing), so the date fields are optional here.
+   item: DrawerItem & { createdAt?: number; updatedAt?: number };
    headerAction?: ReactNode;
    headerActionLeft?: boolean;
 }) {
@@ -204,28 +217,24 @@ export function DrawerItemPreview({
    };
 
    return (
-      <div className="p-2 rounded-md hover:bg-muted transition-colors bg-card/75 border-2 border-border">
-         <div className={cn(
-            "flex items-center gap-2 mb-2",
-            headerActionLeft && "flex-row-reverse"
-         )}>
-            <p className="flex-1 min-w-0 font-semibold truncate text-md px-1">
-               {item.name}
-            </p>
+      // Uniform card: a FIXED preview area (every type's preview is fit into it), then the name, then a
+      // meta row (type glyph + game glyph + date). Same footprint regardless of type.
+      <div className="flex flex-col gap-2 rounded-md border-2 border-border bg-card/75 p-2 transition-colors hover:bg-muted">
+         <FitToBox className="pointer-events-none h-32 w-full rounded-md bg-popover/30">
+            {renderSnapshot()}
+         </FitToBox>
+
+         <div className={cn('flex items-center gap-2', headerActionLeft && 'flex-row-reverse')}>
+            <p className="min-w-0 flex-1 truncate px-1 text-sm font-semibold">{item.name}</p>
             {headerAction}
          </div>
 
-         <div className="w-full h-30 my-4 flex items-center justify-center bg-transparent pointer-events-none rounded-md overflow-hidden">
-            <div>
-               {renderSnapshot()}
-            </div>
+         {/* Meta: app-themed chrome (the game glyph is content's color via the icon, but the row is muted). */}
+         <div className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
+            {getItemTypeIcon(item.type)}
+            {gameGlyph(item.game)}
+            <ItemDateLabel type={item.type} createdAt={item.createdAt} updatedAt={item.updatedAt} className="truncate" />
          </div>
-
-         <p className="w-full text-center font-semibold truncate text-sm mb-2 px-1">
-            {/* NEUTRAL items are game-agnostic: show just the type, no game segment. */}
-            {item.game !== 'NEUTRAL' && <><span>{t(`Drawer.Types.${item.game}`)}</span> • </>}
-            <span>{t(`Drawer.Types.${getItemTypeLabelKey(item.game, item.type)}`)}</span>
-         </p>
       </div>
    );
 };

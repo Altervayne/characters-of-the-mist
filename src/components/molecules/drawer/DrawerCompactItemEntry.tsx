@@ -15,15 +15,25 @@ import { MoreHorizontal, Pencil, Trash2, Move, GripVertical, Upload } from 'luci
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
+import { getGameVisual } from '@/lib/constants/gameVisuals';
 import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
+// -- Component Imports --
+import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
+
 // -- Type Imports --
-import type { DrawerItem } from '@/lib/types/drawer';
+import type { ReactElement } from 'react';
+import type { DrawerItem, GameSystem } from '@/lib/types/drawer';
 
+/** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
+function gameGlyph(game: GameSystem): ReactElement | null {
+   if (game === 'NEUTRAL') return null;
+   const Icon = getGameVisual(game).Icon;
+   return <Icon className="h-4 w-4 shrink-0" />;
+}
 
-
-export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
+export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem & { createdAt?: number; updatedAt?: number }, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
    const { t } = useTranslation();
 
    const handleExport = async (e: React.MouseEvent) => {
@@ -54,10 +64,15 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
                      { "border-2 border-border bg-muted/50": isPreview }
                   )}
                >
-                  <div className="flex h-8 items-center gap-2 truncate">
+                  <div className="flex h-8 min-w-0 items-center gap-2">
                      <GripVertical className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab" {...dragAttributes} {...dragListeners} />
                      {getItemTypeIcon(item.type)}
-                     <span className="truncate hover:text-wrap font-medium text-sm">{item.name}</span>
+                     <span className="truncate font-medium text-sm">{item.name}</span>
+                     {/* Meta line: game glyph + the date label, muted, after the name. */}
+                     <span className="ml-1 flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        {gameGlyph(item.game)}
+                        <ItemDateLabel type={item.type} createdAt={item.createdAt} updatedAt={item.updatedAt} />
+                     </span>
                   </div>
                   {!isPreview &&
                      <DropdownMenu>

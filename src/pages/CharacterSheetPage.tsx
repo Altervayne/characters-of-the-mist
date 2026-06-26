@@ -104,6 +104,8 @@ function DesktopCharacterSheetPage() {
       springTarget,
       sheetHighlight,
       isIncompatibleComponentDrag,
+      isDrawerItemDragActive,
+      workspaceDwellKey,
       renderClone,
       renderCluster,
    } = useCharacterSheetDnD();
@@ -272,7 +274,7 @@ function DesktopCharacterSheetPage() {
 
                {/* Expanded drawer: an overlay over the workspace area (TabStrip + sheet/board stay mounted
                    behind it; the sidebar is outside this column, so it stays visible). */}
-               {isDrawerExpanded && <ExpandedDrawer />}
+               {isDrawerExpanded && <ExpandedDrawer isItemDragActive={isDrawerItemDragActive} workspaceDwellKey={workspaceDwellKey} />}
             </div>
 
             {/* Drawer (Open side panel). Hidden while Expanded - the takeover renders in the workspace column. */}

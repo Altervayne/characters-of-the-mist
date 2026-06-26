@@ -311,7 +311,12 @@
          "noMatches": "No items match your search.",
          "jumpTo": "Jump to folder",
          "created": "Created {{date}}",
-         "updated": "Updated {{date}}"
+         "updated": "Updated {{date}}",
+         "unavailable": "This item is no longer available."
+      },
+      "card": {
+         "updated": "Updated {{relative}}",
+         "created": "Created {{relative}}"
       },
       "filters": {
          "title": "Filters",
@@ -349,6 +354,8 @@
       "expand": "Expand drawer",
       "contract": "Contract",
       "expandedTitle": "Library",
+      "seeWorkspace": "See workspace",
+      "reexpand": "Back to library",
       "backToRoot": "Back to root",
       "namePlaceholder": "Name",
       "noSubfolders": "No subfolders",

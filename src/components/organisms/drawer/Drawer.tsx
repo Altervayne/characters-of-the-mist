@@ -28,6 +28,7 @@ import { DrawerCompactItemEntry } from '@/components/molecules/drawer/DrawerComp
 import { SpringDwellAffordance } from '@/components/molecules/drawer/SpringDwellAffordance';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSearchResultEntry';
+import { DrawerSearchResultCard } from '@/components/molecules/drawer/DrawerSearchResultCard';
 import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
@@ -204,16 +205,19 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                               {/* Sort control: ordering is frequently changed, so it sits at the results header. */}
                               <DrawerSortControl />
                               {searchResults && searchResults.length > 0 ? (
-                                 searchResults.map((summary) => (
-                                    <DrawerSearchResultEntry
-                                       key={summary.id}
-                                       summary={summary}
-                                       onJumpTo={() => handleJumpToResult(summary.parentFolderId)}
-                                       onRename={() => setActiveAction({ id: cuid(), type: 'rename-item', target: summary })}
-                                       onDelete={() => setActiveAction({ id: cuid(), type: 'delete-item', target: summary })}
-                                       onMove={() => setActiveAction({ id: cuid(), type: 'move-item', target: summary })}
-                                    />
-                                 ))
+                                 searchResults.map((summary) => {
+                                    const resultProps = {
+                                       summary,
+                                       onJumpTo: () => handleJumpToResult(summary.parentFolderId),
+                                       onRename: () => setActiveAction({ id: cuid(), type: 'rename-item', target: summary }),
+                                       onDelete: () => setActiveAction({ id: cuid(), type: 'delete-item', target: summary }),
+                                       onMove: () => setActiveAction({ id: cuid(), type: 'move-item', target: summary }),
+                                    };
+                                    // Rich -> the lazy rich card (preview loads when scrolled to); List -> the light row.
+                                    return isCompactDrawer
+                                       ? <DrawerSearchResultEntry key={summary.id} {...resultProps} />
+                                       : <DrawerSearchResultCard key={summary.id} {...resultProps} />;
+                                 })
                               ) : (
                                  <div className="flex h-full flex-col items-center justify-center py-8 text-center">
                                     <Inbox className="mx-auto h-16 w-16 text-muted-foreground" />

@@ -37,6 +37,9 @@ interface AppGeneralState {
    // `isDrawerExpanded` is only meaningful while open; closing clears it.
    isDrawerOpen: boolean;
    isDrawerExpanded: boolean;
+   // The Expanded overlay slides aside mid-drag so an item can be dropped on the revealed workspace.
+   // Only meaningful while Expanded + dragging; any contract/close clears it.
+   isDrawerReceded: boolean;
 
    // Mobile Drawer
    mobileDrawerSnapPoint: MobileDrawerSnapPoint;
@@ -75,6 +78,7 @@ interface AppGeneralState {
       setDrawerExpanded: (isExpanded: boolean) => void;
       expandDrawer: () => void;
       contractDrawer: () => void;
+      setDrawerReceded: (isReceded: boolean) => void;
 
       // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint: MobileDrawerSnapPoint) => void;
@@ -112,6 +116,7 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    // Drawer
    isDrawerOpen: false,
    isDrawerExpanded: false,
+   isDrawerReceded: false,
 
    // Mobile Drawer
    mobileDrawerSnapPoint: 'closed',
@@ -144,12 +149,13 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setIsEditing: (isEditing) => set({ isEditing }),
       toggleIsEditing: () => set((state) => ({ isEditing: !state.isEditing })),
 
-      // Drawer. Closing always drops Expanded too (it's only meaningful while open).
-      setDrawerOpen: (isOpen) => set(isOpen ? { isDrawerOpen: true } : { isDrawerOpen: false, isDrawerExpanded: false }),
-      toggleDrawer: () => set((state) => (state.isDrawerOpen ? { isDrawerOpen: false, isDrawerExpanded: false } : { isDrawerOpen: true })),
+      // Drawer. Closing always drops Expanded (and any recede) too (only meaningful while open).
+      setDrawerOpen: (isOpen) => set(isOpen ? { isDrawerOpen: true } : { isDrawerOpen: false, isDrawerExpanded: false, isDrawerReceded: false }),
+      toggleDrawer: () => set((state) => (state.isDrawerOpen ? { isDrawerOpen: false, isDrawerExpanded: false, isDrawerReceded: false } : { isDrawerOpen: true })),
       setDrawerExpanded: (isExpanded) => set({ isDrawerExpanded: isExpanded }),
-      expandDrawer: () => set({ isDrawerOpen: true, isDrawerExpanded: true }),
-      contractDrawer: () => set({ isDrawerExpanded: false }),
+      expandDrawer: () => set({ isDrawerOpen: true, isDrawerExpanded: true, isDrawerReceded: false }),
+      contractDrawer: () => set({ isDrawerExpanded: false, isDrawerReceded: false }),
+      setDrawerReceded: (isReceded) => set({ isDrawerReceded: isReceded }),
 
       // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint) => set({ mobileDrawerSnapPoint: snapPoint }),
