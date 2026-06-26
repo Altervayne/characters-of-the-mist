@@ -169,7 +169,16 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
             onClose={() => setDrawerOpen(false)}
          />
 
-         <div className="flex min-h-0 flex-1">
+         <motion.div
+            // Cross-fade the BODY across expand<->reduce: it fades in here (horizontal: folders left,
+            // items right) after the vertical side-panel body has faded out, and fades out on contract -
+            // the layout swap is never seen. The shared header above and the panel resize are untouched.
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15, delay: 0.1 }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            className="flex min-h-0 flex-1"
+         >
             {/* Folder side-nav. Internal spacing/padding mirrors the side-panel Drawer's folder section
                 (p-2 pt-0; the inter-folder rhythm comes from the reorder slots, not a flat gap), so the
                 two read identically; only the column chrome (w-64, border, bg-popover) is Library-specific. */}
@@ -285,7 +294,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                   <EmptyState message={t('Drawer.emptyFolder')} />
                )}
             </main>
-         </div>
+         </motion.div>
 
          {/* The modification window (rename / delete / move / add-folder), as in the side panel. */}
          {activeAction && <div className="absolute inset-0 bg-black/40" />}

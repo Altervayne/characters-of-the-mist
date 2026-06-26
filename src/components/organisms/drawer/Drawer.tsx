@@ -189,7 +189,16 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                         )}
                      </DrawerHeader>
 
-                     <div className="grow bg-popover overflow-y-auto flex flex-col">
+                     <motion.div
+                        // Cross-fade the BODY across expand<->reduce: it fades out, the vertical (here)
+                        // <-> horizontal (Library) layout swaps while it is invisible, then it fades back
+                        // in. The header above and the panel resize are untouched. Quick so it stays snappy.
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.15, delay: 0.1 }}
+                        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                        className="grow bg-popover overflow-y-auto flex flex-col"
+                     >
                         {isSearchActive ? (
                            /* Flat results: a light row per matching item; the browse chrome (back / folders /
                               add-folder / items) is absent, not overlaid. Results are not draggable/reorderable. */
@@ -343,7 +352,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                         </motion.div>
                         </>
                         )}
-                     </div>
+                     </motion.div>
 
                      <div className="flex flex-col shrink-0 p-2 mt-auto gap-2 bg-card border-t-2 border-border">
                         <form ref={formRef} className="hidden">
