@@ -55,7 +55,7 @@ function ResultCardShell({ summary, menu, removed = false }: { summary: DrawerIt
    const { t } = useTranslation();
    return (
       <div className="relative flex flex-col gap-2 rounded-md border-2 border-border bg-card/75 p-2">
-         <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-md bg-popover/30">
+         <div className="flex aspect-[19/10] w-full items-center justify-center overflow-hidden rounded-md bg-popover/30">
             {removed
                ? <p className="px-4 text-center text-xs text-muted-foreground">{t('Drawer.search.unavailable')}</p>
                : <div className="h-full w-full animate-pulse rounded-md bg-muted/40" />}

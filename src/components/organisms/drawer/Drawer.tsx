@@ -162,12 +162,13 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                   className="w-full p-0 h-full flex flex-col"
                >
                      <header className="shrink-0 py-2 px-4 min-h-26 border-b-2 border-border">
-                        <div className="flex grow h-8 items-center justify-between my-2">
-                           <h2 className="flex-1 text-xl font-bold">{t('Drawer.title')}</h2>
-                           <div className="flex-2">
-                              <DrawerUndoRedoControls/>
-                           </div>
-                           <div className="flex-1 flex items-center justify-end gap-1">
+                        {/* Control row: modest title left; one right cluster of undo/redo + a divider +
+                            view/expand/close - so undo/redo sits with the chrome, not floating centre. */}
+                        <div className="flex items-center justify-between gap-2 my-2">
+                           <h2 className="text-lg font-semibold">{t('Drawer.title')}</h2>
+                           <div className="flex items-center gap-1">
+                              <DrawerUndoRedoControls compact />
+                              <div className="mx-1 h-6 w-px shrink-0 bg-border" />
                               <div onClick={toggleCompactDrawer} className="rounded p-2 hover:bg-muted cursor-pointer" role="button" aria-label={t('Drawer.toggleView')} data-tour="drawer-rich-view-toggle">
                                  {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
                               </div>

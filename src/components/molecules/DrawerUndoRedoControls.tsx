@@ -12,11 +12,29 @@ import { useDrawerUndoRedo } from '@/hooks/drawer/useDrawerUndoRedo';
 
 
 
-export function DrawerUndoRedoControls() {
+/**
+ * Undo / redo for the drawer's command engine. `compact` renders an icon-only pair that matches the
+ * header's other icon buttons (for the tidy control cluster); the default is the labelled outline pair.
+ */
+export function DrawerUndoRedoControls({ compact = false }: { compact?: boolean }) {
    const { t: t } = useTranslation();
    const { canUndo, canRedo, undo, redo } = useDrawerUndoRedo();
 
-
+   if (compact) {
+      // Same look as the view/expand/close icon buttons (rounded p-2 hover:bg-muted, h-6 icons); native
+      // buttons so disabled state reads correctly when there's nothing to undo/redo.
+      const iconButton = 'rounded p-2 hover:bg-muted cursor-pointer disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent';
+      return (
+         <div data-tour="drawer-undo-redo-buttons" className="flex items-center">
+            <button type="button" onClick={() => { void undo(); }} disabled={!canUndo} aria-label={t('Actions.undo')} title={t('Actions.undo')} className={iconButton}>
+               <Undo className="h-6 w-6" />
+            </button>
+            <button type="button" onClick={() => { void redo(); }} disabled={!canRedo} aria-label={t('Actions.redo')} title={t('Actions.redo')} className={iconButton}>
+               <Redo className="h-6 w-6" />
+            </button>
+         </div>
+      );
+   }
 
    return (
       <div data-tour="drawer-undo-redo-buttons" className="flex items-center gap-2 justify-evenly max-w-50">

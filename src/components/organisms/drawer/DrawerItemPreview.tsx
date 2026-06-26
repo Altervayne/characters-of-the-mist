@@ -220,7 +220,9 @@ export function DrawerItemPreview({
       // Uniform card: a FIXED preview area (every type's preview is fit into it), then the name, then a
       // meta row (type glyph + game glyph + date). Same footprint regardless of type.
       <div className="flex flex-col gap-2 rounded-md border-2 border-border bg-card/75 p-2 transition-colors hover:bg-muted">
-         <FitToBox className="pointer-events-none h-32 w-full rounded-md bg-popover/30">
+         {/* Fixed ASPECT (not a fixed height) so the preview keeps the same proportion in both the narrow
+             side panel and the wider Library cells - a fixed height read wide-short in the roomy panel. */}
+         <FitToBox className="pointer-events-none aspect-[19/10] w-full rounded-md bg-popover/30">
             {renderSnapshot()}
          </FitToBox>
 

@@ -132,7 +132,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
              with no page scroll) and goes pointer-transparent, but STAYS MOUNTED so the live drag is never
              cancelled and the cursor reaches the revealed workspace. */}
          <div className={cn(
-            'pointer-events-auto relative flex h-full w-full flex-col bg-background transition-transform duration-300 ease-in-out',
+            'pointer-events-auto relative flex h-full w-full flex-col bg-card transition-transform duration-300 ease-in-out',
             isReceded && 'translate-y-full',
          )}>
          {/* Header: title, the shared search bar, contract + close. */}
@@ -198,7 +198,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey }: Expanded
             </aside>
 
             {/* Item area: a responsive grid of items (browse) or search results. */}
-            <main className="relative flex-1 overflow-y-auto p-4">
+            <main className="relative flex-1 overflow-y-auto bg-popover p-4">
                {isSearchActive ? (
                   <div className="flex flex-col gap-3">
                      <DrawerSortControl />
