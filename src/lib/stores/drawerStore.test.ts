@@ -97,6 +97,33 @@ describe('drawerStore optimistic reorder/move', () => {
    });
 });
 
+describe('drawerStore navigation clears the view (loading skeleton)', () => {
+   beforeEach(() => {
+      vi.clearAllMocks();
+      (getFolderChildren as Mock).mockResolvedValue({ folders: [], items: [] });
+   });
+
+   it('setDrawerCurrentFolderId drops the stale view immediately, then loads the new folder', async () => {
+      seedItems([item('a'), item('b')]);
+      const pending = useDrawerStore.getState().actions.setDrawerCurrentFolderId('sub');
+      // Synchronous: the previous folder's content is gone before the new query resolves, so the
+      // UI shows a skeleton (currentFolderView === null) instead of stale rows.
+      expect(useDrawerStore.getState().currentFolderView).toBeNull();
+      await pending;
+      // Once loaded, the view is populated again - no longer the skeleton state.
+      expect(useDrawerStore.getState().currentFolderView).not.toBeNull();
+   });
+
+   it('reloadCurrentFolder keeps the existing view (no skeleton on a reload / optimistic mutation)', async () => {
+      seedItems([item('a'), item('b')]);
+      const before = useDrawerStore.getState().currentFolderView;
+      const pending = useDrawerStore.getState().actions.reloadCurrentFolder();
+      // The view is NOT nulled mid-reload, so an in-place reload or optimistic mutation never flashes a skeleton.
+      expect(useDrawerStore.getState().currentFolderView).toBe(before);
+      await pending;
+   });
+});
+
 describe('drawerStore search', () => {
    const summary = (id: string): DrawerItemSummary => ({
       id, name: id, type: 'CHARACTER_CARD', game: 'LEGENDS', parentFolderId: null, createdAt: 0, updatedAt: 0,

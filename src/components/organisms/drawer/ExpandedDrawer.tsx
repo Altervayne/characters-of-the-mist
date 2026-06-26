@@ -22,6 +22,7 @@ import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSea
 import { DrawerSearchResultCard } from '@/components/molecules/drawer/DrawerSearchResultCard';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { DrawerHeader } from '@/components/molecules/drawer/DrawerHeader';
+import { DrawerNavSkeleton, DrawerGridSkeleton } from '@/components/molecules/drawer/DrawerContentSkeleton';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 
@@ -71,6 +72,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
       currentFolders,
       parentFolderId,
       breadcrumbPath,
+      isContentLoading,
    } = useDrawerNavigation();
 
    const { reloadCurrentFolder, clearSearch } = useDrawerActions();
@@ -188,7 +190,10 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                   </div>
                )}
 
-               {currentFolders.length > 0 && (
+               {isContentLoading ? (
+                  // Navigating to a new folder: placeholder folder rows instead of the stale list.
+                  <DrawerNavSkeleton />
+               ) : currentFolders.length > 0 && (
                   // Folders reorder via the same expanding-slot mechanism as the side panel (static rows,
                   // a thin constant gap between them that becomes the drop target during a folder drag).
                   <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
@@ -255,6 +260,9 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                         <EmptyState message={t('Drawer.search.noMatches')} />
                      )}
                   </div>
+               ) : isContentLoading ? (
+                  // Navigating to a new folder: a grid of card placeholders instead of the stale items.
+                  <DrawerGridSkeleton compact={isCompactDrawer} />
                ) : currentItems.length > 0 ? (
                   // Rich -> a grid of uniform cards; List -> a single column of rows (same toggle as the side panel).
                   // Items reorder via the grid live-shuffle (rectSortingStrategy); the `over` is resolved from

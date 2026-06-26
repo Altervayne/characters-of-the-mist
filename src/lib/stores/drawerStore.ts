@@ -340,7 +340,10 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          //  Navigation + view
          // ==================
          setDrawerCurrentFolderId: async (id) => {
-            set({ currentFolderId: id });
+            // Navigation: drop the previous folder's view immediately (currentFolderView = null) so the UI
+            // shows a loading skeleton, not the stale contents, while the new folder loads. A reload keeps
+            // its view (below), so a mutation / optimistic reorder never flashes a skeleton.
+            set({ currentFolderId: id, currentFolderView: null });
             await loadView(id);
          },
          reloadCurrentFolder: async () => {

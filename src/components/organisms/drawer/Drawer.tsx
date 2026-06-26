@@ -33,6 +33,7 @@ import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortContr
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerHeader } from '@/components/molecules/drawer/DrawerHeader';
+import { DrawerPanelSkeleton } from '@/components/molecules/drawer/DrawerContentSkeleton';
 
 // -- Store and Hook Imports --
 import { useDrawerActions, useDrawerStore, isSearchFilterActive } from '@/lib/stores/drawerStore';
@@ -78,6 +79,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
       currentFolders,
       parentFolderId,
       breadcrumbPath,
+      isContentLoading,
    } = useDrawerNavigation();
 
    const { reloadCurrentFolder } = useDrawerActions();
@@ -215,12 +217,19 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                  </div>
                               )}
                            </div>
+                        ) : isContentLoading ? (
+                           // Navigating to a new folder: a layout-matched skeleton instead of the stale
+                           // previous folder (threshold-gated, so an instant load never flashes it).
+                           <DrawerPanelSkeleton compact={isCompactDrawer} />
                         ) : (
                         <>
-                        <motion.div data-tour="drawer-folders" layout transition={{ duration: 0.1 }} className="flex flex-col w-full p-2 pt-0 border-b-2 border-border overflow-hidden shrink-0">
+                        {/* Reflow containers animate POSITION not size: a full `layout` scales the box to
+                            its new size, which stretches the non-`layout` children (folder rows, cards)
+                            mid-animation. `layout="position"` slides them into place without that distortion. */}
+                        <motion.div data-tour="drawer-folders" layout="position" transition={{ duration: 0.1 }} className="flex flex-col w-full p-2 pt-0 border-b-2 border-border overflow-hidden shrink-0">
                            {currentFolderId && (
                               <motion.div
-                                 layout
+                                 layout="position"
                                  transition={{ duration: 0.1 }}
                                  ref={backButtonRef}
                                  data-drawer-back
@@ -278,7 +287,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                  />
                               </SortableContext>
                            )}
-                           <motion.div layout transition={{ duration: 0.1 }} className="bg-card mt-1 border-2 border-dashed border-border rounded">
+                           <motion.div layout="position" transition={{ duration: 0.1 }} className="bg-card mt-1 border-2 border-dashed border-border rounded">
                               <Button variant="ghost" className="w-full justify-start cursor-pointer" onClick={handleAddFolder}>
                                  <Plus className="mr-2 h-4 w-4" />
                                  {t('Drawer.addFolder')}
@@ -286,7 +295,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                            </motion.div>
                         </motion.div>
 
-                        <motion.div data-tour="drawer-items" layout transition={{ duration: 0.1 }} className="flex-1 p-1 flex flex-col">
+                        <motion.div data-tour="drawer-items" layout="position" transition={{ duration: 0.1 }} className="flex-1 p-1 flex flex-col">
                            <div
                               ref={setNodeRef}
                               data-drawer-items-area
@@ -322,7 +331,7 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                     </SortableContext>
                                  </div>
                               ) : (
-                                 <motion.div layout transition={{ duration: 0.1 }} className="text-center py-8 h-full flex flex-col justify-center items-center">
+                                 <motion.div layout="position" transition={{ duration: 0.1 }} className="text-center py-8 h-full flex flex-col justify-center items-center">
                                     <Inbox className="mx-auto h-16 w-16 text-muted-foreground" />
                                     <p className="text-lg text-muted-foreground mt-2">{t('Drawer.emptyFolder')}</p>
                                  </motion.div>

@@ -34,7 +34,7 @@ export function DrawerHeader({ title, isCompactDrawer, onToggleView, modeIcon, m
 
    return (
       <header className="shrink-0 border-b-2 border-border px-4 py-2">
-         <div className="my-2 flex items-center justify-between gap-2">
+         <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold">{title}</h2>
             <div className="flex items-center gap-1">
                <DrawerUndoRedoControls compact />

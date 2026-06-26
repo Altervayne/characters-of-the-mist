@@ -47,6 +47,7 @@ export function useDrawerNavigation() {
       breadcrumbPath: view.breadcrumbPath,
       childCounts: view.childCounts,
       isLoading: view.isLoading,
+      isContentLoading: view.isContentLoading,
       error: view.error,
    };
 }

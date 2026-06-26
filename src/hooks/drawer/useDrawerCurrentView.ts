@@ -39,6 +39,10 @@ export function useDrawerCurrentView() {
       breadcrumbPath,
       parentFolderId,
       isLoading,
+      // The view is nulled ONLY on navigation (the store clears it before loading the new folder), so this
+      // means "navigating to a new folder, not loaded yet" - distinct from a loaded-but-empty folder. It
+      // drives the loading skeleton; a reload / optimistic mutation keeps the view, so it never fires there.
+      isContentLoading: currentFolderView === null,
       error,
    };
 }

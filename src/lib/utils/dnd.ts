@@ -116,6 +116,38 @@ function resolveExpandedLibraryItemOver(args: Parameters<CollisionDetection>[0])
    return [];
 }
 
+/**
+ * The side-panel's same-folder REORDER over for a drawer-item drag: the over sibling resolved from the
+ * item rows' LIVE rects (the shuffle transform subtracted so they read at their static slots, clamped at
+ * the edges) - the keep-shuffle fix. Shared by the regular `drawer-item` branch AND the character/board
+ * (`FULL_*`) reorder fallback so all drawer items reorder identically. Returns null when there's no
+ * pointer or the cursor isn't over the items body, so the caller keeps its center-based fallback.
+ */
+function resolveSidePanelItemReorderOver(args: Parameters<CollisionDetection>[0]): Collision[] | null {
+   const pointer = args.pointerCoordinates;
+   const itemsAreaRect = typeof document !== 'undefined'
+      ? (document.querySelector('[data-drawer-items-area]')?.getBoundingClientRect() ?? null)
+      : null;
+   const overItemsBody = !!pointer && !!itemsAreaRect &&
+      pointer.x >= itemsAreaRect.left && pointer.x <= itemsAreaRect.right &&
+      pointer.y >= itemsAreaRect.top && pointer.y <= itemsAreaRect.bottom;
+   if (!pointer || !overItemsBody) return null;
+
+   const itemRows = args.droppableContainers.flatMap((container) => {
+      if (container.data.current?.type !== 'drawer-item') return [];
+      const node = container.node?.current;
+      if (!node) return [];
+      const rect = node.getBoundingClientRect();
+      // Static slot (subtract the live sort transform), so the held row anchors at its own place and a
+      // drop in place is a true no-op - reading the shuffled rect would feed back into the shuffle.
+      const transform = getComputedStyle(node).transform;
+      const translateY = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform).m42 : 0;
+      return [{ id: String(container.id), top: rect.top - translateY, bottom: rect.bottom - translateY }];
+   });
+   const overId = resolveSortableOverId(itemRows, pointer.y);
+   return overId ? [{ id: overId }] : null;
+}
+
 export const customCollisionDetection: CollisionDetection = (args) => {
    const activeData = args.active.data.current;
    const activeDataType = args.active.data.current?.type as string;
@@ -195,6 +227,14 @@ export const customCollisionDetection: CollisionDetection = (args) => {
          return primaryCollisions;
       }
 
+      // Same-folder REORDER: the live-geometry over (the keep-shuffle fix), so a character/board reorders
+      // exactly like a regular item - NOT dnd-kit's center-only measured-rect collision, which desyncs in
+      // the scrollable/animated drawer (the jank). The drag-out zones above keep priority.
+      const reorderOver = resolveSidePanelItemReorderOver(args);
+      if (reorderOver) return reorderOver;
+
+      // Fallback when the cursor isn't over the items body (no DOM, keyboard drag): nearest sibling row,
+      // excluding the active so `over` is always a different row (handleDragEnd no-ops a self drop).
       const siblingDroppables = args.droppableContainers.filter(
          (container) => container.data.current?.type === 'drawer-item' && container.id !== args.active.id,
       );
@@ -239,34 +279,10 @@ export const customCollisionDetection: CollisionDetection = (args) => {
          return surfaceZoneCollisions;
       }
 
-      // Same-folder REORDER: resolve the `over` sibling from the rows' LIVE rects, not dnd-kit's measured
-      // droppable rects (those desync in the scrollable/animated drawer - the reorder jank). Clamped at
-      // the edges so dropping past the first/last row still lands. Scoped to the items body, so hovering
-      // folders/the sheet falls through to the center-based path below. Live DOM only; no DOM -> fallback.
-      const pointer = args.pointerCoordinates;
-      const itemsAreaRect = typeof document !== 'undefined'
-         ? (document.querySelector('[data-drawer-items-area]')?.getBoundingClientRect() ?? null)
-         : null;
-      const overItemsBody = !!pointer && !!itemsAreaRect &&
-         pointer.x >= itemsAreaRect.left && pointer.x <= itemsAreaRect.right &&
-         pointer.y >= itemsAreaRect.top && pointer.y <= itemsAreaRect.bottom;
-      if (pointer && overItemsBody) {
-         const itemRows = args.droppableContainers.flatMap((container) => {
-            if (container.data.current?.type !== 'drawer-item') return [];
-            const node = container.node?.current;
-            if (!node) return [];
-            const rect = node.getBoundingClientRect();
-            // Subtract the row's live sort transform so it reads at its STATIC slot, not its mid-shuffle
-            // position - the shuffle is driven BY this `over`, so reading the shuffled rect feeds back
-            // (the dragged row tracks the cursor and would always resolve to itself). With static slots
-            // the held item anchors at its own row, so dropping in place stays a true no-op.
-            const transform = getComputedStyle(node).transform;
-            const translateY = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform).m42 : 0;
-            return [{ id: String(container.id), top: rect.top - translateY, bottom: rect.bottom - translateY }];
-         });
-         const overId = resolveSortableOverId(itemRows, pointer.y);
-         if (overId) return [{ id: overId }];
-      }
+      // Same-folder REORDER by live geometry (the keep-shuffle fix), shared with the character/board
+      // branch. Falls through to the center-based path below when the cursor isn't over the items body.
+      const reorderOver = resolveSidePanelItemReorderOver(args);
+      if (reorderOver) return reorderOver;
 
       const itemDroppables = args.droppableContainers.filter((container) => {
          const type = container.data.current?.type as string;
