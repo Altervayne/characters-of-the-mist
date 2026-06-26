@@ -22,6 +22,7 @@ import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterSt
 import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
+import { getChildFolders, getParentFolderId, whenFolderTreeSettled } from '@/lib/drawer/drawerFolderTree';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
@@ -256,7 +257,7 @@ export function useCharacterSheetDnD() {
          return;
       }
       if (springNavigatingRef.current) return;
-      const destination = target.kind === 'back' ? useDrawerStore.getState().parentFolderId : target.id;
+      const destination = target.kind === 'back' ? getParentFolderId(useDrawerStore.getState().currentFolderId) : target.id;
       // Anchor the post-nav grace at the current cursor: until it moves NAV_GRACE_PX,
       // the drop resolves to the folder we navigated to (not a row that reflows under it).
       navGraceAnchorRef.current = lastPointerRef.current;
@@ -860,7 +861,8 @@ export function useCharacterSheetDnD() {
          // slotted into place (an append + reorder, hence two undo steps).
          if (isFolderDrag && over?.data.current?.type === 'drawer-drop-zone') {
             const destParentId = useDrawerStore.getState().currentFolderId ?? null;
-            const scope = useDrawerStore.getState().currentFolderView?.folders ?? [];
+            // Folder scope comes from the folder-tree cache (the store no longer carries folders).
+            const scope = getChildFolders(destParentId);
             const { targetId } = over.data.current as { targetId: string };
             const fromIndex = scope.findIndex((f) => f.id === draggedId);
             const slotIndex = targetId === 'last' ? scope.length : scope.findIndex((f) => f.id === targetId);
@@ -874,7 +876,9 @@ export function useCharacterSheetDnD() {
                const targetIndex = slotIndex < 0 ? scope.length : slotIndex;
                void (async () => {
                   await moveFolder(draggedId, destParentId ?? undefined);
-                  const after = useDrawerStore.getState().currentFolderView?.folders ?? [];
+                  // The move re-derived the cache; read the appended position back from it to slot it in.
+                  await whenFolderTreeSettled();
+                  const after = getChildFolders(destParentId);
                   const appendedIndex = after.findIndex((f) => f.id === draggedId);
                   if (appendedIndex !== -1 && appendedIndex !== targetIndex) {
                      await reorderFolders(destParentId, appendedIndex, targetIndex);
@@ -899,7 +903,7 @@ export function useCharacterSheetDnD() {
          const currentFolderId = useDrawerStore.getState().currentFolderId ?? null;
          const view = useDrawerStore.getState().currentFolderView;
          const alreadyInCurrentFolder = isFolderDrag
-            ? (view?.folders ?? []).some((f) => f.id === draggedId)
+            ? getChildFolders(currentFolderId).some((f) => f.id === draggedId)
             : (view?.items ?? []).some((i) => i.id === draggedId);
          if (!alreadyInCurrentFolder) {
             if (isFolderDrag) void moveFolder(draggedId, currentFolderId ?? undefined);

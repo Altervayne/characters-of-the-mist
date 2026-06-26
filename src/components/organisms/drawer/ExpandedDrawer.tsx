@@ -22,7 +22,7 @@ import { DrawerSearchResultEntry } from '@/components/molecules/drawer/DrawerSea
 import { DrawerSearchResultCard } from '@/components/molecules/drawer/DrawerSearchResultCard';
 import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortControl';
 import { DrawerHeader } from '@/components/molecules/drawer/DrawerHeader';
-import { DrawerNavSkeleton, DrawerGridSkeleton } from '@/components/molecules/drawer/DrawerContentSkeleton';
+import { DrawerGridSkeleton } from '@/components/molecules/drawer/DrawerContentSkeleton';
 import { DrawerModificationWindow } from '@/components/organisms/drawer/DrawerModificationWindow';
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 
@@ -190,10 +190,8 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                   </div>
                )}
 
-               {isContentLoading ? (
-                  // Navigating to a new folder: placeholder folder rows instead of the stale list.
-                  <DrawerNavSkeleton />
-               ) : currentFolders.length > 0 && (
+               {/* Folders render from the in-memory cache - present instantly on navigation, no skeleton. */}
+               {currentFolders.length > 0 && (
                   // Folders reorder via the same expanding-slot mechanism as the side panel (static rows,
                   // a thin constant gap between them that becomes the drop target during a folder drag).
                   <SortableContext items={folderIds} strategy={staticListSortingStrategy}>

@@ -32,48 +32,47 @@ vi.mock('@/lib/drawer/drawerCommandEngine', () => ({
 }));
 
 vi.mock('@/lib/drawer/drawerRepository', () => ({
-   getFolderChildren: vi.fn().mockResolvedValue({ folders: [], items: [] }),
-   getBreadcrumbPath: vi.fn().mockResolvedValue([]),
-   getChildCountsForFolders: vi.fn().mockResolvedValue(new Map()),
+   getFolderItems: vi.fn().mockResolvedValue([]),
+   getItemCountsForFolders: vi.fn().mockResolvedValue(new Map()),
    queryItems: vi.fn().mockResolvedValue([]),
+}));
+
+// The folder structure is served from the folder-tree cache, not the store; stub its selectors so the
+// store's item-loading logic is tested in isolation.
+vi.mock('@/lib/drawer/drawerFolderTree', () => ({
+   getChildFolders: vi.fn(() => []),
+   getChildFolderCount: vi.fn(() => 0),
+   whenFolderTreeSettled: vi.fn().mockResolvedValue(undefined),
 }));
 
 // -- Local Imports (after the mocks so the store binds the mocked deps) --
 import { useDrawerStore, activeSearchFilters, isSearchFilterActive } from './drawerStore';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
-import { getFolderChildren, queryItems } from '@/lib/drawer/drawerRepository';
+import { getFolderItems, queryItems } from '@/lib/drawer/drawerRepository';
 import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
-import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
+import type { DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 
 const item = (id: string) => ({ id, name: id, parentFolderId: 'root', order: 0 }) as unknown as DrawerItemRecord;
-const folder = (id: string) => ({ id, name: id, parentFolderId: 'root', order: 0 }) as DrawerFolderRecord;
 const ids = (rows: { id: string }[] | undefined) => (rows ?? []).map((row) => row.id);
 
 const seedItems = (rows: DrawerItemRecord[]) =>
-   useDrawerStore.setState({ currentFolderId: null, currentFolderView: { folders: [], items: rows, childCounts: new Map() }, error: null });
-const seedFolders = (rows: DrawerFolderRecord[]) =>
-   useDrawerStore.setState({ currentFolderId: null, currentFolderView: { folders: rows, items: [], childCounts: new Map() }, error: null });
+   useDrawerStore.setState({ currentFolderId: null, currentFolderView: { items: rows, childCounts: new Map() }, error: null });
 
 describe('drawerStore optimistic reorder/move', () => {
    beforeEach(() => {
       vi.clearAllMocks();
       (drawerCommandEngine.execute as Mock).mockResolvedValue(undefined);
-      (getFolderChildren as Mock).mockResolvedValue({ folders: [], items: [] });
+      (getFolderItems as Mock).mockResolvedValue([]);
       useDrawerStore.setState({ currentFolderId: null, currentFolderView: null, error: null });
    });
 
+   // Items stay in the store and reorder/move optimistically; folders moved to the cache (re-derived on
+   // the mutation), so they have no optimistic store step here.
    it('reorderItems applies the new order to currentFolderView synchronously', async () => {
       seedItems([item('a'), item('b'), item('c')]);
       const pending = useDrawerStore.getState().actions.reorderItems(null, 0, 2);
       // Asserted BEFORE awaiting: the optimistic `set` runs before the first await.
       expect(ids(useDrawerStore.getState().currentFolderView?.items)).toEqual(['b', 'c', 'a']);
-      await pending;
-   });
-
-   it('reorderFolders applies the new order to currentFolderView synchronously', async () => {
-      seedFolders([folder('a'), folder('b'), folder('c')]);
-      const pending = useDrawerStore.getState().actions.reorderFolders(null, 2, 0);
-      expect(ids(useDrawerStore.getState().currentFolderView?.folders)).toEqual(['c', 'a', 'b']);
       await pending;
    });
 
@@ -88,7 +87,7 @@ describe('drawerStore optimistic reorder/move', () => {
       seedItems([item('a'), item('b'), item('c')]);
       (drawerCommandEngine.execute as Mock).mockRejectedValueOnce(new Error('persist failed'));
       // The revert reload returns the real, unchanged order.
-      (getFolderChildren as Mock).mockResolvedValue({ folders: [], items: [item('a'), item('b'), item('c')] });
+      (getFolderItems as Mock).mockResolvedValue([item('a'), item('b'), item('c')]);
 
       await expect(useDrawerStore.getState().actions.reorderItems(null, 0, 2)).rejects.toThrow('persist failed');
 
@@ -97,10 +96,10 @@ describe('drawerStore optimistic reorder/move', () => {
    });
 });
 
-describe('drawerStore navigation clears the view (loading skeleton)', () => {
+describe('drawerStore navigation clears the items view (item skeleton)', () => {
    beforeEach(() => {
       vi.clearAllMocks();
-      (getFolderChildren as Mock).mockResolvedValue({ folders: [], items: [] });
+      (getFolderItems as Mock).mockResolvedValue([]);
    });
 
    it('setDrawerCurrentFolderId drops the stale view immediately, then loads the new folder', async () => {

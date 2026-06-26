@@ -6,7 +6,8 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { deepReId } from '../utils/drawer';
 
 // -- Drawer Data Layer Imports --
-import { getBreadcrumbPath, getChildCountsForFolders, getFolderChildren, queryItems } from '@/lib/drawer/drawerRepository';
+import { getFolderItems, getItemCountsForFolders, queryItems } from '@/lib/drawer/drawerRepository';
+import { getChildFolders, getChildFolderCount, whenFolderTreeSettled } from '@/lib/drawer/drawerFolderTree';
 import {
    createCreateFolderCommand,
    createCreateItemCommand,
@@ -30,7 +31,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 // -- Type Imports --
 import type { DrawerCommand } from '@/lib/drawer/drawerCommandEngine';
 import type { DrawerItemQuery, DrawerItemSummary } from '@/lib/drawer/drawerRepository';
-import type { DrawerFolderRecord, DrawerItemRecord } from '@/lib/drawer/drawerRecords';
+import type { DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 import type { Drawer, Folder, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
 
 /*
@@ -56,9 +57,12 @@ export interface PendingDrawerItem {
    presetId?: string;
 }
 
-/** The loaded view of the current folder. `null` until the first load completes. */
+/**
+ * The loaded view of the current folder's ITEMS. `null` until the first load completes (and while
+ * navigating to a new folder). The folder STRUCTURE is not here - it is served from the folder-tree
+ * cache - so this nulling drives only the item skeleton, never the (always-cached) folder list.
+ */
 export interface DrawerCurrentFolderView {
-   folders: DrawerFolderRecord[];
    items: DrawerItemRecord[];
    /** Direct child counts keyed by child-folder id, for rendering folder summary rows. */
    childCounts: Map<string, { folderCount: number; itemCount: number }>;
@@ -73,8 +77,6 @@ export interface DrawerStoreError {
 export interface DrawerState {
    currentFolderId: string | null;
    currentFolderView: DrawerCurrentFolderView | null;
-   breadcrumbPath: DrawerFolderRecord[];
-   parentFolderId: string | null;
    isLoading: boolean;
    error: DrawerStoreError | null;
    pendingItem: PendingDrawerItem | null;
@@ -122,12 +124,10 @@ export interface DrawerState {
 
 const initialState: Pick<
    DrawerState,
-   'currentFolderId' | 'currentFolderView' | 'breadcrumbPath' | 'parentFolderId' | 'isLoading' | 'error' | 'pendingItem' | 'canUndo' | 'canRedo' | 'searchCriteria' | 'searchResults' | 'isSearching'
+   'currentFolderId' | 'currentFolderView' | 'isLoading' | 'error' | 'pendingItem' | 'canUndo' | 'canRedo' | 'searchCriteria' | 'searchResults' | 'isSearching'
 > = {
    currentFolderId: null,
    currentFolderView: null,
-   breadcrumbPath: [],
-   parentFolderId: null,
    isLoading: false,
    error: null,
    pendingItem: null,
@@ -154,20 +154,27 @@ function markDrawerModified(): void {
 
 export const useDrawerStore = create<DrawerState>()((set, get) => {
    /**
-    * Loads the view for a folder (`null` = root): its ordered children, breadcrumb
-    * trail, parent id, and child-folder counts. Sets `isLoading`/`error`; never
-    * throws (errors land in `error` state for the UI to surface).
+    * Loads a folder's ITEMS (`null` = root) and the child-folder summary counts. The folder structure
+    * (the folders themselves, breadcrumb, parent) comes from the cache, so this queries only items - no
+    * folder query on navigation. Each child folder's `folderCount` is read from the cache; its
+    * `itemCount` is a cheap items-only count. Sets `isLoading`/`error`; never throws.
     */
    const loadView = async (folderId: string | null): Promise<void> => {
       set({ isLoading: true, error: null });
       try {
-         const { folders, items } = await getFolderChildren(folderId);
-         const breadcrumbPath = await getBreadcrumbPath(folderId);
-         const childCounts = await getChildCountsForFolders(folders.map((folder) => folder.id));
-         // The parent of the current folder is the breadcrumb entry before it
-         // (root when the current folder is top-level or the root itself).
-         const parentFolderId = breadcrumbPath.length >= 2 ? breadcrumbPath[breadcrumbPath.length - 2].id : null;
-         set({ currentFolderView: { folders, items, childCounts }, breadcrumbPath, parentFolderId, isLoading: false });
+         // Wait for any in-flight rebuild so the cache (folder counts below, and the folder list the UI
+         // reads) reflects the latest mutation; on a settled cache this resolves immediately.
+         await whenFolderTreeSettled();
+         const items = await getFolderItems(folderId);
+         const childFolders = getChildFolders(folderId);
+         const itemCounts = await getItemCountsForFolders(childFolders.map((folder) => folder.id));
+         const childCounts = new Map(
+            childFolders.map((folder) => [
+               folder.id,
+               { folderCount: getChildFolderCount(folder.id), itemCount: itemCounts.get(folder.id) ?? 0 },
+            ]),
+         );
+         set({ currentFolderView: { items, childCounts }, isLoading: false });
       } catch (error) {
          set({ isLoading: false, error: toStoreError(error) });
       }
@@ -234,33 +241,14 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             await runMutation(createDeleteFolderCommand(folderId));
          },
          moveFolder: async (folderId, destinationFolderId) => {
-            // Optimistic: the moved folder leaves the current view, so
-            // drop it from the loaded folders immediately; the command then persists the
-            // move and the reload confirms it. On failure, reload to the real order.
-            const view = get().currentFolderView;
-            if (view) set({ currentFolderView: { ...view, folders: view.folders.filter((folder) => folder.id !== folderId) } });
-            try {
-               await runMutation(createMoveFolderCommand(folderId, destinationFolderId ?? null));
-            } catch (error) {
-               await loadView(get().currentFolderId);
-               set({ error: toStoreError(error) });
-               throw error;
-            }
+            // No optimistic step: the folder list is served from the folder-tree cache, which the
+            // command's engine notify re-derives - the moved folder leaves this view on its own.
+            await runMutation(createMoveFolderCommand(folderId, destinationFolderId ?? null));
          },
          reorderFolders: async (parentFolderId, oldIndex, newIndex) => {
-            // Optimistic: reflect the new order in the loaded view at once
-            // so the row lands where released, no wait for the command + reload. The
-            // engine reorders with the same arrayMove semantics, so the reload is a no-op
-            // visually; on failure, reload to revert to the persisted truth.
-            const view = get().currentFolderView;
-            if (view) set({ currentFolderView: { ...view, folders: arrayMove(view.folders, oldIndex, newIndex) } });
-            try {
-               await runMutation(createReorderFoldersCommand(parentFolderId, oldIndex, newIndex));
-            } catch (error) {
-               await loadView(get().currentFolderId);
-               set({ error: toStoreError(error) });
-               throw error;
-            }
+            // No optimistic step: the cache re-derives the reordered folders on the command's engine
+            // notify, so the rows land in their new order without patching this view.
+            await runMutation(createReorderFoldersCommand(parentFolderId, oldIndex, newIndex));
          },
 
          // ==================

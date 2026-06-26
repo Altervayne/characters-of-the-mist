@@ -33,7 +33,7 @@ import { DrawerSortControl } from '@/components/molecules/drawer/DrawerSortContr
 import { Breadcrumb } from '@/components/molecules/Breadcrumbs';
 import FolderDropZone from '@/components/molecules/drawer/FolderDropZone';
 import { DrawerHeader } from '@/components/molecules/drawer/DrawerHeader';
-import { DrawerPanelSkeleton } from '@/components/molecules/drawer/DrawerContentSkeleton';
+import { DrawerItemsSkeleton } from '@/components/molecules/drawer/DrawerContentSkeleton';
 
 // -- Store and Hook Imports --
 import { useDrawerActions, useDrawerStore, isSearchFilterActive } from '@/lib/stores/drawerStore';
@@ -217,12 +217,11 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                  </div>
                               )}
                            </div>
-                        ) : isContentLoading ? (
-                           // Navigating to a new folder: a layout-matched skeleton instead of the stale
-                           // previous folder (threshold-gated, so an instant load never flashes it).
-                           <DrawerPanelSkeleton compact={isCompactDrawer} />
                         ) : (
                         <>
+                        {/* Folders render from the in-memory cache, so they are present instantly on
+                            navigation - no skeleton here. Only the items area (below) shows a skeleton
+                            while its query runs. */}
                         {/* Reflow containers animate POSITION not size: a full `layout` scales the box to
                             its new size, which stretches the non-`layout` children (folder rows, cards)
                             mid-animation. `layout="position"` slides them into place without that distortion. */}
@@ -309,7 +308,11 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                  (isDragHovering || drawerDropTarget?.kind === 'current-folder') && "border-primary bg-primary/10"
                               )}
                            >
-                              {currentItems.length > 0 ? (
+                              {isContentLoading ? (
+                                 // Navigating: a layout-matched ITEM skeleton (threshold-gated, so an
+                                 // instant load never flashes it); the folder list above stays put.
+                                 <DrawerItemsSkeleton compact={isCompactDrawer} />
+                              ) : currentItems.length > 0 ? (
                                  <div className="flex flex-col gap-2">
                                     {/* Live shuffle: siblings animate aside to open a real gap where the
                                         dragged item will land. The `over` is resolved by live geometry in

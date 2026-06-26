@@ -272,6 +272,40 @@ export function getFolder(folderId: string): Promise<DrawerFolderRecord | undefi
    return db.folders.get(folderId);
 }
 
+/**
+ * Every folder record, flat. Backs the in-memory folder-tree cache, which re-derives
+ * the whole structure from this on each mutation rather than patching itself - folders
+ * are tiny and mutations rare relative to navigation, so a full read cannot drift.
+ */
+export function getAllFolders(): Promise<DrawerFolderRecord[]> {
+   return db.folders.toArray();
+}
+
+/**
+ * Ordered child ITEMS of a folder (`null` = root), without touching the folders
+ * table. The folder structure now comes from the cache, so navigation loads only
+ * items - this is the read it uses.
+ */
+export function getFolderItems(parentFolderId: string | null): Promise<DrawerItemRecord[]> {
+   const storedParentId = toStoredParentId(parentFolderId);
+   return runReadTransaction([db.items], () => orderedChildItems(storedParentId));
+}
+
+/**
+ * Direct ITEM counts for many folders at once, keyed by folder id - the item half of
+ * a folder row's summary (the folder half is read straight from the cache). Items
+ * only, so navigation never queries the folders table.
+ */
+export function getItemCountsForFolders(folderIds: string[]): Promise<Map<string, number>> {
+   return runReadTransaction([db.items], async () => {
+      const counts = new Map<string, number>();
+      for (const folderId of folderIds) {
+         counts.set(folderId, await db.items.where('parentFolderId').equals(folderId).count());
+      }
+      return counts;
+   });
+}
+
 /** Loads a single item record by id, or `undefined` if it does not exist. */
 export function getItem(itemId: string): Promise<DrawerItemRecord | undefined> {
    return db.items.get(itemId);
