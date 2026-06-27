@@ -262,6 +262,7 @@
 
          "openDrawer": "Open Drawer",
          "closeDrawer": "Close Drawer",
+         "drawer": "Drawer",
 
          "saveToDrawer": "Save Character",
          "saveToDrawerAs": "Save Character As...",

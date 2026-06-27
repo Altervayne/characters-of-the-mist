@@ -50,11 +50,13 @@ interface DiceTrayProps {
    onCacheRoll: (content: DiceTrayContent) => void;
    /** Render the `data-board-fill-spacer` slack so a footer pins to the bottom under canvas drag-resize. */
    growToFill?: boolean;
+   /** Whether to render the title input. Off for the generic app-wide tray, which is unnamed. */
+   showTitle?: boolean;
    /** Optional: fired when the title input is focused (the board uses it to select the item). */
    onTitleFocus?: () => void;
 }
 
-export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill = false, onTitleFocus }: DiceTrayProps) {
+export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill = false, showTitle = true, onTitleFocus }: DiceTrayProps) {
    const { t } = useTranslation();
 
    // Normalize legacy trays (count-map dice, flat modifier); every commit spreads this, so
@@ -152,19 +154,21 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
 
    return (
       <div className="flex min-h-0 w-full flex-1 flex-col bg-card text-card-foreground">
-         <input
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onFocus={onTitleFocus}
-            onBlur={commitTitle}
-            onPointerDown={stopDrag}
-            placeholder={t('BoardView.diceTitlePlaceholder')}
-            className={cn(
-               'shrink-0 border-b border-border bg-transparent px-2 py-1.5 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60',
-               editable ? 'pointer-events-auto' : 'pointer-events-none',
-            )}
-         />
+         {showTitle && (
+            <input
+               type="text"
+               value={title}
+               onChange={(event) => setTitle(event.target.value)}
+               onFocus={onTitleFocus}
+               onBlur={commitTitle}
+               onPointerDown={stopDrag}
+               placeholder={t('BoardView.diceTitlePlaceholder')}
+               className={cn(
+                  'shrink-0 border-b border-border bg-transparent px-2 py-1.5 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60',
+                  editable ? 'pointer-events-auto' : 'pointer-events-none',
+               )}
+            />
+         )}
 
          <div className="flex flex-col">
             {/* The dice, each as its shape, plus the add-die picker. */}

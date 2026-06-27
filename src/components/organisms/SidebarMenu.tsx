@@ -354,7 +354,21 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
             {/* Context-specific scrollable buttons */}
             <div className="flex flex-col grow w-full min-h-0 overflow-y-auto overscroll-contain">
-               { activeWindow === 'PLAY_AREA' && 
+               {/* Submenus: the two panel toggles (Drawer + Dice Tray) lead every context, side by side and
+                   identical wherever you are. Each goes muted while its panel is open. */}
+               <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                  "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
+                  isCollapsed ? "px-0" : "px-2"
+               )}>
+                  <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} variant={isDrawerOpen ? 'secondary' : 'default'} Icon={BookUser}>
+                     {t('CharacterSheetPage.SidebarMenu.drawer')}
+                  </SidebarButton>
+                  <SidebarButton data-tour="dice-tray-button" isCollapsed={isCollapsed} onClick={toggleDiceTray} variant={isDiceTrayOpen ? 'secondary' : 'default'} Icon={Dices}>
+                     {t('CharacterSheetPage.SidebarMenu.diceTray')}
+                  </SidebarButton>
+               </motion.section>
+
+               { activeWindow === 'PLAY_AREA' &&
                   <>
                      <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
@@ -362,9 +376,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      )}>
                         <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} Icon={isEditing ? Dices : Edit}>
                            {isEditing ? t('CharacterSheetPage.SidebarMenu.playMode') : t('CharacterSheetPage.SidebarMenu.editMode')}
-                        </SidebarButton>
-                        <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
-                           {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
                         </SidebarButton>
                      </motion.section>
 
@@ -400,16 +411,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
                { activeWindow === 'BOARD' &&
                   <>
-                     {/* View control above the save/export group, mirroring how the play area leads with its toggles. */}
-                     <motion.section layout transition={{ duration: 0.2 }} className={cn(
-                        "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
-                        isCollapsed ? "px-0" : "px-2"
-                     )}>
-                        <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
-                           {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
-                        </SidebarButton>
-                     </motion.section>
-
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
@@ -433,7 +434,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                }
 
                { activeWindow === 'MAIN_MENU' &&
-                  <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
+                  <motion.section layout transition={{ duration: 0.2 }} className={cn(
                      "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
                      isCollapsed ? "px-0" : "px-2"
                   )}>
@@ -442,9 +443,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      </SidebarButton>
                      <SidebarButton isCollapsed={isCollapsed} onClick={() => boardImportInputRef.current?.click()} Icon={Download}>
                         {t('CharacterSheetPage.SidebarMenu.importBoard')}
-                     </SidebarButton>
-                     <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} Icon={BookUser}>
-                        {isDrawerOpen ? t('CharacterSheetPage.SidebarMenu.closeDrawer') : t('CharacterSheetPage.SidebarMenu.openDrawer')}
                      </SidebarButton>
                   </motion.section>
                }
@@ -470,9 +468,6 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   "flex flex-col items-center gap-2 p-2 bg-card",
                   activeWindow === 'MAIN_MENU' && "border-t-2 border-border"
                )}>
-                  <SidebarButton data-tour="dice-tray-button" isCollapsed={isCollapsed} onClick={toggleDiceTray} variant={isDiceTrayOpen ? 'secondary' : 'default'} Icon={Dices}>
-                     {t('CharacterSheetPage.SidebarMenu.diceTray')}
-                  </SidebarButton>
                   <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
                      {t('CharacterSheetPage.SidebarMenu.settings')}
                   </SidebarButton>

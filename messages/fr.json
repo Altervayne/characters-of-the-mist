@@ -253,6 +253,7 @@
          "playMode": "Mode Jeu",
          "openDrawer": "Ouvrir le Tiroir",
          "closeDrawer": "Fermer le Tiroir",
+         "drawer": "[TO COMPLETE]",
          "saveToDrawer": "Enregistrer le Perso.",
          "saveToDrawerAs": "Enregistrer sous... ",
          "saveBoardToDrawer": "[TO COMPLETE]",

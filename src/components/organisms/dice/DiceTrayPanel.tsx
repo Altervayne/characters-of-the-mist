@@ -51,8 +51,9 @@ export function DiceTrayPanel() {
                      </button>
                   </div>
                   {/* The core migrates content defensively on read; both writes go straight to the persisted
-                      setting (no undo). growToFill off - the panel sizes to its content. */}
-                  <DiceTray content={content} editable onChange={setDiceTrayContent} onCacheRoll={setDiceTrayContent} growToFill={false} />
+                      setting (no undo). growToFill off - the panel sizes to its content; showTitle off - the
+                      app-wide tray is a generic "roll from anywhere" tray, not a named one. */}
+                  <DiceTray content={content} editable onChange={setDiceTrayContent} onCacheRoll={setDiceTrayContent} growToFill={false} showTitle={false} />
                </div>
             </motion.div>
          )}
