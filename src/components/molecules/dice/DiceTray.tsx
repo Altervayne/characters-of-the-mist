@@ -6,20 +6,21 @@ import { useTranslation } from 'react-i18next';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Dices, Minus, Plus, X } from 'lucide-react';
+import { CornerDownLeft, Dices, Minus, Plus, Terminal, X } from 'lucide-react';
 
 // -- Basic UI Imports --
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { DIE_SIDES, migrateDiceTrayContent, rollDiceTray } from '@/lib/dice/diceTray';
+import { QUICK_PICK, migrateDiceTrayContent, rollDiceTray } from '@/lib/dice/diceTray';
+import { parseDiceCommand } from '@/lib/dice/diceCommand';
 
 // -- Component Imports --
 import { DieShape } from './DieShape';
 
 // -- Type Imports --
-import type { DiceTrayContent, DiceTrayModifier, DieSides } from '@/lib/dice/diceTrayTypes';
+import type { DiceTrayContent, DiceTrayModifier } from '@/lib/dice/diceTrayTypes';
 
 /*
  * The board-agnostic dice tray: a list of individual dice + labeled modifiers (+ optional title), a roll
@@ -87,11 +88,23 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
       if (trimmed !== (tray.title ?? '')) onChange({ ...tray, title: trimmed });
    };
 
-   const addDie = (sides: DieSides) => {
+   const addDie = (sides: number) => {
       onChange({ ...tray, dice: [...dice, { id: cuid(), sides }] });
       setPickerOpen(false);
    };
    const removeDie = (id: string) => onChange({ ...tray, dice: dice.filter((die) => die.id !== id) });
+   // A penalty die: its rolled value subtracts. Toggled per die in editable mode.
+   const toggleNegative = (id: string) =>
+      onChange({ ...tray, dice: dice.map((die) => (die.id === id ? { ...die, negative: !die.negative } : die)) });
+
+   // A typed/pasted formula REPLACES the tray's dice + modifiers (a command describes a full setup). One
+   // onChange = one undoable edit on the board, persisted directly on the app tray. A bad parse is a no-op.
+   const applyCommand = (raw: string): boolean => {
+      const result = parseDiceCommand(raw);
+      if ('error' in result) return false;
+      onChange({ ...tray, dice: result.dice, modifiers: result.modifiers });
+      return true;
+   };
 
    const addModifier = () => onChange({ ...tray, modifiers: [...modifiers, { id: cuid(), label: '', value: 0 }] });
    const removeModifier = (id: string) => onChange({ ...tray, modifiers: modifiers.filter((m) => m.id !== id) });
@@ -148,7 +161,7 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
    // Resting faces/breakdown come from the cached lastRoll; during a roll, from the live state.
    const faceOf = (id: string): number | null => (liveFaces ? liveFaces[id] ?? null : tray.lastRoll?.faces[id] ?? null);
    const displayTotal = liveFaces
-      ? dice.reduce((sum, die) => sum + (liveFaces[die.id] ?? 0), 0) + modifierTotal
+      ? dice.reduce((sum, die) => { const v = liveFaces[die.id] ?? 0; return sum + (die.negative ? -v : v); }, 0) + modifierTotal
       : tray.lastRoll?.total ?? null;
    const displayModifiers = liveFaces ? modifiers.map((m) => ({ label: m.label, value: m.value })) : tray.lastRoll?.modifiers ?? [];
 
@@ -175,18 +188,32 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
             <div className="flex flex-wrap content-start gap-1.5 p-2">
                {dice.map((die) => (
                   <div key={die.id} className="group/die relative h-11 w-11">
-                     <DieShape sides={die.sides} value={faceOf(die.id)} />
+                     <DieShape sides={die.sides} value={faceOf(die.id)} negative={die.negative} />
                      {editable && (
-                        <button
-                           type="button"
-                           title={t('BoardView.diceRemoveDie')}
-                           aria-label={t('BoardView.diceRemoveDie')}
-                           onPointerDown={stopDrag}
-                           onClick={() => removeDie(die.id)}
-                           className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground group-hover/die:flex cursor-pointer"
-                        >
-                           <X className="h-2.5 w-2.5" />
-                        </button>
+                        <>
+                           {/* Penalty toggle (top-left): flips the die negative so its value subtracts. */}
+                           <button
+                              type="button"
+                              title={t('BoardView.diceToggleNegative')}
+                              aria-label={t('BoardView.diceToggleNegative')}
+                              onPointerDown={stopDrag}
+                              onClick={() => toggleNegative(die.id)}
+                              className="absolute -left-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-secondary text-secondary-foreground group-hover/die:flex cursor-pointer"
+                           >
+                              {die.negative ? <Plus className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
+                           </button>
+                           {/* Remove (top-right). */}
+                           <button
+                              type="button"
+                              title={t('BoardView.diceRemoveDie')}
+                              aria-label={t('BoardView.diceRemoveDie')}
+                              onPointerDown={stopDrag}
+                              onClick={() => removeDie(die.id)}
+                              className="absolute -right-1 -top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground group-hover/die:flex cursor-pointer"
+                           >
+                              <X className="h-2.5 w-2.5" />
+                           </button>
+                        </>
                      )}
                   </div>
                ))}
@@ -205,7 +232,7 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
                   </PopoverTrigger>
                   <PopoverContent align="start" sideOffset={6} className="w-auto p-2">
                      <div className="grid grid-cols-4 gap-1">
-                        {DIE_SIDES.map((sides) => (
+                        {QUICK_PICK.map((sides) => (
                            <button
                               key={sides}
                               type="button"
@@ -219,8 +246,26 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
                            </button>
                         ))}
                      </div>
+                     {/* Custom sides: add any dN by hand (any integer >= 2 -> a weird die). */}
+                     <CustomSidesAdder
+                        placeholder={t('BoardView.diceCustomSidesPlaceholder')}
+                        addLabel={t('BoardView.diceAddCustomDie')}
+                        onAdd={addDie}
+                     />
                   </PopoverContent>
                </Popover>
+
+               {/* A tucked extra: build the whole tray from a typed formula like 1d6+2d12+4-2. */}
+               {editable && (
+                  <CommandPopover
+                     triggerLabel={t('BoardView.diceCommandLabel')}
+                     placeholder={t('BoardView.diceCommandPlaceholder')}
+                     applyLabel={t('BoardView.diceCommandApply')}
+                     errorLabel={t('BoardView.diceCommandError')}
+                     stopDrag={stopDrag}
+                     onApply={applyCommand}
+                  />
+               )}
             </div>
 
             {/* Modifiers: a labeled list, each row one undoable change. */}
@@ -345,6 +390,111 @@ function ModifierRow({
             className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive hover:text-destructive-foreground cursor-pointer"
          >
             <X className="h-3 w-3" />
+         </button>
+      </div>
+   );
+}
+
+/**
+ * The tucked dice-command entry: a small icon that opens a field where a formula (e.g. `1d6+2d12+4`)
+ * REPLACES the tray. `onApply` returns false on a bad parse, which surfaces a subtle inline error and
+ * leaves the tray untouched (the popover stays open so the typo can be fixed).
+ */
+function CommandPopover({ triggerLabel, placeholder, applyLabel, errorLabel, stopDrag, onApply }: {
+   triggerLabel: string;
+   placeholder: string;
+   applyLabel: string;
+   errorLabel: string;
+   stopDrag: (event: ReactPointerEvent) => void;
+   onApply: (raw: string) => boolean;
+}) {
+   const [open, setOpen] = useState(false);
+   const [value, setValue] = useState('');
+   const [error, setError] = useState(false);
+   const submit = () => {
+      if (onApply(value.trim())) {
+         setValue('');
+         setError(false);
+         setOpen(false);
+      } else {
+         setError(true);
+      }
+   };
+   return (
+      <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setError(false); }}>
+         <PopoverTrigger asChild>
+            <button
+               type="button"
+               title={triggerLabel}
+               aria-label={triggerLabel}
+               onPointerDown={stopDrag}
+               className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+            >
+               <Terminal className="h-5 w-5" />
+            </button>
+         </PopoverTrigger>
+         <PopoverContent align="start" sideOffset={6} className="w-64 p-2">
+            <div className="flex items-center gap-1">
+               <input
+                  type="text"
+                  autoFocus
+                  value={value}
+                  onChange={(event) => { setValue(event.target.value); setError(false); }}
+                  onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submit(); } }}
+                  onPointerDown={stopDrag}
+                  placeholder={placeholder}
+                  className={cn(
+                     'min-w-0 flex-1 rounded border bg-transparent px-1.5 py-1 font-mono text-xs outline-none placeholder:font-sans placeholder:text-muted-foreground/60',
+                     error ? 'border-destructive' : 'border-border',
+                  )}
+               />
+               <button
+                  type="button"
+                  title={applyLabel}
+                  aria-label={applyLabel}
+                  onPointerDown={stopDrag}
+                  onClick={submit}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+               >
+                  <CornerDownLeft className="h-4 w-4" />
+               </button>
+            </div>
+            {error && <p className="mt-1 px-0.5 text-[0.65rem] text-destructive">{errorLabel}</p>}
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+/** A number field for adding a die with any side count (>= 2): the by-hand path to a weird die. */
+function CustomSidesAdder({ placeholder, addLabel, onAdd }: { placeholder: string; addLabel: string; onAdd: (sides: number) => void }) {
+   const [raw, setRaw] = useState('');
+   const submit = () => {
+      const sides = parseInt(raw, 10);
+      if (Number.isFinite(sides) && sides >= 2) {
+         onAdd(sides);
+         setRaw('');
+      }
+   };
+   return (
+      <div className="mt-2 flex items-center gap-1 border-t border-border pt-2">
+         <span className="font-mono text-xs text-muted-foreground">d</span>
+         <input
+            type="number"
+            min={2}
+            value={raw}
+            onChange={(event) => setRaw(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submit(); } }}
+            placeholder={placeholder}
+            className="w-16 rounded border border-border bg-transparent px-1.5 py-0.5 text-xs outline-none placeholder:text-muted-foreground/60"
+         />
+         <button
+            type="button"
+            title={addLabel}
+            aria-label={addLabel}
+            onClick={submit}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+         >
+            <Plus className="h-4 w-4" />
          </button>
       </div>
    );

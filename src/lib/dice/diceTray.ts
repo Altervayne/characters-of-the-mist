@@ -11,14 +11,18 @@ import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier, DieSides } from '@
  * injected RNG.
  */
 
-/** The die faces a tray can hold, ascending - also the picker / display order. */
+/** The platonic faces, ascending - the migration's count-map order and the projected-shape set. */
 export const DIE_SIDES: DieSides[] = [4, 6, 8, 10, 12, 20, 100];
 
-/** One die's outcome: which die (by id) and the value it landed on. */
+/** The picker's quick-pick buttons: the d2 coin plus the platonic set. Any sides >= 2 is still valid. */
+export const QUICK_PICK: number[] = [2, 4, 6, 8, 10, 12, 20, 100];
+
+/** One die's outcome: which die (by id), its face count, the value it landed on, and whether it subtracts. */
 export interface DieFace {
    id: string;
-   sides: DieSides;
+   sides: number;
    value: number;
+   negative?: boolean;
 }
 
 /** A full roll: each die's face, the dice subtotal, the labeled modifier breakdown, and the grand total. */
@@ -31,18 +35,19 @@ export interface DiceTrayResult {
 }
 
 /**
- * Rolls a tray's dice (each lands on `1..sides`) and adds every modifier's value. `rng`
- * (default `Math.random`) is injectable so tests are deterministic. The result keeps the
- * per-modifier breakdown for display, never collapsing to one number. Empty lists are fine
- * (a roll with no dice/modifiers yields 0).
+ * Rolls a tray's dice (each lands on `1..sides`, any sides >= 2) and adds every modifier's value. A
+ * NEGATIVE (penalty) die still lands on `1..sides`, but its rolled value is SUBTRACTED from the dice
+ * subtotal; the face carries the flag so the UI can mark it. `rng` (default `Math.random`) is injectable so
+ * tests are deterministic. The result keeps the per-modifier breakdown for display, never collapsing to one
+ * number. Empty lists are fine (a roll with no dice/modifiers yields 0).
  */
 export function rollDiceTray(dice: DiceTrayDie[], modifiers: DiceTrayModifier[], rng: () => number = Math.random): DiceTrayResult {
    const faces: DieFace[] = [];
    let diceTotal = 0;
    for (const die of dice) {
       const value = 1 + Math.floor(rng() * die.sides);
-      faces.push({ id: die.id, sides: die.sides, value });
-      diceTotal += value;
+      faces.push({ id: die.id, sides: die.sides, value, negative: die.negative });
+      diceTotal += die.negative ? -value : value;
    }
    const breakdown = modifiers.map((modifier) => ({ label: modifier.label, value: modifier.value }));
    const modifierTotal = breakdown.reduce((sum, modifier) => sum + modifier.value, 0);

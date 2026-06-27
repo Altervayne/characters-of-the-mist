@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { DIE_SIDES, migrateDiceTrayContent, rollDiceTray } from './diceTray';
+import { DIE_SIDES, QUICK_PICK, migrateDiceTrayContent, rollDiceTray } from './diceTray';
 
 // -- Type Imports --
 import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier } from '@/lib/dice/diceTrayTypes';
@@ -68,6 +68,38 @@ describe('rollDiceTray', () => {
 
    it('exposes the standard polyhedral set in ascending order', () => {
       expect(DIE_SIDES).toEqual([4, 6, 8, 10, 12, 20, 100]);
+   });
+
+   it('quick-pick is the coin plus the platonic set', () => {
+      expect(QUICK_PICK).toEqual([2, 4, 6, 8, 10, 12, 20, 100]);
+   });
+
+   it('rolls arbitrary side counts within 1..sides (a coin and a weird die)', () => {
+      const result = rollDiceTray(dice(['coin', 2], ['weird', 63]), [], Math.random);
+      const [coin, weird] = result.faces;
+      expect(coin.value).toBeGreaterThanOrEqual(1);
+      expect(coin.value).toBeLessThanOrEqual(2);
+      expect(weird.value).toBeGreaterThanOrEqual(1);
+      expect(weird.value).toBeLessThanOrEqual(63);
+   });
+
+   it('subtracts a negative (penalty) die from the dice subtotal', () => {
+      // rng 0.99 -> 6 on a d6. One positive (+6), one negative (-6) -> diceTotal 0.
+      const penalty: DiceTrayDie[] = [{ id: 'a', sides: 6 }, { id: 'b', sides: 6, negative: true }];
+      const result = rollDiceTray(penalty, [], () => 0.99);
+      expect(result.faces.map((f) => f.value)).toEqual([6, 6]);
+      expect(result.faces[1].negative).toBe(true);
+      expect(result.diceTotal).toBe(0);
+      expect(result.total).toBe(0);
+   });
+
+   it('a mixed tray sums positives, subtracts negatives, then adds modifiers', () => {
+      // rng 0 -> 1 on every die. +d20 (1) + d6 (1) - d8 (1) = 1; modifier +2 -> total 3.
+      const mixed: DiceTrayDie[] = [{ id: 'a', sides: 20 }, { id: 'b', sides: 6 }, { id: 'c', sides: 8, negative: true }];
+      const result = rollDiceTray(mixed, mods(['m', 2, 'Bonus']), () => 0);
+      expect(result.diceTotal).toBe(1);
+      expect(result.modifierTotal).toBe(2);
+      expect(result.total).toBe(3);
    });
 });
 

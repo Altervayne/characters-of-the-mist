@@ -4,13 +4,18 @@
  * board coupling. The board's `DiceTrayBoardContent` is just this plus the board item's `kind` tag.
  */
 
-/** The standard polyhedral die faces a dice tray can hold. */
+/** The standard polyhedral die faces (the quick-pick set + the shapes with a real projection). */
 export type DieSides = 4 | 6 | 8 | 10 | 12 | 20 | 100;
 
-/** One die in a tray: a stable id (so a cached roll maps to it) and its face count. */
+/**
+ * One die in a tray: a stable id (so a cached roll maps to it) and its face count. `sides` is any integer
+ * >= 2 (a d2 coin, the platonic set, or an arbitrary "weird" die like a d63); `negative` marks a penalty
+ * die whose rolled value SUBTRACTS from the total.
+ */
 export interface DiceTrayDie {
    id: string;
-   sides: DieSides;
+   sides: number;
+   negative?: boolean;
 }
 
 /** One labeled modifier on a tray: an optional label and a signed value (config, undoable). */
