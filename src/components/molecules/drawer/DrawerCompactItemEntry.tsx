@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from '@/components/ui/button';
 
 // -- Icon Imports --
-import { MoreHorizontal, Pencil, Trash2, Move, GripVertical, Upload } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Move, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
-import { DrawerListRow } from '@/components/molecules/drawer/DrawerListRow';
+import { DrawerListRow, DrawerListRowFrame } from '@/components/molecules/drawer/DrawerListRow';
 
 // -- Type Imports --
 import type { DrawerItem } from '@/lib/types/drawer';
@@ -48,22 +48,9 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
       >
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
             <DragStaticWrapper isBeingDragged={isBeingDragged}>
-               <DrawerListRow
-                  type={item.type}
-                  name={item.name}
-                  game={item.game}
-                  createdAt={item.createdAt}
-                  updatedAt={item.updatedAt}
+               <DrawerListRowFrame
                   className={cn(isPreview && 'border-2 border-border bg-muted/50')}
-                  /* The grip is the drag handle; it reserves its slot and hover-reveals (no reflow), like the menu. */
-                  leading={
-                     <GripVertical
-                        className="h-5 w-5 shrink-0 cursor-grab text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
-                        {...dragAttributes}
-                        {...dragListeners}
-                     />
-                  }
-                  trailing={!isPreview &&
+                  menu={!isPreview &&
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100">
@@ -78,7 +65,19 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
                         </DropdownMenuContent>
                      </DropdownMenu>
                   }
-               />
+               >
+                  {/* The whole row is the drag handle; the menu overlays it on hover (a sibling, so a menu
+                      click never starts a drag), mirroring the rich result card. */}
+                  <div {...dragAttributes} {...dragListeners} className="cursor-grab">
+                     <DrawerListRow
+                        type={item.type}
+                        name={item.name}
+                        game={item.game}
+                        createdAt={item.createdAt}
+                        updatedAt={item.updatedAt}
+                     />
+                  </div>
+               </DrawerListRowFrame>
             </DragStaticWrapper>
          )}
       </Sortable>

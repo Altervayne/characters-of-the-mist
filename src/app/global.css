@@ -633,6 +633,11 @@ aside .flex-col.gap-2 {
 
 aside .flex-col.gap-2 > * {
    flex-shrink: 0 !important;
+}
+
+/* The min-height keeps the sidebar's own button rows from collapsing under the tour overlay; scope it to
+   the sidebar so it doesn't pad out the drawer's compact list rows (same aside + gap-2 layout). */
+aside[data-tour="sidebar-menu"] .flex-col.gap-2 > * {
    min-height: 2.5rem !important;
 }
 

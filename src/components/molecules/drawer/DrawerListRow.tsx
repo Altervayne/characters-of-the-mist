@@ -1,5 +1,5 @@
 // -- React Imports --
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Utils Imports --
@@ -9,27 +9,25 @@ import { getGameVisual } from '@/lib/constants/gameVisuals';
 
 // -- Component Imports --
 import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
+import { IconTooltip } from '@/components/molecules/drawer/IconTooltip';
 
 // -- Type Imports --
 import type { GeneralItemType, GameSystem } from '@/lib/types/drawer';
 
 /*
- * The shared List-view row layout, used by both the browse list and the search results so they read
- * identically: [leading slot] [type glyph] [name - owns the flexible space] [game glyph] [date - a
- * right-aligned column] [trailing slot]. The name flexes and only truncates when genuinely too long;
- * the date sits in its own right-aligned column so dates scan straight down the list. Leading hosts the
- * browse drag-grip (none for results); trailing hosts the actions menu. The row exposes `group/row` so
- * those slots can hover-reveal (`group-hover/row:opacity-100`) without reflow.
+ * The shared List-view row, used by both the browse list and the search results so they read identically:
+ * [type glyph] [name - owns the flexible space] [game glyph] [date - a right-aligned column]. The name
+ * flexes and only truncates when genuinely too long; the date sits in its own right-aligned column so
+ * dates scan straight down the list. The row is content-only: the whole row is the drag handle and the
+ * actions menu floats as a hover overlay, both owned by {@link DrawerListRowFrame}, so the content reaches
+ * both edges. Like the rich card, the type / game glyphs carry a styled tooltip naming them.
  */
 
-/**
- * The game glyph element (resolved in this module helper, not in render); neutral items have none. The
- * dense rows use a native `title` (a lightweight hover label, no per-row tooltip machinery) to name it.
- */
-function gameGlyph(game: GameSystem, title: string): ReactElement | null {
+/** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
+function gameGlyph(game: GameSystem): ReactElement | null {
    if (game === 'NEUTRAL') return null;
    const Icon = getGameVisual(game).Icon;
-   return <span title={title} className="inline-flex shrink-0"><Icon className="h-4 w-4 shrink-0 text-muted-foreground" /></span>;
+   return <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />;
 }
 
 interface DrawerListRowProps {
@@ -38,29 +36,50 @@ interface DrawerListRowProps {
    game: GameSystem;
    createdAt?: number;
    updatedAt?: number;
-   /** Leading slot, left of the type glyph (the browse drag-grip; absent for results). */
-   leading?: ReactNode;
-   /** Trailing slot, right of the date column (the actions menu). */
-   trailing?: ReactNode;
    className?: string;
 }
 
-export function DrawerListRow({ type, name, game, createdAt, updatedAt, leading, trailing, className }: DrawerListRowProps) {
+export function DrawerListRow({ type, name, game, createdAt, updatedAt, className }: DrawerListRowProps) {
    const { t } = useTranslation();
+   const glyph = gameGlyph(game);
    return (
-      <div className={cn('group/row flex min-h-8 items-center gap-2 rounded py-1 pl-1 pr-2 hover:bg-muted data-[state=open]:bg-muted', className)}>
-         {leading}
-         {/* Native title hover labels name the otherwise-unlabelled indicator icons (type + game). */}
-         <span title={t(`Drawer.filters.itemType.${type}`)} className="inline-flex shrink-0">{getItemTypeIcon(type)}</span>
+      <div className={cn('flex min-h-8 items-center gap-2 rounded p-1.5 pr-2', className)}>
+         {/* Tooltips name the otherwise-unlabelled indicator icons (type + game). */}
+         <IconTooltip label={t(`Drawer.filters.itemType.${type}`)}>{getItemTypeIcon(type)}</IconTooltip>
          <span className="min-w-0 flex-1 truncate text-sm font-medium">{name}</span>
-         {gameGlyph(game, t(`Drawer.Types.${game}`))}
+         {glyph && <IconTooltip label={t(`Drawer.Types.${game}`)}>{glyph}</IconTooltip>}
          <ItemDateLabel
             type={type}
             createdAt={createdAt}
             updatedAt={updatedAt}
             className="min-w-16 shrink-0 whitespace-nowrap text-right text-xs text-muted-foreground"
          />
-         {trailing}
+      </div>
+   );
+}
+
+/*
+ * The row frame shared by both list surfaces: a `relative group/row` container that highlights on hover
+ * and floats the actions menu as a sibling overlay at the right edge, vertically centered. The menu sits
+ * OUTSIDE the drag-handle body (which each caller wires itself, wrapping the row in `cursor-grab` +
+ * listeners), so clicking the menu never starts a drag. A non-draggable row (a search summary) just omits
+ * the handle wiring. `containerRef` lets the search hook anchor its draggable node on the container.
+ */
+export function DrawerListRowFrame({
+   children,
+   menu,
+   containerRef,
+   className,
+}: {
+   children: ReactNode;
+   menu?: ReactNode;
+   containerRef?: Ref<HTMLDivElement>;
+   className?: string;
+}) {
+   return (
+      <div ref={containerRef} className={cn('group/row relative rounded hover:bg-muted data-[state=open]:bg-muted', className)}>
+         {children}
+         {menu && <div className="absolute right-1 top-1/2 z-10 -translate-y-1/2">{menu}</div>}
       </div>
    );
 }

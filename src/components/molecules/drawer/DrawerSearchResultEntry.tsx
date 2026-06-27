@@ -4,16 +4,13 @@ import type { ReactNode } from 'react';
 // -- DnD Imports --
 import { DragStaticWrapper } from '@/components/dnd';
 
-// -- Icon Imports --
-import { GripVertical } from 'lucide-react';
-
 // -- Hook Imports --
 import { useInView } from '@/hooks/useInView';
 import { useDrawerItemContent } from '@/hooks/drawer/useDrawerItemContent';
 import { useResultDraggable } from '@/hooks/drawer/useResultDraggable';
 
 // -- Component Imports --
-import { DrawerListRow } from '@/components/molecules/drawer/DrawerListRow';
+import { DrawerListRow, DrawerListRowFrame } from '@/components/molecules/drawer/DrawerListRow';
 import { DrawerResultMenu } from '@/components/molecules/drawer/DrawerResultMenu';
 
 // -- Type Imports --
@@ -24,10 +21,10 @@ import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
  * A flat search-result row, driven by a content-FREE {@link DrawerItemSummary}. Shares the exact List
  * layout with the browse row ({@link DrawerListRow}) - type glyph, flexible name, game glyph, right-
  * aligned date column - and, like the Rich result card, lazy-loads its content once the row scrolls into
- * view and then becomes DRAGGABLE OUT (a grip in the leading slot). Results don't reorder among
- * themselves, so it is a plain draggable, not a Sortable; the payload matches a browse item exactly, so
- * the board / sheet / tab drop handlers embed it unchanged. A not-yet-loaded / missing row shows the same
- * summary with no grip (nothing to drag).
+ * view and then becomes DRAGGABLE OUT from anywhere on the row. Results don't reorder among themselves, so
+ * it is a plain draggable, not a Sortable; the payload matches a browse item exactly, so the board / sheet
+ * / tab drop handlers embed it unchanged. A not-yet-loaded / missing row shows the same content with no
+ * drag wiring (nothing to drag) - identical layout, so loading -> loaded never shifts.
  */
 
 export interface DrawerSearchResultEntryProps {
@@ -38,7 +35,7 @@ export interface DrawerSearchResultEntryProps {
    onMove: () => void;
 }
 
-/** The hover-revealed result menu (Jump-to / rename / move / delete), built once and placed in `trailing`. */
+/** The hover-revealed result menu (Jump-to / rename / move / delete), built once and floated as the row overlay. */
 function resultMenu({ onJumpTo, onRename, onDelete, onMove }: DrawerSearchResultEntryProps): ReactNode {
    return (
       <DrawerResultMenu
@@ -53,49 +50,43 @@ function resultMenu({ onJumpTo, onRename, onDelete, onMove }: DrawerSearchResult
 
 /**
  * The summary row - not draggable. Used before the content loads and when it is missing: the display is
- * the same as a loaded row (name/type/game/date all live on the summary), only the grip is absent. A
- * reserved leading spacer matches the grip's footprint, so the row doesn't shift when the grip appears.
+ * the same as a loaded row (name/type/game/date all live on the summary), only the drag wiring is absent.
+ * No drag handle, no shift on load.
  */
 function SummaryRow({ summary, menu }: { summary: DrawerItemSummary; menu: ReactNode }) {
    return (
-      <DrawerListRow
-         type={summary.type}
-         name={summary.name}
-         game={summary.game}
-         createdAt={summary.createdAt}
-         updatedAt={summary.updatedAt}
-         leading={<span aria-hidden className="h-5 w-5 shrink-0" />}
-         trailing={menu}
-      />
+      <DrawerListRowFrame menu={menu}>
+         <DrawerListRow
+            type={summary.type}
+            name={summary.name}
+            game={summary.game}
+            createdAt={summary.createdAt}
+            updatedAt={summary.updatedAt}
+         />
+      </DrawerListRowFrame>
    );
 }
 
 /**
- * A loaded result row, draggable OUT via the grip. Display still comes from the summary (identical to the
- * summary row, so loading -> loaded never shifts); the loaded record only feeds the drag payload. The menu
- * stays a trailing sibling so only the grip starts a drag.
+ * A loaded result row, draggable OUT from anywhere on the row. Display still comes from the summary
+ * (identical to the summary row, so loading -> loaded never shifts); the loaded record only feeds the drag
+ * payload. The menu stays a sibling overlay (outside the drag-handle body), so a menu click never drags.
  */
 function DraggableResultRow({ summary, item, menu }: { summary: DrawerItemSummary; item: DrawerItemRecord; menu: ReactNode }) {
    const { attributes, listeners, setNodeRef, isDragging } = useResultDraggable(summary, item);
    return (
       <DragStaticWrapper isBeingDragged={isDragging}>
-         <div ref={setNodeRef}>
-            <DrawerListRow
-               type={summary.type}
-               name={summary.name}
-               game={summary.game}
-               createdAt={summary.createdAt}
-               updatedAt={summary.updatedAt}
-               leading={
-                  <GripVertical
-                     className="h-5 w-5 shrink-0 cursor-grab text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100"
-                     {...attributes}
-                     {...listeners}
-                  />
-               }
-               trailing={menu}
-            />
-         </div>
+         <DrawerListRowFrame containerRef={setNodeRef} menu={menu}>
+            <div {...attributes} {...listeners} className="cursor-grab">
+               <DrawerListRow
+                  type={summary.type}
+                  name={summary.name}
+                  game={summary.game}
+                  createdAt={summary.createdAt}
+                  updatedAt={summary.updatedAt}
+               />
+            </div>
+         </DrawerListRowFrame>
       </DragStaticWrapper>
    );
 }
