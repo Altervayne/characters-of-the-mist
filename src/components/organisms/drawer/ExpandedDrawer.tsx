@@ -179,6 +179,7 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
             modeLabel={t('Drawer.contract')}
             onMode={contractDrawer}
             onClose={() => setDrawerOpen(false)}
+            wide
          >
             {/* The breadcrumb lives in the header's full-width secondary row (like the side panel), so a
                 deep path has the whole Library width to breathe instead of the cramped folder side-nav. */}

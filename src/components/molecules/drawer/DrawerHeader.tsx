@@ -26,10 +26,12 @@ interface DrawerHeaderProps {
    modeLabel: string;
    onMode: () => void;
    onClose: () => void;
+   /** The roomy Library surface: lets the search's Filters panel use the width (multi-column). */
+   wide?: boolean;
    children?: ReactNode;
 }
 
-export function DrawerHeader({ title, isCompactDrawer, onToggleView, modeIcon, modeLabel, onMode, onClose, children }: DrawerHeaderProps) {
+export function DrawerHeader({ title, isCompactDrawer, onToggleView, modeIcon, modeLabel, onMode, onClose, wide = false, children }: DrawerHeaderProps) {
    const { t } = useTranslation();
 
    return (
@@ -51,7 +53,7 @@ export function DrawerHeader({ title, isCompactDrawer, onToggleView, modeIcon, m
             </div>
          </div>
 
-         <DrawerSearchBar />
+         <DrawerSearchBar wide={wide} />
 
          {children}
       </header>

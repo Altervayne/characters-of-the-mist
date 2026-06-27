@@ -22,7 +22,7 @@ import { useDrawerSearch } from '@/hooks/drawer/useDrawerSearch';
  * search state, so the Open side panel and the Expanded view stay in sync without forking the search.
  */
 
-export function DrawerSearchBar() {
+export function DrawerSearchBar({ wide = false }: { wide?: boolean }) {
    const { t } = useTranslation();
    const { text, setText, clear, isSearchActive, resultCount, activeFilterCount } = useDrawerSearch();
    const [filtersOpen, setFiltersOpen] = useState(false);
@@ -62,7 +62,7 @@ export function DrawerSearchBar() {
             </Button>
          </div>
 
-         {filtersOpen && <DrawerFiltersPanel />}
+         {filtersOpen && <DrawerFiltersPanel wide={wide} />}
       </div>
    );
 }

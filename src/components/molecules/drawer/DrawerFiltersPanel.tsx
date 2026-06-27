@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 
 // -- Utils Imports --
+import { cn } from '@/lib/utils';
 import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
 import { getGameVisual, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 
@@ -91,7 +92,12 @@ function DateRangeRow({ label, range, onChange }: { label: string; range?: [numb
    );
 }
 
-export function DrawerFiltersPanel() {
+/**
+ * @param wide - The roomy Library layout: the checkbox lists become multi-column grids and the two date
+ *   ranges sit side by side, so the panel uses the horizontal space and stays short (no scroll). Default
+ *   (the narrow side panel) keeps the single vertical scroll column.
+ */
+export function DrawerFiltersPanel({ wide = false }: { wide?: boolean }) {
    const { t } = useTranslation();
    const criteria = useDrawerStore((state) => state.searchCriteria);
    const { updateSearchCriteria, clearSearch } = useDrawerActions();
@@ -108,8 +114,14 @@ export function DrawerFiltersPanel() {
       void updateSearchCriteria({ games: next });
    };
 
+   // Wide spreads each section across the width (grids + side-by-side dates) so it's short; narrow keeps
+   // the vertical lists and the bounded scroll the cramped side panel needs.
+   const typeListClass = wide ? 'grid grid-cols-3 gap-x-3 gap-y-0.5' : 'flex flex-col gap-1';
+   const gameListClass = wide ? 'grid grid-cols-2 gap-x-3 gap-y-0.5' : 'flex flex-col gap-1';
+   const datesClass = wide ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-3';
+
    return (
-      <div className="mt-2 flex max-h-72 flex-col gap-3 overflow-y-auto rounded-md border border-border bg-card p-3">
+      <div className={cn('mt-2 flex flex-col gap-3 rounded-md border border-border bg-card p-3', !wide && 'max-h-72 overflow-y-auto')}>
          <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">{t('Drawer.filters.title')}</h3>
             <Button variant="ghost" size="sm" className="h-7 cursor-pointer px-2 text-xs" onClick={clearSearch}>{t('Drawer.filters.clearAll')}</Button>
@@ -118,29 +130,35 @@ export function DrawerFiltersPanel() {
          {/* Type (multi). */}
          <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-muted-foreground">{t('Drawer.filters.type')}</span>
-            {FILTERABLE_ITEM_TYPES.map((type) => (
-               <label key={type} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
-                  <Checkbox checked={selectedTypes.includes(type)} onCheckedChange={() => toggleType(type)} />
-                  {getItemTypeIcon(type)}
-                  <span className="text-sm">{t(`Drawer.filters.itemType.${type}`)}</span>
-               </label>
-            ))}
+            <div className={typeListClass}>
+               {FILTERABLE_ITEM_TYPES.map((type) => (
+                  <label key={type} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
+                     <Checkbox checked={selectedTypes.includes(type)} onCheckedChange={() => toggleType(type)} />
+                     {getItemTypeIcon(type)}
+                     <span className="text-sm">{t(`Drawer.filters.itemType.${type}`)}</span>
+                  </label>
+               ))}
+            </div>
          </div>
 
          {/* Game (multi). */}
          <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-muted-foreground">{t('Drawer.filters.game')}</span>
-            {FILTERABLE_GAMES.map((game) => (
-               <label key={game} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
-                  <Checkbox checked={selectedGames.includes(game)} onCheckedChange={() => toggleGame(game)} />
-                  {gameGlyph(game)}
-                  <span className="text-sm">{t(`Drawer.Types.${game}`)}</span>
-               </label>
-            ))}
+            <div className={gameListClass}>
+               {FILTERABLE_GAMES.map((game) => (
+                  <label key={game} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
+                     <Checkbox checked={selectedGames.includes(game)} onCheckedChange={() => toggleGame(game)} />
+                     {gameGlyph(game)}
+                     <span className="text-sm">{t(`Drawer.Types.${game}`)}</span>
+                  </label>
+               ))}
+            </div>
          </div>
 
-         <DateRangeRow label={t('Drawer.filters.created')} range={criteria?.createdBetween} onChange={(next) => void updateSearchCriteria({ createdBetween: next })} />
-         <DateRangeRow label={t('Drawer.filters.updated')} range={criteria?.updatedBetween} onChange={(next) => void updateSearchCriteria({ updatedBetween: next })} />
+         <div className={datesClass}>
+            <DateRangeRow label={t('Drawer.filters.created')} range={criteria?.createdBetween} onChange={(next) => void updateSearchCriteria({ createdBetween: next })} />
+            <DateRangeRow label={t('Drawer.filters.updated')} range={criteria?.updatedBetween} onChange={(next) => void updateSearchCriteria({ updatedBetween: next })} />
+         </div>
       </div>
    );
 }
