@@ -179,7 +179,18 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
             modeLabel={t('Drawer.contract')}
             onMode={contractDrawer}
             onClose={() => setDrawerOpen(false)}
-         />
+         >
+            {/* The breadcrumb lives in the header's full-width secondary row (like the side panel), so a
+                deep path has the whole Library width to breathe instead of the cramped folder side-nav. */}
+            {breadcrumbPath.length > 0 && (
+               <div className="mt-2 flex items-center gap-2">
+                  <div onClick={() => navigateToFolder(null)} className="shrink-0 cursor-pointer rounded p-1 hover:bg-muted" role="button" aria-label={t('Drawer.backToRoot')}>
+                     <ArrowUpToLine className="h-4 w-4" />
+                  </div>
+                  <Breadcrumb path={breadcrumbPath} onNavigate={navigateToFolder} />
+               </div>
+            )}
+         </DrawerHeader>
 
          <motion.div
             // Cross-fade the BODY across expand<->reduce: it fades in here (horizontal: folders left,
@@ -195,15 +206,7 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
                 (p-2 pt-0; the inter-folder rhythm comes from the reorder slots, not a flat gap), so the
                 two read identically; only the column chrome (w-64, border, bg-popover) is Library-specific. */}
             <aside className="flex w-64 shrink-0 flex-col overflow-y-auto border-r-2 border-border bg-popover p-2 pt-0">
-               {breadcrumbPath.length > 0 && (
-                  <div className="mt-2 mb-1 flex items-center gap-2">
-                     <div onClick={() => navigateToFolder(null)} className="shrink-0 cursor-pointer rounded p-1 hover:bg-muted" role="button" aria-label={t('Drawer.backToRoot')}>
-                        <ArrowUpToLine className="h-4 w-4" />
-                     </div>
-                     <Breadcrumb path={breadcrumbPath} onNavigate={navigateToFolder} />
-                  </div>
-               )}
-
+               {/* Breadcrumb moved to the header's full-width row; the side-nav starts at Back / the folders. */}
                {currentFolderId && (
                   // `data-drawer-back` makes this a Back hit-area for the drag dwell (read live by the
                   // pointer-move resolver), so dwelling it spring-navigates up - exactly like the side panel.
