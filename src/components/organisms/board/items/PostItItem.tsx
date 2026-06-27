@@ -4,12 +4,12 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // -- Utils Imports --
-import { cn } from '@/lib/utils';
 import { readableTextColor } from '@/lib/color';
 import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 
 // -- Component Imports --
 import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
+import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 
 // -- Type Imports --
 import type { BoardItemContent, PostItBoardContent } from '@/lib/types/board';
@@ -95,19 +95,25 @@ export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, 
 
    return (
       <div className="h-full w-full p-2.5" style={{ backgroundColor: background, color: textColor }}>
-         <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onFocus={onRequestSelect}
-            onBlur={commitText}
-            onPointerDown={(event) => event.stopPropagation()}
-            placeholder={t('BoardView.postItPlaceholder')}
-            style={{ color: textColor }}
-            className={cn(
-               'h-full w-full resize-none border-0 bg-transparent text-sm leading-snug outline-none placeholder:opacity-50',
-               isSelected ? 'pointer-events-auto cursor-text' : 'pointer-events-none',
-            )}
-         />
+         {/* Selected -> edit the raw Markdown source; otherwise -> render it (inheriting the note's color).
+             The rendered block is pointer-transparent, so a body click falls through to select (then edit);
+             empty + unselected shows nothing, the placeholder lives in the textarea. */}
+         {isSelected ? (
+            <textarea
+               value={text}
+               onChange={(event) => setText(event.target.value)}
+               onFocus={onRequestSelect}
+               onBlur={commitText}
+               onPointerDown={(event) => event.stopPropagation()}
+               placeholder={t('BoardView.postItPlaceholder')}
+               style={{ color: textColor }}
+               className="h-full w-full resize-none border-0 bg-transparent text-sm leading-snug outline-none placeholder:opacity-50 cursor-text"
+            />
+         ) : text.trim() ? (
+            <div className="h-full w-full overflow-auto">
+               <NoteMarkdown content={text} />
+            </div>
+         ) : null}
 
          {isSelected && toolbarSlot && createPortal(
             // Pass the PENDING-aware color (like the zone's), so the picker's `value` tracks the live

@@ -13,6 +13,9 @@ import { Bookmark, BookmarkMinus, ChevronLeft, ChevronRight, Minus, Plus, X } fr
 import { cn } from '@/lib/utils';
 import { migrateJournalContent, withPageRemoved } from '@/lib/board/journalContent';
 
+// -- Component Imports --
+import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
+
 // -- Type Imports --
 import type { BoardItemContent, JournalBoardContent } from '@/lib/types/board';
 
@@ -139,18 +142,23 @@ export function JournalItem({ content, isSelected, toolbarSlot, sideSlot, onCont
             toolbarSlot,
          )}
 
-         <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onFocus={onRequestSelect}
-            onBlur={commit}
-            onPointerDown={(event) => event.stopPropagation()}
-            placeholder={t('BoardView.journalPlaceholder')}
-            className={cn(
-               'min-h-0 flex-1 resize-none border-0 bg-transparent p-2 text-sm leading-snug outline-none placeholder:text-muted-foreground/50',
-               isSelected ? 'pointer-events-auto cursor-text' : 'pointer-events-none',
-            )}
-         />
+         {/* Selected -> edit the page's raw Markdown; otherwise -> render it (inheriting the theme color).
+             The rendered block is pointer-transparent, so a body click falls through to select (then edit). */}
+         {isSelected ? (
+            <textarea
+               value={text}
+               onChange={(event) => setText(event.target.value)}
+               onFocus={onRequestSelect}
+               onBlur={commit}
+               onPointerDown={(event) => event.stopPropagation()}
+               placeholder={t('BoardView.journalPlaceholder')}
+               className="min-h-0 flex-1 resize-none border-0 bg-transparent p-2 text-sm leading-snug outline-none placeholder:text-muted-foreground/50 cursor-text"
+            />
+         ) : (
+            <div className="min-h-0 flex-1 overflow-auto p-2">
+               {text.trim() ? <NoteMarkdown content={text} /> : null}
+            </div>
+         )}
 
          {/* Bookmark side tabs: portaled into the box's non-clipped side slot so they protrude
              past the right edge (the body keeps clipping its text). Still body-scaled + in page
