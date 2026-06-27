@@ -6,21 +6,22 @@ import { useTranslation } from 'react-i18next';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { CornerDownLeft, Dices, Minus, Plus, Terminal, X } from 'lucide-react';
+import { ChevronDown, CornerDownLeft, Dices, History, Minus, Plus, Terminal, Trash2, X } from 'lucide-react';
 
 // -- Basic UI Imports --
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { QUICK_PICK, migrateDiceTrayContent, rollDiceTray } from '@/lib/dice/diceTray';
+import { QUICK_PICK, appendRollEntry, migrateDiceTrayContent, rollDiceTray } from '@/lib/dice/diceTray';
 import { parseDiceCommand } from '@/lib/dice/diceCommand';
+import { formatRelativeItemDate } from '@/lib/drawer/itemDateDisplay';
 
 // -- Component Imports --
 import { DieShape } from './DieShape';
 
 // -- Type Imports --
-import type { DiceTrayContent, DiceTrayModifier } from '@/lib/dice/diceTrayTypes';
+import type { DiceTrayContent, DiceTrayModifier, RollEntry } from '@/lib/dice/diceTrayTypes';
 
 /*
  * The board-agnostic dice tray: a list of individual dice + labeled modifiers (+ optional title), a roll
@@ -118,8 +119,29 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
    // ==================
    const settle = (faces: Record<string, number>, breakdown: { label?: string; value: number }[], total: number) => {
       setLiveFaces(null); // rest from the cached lastRoll, not stale animation state
-      onCacheRoll({ ...tray, lastRoll: { faces, modifiers: breakdown, total } });
+      // Record the roll in history alongside the live lastRoll - both via the non-undoable cache path, so a
+      // roll never becomes undo steps. The entry is self-contained (config + faces in dice order + total).
+      const entry: RollEntry = {
+         id: cuid(),
+         at: Date.now(),
+         dice: dice.map((die) => (die.negative ? { sides: die.sides, negative: true } : { sides: die.sides })),
+         modifiers: breakdown,
+         faces: dice.map((die) => faces[die.id] ?? 0),
+         total,
+      };
+      onCacheRoll({ ...tray, lastRoll: { faces, modifiers: breakdown, total }, history: appendRollEntry(tray.history ?? [], entry) });
    };
+
+   // Clicking a history entry RESTORES its setup (dice + modifiers, fresh ids) into the tray - a normal,
+   // undoable-on-board edit. It loads the configuration, not the past random result.
+   const restoreEntry = (entry: RollEntry) => onChange({
+      ...tray,
+      dice: entry.dice.map((die) => (die.negative ? { id: cuid(), sides: die.sides, negative: true } : { id: cuid(), sides: die.sides })),
+      modifiers: entry.modifiers.map((modifier) => ({ id: cuid(), label: modifier.label, value: modifier.value })),
+   });
+
+   // Clearing history is roll-cache management, not a config edit - non-undoable, like the appends.
+   const clearHistory = () => onCacheRoll({ ...tray, history: [] });
 
    const roll = () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -300,6 +322,19 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
             </div>
          </div>
 
+         {/* Roll history: a tucked, collapsed-by-default log of recent rolls; click one to restore its setup. */}
+         <RollHistory
+            entries={tray.history ?? []}
+            editable={editable}
+            label={t('BoardView.diceHistory')}
+            emptyLabel={t('BoardView.diceHistoryEmpty')}
+            restoreLabel={t('BoardView.diceHistoryRestore')}
+            clearLabel={t('BoardView.diceHistoryClear')}
+            stopDrag={stopDrag}
+            onRestore={restoreEntry}
+            onClear={clearHistory}
+         />
+
          {/* Flexible slack: when the tray is dragged taller than its content, the extra space
              lands here so the Roll footer stays pinned to the bottom (the box reads the floor as
              its height minus this spacer). Only the canvas-resizable host renders it. */}
@@ -391,6 +426,90 @@ function ModifierRow({
          >
             <X className="h-3 w-3" />
          </button>
+      </div>
+   );
+}
+
+/** A compact one-line summary of a past roll, e.g. `2d6 -1d8 +3` (dice grouped by sides + sign, then mods). */
+function summarizeRoll(entry: RollEntry): string {
+   const groups: { sides: number; negative: boolean; count: number }[] = [];
+   for (const die of entry.dice) {
+      const group = groups.find((g) => g.sides === die.sides && g.negative === !!die.negative);
+      if (group) group.count += 1;
+      else groups.push({ sides: die.sides, negative: !!die.negative, count: 1 });
+   }
+   const parts = [
+      ...groups.map((g) => `${g.negative ? '-' : ''}${g.count}d${g.sides}`),
+      ...entry.modifiers.map((m) => signed(m.value)),
+   ];
+   return parts.length > 0 ? parts.join(' ') : '—';
+}
+
+/**
+ * The tucked roll history: a collapsed-by-default toggle that expands to a scrollable list of recent rolls
+ * (newest first - result + relative time). Clicking an entry restores its setup (editable only); a clear
+ * affordance empties the log. Reading the log is always allowed; restoring / clearing gate on `editable`.
+ */
+function RollHistory({ entries, editable, label, emptyLabel, restoreLabel, clearLabel, stopDrag, onRestore, onClear }: {
+   entries: RollEntry[];
+   editable: boolean;
+   label: string;
+   emptyLabel: string;
+   restoreLabel: string;
+   clearLabel: string;
+   stopDrag: (event: ReactPointerEvent) => void;
+   onRestore: (entry: RollEntry) => void;
+   onClear: () => void;
+}) {
+   const [open, setOpen] = useState(false);
+   return (
+      <div className="shrink-0 border-t border-border">
+         <button
+            type="button"
+            onPointerDown={stopDrag}
+            onClick={() => setOpen((value) => !value)}
+            className="flex w-full items-center justify-between px-2 py-1.5 text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground cursor-pointer"
+         >
+            <span className="flex items-center gap-1"><History className="h-3 w-3" />{label}{entries.length > 0 && ` (${entries.length})`}</span>
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
+         </button>
+         {open && (
+            <div className="max-h-40 overflow-y-auto px-2 pb-2">
+               {entries.length === 0 ? (
+                  <p className="px-0.5 py-1 text-xs text-muted-foreground">{emptyLabel}</p>
+               ) : (
+                  <div className="flex flex-col gap-0.5">
+                     {entries.map((entry) => (
+                        <button
+                           key={entry.id}
+                           type="button"
+                           disabled={!editable}
+                           title={editable ? restoreLabel : undefined}
+                           onPointerDown={stopDrag}
+                           onClick={() => onRestore(entry)}
+                           className={cn('flex items-center justify-between gap-2 rounded px-1.5 py-1 text-left', editable ? 'hover:bg-muted cursor-pointer' : 'cursor-default')}
+                        >
+                           <span className="min-w-0 flex-1 truncate font-mono text-xs">
+                              <span className="text-muted-foreground">{summarizeRoll(entry)} = </span>
+                              <span className="font-bold tabular-nums">{entry.total}</span>
+                           </span>
+                           <span className="shrink-0 text-[0.6rem] text-muted-foreground">{formatRelativeItemDate(entry.at)}</span>
+                        </button>
+                     ))}
+                  </div>
+               )}
+               {editable && entries.length > 0 && (
+                  <button
+                     type="button"
+                     onPointerDown={stopDrag}
+                     onClick={onClear}
+                     className="mt-1 flex w-full items-center justify-center gap-1 rounded py-1 text-[0.65rem] text-muted-foreground hover:text-destructive cursor-pointer"
+                  >
+                     <Trash2 className="h-3 w-3" />{clearLabel}
+                  </button>
+               )}
+            </div>
+         )}
       </div>
    );
 }

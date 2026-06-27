@@ -2,10 +2,10 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { DIE_SIDES, QUICK_PICK, migrateDiceTrayContent, rollDiceTray } from './diceTray';
+import { DIE_SIDES, QUICK_PICK, ROLL_HISTORY_CAP, appendRollEntry, migrateDiceTrayContent, rollDiceTray } from './diceTray';
 
 // -- Type Imports --
-import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier } from '@/lib/dice/diceTrayTypes';
+import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier, RollEntry } from '@/lib/dice/diceTrayTypes';
 
 /*
  * Tests for the pure dice-tray roll and the legacy migration. An injected RNG makes the
@@ -133,5 +133,42 @@ describe('migrateDiceTrayContent', () => {
       const migrated = migrateDiceTrayContent(partial);
       expect(migrated.dice.map((d) => d.id)).toEqual(['a']); // dice untouched
       expect(migrated.modifiers).toEqual([{ id: expect.any(String), value: 3, label: undefined }]);
+   });
+
+   it('defaults history to [] when migrating legacy content', () => {
+      const legacy = { dice: { 6: 1 }, modifier: 0 } as unknown as DiceTrayContent;
+      expect(migrateDiceTrayContent(legacy).history).toEqual([]);
+   });
+
+   it('preserves an existing history through a shape migration', () => {
+      const entry: RollEntry = { id: 'r1', at: 1, dice: [{ sides: 6 }], modifiers: [], faces: [4], total: 4 };
+      const legacy = { dice: { 6: 1 }, modifier: 0, history: [entry] } as unknown as DiceTrayContent;
+      expect(migrateDiceTrayContent(legacy).history).toEqual([entry]);
+   });
+});
+
+describe('appendRollEntry', () => {
+   const entry = (id: string): RollEntry => ({ id, at: Number(id), dice: [{ sides: 6 }], modifiers: [], faces: [3], total: 3 });
+
+   it('prepends the newest roll (newest first)', () => {
+      const history = appendRollEntry([entry('1')], entry('2'));
+      expect(history.map((e) => e.id)).toEqual(['2', '1']);
+   });
+
+   it('caps the history, dropping the oldest past the cap', () => {
+      // Fill to the cap, then a 21st roll drops the oldest.
+      let history: RollEntry[] = [];
+      for (let i = 1; i <= ROLL_HISTORY_CAP; i++) history = appendRollEntry(history, entry(String(i)));
+      expect(history).toHaveLength(ROLL_HISTORY_CAP);
+      history = appendRollEntry(history, entry('overflow'));
+      expect(history).toHaveLength(ROLL_HISTORY_CAP);
+      expect(history[0].id).toBe('overflow'); // newest kept
+      expect(history.some((e) => e.id === '1')).toBe(false); // oldest dropped
+   });
+
+   it('does not mutate the input history', () => {
+      const original = [entry('1')];
+      appendRollEntry(original, entry('2'));
+      expect(original.map((e) => e.id)).toEqual(['1']);
    });
 });

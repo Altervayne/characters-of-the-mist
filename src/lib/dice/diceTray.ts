@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Type Imports --
-import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier, DieSides } from '@/lib/dice/diceTrayTypes';
+import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier, DieSides, RollEntry } from '@/lib/dice/diceTrayTypes';
 
 /*
  * The dice-tray roll + the legacy-shape migration. The roll is a pure function over the
@@ -16,6 +16,14 @@ export const DIE_SIDES: DieSides[] = [4, 6, 8, 10, 12, 20, 100];
 
 /** The picker's quick-pick buttons: the d2 coin plus the platonic set. Any sides >= 2 is still valid. */
 export const QUICK_PICK: number[] = [2, 4, 6, 8, 10, 12, 20, 100];
+
+/** How many past rolls a tray keeps (newest first); the list is bounded since it rides board / app content. */
+export const ROLL_HISTORY_CAP = 20;
+
+/** Prepends a roll to the history, newest first, dropping the oldest past the cap. Pure (no mutation). */
+export function appendRollEntry(history: RollEntry[], entry: RollEntry, cap: number = ROLL_HISTORY_CAP): RollEntry[] {
+   return [entry, ...history].slice(0, cap);
+}
 
 /** One die's outcome: which die (by id), its face count, the value it landed on, and whether it subtracts. */
 export interface DieFace {
@@ -75,7 +83,9 @@ export function migrateDiceTrayContent<T extends DiceTrayContent>(content: T): T
       : (raw.modifiers as DiceTrayModifier[]);
 
    if (!diceMigrated && !modifiersMigrated) return content;
-   const next = { ...content, dice, modifiers } as T;
+   // A shape migration is already producing a new object, so default history here too. A tray already on
+   // the list shapes keeps its identity (see the idempotency test); the consumer reads `history ?? []`.
+   const next = { ...content, dice, modifiers, history: content.history ?? [] } as T;
    delete (next as { modifier?: unknown }).modifier; // drop the legacy flat field
    return next;
 }

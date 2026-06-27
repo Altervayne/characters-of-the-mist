@@ -33,6 +33,20 @@ export interface DiceTrayLastRoll {
 }
 
 /**
+ * One past roll in a tray's history: enough to DISPLAY it (faces in dice order + breakdown + total + when)
+ * AND to RESTORE its setup (the dice + modifiers it was rolled with). Self-contained (no id references) so
+ * it survives independently of the tray's current dice.
+ */
+export interface RollEntry {
+   id: string;
+   at: number;
+   dice: { sides: number; negative?: boolean }[];
+   modifiers: { label?: string; value: number }[];
+   faces: number[];
+   total: number;
+}
+
+/**
  * A persistent preset roller: a list of individual dice plus a list of labeled modifiers (and an optional
  * title). The CONFIG (dice / modifiers / title) is the consumer's undoable state; the `lastRoll` is the
  * CACHED last result, written via the consumer's non-undoable path so it survives reload + save/export
@@ -47,4 +61,6 @@ export interface DiceTrayContent {
    modifiers: DiceTrayModifier[];
    /** The last roll, cached (not undoable). */
    lastRoll?: DiceTrayLastRoll;
+   /** Recent rolls, newest first, capped (not undoable); travels with the tray on copy / export. */
+   history?: RollEntry[];
 }
