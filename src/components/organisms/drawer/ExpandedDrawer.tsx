@@ -88,7 +88,7 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
    } = useDrawerNavigation();
 
    const { reloadCurrentFolder, clearSearch } = useDrawerActions();
-   const { contractDrawer, setDrawerOpen } = useAppGeneralStateActions();
+   const { contractDrawer, setDrawerOpen, setDrawerReceded } = useAppGeneralStateActions();
    // The Library honors the SAME Rich/List toggle as the side panel (one shared setting, not a new flag).
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
    const { toggleCompactDrawer } = useAppSettingsActions();
@@ -118,6 +118,12 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
    useEffect(() => {
       void reloadCurrentFolder();
    }, [reloadCurrentFolder]);
+
+   // Leaving the Library always lands non-receded. A drop that contracted from the receded See-Workspace
+   // state keeps it receded so the overlay exits off-screen (no Library flash); clear the flag once this
+   // overlay has actually unmounted (after the exit), so the next expand starts in view. Mid-drag the
+   // recede is a transform, not an unmount, so this never fires then.
+   useEffect(() => () => { setDrawerReceded(false); }, [setDrawerReceded]);
 
    const handleJumpToResult = (folderId: string | null) => {
       navigateToFolder(folderId);

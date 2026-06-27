@@ -131,7 +131,7 @@ export function useCharacterSheetDnD() {
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
    const { initiateItemDrop, moveFolder, reorderFolders, moveItem, reorderItems, setDrawerCurrentFolderId } = useDrawerActions();
    const { setContextualGame } = useAppSettingsActions();
-   const { setDrawerOpen, setDrawerReceded } = useAppGeneralStateActions();
+   const { setDrawerOpen, setDrawerReceded, contractDrawer } = useAppGeneralStateActions();
 
    // ==================
    //  Utility & Library States
@@ -826,6 +826,20 @@ export function useCharacterSheetDnD() {
       const manualDrawerTarget = hoveredDrawerTargetRef.current;
       // The last cursor position, for a board drop's world placement (cleared by cleanup).
       const dropPointer = lastPointerRef.current;
+      // Read the drawer's expand/recede state before clearDragFeedback tears it down: once an item lands
+      // on the workspace, the Library's search/nav job is done, so leave the drawer as the reduced side
+      // panel. If the drop came from the receded See-Workspace state, clearDragFeedback just un-receded it,
+      // which would slide the Library back UP into view as the overlay contracts (a flash). Re-recede so it
+      // stays off-screen through the exit - only the reduced side panel is seen opening; ExpandedDrawer
+      // clears the flag when it unmounts. Only the successful workspace-drop branches call this; a no-op /
+      // cancel leaves clearDragFeedback's un-recede in place, restoring the Library.
+      const wasDrawerExpanded = useAppGeneralStateStore.getState().isDrawerExpanded;
+      const wasDrawerReceded = useAppGeneralStateStore.getState().isDrawerReceded;
+      const contractIfExpanded = () => {
+         if (!wasDrawerExpanded) return;
+         contractDrawer();
+         if (wasDrawerReceded) setDrawerReceded(true);
+      };
 
       setActiveDragItem(null);
       setIsOverDrawer(false);
@@ -845,6 +859,7 @@ export function useCharacterSheetDnD() {
             const characterData = draggedItem.content as Character;
             openCharacterTab(characterData, draggedItem.id); // append-or-focus
             setContextualGame(characterData.game);
+            contractIfExpanded();
          }
          return;
       }
@@ -995,6 +1010,7 @@ export function useCharacterSheetDnD() {
                kind: spec.kind,
                content: spec.content,
             });
+            contractIfExpanded();
             return;
          }
 
@@ -1007,6 +1023,7 @@ export function useCharacterSheetDnD() {
                const characterData = draggedItem.content as Character;
                openCharacterTab(characterData, draggedItem.id);
                setContextualGame(characterData.game);
+               contractIfExpanded();
             } else if (draggedItem?.type === 'FULL_BOARD') {
                // A board dropped on the workspace opens like a character: focus its tab if already
                // open (don't re-import, so live unsaved edits aren't clobbered), else materialize the
@@ -1017,6 +1034,7 @@ export function useCharacterSheetDnD() {
                } else {
                   void importBoard(boardData).then(() => openBoardTab(boardData.id));
                }
+               contractIfExpanded();
             }
             return;
          }
@@ -1031,12 +1049,14 @@ export function useCharacterSheetDnD() {
                const characterData = draggedItem.content as Character;
                openCharacterTab(characterData, draggedItem.id); // append-or-focus
                setContextualGame(characterData.game);
+               contractIfExpanded();
             } else if (draggedItem?.type === 'FULL_BOARD') {
                // The drawer copy is the source of truth on open: materialize it into the
                // working tables, then focus-or-open its tab (by board id) so an already-open
                // board's live state is never clobbered.
                const boardData = draggedItem.content as Board;
                void importBoard(boardData).then(() => openBoardTab(boardData.id));
+               contractIfExpanded();
             }
             return;
          }
@@ -1108,6 +1128,7 @@ export function useCharacterSheetDnD() {
                   toast.error(tNotifications('Notifications.character.duplicatePortrait'));
                }
             }
+            contractIfExpanded();
             return;
          }
       }
@@ -1186,6 +1207,8 @@ export function useCharacterSheetDnD() {
       addImportedCard,
       tNotifications,
       clearDragFeedback,
+      contractDrawer,
+      setDrawerReceded,
       activeDragItem,
    ]);
 
