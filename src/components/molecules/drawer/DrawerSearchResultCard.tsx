@@ -3,17 +3,16 @@ import { useTranslation } from 'react-i18next';
 import type { ReactElement, ReactNode } from 'react';
 
 // -- DnD Imports --
-import { useDraggable } from '@dnd-kit/core';
 import { DragStaticWrapper } from '@/components/dnd';
 
 // -- Hook Imports --
 import { useInView } from '@/hooks/useInView';
 import { useDrawerItemContent } from '@/hooks/drawer/useDrawerItemContent';
+import { useResultDraggable } from '@/hooks/drawer/useResultDraggable';
 
 // -- Utils Imports --
 import { getItemTypeIcon } from '@/lib/utils/drawer-icons';
 import { getGameVisual } from '@/lib/constants/gameVisuals';
-import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
@@ -84,10 +83,7 @@ function ResultCardShell({ summary, menu, removed = false }: { summary: DrawerIt
  * menu is a sibling overlay (not a descendant), so the menu never starts a drag.
  */
 function DraggableResultCard({ summary, item, menu }: { summary: DrawerItemSummary; item: DrawerItemRecord; menu: ReactNode }) {
-   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-      id: summary.id,
-      data: { type: DRAG_TYPES.DRAWER_ITEM, item, parentFolderId: summary.parentFolderId, isDrawer: true },
-   });
+   const { attributes, listeners, setNodeRef, isDragging } = useResultDraggable(summary, item);
 
    return (
       <DragStaticWrapper isBeingDragged={isDragging}>
