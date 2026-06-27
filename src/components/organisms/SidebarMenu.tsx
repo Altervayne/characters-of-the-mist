@@ -374,8 +374,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                         "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
                         isCollapsed ? "px-0" : "px-2"
                      )}>
-                        <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} Icon={isEditing ? Dices : Edit}>
-                           {isEditing ? t('CharacterSheetPage.SidebarMenu.playMode') : t('CharacterSheetPage.SidebarMenu.editMode')}
+                        <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} variant={isEditing ? 'secondary' : 'default'} Icon={Edit}>
+                           {t('CharacterSheetPage.SidebarMenu.editMode')}
                         </SidebarButton>
                      </motion.section>
 
