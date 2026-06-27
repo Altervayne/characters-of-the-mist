@@ -277,17 +277,17 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
                   </PopoverContent>
                </Popover>
 
-               {/* A tucked extra: build the whole tray from a typed formula like 1d6+2d12+4-2. */}
-               {editable && (
-                  <CommandPopover
-                     triggerLabel={t('BoardView.diceCommandLabel')}
-                     placeholder={t('BoardView.diceCommandPlaceholder')}
-                     applyLabel={t('BoardView.diceCommandApply')}
-                     errorLabel={t('BoardView.diceCommandError')}
-                     stopDrag={stopDrag}
-                     onApply={applyCommand}
-                  />
-               )}
+               {/* Build the whole tray from a typed formula like 1d6+2d12+4-2. Always rendered, like the
+                   add-die picker, so the dice row's layout is identical whether or not the tray is selected
+                   (a board item gates `editable` on selection - a conditional in-flow control would reflow). */}
+               <CommandPopover
+                  triggerLabel={t('BoardView.diceCommandLabel')}
+                  placeholder={t('BoardView.diceCommandPlaceholder')}
+                  applyLabel={t('BoardView.diceCommandApply')}
+                  errorLabel={t('BoardView.diceCommandError')}
+                  stopDrag={stopDrag}
+                  onApply={applyCommand}
+               />
             </div>
 
             {/* Modifiers: a labeled list, each row one undoable change. */}
