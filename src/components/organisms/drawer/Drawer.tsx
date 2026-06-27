@@ -68,7 +68,7 @@ const contentVariants: Variants = {
 };
 
 
-export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, drawerDropTarget?: DrawerDropTarget | null, overDragId: string | null; springTargetId?: string | null; }) {
+export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = false, drawerDropTarget = null, overDragId, springTargetId = null }: { isDragHovering : boolean, activeDragId: string | null, isFolderDragActive?: boolean, drawerDropTarget?: DrawerDropTarget | null, overDragId: string | null; springTargetId?: string | null; }) {
    const { t: t } = useTranslation();
    const { t: tActions } = useTranslation()
 
@@ -263,14 +263,15 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                  {currentFolders.map((folder, index) => (
                                     <React.Fragment key={folder.id}>
                                        {/* These slots reorder FOLDERS, so they expand only during a folder drag
-                                           (an item/card/tracker drag never expands them). No-op when inserting
-                                           before the dragged folder (its own slot) or before the folder right
-                                           after it; those leave it in place. */}
+                                           (an item/card/tracker drag never expands them). When the dragged folder
+                                           is in THIS view, the two slots flanking it are no-ops (skip them); when
+                                           it was dragged in from elsewhere (not in view) every slot is valid, so
+                                           it can be placed at any position here. */}
                                        <FolderDropZone
                                           id={`drop-zone-before-${folder.id}`}
                                           activeId={activeDragId}
                                           overId={overDragId}
-                                          canExpand={activeFolderIndex !== -1 && index !== activeFolderIndex && index !== activeFolderIndex + 1}
+                                          canExpand={isFolderDragActive && (activeFolderIndex === -1 || (index !== activeFolderIndex && index !== activeFolderIndex + 1))}
                                           data={{ type: 'drawer-drop-zone', targetId: folder.id, position: 'before' }}
                                        />
                                        <DrawerFolderEntry
@@ -285,12 +286,13 @@ export function Drawer({ isDragHovering, activeDragId, drawerDropTarget = null, 
                                        />
                                     </React.Fragment>
                                  ))}
-                                 {/* Folder-drag only; no-op when the dragged folder is already last. */}
+                                 {/* Folder-drag only; no-op when the dragged in-view folder is already last (a
+                                     dragged-in folder, not in view, can always land last). */}
                                  <FolderDropZone
                                     id={`drop-zone-after-last`}
                                     activeId={activeDragId}
                                     overId={overDragId}
-                                    canExpand={activeFolderIndex !== -1 && activeFolderIndex !== currentFolders.length - 1}
+                                    canExpand={isFolderDragActive && (activeFolderIndex === -1 || activeFolderIndex !== currentFolders.length - 1)}
                                     data={{ type: 'drawer-drop-zone', targetId: 'last', position: 'after' }}
                                  />
                               </SortableContext>

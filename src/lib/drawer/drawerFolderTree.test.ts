@@ -33,6 +33,7 @@ import {
    getChildFolderCount,
    getBreadcrumb,
    getParentFolderId,
+   setOptimisticFolderChildren,
    rebuildFolderTree,
    whenFolderTreeSettled,
 } from './drawerFolderTree';
@@ -115,5 +116,38 @@ describe('folder-tree module cache (re-derive on mutation, read on navigation)',
       expect(getChildFolders(null).map((folder) => folder.id)).toEqual(['B', 'A']);
       expect(getBreadcrumb('A1').map((folder) => folder.id)).toEqual(['A', 'A1']);
       expect(getParentFolderId('A1')).toBe('A');
+   });
+});
+
+describe('folder-tree optimistic override (instant reorder)', () => {
+   beforeEach(async () => {
+      vi.clearAllMocks();
+      (getAllFolders as Mock).mockResolvedValue(FIXTURE);
+      await rebuildFolderTree(); // settle to ['B', 'A'] at root, and clear any leftover override
+   });
+
+   it('shows the override order immediately, without a re-query', () => {
+      const before = (getAllFolders as Mock).mock.calls.length;
+      // Predict the reordered order (a plain array-move would produce this) and set it.
+      setOptimisticFolderChildren(null, [f('A', DRAWER_ROOT_PARENT_ID, 1), f('B', DRAWER_ROOT_PARENT_ID, 0)]);
+      expect(getChildFolders(null).map((folder) => folder.id)).toEqual(['A', 'B']); // instant, override wins
+      expect((getAllFolders as Mock).mock.calls.length).toBe(before); // no DB read
+   });
+
+   it('a rebuild clears the override - the re-derived order takes over (persisted reorder reconciles)', async () => {
+      setOptimisticFolderChildren(null, [f('A', DRAWER_ROOT_PARENT_ID, 1), f('B', DRAWER_ROOT_PARENT_ID, 0)]);
+      // The persisted reorder: the DB now returns the new order; the rebuild adopts it AND drops the override.
+      (getAllFolders as Mock).mockResolvedValue([f('B', DRAWER_ROOT_PARENT_ID, 1), f('A', DRAWER_ROOT_PARENT_ID, 0)]);
+      await rebuildFolderTree();
+      expect(getChildFolders(null).map((folder) => folder.id)).toEqual(['A', 'B']); // from the DB, not the override
+   });
+
+   it('a failed mutation reverts: the rebuild re-reads the OLD order and the override is gone', async () => {
+      setOptimisticFolderChildren(null, [f('A', DRAWER_ROOT_PARENT_ID, 1), f('B', DRAWER_ROOT_PARENT_ID, 0)]);
+      expect(getChildFolders(null).map((folder) => folder.id)).toEqual(['A', 'B']); // optimistic
+      // The command failed, so the DB still holds the original order; its rebuild wipes the override.
+      (getAllFolders as Mock).mockResolvedValue(FIXTURE);
+      await rebuildFolderTree();
+      expect(getChildFolders(null).map((folder) => folder.id)).toEqual(['B', 'A']); // reverted to the truth
    });
 });

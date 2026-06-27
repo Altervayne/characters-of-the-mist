@@ -215,6 +215,9 @@ export function useCharacterSheetDnD() {
    // `workspaceDwellKey` ('see-workspace' | 'reexpand' | null) drives the strip/edge dwell-progress cue.
    // The recede itself lives in appGeneralStateStore; the dwell reuses the spring timer (own controller).
    const [isDrawerItemDragActive, setIsDrawerItemDragActive] = useState(false);
+   // True only while a FOLDER is being dragged: the drawer surfaces show the reorder drop slots even after
+   // drilling into another folder (where the dragged folder isn't in view), so it can be placed precisely.
+   const [isFolderDragActive, setIsFolderDragActive] = useState(false);
    const [workspaceDwellKey, setWorkspaceDwellKey] = useState<string | null>(null);
    const draggedFolderIdRef = useRef<string | null>(null);
    const springNavigatingRef = useRef(false);
@@ -518,6 +521,7 @@ export function useCharacterSheetDnD() {
       workspaceDwellControllerRef.current?.cancel();
       setWorkspaceDwellKey(null);
       setIsDrawerItemDragActive(false);
+      setIsFolderDragActive(false);
       if (useAppGeneralStateStore.getState().isDrawerReceded) setDrawerReceded(false);
       // Clear the morph feedback (clone funnel + cursor cluster).
       resetMorph();
@@ -534,6 +538,8 @@ export function useCharacterSheetDnD() {
       dragKindRef.current = classifyDrag(active);
       // A drawer ITEM drag (not a folder) gets the See-Workspace strip while Expanded.
       setIsDrawerItemDragActive(dragKindRef.current === 'drawer-character' || dragKindRef.current === 'drawer-component');
+      // A FOLDER drag shows the reorder drop slots in every drawer view (so a drilled-into folder can host it).
+      setIsFolderDragActive(dragKindRef.current === 'drawer-folder');
       tabStripElRef.current = document.querySelector<HTMLElement>('[data-tab-strip]');
       isOverTabLaneRef.current = false;
       overZoneRef.current = null;
@@ -1221,6 +1227,8 @@ export function useCharacterSheetDnD() {
       // in progress ('see-workspace' | 'reexpand' | null), for the strip/edge progress cue.
       isDrawerItemDragActive,
       workspaceDwellKey,
+      // True while a folder is dragged, so the drawer surfaces show the reorder slots in any view.
+      isFolderDragActive,
       // Content-aware sheet highlight: which section to light up.
       sheetHighlight,
       // True while a game-incompatible component is dragged with a character loaded,

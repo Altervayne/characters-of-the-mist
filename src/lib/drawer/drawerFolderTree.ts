@@ -99,12 +99,39 @@ let version = 0;
 const listeners = new Set<() => void>();
 let currentRebuild: Promise<void> = Promise.resolve();
 
-/** Re-reads every folder and rebuilds the index from scratch, then bumps the version. */
+/*
+ * Transient optimistic override: a predicted children order for ONE parent, shown from a reorder drop
+ * until the next rebuild re-derives the truth. Kept ALONGSIDE the source maps, never inside them - so the
+ * re-derive-only rule holds. rebuild() ALWAYS clears it, which is what keeps it from drifting: the order
+ * lives only until the mutation's rebuild lands the real order; a FAILED mutation's rebuild re-reads the
+ * old order, the override is gone, and it self-reverts. Never a second source of truth.
+ */
+let optimisticChildren: Map<string, DrawerFolderRecord[]> | null = null;
+
+/** Bumps the version and notifies subscribers (a re-render). */
+function bumpVersion(): void {
+   version += 1;
+   for (const listener of listeners) listener();
+}
+
+/** Re-reads every folder and rebuilds the index from scratch; drops any optimistic override; bumps the version. */
 async function rebuild(): Promise<void> {
    const records = await getAllFolders();
    index = buildFolderTreeIndex(records);
-   version += 1;
-   for (const listener of listeners) listener();
+   optimisticChildren = null;
+   bumpVersion();
+}
+
+/**
+ * Optimistically show `orderedFolders` as the children of `parentId` until the next rebuild clears it.
+ * The order MUST match what the DB will produce (a plain array-move) so the optimistic->persisted swap is
+ * invisible. Transient by design - rebuild() always wipes it, so it cannot drift.
+ */
+export function setOptimisticFolderChildren(parentId: string | null, orderedFolders: DrawerFolderRecord[]): void {
+   const map = optimisticChildren ?? new Map<string, DrawerFolderRecord[]>();
+   map.set(toStoredParentId(parentId), orderedFolders);
+   optimisticChildren = map;
+   bumpVersion();
 }
 
 /** Throws the cache away and rebuilds it from the DB. The mutation trigger; returns the in-flight rebuild. */
@@ -138,9 +165,10 @@ export function getDrawerFolderTreeVersion(): number {
    return version;
 }
 
-/** Ordered child folders of a parent (`null` = root), from the live cache. */
+/** Ordered child folders of a parent (`null` = root): the transient optimistic order if one is set, else the re-derived list. */
 export function getChildFolders(parentId: string | null): readonly DrawerFolderRecord[] {
-   return selectChildFolders(index, parentId);
+   const override = optimisticChildren?.get(toStoredParentId(parentId));
+   return override ?? selectChildFolders(index, parentId);
 }
 
 /** Direct child-folder count of a parent (`null` = root), from the live cache. */

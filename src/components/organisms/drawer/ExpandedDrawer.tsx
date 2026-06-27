@@ -60,6 +60,8 @@ import type { DrawerDropTarget } from '@/lib/utils/dragFeedback';
 interface ExpandedDrawerProps {
    /** A drawer ITEM (not folder) is being dragged: show the See-Workspace strip. */
    isItemDragActive: boolean;
+   /** A FOLDER is being dragged: show the reorder drop slots in any view (so a drilled-into folder can host it). */
+   isFolderDragActive: boolean;
    /** Which recede dwell is in progress ('see-workspace' | 'reexpand' | null), for the progress cue. */
    workspaceDwellKey: string | null;
    /** The dragged item/folder id + the dnd-kit `over` id, for the folder reorder slots (as in the side panel). */
@@ -71,7 +73,7 @@ interface ExpandedDrawerProps {
    springTargetId?: string | null;
 }
 
-export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDragId, overDragId, drawerDropTarget = null, springTargetId = null }: ExpandedDrawerProps) {
+export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspaceDwellKey, activeDragId, overDragId, drawerDropTarget = null, springTargetId = null }: ExpandedDrawerProps) {
    const { t } = useTranslation();
    // Receded = slid aside to reveal the workspace (set by the DnD layer's dwell); only true mid-drag.
    const isReceded = useAppGeneralStateStore((state) => state.isDrawerReceded);
@@ -219,11 +221,14 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                   <SortableContext items={folderIds} strategy={staticListSortingStrategy}>
                      {currentFolders.map((folder, index) => (
                         <React.Fragment key={folder.id}>
+                           {/* During a folder drag the slots expand; when the dragged folder is in this view its
+                               two flanking slots are no-ops, but a folder dragged in from elsewhere (not in view)
+                               can land at any slot here. */}
                            <FolderDropZone
                               id={`drop-zone-before-${folder.id}`}
                               activeId={activeDragId}
                               overId={overDragId}
-                              canExpand={activeFolderIndex !== -1 && index !== activeFolderIndex && index !== activeFolderIndex + 1}
+                              canExpand={isFolderDragActive && (activeFolderIndex === -1 || (index !== activeFolderIndex && index !== activeFolderIndex + 1))}
                               data={{ type: 'drawer-drop-zone', targetId: folder.id, position: 'before' }}
                            />
                            <DrawerFolderEntry
@@ -242,7 +247,7 @@ export function ExpandedDrawer({ isItemDragActive, workspaceDwellKey, activeDrag
                         id={`drop-zone-after-last`}
                         activeId={activeDragId}
                         overId={overDragId}
-                        canExpand={activeFolderIndex !== -1 && activeFolderIndex !== currentFolders.length - 1}
+                        canExpand={isFolderDragActive && (activeFolderIndex === -1 || activeFolderIndex !== currentFolders.length - 1)}
                         data={{ type: 'drawer-drop-zone', targetId: 'last', position: 'after' }}
                      />
                   </SortableContext>

@@ -105,6 +105,7 @@ function DesktopCharacterSheetPage() {
       sheetHighlight,
       isIncompatibleComponentDrag,
       isDrawerItemDragActive,
+      isFolderDragActive,
       workspaceDwellKey,
       renderClone,
       renderCluster,
@@ -291,6 +292,7 @@ function DesktopCharacterSheetPage() {
                   <Drawer
                      isDragHovering={isOverDrawer}
                      activeDragId={activeDragItem?.id ?? null}
+                     isFolderDragActive={isFolderDragActive}
                      drawerDropTarget={drawerDropTarget}
                      overDragId={overDragId}
                      springTargetId={springTarget}
@@ -308,6 +310,7 @@ function DesktopCharacterSheetPage() {
                   <ExpandedDrawer
                      key="expanded-drawer"
                      isItemDragActive={isDrawerItemDragActive}
+                     isFolderDragActive={isFolderDragActive}
                      workspaceDwellKey={workspaceDwellKey}
                      activeDragId={activeDragItem?.id ?? null}
                      overDragId={overDragId}

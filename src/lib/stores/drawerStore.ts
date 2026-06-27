@@ -7,7 +7,7 @@ import { deepReId } from '../utils/drawer';
 
 // -- Drawer Data Layer Imports --
 import { getFolderItems, getItemCountsForFolders, queryItems } from '@/lib/drawer/drawerRepository';
-import { getChildFolders, getChildFolderCount, whenFolderTreeSettled } from '@/lib/drawer/drawerFolderTree';
+import { getChildFolders, getChildFolderCount, setOptimisticFolderChildren, whenFolderTreeSettled } from '@/lib/drawer/drawerFolderTree';
 import {
    createCreateFolderCommand,
    createCreateItemCommand,
@@ -246,8 +246,14 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             await runMutation(createMoveFolderCommand(folderId, destinationFolderId ?? null));
          },
          reorderFolders: async (parentFolderId, oldIndex, newIndex) => {
-            // No optimistic step: the cache re-derives the reordered folders on the command's engine
-            // notify, so the rows land in their new order without patching this view.
+            // Optimistic: snap to the predicted order instantly via the folder-tree's transient override (a
+            // plain array-move, matching what the DB will produce), THEN persist. The command's rebuild
+            // re-derives the truth and clears the override; a failed command's rebuild re-reads the old order
+            // so it self-reverts. No source-map patching - the override is a throwaway, wiped every rebuild.
+            const current = getChildFolders(parentFolderId);
+            if (oldIndex >= 0 && oldIndex < current.length && newIndex >= 0 && newIndex < current.length) {
+               setOptimisticFolderChildren(parentFolderId, arrayMove([...current], oldIndex, newIndex));
+            }
             await runMutation(createReorderFoldersCommand(parentFolderId, oldIndex, newIndex));
          },
 
