@@ -32,6 +32,7 @@ import { ClearBoardControl } from '../molecules/ClearBoardControl';
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
+import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Other Imports --
 import cuid from 'cuid';
@@ -70,6 +71,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, setHasUnsavedChanges } = useCharacterActions();
    const { openCharacterTab, openBoardTab, deactivate } = useTabManagerActions();
    const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
+
+   // The app-wide dice tray toggles a bottom panel (reachable from any window).
+   const isDiceTrayOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
+   const { toggleDiceTray } = useAppSettingsActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
    const characterFormRef = useRef<HTMLFormElement>(null);
@@ -465,6 +470,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   "flex flex-col items-center gap-2 p-2 bg-card",
                   activeWindow === 'MAIN_MENU' && "border-t-2 border-border"
                )}>
+                  <SidebarButton data-tour="dice-tray-button" isCollapsed={isCollapsed} onClick={toggleDiceTray} variant={isDiceTrayOpen ? 'secondary' : 'default'} Icon={Dices}>
+                     {t('CharacterSheetPage.SidebarMenu.diceTray')}
+                  </SidebarButton>
                   <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
                      {t('CharacterSheetPage.SidebarMenu.settings')}
                   </SidebarButton>

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { DIE_SIDES, migrateDiceTrayContent, rollDiceTray } from './diceTray';
 
 // -- Type Imports --
-import type { DiceTrayBoardContent, DiceTrayDie, DiceTrayModifier } from '@/lib/types/board';
+import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier } from '@/lib/dice/diceTrayTypes';
 
 /*
  * Tests for the pure dice-tray roll and the legacy migration. An injected RNG makes the
@@ -74,7 +74,7 @@ describe('rollDiceTray', () => {
 describe('migrateDiceTrayContent', () => {
    it('expands a legacy count-map into individual dice and a flat modifier into a one-entry list', () => {
       // The old shape stored die counts and a single flat modifier.
-      const legacy = { kind: 'dice-tray', title: 'Old', dice: { 6: 2, 20: 1 }, modifier: -2 } as unknown as DiceTrayBoardContent;
+      const legacy = { title: 'Old', dice: { 6: 2, 20: 1 }, modifier: -2 } as unknown as DiceTrayContent;
       const migrated = migrateDiceTrayContent(legacy);
       expect(migrated.dice.map((d) => d.sides)).toEqual([6, 6, 20]);
       expect(new Set(migrated.dice.map((d) => d.id)).size).toBe(3); // distinct ids
@@ -87,17 +87,17 @@ describe('migrateDiceTrayContent', () => {
    });
 
    it('a zero flat modifier migrates to an empty list', () => {
-      const legacy = { kind: 'dice-tray', dice: { 6: 1 }, modifier: 0 } as unknown as DiceTrayBoardContent;
+      const legacy = { dice: { 6: 1 }, modifier: 0 } as unknown as DiceTrayContent;
       expect(migrateDiceTrayContent(legacy).modifiers).toEqual([]);
    });
 
    it('is idempotent for a tray already on the list shapes', () => {
-      const listShape: DiceTrayBoardContent = { kind: 'dice-tray', dice: dice(['a', 6]), modifiers: mods(['m', 2, 'Bonus']) };
+      const listShape: DiceTrayContent = { dice: dice(['a', 6]), modifiers: mods(['m', 2, 'Bonus']) };
       expect(migrateDiceTrayContent(listShape)).toBe(listShape);
    });
 
    it('migrates modifiers even when the dice are already a list', () => {
-      const partial = { kind: 'dice-tray', dice: dice(['a', 6]), modifier: 3 } as unknown as DiceTrayBoardContent;
+      const partial = { dice: dice(['a', 6]), modifier: 3 } as unknown as DiceTrayContent;
       const migrated = migrateDiceTrayContent(partial);
       expect(migrated.dice.map((d) => d.id)).toEqual(['a']); // dice untouched
       expect(migrated.modifiers).toEqual([{ id: expect.any(String), value: 3, label: undefined }]);

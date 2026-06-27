@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
+import type { DiceTrayContent } from '@/lib/dice/diceTrayTypes';
 
 
 
@@ -25,6 +26,10 @@ interface AppSettingsState {
    areGestureHintsEnabled: boolean;
    hasSeenTrackerSelectHint: boolean;
    hasSeenDrawerMenuHint: boolean;
+   // The app-wide dice tray (a bottom sliding panel, reachable from any tab). Persisted, no undo: edits
+   // and rolls write straight to `content`, so the configured dice/modifiers and the last roll survive a
+   // reload. `isOpen` is the panel's slide state.
+   diceTray: { content: DiceTrayContent; isOpen: boolean };
    actions: {
       setTheme: (theme: ThemeName) => void;
       toggleCompactDrawer: () => void;
@@ -40,6 +45,9 @@ interface AppSettingsState {
       setGestureHintsEnabled: (enabled: boolean) => void;
       setHasSeenTrackerSelectHint: (seen: boolean) => void;
       setHasSeenDrawerMenuHint: (seen: boolean) => void;
+      setDiceTrayContent: (content: DiceTrayContent) => void;
+      toggleDiceTray: () => void;
+      setDiceTrayOpen: (isOpen: boolean) => void;
    };
 }
 
@@ -61,6 +69,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          areGestureHintsEnabled: true,
          hasSeenTrackerSelectHint: false,
          hasSeenDrawerMenuHint: false,
+         diceTray: { content: { dice: [], modifiers: [] }, isOpen: false },
          actions: {
             setTheme: (theme) => set({ theme }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
@@ -75,7 +84,11 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setMobileHandedness: (handedness) => set({ mobileHandedness: handedness }),
             setGestureHintsEnabled: (enabled) => set({ areGestureHintsEnabled: enabled }),
             setHasSeenTrackerSelectHint: (seen) => set({ hasSeenTrackerSelectHint: seen }),
-            setHasSeenDrawerMenuHint: (seen) => set({ hasSeenDrawerMenuHint: seen })
+            setHasSeenDrawerMenuHint: (seen) => set({ hasSeenDrawerMenuHint: seen }),
+            // No undo: edits and rolls both write straight to content; the persist middleware saves it.
+            setDiceTrayContent: (content) => set((state) => ({ diceTray: { ...state.diceTray, content } })),
+            toggleDiceTray: () => set((state) => ({ diceTray: { ...state.diceTray, isOpen: !state.diceTray.isOpen } })),
+            setDiceTrayOpen: (isOpen) => set((state) => ({ diceTray: { ...state.diceTray, isOpen } })),
          },
       }),
       {
@@ -94,7 +107,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             mobileHandedness: state.mobileHandedness,
             areGestureHintsEnabled: state.areGestureHintsEnabled,
             hasSeenTrackerSelectHint: state.hasSeenTrackerSelectHint,
-            hasSeenDrawerMenuHint: state.hasSeenDrawerMenuHint
+            hasSeenDrawerMenuHint: state.hasSeenDrawerMenuHint,
+            diceTray: state.diceTray
          }),
       }
    )

@@ -294,8 +294,13 @@
 
          "settings": "Settings",
          "info": "App Info",
-         "patchNotes": "Patch Notes"
+         "patchNotes": "Patch Notes",
+         "diceTray": "Dice Tray"
       }
+   },
+   "DiceTray": {
+      "title": "Dice Tray",
+      "close": "Close"
    },
    "Actions": {
       "undo": "Undo",

@@ -28,6 +28,7 @@ import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
 import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { ExpandedDrawer } from '@/components/organisms/drawer/ExpandedDrawer';
+import { DiceTrayPanel } from '@/components/organisms/dice/DiceTrayPanel';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
@@ -321,6 +322,9 @@ function DesktopCharacterSheetPage() {
             </AnimatePresence>
             </div>
          </div>
+
+         {/* App-wide dice tray: a bottom panel overlaying any tab (mounted at the shell, not a page). */}
+         <DiceTrayPanel />
 
 
          {/* DIALOGS START */}

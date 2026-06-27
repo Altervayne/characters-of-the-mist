@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { projectDieFaceOn } from '@/lib/board/dieGeometry';
 
 // -- Type Imports --
-import type { DieSides } from '@/lib/types/board';
+import type { DieSides } from '@/lib/dice/diceTrayTypes';
 
 /*
  * A die drawn as its real polyhedron viewed straight down a front face's normal: the

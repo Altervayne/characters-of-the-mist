@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Type Imports --
-import type { DiceTrayBoardContent, DiceTrayDie, DiceTrayModifier, DieSides } from '@/lib/types/board';
+import type { DiceTrayContent, DiceTrayDie, DiceTrayModifier, DieSides } from '@/lib/dice/diceTrayTypes';
 
 /*
  * The dice-tray roll + the legacy-shape migration. The roll is a pure function over the
@@ -53,10 +53,11 @@ export function rollDiceTray(dice: DiceTrayDie[], modifiers: DiceTrayModifier[],
  * Normalizes a tray's content to the current LIST shapes: dice from the old count-map
  * (`dice: { 6: 2 }`) into individual dice, and the old flat `modifier: N` into a one-entry
  * modifier list (`N !== 0 ? [{value:N}] : []`), losslessly. Idempotent: a tray already on
- * the list shapes is returned unchanged. Board items have no central harmonize pass, so this
- * runs defensively wherever a tray's content is read.
+ * the list shapes is returned unchanged. Generic over the concrete content so a caller keeps
+ * its own shape (e.g. the board adds `kind`). Runs defensively wherever a tray's content is
+ * read, since there is no central harmonize pass.
  */
-export function migrateDiceTrayContent(content: DiceTrayBoardContent): DiceTrayBoardContent {
+export function migrateDiceTrayContent<T extends DiceTrayContent>(content: T): T {
    // Runtime-typed: legacy data violates the current types, so read the fields as unknown.
    const raw = content as unknown as { dice?: unknown; modifiers?: unknown; modifier?: unknown };
 
@@ -69,7 +70,7 @@ export function migrateDiceTrayContent(content: DiceTrayBoardContent): DiceTrayB
       : (raw.modifiers as DiceTrayModifier[]);
 
    if (!diceMigrated && !modifiersMigrated) return content;
-   const next = { ...content, dice, modifiers };
+   const next = { ...content, dice, modifiers } as T;
    delete (next as { modifier?: unknown }).modifier; // drop the legacy flat field
    return next;
 }

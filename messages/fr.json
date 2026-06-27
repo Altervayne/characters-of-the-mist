@@ -281,8 +281,13 @@
          "unloadConfirmButton": "Retourner au Menu",
          "settings": "Paramètres",
          "info": "À Propos",
-         "patchNotes": "Patch Notes"
+         "patchNotes": "Patch Notes",
+         "diceTray": "[TO COMPLETE]"
       }
+   },
+   "DiceTray": {
+      "title": "[TO COMPLETE]",
+      "close": "[TO COMPLETE]"
    },
    "Actions": {
       "undo": "Undo",

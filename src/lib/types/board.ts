@@ -8,6 +8,9 @@
  * shapes are expected to grow (flagged inline where so).
  */
 
+// -- Type Imports --
+import type { DiceTrayContent } from '@/lib/dice/diceTrayTypes';
+
 /** Board camera: pan offset + zoom. Persisted; a return-to-origin control resets it. */
 export interface Viewport {
    x: number;
@@ -108,39 +111,17 @@ export interface PinBoardContent {
    color: string;
 }
 
-/** The standard polyhedral die faces a dice tray can hold. */
-export type DieSides = 4 | 6 | 8 | 10 | 12 | 20 | 100;
-
-/** One die in a tray: a stable id (so a cached roll maps to it) and its face count. */
-export interface DiceTrayDie {
-   id: string;
-   sides: DieSides;
-}
-
-/** One labeled modifier on a tray: an optional label and a signed value (config, undoable). */
-export interface DiceTrayModifier {
-   id: string;
-   label?: string;
-   value: number;
-}
+// The dice-tray data shapes now live in the board-agnostic dice home (a second consumer is coming);
+// re-exported here so existing `@/lib/types/board` importers keep working.
+export type { DieSides, DiceTrayDie, DiceTrayModifier } from '@/lib/dice/diceTrayTypes';
 
 /**
- * A persistent preset roller: a list of individual dice plus a list of labeled modifiers
- * (and an optional title). The CONFIG (dice / modifiers / title) is undoable; the `lastRoll`
- * is the CACHED last result, written via the non-undoable cache path so it survives reload +
- * save/export without ever landing on the undo stack or spamming the board with commands.
+ * The board's dice tray: the board-agnostic {@link DiceTrayContent} (dice / modifiers / title / cached
+ * lastRoll) plus the board item `kind` tag. The CONFIG is undoable; the `lastRoll` is the CACHED last
+ * result, written via the non-undoable cache path so it survives reload + save/export without ever
+ * landing on the undo stack or spamming the board with commands. The board adds nothing beyond the tray.
  */
-export interface DiceTrayBoardContent {
-   kind: 'dice-tray';
-   /** Optional label, e.g. "Attack". */
-   title?: string;
-   /** The individual dice (config, undoable). */
-   dice: DiceTrayDie[];
-   /** The labeled modifiers added to the dice subtotal (config, undoable). */
-   modifiers: DiceTrayModifier[];
-   /** The last roll: each die's face by id, the modifier breakdown at roll time, and the total. Cached, not undoable. */
-   lastRoll?: { faces: Record<string, number>; modifiers: { label?: string; value: number }[]; total: number };
-}
+export type DiceTrayBoardContent = DiceTrayContent & { kind: 'dice-tray' };
 
 /**
  * A labeled, resizable background frame that groups items (a Figma-style zone). Renders BEHIND
