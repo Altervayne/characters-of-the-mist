@@ -29,7 +29,9 @@ export function ThemePreview({ tokenSet, radius, dark, label, warning }: { token
    return (
       <div
          style={paneVars(tokenSet, radius)}
-         className={cn('flex flex-1 flex-col gap-2 overflow-hidden rounded-md border border-border bg-background p-3 text-foreground', dark && 'dark')}
+         // `light` opts this pane out of the app's `dark:` variant so it renders its light state even when
+         // the app is dark; the dark pane carries `dark` so its `dark:` refinements fire as intended.
+         className={cn('flex flex-1 flex-col gap-2 overflow-hidden rounded-md border border-border bg-background p-3 text-foreground', dark ? 'dark' : 'light')}
       >
          <div className="flex items-center justify-between gap-2">
             <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
