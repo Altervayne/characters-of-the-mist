@@ -446,6 +446,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const el = clipRef.current;
       if (!el) return;
       const onWheel = (event: WheelEvent) => {
+         // A selected, scrollable note (post-it/journal) marks its body for native scroll: let the wheel
+         // scroll it instead of zooming the board - no preventDefault, so the textarea scrolls natively.
+         const target = event.target;
+         if (target instanceof Element && target.closest('[data-board-wheel-scroll]')) return;
          const rect = el.getBoundingClientRect();
          const vp = viewportRef.current;
          const factor = Math.exp(-event.deltaY * ZOOM_SENSITIVITY);

@@ -107,6 +107,8 @@ export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, 
                onPointerDown={(event) => event.stopPropagation()}
                placeholder={t('BoardView.postItPlaceholder')}
                style={{ color: textColor }}
+               // Selected -> the board's wheel listener skips this so the wheel scrolls the note, not zoom.
+               data-board-wheel-scroll
                className="h-full w-full resize-none border-0 bg-transparent p-2.5 text-sm leading-snug outline-none placeholder:opacity-50 cursor-text"
             />
          ) : text.trim() ? (

@@ -152,6 +152,8 @@ export function JournalItem({ content, isSelected, toolbarSlot, sideSlot, onCont
                onBlur={commit}
                onPointerDown={(event) => event.stopPropagation()}
                placeholder={t('BoardView.journalPlaceholder')}
+               // Selected -> the board's wheel listener skips this so the wheel scrolls the page, not zoom.
+               data-board-wheel-scroll
                className="min-h-0 flex-1 resize-none border-0 bg-transparent p-2 text-sm leading-snug outline-none placeholder:text-muted-foreground/50 cursor-text"
             />
          ) : (
