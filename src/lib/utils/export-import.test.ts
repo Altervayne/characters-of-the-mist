@@ -8,13 +8,16 @@ import {
    base64ToBytes,
    blobToBase64,
    collectAssetIdsFromContent,
+   generateExportFilename,
+   isExportedCustomTheme,
    rehydrateEmbeddedAssets,
 } from './export-import';
 
 // -- Type Imports --
-import type { EmbeddedAsset } from './export-import';
+import type { EmbeddedAsset, ExportFile } from './export-import';
 import type { Card, Character } from '@/lib/types/character';
 import type { Drawer, DrawerItem } from '@/lib/types/drawer';
+import type { CustomTheme } from '@/lib/theme/themeTokens';
 
 /*
  * Tests for the inline-embed export/import plumbing: the content walk, the base64
@@ -71,6 +74,47 @@ describe('collectAssetIdsFromContent', () => {
    it('returns empty for content with no asset references', () => {
       expect(collectAssetIdsFromContent(imageCard('')).size).toBe(0);
       expect(collectAssetIdsFromContent(character([])).size).toBe(0);
+   });
+});
+
+describe('CUSTOM_THEME export/import', () => {
+   const makeTheme = (): CustomTheme => ({
+      id: 'orig', name: 'My Theme', radius: '0.75rem',
+      light: { background: '#fff' } as unknown as CustomTheme['light'],
+      dark: { background: '#000' } as unknown as CustomTheme['dark'],
+      seedMode: '3-seed', seeds: { primary: '#1', surface: '#2', accent: '#3', vivid: true },
+   });
+
+   it('references no assets (a theme is asset-free)', () => {
+      expect(collectAssetIdsFromContent(makeTheme()).size).toBe(0);
+   });
+
+   it('names the file with a Theme label and no game prefix', () => {
+      const name = generateExportFilename('NEUTRAL', 'CUSTOM_THEME', 'My Theme');
+      expect(name).toContain('My Theme');
+      expect(name).toContain('Theme');
+      expect(name).not.toMatch(/LitM|CoM|OS/);
+   });
+
+   it('isExportedCustomTheme accepts a theme envelope and rejects others', () => {
+      const themeFile: ExportFile = { fileType: 'CUSTOM_THEME', game: 'NEUTRAL', content: makeTheme() };
+      expect(isExportedCustomTheme(themeFile)).toBe(true);
+      expect(isExportedCustomTheme({ fileType: 'FULL_CHARACTER_SHEET', game: 'LEGENDS', content: character([]) })).toBe(false);
+      const malformed = { fileType: 'CUSTOM_THEME', game: 'NEUTRAL', content: { light: {}, dark: {} } } as unknown as ExportFile;
+      expect(isExportedCustomTheme(malformed)).toBe(false);
+   });
+
+   it('round-trips with a fresh id, preserving light/dark/radius and seedMode/seeds', () => {
+      const theme = makeTheme();
+      const file: ExportFile = { fileType: 'CUSTOM_THEME', game: 'NEUTRAL', content: theme };
+      // The importer re-IDs the validated content (the exact shape the manager's handler builds).
+      const reIded = { ...(file.content as CustomTheme), id: 'fresh' };
+      expect(reIded.id).not.toBe(theme.id);
+      expect(reIded.light).toEqual(theme.light);
+      expect(reIded.dark).toEqual(theme.dark);
+      expect(reIded.radius).toBe(theme.radius);
+      expect(reIded.seedMode).toBe('3-seed');
+      expect(reIded.seeds).toEqual(theme.seeds);
    });
 });
 

@@ -177,6 +177,10 @@
          "updated": "[TO COMPLETE]",
          "cleared": "[TO COMPLETE]"
       },
+      "theme": {
+         "exported": "[TO COMPLETE]",
+         "imported": "[TO COMPLETE]"
+      },
       "card": {
          "created": "Carte créée avec succès.",
          "updated": "Carte mise à jour avec succès."
@@ -523,6 +527,8 @@
          "noCustoms": "[TO COMPLETE]",
          "actionsMenu": "[TO COMPLETE]",
          "reorder": "[TO COMPLETE]",
+         "export": "[TO COMPLETE]",
+         "importTheme": "[TO COMPLETE]",
          "duplicate": "[TO COMPLETE]",
          "rename": "[TO COMPLETE]",
          "delete": "[TO COMPLETE]",

@@ -62,6 +62,11 @@ export function useDrawerFileImport(currentFolderId: string | null) {
                toast.success(tNotifications('Notifications.drawer.importSuccess'));
                break;
 
+            case 'CUSTOM_THEME':
+               // Themes live in app settings (imported from the Themes window), not the drawer - reject here.
+               toast.error(tNotifications('Notifications.general.importFailed'));
+               break;
+
             default:
                addImportedItem(importedData.content as DrawerItemContent, importedData.fileType, importedData.game, currentFolderId ?? undefined);
                toast.success(tNotifications('Notifications.drawer.importSuccess'));

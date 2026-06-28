@@ -164,7 +164,9 @@ const hasRegisteredMigration = (dataType: GeneralItemType): boolean =>
 
 
 
-export function harmonizeData<T extends object>(data: T, dataType: GeneralItemType): T {
+// Accepts any envelope item type the importers pass. A type with no registered migration (e.g. the
+// 2.0-native CUSTOM_THEME) has nothing to migrate and passes straight through unchanged.
+export function harmonizeData<T extends object>(data: T, dataType: GeneralItemType | 'CUSTOM_THEME'): T {
    if (!data || typeof data !== 'object') {
       return data;
    }
@@ -179,13 +181,13 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
    // standalone Cards stored in the drawer). Such data defaults to '1.0.0' and
    // re-runs its migrations on every load - migration functions for those types
    // must therefore be idempotent.
-   if (isVersionable(harmonizedData) || isCharacter(harmonizedData) || isDrawer(harmonizedData) || hasRegisteredMigration(dataType)) {
+   if (isVersionable(harmonizedData) || isCharacter(harmonizedData) || isDrawer(harmonizedData) || hasRegisteredMigration(dataType as GeneralItemType)) {
       let currentVersion = (isVersionable(harmonizedData) && harmonizedData.version) || '1.0.0';
 
       for (const targetVersion of MIGRATION_VERSIONS) {
          if (compare(targetVersion, currentVersion) > 0) {
             const versionMigrations = MIGRATIONS[targetVersion];
-            const migrate = versionMigrations[dataType];
+            const migrate = versionMigrations[dataType as GeneralItemType];
 
             if (migrate) {
                harmonizedData = migrate(data);
@@ -216,7 +218,7 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
       harmonizedData = stripCharacterTrackerGames(harmonizedData as Character);
    } else if (isCard(harmonizedData) && dataType === 'IMAGE_CARD') {
       harmonizedData = ensureImageCardSize(harmonizedData);
-   } else if (TRACKER_ITEM_TYPES.has(dataType)) {
+   } else if (TRACKER_ITEM_TYPES.has(dataType as GeneralItemType)) {
       // A standalone tracker saved in the drawer: its content IS the tracker; drop its dead `game`.
       harmonizedData = stripTrackerGame(harmonizedData);
    }

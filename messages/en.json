@@ -177,6 +177,10 @@
          "updated": "Board updated from file.",
          "cleared": "Board cleared."
       },
+      "theme": {
+         "exported": "Theme exported to downloads.",
+         "imported": "Theme imported."
+      },
       "card": {
          "created": "Card created successfully.",
          "updated": "Card updated successfully."
@@ -566,6 +570,8 @@
          "noCustoms": "No custom themes yet. Duplicate a preset to start one.",
          "actionsMenu": "Theme actions",
          "reorder": "Drag to reorder",
+         "export": "Export",
+         "importTheme": "Import theme",
          "duplicate": "Duplicate",
          "rename": "Rename",
          "delete": "Delete",

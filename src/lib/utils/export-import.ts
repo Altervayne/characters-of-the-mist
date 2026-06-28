@@ -1,14 +1,16 @@
 import type { Card, Tracker, Character, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
 import type { Drawer, DrawerItem, Folder, GameSystem, GeneralItemType } from '../types/drawer';
 import type { Board, BoardItemContent } from '@/lib/types/board';
+import type { CustomTheme } from '@/lib/theme/themeTokens';
 import { APP_VERSION } from '../config';
 import { getAsset, storeAsset } from '@/lib/assets/assetRepository';
 import { hashBytes } from '@/lib/assets/processImage';
 import type { ProcessedImage } from '@/lib/assets/processImage';
 
-export type ExportableItemType = GeneralItemType
-// A board (`FULL_BOARD`) rides the generic export envelope; board IMPORT is not wired yet.
-export type ExportableContent = Card | Tracker | Character | Folder | Drawer | Board;
+// `CUSTOM_THEME` is a 2.0-native type (themes live in app settings, not the drawer); it rides the same
+// envelope as everything else. A board (`FULL_BOARD`) rides it too.
+export type ExportableItemType = GeneralItemType | 'CUSTOM_THEME';
+export type ExportableContent = Card | Tracker | Character | Folder | Drawer | Board | CustomTheme;
 
 /** One asset's bytes carried inside an exported file so the file is self-contained. */
 export interface EmbeddedAsset {
@@ -99,6 +101,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
 
       case "IMAGE_CARD":
          textType = "Portrait"
+         break;
+
+      case "CUSTOM_THEME":
+         textType = "Theme"
          break;
    }
 
@@ -214,6 +220,8 @@ function collectFromBoard(board: Board, into: Set<string>): void {
  */
 export function collectAssetIdsFromContent(content: ExportableContent): Set<string> {
    const ids = new Set<string>();
+   // A custom theme is just token sets - no asset references; bail before the item walks.
+   if ('light' in content && 'dark' in content && 'radius' in content) return ids;
    if ('rootItems' in content) {
       // Drawer: root items + every folder subtree.
       for (const item of content.rootItems) collectFromItem(item, ids);
@@ -356,6 +364,25 @@ export async function exportDrawer(drawer: Drawer) {
    const drawerFileName = generateExportFilename('NEUTRAL', 'FULL_DRAWER', 'Full Drawer');
    await exportToFile(drawer, 'FULL_DRAWER', 'NEUTRAL', drawerFileName);
 };
+
+/**
+ * Quick helper to export a single custom theme. Themes are game-agnostic (NEUTRAL) and asset-free, so the
+ * file is just the envelope around the theme (its light/dark token sets, radius, and any seedMode/seeds).
+ */
+export async function exportCustomTheme(theme: CustomTheme) {
+   const fileName = generateExportFilename('NEUTRAL', 'CUSTOM_THEME', theme.name);
+   await exportToFile(theme, 'CUSTOM_THEME', 'NEUTRAL', fileName);
+};
+
+/**
+ * Whether a parsed file is a custom-theme export carrying the token sets a theme needs - so a
+ * character/board/malformed `.cotm` is rejected before it's added as a theme. (Themes are 2.0-native,
+ * so there's no harmonize step; the importer just re-IDs the validated content.)
+ */
+export function isExportedCustomTheme(file: ExportFile): boolean {
+   const content = file.content as Partial<CustomTheme>;
+   return file.fileType === 'CUSTOM_THEME' && !!content.light && !!content.dark && typeof content.radius === 'string';
+}
 
 /**
  * Imports a .cotm file and parses it into an ExportFile structure.

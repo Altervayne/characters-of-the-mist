@@ -1,9 +1,10 @@
 // -- React Imports --
-import { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Library Imports --
 import cuid from 'cuid';
+import toast from 'react-hot-toast';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
@@ -14,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // -- Icon Imports --
-import { Check, Copy, GripVertical, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react';
+import { Check, Copy, Download, GripVertical, MoreHorizontal, Pencil, Trash2, Upload, X } from 'lucide-react';
 
 // -- DnD Component Imports --
 import { Sortable, DragLayoutWrapper } from '@/components/dnd';
@@ -24,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { PRESET_LABELS, PRESET_THEMES, customThemeClass } from '@/lib/theme/themeTokens';
 import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
+import { exportCustomTheme, importFromFile, isExportedCustomTheme } from '@/lib/utils/export-import';
 
 // -- Store Imports --
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
@@ -111,6 +113,45 @@ export function ThemeManager() {
       setRenamingId(null);
    };
 
+   const importInputRef = useRef<HTMLInputElement>(null);
+   const importFormRef = useRef<HTMLFormElement>(null);
+
+   // Export one custom theme to a .cotm file (the whole theme - light/dark token sets, radius, any seeds).
+   const exportTheme = async (id: string) => {
+      const theme = customThemes.find((entry) => entry.id === id);
+      if (!theme) return;
+      try {
+         await exportCustomTheme(theme);
+         toast.success(t('Notifications.theme.exported'));
+      } catch (error) {
+         console.error('Theme export failed:', error);
+         toast.error(t('Notifications.general.exportError'));
+      }
+   };
+
+   // Import a .cotm theme as a NEW custom: validate it's a theme envelope, give it a fresh id (so the same
+   // file can be imported twice without colliding), add it, and select it. No harmonize - themes are
+   // 2.0-native with no legacy migration.
+   const handleImportFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+         const imported = await importFromFile(file);
+         if (isExportedCustomTheme(imported)) {
+            const theme: CustomTheme = { ...(imported.content as CustomTheme), id: cuid() };
+            addCustomTheme(theme);
+            setTheme(customThemeClass(theme.id));
+            toast.success(t('Notifications.theme.imported'));
+         } else {
+            toast.error(t('Notifications.general.importFailed'));
+         }
+      } catch (error) {
+         console.error('Theme import failed:', error);
+         toast.error(t('Notifications.general.importFailed'));
+      }
+      importFormRef.current?.reset();
+   };
+
    const renderRow = (entry: ThemeEntry, dragHandle?: DragHandleProps) => {
       const isActive = activeTheme === entry.value;
       const customId = entry.isCustom ? entry.value.replace('theme-custom-', '') : null;
@@ -184,6 +225,9 @@ export function ThemeManager() {
                         <DropdownMenuItem onClick={() => startRename(customId, entry.label)} className="cursor-pointer">
                            <Pencil className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.rename')}</span>
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportTheme(customId)} className="cursor-pointer">
+                           <Upload className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.export')}</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                            onClick={() => setPendingDelete(customThemes.find((theme) => theme.id === customId) ?? null)}
                            className="cursor-pointer text-destructive"
@@ -209,7 +253,17 @@ export function ThemeManager() {
          {/* Customs get their own scroller, so the presets never scroll away. Only this section is
              sortable - a local DndContext + SortableContext over the custom ids; presets stay outside it. */}
          <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-border pt-3">
-            <SectionHeading>{t('SettingsDialog.themes.customsHeading')}</SectionHeading>
+            <div className="flex items-center justify-between gap-2">
+               <SectionHeading>{t('SettingsDialog.themes.customsHeading')}</SectionHeading>
+               <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => importInputRef.current?.click()}
+                  className="h-6 cursor-pointer px-2 text-xs text-muted-foreground hover:text-foreground"
+               >
+                  <Download className="mr-1 h-3.5 w-3.5" />{t('SettingsDialog.themes.importTheme')}
+               </Button>
+            </div>
             {customEntries.length > 0 ? (
                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={customThemes.map((theme) => theme.id)} strategy={verticalListSortingStrategy}>
@@ -255,6 +309,10 @@ export function ThemeManager() {
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>
+
+         <form ref={importFormRef} className="hidden">
+            <input type="file" ref={importInputRef} onChange={handleImportFileSelected} accept=".cotm,application/json" />
+         </form>
       </div>
    );
 }
