@@ -35,8 +35,11 @@ export const TOKEN_GROUPS: { id: string; tokens: ChromeTokenKey[] }[] = [
    { id: 'lines', tokens: ['border', 'input'] },
 ];
 
-/** The two seed-generator modes (one accent/neutral pair for both modes, or one pair per mode). */
-export type SeedMode = '2-seed' | '4-seed';
+/**
+ * The seed-generator modes. 2-seed / 4-seed are the strictly-safe (near-gray) generators; 3-seed is the
+ * Expressive mode - tinted surfaces, a real accent, seed-driven brightness - chosen deliberately.
+ */
+export type SeedMode = '2-seed' | '4-seed' | '3-seed';
 
 /** 2-seed inputs: a single accent + neutral pair drives both light and dark. */
 export interface TwoSeeds {
@@ -52,8 +55,16 @@ export interface FourSeeds {
    darkNeutral: string;
 }
 
+/** 3-seed (Expressive) inputs: a primary, a surface tint, and a real accent; `vivid` scales the boldness. */
+export interface ThreeSeeds {
+   primary: string;
+   surface: string;
+   accent: string;
+   vivid?: boolean;
+}
+
 /** The seeds a theme was last generated from, kept so the panel restores them and can re-generate. */
-export type ThemeSeeds = TwoSeeds | FourSeeds;
+export type ThemeSeeds = TwoSeeds | FourSeeds | ThreeSeeds;
 
 /**
  * A user-defined theme. `light` / `dark` are the resolved palettes that actually apply (the source of

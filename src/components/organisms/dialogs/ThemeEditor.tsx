@@ -26,7 +26,7 @@ import { lowContrastPairs } from '@/lib/theme/contrastWarnings';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
-import type { ChromeTokenKey, CustomTheme, FourSeeds, SeedMode, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
+import type { ChromeTokenKey, CustomTheme, FourSeeds, SeedMode, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
 import type { ContrastWarning } from '@/lib/theme/contrastWarnings';
 
 /*
@@ -49,6 +49,8 @@ const RADIUS_STEP = 0.05;
 /** The seed swatches open here when a theme has never been generated. */
 const DEFAULT_ACCENT_SEED = '#2563eb';
 const DEFAULT_NEUTRAL_SEED = '#6b7280';
+/** Expressive defaults: a blue primary, a neutral surface tint, and a contrasting amber accent. */
+const DEFAULT_ACCENT_CONTRAST_SEED = '#f59e0b';
 
 /** Any CSS color -> `#rrggbb` so the picker (hex-based) opens on the current value. */
 function toHex(color: string): string {
@@ -57,13 +59,17 @@ function toHex(color: string): string {
 }
 
 /** Restores the seed panel's inputs from a theme's saved seeds, falling back to the defaults. */
-function restoreSeeds(theme: CustomTheme): { two: TwoSeeds; four: FourSeeds } {
+function restoreSeeds(theme: CustomTheme): { two: TwoSeeds; four: FourSeeds; three: ThreeSeeds } {
    const two: TwoSeeds = { accent: DEFAULT_ACCENT_SEED, neutral: DEFAULT_NEUTRAL_SEED };
    const four: FourSeeds = { lightAccent: DEFAULT_ACCENT_SEED, lightNeutral: DEFAULT_NEUTRAL_SEED, darkAccent: DEFAULT_ACCENT_SEED, darkNeutral: DEFAULT_NEUTRAL_SEED };
+   const three: ThreeSeeds = { primary: DEFAULT_ACCENT_SEED, surface: DEFAULT_NEUTRAL_SEED, accent: DEFAULT_ACCENT_CONTRAST_SEED, vivid: false };
    const seeds = theme.seeds;
-   if (seeds && 'accent' in seeds) { two.accent = seeds.accent; two.neutral = seeds.neutral; }
+   // The three shapes are distinguished by their unique keys: `primary` (3-seed), `lightAccent` (4-seed),
+   // `accent` (2-seed).
+   if (seeds && 'primary' in seeds) { Object.assign(three, seeds); }
    else if (seeds && 'lightAccent' in seeds) { Object.assign(four, seeds); }
-   return { two, four };
+   else if (seeds && 'accent' in seeds) { two.accent = seeds.accent; two.neutral = seeds.neutral; }
+   return { two, four, three };
 }
 
 /** One token's swatch for one mode: opens the shared picker, commits the chosen hex; flags low contrast. */
@@ -121,13 +127,14 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
 
    const restored = restoreSeeds(theme);
    const [open, setOpen] = useState(false);
-   const [mode, setMode] = useState<SeedMode>(theme.seedMode === '4-seed' ? '4-seed' : '2-seed');
+   const [mode, setMode] = useState<SeedMode>(theme.seedMode === '4-seed' ? '4-seed' : theme.seedMode === '3-seed' ? '3-seed' : '2-seed');
    const [two, setTwo] = useState<TwoSeeds>(restored.two);
    const [four, setFour] = useState<FourSeeds>(restored.four);
+   const [three, setThree] = useState<ThreeSeeds>(restored.three);
    const [confirming, setConfirming] = useState(false);
 
    const generate = () => {
-      const seeds = mode === '2-seed' ? two : four;
+      const seeds = mode === '2-seed' ? two : mode === '3-seed' ? three : four;
       const { light, dark } = deriveFromSeeds(mode, seeds);
       // Overwrite both palettes from the seeds; radius is the manual slider's, untouched here.
       updateCustomTheme(theme.id, { light, dark, seedMode: mode, seeds });
@@ -156,12 +163,32 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
                   <Button variant={mode === '4-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('4-seed')} className="cursor-pointer">
                      {t('SettingsDialog.themes.seeds.fourSeed')}
                   </Button>
+                  <Button variant={mode === '3-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('3-seed')} className="cursor-pointer">
+                     {t('SettingsDialog.themes.seeds.expressive')}
+                  </Button>
                </div>
 
                {mode === '2-seed' ? (
                   <div className="flex flex-wrap gap-4">
                      <SeedSwatch label={t('SettingsDialog.themes.seeds.accent')} value={two.accent} onPick={(hex) => setTwo((s) => ({ ...s, accent: hex }))} />
                      <SeedSwatch label={t('SettingsDialog.themes.seeds.neutral')} value={two.neutral} onPick={(hex) => setTwo((s) => ({ ...s, neutral: hex }))} />
+                  </div>
+               ) : mode === '3-seed' ? (
+                  <div className="flex flex-col gap-3">
+                     <div className="flex flex-wrap gap-4">
+                        <SeedSwatch label={t('SettingsDialog.themes.seeds.primary')} value={three.primary} onPick={(hex) => setThree((s) => ({ ...s, primary: hex }))} />
+                        <SeedSwatch label={t('SettingsDialog.themes.seeds.surface')} value={three.surface} onPick={(hex) => setThree((s) => ({ ...s, surface: hex }))} />
+                        <SeedSwatch label={t('SettingsDialog.themes.seeds.accent')} value={three.accent} onPick={(hex) => setThree((s) => ({ ...s, accent: hex }))} />
+                     </div>
+                     {/* Vivid scales the boldness (surface saturation, foreground tint, accent saturation). */}
+                     <Button
+                        variant={three.vivid ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setThree((s) => ({ ...s, vivid: !s.vivid }))}
+                        className="w-fit cursor-pointer"
+                     >
+                        {t('SettingsDialog.themes.seeds.vivid')}
+                     </Button>
                   </div>
                ) : (
                   <div className="flex flex-col gap-2">

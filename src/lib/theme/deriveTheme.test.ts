@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { derive2Seed, derive4Seed, deriveFromSeeds, deriveMode } from './deriveTheme';
+import { derive2Seed, derive3Seed, derive4Seed, deriveExpressiveMode, deriveFromSeeds, deriveMode } from './deriveTheme';
 import { CHROME_TOKEN_KEYS } from './themeTokens';
 import { colorToHsl, contrastRatio, parseColorToRgb } from '@/lib/color';
 
@@ -121,5 +121,79 @@ describe('deriveFromSeeds', () => {
    it('routes 4-seed to derive4Seed', () => {
       const seeds = { lightAccent: '#10b981', lightNeutral: '#9ca3af', darkAccent: '#f59e0b', darkNeutral: '#52525b' };
       expect(deriveFromSeeds('4-seed', seeds)).toEqual(derive4Seed(seeds));
+   });
+
+   it('routes 3-seed to derive3Seed', () => {
+      const seeds = { primary: '#2563eb', surface: '#6b7280', accent: '#f59e0b', vivid: true };
+      expect(deriveFromSeeds('3-seed', seeds)).toEqual(derive3Seed(seeds));
+   });
+});
+
+/** A coarse seed grid for the 3-dimensional Expressive AA sweep (full grid cubed would be enormous). */
+function coarseSeeds(): string[] {
+   const seeds = [0, 60, 120, 180, 240, 300].map((hue) => `hsl(${hue} 80% 50%)`);
+   seeds.push('hsl(0 0% 10%)', 'hsl(0 0% 90%)', 'hsl(210 100% 50%)', 'hsl(40 100% 60%)', 'hsl(0 0% 50%)');
+   return seeds;
+}
+const COARSE = coarseSeeds();
+
+describe('deriveExpressiveMode / derive3Seed (Expressive)', () => {
+   it('produces a complete, parseable TokenSet in both modes and both vivid states', () => {
+      for (const mode of ['light', 'dark'] as const) {
+         for (const vivid of [false, true]) {
+            const set = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 50%)', 'hsl(45 90% 55%)', mode, vivid);
+            for (const key of CHROME_TOKEN_KEYS) {
+               expect(typeof set[key]).toBe('string');
+               expect(parseColorToRgb(set[key])).not.toBeNull();
+            }
+         }
+      }
+   });
+
+   // The whole point: surfaces and accent are tinted/real, NOT the safe near-gray output.
+   it('makes surfaces more saturated than the safe mode (a real tint, not near-gray)', () => {
+      const expr = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 80% 50%)', 'hsl(45 90% 55%)', 'light', false);
+      expect(colorToHsl(expr.background)[1]).toBeGreaterThan(14); // above the safe SURFACE_SAT_CAP
+   });
+
+   it('gives accent a real saturation, unlike the safe faint-tint accent', () => {
+      const expr = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 50%)', 'hsl(45 95% 55%)', 'light', true);
+      expect(colorToHsl(expr.accent)[1]).toBeGreaterThan(30); // above the safe ACCENT_SURFACE_SAT_CAP
+   });
+
+   it('vivid is bolder: surfaces carry more saturation than calm for a saturated surface seed', () => {
+      const calm = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 100% 50%)', 'hsl(45 90% 55%)', 'light', false);
+      const vivid = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 100% 50%)', 'hsl(45 90% 55%)', 'light', true);
+      expect(colorToHsl(vivid.background)[1]).toBeGreaterThan(colorToHsl(calm.background)[1]);
+   });
+
+   it('drives surface brightness from the surface seed (a darker light-mode seed yields a dimmer background)', () => {
+      const bright = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 95%)', 'hsl(45 90% 55%)', 'light', false);
+      const dim = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 50%)', 'hsl(45 90% 55%)', 'light', false);
+      expect(colorToHsl(bright.background)[2]).toBeGreaterThan(colorToHsl(dim.background)[2]);
+   });
+
+   // Bold but still readable: every REQUIRED pair clears AA across the seed cube, both modes, both vivid.
+   it('clears the AA floor on every required pair across the Expressive seed cube (both modes, both vivid)', () => {
+      for (const primary of COARSE) {
+         for (const surface of COARSE) {
+            for (const accent of COARSE) {
+               for (const mode of ['light', 'dark'] as const) {
+                  for (const vivid of [false, true]) {
+                     const set = deriveExpressiveMode(primary, surface, accent, mode, vivid);
+                     for (const [fg, bg] of CONTRAST_PAIRS) {
+                        const ratio = contrastRatio(set[fg], set[bg]);
+                        expect(ratio, `${mode} vivid=${vivid} ${fg}/${bg} p=${primary} s=${surface} a=${accent}`).toBeGreaterThanOrEqual(AA);
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }, 30000);
+
+   it('3-seed drives both modes from one shared seed set + vivid flag', () => {
+      const { light, dark } = derive3Seed({ primary: 'hsl(220 80% 50%)', surface: 'hsl(30 60% 50%)', accent: 'hsl(45 90% 55%)', vivid: true });
+      expect(light.background).not.toBe(dark.background);
    });
 });

@@ -583,8 +583,12 @@
             "title": "Generate from seeds (optional)",
             "twoSeed": "2 seeds",
             "fourSeed": "4 seeds",
+            "expressive": "Expressive",
             "accent": "Accent",
             "neutral": "Neutral",
+            "primary": "Primary",
+            "surface": "Surface",
+            "vivid": "Vivid",
             "generate": "Generate",
             "confirmTitle": "Generate from seeds?",
             "confirmDescription": "This replaces all of the theme's colors with ones derived from the seeds. Your roundness is kept, and you can keep editing afterwards."
