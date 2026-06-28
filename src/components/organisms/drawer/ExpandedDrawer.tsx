@@ -272,7 +272,7 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
             </aside>
 
             {/* Item area: a responsive grid of items (browse) or search results. */}
-            <main className="relative flex-1 overflow-y-auto bg-popover p-4">
+            <main className="relative flex-1 overflow-y-auto bg-popover p-1">
                {isSearchActive ? (
                   <div className="flex flex-col gap-3">
                      <DrawerSortControl />

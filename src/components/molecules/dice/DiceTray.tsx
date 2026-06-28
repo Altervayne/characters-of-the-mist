@@ -487,9 +487,10 @@ function RollHistory({ entries, editable, label, emptyLabel, restoreLabel, clear
                            title={editable ? restoreLabel : undefined}
                            onPointerDown={stopDrag}
                            onClick={() => onRestore(entry)}
-                           className={cn('flex items-center justify-between gap-2 rounded px-1.5 py-1 text-left', editable ? 'hover:bg-muted cursor-pointer' : 'cursor-default')}
+                           className={cn('flex items-start justify-between gap-2 rounded px-1.5 py-1 text-left', editable ? 'hover:bg-muted cursor-pointer' : 'cursor-default')}
                         >
-                           <span className="min-w-0 flex-1 truncate font-mono text-xs">
+                           {/* The summary wraps (a big roll stays fully readable); the timestamp aligns to its first line. */}
+                           <span className="min-w-0 flex-1 break-words font-mono text-xs">
                               <span className="text-muted-foreground">{summarizeRoll(entry)} = </span>
                               <span className="font-bold tabular-nums">{entry.total}</span>
                            </span>
