@@ -12,7 +12,7 @@ import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopo
 import { ThemePreview } from '@/components/organisms/dialogs/ThemePreview';
 
 // -- Icon Imports --
-import { AlertTriangle, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Info, Sparkles } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -107,6 +107,47 @@ function TokenSwatch({ value, label, onPick, warning }: { value: string; label: 
             </Tooltip>
          )}
       </div>
+   );
+}
+
+/** A compact hex field beside a swatch: type/paste a color without opening the picker. Reverts garbage. */
+function HexInput({ value, label, onCommit, className }: { value: string; label: string; onCommit: (hex: string) => void; className?: string }) {
+   const hex = toHex(value);
+   const [draft, setDraft] = useState(hex);
+   // Re-sync when the token value changes elsewhere (the picker, a generate) - adjust-during-render pattern.
+   const [synced, setSynced] = useState(hex);
+   if (hex !== synced) { setSynced(hex); setDraft(hex); }
+
+   const commit = () => {
+      const rgb = parseColorToRgb(draft);
+      if (rgb) onCommit(rgbToHex(...rgb)); // normalize (#rgb -> #rrggbb)
+      else setDraft(hex); // invalid -> revert, never write garbage
+   };
+   return (
+      <input
+         type="text"
+         aria-label={label}
+         value={draft}
+         spellCheck={false}
+         onChange={(event) => setDraft(event.target.value)}
+         onBlur={commit}
+         onKeyDown={(event) => { if (event.key === 'Enter') commit(); if (event.key === 'Escape') setDraft(hex); }}
+         className={cn('h-7 rounded-md border border-input bg-transparent px-1.5 font-mono text-xs tabular-nums outline-none focus:border-ring', className)}
+      />
+   );
+}
+
+/** A muted info icon whose tooltip explains a token's purpose (copy from the theme audit). */
+function InfoTip({ text }: { text: string }) {
+   return (
+      <Tooltip>
+         <TooltipTrigger asChild>
+            <button type="button" tabIndex={-1} aria-label={text} className="shrink-0 cursor-help text-muted-foreground/60 hover:text-foreground">
+               <Info className="h-3.5 w-3.5" />
+            </button>
+         </TooltipTrigger>
+         <TooltipContent className="max-w-56">{text}</TooltipContent>
+      </Tooltip>
    );
 }
 
@@ -282,22 +323,35 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
             <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">{theme.radius}</span>
          </div>
 
-         {/* Per-token rows, grouped; light + dark swatches side by side. */}
-         <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 pl-[7.5rem]">
-               <span className="w-7 text-center text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.lightColumn')}</span>
-               <span className="w-7 text-center text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.darkColumn')}</span>
-            </div>
+         {/* Per-token rows: each surface paired with its foreground, two group-blocks per row on a wide
+             window (one when narrow). Each block carries its own Light/Dark markers so the columns line up. */}
+         <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2">
             {TOKEN_GROUPS.map((group) => (
-               <div key={group.id} className="flex flex-col gap-1">
-                  <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t(`SettingsDialog.themes.groups.${group.id}`)}</span>
-                  {group.tokens.map((token) => (
-                     <div key={token} className="flex items-center gap-2">
-                        <span className="w-28 shrink-0 truncate text-sm">{t(`SettingsDialog.themes.tokens.${token}`)}</span>
-                        <TokenSwatch value={theme.light[token]} label={`${t(`SettingsDialog.themes.tokens.${token}`)} · ${t('SettingsDialog.themes.lightColumn')}`} onPick={(hex) => setToken('light', token, hex)} warning={warningText(lightByFg.get(token))} />
-                        <TokenSwatch value={theme.dark[token]} label={`${t(`SettingsDialog.themes.tokens.${token}`)} · ${t('SettingsDialog.themes.darkColumn')}`} onPick={(hex) => setToken('dark', token, hex)} warning={warningText(darkByFg.get(token))} />
-                     </div>
-                  ))}
+               <div key={group.id} className="flex flex-col gap-1 rounded-md border border-border/60 p-2">
+                  <div className="flex items-center gap-2">
+                     <span className="min-w-0 flex-1 text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t(`SettingsDialog.themes.groups.${group.id}`)}</span>
+                     <span className="w-24 text-center text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.lightColumn')}</span>
+                     <span className="w-24 text-center text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.darkColumn')}</span>
+                  </div>
+                  {group.tokens.map((token) => {
+                     const tokenLabel = t(`SettingsDialog.themes.tokens.${token}`);
+                     return (
+                        <div key={token} className="flex items-center gap-2">
+                           <div className="flex min-w-0 flex-1 items-center gap-1">
+                              <span className="truncate text-sm">{tokenLabel}</span>
+                              <InfoTip text={t(`SettingsDialog.themes.tokenPurpose.${token}`)} />
+                           </div>
+                           <div className="flex w-24 items-center gap-1">
+                              <TokenSwatch value={theme.light[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.lightColumn')}`} onPick={(hex) => setToken('light', token, hex)} warning={warningText(lightByFg.get(token))} />
+                              <HexInput value={theme.light[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.lightColumn')}`} onCommit={(hex) => setToken('light', token, hex)} className="min-w-0 flex-1" />
+                           </div>
+                           <div className="flex w-24 items-center gap-1">
+                              <TokenSwatch value={theme.dark[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.darkColumn')}`} onPick={(hex) => setToken('dark', token, hex)} warning={warningText(darkByFg.get(token))} />
+                              <HexInput value={theme.dark[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.darkColumn')}`} onCommit={(hex) => setToken('dark', token, hex)} className="min-w-0 flex-1" />
+                           </div>
+                        </div>
+                     );
+                  })}
                </div>
             ))}
          </div>

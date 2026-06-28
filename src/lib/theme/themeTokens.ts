@@ -24,14 +24,20 @@ export type ChromeTokenKey = (typeof CHROME_TOKEN_KEYS)[number];
 export type TokenSet = Record<ChromeTokenKey, string>;
 
 /**
- * The editor's grouping of the 19 tokens into readable sections. Structure only - the section + token
- * display labels are i18n (`SettingsDialog.themes.groups.*` / `.tokens.*`), so the editor resolves them.
+ * The editor's grouping of the 19 tokens: each surface paired with the foreground that sits on it, so the
+ * two are edited side by side. Structure only - the section + token display labels are i18n
+ * (`SettingsDialog.themes.groups.*` / `.tokens.*`), so the editor resolves them. (`ring` rides the primary
+ * group; `border`/`input` have no foreground pair.)
  */
 export const TOKEN_GROUPS: { id: string; tokens: ChromeTokenKey[] }[] = [
-   { id: 'surfaces', tokens: ['background', 'card', 'popover', 'muted', 'secondary', 'accent'] },
-   { id: 'text', tokens: ['foreground', 'card-foreground', 'popover-foreground', 'secondary-foreground', 'accent-foreground', 'muted-foreground'] },
-   { id: 'brand', tokens: ['primary', 'primary-foreground', 'ring'] },
-   { id: 'feedback', tokens: ['destructive', 'destructive-foreground'] },
+   { id: 'base', tokens: ['background', 'foreground'] },
+   { id: 'card', tokens: ['card', 'card-foreground'] },
+   { id: 'popover', tokens: ['popover', 'popover-foreground'] },
+   { id: 'primary', tokens: ['primary', 'primary-foreground', 'ring'] },
+   { id: 'secondary', tokens: ['secondary', 'secondary-foreground'] },
+   { id: 'muted', tokens: ['muted', 'muted-foreground'] },
+   { id: 'accent', tokens: ['accent', 'accent-foreground'] },
+   { id: 'destructive', tokens: ['destructive', 'destructive-foreground'] },
    { id: 'lines', tokens: ['border', 'input'] },
 ];
 
