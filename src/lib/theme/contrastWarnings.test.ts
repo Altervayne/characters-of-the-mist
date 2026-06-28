@@ -36,6 +36,13 @@ describe('lowContrastPairs', () => {
       expect(warnings.find((warning) => warning.foreground === 'foreground')).toBeUndefined();
    });
 
+   it('clears every foreground/surface pair on every built-in preset, both modes (no warning on duplicate)', () => {
+      for (const [name, preset] of Object.entries(PRESET_THEMES)) {
+         expect(lowContrastPairs(preset.light), `${name} light`).toEqual([]);
+         expect(lowContrastPairs(preset.dark), `${name} dark`).toEqual([]);
+      }
+   });
+
    it('checks all eight foreground/surface pairs', () => {
       expect(CONTRAST_PAIRS).toHaveLength(8);
    });
