@@ -558,7 +558,41 @@
          "renamePlaceholder": "Theme name",
          "deleteConfirmTitle": "Delete theme?",
          "deleteConfirmDescription": "\"{{name}}\" will be permanently removed. If it's the active theme, the app falls back to a preset.",
-         "deleteConfirmButton": "Delete"
+         "deleteConfirmButton": "Delete",
+         "duplicateToEdit": "Presets can't be edited. Duplicate this one to make it your own.",
+         "lightColumn": "Light",
+         "darkColumn": "Dark",
+         "radius": "Roundness",
+         "previewLight": "Light preview",
+         "previewDark": "Dark preview",
+         "groups": {
+            "surfaces": "Surfaces",
+            "text": "Text",
+            "brand": "Brand",
+            "feedback": "Feedback",
+            "lines": "Lines"
+         },
+         "tokens": {
+            "background": "Background",
+            "foreground": "Text",
+            "card": "Card",
+            "card-foreground": "Card text",
+            "popover": "Popover",
+            "popover-foreground": "Popover text",
+            "primary": "Primary",
+            "primary-foreground": "Primary text",
+            "secondary": "Secondary",
+            "secondary-foreground": "Secondary text",
+            "muted": "Muted",
+            "muted-foreground": "Muted text",
+            "accent": "Accent",
+            "accent-foreground": "Accent text",
+            "destructive": "Destructive",
+            "destructive-foreground": "Destructive text",
+            "border": "Border",
+            "input": "Input",
+            "ring": "Focus ring"
+         }
       },
 
       "light": "Light Mode",

@@ -516,7 +516,41 @@
          "renamePlaceholder": "[TO COMPLETE]",
          "deleteConfirmTitle": "[TO COMPLETE]",
          "deleteConfirmDescription": "[TO COMPLETE]",
-         "deleteConfirmButton": "[TO COMPLETE]"
+         "deleteConfirmButton": "[TO COMPLETE]",
+         "duplicateToEdit": "[TO COMPLETE]",
+         "lightColumn": "[TO COMPLETE]",
+         "darkColumn": "[TO COMPLETE]",
+         "radius": "[TO COMPLETE]",
+         "previewLight": "[TO COMPLETE]",
+         "previewDark": "[TO COMPLETE]",
+         "groups": {
+            "surfaces": "[TO COMPLETE]",
+            "text": "[TO COMPLETE]",
+            "brand": "[TO COMPLETE]",
+            "feedback": "[TO COMPLETE]",
+            "lines": "[TO COMPLETE]"
+         },
+         "tokens": {
+            "background": "[TO COMPLETE]",
+            "foreground": "[TO COMPLETE]",
+            "card": "[TO COMPLETE]",
+            "card-foreground": "[TO COMPLETE]",
+            "popover": "[TO COMPLETE]",
+            "popover-foreground": "[TO COMPLETE]",
+            "primary": "[TO COMPLETE]",
+            "primary-foreground": "[TO COMPLETE]",
+            "secondary": "[TO COMPLETE]",
+            "secondary-foreground": "[TO COMPLETE]",
+            "muted": "[TO COMPLETE]",
+            "muted-foreground": "[TO COMPLETE]",
+            "accent": "[TO COMPLETE]",
+            "accent-foreground": "[TO COMPLETE]",
+            "destructive": "[TO COMPLETE]",
+            "destructive-foreground": "[TO COMPLETE]",
+            "border": "[TO COMPLETE]",
+            "input": "[TO COMPLETE]",
+            "ring": "[TO COMPLETE]"
+         }
       },
 
       "light": "Mode Clair",

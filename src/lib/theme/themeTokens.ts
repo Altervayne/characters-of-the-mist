@@ -24,6 +24,18 @@ export type ChromeTokenKey = (typeof CHROME_TOKEN_KEYS)[number];
 export type TokenSet = Record<ChromeTokenKey, string>;
 
 /**
+ * The editor's grouping of the 19 tokens into readable sections. Structure only - the section + token
+ * display labels are i18n (`SettingsDialog.themes.groups.*` / `.tokens.*`), so the editor resolves them.
+ */
+export const TOKEN_GROUPS: { id: string; tokens: ChromeTokenKey[] }[] = [
+   { id: 'surfaces', tokens: ['background', 'card', 'popover', 'muted', 'secondary', 'accent'] },
+   { id: 'text', tokens: ['foreground', 'card-foreground', 'popover-foreground', 'secondary-foreground', 'accent-foreground', 'muted-foreground'] },
+   { id: 'brand', tokens: ['primary', 'primary-foreground', 'ring'] },
+   { id: 'feedback', tokens: ['destructive', 'destructive-foreground'] },
+   { id: 'lines', tokens: ['border', 'input'] },
+];
+
+/**
  * A user-defined theme. `light` / `dark` are the resolved palettes that actually apply (the source of
  * truth); `radius` is the shared corner size. `seedMode` / `seeds` are placeholders for the derivation
  * engine (themes-2/3) - optional and unused here.
