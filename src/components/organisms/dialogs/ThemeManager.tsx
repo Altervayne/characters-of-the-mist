@@ -8,14 +8,16 @@ import cuid from 'cuid';
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // -- Icon Imports --
-import { Check, Copy, Pencil, Trash2, X } from 'lucide-react';
+import { Check, Copy, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { PRESET_LABELS, PRESET_THEMES, customThemeClass } from '@/lib/theme/themeTokens';
+import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 
 // -- Store Imports --
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
@@ -25,10 +27,10 @@ import type { CustomTheme, TokenSet } from '@/lib/theme/themeTokens';
 import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
 
 /*
- * The theme manager: the 4 presets + every custom theme, all selectable. Any entry can be DUPLICATED into a
- * new custom (a copy of its resolved token sets - the on-ramp to a custom theme until the editor lands);
- * customs can be renamed + deleted (presets are immutable). Selecting applies immediately via the store +
- * the runtime ThemeClassManager. The light/dark control is separate (it stays in the Settings dialog).
+ * The theme manager: a pinned Presets section + a scrollable Customs section. Each theme is a ROW whose body
+ * applies it on click (active = selected), with a hover-revealed "..." menu (mirroring the drawer rows):
+ * presets are immutable so they only Duplicate; customs also Rename (inline) + Delete (confirmed). Duplicate
+ * copies any entry's resolved token sets into a fresh custom and selects it. No light/dark control here.
  */
 
 /** A selectable theme entry: its active value, label, and the token sets a duplicate copies. */
@@ -37,6 +39,11 @@ interface ThemeEntry {
    label: string;
    isCustom: boolean;
    source: { light: TokenSet; dark: TokenSet; radius: string };
+}
+
+/** A small uppercase section heading, matching the editor's group labels. */
+function SectionHeading({ children }: { children: React.ReactNode }) {
+   return <span className="px-1 text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{children}</span>;
 }
 
 export function ThemeManager() {
@@ -61,7 +68,6 @@ export function ThemeManager() {
       isCustom: true,
       source: { light: theme.light, dark: theme.dark, radius: theme.radius },
    }));
-   const entries = [...presetEntries, ...customEntries];
 
    // Duplicate ANY entry into a new, independent custom (deep-copied token sets), then select it.
    const duplicate = (entry: ThemeEntry) => {
@@ -83,66 +89,95 @@ export function ThemeManager() {
       setRenamingId(null);
    };
 
-   return (
-      <div className="flex flex-col gap-1.5">
-         {entries.map((entry) => {
-            const isActive = activeTheme === entry.value;
-            const customId = entry.isCustom ? entry.value.replace('theme-custom-', '') : null;
-            const isRenaming = customId !== null && renamingId === customId;
+   const renderRow = (entry: ThemeEntry) => {
+      const isActive = activeTheme === entry.value;
+      const customId = entry.isCustom ? entry.value.replace('theme-custom-', '') : null;
 
-            return (
-               <div key={entry.value} className="flex items-center gap-1.5">
-                  {isRenaming && customId ? (
+      // A custom row mid-rename swaps its body for the inline input (commit on Enter/Check, cancel on Esc/X).
+      if (customId && renamingId === customId) {
+         return (
+            <div key={entry.value} className="flex items-center gap-1.5">
+               <Input
+                  autoFocus
+                  value={renameDraft}
+                  onChange={(event) => setRenameDraft(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === 'Enter') commitRename(customId); if (event.key === 'Escape') setRenamingId(null); }}
+                  placeholder={t('SettingsDialog.themes.renamePlaceholder')}
+                  className="h-9 flex-1"
+               />
+               <Button variant="default" size="icon" onClick={() => commitRename(customId)} title={t('SettingsDialog.themes.save')} className="shrink-0 cursor-pointer">
+                  <Check className="h-4 w-4" />
+               </Button>
+               <Button variant="outline" size="icon" onClick={() => setRenamingId(null)} title={t('SettingsDialog.dangerZone.resetDialog.cancel')} className="shrink-0 cursor-pointer">
+                  <X className="h-4 w-4" />
+               </Button>
+            </div>
+         );
+      }
+
+      return (
+         <div
+            key={entry.value}
+            onClick={() => setTheme(entry.value)}
+            className={cn(
+               'group/row relative flex cursor-pointer items-center rounded-md',
+               isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',
+            )}
+         >
+            {/* `pr-8` keeps the truncated name clear of the overlaid menu trigger. */}
+            <span className="min-w-0 flex-1 truncate px-3 py-2 pr-8 text-sm">{entry.label}</span>
+
+            <DropdownMenu>
+               <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
+                  <Button
+                     variant="ghost"
+                     size="icon"
+                     title={t('SettingsDialog.themes.actionsMenu')}
+                     className={`absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 shrink-0 cursor-pointer opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 ${DRAWER_MENU_TRIGGER_CLASS}`}
+                  >
+                     <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent onClick={(event) => event.stopPropagation()}>
+                  <DropdownMenuItem onClick={() => duplicate(entry)} className="cursor-pointer">
+                     <Copy className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.duplicate')}</span>
+                  </DropdownMenuItem>
+                  {entry.isCustom && customId && (
                      <>
-                        <Input
-                           autoFocus
-                           value={renameDraft}
-                           onChange={(event) => setRenameDraft(event.target.value)}
-                           onKeyDown={(event) => { if (event.key === 'Enter') commitRename(customId); if (event.key === 'Escape') setRenamingId(null); }}
-                           placeholder={t('SettingsDialog.themes.renamePlaceholder')}
-                           className="h-9 flex-1"
-                        />
-                        <Button variant="default" size="icon" onClick={() => commitRename(customId)} title={t('SettingsDialog.themes.save')} className="shrink-0 cursor-pointer">
-                           <Check className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => setRenamingId(null)} title={t('SettingsDialog.dangerZone.resetDialog.cancel')} className="shrink-0 cursor-pointer">
-                           <X className="h-4 w-4" />
-                        </Button>
-                     </>
-                  ) : (
-                     <>
-                        {/* Selecting applies the theme immediately; the active one reads as a filled button. */}
-                        <Button
-                           variant={isActive ? 'default' : 'outline'}
-                           onClick={() => setTheme(entry.value)}
-                           className="flex-1 min-w-0 justify-start cursor-pointer"
+                        <DropdownMenuItem onClick={() => startRename(customId, entry.label)} className="cursor-pointer">
+                           <Pencil className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.rename')}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                           onClick={() => setPendingDelete(customThemes.find((theme) => theme.id === customId) ?? null)}
+                           className="cursor-pointer text-destructive"
                         >
-                           <span className="truncate">{entry.label}</span>
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => duplicate(entry)} title={t('SettingsDialog.themes.duplicate')} className="shrink-0 cursor-pointer">
-                           <Copy className="h-4 w-4" />
-                        </Button>
-                        {entry.isCustom && customId && (
-                           <>
-                              <Button variant="ghost" size="icon" onClick={() => startRename(customId, entry.label)} title={t('SettingsDialog.themes.rename')} className="shrink-0 cursor-pointer">
-                                 <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                 variant="ghost"
-                                 size="icon"
-                                 onClick={() => setPendingDelete(customThemes.find((theme) => theme.id === customId) ?? null)}
-                                 title={t('SettingsDialog.themes.delete')}
-                                 className={cn('shrink-0 cursor-pointer text-muted-foreground hover:text-destructive')}
-                              >
-                                 <Trash2 className="h-4 w-4" />
-                              </Button>
-                           </>
-                        )}
+                           <Trash2 className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.delete')}</span>
+                        </DropdownMenuItem>
                      </>
                   )}
-               </div>
-            );
-         })}
+               </DropdownMenuContent>
+            </DropdownMenu>
+         </div>
+      );
+   };
+
+   return (
+      <div className="flex h-full min-h-0 flex-col gap-3">
+         {/* Presets stay pinned at the top. */}
+         <div className="flex flex-col gap-1">
+            <SectionHeading>{t('SettingsDialog.themes.presetsHeading')}</SectionHeading>
+            <div className="flex flex-col gap-1">{presetEntries.map(renderRow)}</div>
+         </div>
+
+         {/* Customs get their own scroller, so the presets never scroll away. */}
+         <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-border pt-3">
+            <SectionHeading>{t('SettingsDialog.themes.customsHeading')}</SectionHeading>
+            <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+               {customEntries.length > 0
+                  ? customEntries.map(renderRow)
+                  : <p className="px-1 py-2 text-xs text-muted-foreground">{t('SettingsDialog.themes.noCustoms')}</p>}
+            </div>
+         </div>
 
          <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
             <AlertDialogContent>

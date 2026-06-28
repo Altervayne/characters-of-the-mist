@@ -34,20 +34,24 @@ export function ThemesDialog({ isOpen, onOpenChange }: ThemesDialogProps) {
 
    return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-         <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden sm:max-w-5xl">
-            <DialogHeader>
+         {/* `p-0 gap-0` drops the dialog's own padding so each band fills edge to edge - the dividers run
+             the full width/height and the three surface shades read as distinct sections. The shades use
+             chrome tokens whose brightness order holds in light AND dark (and adapts to a custom theme):
+             header = card (raised/brightest), list = popover (middle), editor = background (recedes). */}
+         <DialogContent className="flex max-h-[88vh] flex-col overflow-hidden p-0 gap-0 sm:max-w-5xl">
+            <DialogHeader className="border-b border-border bg-card px-6 py-4">
                <DialogTitle>{t('SettingsDialog.themes.windowTitle')}</DialogTitle>
                <DialogDescription>{t('SettingsDialog.themes.windowDescription')}</DialogDescription>
             </DialogHeader>
 
-            <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
-               {/* Master: the theme list (CRUD). */}
-               <div className="w-56 shrink-0 overflow-y-auto pr-1">
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+               {/* Master: the theme list (its own panel; it owns the customs scroll). */}
+               <div className="flex w-56 shrink-0 flex-col border-r border-border bg-popover p-4">
                   <ThemeManager />
                </div>
 
                {/* Detail: the editor for the active custom theme, or a hint for an (immutable) preset. */}
-               <div className="min-w-0 flex-1 overflow-y-auto">
+               <div className="min-w-0 flex-1 overflow-y-auto bg-background p-4">
                   {editingTheme ? <ThemeEditor key={editingTheme.id} theme={editingTheme} /> : <ThemeEditorPlaceholder />}
                </div>
             </div>
