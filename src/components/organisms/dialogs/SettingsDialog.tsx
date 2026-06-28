@@ -16,12 +16,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
-import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, HardDrive } from 'lucide-react';
+import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, HardDrive, Palette } from 'lucide-react';
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
 import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyDrawerBackupDialog';
 import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/LegacyCharacterBackupDialog';
+import { ThemesDialog } from '@/components/organisms/dialogs/ThemesDialog';
+
+// -- Theme Imports --
+import { PRESET_LABELS, customThemeClass } from '@/lib/theme/themeTokens';
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -130,11 +134,16 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { resolvedTheme, setTheme: setMode } = useTheme();
    const { isMobile } = useDeviceType();
 
-   const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode } = useAppSettingsStore();
+   const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode } = useAppSettingsStore();
    const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode } = useAppSettingsActions();
 
-   const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
+   // The quick selector: presets + customs (so any theme is one click away without opening the manager).
+   const themeOptions = [
+      ...Object.entries(PRESET_LABELS).map(([value, label]) => ({ value, label })),
+      ...customThemes.map((custom) => ({ value: customThemeClass(custom.id), label: custom.name })),
+   ];
 
+   const [isThemesDialogOpen, setIsThemesDialogOpen] = useState(false);
    const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
    const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
    const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
@@ -236,18 +245,25 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label htmlFor="theme-select" className="text-left">{t('SettingsDialog.accentColor')}</Label>
-                     <Select value={colorTheme} onValueChange={setColorTheme}>
-                        <SelectTrigger id="theme-select" className="col-span-2 cursor-pointer">
-                           <SelectValue placeholder={t('SettingsDialog.selectThemePlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                           {colorThemeOptions.map(themeName => (
-                              <SelectItem key={themeName} value={themeName} className="cursor-pointer">
-                                 {themeName === 'theme-city-of-mist' ? "City of Mist" : themeName.replace('theme-', '').charAt(0).toUpperCase() + themeName.slice(7)}
-                              </SelectItem>
-                           ))}
-                        </SelectContent>
-                     </Select>
+                     <div className="col-span-2 flex items-center gap-2">
+                        {/* Quick switch to any theme (presets + customs); the manager window holds the CRUD. */}
+                        <Select value={colorTheme} onValueChange={(value) => setColorTheme(value as typeof colorTheme)}>
+                           <SelectTrigger id="theme-select" className="flex-1 min-w-0 cursor-pointer">
+                              <SelectValue placeholder={t('SettingsDialog.selectThemePlaceholder')} />
+                           </SelectTrigger>
+                           <SelectContent>
+                              {themeOptions.map((option) => (
+                                 <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                                    {option.label}
+                                 </SelectItem>
+                              ))}
+                           </SelectContent>
+                        </Select>
+                        <Button variant="outline" onClick={() => setIsThemesDialogOpen(true)} title={t('SettingsDialog.themes.manage')} className="shrink-0 cursor-pointer">
+                           <Palette className="h-4 w-4 shrink-0" />
+                           <span className="sr-only">{t('SettingsDialog.themes.manage')}</span>
+                        </Button>
+                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 items-center gap-4">
@@ -448,6 +464,11 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
             </DialogContent>
          </Dialog>
+
+         <ThemesDialog
+            isOpen={isThemesDialogOpen}
+            onOpenChange={setIsThemesDialogOpen}
+         />
 
          <MigrationDialog
             isOpen={isMigrationDialogOpen}

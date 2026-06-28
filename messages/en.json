@@ -546,6 +546,21 @@
       "accentColor": "Theme Palette",
       "appearance": "Theme Mode",
 
+      "themes": {
+         "manage": "Manage themes",
+         "windowTitle": "Themes",
+         "windowDescription": "Select, duplicate, rename, or delete your themes. Presets can be duplicated into a custom theme.",
+         "duplicate": "Duplicate",
+         "rename": "Rename",
+         "delete": "Delete",
+         "save": "Save",
+         "copyName": "{{name}} copy",
+         "renamePlaceholder": "Theme name",
+         "deleteConfirmTitle": "Delete theme?",
+         "deleteConfirmDescription": "\"{{name}}\" will be permanently removed. If it's the active theme, the app falls back to a preset.",
+         "deleteConfirmButton": "Delete"
+      },
+
       "light": "Light Mode",
       "dark": "Dark Mode",
 

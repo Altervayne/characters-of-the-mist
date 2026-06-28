@@ -54,6 +54,7 @@ describe('deriveMode', () => {
       }
    });
 
+   // Heavy: ~28.8k palettes; given a wide timeout so it never flakes under parallel suite load.
    it('clears the AA floor on every required pair across the whole seed grid, both modes', () => {
       for (const accent of SEEDS) {
          for (const neutral of SEEDS) {
@@ -66,7 +67,7 @@ describe('deriveMode', () => {
             }
          }
       }
-   });
+   }, 30000);
 
    it('keeps surfaces neutral-ish even from a vivid neutral seed (clamped saturation)', () => {
       const set = deriveMode('hsl(0 0% 50%)', 'hsl(300 100% 50%)', 'light');

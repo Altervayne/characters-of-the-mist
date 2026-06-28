@@ -41,8 +41,8 @@ export interface CustomTheme {
 /** A custom theme's active value (and CSS class) is `theme-custom-{id}`, so the preset class-swap just works. */
 export const CUSTOM_THEME_PREFIX = 'theme-custom-';
 
-/** The active value for a custom theme by id. */
-export const customThemeClass = (id: string): string => `${CUSTOM_THEME_PREFIX}${id}`;
+/** The active value for a custom theme by id (its value IS its class). */
+export const customThemeClass = (id: string): `theme-custom-${string}` => `${CUSTOM_THEME_PREFIX}${id}`;
 
 /** The id embedded in a `theme-custom-{id}` value, or null if this isn't a custom theme value. */
 export const customThemeIdFromClass = (theme: string): string | null =>
@@ -60,6 +60,14 @@ export function tokenSetToCssVars(set: TokenSet, radius?: string): string {
    if (radius !== undefined) declarations.push(`--radius: ${radius};`);
    return declarations.join(' ');
 }
+
+/** The built-in presets' display names (brand proper nouns, not translated), in selector order. */
+export const PRESET_LABELS: Record<string, string> = {
+   'theme-neutral': 'Neutral',
+   'theme-legends': 'Legends in the Mist',
+   'theme-otherscape': ':Otherscape',
+   'theme-city-of-mist': 'City of Mist',
+};
 
 /** The built-in presets, keyed by their theme class - light/dark palettes + radius lifted from global.css. */
 export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; radius: string }> = {

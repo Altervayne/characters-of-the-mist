@@ -503,6 +503,22 @@
       "selectThemePlaceholder": "Sélectionner un thème",
       "accentColor": "Palette",
       "appearance": "Mode",
+
+      "themes": {
+         "manage": "[TO COMPLETE]",
+         "windowTitle": "[TO COMPLETE]",
+         "windowDescription": "[TO COMPLETE]",
+         "duplicate": "[TO COMPLETE]",
+         "rename": "[TO COMPLETE]",
+         "delete": "[TO COMPLETE]",
+         "save": "[TO COMPLETE]",
+         "copyName": "[TO COMPLETE]",
+         "renamePlaceholder": "[TO COMPLETE]",
+         "deleteConfirmTitle": "[TO COMPLETE]",
+         "deleteConfirmDescription": "[TO COMPLETE]",
+         "deleteConfirmButton": "[TO COMPLETE]"
+      },
+
       "light": "Mode Clair",
       "dark": "Mode Sombre",
       "cardView": {
