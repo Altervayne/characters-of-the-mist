@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -82,6 +82,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const componentFormRef = useRef<HTMLFormElement>(null);
    const boardImportInputRef = useRef<HTMLInputElement>(null);
    const boardFormRef = useRef<HTMLFormElement>(null);
+   const characterUpdateInputRef = useRef<HTMLInputElement>(null);
+   const characterUpdateFormRef = useRef<HTMLFormElement>(null);
+   const boardUpdateInputRef = useRef<HTMLInputElement>(null);
+   const boardUpdateFormRef = useRef<HTMLFormElement>(null);
 
 
 
@@ -302,6 +306,81 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
 
 
+   // Update-in-place: overwrite the OPEN character/board with a file's contents while KEEPING its id +
+   // drawer link, so every reference-by-id (a board's character element, the drawer copy) stays intact.
+   // A pick validates the type then stashes the parsed entity; the confirm dialog is the last gate
+   // before the destructive replace. No re-ID here (that's the new-board path) - the id is preserved.
+   const [pendingCharacterUpdate, setPendingCharacterUpdate] = useState<Character | null>(null);
+   const [pendingBoardUpdate, setPendingBoardUpdate] = useState<Board | null>(null);
+
+   const handleCharacterUpdateFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+         const importedData = await importFromFile(file);
+         if (importedData.fileType !== 'FULL_CHARACTER_SHEET' || !character) {
+            toast.error(tNotifications('Notifications.general.importFailed'));
+         } else {
+            setPendingCharacterUpdate(harmonizeData(importedData.content, importedData.fileType) as Character);
+         }
+      } catch (error) {
+         console.error("Failed to read character file:", error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+      characterUpdateFormRef.current?.reset();
+   };
+
+   const handleBoardUpdateFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+         const importedData = await importFromFile(file);
+         const hasActiveBoard = !!getActiveBoardStore()?.getState().boardId;
+         if (importedData.fileType !== 'FULL_BOARD' || !hasActiveBoard) {
+            toast.error(tNotifications('Notifications.general.importFailed'));
+         } else {
+            setPendingBoardUpdate(harmonizeData(importedData.content, importedData.fileType) as Board);
+         }
+      } catch (error) {
+         console.error("Failed to read board file:", error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+      boardUpdateFormRef.current?.reset();
+   };
+
+   const confirmCharacterUpdate = () => {
+      if (!pendingCharacterUpdate || !character) { setPendingCharacterUpdate(null); return; }
+      // Keep this character's identity + drawer link; take everything else from the file. The same id
+      // means loadCharacter replaces the active tab's instance in place (no duplicate tab).
+      const updated: Character = { ...pendingCharacterUpdate, id: character.id, drawerItemId: character.drawerItemId };
+      loadCharacter(updated, character.drawerItemId);
+      // Overwritten in the working store but not yet pushed to the drawer copy - mark dirty until Save.
+      setHasUnsavedChanges(true);
+      setPendingCharacterUpdate(null);
+      toast.success(tNotifications('Notifications.character.updated'));
+   };
+
+   const confirmBoardUpdate = async () => {
+      const store = getActiveBoardStore();
+      const boardId = store?.getState().boardId;
+      if (!pendingBoardUpdate || !store || !boardId) { setPendingBoardUpdate(null); return; }
+      // Keep this board's id + drawer link; replace its rows wholesale from the file (the file's item
+      // ids are a consistent set). hydrate reloads clean, so mark dirty after.
+      const updated: Board = { ...pendingBoardUpdate, id: boardId, drawerItemId: store.getState().drawerItemId ?? undefined };
+      try {
+         await importBoard(updated);
+         await store.getState().actions.hydrate(boardId);
+         store.getState().actions.setHasUnsavedChanges(true);
+         toast.success(tNotifications('Notifications.board.updated'));
+      } catch (error) {
+         console.error("Failed to update board from file:", error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+      setPendingBoardUpdate(null);
+   };
+
+
+
    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
    const handleResetCharacter = () => {
       resetCharacter();
@@ -317,12 +396,20 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
 
    return (
-      <aside 
+      <aside
          data-tour="sidebar-menu"
          className={cn(
-            "hidden md:flex flex-col bg-card pt-2 border-r-2 border-border space-y-4 transition-all duration-300 ease-in-out overflow-hidden",
+            "hidden md:flex flex-col bg-card pt-2 border-r-2 border-border space-y-4 ease-in-out overflow-hidden",
             isCollapsed ? "w-14 items-center" : "w-60"
          )}
+         style={{
+            // The rail opens immediately but waits to CLOSE until the buttons have collapsed to one line
+            // (the height-collapse, 200ms) - otherwise it would clip the still-wide buttons mid-collapse.
+            transitionProperty: 'width',
+            transitionDuration: '300ms',
+            transitionTimingFunction: 'ease-in-out',
+            transitionDelay: isCollapsed ? '200ms' : '0ms',
+         }}
       >
          <div className="flex flex-col justify-between w-full h-full">
             {/* Header */}
@@ -394,6 +481,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                         <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
                            {t('CharacterSheetPage.SidebarMenu.importCharacter')}
                         </SidebarButton>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={() => characterUpdateInputRef.current?.click()} Icon={RefreshCw}>
+                           {t('CharacterSheetPage.SidebarMenu.updateCharacter')}
+                        </SidebarButton>
                         <SidebarButton data-tour="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
                            {t('CharacterSheetPage.SidebarMenu.importComponent')}
                         </SidebarButton>
@@ -425,6 +515,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                         </SidebarButton>
                         <SidebarButton isCollapsed={isCollapsed} onClick={() => boardImportInputRef.current?.click()} Icon={Download}>
                            {t('CharacterSheetPage.SidebarMenu.importBoard')}
+                        </SidebarButton>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={() => boardUpdateInputRef.current?.click()} Icon={RefreshCw}>
+                           {t('CharacterSheetPage.SidebarMenu.updateBoard')}
                         </SidebarButton>
                      </motion.section>
 
@@ -508,6 +601,22 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   accept=".cotm,application/json"
                />
             </form>
+            <form ref={characterUpdateFormRef} className="hidden">
+               <input
+                  type="file"
+                  ref={characterUpdateInputRef}
+                  onChange={handleCharacterUpdateFileSelected}
+                  accept=".cotm,application/json"
+               />
+            </form>
+            <form ref={boardUpdateFormRef} className="hidden">
+               <input
+                  type="file"
+                  ref={boardUpdateInputRef}
+                  onChange={handleBoardUpdateFileSelected}
+                  accept=".cotm,application/json"
+               />
+            </form>
          </div>
 
 
@@ -523,6 +632,32 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                <AlertDialogFooter>
                   <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.resetConfirmCancelButton')}</AlertDialogCancel>
                   <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={handleResetCharacter}>{t('CharacterSheetPage.SidebarMenu.resetConfirmButton')}</AlertDialogAction>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         <AlertDialog open={pendingCharacterUpdate !== null} onOpenChange={(open) => { if (!open) setPendingCharacterUpdate(null); }}>
+            <AlertDialogContent>
+               <AlertDialogHeader>
+                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.updateCharacterConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.updateCharacterConfirmDescription')}</AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.updateConfirmCancelButton')}</AlertDialogCancel>
+                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={confirmCharacterUpdate}>{t('CharacterSheetPage.SidebarMenu.updateConfirmButton')}</AlertDialogAction>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         <AlertDialog open={pendingBoardUpdate !== null} onOpenChange={(open) => { if (!open) setPendingBoardUpdate(null); }}>
+            <AlertDialogContent>
+               <AlertDialogHeader>
+                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.updateBoardConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.updateBoardConfirmDescription')}</AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.updateConfirmCancelButton')}</AlertDialogCancel>
+                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={confirmBoardUpdate}>{t('CharacterSheetPage.SidebarMenu.updateConfirmButton')}</AlertDialogAction>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>
