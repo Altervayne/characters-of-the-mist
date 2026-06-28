@@ -94,7 +94,7 @@ export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, 
    };
 
    return (
-      <div className="h-full w-full p-2.5" style={{ backgroundColor: background, color: textColor }}>
+      <div className="h-full w-full" style={{ backgroundColor: background, color: textColor }}>
          {/* Selected -> edit the raw Markdown source; otherwise -> render it (inheriting the note's color).
              The rendered block is pointer-transparent, so a body click falls through to select (then edit);
              empty + unselected shows nothing, the placeholder lives in the textarea. */}
@@ -107,10 +107,13 @@ export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, 
                onPointerDown={(event) => event.stopPropagation()}
                placeholder={t('BoardView.postItPlaceholder')}
                style={{ color: textColor }}
-               className="h-full w-full resize-none border-0 bg-transparent text-sm leading-snug outline-none placeholder:opacity-50 cursor-text"
+               className="h-full w-full resize-none border-0 bg-transparent p-2.5 text-sm leading-snug outline-none placeholder:opacity-50 cursor-text"
             />
          ) : text.trim() ? (
-            <div className="h-full w-full overflow-auto">
+            // Clip at rest (no scrollbar on a resting note); the textarea scrolls when selected. Padding is
+            // on this scroll element (not a wrapper), so the selected textarea's scrollbar sits at the
+            // post-it's edge while the text stays inset - matching the journal.
+            <div className="h-full w-full overflow-hidden p-2.5">
                <NoteMarkdown content={text} />
             </div>
          ) : null}

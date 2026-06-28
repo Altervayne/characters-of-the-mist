@@ -155,7 +155,8 @@ export function JournalItem({ content, isSelected, toolbarSlot, sideSlot, onCont
                className="min-h-0 flex-1 resize-none border-0 bg-transparent p-2 text-sm leading-snug outline-none placeholder:text-muted-foreground/50 cursor-text"
             />
          ) : (
-            <div className="min-h-0 flex-1 overflow-auto p-2">
+            // Clip at rest (no scrollbar on a resting page); the textarea scrolls when selected.
+            <div className="min-h-0 flex-1 overflow-hidden p-2">
                {text.trim() ? <NoteMarkdown content={text} /> : null}
             </div>
          )}
