@@ -565,6 +565,19 @@
          "radius": "Roundness",
          "previewLight": "Light preview",
          "previewDark": "Dark preview",
+         "contrastWarning": "Low contrast: {{fg}} on {{bg}} is {{ratio}}:1 (aim for 4.5:1).",
+         "contrastSummary_one": "{{count}} low-contrast pair",
+         "contrastSummary_other": "{{count}} low-contrast pairs",
+         "seeds": {
+            "title": "Generate from seeds (optional)",
+            "twoSeed": "2 seeds",
+            "fourSeed": "4 seeds",
+            "accent": "Accent",
+            "neutral": "Neutral",
+            "generate": "Generate",
+            "confirmTitle": "Generate from seeds?",
+            "confirmDescription": "This replaces all of the theme's colors with ones derived from the seeds. Your roundness is kept, and you can keep editing afterwards."
+         },
          "groups": {
             "surfaces": "Surfaces",
             "text": "Text",

@@ -25,13 +25,16 @@ function paneVars(tokenSet: TokenSet, radius: string): CSSProperties {
    return vars as CSSProperties;
 }
 
-export function ThemePreview({ tokenSet, radius, dark, label }: { tokenSet: TokenSet; radius: string; dark: boolean; label: string }) {
+export function ThemePreview({ tokenSet, radius, dark, label, warning }: { tokenSet: TokenSet; radius: string; dark: boolean; label: string; warning?: string }) {
    return (
       <div
          style={paneVars(tokenSet, radius)}
          className={cn('flex flex-1 flex-col gap-2 overflow-hidden rounded-md border border-border bg-background p-3 text-foreground', dark && 'dark')}
       >
-         <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+         <div className="flex items-center justify-between gap-2">
+            <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+            {warning && <span className="text-[0.6rem] font-semibold text-destructive">{warning}</span>}
+         </div>
 
          {/* A card with header + muted body text. */}
          <div className="overflow-hidden rounded-[var(--radius)] border border-border bg-card text-card-foreground">

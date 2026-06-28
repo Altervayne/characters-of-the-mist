@@ -35,10 +35,30 @@ export const TOKEN_GROUPS: { id: string; tokens: ChromeTokenKey[] }[] = [
    { id: 'lines', tokens: ['border', 'input'] },
 ];
 
+/** The two seed-generator modes (one accent/neutral pair for both modes, or one pair per mode). */
+export type SeedMode = '2-seed' | '4-seed';
+
+/** 2-seed inputs: a single accent + neutral pair drives both light and dark. */
+export interface TwoSeeds {
+   accent: string;
+   neutral: string;
+}
+
+/** 4-seed inputs: an independent accent + neutral pair per mode. */
+export interface FourSeeds {
+   lightAccent: string;
+   lightNeutral: string;
+   darkAccent: string;
+   darkNeutral: string;
+}
+
+/** The seeds a theme was last generated from, kept so the panel restores them and can re-generate. */
+export type ThemeSeeds = TwoSeeds | FourSeeds;
+
 /**
  * A user-defined theme. `light` / `dark` are the resolved palettes that actually apply (the source of
- * truth); `radius` is the shared corner size. `seedMode` / `seeds` are placeholders for the derivation
- * engine (themes-2/3) - optional and unused here.
+ * truth); `radius` is the shared corner size. When the theme was filled from the seed generator,
+ * `seedMode` + `seeds` record what produced it (manual edits afterwards win - they overwrite tokens).
  */
 export interface CustomTheme {
    id: string;
@@ -46,8 +66,8 @@ export interface CustomTheme {
    light: TokenSet;
    dark: TokenSet;
    radius: string;
-   seedMode?: 'manual' | '2-seed' | '4-seed';
-   seeds?: unknown;
+   seedMode?: SeedMode;
+   seeds?: ThemeSeeds;
 }
 
 /** A custom theme's active value (and CSS class) is `theme-custom-{id}`, so the preset class-swap just works. */

@@ -48,7 +48,7 @@ export function ThemesDialog({ isOpen, onOpenChange }: ThemesDialogProps) {
 
                {/* Detail: the editor for the active custom theme, or a hint for an (immutable) preset. */}
                <div className="min-w-0 flex-1 overflow-y-auto">
-                  {editingTheme ? <ThemeEditor theme={editingTheme} /> : <ThemeEditorPlaceholder />}
+                  {editingTheme ? <ThemeEditor key={editingTheme.id} theme={editingTheme} /> : <ThemeEditorPlaceholder />}
                </div>
             </div>
          </DialogContent>

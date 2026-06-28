@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { derive2Seed, derive4Seed, deriveMode } from './deriveTheme';
+import { derive2Seed, derive4Seed, deriveFromSeeds, deriveMode } from './deriveTheme';
 import { CHROME_TOKEN_KEYS } from './themeTokens';
 import { colorToHsl, contrastRatio, parseColorToRgb } from '@/lib/color';
 
@@ -109,5 +109,17 @@ describe('derive2Seed / derive4Seed', () => {
       const swapped = derive4Seed({ ...base, darkAccent: 'hsl(90 80% 55%)', darkNeutral: 'hsl(90 20% 50%)' });
       expect(swapped.light).toEqual(result.light);
       expect(swapped.dark).not.toEqual(result.dark);
+   });
+});
+
+describe('deriveFromSeeds', () => {
+   it('routes 2-seed to derive2Seed', () => {
+      const seeds = { accent: '#2563eb', neutral: '#6b7280' };
+      expect(deriveFromSeeds('2-seed', seeds)).toEqual(derive2Seed(seeds.accent, seeds.neutral));
+   });
+
+   it('routes 4-seed to derive4Seed', () => {
+      const seeds = { lightAccent: '#10b981', lightNeutral: '#9ca3af', darkAccent: '#f59e0b', darkNeutral: '#52525b' };
+      expect(deriveFromSeeds('4-seed', seeds)).toEqual(derive4Seed(seeds));
    });
 });

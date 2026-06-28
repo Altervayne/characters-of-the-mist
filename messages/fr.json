@@ -523,6 +523,19 @@
          "radius": "[TO COMPLETE]",
          "previewLight": "[TO COMPLETE]",
          "previewDark": "[TO COMPLETE]",
+         "contrastWarning": "[TO COMPLETE]",
+         "contrastSummary_one": "[TO COMPLETE]",
+         "contrastSummary_other": "[TO COMPLETE]",
+         "seeds": {
+            "title": "[TO COMPLETE]",
+            "twoSeed": "[TO COMPLETE]",
+            "fourSeed": "[TO COMPLETE]",
+            "accent": "[TO COMPLETE]",
+            "neutral": "[TO COMPLETE]",
+            "generate": "[TO COMPLETE]",
+            "confirmTitle": "[TO COMPLETE]",
+            "confirmDescription": "[TO COMPLETE]"
+         },
          "groups": {
             "surfaces": "[TO COMPLETE]",
             "text": "[TO COMPLETE]",

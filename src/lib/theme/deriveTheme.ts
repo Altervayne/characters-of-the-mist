@@ -2,7 +2,7 @@
 import { colorToHsl, contrastRatio, formatHsl } from '@/lib/color';
 
 // -- Type Imports --
-import type { TokenSet } from '@/lib/theme/themeTokens';
+import type { FourSeeds, SeedMode, ThemeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
 
 /*
  * The optional seed-to-theme generator: pure functions that turn an accent + neutral seed into a full
@@ -92,11 +92,16 @@ export function derive2Seed(accent: string, neutral: string): { light: TokenSet;
 }
 
 /** 4-seed: an independent accent + neutral pair per mode. */
-export function derive4Seed(seeds: {
-   lightAccent: string; lightNeutral: string; darkAccent: string; darkNeutral: string;
-}): { light: TokenSet; dark: TokenSet } {
+export function derive4Seed(seeds: FourSeeds): { light: TokenSet; dark: TokenSet } {
    return {
       light: deriveMode(seeds.lightAccent, seeds.lightNeutral, 'light'),
       dark: deriveMode(seeds.darkAccent, seeds.darkNeutral, 'dark'),
    };
+}
+
+/** Routes a seed set through the matching generator - the single seam the editor's Generate calls. */
+export function deriveFromSeeds(mode: SeedMode, seeds: ThemeSeeds): { light: TokenSet; dark: TokenSet } {
+   return mode === '2-seed'
+      ? derive2Seed((seeds as TwoSeeds).accent, (seeds as TwoSeeds).neutral)
+      : derive4Seed(seeds as FourSeeds);
 }
