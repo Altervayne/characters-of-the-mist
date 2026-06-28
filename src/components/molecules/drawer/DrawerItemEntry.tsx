@@ -18,6 +18,7 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
+import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 
 // -- Type Imports --
 import type { DrawerItem } from '@/lib/types/drawer';
@@ -60,7 +61,7 @@ export function DrawerItemEntry({ item, parentFolderId, onRename, onDelete, onMo
                   <div className="absolute top-1 right-1 z-10">
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer">
+                           <Button variant="ghost" size="icon" className={`h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer ${DRAWER_MENU_TRIGGER_CLASS}`}>
                               <MoreHorizontal className="h-4 w-4" />
                            </Button>
                         </DropdownMenuTrigger>

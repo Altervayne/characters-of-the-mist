@@ -20,6 +20,7 @@ import { Folder, MoreHorizontal, Pencil, Trash2, Move, GripVertical, Upload } fr
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 import { exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 import { exportFolderAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
@@ -88,7 +89,7 @@ export function DrawerFolderEntry({ folder, parentFolderId, isOver, isSpringTarg
 
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <Button variant="ghost" size="icon" className={`h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${DRAWER_MENU_TRIGGER_CLASS}`}>
                               <MoreHorizontal className="h-4 w-4" />
                            </Button>
                         </DropdownMenuTrigger>

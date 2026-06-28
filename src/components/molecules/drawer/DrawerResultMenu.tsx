@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 // -- Icon Imports --
 import { CornerUpRight, MoreHorizontal, Move, Pencil, Trash2 } from 'lucide-react';
 
+// -- Local Imports --
+import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
+
 /*
  * The search-result action menu: Jump-to-folder + rename / move / delete. Every action is id-based, so
  * it works in every result state - even while the rich card is still a content-free skeleton. Shared by
@@ -29,7 +32,7 @@ export function DrawerResultMenu({ onJumpTo, onRename, onDelete, onMove, trigger
    return (
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className={`h-6 w-6 shrink-0 cursor-pointer ${triggerClassName ?? ''}`}>
+            <Button variant="ghost" size="icon" className={`h-6 w-6 shrink-0 cursor-pointer ${DRAWER_MENU_TRIGGER_CLASS} ${triggerClassName ?? ''}`}>
                <MoreHorizontal className="h-4 w-4" />
             </Button>
          </DropdownMenuTrigger>

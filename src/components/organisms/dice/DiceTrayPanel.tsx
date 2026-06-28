@@ -35,7 +35,7 @@ export function DiceTrayPanel() {
                animate={{ y: 0 }}
                exit={{ y: '100%' }}
                transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-               className="fixed inset-x-0 bottom-0 z-50 mx-auto hidden w-full max-w-md md:block"
+               className="fixed inset-x-0 bottom-0 z-50 mx-auto hidden w-full max-w-78.5 md:block"
             >
                <div className="overflow-hidden rounded-t-lg border-2 border-b-0 border-border bg-card shadow-2xl">
                   <div className="flex items-center justify-between border-b border-border px-3 py-1.5">

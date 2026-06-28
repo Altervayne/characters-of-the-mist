@@ -79,7 +79,7 @@ export function DrawerListRowFrame({
    return (
       <div ref={containerRef} className={cn('group/row relative rounded hover:bg-muted data-[state=open]:bg-muted', className)}>
          {children}
-         {menu && <div className="absolute right-1 top-1/2 z-10 -translate-y-1/2">{menu}</div>}
+         {menu && <div className="absolute inset-y-0 right-1 z-10 flex items-center">{menu}</div>}
       </div>
    );
 }

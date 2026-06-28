@@ -19,6 +19,7 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Component Imports --
 import { DrawerListRow, DrawerListRowFrame } from '@/components/molecules/drawer/DrawerListRow';
+import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 
 // -- Type Imports --
 import type { DrawerItem } from '@/lib/types/drawer';
@@ -53,7 +54,7 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
                   menu={!isPreview &&
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100">
+                           <Button variant="ghost" size="icon" className={`h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100 ${DRAWER_MENU_TRIGGER_CLASS}`}>
                               <MoreHorizontal className="h-4 w-4" />
                            </Button>
                         </DropdownMenuTrigger>
