@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { MIN_ITEM_SIZE, computeResize, effectiveHeight, fitContentHeight, shouldSyncMeasuredHeight } from './boardResize';
+import { MIN_ITEM_SIZE, computeResize, effectiveHeight, fitContentHeight, fitContentWidth, shouldSyncMeasuredHeight, shouldSyncMeasuredSize } from './boardResize';
 
 /*
  * Resize math: the bottom-right grip grows width/height with x/y pinned, and a min-height item
@@ -86,5 +86,36 @@ describe('fitContentHeight', () => {
 
    it('falls back to the stored height until the content is measured', () => {
       expect(fitContentHeight(132, 0)).toBe(132);
+   });
+});
+
+describe('shouldSyncMeasuredSize (width axis: a card toggling flip <-> side-by-side)', () => {
+   it('syncs when the card widens (flip -> two faces side by side)', () => {
+      expect(shouldSyncMeasuredSize('fit', 504, 250)).toBe(true);
+   });
+
+   it('syncs when the card narrows back (side-by-side -> one face)', () => {
+      expect(shouldSyncMeasuredSize('fit', 250, 504)).toBe(true);
+   });
+
+   it('does not thrash within the epsilon once converged', () => {
+      expect(shouldSyncMeasuredSize('fit', 504, 504)).toBe(false);
+      expect(shouldSyncMeasuredSize('fit', 504.5, 504)).toBe(false);
+      expect(shouldSyncMeasuredSize('fit', 506, 504)).toBe(true);
+   });
+
+   it('is the same function the height alias points at', () => {
+      expect(shouldSyncMeasuredHeight).toBe(shouldSyncMeasuredSize);
+   });
+});
+
+describe('fitContentWidth', () => {
+   it('renders at the measured content width (grows AND shrinks)', () => {
+      expect(fitContentWidth(250, 504)).toBe(504);
+      expect(fitContentWidth(504, 250)).toBe(250);
+   });
+
+   it('falls back to the stored width until the content is measured', () => {
+      expect(fitContentWidth(250, 0)).toBe(250);
    });
 });

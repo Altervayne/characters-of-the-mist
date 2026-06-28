@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { screenDeltaToWorld } from '@/lib/board/boardCoordinates';
-import { MIN_ITEM_SIZE, computeResize, effectiveHeight, fitContentHeight, shouldSyncMeasuredHeight } from '@/lib/board/boardResize';
+import { MIN_ITEM_SIZE, computeResize, effectiveHeight, fitContentHeight, fitContentWidth, shouldSyncMeasuredHeight, shouldSyncMeasuredSize } from '@/lib/board/boardResize';
 import { COLLAPSED_BAR_HEIGHT, COLLAPSED_BAR_WIDTH } from '@/lib/board/zoneCollapse';
 import { ZONE_TITLE_BAR_HEIGHT } from './items/ZoneItem';
 
@@ -48,8 +48,16 @@ const isMinHeight = (kind: BoardItemKind): boolean => MIN_HEIGHT_KINDS.has(kind)
 const FIT_CONTENT_KINDS = new Set<BoardItemKind>(['character']);
 const isFitContent = (kind: BoardItemKind): boolean => FIT_CONTENT_KINDS.has(kind);
 
-/** Either behaviour measures content into the box; only the sync rule + render height differ. */
-const measuresContent = (kind: BoardItemKind): boolean => isMinHeight(kind) || isFitContent(kind);
+/**
+ * Kinds whose WIDTH fits their content exactly - grows AND shrinks to hug the measured width (no
+ * manual resize). A board card has no width grip; its width is purely content-driven (one face in
+ * flip, two side by side), so it width-fits while its height stays static (the card is a fixed h-150).
+ */
+const FIT_WIDTH_KINDS = new Set<BoardItemKind>(['card']);
+const isFitWidth = (kind: BoardItemKind): boolean => FIT_WIDTH_KINDS.has(kind);
+
+/** Any of these behaviours measures content into the box; only the synced axis + rule differ. */
+const measuresContent = (kind: BoardItemKind): boolean => isMinHeight(kind) || isFitContent(kind) || isFitWidth(kind);
 
 interface BoardItemBoxProps {
    item: BoardItem;
@@ -134,16 +142,19 @@ export function BoardItemBox({
 
    const minHeight = isMinHeight(item.kind);
    const fitContent = isFitContent(item.kind);
+   const fitWidth = isFitWidth(item.kind);
    const measures = measuresContent(item.kind);
-   // A measured kind drives its render height from its content. The measure wrapper fills the body
-   // and grows with content (min-h-full); the content's natural height is its height MINUS any
-   // flexible fill spacer (a kind that pins a footer marks the spacer with data-board-fill-spacer,
-   // and the slack lives in the spacer, not below the content). offsetHeight is layout px = world
-   // units, regardless of the world-layer scale. A MIN-HEIGHT kind treats the measure as a floor and
-   // bumps up only when content overflows (the user can still drag it taller); a FIT-CONTENT kind
-   // tracks the measure exactly (grow and shrink). Both write back via the non-undoable sync.
+   // A measured kind drives one axis from its content. HEIGHT kinds: the wrapper fills the body and
+   // grows with content (min-h-full); the natural height is its height MINUS any flexible fill spacer
+   // (a kind that pins a footer marks the spacer with data-board-fill-spacer, so the slack lives in the
+   // spacer, not below the content). A MIN-HEIGHT kind treats the measure as a floor (drag taller, never
+   // shorter than content); a FIT-CONTENT kind tracks it exactly (grow and shrink). A FIT-WIDTH kind
+   // (a card) instead hugs its natural WIDTH - one face in flip, two side by side - its height static.
+   // offsetWidth/offsetHeight are layout px = world units regardless of the world-layer scale. All write
+   // back via the non-undoable sync, guarded by the epsilon so the observer settles instead of looping.
    const measureRef = useRef<HTMLDivElement | null>(null);
    const [contentHeight, setContentHeight] = useState(0);
+   const [contentWidth, setContentWidth] = useState(0);
    useEffect(() => {
       if (!measures) return;
       const el = measureRef.current;
@@ -152,6 +163,16 @@ export function BoardItemBox({
       // in the effect body. The spacer is observed too: when content grows inside an already-tall
       // box the wrapper's own size doesn't change, but the spacer shrinks - that must re-measure.
       const measure = () => {
+         // A card width-fits (the wrapper is w-fit, so offsetWidth reads the true 1- or 2-face width).
+         if (fitWidth) {
+            const measuredWidth = Math.round(el.offsetWidth);
+            if (measuredWidth <= 0) return;
+            setContentWidth(measuredWidth);
+            if (shouldSyncMeasuredSize('fit', measuredWidth, item.width)) {
+               onSyncSize(item.id, { width: measuredWidth });
+            }
+            return;
+         }
          const spacer = el.querySelector<HTMLElement>('[data-board-fill-spacer]');
          const measured = Math.round(el.offsetHeight - (spacer?.offsetHeight ?? 0));
          if (measured <= 0) return;
@@ -165,7 +186,7 @@ export function BoardItemBox({
       const spacer = el.querySelector('[data-board-fill-spacer]');
       if (spacer) observer.observe(spacer);
       return () => observer.disconnect();
-   }, [measures, fitContent, item.id, item.height, onSyncSize]);
+   }, [measures, fitContent, fitWidth, item.id, item.height, item.width, onSyncSize]);
 
    // The rect to render: a live resize wins, else the base rect plus any active group-move offset.
    const rect: DragRect = resizeRect ?? {
@@ -254,7 +275,9 @@ export function BoardItemBox({
       : minHeight
          ? effectiveHeight(rect.height, contentHeight)
          : rect.height;
-   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : rect.width;
+   // A fit-width card renders at its measured content width exactly (its single/double-face footprint);
+   // every other kind keeps its rect width. The synced width feeds the rect-based board systems too.
+   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : fitWidth ? fitContentWidth(rect.width, contentWidth) : rect.width;
    const boxHeight = isCollapsedZone ? COLLAPSED_BAR_HEIGHT : renderHeight;
 
    const body = (
@@ -344,10 +367,13 @@ export function BoardItemBox({
                 body via a flex column (`min-h-full`) so a pinned footer sits at the bottom and the
                 slack lands in its fill spacer. A FIT-CONTENT kind wraps in a plain block sized to its
                 natural content (the body's own `flex-1` goes inert outside a flex parent, so it can't
-                stretch to the box) - the measure then shrinks as well as grows as rows change. Others
+                stretch to the box) - the measure then shrinks as well as grows as rows change. A
+                FIT-WIDTH card uses `h-full w-fit`: full height keeps the card's height chain resolved
+                from the box, while `w-fit` lets the wrapper exceed the current box (the fixed-width
+                faces force min-content past the box) so the true 1-/2-face width is measurable. Others
                 render plain. */}
             {measures
-               ? <div ref={measureRef} className={minHeight ? 'flex min-h-full w-full flex-col' : 'w-full'}>{body}</div>
+               ? <div ref={measureRef} className={fitWidth ? 'h-full w-fit' : minHeight ? 'flex min-h-full w-full flex-col' : 'w-full'}>{body}</div>
                : body}
          </div>
 

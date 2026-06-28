@@ -16,7 +16,7 @@ import type { ToolbarHoverHandlers } from '@/hooks/useToolbarHover';
 interface CardFlipWrapperProps {
   effectiveViewMode: 'FLIP' | 'SIDE_BY_SIDE';
   isDrawerPreview: boolean;
-  /** Board embed: forced FLIP (stable footprint) and no sheet chrome - the board toolbar carries the actions. */
+  /** Board embed: uses the card's own view mode (default flip, never the global) and no sheet chrome - the board toolbar carries the actions. */
   isBoardEmbed?: boolean;
   isSnapshot?: boolean;
   isMobile?: boolean;
@@ -75,24 +75,27 @@ export const CardFlipWrapper = React.forwardRef<HTMLDivElement, CardFlipWrapperP
      isEditing, dragAttributes, dragListeners, cardTheme, onExport, onCycleViewMode,
      onFlip, onDelete, onEditCard, cardFront, cardBack }, ref) => {
 
-    // Board embeds are FLIP only (stable footprint); side-by-side would double the width.
-    const viewMode = isBoardEmbed ? 'FLIP' : effectiveViewMode;
+    // The board uses each card's own view mode (default flip), never the global side-by-side. A horizontal
+    // side-by-side would overflow the fixed-width box, so the board stacks vertically (useVerticalStack).
+    const viewMode = isBoardEmbed ? (card.viewMode ?? 'FLIP') : effectiveViewMode;
 
     if (viewMode === 'SIDE_BY_SIDE' && !isDrawerPreview) {
       return (
         <motion.div ref={ref} {...hoverHandlers} className="relative">
-          <ToolbarHandle
-            isEditing={isEditing}
-            isHovered={isHovered}
-            dragAttributes={dragAttributes}
-            dragListeners={dragListeners}
-            onDelete={onDelete}
-            onEditCard={onEditCard}
-            onExport={onExport}
-            onCycleViewMode={onCycleViewMode}
-            cardViewMode={card.viewMode}
-            cardTheme={cardTheme}
-          />
+          {!isBoardEmbed && (
+            <ToolbarHandle
+              isEditing={isEditing}
+              isHovered={isHovered}
+              dragAttributes={dragAttributes}
+              dragListeners={dragListeners}
+              onDelete={onDelete}
+              onEditCard={onEditCard}
+              onExport={onExport}
+              onCycleViewMode={onCycleViewMode}
+              cardViewMode={card.viewMode}
+              cardTheme={cardTheme}
+            />
+          )}
           <div className={useVerticalStack ? "flex flex-col gap-2" : "flex gap-1 items-start"}>
             {cardFront}
             {cardBack}

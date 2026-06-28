@@ -73,7 +73,7 @@ const variants: sideVariants = {
 
 
 
-const ViewModeIcon = ({ mode }: { mode: CardViewMode | null | undefined }) => {
+export const ViewModeIcon = ({ mode }: { mode: CardViewMode | null | undefined }) => {
    if (mode === 'SIDE_BY_SIDE') return <BookOpen className="h-4 w-4" />;
    if (mode === 'FLIP') return <FlipHorizontal className="h-4 w-4" />;
    return <Globe className="h-4 w-4" />;

@@ -44,17 +44,26 @@ export function effectiveHeight(storedHeight: number, contentHeight: number): nu
 export const HEIGHT_SYNC_EPSILON = 1;
 
 /**
- * Whether a freshly measured content height should be synced to the stored height, by behaviour:
+ * Whether a freshly measured content size should be synced to the stored size, by behaviour (the
+ * axis is the caller's - height or width):
  * - `'fit'` tracks the content EXACTLY (grow AND shrink), so it writes back whenever the measure
- *   differs by more than `epsilon` - the element hugs its content as cards are added or removed.
+ *   differs by more than `epsilon` - the element hugs its content as it changes.
  * - `'min'` is a grow-only floor (the dice tray): it writes back only when content exceeds the
- *   stored height, never shrinking below the user's chosen size.
+ *   stored size, never shrinking below the user's chosen size.
  */
-export function shouldSyncMeasuredHeight(mode: 'fit' | 'min', measured: number, stored: number, epsilon: number = HEIGHT_SYNC_EPSILON): boolean {
+export function shouldSyncMeasuredSize(mode: 'fit' | 'min', measured: number, stored: number, epsilon: number = HEIGHT_SYNC_EPSILON): boolean {
    return mode === 'fit' ? Math.abs(measured - stored) > epsilon : measured > stored;
 }
+
+/** Height-axis alias of {@link shouldSyncMeasuredSize}. */
+export const shouldSyncMeasuredHeight = shouldSyncMeasuredSize;
 
 /** The height a fit-content item renders at: its measured content exactly, or the stored height until measured. */
 export function fitContentHeight(storedHeight: number, contentHeight: number): number {
    return contentHeight > 0 ? contentHeight : storedHeight;
+}
+
+/** The width a fit-width item renders at: its measured content exactly, or the stored width until measured. */
+export function fitContentWidth(storedWidth: number, contentWidth: number): number {
+   return contentWidth > 0 ? contentWidth : storedWidth;
 }
