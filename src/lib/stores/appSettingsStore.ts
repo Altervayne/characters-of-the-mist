@@ -40,6 +40,7 @@ interface AppSettingsState {
       addCustomTheme: (theme: CustomTheme) => void;
       updateCustomTheme: (id: string, patch: Partial<CustomTheme>) => void;
       deleteCustomTheme: (id: string) => void;
+      reorderCustomThemes: (activeId: string, overId: string) => void;
       toggleCompactDrawer: () => void;
       setSideBySideView: (isSideBySide: boolean) => void;
       setLastVisitedVersion: (version: string) => void;
@@ -90,6 +91,16 @@ export const useAppSettingsStore = create<AppSettingsState>()(
                customThemes: state.customThemes.filter((entry) => entry.id !== id),
                theme: state.theme === `theme-custom-${id}` ? 'theme-neutral' : state.theme,
             })),
+            // Move a custom theme to another's slot (drag-to-reorder); the array IS the persisted order.
+            reorderCustomThemes: (activeId, overId) => set((state) => {
+               const from = state.customThemes.findIndex((entry) => entry.id === activeId);
+               const to = state.customThemes.findIndex((entry) => entry.id === overId);
+               if (from === -1 || to === -1 || from === to) return {};
+               const next = state.customThemes.slice();
+               const [moved] = next.splice(from, 1);
+               next.splice(to, 0, moved);
+               return { customThemes: next };
+            }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
             setSideBySideView: (isSideBySide) => set({ isSideBySideView: isSideBySide }),
             setLastVisitedVersion: (version) => set({ lastVisitedVersion: version }),

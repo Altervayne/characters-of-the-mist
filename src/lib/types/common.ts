@@ -28,7 +28,8 @@ export type DragItemType =
    | 'drawer-folder'
    | 'drawer-item'
    | 'tracker'
-   | 'sheet-tracker';
+   | 'sheet-tracker'
+   | 'theme';
 
 /**
  * Draggable item type - represents the actual data being dragged

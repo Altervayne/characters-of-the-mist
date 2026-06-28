@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 // -- Library Imports --
 import cuid from 'cuid';
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -12,19 +14,28 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // -- Icon Imports --
-import { Check, Copy, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react';
+import { Check, Copy, GripVertical, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react';
+
+// -- DnD Component Imports --
+import { Sortable, DragLayoutWrapper } from '@/components/dnd';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { PRESET_LABELS, PRESET_THEMES, customThemeClass } from '@/lib/theme/themeTokens';
 import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
+import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Store Imports --
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
+import type { DragEndEvent } from '@dnd-kit/core';
+import type { SortableChildProps } from '@/components/dnd';
 import type { CustomTheme, TokenSet } from '@/lib/theme/themeTokens';
 import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
+
+/** The drag listeners a custom row's grip carries (from the Sortable render props). */
+type DragHandleProps = Pick<SortableChildProps, 'dragAttributes' | 'dragListeners'>;
 
 /*
  * The theme manager: a pinned Presets section + a scrollable Customs section. Each theme is a ROW whose body
@@ -50,7 +61,18 @@ export function ThemeManager() {
    const { t } = useTranslation();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
-   const { setTheme, addCustomTheme, updateCustomTheme, deleteCustomTheme } = useAppSettingsActions();
+   const { setTheme, addCustomTheme, updateCustomTheme, deleteCustomTheme, reorderCustomThemes } = useAppSettingsActions();
+
+   // A LOCAL drag context, scoped to this window's customs list - never the app-wide character/board DnD.
+   // The small activation distance lets a click (select) or a grip tap fire without starting a drag.
+   const sensors = useSensors(
+      useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+      useSensor(KeyboardSensor),
+   );
+   const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) reorderCustomThemes(String(active.id), String(over.id));
+   };
 
    const [renamingId, setRenamingId] = useState<string | null>(null);
    const [renameDraft, setRenameDraft] = useState('');
@@ -89,7 +111,7 @@ export function ThemeManager() {
       setRenamingId(null);
    };
 
-   const renderRow = (entry: ThemeEntry) => {
+   const renderRow = (entry: ThemeEntry, dragHandle?: DragHandleProps) => {
       const isActive = activeTheme === entry.value;
       const customId = entry.isCustom ? entry.value.replace('theme-custom-', '') : null;
 
@@ -124,8 +146,23 @@ export function ThemeManager() {
                isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',
             )}
          >
+            {/* Custom rows get a hover-revealed grip that carries the drag listeners; presets have none.
+                Its click is swallowed so a grip tap never toggles selection. */}
+            {dragHandle && (
+               <button
+                  type="button"
+                  {...dragHandle.dragAttributes}
+                  {...dragHandle.dragListeners}
+                  onClick={(event) => event.stopPropagation()}
+                  title={t('SettingsDialog.themes.reorder')}
+                  aria-label={t('SettingsDialog.themes.reorder')}
+                  className="ml-1 flex h-6 w-5 shrink-0 cursor-grab items-center justify-center text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+               >
+                  <GripVertical className="h-4 w-4" />
+               </button>
+            )}
             {/* `pr-8` keeps the truncated name clear of the overlaid menu trigger. */}
-            <span className="min-w-0 flex-1 truncate px-3 py-2 pr-8 text-sm">{entry.label}</span>
+            <span className={cn('min-w-0 flex-1 truncate py-2 pr-8 text-sm', dragHandle ? 'pl-1' : 'pl-3')}>{entry.label}</span>
 
             <DropdownMenu>
                <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
@@ -166,17 +203,37 @@ export function ThemeManager() {
          {/* Presets stay pinned at the top. */}
          <div className="flex flex-col gap-1">
             <SectionHeading>{t('SettingsDialog.themes.presetsHeading')}</SectionHeading>
-            <div className="flex flex-col gap-1">{presetEntries.map(renderRow)}</div>
+            <div className="flex flex-col gap-1">{presetEntries.map((entry) => renderRow(entry))}</div>
          </div>
 
-         {/* Customs get their own scroller, so the presets never scroll away. */}
+         {/* Customs get their own scroller, so the presets never scroll away. Only this section is
+             sortable - a local DndContext + SortableContext over the custom ids; presets stay outside it. */}
          <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-border pt-3">
             <SectionHeading>{t('SettingsDialog.themes.customsHeading')}</SectionHeading>
-            <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-               {customEntries.length > 0
-                  ? customEntries.map(renderRow)
-                  : <p className="px-1 py-2 text-xs text-muted-foreground">{t('SettingsDialog.themes.noCustoms')}</p>}
-            </div>
+            {customEntries.length > 0 ? (
+               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={customThemes.map((theme) => theme.id)} strategy={verticalListSortingStrategy}>
+                     <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+                        {customEntries.map((entry) => {
+                           const id = entry.value.replace('theme-custom-', '');
+                           return (
+                              <Sortable key={id} id={id} data={{ type: DRAG_TYPES.THEME, item: entry }}>
+                                 {({ dragAttributes, dragListeners, isBeingDragged }) => (
+                                    <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                                       {renderRow(entry, { dragAttributes, dragListeners })}
+                                    </DragLayoutWrapper>
+                                 )}
+                              </Sortable>
+                           );
+                        })}
+                     </div>
+                  </SortableContext>
+               </DndContext>
+            ) : (
+               <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+                  <p className="px-1 py-2 text-xs text-muted-foreground">{t('SettingsDialog.themes.noCustoms')}</p>
+               </div>
+            )}
          </div>
 
          <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>

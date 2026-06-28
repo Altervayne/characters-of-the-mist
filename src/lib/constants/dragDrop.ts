@@ -18,6 +18,7 @@ export const DRAG_TYPES = {
    SHEET_TRACKER: 'sheet-tracker',
    DRAWER_BACK_BUTTON: 'drawer-back-button',
    TAB: 'tab',
+   THEME: 'theme',
 } as const;
 
 export type DropZone = typeof DROP_ZONES[keyof typeof DROP_ZONES];

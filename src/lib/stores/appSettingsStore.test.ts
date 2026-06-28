@@ -94,4 +94,22 @@ describe('appSettingsStore customThemes slice', () => {
       actions.deleteCustomTheme('a');
       expect(useAppSettingsStore.getState().theme).toBe('theme-custom-b');
    });
+
+   it('reorderCustomThemes moves the active id to the over id\'s slot (array IS the order)', () => {
+      const { actions } = useAppSettingsStore.getState();
+      ['a', 'b', 'c'].forEach((id) => actions.addCustomTheme(makeTheme(id)));
+      actions.reorderCustomThemes('a', 'c'); // drag a onto c -> [b, c, a]
+      expect(useAppSettingsStore.getState().customThemes.map((t) => t.id)).toEqual(['b', 'c', 'a']);
+      actions.reorderCustomThemes('a', 'b'); // drag a back before b -> [a, b, c]
+      expect(useAppSettingsStore.getState().customThemes.map((t) => t.id)).toEqual(['a', 'b', 'c']);
+   });
+
+   it('reorderCustomThemes is a no-op on missing or equal ids', () => {
+      const { actions } = useAppSettingsStore.getState();
+      ['a', 'b'].forEach((id) => actions.addCustomTheme(makeTheme(id)));
+      actions.reorderCustomThemes('a', 'a');       // equal
+      actions.reorderCustomThemes('a', 'missing'); // unknown over
+      actions.reorderCustomThemes('missing', 'b'); // unknown active
+      expect(useAppSettingsStore.getState().customThemes.map((t) => t.id)).toEqual(['a', 'b']);
+   });
 });

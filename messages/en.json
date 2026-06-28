@@ -565,6 +565,7 @@
          "customsHeading": "Your themes",
          "noCustoms": "No custom themes yet. Duplicate a preset to start one.",
          "actionsMenu": "Theme actions",
+         "reorder": "Drag to reorder",
          "duplicate": "Duplicate",
          "rename": "Rename",
          "delete": "Delete",
