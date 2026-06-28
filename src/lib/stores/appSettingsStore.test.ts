@@ -6,6 +6,8 @@ import { useAppSettingsStore } from './appSettingsStore';
 
 // -- Type Imports --
 import type { DiceTrayContent } from '@/lib/dice/diceTrayTypes';
+import type { CustomTheme } from '@/lib/theme/themeTokens';
+import { PRESET_THEMES } from '@/lib/theme/themeTokens';
 
 /*
  * Tests for the app-wide dice-tray settings slice: the default (empty, closed), the open/toggle actions,
@@ -52,5 +54,44 @@ describe('appSettingsStore diceTray slice', () => {
       actions.setDiceTrayContent(rolled);
       expect(useAppSettingsStore.getState().diceTray.content).toEqual(rolled);
       expect(useAppSettingsStore.getState().diceTray.isOpen).toBe(false); // content edit doesn't open the panel
+   });
+});
+
+describe('appSettingsStore customThemes slice', () => {
+   const makeTheme = (id: string): CustomTheme => ({
+      id, name: `Theme ${id}`, radius: '0.5rem',
+      light: PRESET_THEMES['theme-neutral'].light, dark: PRESET_THEMES['theme-neutral'].dark,
+   });
+
+   beforeEach(() => {
+      useAppSettingsStore.setState({ theme: 'theme-neutral', customThemes: [] });
+   });
+
+   it('addCustomTheme appends and updateCustomTheme patches by id', () => {
+      const { actions } = useAppSettingsStore.getState();
+      actions.addCustomTheme(makeTheme('a'));
+      actions.addCustomTheme(makeTheme('b'));
+      actions.updateCustomTheme('a', { name: 'Renamed' });
+      const list = useAppSettingsStore.getState().customThemes;
+      expect(list.map((t) => t.id)).toEqual(['a', 'b']);
+      expect(list.find((t) => t.id === 'a')?.name).toBe('Renamed');
+   });
+
+   it('deleteCustomTheme resets the active theme to a preset when the deleted theme was active', () => {
+      const { actions } = useAppSettingsStore.getState();
+      actions.addCustomTheme(makeTheme('a'));
+      actions.setTheme('theme-custom-a');
+      actions.deleteCustomTheme('a');
+      expect(useAppSettingsStore.getState().customThemes).toEqual([]);
+      expect(useAppSettingsStore.getState().theme).toBe('theme-neutral');
+   });
+
+   it('deleteCustomTheme leaves the active theme alone when a different theme was active', () => {
+      const { actions } = useAppSettingsStore.getState();
+      actions.addCustomTheme(makeTheme('a'));
+      actions.addCustomTheme(makeTheme('b'));
+      actions.setTheme('theme-custom-b');
+      actions.deleteCustomTheme('a');
+      expect(useAppSettingsStore.getState().theme).toBe('theme-custom-b');
    });
 });

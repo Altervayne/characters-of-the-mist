@@ -5,15 +5,20 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
 import type { DiceTrayContent } from '@/lib/dice/diceTrayTypes';
+import type { CustomTheme } from '@/lib/theme/themeTokens';
 
 
 
 export type ThemeName = 'theme-neutral' | 'theme-legends' | 'theme-otherscape' | 'theme-city-of-mist';
+/** The active theme: a preset class, or a custom theme's `theme-custom-{id}` (its value IS its class). */
+export type ActiveTheme = ThemeName | `theme-custom-${string}`;
 export type DeviceType = 'mobile' | 'desktop';
 export type MobileHandedness = 'left' | 'right';
 
 interface AppSettingsState {
-   theme: ThemeName;
+   theme: ActiveTheme;
+   /** User-defined themes (applied at runtime by the ThemeClassManager). Dormant until the editor ships. */
+   customThemes: CustomTheme[];
    isCompactDrawer: boolean;
    isSideBySideView: boolean;
    lastVisitedVersion: string;
@@ -31,7 +36,10 @@ interface AppSettingsState {
    // reload. `isOpen` is the panel's slide state.
    diceTray: { content: DiceTrayContent; isOpen: boolean };
    actions: {
-      setTheme: (theme: ThemeName) => void;
+      setTheme: (theme: ActiveTheme) => void;
+      addCustomTheme: (theme: CustomTheme) => void;
+      updateCustomTheme: (id: string, patch: Partial<CustomTheme>) => void;
+      deleteCustomTheme: (id: string) => void;
       toggleCompactDrawer: () => void;
       setSideBySideView: (isSideBySide: boolean) => void;
       setLastVisitedVersion: (version: string) => void;
@@ -57,6 +65,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
    persist(
       (set) => ({
          theme: 'theme-neutral',
+         customThemes: [],
          isCompactDrawer: false,
          isSideBySideView: false,
          lastVisitedVersion: "0.0.0",
@@ -72,6 +81,15 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          diceTray: { content: { dice: [], modifiers: [] }, isOpen: false },
          actions: {
             setTheme: (theme) => set({ theme }),
+            addCustomTheme: (theme) => set((state) => ({ customThemes: [...state.customThemes, theme] })),
+            updateCustomTheme: (id, patch) => set((state) => ({
+               customThemes: state.customThemes.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+            })),
+            // Drop the theme; if it was the active one, fall back to a preset so the app stays themed.
+            deleteCustomTheme: (id) => set((state) => ({
+               customThemes: state.customThemes.filter((entry) => entry.id !== id),
+               theme: state.theme === `theme-custom-${id}` ? 'theme-neutral' : state.theme,
+            })),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
             setSideBySideView: (isSideBySide) => set({ isSideBySideView: isSideBySide }),
             setLastVisitedVersion: (version) => set({ lastVisitedVersion: version }),
@@ -96,6 +114,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          storage: createJSONStorage(() => localStorage),
          partialize: (state) => ({
             theme: state.theme,
+            customThemes: state.customThemes,
             isCompactDrawer: state.isCompactDrawer,
             isSideBySideView: state.isSideBySideView,
             lastVisitedVersion: state.lastVisitedVersion,
