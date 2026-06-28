@@ -256,7 +256,7 @@
       "addPortrait": "Ajouter un portrait",
       "dropToLoadCharacter": "Déposez un Objet Fiche de Personnage ici pour charger le personnage entier. Soyez prudent, cette action remplacera votre personnage actif.",
       "dropToOpenBoard": "[TO COMPLETE]",
-      "dropToImport": "Déposez votre fichier ici pour importer le composant dans votre fiche de personnage active. Si le fichier est une fiche de personnage entière, elle remplacera votre personnage actif.",
+      "dropToImport": "[TO COMPLETE]",
       "cannotDropWrongGame": "Vous ne pouvez pas déposer cet Objet ici, il appartient à un autre système de jeu.",
       "SidebarMenu": {
          "sidebarTitle": "Menu",

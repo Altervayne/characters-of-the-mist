@@ -423,6 +423,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                         <SidebarButton isCollapsed={isCollapsed} onClick={handleExportBoard} Icon={Upload}>
                            {t('CharacterSheetPage.SidebarMenu.exportBoard')}
                         </SidebarButton>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={() => boardImportInputRef.current?.click()} Icon={Download}>
+                           {t('CharacterSheetPage.SidebarMenu.importBoard')}
+                        </SidebarButton>
                      </motion.section>
 
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(

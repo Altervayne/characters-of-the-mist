@@ -9,6 +9,8 @@ import { useDropzone } from 'react-dropzone';
 // -- Utils Imports --
 import { importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
+import { importBoard } from '@/lib/board/boardRepository';
+import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -17,6 +19,7 @@ import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
+import type { Board } from '@/lib/types/board';
 
 
 
@@ -37,7 +40,7 @@ export function useCharacterSheetFileImport() {
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
    const { addImportedCard, addImportedTracker } = useCharacterActions();
-   const { openCharacterTab } = useTabManagerActions();
+   const { openCharacterTab, openBoardTab } = useTabManagerActions();
    const { setContextualGame } = useAppSettingsActions();
 
    const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -57,6 +60,19 @@ export function useCharacterSheetFileImport() {
             openCharacterTab(characterData);
             setContextualGame(characterData.game);
             toast.success(tNotifications('Notifications.character.imported'));
+            return;
+         }
+
+         // ==================
+         //  Full board (character-independent; always imported as a NEW board)
+         // ==================
+         if (fileType === 'FULL_BOARD') {
+            // Fresh, independent identity (connection-safe) so re-importing the same file never
+            // collides with an existing board id.
+            const reIded = reIdBoardAggregate(migratedContent as Board);
+            await importBoard(reIded);
+            await openBoardTab(reIded.id);
+            toast.success(tNotifications('Notifications.board.imported'));
             return;
          }
 
@@ -94,7 +110,7 @@ export function useCharacterSheetFileImport() {
          console.error("Failed to import file:", error);
          toast.error(tNotifications('Notifications.general.importFailed'));
       }
-   }, [character, openCharacterTab, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
+   }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
 
    const { getRootProps, isDragActive } = useDropzone({
       onDrop: onFileDrop,
