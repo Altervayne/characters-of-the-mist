@@ -233,7 +233,7 @@ export const OtherscapeThemeCard = React.memo(
                         {/* Flaws Section */}
                         <CardSectionHeader title={t('OtherscapeThemeCard.flawsTitle')} className="mt-2" />
                         {details.weaknessTags.map((tag, index) =>
-                           <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />
+                           <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} isDark />
                         )}
                         {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('OtherscapeThemeCard.addFlawTag')}</Button>}
                      </div>
@@ -273,7 +273,7 @@ export const OtherscapeThemeCard = React.memo(
                         {details.powerTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="power" isEditing={isEditing} index={index} />)}
                         {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'powerTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('ThemeCard.addPowerTag')}</Button>}
 
-                        {details.weaknessTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} />)}
+                        {details.weaknessTags.map((tag, index) => <TagItem key={tag.id} cardId={card.id} tag={tag} tagType="weakness" isEditing={isEditing} index={index} isDark />)}
                         {isEditing && <Button variant="ghost" size="sm" className="m-2 border border-dashed cursor-pointer" onClick={() => actions.addTag(card.id, 'weaknessTags')}><PlusCircle className="h-4 w-4 mr-2"/>{t('ThemeCard.addWeaknessTag')}</Button>}
                      </div>
                   </>

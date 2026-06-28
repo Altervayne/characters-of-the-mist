@@ -43,18 +43,33 @@ interface TagItemProps {
    placeholderKey?: string;
    /** Optional "no name" fallback override (defaults to TagItem.noName). */
    noNameKey?: string;
+   /**
+    * Dark-paper card (e.g. the Otherscape theme cards). Desaturating the weakness text isn't enough there:
+    * the card's ink is light AND cool, so once neutralized it can still sit dim on the destructive wash.
+    * When set, lift the weakness text's luminance too so it reads clearly. Light-paper cards don't need it.
+    */
+   isDark?: boolean;
 }
 
 
 
-export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear, listName: listNameOverride, placeholderKey, noNameKey }: TagItemProps) {
+export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isTrackerTag, isLoadoutGear, listName: listNameOverride, placeholderKey, noNameKey, isDark }: TagItemProps) {
    const { t: t } = useTranslation();
    const actions = useCharacterActions();
    const listName = listNameOverride ?? (tagType === 'power' ? 'powerTags' : 'weaknessTags');
 
    const isEvenRow = index % 2 === 0;
-   const powerBg = isEvenRow ? 'bg-black/5' : 'bg-black/2';
-   const weaknessBg = isEvenRow ? 'bg-destructive/10' : 'bg-destructive/5';
+   // Stripe each row with a faint wash of the card's own ink - the card's red for negative rows, otherwise
+   // its text color - so the zebra follows the card-type and light/dark instead of a fixed black that
+   // disappears on dark paper. Both vars fall back to the chrome tokens off a card, so it works anywhere.
+   const rowBackground = tagType === 'weakness'
+      ? `color-mix(in srgb, var(--card-destructive-bg, transparent) ${isEvenRow ? 45 : 30}%, transparent)`
+      : `color-mix(in srgb, var(--card-paper-fg) ${isEvenRow ? 6 : 3}%, transparent)`;
+
+   // Strip the card's text tint on weakness rows so the foreground reads as a neutral gray at its own
+   // lightness, instead of a cool tint (e.g. Otherscape's purple/pink) clashing with the destructive wash.
+   // On dark-paper cards, also lift its luminance so the neutralized text doesn't sit dim on the wash.
+   const weaknessForeground = tagType === 'weakness' && (isDark ? 'grayscale brightness-150' : 'grayscale');
 
 
 
@@ -105,13 +120,9 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
             // `min-width: auto`, which on a row that includes text would let an
             // unbroken word push the row wider than its parent card).
             'flex items-center justify-between px-1 py-0.5 w-full min-w-0',
-            tagType === 'power' ? powerBg : weaknessBg,
             tag.isScratched && 'opacity-50'
          )}
-         style={tagType === 'weakness' ? (isEvenRow
-            ? { backgroundColor: 'color-mix(in srgb, var(--card-destructive-bg, transparent) 25%, transparent)' }
-            : { backgroundColor: 'color-mix(in srgb, var(--card-destructive-bg, transparent) 18%, transparent)' }
-         ) : undefined}
+         style={{ backgroundColor: rowBackground }}
       >
          <div className="flex shrink-0 items-center justify-center w-6">
             {tagType === 'power' && !isEditing && (
@@ -127,7 +138,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
             <Input
                value={localName}
                onChange={(e) => setLocalName(e.target.value)}
-               className="mx-1 h-7 flex-1 min-w-0 text-center text-sm border-0 shadow-none"
+               className={cn('mx-1 h-7 flex-1 min-w-0 text-center text-sm border-0 shadow-none', weaknessForeground)}
                placeholder={t(placeholderKey ?? 'TagItem.placeholder')}
             />
          ) : (
@@ -137,6 +148,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
             <p
                className={cn(
                   'flex-1 min-w-0 text-sm text-center py-1 break-words [overflow-wrap:anywhere]',
+                  weaknessForeground,
                   tag.isScratched && !isLoadoutGear ? 'line-through' : tag.isActive && 'underline'
                )}
             >
@@ -146,7 +158,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
 
          <div className="flex shrink-0 items-center justify-center w-6">
             {isEditing ? (
-               <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive cursor-pointer" onClick={handleRemove}>
+               <Button variant="ghost" size="icon" className={cn('h-6 w-6 text-destructive cursor-pointer', weaknessForeground)} onClick={handleRemove}>
                   <Trash2 className="h-4 w-4" />
                </Button>
             ) : (

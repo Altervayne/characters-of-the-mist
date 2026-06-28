@@ -8,9 +8,6 @@ import { Button } from '@/components/ui/button';
 // -- Icon Imports --
 import { Trash2 } from 'lucide-react';
 
-// -- Utils Imports --
-import { cn } from '@/lib/utils';
-
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
@@ -48,13 +45,14 @@ export function BlandTagItem({ cardId, tag, listName, isEditing, index }: BlandT
 
 
    return (
-      <div className={cn(
+      <div
          // `min-w-0` keeps a long tag name from forcing the row wider than its
          // parent card. Flex children otherwise default to `min-width: auto`
          // which lets unbroken text grow the row past the card edge.
-         "flex items-center gap-2 text-sm p-1 w-full min-w-0",
-         isEvenRow ? 'bg-black/5' : 'bg-transparent'
-      )}>
+         className="flex items-center gap-2 text-sm p-1 w-full min-w-0"
+         // Faint wash of the card's ink so the zebra adapts per card-type + light/dark.
+         style={{ backgroundColor: `color-mix(in srgb, var(--card-paper-fg) ${isEvenRow ? 6 : 3}%, transparent)` }}
+      >
          {isEditing ? (
             <>
                <Input

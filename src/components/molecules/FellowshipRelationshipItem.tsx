@@ -8,9 +8,6 @@ import { Button } from '@/components/ui/button';
 // -- Icon Imports --
 import { Trash2 } from 'lucide-react';
 
-// -- Utils Imports --
-import { cn } from '@/lib/utils';
-
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
@@ -35,7 +32,8 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
    const { updateRelationship, removeRelationship } = useCharacterActions();
 
    const isEvenRow = index % 2 === 0;
-   const bgColor = isEvenRow ? 'bg-black/5' : 'bg-black/2';
+   // Faint wash of the card's ink so the zebra adapts per card-type + light/dark.
+   const rowBackground = `color-mix(in srgb, var(--card-paper-fg) ${isEvenRow ? 6 : 3}%, transparent)`;
 
 
 
@@ -62,9 +60,7 @@ export function FellowshipRelationshipItem({ cardId, relationship, isEditing, in
 
 
    return (
-      <div className={cn("flex items-center gap-2 text-sm p-1",
-         bgColor
-      )}>
+      <div className="flex items-center gap-2 text-sm p-1" style={{ backgroundColor: rowBackground }}>
          {isEditing ? (
             <Input
                value={localCompanionName}
