@@ -43,8 +43,10 @@ export function DieShape({ sides, value, negative = false }: { sides: number; va
    // component so its hooks stay unconditional (a die's `sides` never changes in place - the picker adds a
    // fresh die - so the branch is stable per instance anyway).
    const colorClass = negative ? 'text-destructive' : 'text-primary';
+   // The on-color knockout token, paired with colorClass, for the weird die's solid side-count badge.
+   const onColorClass = negative ? 'fill-destructive-foreground' : 'fill-primary-foreground';
    if (sides === 2) return <CoinShape value={value} colorClass={colorClass} />;
-   if (!PLATONIC.has(sides)) return <WeirdDieShape sides={sides} value={value} colorClass={colorClass} />;
+   if (!PLATONIC.has(sides)) return <WeirdDieShape sides={sides} value={value} colorClass={colorClass} onColorClass={onColorClass} />;
    return <PolyhedronShape sides={sides} value={value} colorClass={colorClass} />;
 }
 
@@ -106,11 +108,12 @@ const WEIRD_INNER = hexPoints(28);
 
 /**
  * The generic "weird die" for any non-platonic side count: one faceted hexagonal gem (outer silhouette + an
- * inset facet ring + connecting edges, in the same line-art style), the rolled value centered, and a `dN`
- * badge so it stays identifiable. The badge shows even when unrolled (it is the only thing telling a d63
- * from a d7).
+ * inset facet ring + connecting edges, in the same line-art style). One generic shape for every odd side
+ * count, so the side count is shown as text - the only thing telling a d63 from a d7. It rides a SOLID
+ * bottom strip (always shown, the die's identity); the rolled value sits in the standard centered slot, so
+ * a weird-die result lines up with every other die beside it.
  */
-function WeirdDieShape({ sides, value, colorClass }: { sides: number; value: number | null; colorClass: string }) {
+function WeirdDieShape({ sides, value, colorClass, onColorClass }: { sides: number; value: number | null; colorClass: string; onColorClass: string }) {
    return (
       <svg viewBox="0 0 100 100" className={cn('h-full w-full', colorClass)}>
          <polygon points={points(WEIRD_OUTER)} fill="currentColor" fillOpacity={0.1} />
@@ -128,11 +131,26 @@ function WeirdDieShape({ sides, value, colorClass }: { sides: number; value: num
             const next = WEIRD_OUTER[(i + 1) % WEIRD_OUTER.length];
             return <line key={`o${i}`} x1={p[0]} y1={p[1]} x2={next[0]} y2={next[1]} stroke="currentColor" strokeWidth={5} strokeLinecap="round" />;
          })}
+         {/* The rolled value uses the STANDARD centered slot (y=50, valueFontSize), so it aligns with a d20. */}
          {value != null && <ValueText value={value} />}
-         {/* Side-count badge: small + muted so it identifies the die without competing with the value. */}
-         <text x="50" y="90" textAnchor="middle" dominantBaseline="central" fontSize={15} className="fill-muted-foreground font-mono font-semibold">
-            d{sides}
-         </text>
+         <WeirdSideBadge label={`d${sides}`} onColorClass={onColorClass} />
       </svg>
+   );
+}
+
+/**
+ * The weird die's side-count badge: a SOLID, opaque strip in the die's color stuck to the bottom edge, drawn
+ * OVER the facets so it masks the busy lines, with the label knocked out in the matching on-color token -
+ * legible on either palette, light or dark. Always shown (it is the die's identity); fixed-width so a short
+ * or long `dN` keeps the same bottom band.
+ */
+function WeirdSideBadge({ label, onColorClass }: { label: string; onColorClass: string }) {
+   return (
+      <>
+         <rect x={11} y={68} width={78} height={32} rx={7} fill="currentColor" />
+         <text x="50" y={86} textAnchor="middle" dominantBaseline="central" fontSize={24} className={cn(onColorClass, 'font-mono font-bold')}>
+            {label}
+         </text>
+      </>
    );
 }
