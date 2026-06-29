@@ -152,12 +152,21 @@ function InfoTip({ text }: { text: string }) {
    );
 }
 
-/** A labelled seed swatch (accent / neutral) for the generator panel. */
-function SeedSwatch({ label, value, onPick }: { label: string; value: string; onPick: (hex: string) => void }) {
+/**
+ * One seed input for the generator, built like the editor's token rows: a label (with an optional info
+ * tip) over a swatch + hex field, so seeds read and behave the same (paste, revert-on-invalid, picker sync).
+ */
+function SeedField({ label, info, value, onPick }: { label: string; info?: string; value: string; onPick: (hex: string) => void }) {
    return (
-      <div className="flex items-center gap-2">
-         <span className="text-sm">{label}</span>
-         <TokenSwatch value={value} label={label} onPick={onPick} />
+      <div className="flex min-w-0 flex-col gap-1">
+         <div className="flex items-center gap-1">
+            <span className="truncate text-sm">{label}</span>
+            {info && <InfoTip text={info} />}
+         </div>
+         <div className="flex items-center gap-1">
+            <TokenSwatch value={value} label={label} onPick={onPick} />
+            <HexInput value={value} label={label} onCommit={onPick} className="min-w-0 flex-1" />
+         </div>
       </div>
    );
 }
@@ -197,63 +206,70 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
 
          {open && (
             <div className="flex flex-col gap-3 border-t border-border px-3 py-3">
-               {/* Mode toggle: one pair for both modes, or one pair per mode. */}
-               <div className="flex gap-1.5">
-                  <Button variant={mode === '2-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('2-seed')} className="cursor-pointer">
-                     {t('SettingsDialog.themes.seeds.twoSeed')}
-                  </Button>
-                  <Button variant={mode === '4-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('4-seed')} className="cursor-pointer">
-                     {t('SettingsDialog.themes.seeds.fourSeed')}
-                  </Button>
-                  <Button variant={mode === '3-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('3-seed')} className="cursor-pointer">
-                     {t('SettingsDialog.themes.seeds.expressive')}
-                  </Button>
+               {/* Mode picker: one evenly-split segmented control, with a one-line note on what it does. */}
+               <div className="flex flex-col gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
+                     <Button variant={mode === '2-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('2-seed')} className="w-full cursor-pointer">
+                        {t('SettingsDialog.themes.seeds.twoSeed')}
+                     </Button>
+                     <Button variant={mode === '3-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('3-seed')} className="w-full cursor-pointer">
+                        {t('SettingsDialog.themes.seeds.expressive')}
+                     </Button>
+                     <Button variant={mode === '4-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('4-seed')} className="w-full cursor-pointer">
+                        {t('SettingsDialog.themes.seeds.fourSeed')}
+                     </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                     {t(`SettingsDialog.themes.seeds.${mode === '2-seed' ? 'twoSeedDesc' : mode === '3-seed' ? 'expressiveDesc' : 'fourSeedDesc'}`)}
+                  </p>
                </div>
 
                {mode === '2-seed' ? (
-                  <div className="flex flex-wrap gap-4">
-                     <SeedSwatch label={t('SettingsDialog.themes.seeds.accent')} value={two.accent} onPick={(hex) => setTwo((s) => ({ ...s, accent: hex }))} />
-                     <SeedSwatch label={t('SettingsDialog.themes.seeds.neutral')} value={two.neutral} onPick={(hex) => setTwo((s) => ({ ...s, neutral: hex }))} />
+                  <div className="grid grid-cols-2 gap-3">
+                     <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={two.accent} onPick={(hex) => setTwo((s) => ({ ...s, accent: hex }))} />
+                     <SeedField label={t('SettingsDialog.themes.seeds.neutral')} info={t('SettingsDialog.themes.seeds.neutralInfo')} value={two.neutral} onPick={(hex) => setTwo((s) => ({ ...s, neutral: hex }))} />
                   </div>
                ) : mode === '3-seed' ? (
                   <div className="flex flex-col gap-3">
-                     <div className="flex flex-wrap gap-4">
-                        <SeedSwatch label={t('SettingsDialog.themes.seeds.primary')} value={three.primary} onPick={(hex) => setThree((s) => ({ ...s, primary: hex }))} />
-                        <SeedSwatch label={t('SettingsDialog.themes.seeds.surface')} value={three.surface} onPick={(hex) => setThree((s) => ({ ...s, surface: hex }))} />
-                        <SeedSwatch label={t('SettingsDialog.themes.seeds.accent')} value={three.accent} onPick={(hex) => setThree((s) => ({ ...s, accent: hex }))} />
+                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <SeedField label={t('SettingsDialog.themes.seeds.primary')} info={t('SettingsDialog.themes.seeds.primaryInfo')} value={three.primary} onPick={(hex) => setThree((s) => ({ ...s, primary: hex }))} />
+                        <SeedField label={t('SettingsDialog.themes.seeds.surface')} info={t('SettingsDialog.themes.seeds.surfaceInfo')} value={three.surface} onPick={(hex) => setThree((s) => ({ ...s, surface: hex }))} />
+                        <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={three.accent} onPick={(hex) => setThree((s) => ({ ...s, accent: hex }))} />
                      </div>
                      {/* Vivid scales the boldness (surface saturation, foreground tint, accent saturation). */}
-                     <Button
-                        variant={three.vivid ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setThree((s) => ({ ...s, vivid: !s.vivid }))}
-                        className="w-fit cursor-pointer"
-                     >
-                        {t('SettingsDialog.themes.seeds.vivid')}
-                     </Button>
+                     <div className="flex items-center gap-2">
+                        <Button
+                           variant={three.vivid ? 'default' : 'outline'}
+                           size="sm"
+                           onClick={() => setThree((s) => ({ ...s, vivid: !s.vivid }))}
+                           className="shrink-0 cursor-pointer"
+                        >
+                           {t('SettingsDialog.themes.seeds.vivid')}
+                        </Button>
+                        <span className="text-xs text-muted-foreground">{t('SettingsDialog.themes.seeds.vividHint')}</span>
+                     </div>
                   </div>
                ) : (
-                  <div className="flex flex-col gap-2">
+                  /* Light and Dark share the same two-column grid so Accent sits above Accent, Neutral above Neutral. */
+                  <div className="flex flex-col gap-3">
                      <div className="flex flex-col gap-1.5">
                         <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.lightColumn')}</span>
-                        <div className="flex flex-wrap gap-4">
-                           <SeedSwatch label={t('SettingsDialog.themes.seeds.accent')} value={four.lightAccent} onPick={(hex) => setFour((s) => ({ ...s, lightAccent: hex }))} />
-                           <SeedSwatch label={t('SettingsDialog.themes.seeds.neutral')} value={four.lightNeutral} onPick={(hex) => setFour((s) => ({ ...s, lightNeutral: hex }))} />
+                        <div className="grid grid-cols-2 gap-3">
+                           <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={four.lightAccent} onPick={(hex) => setFour((s) => ({ ...s, lightAccent: hex }))} />
+                           <SeedField label={t('SettingsDialog.themes.seeds.neutral')} info={t('SettingsDialog.themes.seeds.neutralInfo')} value={four.lightNeutral} onPick={(hex) => setFour((s) => ({ ...s, lightNeutral: hex }))} />
                         </div>
                      </div>
                      <div className="flex flex-col gap-1.5">
                         <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.darkColumn')}</span>
-                        <div className="flex flex-wrap gap-4">
-                           <SeedSwatch label={t('SettingsDialog.themes.seeds.accent')} value={four.darkAccent} onPick={(hex) => setFour((s) => ({ ...s, darkAccent: hex }))} />
-                           <SeedSwatch label={t('SettingsDialog.themes.seeds.neutral')} value={four.darkNeutral} onPick={(hex) => setFour((s) => ({ ...s, darkNeutral: hex }))} />
+                        <div className="grid grid-cols-2 gap-3">
+                           <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={four.darkAccent} onPick={(hex) => setFour((s) => ({ ...s, darkAccent: hex }))} />
+                           <SeedField label={t('SettingsDialog.themes.seeds.neutral')} info={t('SettingsDialog.themes.seeds.neutralInfo')} value={four.darkNeutral} onPick={(hex) => setFour((s) => ({ ...s, darkNeutral: hex }))} />
                         </div>
                      </div>
                   </div>
                )}
 
-               <div>
-                  <Button size="sm" onClick={() => setConfirming(true)} className="cursor-pointer">{t('SettingsDialog.themes.seeds.generate')}</Button>
-               </div>
+               <Button onClick={() => setConfirming(true)} className="w-full cursor-pointer">{t('SettingsDialog.themes.seeds.generate')}</Button>
             </div>
          )}
 
