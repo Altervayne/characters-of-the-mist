@@ -529,6 +529,7 @@
          "reorder": "[TO COMPLETE]",
          "export": "[TO COMPLETE]",
          "importTheme": "[TO COMPLETE]",
+         "dropToImport": "[TO COMPLETE]",
          "duplicate": "[TO COMPLETE]",
          "rename": "[TO COMPLETE]",
          "delete": "[TO COMPLETE]",

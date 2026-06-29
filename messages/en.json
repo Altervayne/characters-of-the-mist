@@ -572,6 +572,7 @@
          "reorder": "Drag to reorder",
          "export": "Export",
          "importTheme": "Import theme",
+         "dropToImport": "Drop a theme file to import it",
          "duplicate": "Duplicate",
          "rename": "Rename",
          "delete": "Delete",

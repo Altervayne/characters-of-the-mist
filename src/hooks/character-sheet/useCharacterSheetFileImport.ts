@@ -11,6 +11,7 @@ import { importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
 import { importBoard } from '@/lib/board/boardRepository';
 import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
+import { useThemeImport } from '@/lib/theme/useThemeImport';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -42,6 +43,7 @@ export function useCharacterSheetFileImport() {
    const { addImportedCard, addImportedTracker } = useCharacterActions();
    const { openCharacterTab, openBoardTab } = useTabManagerActions();
    const { setContextualGame } = useAppSettingsActions();
+   const importTheme = useThemeImport();
 
    const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
@@ -73,6 +75,14 @@ export function useCharacterSheetFileImport() {
             await importBoard(reIded);
             await openBoardTab(reIded.id);
             toast.success(tNotifications('Notifications.board.imported'));
+            return;
+         }
+
+         // ==================
+         //  Custom theme (character-independent; always imported as a NEW custom and selected)
+         // ==================
+         if (fileType === 'CUSTOM_THEME') {
+            importTheme(importedData);
             return;
          }
 
@@ -110,7 +120,7 @@ export function useCharacterSheetFileImport() {
          console.error("Failed to import file:", error);
          toast.error(tNotifications('Notifications.general.importFailed'));
       }
-   }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, tNotifications]);
+   }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, importTheme, tNotifications]);
 
    const { getRootProps, isDragActive } = useDropzone({
       onDrop: onFileDrop,

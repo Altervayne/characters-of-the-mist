@@ -3,7 +3,6 @@ import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Library Imports --
-import cuid from 'cuid';
 import toast from 'react-hot-toast';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -27,7 +26,8 @@ import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
 import { restrictToParentElement, restrictToVerticalAxis } from '@/lib/theme/themeReorderModifiers';
 import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
-import { exportCustomTheme, importFromFile, isExportedCustomTheme } from '@/lib/utils/export-import';
+import { exportCustomTheme, importFromFile } from '@/lib/utils/export-import';
+import { useThemeImport } from '@/lib/theme/useThemeImport';
 
 // -- Store Imports --
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
@@ -65,7 +65,7 @@ export function ThemeManager() {
    const { t } = useTranslation();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
-   const { setTheme, addCustomTheme, updateCustomTheme, deleteCustomTheme, reorderCustomThemes } = useAppSettingsActions();
+   const { setTheme, updateCustomTheme, deleteCustomTheme, reorderCustomThemes } = useAppSettingsActions();
 
    // A LOCAL drag context, scoped to this window's customs list - never the app-wide character/board DnD.
    // The small activation distance lets a click (select) or a grip tap fire without starting a drag.
@@ -126,22 +126,14 @@ export function ThemeManager() {
       }
    };
 
-   // Import a .cotm theme as a NEW custom: validate it's a theme envelope, give it a fresh id (so the same
-   // file can be imported twice without colliding), add it, and select it. No harmonize - themes are
-   // 2.0-native with no legacy migration.
+   // Import a .cotm theme picked from the file dialog, through the shared import path (validate, fresh id,
+   // add, select). No harmonize - themes are 2.0-native with no legacy migration.
+   const importTheme = useThemeImport();
    const handleImportFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
       try {
-         const imported = await importFromFile(file);
-         if (isExportedCustomTheme(imported)) {
-            const theme: CustomTheme = { ...(imported.content as CustomTheme), id: cuid() };
-            addCustomTheme(theme);
-            setTheme(customThemeClass(theme.id));
-            toast.success(t('Notifications.theme.imported'));
-         } else {
-            toast.error(t('Notifications.general.importFailed'));
-         }
+         importTheme(await importFromFile(file));
       } catch (error) {
          console.error('Theme import failed:', error);
          toast.error(t('Notifications.general.importFailed'));
