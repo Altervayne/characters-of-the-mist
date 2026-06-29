@@ -141,8 +141,9 @@ export function ThemesDialog({ isOpen, onOpenChange }: ThemesDialogProps) {
                      <ThemeManager />
                   </div>
 
-                  {/* Detail: the editor for the active custom theme, or a hint for an (immutable) preset. */}
-                  <div className="min-w-0 flex-1 overflow-y-auto bg-background p-4">
+                  {/* Detail: the editor for the active custom theme, or a hint for an (immutable) preset. The
+                      editor owns its own scroll + padding (so its Save header can stay fixed at the top). */}
+                  <div className="min-w-0 flex-1 overflow-hidden bg-background">
                      {editingTheme ? <ThemeEditor key={editingTheme.id} theme={editingTheme} /> : <ThemeEditorPlaceholder />}
                   </div>
                </div>

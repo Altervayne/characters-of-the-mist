@@ -331,15 +331,17 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
       count > 0 ? t('SettingsDialog.themes.contrastSummary', { count }) : undefined;
 
    return (
-      <div className="flex flex-col gap-4">
-         {/* Sticky action row: edits preview live but only persist on Save, which enables only when dirty. */}
-         <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-end gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
+      <div className="flex h-full min-h-0 flex-col">
+         {/* Opaque, non-scrolling header: the body scrolls beneath it. Edits preview live but only persist on
+             Save, which enables only when dirty. */}
+         <div className="flex shrink-0 items-center justify-end gap-3 border-b border-border bg-background px-4 py-2">
             {dirty && <span className="text-xs text-muted-foreground">{t('SettingsDialog.themes.unsavedChanges')}</span>}
             <Button size="sm" onClick={saveThemeDraft} disabled={!dirty} className="cursor-pointer">
                <Save className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.saveChanges')}
             </Button>
          </div>
 
+         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
          {/* Live previews: real chrome under the draft's inline vars; the dark pane also carries `.dark`. */}
          <div className="flex gap-2">
             <ThemePreview tokenSet={draft.light} radius={draft.radius} dark={false} label={t('SettingsDialog.themes.previewLight')} warning={summary(lightWarnings.length)} />
@@ -383,18 +385,19 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
                               <InfoTip text={t(`SettingsDialog.themes.tokenPurpose.${token}`)} />
                            </div>
                            <div className="flex w-24 items-center gap-1">
-                              <TokenSwatch value={theme.light[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.lightColumn')}`} onPick={(hex) => setToken('light', token, hex)} warning={warningText(lightByFg.get(token))} />
-                              <HexInput value={theme.light[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.lightColumn')}`} onCommit={(hex) => setToken('light', token, hex)} className="min-w-0 flex-1" />
+                              <TokenSwatch value={draft.light[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.lightColumn')}`} onPick={(hex) => setToken('light', token, hex)} warning={warningText(lightByFg.get(token))} />
+                              <HexInput value={draft.light[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.lightColumn')}`} onCommit={(hex) => setToken('light', token, hex)} className="min-w-0 flex-1" />
                            </div>
                            <div className="flex w-24 items-center gap-1">
-                              <TokenSwatch value={theme.dark[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.darkColumn')}`} onPick={(hex) => setToken('dark', token, hex)} warning={warningText(darkByFg.get(token))} />
-                              <HexInput value={theme.dark[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.darkColumn')}`} onCommit={(hex) => setToken('dark', token, hex)} className="min-w-0 flex-1" />
+                              <TokenSwatch value={draft.dark[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.darkColumn')}`} onPick={(hex) => setToken('dark', token, hex)} warning={warningText(darkByFg.get(token))} />
+                              <HexInput value={draft.dark[token]} label={`${tokenLabel} · ${t('SettingsDialog.themes.darkColumn')}`} onCommit={(hex) => setToken('dark', token, hex)} className="min-w-0 flex-1" />
                            </div>
                         </div>
                      );
                   })}
                </div>
             ))}
+         </div>
          </div>
       </div>
    );
@@ -414,16 +417,19 @@ export function ThemeEditorPlaceholder() {
    const source = PRESET_THEMES[activeTheme] ?? PRESET_THEMES['theme-neutral'];
    const label = PRESET_LABELS[activeTheme] ?? PRESET_LABELS['theme-neutral'];
 
+   // The editor pane no longer pads its content, so the placeholder pads itself off the dialog edges.
    return (
-      <button
-         type="button"
-         onClick={() => guardedSwitch(() => createCustomFrom(source, t('SettingsDialog.themes.copyName', { name: label })))}
-         className={cn(
-            'flex h-full w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-border p-6',
-            'text-center text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:bg-muted/40 hover:text-foreground',
-         )}
-      >
-         {t('SettingsDialog.themes.createFromPreset', { name: label })}
-      </button>
+      <div className="h-full p-4">
+         <button
+            type="button"
+            onClick={() => guardedSwitch(() => createCustomFrom(source, t('SettingsDialog.themes.copyName', { name: label })))}
+            className={cn(
+               'flex h-full w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-border p-6',
+               'text-center text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:bg-muted/40 hover:text-foreground',
+            )}
+         >
+            {t('SettingsDialog.themes.createFromPreset', { name: label })}
+         </button>
+      </div>
    );
 }
