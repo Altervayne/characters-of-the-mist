@@ -18,12 +18,13 @@ import { AlertTriangle, ChevronDown, ChevronRight, Info, Sparkles } from 'lucide
 import { cn } from '@/lib/utils';
 import { parseColorToRgb, rgbToHex } from '@/lib/color';
 import { readRecentColors } from '@/lib/recentColors';
-import { TOKEN_GROUPS } from '@/lib/theme/themeTokens';
+import { PRESET_LABELS, PRESET_THEMES, TOKEN_GROUPS } from '@/lib/theme/themeTokens';
 import { deriveFromSeeds } from '@/lib/theme/deriveTheme';
+import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
 import { lowContrastPairs } from '@/lib/theme/contrastWarnings';
 
 // -- Store Imports --
-import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
 import type { ChromeTokenKey, CustomTheme, FourSeeds, SeedMode, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
@@ -359,12 +360,29 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
    );
 }
 
-/** A note shown in the detail area when a preset (un-editable) is selected. */
+/**
+ * Shown in the detail area when a preset (un-editable) is active: a big clickable card that makes an editable
+ * copy of the CURRENT preset and selects it, so editing is one click away without hunting for Duplicate.
+ */
 export function ThemeEditorPlaceholder() {
    const { t } = useTranslation();
+   const activeTheme = useAppSettingsStore((state) => state.theme);
+   const createCustomFrom = useCreateCustomTheme();
+
+   // The placeholder only renders for an active preset, so these are defined; fall back to Neutral defensively.
+   const source = PRESET_THEMES[activeTheme] ?? PRESET_THEMES['theme-neutral'];
+   const label = PRESET_LABELS[activeTheme] ?? PRESET_LABELS['theme-neutral'];
+
    return (
-      <div className={cn('flex h-full items-center justify-center rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground')}>
-         {t('SettingsDialog.themes.duplicateToEdit')}
-      </div>
+      <button
+         type="button"
+         onClick={() => createCustomFrom(source, t('SettingsDialog.themes.copyName', { name: label }))}
+         className={cn(
+            'flex h-full w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-border p-6',
+            'text-center text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:bg-muted/40 hover:text-foreground',
+         )}
+      >
+         {t('SettingsDialog.themes.createFromPreset', { name: label })}
+      </button>
    );
 }

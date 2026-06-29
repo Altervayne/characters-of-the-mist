@@ -15,14 +15,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // -- Icon Imports --
-import { Check, Copy, Download, GripVertical, MoreHorizontal, Pencil, Trash2, Upload, X } from 'lucide-react';
+import { Check, Copy, Download, GripVertical, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
 
 // -- DnD Component Imports --
-import { Sortable, DragLayoutWrapper } from '@/components/dnd';
+import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { PRESET_LABELS, PRESET_THEMES, customThemeClass } from '@/lib/theme/themeTokens';
+import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
+import { restrictToParentElement, restrictToVerticalAxis } from '@/lib/theme/themeReorderModifiers';
 import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 import { exportCustomTheme, importFromFile, isExportedCustomTheme } from '@/lib/utils/export-import';
@@ -93,18 +95,13 @@ export function ThemeManager() {
       source: { light: theme.light, dark: theme.dark, radius: theme.radius },
    }));
 
+   const createCustomFrom = useCreateCustomTheme();
+
    // Duplicate ANY entry into a new, independent custom (deep-copied token sets), then select it.
-   const duplicate = (entry: ThemeEntry) => {
-      const id = cuid();
-      addCustomTheme({
-         id,
-         name: t('SettingsDialog.themes.copyName', { name: entry.label }),
-         light: { ...entry.source.light },
-         dark: { ...entry.source.dark },
-         radius: entry.source.radius,
-      });
-      setTheme(customThemeClass(id));
-   };
+   const duplicate = (entry: ThemeEntry) => createCustomFrom(entry.source, t('SettingsDialog.themes.copyName', { name: entry.label }));
+
+   // Start a fresh theme from the Neutral preset (also the empty-state action), then select it.
+   const createNew = () => createCustomFrom(PRESET_THEMES['theme-neutral'], t('SettingsDialog.themes.newThemeName'));
 
    const startRename = (id: string, current: string) => { setRenamingId(id); setRenameDraft(current); };
    const commitRename = (id: string) => {
@@ -265,7 +262,7 @@ export function ThemeManager() {
                </Button>
             </div>
             {customEntries.length > 0 ? (
-               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+               <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis, restrictToParentElement]} onDragEnd={handleDragEnd}>
                   <SortableContext items={customThemes.map((theme) => theme.id)} strategy={verticalListSortingStrategy}>
                      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
                         {customEntries.map((entry) => {
@@ -273,9 +270,9 @@ export function ThemeManager() {
                            return (
                               <Sortable key={id} id={id} data={{ type: DRAG_TYPES.THEME, item: entry }}>
                                  {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                                    <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                                    <DragStaticWrapper isBeingDragged={isBeingDragged}>
                                        {renderRow(entry, { dragAttributes, dragListeners })}
-                                    </DragLayoutWrapper>
+                                    </DragStaticWrapper>
                                  )}
                               </Sortable>
                            );
@@ -288,6 +285,11 @@ export function ThemeManager() {
                   <p className="px-1 py-2 text-xs text-muted-foreground">{t('SettingsDialog.themes.noCustoms')}</p>
                </div>
             )}
+
+            {/* Below the scroller so it never scrolls away; the empty-state action too (works with zero customs). */}
+            <Button variant="outline" size="sm" onClick={createNew} className="mt-1 w-full shrink-0 cursor-pointer">
+               <Plus className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.newTheme')}
+            </Button>
          </div>
 
          <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>

@@ -46,7 +46,7 @@ export function ThemesDialog({ isOpen, onOpenChange }: ThemesDialogProps) {
 
             <div className="flex min-h-0 flex-1 overflow-hidden">
                {/* Master: the theme list (its own panel; it owns the customs scroll). */}
-               <div className="flex w-56 shrink-0 flex-col border-r border-border bg-popover p-4">
+               <div className="flex w-56 shrink-0 flex-col border-r border-border bg-popover p-2">
                   <ThemeManager />
                </div>
 
