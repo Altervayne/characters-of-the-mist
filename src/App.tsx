@@ -12,6 +12,7 @@ import { useDeviceType } from '@/hooks/useDeviceType';
 import '@/app/global.css';
 
 function AppContent() {
+  if (localStorage.getItem('__verify_crash')) throw new Error('themes-polish verification crash');
   const { isMobile } = useDeviceType();
 
   return (
