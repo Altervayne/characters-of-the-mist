@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -12,15 +12,16 @@ import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopo
 import { ThemePreview } from '@/components/organisms/dialogs/ThemePreview';
 
 // -- Icon Imports --
-import { AlertTriangle, ChevronDown, ChevronRight, Info, Sparkles } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Info, Save, Sparkles } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { parseColorToRgb, rgbToHex } from '@/lib/color';
 import { readRecentColors } from '@/lib/recentColors';
-import { PRESET_LABELS, PRESET_THEMES, TOKEN_GROUPS } from '@/lib/theme/themeTokens';
+import { PRESET_LABELS, PRESET_THEMES, TOKEN_GROUPS, themeEditorFieldsEqual } from '@/lib/theme/themeTokens';
 import { deriveFromSeeds } from '@/lib/theme/deriveTheme';
 import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
+import { useThemeSwitchGuard } from '@/components/organisms/dialogs/themeSwitchGuard';
 import { lowContrastPairs } from '@/lib/theme/contrastWarnings';
 
 // -- Store Imports --
@@ -174,7 +175,7 @@ function SeedField({ label, info, value, onPick }: { label: string; info?: strin
 /** The collapsible, secondary "generate from seeds" accelerator (manual rows stay the primary way to author). */
 function SeedPanel({ theme }: { theme: CustomTheme }) {
    const { t } = useTranslation();
-   const { updateCustomTheme } = useAppSettingsActions();
+   const { patchThemeDraft } = useAppSettingsActions();
 
    const restored = restoreSeeds(theme);
    const [open, setOpen] = useState(false);
@@ -187,8 +188,8 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
    const generate = () => {
       const seeds = mode === '2-seed' ? two : mode === '3-seed' ? three : four;
       const { light, dark } = deriveFromSeeds(mode, seeds);
-      // Overwrite both palettes from the seeds; radius is the manual slider's, untouched here.
-      updateCustomTheme(theme.id, { light, dark, seedMode: mode, seeds });
+      // Overwrite both palettes in the draft from the seeds; radius is the manual slider's, untouched here.
+      patchThemeDraft({ light, dark, seedMode: mode, seeds });
       setConfirming(false);
    };
 
@@ -291,17 +292,32 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
 
 export function ThemeEditor({ theme }: { theme: CustomTheme }) {
    const { t } = useTranslation();
-   const { updateCustomTheme } = useAppSettingsActions();
+   const { beginThemeDraft, patchThemeDraft, saveThemeDraft } = useAppSettingsActions();
+   const themeDraft = useAppSettingsStore((state) => state.themeDraft);
+
+   // Edits live in a draft, previewed across the whole app, and only reach the saved theme on Save. Start
+   // the draft from the saved theme when this editor opens or switches themes (read fresh, so a rename made
+   // mid-edit isn't clobbered). The editor is keyed by id, so this is effectively a per-theme mount.
+   const themeId = theme.id;
+   useEffect(() => {
+      const saved = useAppSettingsStore.getState().customThemes.find((entry) => entry.id === themeId);
+      if (saved) beginThemeDraft(saved);
+   }, [themeId, beginThemeDraft]);
+
+   // Render from the draft once it matches this theme; until then (first paint) fall back to the saved theme,
+   // which looks identical since the draft starts as a copy.
+   const draft = themeDraft && themeDraft.id === theme.id ? themeDraft : theme;
+   const dirty = themeDraft !== null && themeDraft.id === theme.id && !themeEditorFieldsEqual(themeDraft, theme);
 
    const setToken = (mode: 'light' | 'dark', token: ChromeTokenKey, hex: string) => {
-      const next: TokenSet = { ...theme[mode], [token]: hex };
-      updateCustomTheme(theme.id, { [mode]: next });
+      const next: TokenSet = { ...draft[mode], [token]: hex };
+      patchThemeDraft({ [mode]: next });
    };
-   const radiusValue = parseFloat(theme.radius) || 0;
+   const radiusValue = parseFloat(draft.radius) || 0;
 
    // Per-mode low-contrast flags, indexed by the offending foreground token so its row's swatch can mark it.
-   const lightWarnings = lowContrastPairs(theme.light);
-   const darkWarnings = lowContrastPairs(theme.dark);
+   const lightWarnings = lowContrastPairs(draft.light);
+   const darkWarnings = lowContrastPairs(draft.dark);
    const byForeground = (warnings: ContrastWarning[]) => new Map(warnings.map((warning) => [warning.foreground, warning]));
    const lightByFg = byForeground(lightWarnings);
    const darkByFg = byForeground(darkWarnings);
@@ -316,14 +332,22 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
 
    return (
       <div className="flex flex-col gap-4">
-         {/* Live previews: real chrome under the theme's inline vars; the dark pane also carries `.dark`. */}
+         {/* Sticky action row: edits preview live but only persist on Save, which enables only when dirty. */}
+         <div className="sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-end gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
+            {dirty && <span className="text-xs text-muted-foreground">{t('SettingsDialog.themes.unsavedChanges')}</span>}
+            <Button size="sm" onClick={saveThemeDraft} disabled={!dirty} className="cursor-pointer">
+               <Save className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.saveChanges')}
+            </Button>
+         </div>
+
+         {/* Live previews: real chrome under the draft's inline vars; the dark pane also carries `.dark`. */}
          <div className="flex gap-2">
-            <ThemePreview tokenSet={theme.light} radius={theme.radius} dark={false} label={t('SettingsDialog.themes.previewLight')} warning={summary(lightWarnings.length)} />
-            <ThemePreview tokenSet={theme.dark} radius={theme.radius} dark={true} label={t('SettingsDialog.themes.previewDark')} warning={summary(darkWarnings.length)} />
+            <ThemePreview tokenSet={draft.light} radius={draft.radius} dark={false} label={t('SettingsDialog.themes.previewLight')} warning={summary(lightWarnings.length)} />
+            <ThemePreview tokenSet={draft.dark} radius={draft.radius} dark={true} label={t('SettingsDialog.themes.previewDark')} warning={summary(darkWarnings.length)} />
          </div>
 
          {/* Optional accelerator: fill everything from seeds, then keep editing the rows below on top. */}
-         <SeedPanel theme={theme} />
+         <SeedPanel theme={draft} />
 
          {/* Radius (one value, both modes). */}
          <div className="flex items-center gap-3">
@@ -334,10 +358,10 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
                max={RADIUS_MAX}
                step={RADIUS_STEP}
                value={radiusValue}
-               onChange={(event) => updateCustomTheme(theme.id, { radius: `${event.target.value}rem` })}
+               onChange={(event) => patchThemeDraft({ radius: `${event.target.value}rem` })}
                className="flex-1 cursor-pointer accent-primary"
             />
-            <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">{theme.radius}</span>
+            <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">{draft.radius}</span>
          </div>
 
          {/* Per-token rows: each surface paired with its foreground, two group-blocks per row on a wide
@@ -384,6 +408,7 @@ export function ThemeEditorPlaceholder() {
    const { t } = useTranslation();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const createCustomFrom = useCreateCustomTheme();
+   const guardedSwitch = useThemeSwitchGuard();
 
    // The placeholder only renders for an active preset, so these are defined; fall back to Neutral defensively.
    const source = PRESET_THEMES[activeTheme] ?? PRESET_THEMES['theme-neutral'];
@@ -392,7 +417,7 @@ export function ThemeEditorPlaceholder() {
    return (
       <button
          type="button"
-         onClick={() => createCustomFrom(source, t('SettingsDialog.themes.copyName', { name: label }))}
+         onClick={() => guardedSwitch(() => createCustomFrom(source, t('SettingsDialog.themes.copyName', { name: label })))}
          className={cn(
             'flex h-full w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-border p-6',
             'text-center text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:bg-muted/40 hover:text-foreground',

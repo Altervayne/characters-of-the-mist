@@ -12,12 +12,13 @@ import { CUSTOM_THEME_STYLE_ID, resolveActiveTheme } from '@/lib/theme/themeToke
 export function ThemeClassManager({ children }: { children: React.ReactNode }) {
    const theme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
+   const themeDraft = useAppSettingsStore((state) => state.themeDraft);
 
    useEffect(() => {
       // A preset injects no CSS (its rules live in global.css); a custom theme injects its light + dark
       // vars into one managed <style>. Both end up as a single `theme-*` class on <html>. Re-runs on
-      // customThemes too, so editing the active custom theme's values re-injects live.
-      const { className, css, isStale } = resolveActiveTheme(theme, customThemes);
+      // customThemes and the draft too, so editing the active custom theme previews live across the app.
+      const { className, css, isStale } = resolveActiveTheme(theme, customThemes, undefined, themeDraft);
 
       let styleEl = document.getElementById(CUSTOM_THEME_STYLE_ID) as HTMLStyleElement | null;
       if (!styleEl) {
@@ -36,7 +37,7 @@ export function ThemeClassManager({ children }: { children: React.ReactNode }) {
 
       // The active theme pointed at a custom theme that no longer exists; correct the store to the fallback.
       if (isStale) useAppSettingsStore.getState().actions.setTheme('theme-neutral');
-   }, [theme, customThemes]);
+   }, [theme, customThemes, themeDraft]);
 
    return <>{children}</>;
 }

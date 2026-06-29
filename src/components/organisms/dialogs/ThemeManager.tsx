@@ -28,6 +28,7 @@ import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerM
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 import { exportCustomTheme, importFromFile } from '@/lib/utils/export-import';
 import { useThemeImport } from '@/lib/theme/useThemeImport';
+import { useThemeSwitchGuard } from '@/components/organisms/dialogs/themeSwitchGuard';
 
 // -- Store Imports --
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
@@ -96,12 +97,15 @@ export function ThemeManager() {
    }));
 
    const createCustomFrom = useCreateCustomTheme();
+   // Every action that abandons the current draft (select a row, Duplicate, New, Import) goes through this so
+   // a dirty draft is confirmed first; with no unsaved edits it just runs.
+   const guardedSwitch = useThemeSwitchGuard();
 
    // Duplicate ANY entry into a new, independent custom (deep-copied token sets), then select it.
-   const duplicate = (entry: ThemeEntry) => createCustomFrom(entry.source, t('SettingsDialog.themes.copyName', { name: entry.label }));
+   const duplicate = (entry: ThemeEntry) => guardedSwitch(() => createCustomFrom(entry.source, t('SettingsDialog.themes.copyName', { name: entry.label })));
 
    // Start a fresh theme from the Neutral preset (also the empty-state action), then select it.
-   const createNew = () => createCustomFrom(PRESET_THEMES['theme-neutral'], t('SettingsDialog.themes.newThemeName'));
+   const createNew = () => guardedSwitch(() => createCustomFrom(PRESET_THEMES['theme-neutral'], t('SettingsDialog.themes.newThemeName')));
 
    const startRename = (id: string, current: string) => { setRenamingId(id); setRenameDraft(current); };
    const commitRename = (id: string) => {
@@ -133,7 +137,8 @@ export function ThemeManager() {
       const file = event.target.files?.[0];
       if (!file) return;
       try {
-         importTheme(await importFromFile(file));
+         const imported = await importFromFile(file);
+         guardedSwitch(() => importTheme(imported));
       } catch (error) {
          console.error('Theme import failed:', error);
          toast.error(t('Notifications.general.importFailed'));
@@ -170,7 +175,7 @@ export function ThemeManager() {
       return (
          <div
             key={entry.value}
-            onClick={() => setTheme(entry.value)}
+            onClick={() => { if (entry.value !== activeTheme) guardedSwitch(() => setTheme(entry.value)); }}
             className={cn(
                'group/row relative flex cursor-pointer items-center rounded-md',
                isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',

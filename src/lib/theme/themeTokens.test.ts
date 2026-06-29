@@ -8,6 +8,7 @@ import {
    customThemeClass,
    customThemeIdFromClass,
    resolveActiveTheme,
+   themeEditorFieldsEqual,
    tokenSetToCssVars,
 } from './themeTokens';
 
@@ -92,5 +93,42 @@ describe('resolveActiveTheme', () => {
    it('falls back to a preset (and flags stale) for a missing custom id', () => {
       const r = resolveActiveTheme('theme-custom-gone', [custom]);
       expect(r).toEqual({ className: 'theme-neutral', css: '', isStale: true });
+   });
+
+   it('prefers a draft for the matching active theme (live preview of unsaved edits)', () => {
+      const draft: CustomTheme = { ...custom, light: { ...custom.light, background: 'lime' } as TokenSet };
+      const r = resolveActiveTheme('theme-custom-x1', [custom], 'theme-neutral', draft);
+      expect(r.css).toContain('--background: lime;'); // the draft's value, not the saved 'hotpink'
+      expect(r.css).not.toContain('--background: hotpink;');
+   });
+
+   it('ignores a draft whose id does not match the active theme', () => {
+      const otherDraft: CustomTheme = { ...custom, id: 'other', light: { ...custom.light, background: 'lime' } as TokenSet };
+      const r = resolveActiveTheme('theme-custom-x1', [custom], 'theme-neutral', otherDraft);
+      expect(r.css).toContain('--background: hotpink;'); // the saved value, draft is for another theme
+   });
+
+   it('builds identical CSS with no draft (no-draft path unchanged)', () => {
+      expect(resolveActiveTheme('theme-custom-x1', [custom], 'theme-neutral', null))
+         .toEqual(resolveActiveTheme('theme-custom-x1', [custom]));
+   });
+});
+
+describe('themeEditorFieldsEqual', () => {
+   const base: CustomTheme = {
+      id: 'a', name: 'A', radius: '0.5rem',
+      light: { ...sampleSet } as TokenSet, dark: { ...PRESET_THEMES['theme-neutral'].dark } as TokenSet,
+      seedMode: '2-seed', seeds: { accent: '#111', neutral: '#222' },
+   };
+
+   it('is true for clones, and ignores name/id differences', () => {
+      expect(themeEditorFieldsEqual(base, { ...base, id: 'b', name: 'Renamed' })).toBe(true);
+   });
+
+   it('is false when an editor field differs (light, radius, seedMode, or seeds)', () => {
+      expect(themeEditorFieldsEqual(base, { ...base, radius: '1rem' })).toBe(false);
+      expect(themeEditorFieldsEqual(base, { ...base, light: { ...base.light, background: 'lime' } as TokenSet })).toBe(false);
+      expect(themeEditorFieldsEqual(base, { ...base, seedMode: '3-seed' })).toBe(false);
+      expect(themeEditorFieldsEqual(base, { ...base, seeds: { accent: '#999', neutral: '#222' } })).toBe(false);
    });
 });

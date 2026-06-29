@@ -232,15 +232,33 @@ export function resolveActiveTheme(
    theme: string,
    customThemes: CustomTheme[],
    fallback = 'theme-neutral',
+   draft?: CustomTheme | null,
 ): { className: string; css: string; isStale: boolean } {
    const id = customThemeIdFromClass(theme);
    if (id === null) return { className: theme, css: '', isStale: false };
 
-   const custom = customThemes.find((entry) => entry.id === id);
-   if (!custom) return { className: fallback, css: '', isStale: true };
+   const saved = customThemes.find((entry) => entry.id === id);
+   if (!saved) return { className: fallback, css: '', isStale: true };
+
+   // While editing, the draft for THIS theme drives the live CSS, so the whole app previews unsaved edits.
+   const source = draft && draft.id === id ? draft : saved;
 
    const css =
-      `.${theme} { ${tokenSetToCssVars(custom.light, custom.radius)} }\n` +
-      `.dark.${theme} { ${tokenSetToCssVars(custom.dark)} }`;
+      `.${theme} { ${tokenSetToCssVars(source.light, source.radius)} }\n` +
+      `.dark.${theme} { ${tokenSetToCssVars(source.dark)} }`;
    return { className: theme, css, isStale: false };
+}
+
+/**
+ * Whether two themes match on the EDITOR-owned fields (light, dark, radius, seedMode, seeds) - the fields a
+ * draft tracks. Name/id are excluded (not edited here). Used to tell when a draft has unsaved changes.
+ */
+export function themeEditorFieldsEqual(a: CustomTheme, b: CustomTheme): boolean {
+   return (
+      a.radius === b.radius &&
+      a.seedMode === b.seedMode &&
+      JSON.stringify(a.light) === JSON.stringify(b.light) &&
+      JSON.stringify(a.dark) === JSON.stringify(b.dark) &&
+      JSON.stringify(a.seeds ?? null) === JSON.stringify(b.seeds ?? null)
+   );
 }

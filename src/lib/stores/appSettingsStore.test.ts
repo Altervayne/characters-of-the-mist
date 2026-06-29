@@ -113,3 +113,54 @@ describe('appSettingsStore customThemes slice', () => {
       expect(useAppSettingsStore.getState().customThemes.map((t) => t.id)).toEqual(['a', 'b']);
    });
 });
+
+describe('appSettingsStore theme draft', () => {
+   const makeTheme = (id: string): CustomTheme => ({
+      id, name: `Theme ${id}`, radius: '0.5rem',
+      light: { ...PRESET_THEMES['theme-neutral'].light }, dark: { ...PRESET_THEMES['theme-neutral'].dark },
+   });
+
+   beforeEach(() => {
+      useAppSettingsStore.setState({ theme: 'theme-neutral', customThemes: [], themeDraft: null });
+   });
+
+   it('beginThemeDraft sets a DEEP copy (editing the draft does not touch the saved theme)', () => {
+      const { actions } = useAppSettingsStore.getState();
+      const saved = makeTheme('a');
+      actions.addCustomTheme(saved);
+      actions.beginThemeDraft(saved);
+      actions.patchThemeDraft({ light: { ...saved.light, background: 'lime' } });
+      expect(useAppSettingsStore.getState().themeDraft?.light.background).toBe('lime');
+      // The saved theme is untouched until Save.
+      expect(useAppSettingsStore.getState().customThemes[0].light.background).toBe(saved.light.background);
+   });
+
+   it('patchThemeDraft is a no-op when there is no draft', () => {
+      useAppSettingsStore.getState().actions.patchThemeDraft({ radius: '2rem' });
+      expect(useAppSettingsStore.getState().themeDraft).toBeNull();
+   });
+
+   it('saveThemeDraft writes editor fields back to the saved theme, leaving name/id and the draft intact', () => {
+      const { actions } = useAppSettingsStore.getState();
+      actions.addCustomTheme(makeTheme('a'));
+      actions.updateCustomTheme('a', { name: 'Renamed mid-edit' }); // a rename that must survive Save
+      actions.beginThemeDraft(useAppSettingsStore.getState().customThemes[0]);
+      actions.patchThemeDraft({ radius: '1rem', light: { ...makeTheme('a').light, background: 'lime' } });
+      actions.saveThemeDraft();
+      const saved = useAppSettingsStore.getState().customThemes[0];
+      expect(saved.radius).toBe('1rem');
+      expect(saved.light.background).toBe('lime');
+      expect(saved.name).toBe('Renamed mid-edit'); // name is not an editor field, not clobbered
+      expect(useAppSettingsStore.getState().themeDraft).not.toBeNull(); // draft stays (now clean)
+   });
+
+   it('discardThemeDraft clears the draft (the saved theme is whatever was last saved)', () => {
+      const { actions } = useAppSettingsStore.getState();
+      actions.addCustomTheme(makeTheme('a'));
+      actions.beginThemeDraft(makeTheme('a'));
+      actions.patchThemeDraft({ radius: '3rem' });
+      actions.discardThemeDraft();
+      expect(useAppSettingsStore.getState().themeDraft).toBeNull();
+      expect(useAppSettingsStore.getState().customThemes[0].radius).toBe('0.5rem');
+   });
+});

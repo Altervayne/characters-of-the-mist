@@ -19,6 +19,10 @@ interface AppSettingsState {
    theme: ActiveTheme;
    /** User-defined themes (applied at runtime by the ThemeClassManager). Dormant until the editor ships. */
    customThemes: CustomTheme[];
+   // The theme currently being edited, as a live but UNSAVED draft. The whole app previews it (see
+   // ThemeClassManager), but it only reaches `customThemes` on Save. Excluded from persistence on purpose:
+   // a reload drops unsaved edits and the saved theme stays intact.
+   themeDraft: CustomTheme | null;
    isCompactDrawer: boolean;
    isSideBySideView: boolean;
    lastVisitedVersion: string;
@@ -41,6 +45,10 @@ interface AppSettingsState {
       updateCustomTheme: (id: string, patch: Partial<CustomTheme>) => void;
       deleteCustomTheme: (id: string) => void;
       reorderCustomThemes: (activeId: string, overId: string) => void;
+      beginThemeDraft: (theme: CustomTheme) => void;
+      patchThemeDraft: (patch: Partial<CustomTheme>) => void;
+      saveThemeDraft: () => void;
+      discardThemeDraft: () => void;
       toggleCompactDrawer: () => void;
       setSideBySideView: (isSideBySide: boolean) => void;
       setLastVisitedVersion: (version: string) => void;
@@ -64,9 +72,10 @@ interface AppSettingsState {
 
 export const useAppSettingsStore = create<AppSettingsState>()(
    persist(
-      (set) => ({
+      (set, get) => ({
          theme: 'theme-neutral',
          customThemes: [],
+         themeDraft: null,
          isCompactDrawer: false,
          isSideBySideView: false,
          lastVisitedVersion: "0.0.0",
@@ -101,6 +110,20 @@ export const useAppSettingsStore = create<AppSettingsState>()(
                next.splice(to, 0, moved);
                return { customThemes: next };
             }),
+            // Start (or restart) the live draft from a deep copy of the saved theme, so opening the editor
+            // shows no change until the user edits.
+            beginThemeDraft: (theme) => set({
+               themeDraft: { ...theme, light: { ...theme.light }, dark: { ...theme.dark }, seeds: theme.seeds ? { ...theme.seeds } : undefined },
+            }),
+            patchThemeDraft: (patch) => set((state) => (state.themeDraft ? { themeDraft: { ...state.themeDraft, ...patch } } : {})),
+            // The only write of editor-owned fields back to a saved theme. Name/id aren't editor-edited, so a
+            // rename made mid-edit is preserved. The draft stays put (now matching the saved theme, so clean).
+            saveThemeDraft: () => {
+               const draft = get().themeDraft;
+               if (!draft) return;
+               get().actions.updateCustomTheme(draft.id, { light: draft.light, dark: draft.dark, radius: draft.radius, seedMode: draft.seedMode, seeds: draft.seeds });
+            },
+            discardThemeDraft: () => set({ themeDraft: null }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
             setSideBySideView: (isSideBySide) => set({ isSideBySideView: isSideBySide }),
             setLastVisitedVersion: (version) => set({ lastVisitedVersion: version }),
