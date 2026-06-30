@@ -8,10 +8,10 @@ import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { customThemeClass } from '@/lib/theme/themeTokens';
 
 // -- Type Imports --
-import type { TokenSet } from '@/lib/theme/themeTokens';
+import type { PaperSet, TokenSet } from '@/lib/theme/themeTokens';
 
 /** The palettes a new custom is cloned from: a preset, or any existing theme. */
-type ThemeSource = { light: TokenSet; dark: TokenSet; radius: string };
+type ThemeSource = { light: TokenSet; dark: TokenSet; radius: string; paper: PaperSet };
 
 /**
  * Returns a function that clones the given palettes into a brand-new custom theme (deep-copied token sets,
@@ -22,7 +22,7 @@ export function useCreateCustomTheme() {
    const { addCustomTheme, setTheme } = useAppSettingsActions();
    return (source: ThemeSource, name: string): string => {
       const id = cuid();
-      addCustomTheme({ id, name, light: { ...source.light }, dark: { ...source.dark }, radius: source.radius });
+      addCustomTheme({ id, name, light: { ...source.light }, dark: { ...source.dark }, radius: source.radius, paper: { ...source.paper } });
       setTheme(customThemeClass(id));
       return id;
    };

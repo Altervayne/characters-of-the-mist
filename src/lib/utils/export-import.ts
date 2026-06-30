@@ -381,7 +381,9 @@ export async function exportCustomTheme(theme: CustomTheme) {
  */
 export function isExportedCustomTheme(file: ExportFile): boolean {
    const content = file.content as Partial<CustomTheme>;
-   return file.fileType === 'CUSTOM_THEME' && !!content.light && !!content.dark && typeof content.radius === 'string';
+   return file.fileType === 'CUSTOM_THEME'
+      && !!content.light && !!content.dark && typeof content.radius === 'string'
+      && !!content.paper && typeof content.paper === 'object';
 }
 
 /**

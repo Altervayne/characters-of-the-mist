@@ -673,6 +673,46 @@
             "border": "Border",
             "input": "Input",
             "ring": "Focus ring"
+         },
+         "paper": {
+            "title": "Paper",
+            "intro": "The look of game-agnostic paper elements like drawer trackers. The same in light and dark.",
+            "sampleStatus": "Wounded",
+            "sampleTheme": "The Last Lantern",
+            "samplePower": "Steadfast",
+            "sampleWeakness": "Haunted",
+            "groups": {
+               "paper-base": "Paper",
+               "paper-header": "Header",
+               "paper-secondary": "Secondary",
+               "paper-lines": "Lines",
+               "paper-accent": "Accent",
+               "paper-danger": "Danger"
+            },
+            "tokens": {
+               "paper-background": "Background",
+               "paper-foreground": "Text",
+               "paper-primary": "Header",
+               "paper-primary-foreground": "Header text",
+               "paper-secondary": "Secondary",
+               "paper-secondary-foreground": "Secondary text",
+               "paper-border": "Border",
+               "paper-accent": "Accent",
+               "paper-destructive": "Danger",
+               "paper-destructive-foreground": "Danger text"
+            },
+            "tokenPurpose": {
+               "paper-background": "The parchment behind a paper element, like a drawer tracker's body.",
+               "paper-foreground": "The ink: default text on the paper.",
+               "paper-primary": "The header bar across the top of a paper element.",
+               "paper-primary-foreground": "Text and icons on the header bar.",
+               "paper-secondary": "Quieter chips and surfaces on the paper, like tags.",
+               "paper-secondary-foreground": "Text on those secondary chips.",
+               "paper-border": "The outline around a paper element and its dividers.",
+               "paper-accent": "The standout accent on paper, like a highlighted edge.",
+               "paper-destructive": "Dangerous bits on paper, like a burn or remove.",
+               "paper-destructive-foreground": "Text on the danger color."
+            }
          }
       },
 

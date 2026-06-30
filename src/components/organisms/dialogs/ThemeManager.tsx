@@ -37,7 +37,7 @@ import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSett
 // -- Type Imports --
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { SortableChildProps } from '@/components/dnd';
-import type { CustomTheme, TokenSet } from '@/lib/theme/themeTokens';
+import type { CustomTheme, PaperSet, TokenSet } from '@/lib/theme/themeTokens';
 import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
 
 /** The drag listeners a custom row's grip carries (from the Sortable render props). */
@@ -55,7 +55,7 @@ interface ThemeEntry {
    value: ActiveTheme;
    label: string;
    isCustom: boolean;
-   source: { light: TokenSet; dark: TokenSet; radius: string };
+   source: { light: TokenSet; dark: TokenSet; radius: string; paper: PaperSet };
 }
 
 /** A small uppercase section heading, matching the editor's group labels. */
@@ -94,7 +94,7 @@ export function ThemeManager() {
       value: customThemeClass(theme.id),
       label: theme.name,
       isCustom: true,
-      source: { light: theme.light, dark: theme.dark, radius: theme.radius },
+      source: { light: theme.light, dark: theme.dark, radius: theme.radius, paper: theme.paper },
    }));
 
    const createCustomFrom = useCreateCustomTheme();

@@ -61,6 +61,7 @@ describe('appSettingsStore customThemes slice', () => {
    const makeTheme = (id: string): CustomTheme => ({
       id, name: `Theme ${id}`, radius: '0.5rem',
       light: PRESET_THEMES['theme-neutral'].light, dark: PRESET_THEMES['theme-neutral'].dark,
+      paper: PRESET_THEMES['theme-neutral'].paper,
    });
 
    beforeEach(() => {
@@ -118,6 +119,7 @@ describe('appSettingsStore theme draft', () => {
    const makeTheme = (id: string): CustomTheme => ({
       id, name: `Theme ${id}`, radius: '0.5rem',
       light: { ...PRESET_THEMES['theme-neutral'].light }, dark: { ...PRESET_THEMES['theme-neutral'].dark },
+      paper: { ...PRESET_THEMES['theme-neutral'].paper },
    });
 
    beforeEach(() => {
@@ -145,11 +147,12 @@ describe('appSettingsStore theme draft', () => {
       actions.addCustomTheme(makeTheme('a'));
       actions.updateCustomTheme('a', { name: 'Renamed mid-edit' }); // a rename that must survive Save
       actions.beginThemeDraft(useAppSettingsStore.getState().customThemes[0]);
-      actions.patchThemeDraft({ radius: '1rem', light: { ...makeTheme('a').light, background: 'lime' } });
+      actions.patchThemeDraft({ radius: '1rem', light: { ...makeTheme('a').light, background: 'lime' }, paper: { ...makeTheme('a').paper, 'paper-primary': 'crimson' } });
       actions.saveThemeDraft();
       const saved = useAppSettingsStore.getState().customThemes[0];
       expect(saved.radius).toBe('1rem');
       expect(saved.light.background).toBe('lime');
+      expect(saved.paper['paper-primary']).toBe('crimson'); // paper edits persist on Save too
       expect(saved.name).toBe('Renamed mid-edit'); // name is not an editor field, not clobbered
       expect(useAppSettingsStore.getState().themeDraft).not.toBeNull(); // draft stays (now clean)
    });

@@ -24,6 +24,38 @@ export type ChromeTokenKey = (typeof CHROME_TOKEN_KEYS)[number];
 export type TokenSet = Record<ChromeTokenKey, string>;
 
 /**
+ * The 10 "paper" tokens: a game-agnostic palette for elements that use the card-* paper look without a game
+ * card-type (drawer trackers, NEUTRAL items). MODE-AGNOSTIC - one value each, no light/dark split, so paper
+ * reads the same in both modes like a real game card. Drives the `:root` card-* fallback in global.css.
+ */
+export const PAPER_TOKEN_KEYS = [
+   'paper-background', 'paper-foreground', 'paper-border',
+   'paper-primary', 'paper-primary-foreground',
+   'paper-secondary', 'paper-secondary-foreground',
+   'paper-accent',
+   'paper-destructive', 'paper-destructive-foreground',
+] as const;
+
+export type PaperTokenKey = (typeof PAPER_TOKEN_KEYS)[number];
+
+/** A full paper palette: one CSS color string per paper token. */
+export type PaperSet = Record<PaperTokenKey, string>;
+
+/** The classic parchment shared by every preset (kept in sync with the `:root --paper-*` in global.css). */
+export const CLASSIC_PAPER: PaperSet = {
+   'paper-background': 'hsl(39 56% 91%)',
+   'paper-foreground': 'hsl(28 18% 20%)',
+   'paper-border': 'hsl(30 20% 32%)',
+   'paper-primary': 'hsl(28 30% 34%)',
+   'paper-primary-foreground': 'hsl(40 56% 93%)',
+   'paper-secondary': 'hsl(42 38% 82%)',
+   'paper-secondary-foreground': 'hsl(30 18% 22%)',
+   'paper-accent': 'hsl(34 48% 50%)',
+   'paper-destructive': 'hsl(10 72% 82%)',
+   'paper-destructive-foreground': 'hsl(12 35% 24%)',
+};
+
+/**
  * The editor's grouping of the 19 tokens: each surface paired with the foreground that sits on it, so the
  * two are edited side by side. Structure only - the section + token display labels are i18n
  * (`SettingsDialog.themes.groups.*` / `.tokens.*`), so the editor resolves them. (`ring` rides the primary
@@ -83,6 +115,8 @@ export interface CustomTheme {
    light: TokenSet;
    dark: TokenSet;
    radius: string;
+   // The game-agnostic paper palette (mode-agnostic): one value per token, applied the same in light + dark.
+   paper: PaperSet;
    seedMode?: SeedMode;
    seeds?: ThemeSeeds;
 }
@@ -110,6 +144,24 @@ export function tokenSetToCssVars(set: TokenSet, radius?: string): string {
    return declarations.join(' ');
 }
 
+/** Serializes a paper palette to its `--paper-*` declarations (mode-agnostic - rides the base rule only). */
+export function paperSetToCssVars(paper: PaperSet): string {
+   return PAPER_TOKEN_KEYS.map((key) => `--${key}: ${paper[key]};`).join(' ');
+}
+
+/**
+ * The editor's grouping of the 10 paper tokens, like TOKEN_GROUPS but single-column (paper is mode-agnostic).
+ * Surface paired with its foreground where there is one. Labels are i18n (`SettingsDialog.themes.paper.*`).
+ */
+export const PAPER_GROUPS: { id: string; tokens: PaperTokenKey[] }[] = [
+   { id: 'paper-base', tokens: ['paper-background', 'paper-foreground'] },
+   { id: 'paper-header', tokens: ['paper-primary', 'paper-primary-foreground'] },
+   { id: 'paper-secondary', tokens: ['paper-secondary', 'paper-secondary-foreground'] },
+   { id: 'paper-lines', tokens: ['paper-border'] },
+   { id: 'paper-accent', tokens: ['paper-accent'] },
+   { id: 'paper-danger', tokens: ['paper-destructive', 'paper-destructive-foreground'] },
+];
+
 /** The built-in presets' display names (brand proper nouns, not translated), in selector order. */
 export const PRESET_LABELS: Record<string, string> = {
    'theme-neutral': 'Neutral',
@@ -118,10 +170,11 @@ export const PRESET_LABELS: Record<string, string> = {
    'theme-city-of-mist': 'City of Mist',
 };
 
-/** The built-in presets, keyed by their theme class - light/dark palettes + radius lifted from global.css. */
-export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; radius: string }> = {
+/** The built-in presets, keyed by their theme class - light/dark palettes + radius + paper lifted from global.css. */
+export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; radius: string; paper: PaperSet }> = {
    'theme-neutral': {
       radius: '0.5rem',
+      paper: CLASSIC_PAPER,
       light: {
          background: 'hsl(0 0% 96%)', foreground: 'hsl(222.2 84% 4.9%)',
          card: 'hsl(0 0% 100%)', 'card-foreground': 'hsl(222.2 84% 4.9%)',
@@ -147,6 +200,7 @@ export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; ra
    },
    'theme-legends': {
       radius: '0.5rem',
+      paper: CLASSIC_PAPER,
       light: {
          background: 'hsl(210 6% 96%)', foreground: 'hsl(30 25% 10%)',
          card: 'hsl(43 40% 92%)', 'card-foreground': 'hsl(30 25% 10%)',
@@ -172,6 +226,7 @@ export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; ra
    },
    'theme-city-of-mist': {
       radius: '0.5rem',
+      paper: CLASSIC_PAPER,
       light: {
          background: 'hsl(240 10% 96%)', foreground: 'hsl(240 18% 10%)',
          card: 'hsl(240 15% 82%)', 'card-foreground': 'hsl(240 18% 10%)',
@@ -197,6 +252,7 @@ export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; ra
    },
    'theme-otherscape': {
       radius: '0.5rem',
+      paper: CLASSIC_PAPER,
       light: {
          background: 'hsl(210 5% 88%)', foreground: 'hsl(210 18% 12%)',
          card: 'hsl(210 6% 94%)', 'card-foreground': 'hsl(210 18% 12%)',
@@ -243,15 +299,16 @@ export function resolveActiveTheme(
    // While editing, the draft for THIS theme drives the live CSS, so the whole app previews unsaved edits.
    const source = draft && draft.id === id ? draft : saved;
 
+   // Paper rides the base rule only (mode-agnostic).
    const css =
-      `.${theme} { ${tokenSetToCssVars(source.light, source.radius)} }\n` +
+      `.${theme} { ${tokenSetToCssVars(source.light, source.radius)} ${paperSetToCssVars(source.paper)} }\n` +
       `.dark.${theme} { ${tokenSetToCssVars(source.dark)} }`;
    return { className: theme, css, isStale: false };
 }
 
 /**
- * Whether two themes match on the EDITOR-owned fields (light, dark, radius, seedMode, seeds) - the fields a
- * draft tracks. Name/id are excluded (not edited here). Used to tell when a draft has unsaved changes.
+ * Whether two themes match on the EDITOR-owned fields (light, dark, radius, paper, seedMode, seeds) - the
+ * fields a draft tracks. Name/id are excluded (not edited here). Used to tell when a draft has unsaved changes.
  */
 export function themeEditorFieldsEqual(a: CustomTheme, b: CustomTheme): boolean {
    return (
@@ -259,6 +316,7 @@ export function themeEditorFieldsEqual(a: CustomTheme, b: CustomTheme): boolean 
       a.seedMode === b.seedMode &&
       JSON.stringify(a.light) === JSON.stringify(b.light) &&
       JSON.stringify(a.dark) === JSON.stringify(b.dark) &&
+      JSON.stringify(a.paper) === JSON.stringify(b.paper) &&
       JSON.stringify(a.seeds ?? null) === JSON.stringify(b.seeds ?? null)
    );
 }

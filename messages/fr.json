@@ -630,6 +630,46 @@
             "border": "[TO COMPLETE]",
             "input": "[TO COMPLETE]",
             "ring": "[TO COMPLETE]"
+         },
+         "paper": {
+            "title": "[TO COMPLETE]",
+            "intro": "[TO COMPLETE]",
+            "sampleStatus": "[TO COMPLETE]",
+            "sampleTheme": "[TO COMPLETE]",
+            "samplePower": "[TO COMPLETE]",
+            "sampleWeakness": "[TO COMPLETE]",
+            "groups": {
+               "paper-base": "[TO COMPLETE]",
+               "paper-header": "[TO COMPLETE]",
+               "paper-secondary": "[TO COMPLETE]",
+               "paper-lines": "[TO COMPLETE]",
+               "paper-accent": "[TO COMPLETE]",
+               "paper-danger": "[TO COMPLETE]"
+            },
+            "tokens": {
+               "paper-background": "[TO COMPLETE]",
+               "paper-foreground": "[TO COMPLETE]",
+               "paper-primary": "[TO COMPLETE]",
+               "paper-primary-foreground": "[TO COMPLETE]",
+               "paper-secondary": "[TO COMPLETE]",
+               "paper-secondary-foreground": "[TO COMPLETE]",
+               "paper-border": "[TO COMPLETE]",
+               "paper-accent": "[TO COMPLETE]",
+               "paper-destructive": "[TO COMPLETE]",
+               "paper-destructive-foreground": "[TO COMPLETE]"
+            },
+            "tokenPurpose": {
+               "paper-background": "[TO COMPLETE]",
+               "paper-foreground": "[TO COMPLETE]",
+               "paper-primary": "[TO COMPLETE]",
+               "paper-primary-foreground": "[TO COMPLETE]",
+               "paper-secondary": "[TO COMPLETE]",
+               "paper-secondary-foreground": "[TO COMPLETE]",
+               "paper-border": "[TO COMPLETE]",
+               "paper-accent": "[TO COMPLETE]",
+               "paper-destructive": "[TO COMPLETE]",
+               "paper-destructive-foreground": "[TO COMPLETE]"
+            }
          }
       },
 

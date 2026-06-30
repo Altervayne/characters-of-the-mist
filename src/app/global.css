@@ -97,21 +97,37 @@
    --ring:                    hsl(212.7 26.8% 83.9%);
 }
 
-/* Fallback card tokens, mapped to the app surface, for an element that uses the card-* paper
-   palette WITHOUT a game card-type class - a game-agnostic tracker (e.g. on the board) themed by
-   its NEUTRAL context. The card-type-* classes still override these, so sheet cards are unchanged.
-   var()-based, so they follow the active light/dark/app theme automatically. */
+/* The game-agnostic "paper" palette: one classic parchment shared by every preset. MODE-AGNOSTIC (no .dark
+   override, no per-preset override), so paper reads the same in light and dark - like a real game card. A
+   custom theme injects its own --paper-* over these. Kept in sync with CLASSIC_PAPER in themeTokens.ts. */
 :root {
-   --card-header-bg:       var(--muted);
-   --card-header-fg:       var(--foreground);
-   --card-paper-bg:        var(--card);
-   --card-paper-fg:        var(--card-foreground);
-   --card-accent:          var(--border);
-   --card-border:          var(--border);
-   --card-popover-bg:      var(--popover);
-   --card-popover-fg:      var(--popover-foreground);
-   --card-destructive-bg:  var(--destructive);
-   --card-destructive-fg:  var(--destructive-foreground);
+   --paper-background:           hsl(39 56% 91%);
+   --paper-foreground:           hsl(28 18% 20%);
+   --paper-border:               hsl(30 20% 32%);
+   --paper-primary:              hsl(28 30% 34%);
+   --paper-primary-foreground:   hsl(40 56% 93%);
+   --paper-secondary:            hsl(42 38% 82%);
+   --paper-secondary-foreground: hsl(30 18% 22%);
+   --paper-accent:               hsl(34 48% 50%);
+   --paper-destructive:          hsl(10 72% 82%);
+   --paper-destructive-foreground: hsl(12 35% 24%);
+}
+
+/* Fallback card tokens for an element that uses the card-* paper palette WITHOUT a game card-type class -
+   a game-agnostic tracker (e.g. on the board) or a NEUTRAL item. Now routed through the paper palette, so
+   it reads as paper instead of app chrome. The card-type-* classes still override these, so sheet cards
+   are unchanged. */
+:root {
+   --card-header-bg:       var(--paper-primary);
+   --card-header-fg:       var(--paper-primary-foreground);
+   --card-paper-bg:        var(--paper-background);
+   --card-paper-fg:        var(--paper-foreground);
+   --card-accent:          var(--paper-accent);
+   --card-border:          var(--paper-border);
+   --card-popover-bg:      var(--paper-secondary);
+   --card-popover-fg:      var(--paper-secondary-foreground);
+   --card-destructive-bg:  var(--paper-destructive);
+   --card-destructive-fg:  var(--paper-destructive-foreground);
 }
 
 

@@ -4,9 +4,12 @@ import { describe, expect, it } from 'vitest';
 // -- Local Imports --
 import {
    CHROME_TOKEN_KEYS,
+   CLASSIC_PAPER,
+   PAPER_TOKEN_KEYS,
    PRESET_THEMES,
    customThemeClass,
    customThemeIdFromClass,
+   paperSetToCssVars,
    resolveActiveTheme,
    themeEditorFieldsEqual,
    tokenSetToCssVars,
@@ -33,6 +36,23 @@ describe('tokenSetToCssVars', () => {
 
    it('appends --radius when given', () => {
       expect(tokenSetToCssVars(sampleSet, '0.75rem')).toContain('--radius: 0.75rem;');
+   });
+});
+
+describe('paperSetToCssVars', () => {
+   it('emits one --paper-* declaration per paper token', () => {
+      const css = paperSetToCssVars(CLASSIC_PAPER);
+      for (const key of PAPER_TOKEN_KEYS) {
+         expect(css).toContain(`--${key}: ${CLASSIC_PAPER[key]};`);
+      }
+   });
+});
+
+describe('PRESET_THEMES paper', () => {
+   it('gives every preset the classic paper', () => {
+      for (const preset of Object.values(PRESET_THEMES)) {
+         expect(preset.paper).toBe(CLASSIC_PAPER);
+      }
    });
 });
 
@@ -70,6 +90,7 @@ describe('resolveActiveTheme', () => {
       id: 'x1', name: 'Mine', radius: '0.25rem',
       light: { ...sampleSet, background: 'hotpink' } as TokenSet,
       dark: { ...PRESET_THEMES['theme-neutral'].dark, background: 'rebeccapurple' } as TokenSet,
+      paper: CLASSIC_PAPER,
    };
 
    it('returns a preset class with no CSS for a preset', () => {
@@ -88,6 +109,20 @@ describe('resolveActiveTheme', () => {
       expect(r.css).toContain('--background: rebeccapurple;');
       // The dark rule carries colors only - radius lives on the light rule.
       expect(r.css.split('.dark.theme-custom-x1')[1]).not.toContain('--radius');
+   });
+
+   it('emits paper on the BASE rule only (mode-agnostic), never the .dark rule', () => {
+      const r = resolveActiveTheme('theme-custom-x1', [custom]);
+      expect(r.css).toContain(`--paper-background: ${CLASSIC_PAPER['paper-background']};`);
+      // Paper rides the base rule, never the .dark rule.
+      expect(r.css.split('.dark.theme-custom-x1')[1]).not.toContain('--paper-');
+   });
+
+   it('emits a custom theme\'s own paper when it has one', () => {
+      const withPaper: CustomTheme = { ...custom, paper: { ...CLASSIC_PAPER, 'paper-background': 'seagreen' } };
+      const r = resolveActiveTheme('theme-custom-x1', [withPaper]);
+      expect(r.css).toContain('--paper-background: seagreen;');
+      expect(r.css).not.toContain(`--paper-background: ${CLASSIC_PAPER['paper-background']};`);
    });
 
    it('falls back to a preset (and flags stale) for a missing custom id', () => {
@@ -118,6 +153,7 @@ describe('themeEditorFieldsEqual', () => {
    const base: CustomTheme = {
       id: 'a', name: 'A', radius: '0.5rem',
       light: { ...sampleSet } as TokenSet, dark: { ...PRESET_THEMES['theme-neutral'].dark } as TokenSet,
+      paper: CLASSIC_PAPER,
       seedMode: '2-seed', seeds: { accent: '#111', neutral: '#222' },
    };
 
@@ -125,10 +161,11 @@ describe('themeEditorFieldsEqual', () => {
       expect(themeEditorFieldsEqual(base, { ...base, id: 'b', name: 'Renamed' })).toBe(true);
    });
 
-   it('is false when an editor field differs (light, radius, seedMode, or seeds)', () => {
+   it('is false when an editor field differs (light, radius, seedMode, seeds, or paper)', () => {
       expect(themeEditorFieldsEqual(base, { ...base, radius: '1rem' })).toBe(false);
       expect(themeEditorFieldsEqual(base, { ...base, light: { ...base.light, background: 'lime' } as TokenSet })).toBe(false);
       expect(themeEditorFieldsEqual(base, { ...base, seedMode: '3-seed' })).toBe(false);
       expect(themeEditorFieldsEqual(base, { ...base, seeds: { accent: '#999', neutral: '#222' } })).toBe(false);
+      expect(themeEditorFieldsEqual(base, { ...base, paper: { ...CLASSIC_PAPER, 'paper-primary': 'lime' } })).toBe(false);
    });
 });

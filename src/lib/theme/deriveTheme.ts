@@ -1,8 +1,11 @@
 // -- Utils Imports --
 import { colorToHsl, contrastRatio, formatHsl } from '@/lib/color';
 
+// -- Theme Imports --
+import { CLASSIC_PAPER } from '@/lib/theme/themeTokens';
+
 // -- Type Imports --
-import type { FourSeeds, SeedMode, ThemeSeeds, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
+import type { FourSeeds, PaperSet, SeedMode, ThemeSeeds, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
 
 /*
  * The optional seed-to-theme generator: pure functions that turn an accent + neutral seed into a full
@@ -86,16 +89,36 @@ export function deriveMode(accent: string, neutral: string, mode: 'light' | 'dar
    };
 }
 
-/** 2-seed: one accent + neutral pair drives BOTH modes through the per-mode ramp. */
-export function derive2Seed(accent: string, neutral: string): { light: TokenSet; dark: TokenSet } {
-   return { light: deriveMode(accent, neutral, 'light'), dark: deriveMode(accent, neutral, 'dark') };
+/**
+ * Generated paper: the classic parchment with ONLY the header (primary) + accent re-hued from the seeds, so
+ * it still reads as paper but matches the theme's character. Background / ink / border / secondary /
+ * destructive stay classic. The primary foreground auto-contrasts the re-hued primary.
+ */
+export function derivePaper(primarySeed: string, accentSeed: string): PaperSet {
+   const [primaryHue, primarySat] = colorToHsl(primarySeed);
+   const [accentHue, accentSat] = colorToHsl(accentSeed);
+   const primaryLightness = colorToHsl(CLASSIC_PAPER['paper-primary'])[2];
+   const accentLightness = colorToHsl(CLASSIC_PAPER['paper-accent'])[2];
+   const paperPrimary = formatHsl(primaryHue, primarySat, primaryLightness);
+   return {
+      ...CLASSIC_PAPER,
+      'paper-primary': paperPrimary,
+      'paper-primary-foreground': autoForeground(paperPrimary),
+      'paper-accent': formatHsl(accentHue, accentSat, accentLightness),
+   };
 }
 
-/** 4-seed: an independent accent + neutral pair per mode. */
-export function derive4Seed(seeds: FourSeeds): { light: TokenSet; dark: TokenSet } {
+/** 2-seed: one accent + neutral pair drives BOTH modes; paper takes the accent for its header + accent. */
+export function derive2Seed(accent: string, neutral: string): { light: TokenSet; dark: TokenSet; paper: PaperSet } {
+   return { light: deriveMode(accent, neutral, 'light'), dark: deriveMode(accent, neutral, 'dark'), paper: derivePaper(accent, accent) };
+}
+
+/** 4-seed: an independent accent + neutral pair per mode; paper (mode-agnostic) uses the LIGHT accent. */
+export function derive4Seed(seeds: FourSeeds): { light: TokenSet; dark: TokenSet; paper: PaperSet } {
    return {
       light: deriveMode(seeds.lightAccent, seeds.lightNeutral, 'light'),
       dark: deriveMode(seeds.darkAccent, seeds.darkNeutral, 'dark'),
+      paper: derivePaper(seeds.lightAccent, seeds.lightAccent),
    };
 }
 
@@ -182,17 +205,19 @@ export function deriveExpressiveMode(primary: string, surface: string, accent: s
    };
 }
 
-/** 3-seed (Expressive): one primary/surface/accent set + the vivid flag drive BOTH modes. */
-export function derive3Seed(seeds: ThreeSeeds): { light: TokenSet; dark: TokenSet } {
+/** 3-seed (Expressive): one primary/surface/accent set + the vivid flag drive BOTH modes; paper takes the
+ *  primary (header) + accent. */
+export function derive3Seed(seeds: ThreeSeeds): { light: TokenSet; dark: TokenSet; paper: PaperSet } {
    const vivid = seeds.vivid ?? false;
    return {
       light: deriveExpressiveMode(seeds.primary, seeds.surface, seeds.accent, 'light', vivid),
       dark: deriveExpressiveMode(seeds.primary, seeds.surface, seeds.accent, 'dark', vivid),
+      paper: derivePaper(seeds.primary, seeds.accent),
    };
 }
 
 /** Routes a seed set through the matching generator - the single seam the editor's Generate calls. */
-export function deriveFromSeeds(mode: SeedMode, seeds: ThemeSeeds): { light: TokenSet; dark: TokenSet } {
+export function deriveFromSeeds(mode: SeedMode, seeds: ThemeSeeds): { light: TokenSet; dark: TokenSet; paper: PaperSet } {
    if (mode === '2-seed') return derive2Seed((seeds as TwoSeeds).accent, (seeds as TwoSeeds).neutral);
    if (mode === '3-seed') return derive3Seed(seeds as ThreeSeeds);
    return derive4Seed(seeds as FourSeeds);

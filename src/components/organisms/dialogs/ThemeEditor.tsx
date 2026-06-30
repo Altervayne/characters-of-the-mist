@@ -1,6 +1,9 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+// -- Library Imports --
+import cuid from 'cuid';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -10,6 +13,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 // -- Component Imports --
 import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 import { ThemePreview } from '@/components/organisms/dialogs/ThemePreview';
+import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker';
+import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
+
+// -- Tracker Imports --
+import { emptyTracker } from '@/lib/trackers/emptyTracker';
 
 // -- Icon Imports --
 import { AlertTriangle, ChevronDown, ChevronRight, Info, Save, Sparkles } from 'lucide-react';
@@ -18,7 +26,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Info, Save, Sparkles } from '
 import { cn } from '@/lib/utils';
 import { parseColorToRgb, rgbToHex } from '@/lib/color';
 import { readRecentColors } from '@/lib/recentColors';
-import { PRESET_LABELS, PRESET_THEMES, TOKEN_GROUPS, themeEditorFieldsEqual } from '@/lib/theme/themeTokens';
+import { PAPER_GROUPS, PAPER_TOKEN_KEYS, PRESET_LABELS, PRESET_THEMES, TOKEN_GROUPS, themeEditorFieldsEqual } from '@/lib/theme/themeTokens';
 import { deriveFromSeeds } from '@/lib/theme/deriveTheme';
 import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
 import { useThemeSwitchGuard } from '@/components/organisms/dialogs/themeSwitchGuard';
@@ -28,7 +36,8 @@ import { lowContrastPairs } from '@/lib/theme/contrastWarnings';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
-import type { ChromeTokenKey, CustomTheme, FourSeeds, SeedMode, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
+import type { CSSProperties } from 'react';
+import type { ChromeTokenKey, CustomTheme, FourSeeds, PaperSet, PaperTokenKey, SeedMode, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
 import type { ContrastWarning } from '@/lib/theme/contrastWarnings';
 
 /*
@@ -154,6 +163,39 @@ function InfoTip({ text }: { text: string }) {
 }
 
 /**
+ * A live, mode-agnostic preview of the draft's paper: two REAL trackers (a Status + a Story Theme) rendered
+ * read-only, so it shows exactly what game-agnostic trackers look like under the chosen paper. The wrapper
+ * sets the draft's `--paper-*` vars inline; the `:root` card-* fallback is `var(--paper-*)`, so the cards'
+ * card-* colors resolve to the DRAFT paper and the preview tracks edits. `isDrawerPreview` makes them
+ * read-only AND drops the card-type class, so they route through the paper fallback (not a game palette).
+ */
+function PaperPreview({ paper }: { paper: PaperSet }) {
+   const { t } = useTranslation();
+   const style = Object.fromEntries(PAPER_TOKEN_KEYS.map((key) => [`--${key}`, paper[key]])) as CSSProperties;
+
+   // Stable samples (fresh cuids only when the language changes), so the read-only preview never churns.
+   const { sampleStatus, sampleStoryTheme } = useMemo(() => {
+      const status = emptyTracker('STATUS');
+      status.name = t('SettingsDialog.themes.paper.sampleStatus');
+      status.tiers = [true, true, false, false, false, false]; // a couple active, so the ink reads on both
+
+      const storyTheme = emptyTracker('STORY_THEME');
+      storyTheme.mainTag = { id: cuid(), name: t('SettingsDialog.themes.paper.sampleTheme'), isActive: false, isScratched: false };
+      storyTheme.powerTags = [{ id: cuid(), name: t('SettingsDialog.themes.paper.samplePower'), isActive: false, isScratched: false }];
+      // A weakness tag so paper-destructive is exercised.
+      storyTheme.weaknessTags = [{ id: cuid(), name: t('SettingsDialog.themes.paper.sampleWeakness'), isActive: false, isScratched: false }];
+      return { sampleStatus: status, sampleStoryTheme: storyTheme };
+   }, [t]);
+
+   return (
+      <div style={style} className="flex flex-wrap justify-center gap-4">
+         <StatusTrackerCard tracker={sampleStatus} isDrawerPreview />
+         <StoryThemeTrackerCard tracker={sampleStoryTheme} isDrawerPreview />
+      </div>
+   );
+}
+
+/**
  * One seed input for the generator, built like the editor's token rows: a label (with an optional info
  * tip) over a swatch + hex field, so seeds read and behave the same (paste, revert-on-invalid, picker sync).
  */
@@ -187,9 +229,9 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
 
    const generate = () => {
       const seeds = mode === '2-seed' ? two : mode === '3-seed' ? three : four;
-      const { light, dark } = deriveFromSeeds(mode, seeds);
-      // Overwrite both palettes in the draft from the seeds; radius is the manual slider's, untouched here.
-      patchThemeDraft({ light, dark, seedMode: mode, seeds });
+      const { light, dark, paper } = deriveFromSeeds(mode, seeds);
+      // Overwrite both palettes + paper in the draft from the seeds; radius is the manual slider's, untouched.
+      patchThemeDraft({ light, dark, paper, seedMode: mode, seeds });
       setConfirming(false);
    };
 
@@ -313,6 +355,10 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
       const next: TokenSet = { ...draft[mode], [token]: hex };
       patchThemeDraft({ [mode]: next });
    };
+   // Paper is mode-agnostic, so one swatch writes one value (no light/dark split).
+   const setPaper = (token: PaperTokenKey, hex: string) => {
+      patchThemeDraft({ paper: { ...draft.paper, [token]: hex } });
+   };
    const radiusValue = parseFloat(draft.radius) || 0;
 
    // Per-mode low-contrast flags, indexed by the offending foreground token so its row's swatch can mark it.
@@ -397,6 +443,40 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
                   })}
                </div>
             ))}
+         </div>
+
+         {/* Paper: the game-agnostic palette for "paper" elements (drawer trackers, NEUTRAL items). One value
+             per token (mode-agnostic - same in light and dark), with a live mock-tracker preview. */}
+         <div className="flex flex-col gap-3 border-t border-border pt-4">
+            <div className="flex flex-col gap-1">
+               <span className="text-sm font-semibold">{t('SettingsDialog.themes.paper.title')}</span>
+               <p className="text-xs text-muted-foreground">{t('SettingsDialog.themes.paper.intro')}</p>
+            </div>
+
+            <PaperPreview paper={draft.paper} />
+
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 lg:grid-cols-2">
+               {PAPER_GROUPS.map((group) => (
+                  <div key={group.id} className="flex flex-col gap-1 rounded-md border border-border/60 p-2">
+                     <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t(`SettingsDialog.themes.paper.groups.${group.id}`)}</span>
+                     {group.tokens.map((token) => {
+                        const paperLabel = t(`SettingsDialog.themes.paper.tokens.${token}`);
+                        return (
+                           <div key={token} className="flex items-center gap-2">
+                              <div className="flex min-w-0 flex-1 items-center gap-1">
+                                 <span className="truncate text-sm">{paperLabel}</span>
+                                 <InfoTip text={t(`SettingsDialog.themes.paper.tokenPurpose.${token}`)} />
+                              </div>
+                              <div className="flex w-24 items-center gap-1">
+                                 <TokenSwatch value={draft.paper[token]} label={paperLabel} onPick={(hex) => setPaper(token, hex)} />
+                                 <HexInput value={draft.paper[token]} label={paperLabel} onCommit={(hex) => setPaper(token, hex)} className="min-w-0 flex-1" />
+                              </div>
+                           </div>
+                        );
+                     })}
+                  </div>
+               ))}
+            </div>
          </div>
          </div>
       </div>

@@ -2,8 +2,8 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { derive2Seed, derive3Seed, derive4Seed, deriveExpressiveMode, deriveFromSeeds, deriveMode } from './deriveTheme';
-import { CHROME_TOKEN_KEYS } from './themeTokens';
+import { derive2Seed, derive3Seed, derive4Seed, deriveExpressiveMode, deriveFromSeeds, deriveMode, derivePaper } from './deriveTheme';
+import { CHROME_TOKEN_KEYS, CLASSIC_PAPER } from './themeTokens';
 import { colorToHsl, contrastRatio, parseColorToRgb } from '@/lib/color';
 
 // -- Type Imports --
@@ -195,5 +195,33 @@ describe('deriveExpressiveMode / derive3Seed (Expressive)', () => {
    it('3-seed drives both modes from one shared seed set + vivid flag', () => {
       const { light, dark } = derive3Seed({ primary: 'hsl(220 80% 50%)', surface: 'hsl(30 60% 50%)', accent: 'hsl(45 90% 55%)', vivid: true });
       expect(light.background).not.toBe(dark.background);
+   });
+});
+
+describe('derivePaper', () => {
+   const paper = derivePaper('hsl(200 80% 50%)', 'hsl(120 70% 50%)');
+
+   it('keeps the classic parchment for everything but the header (primary) + accent', () => {
+      for (const key of ['paper-background', 'paper-foreground', 'paper-border', 'paper-secondary', 'paper-secondary-foreground', 'paper-destructive', 'paper-destructive-foreground'] as const) {
+         expect(paper[key]).toBe(CLASSIC_PAPER[key]);
+      }
+   });
+
+   it('re-hues paper-primary from the primary seed and paper-accent from the accent seed (at the classic lightness)', () => {
+      expect(colorToHsl(paper['paper-primary'])[0]).toBeCloseTo(200, -1);
+      expect(colorToHsl(paper['paper-accent'])[0]).toBeCloseTo(120, -1);
+      expect(colorToHsl(paper['paper-primary'])[2]).toBeCloseTo(colorToHsl(CLASSIC_PAPER['paper-primary'])[2], -1);
+      expect(colorToHsl(paper['paper-accent'])[2]).toBeCloseTo(colorToHsl(CLASSIC_PAPER['paper-accent'])[2], -1);
+   });
+
+   it('auto-contrasts paper-primary-foreground against the re-hued header (pure black/white, clears AA)', () => {
+      expect(['hsl(0 0% 0%)', 'hsl(0 0% 100%)']).toContain(paper['paper-primary-foreground']);
+      expect(contrastRatio(paper['paper-primary-foreground'], paper['paper-primary'])).toBeGreaterThanOrEqual(AA);
+   });
+
+   it('each generator returns paper (classic base, header/accent from the seeds)', () => {
+      expect(derive2Seed('hsl(200 80% 50%)', 'hsl(0 0% 50%)').paper).toEqual(derivePaper('hsl(200 80% 50%)', 'hsl(200 80% 50%)'));
+      expect(derive3Seed({ primary: 'hsl(200 80% 50%)', surface: 'hsl(30 50% 50%)', accent: 'hsl(120 70% 50%)' }).paper).toEqual(derivePaper('hsl(200 80% 50%)', 'hsl(120 70% 50%)'));
+      expect(derive4Seed({ lightAccent: 'hsl(200 80% 50%)', lightNeutral: 'hsl(0 0% 50%)', darkAccent: 'hsl(50 80% 50%)', darkNeutral: 'hsl(0 0% 50%)' }).paper).toEqual(derivePaper('hsl(200 80% 50%)', 'hsl(200 80% 50%)'));
    });
 });

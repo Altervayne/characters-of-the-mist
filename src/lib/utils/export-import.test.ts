@@ -82,6 +82,7 @@ describe('CUSTOM_THEME export/import', () => {
       id: 'orig', name: 'My Theme', radius: '0.75rem',
       light: { background: '#fff' } as unknown as CustomTheme['light'],
       dark: { background: '#000' } as unknown as CustomTheme['dark'],
+      paper: { 'paper-background': '#eee' } as unknown as CustomTheme['paper'],
       seedMode: '3-seed', seeds: { primary: '#1', surface: '#2', accent: '#3', vivid: true },
    });
 
@@ -102,6 +103,9 @@ describe('CUSTOM_THEME export/import', () => {
       expect(isExportedCustomTheme({ fileType: 'FULL_CHARACTER_SHEET', game: 'LEGENDS', content: character([]) })).toBe(false);
       const malformed = { fileType: 'CUSTOM_THEME', game: 'NEUTRAL', content: { light: {}, dark: {} } } as unknown as ExportFile;
       expect(isExportedCustomTheme(malformed)).toBe(false);
+      // A theme envelope missing `paper` is rejected (paper is required now - no backfill).
+      const noPaper = { fileType: 'CUSTOM_THEME', game: 'NEUTRAL', content: { light: {}, dark: {}, radius: '0.5rem' } } as unknown as ExportFile;
+      expect(isExportedCustomTheme(noPaper)).toBe(false);
    });
 
    it('round-trips with a fresh id, preserving light/dark/radius and seedMode/seeds', () => {

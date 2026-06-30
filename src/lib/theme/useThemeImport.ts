@@ -32,7 +32,9 @@ export function useThemeImport() {
          toast.error(t('Notifications.general.importFailed'));
          return false;
       }
-      const theme: CustomTheme = { ...(file.content as CustomTheme), id: cuid() };
+      // Fresh id so the same file never collides; the envelope already carried paper (validated above).
+      const content = file.content as CustomTheme;
+      const theme: CustomTheme = { ...content, id: cuid(), paper: { ...content.paper } };
       addCustomTheme(theme);
       setTheme(customThemeClass(theme.id));
       toast.success(t('Notifications.theme.imported'));
