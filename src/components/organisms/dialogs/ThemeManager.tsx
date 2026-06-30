@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // -- Icon Imports --
 import { Check, Copy, Download, GripVertical, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
@@ -191,13 +192,15 @@ export function ThemeManager() {
                   onClick={(event) => event.stopPropagation()}
                   title={t('SettingsDialog.themes.reorder')}
                   aria-label={t('SettingsDialog.themes.reorder')}
-                  className="ml-1 flex h-6 w-5 shrink-0 cursor-grab items-center justify-center text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+                  className="ml-1 flex h-6 w-5 shrink-0 cursor-grab items-center justify-center text-muted-foreground"
                >
                   <GripVertical className="h-4 w-4" />
                </button>
             )}
             {/* `pr-8` keeps the truncated name clear of the overlaid menu trigger. */}
-            <span className={cn('min-w-0 flex-1 truncate py-2 pr-8 text-sm', dragHandle ? 'pl-1' : 'pl-3')}>{entry.label}</span>
+            {/* Runs to the row's right edge and truncates there; the hover `...` trigger sits over the end
+                with its frosted backing (matches the drawer rows). */}
+            <span className={cn('min-w-0 flex-1 truncate py-2 text-sm pr-1', dragHandle ? 'pl-1' : 'pl-3')}>{entry.label}</span>
 
             <DropdownMenu>
                <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
@@ -249,14 +252,22 @@ export function ThemeManager() {
          <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-border pt-3">
             <div className="flex items-center justify-between gap-2">
                <SectionHeading>{t('SettingsDialog.themes.customsHeading')}</SectionHeading>
-               <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => importInputRef.current?.click()}
-                  className="h-6 cursor-pointer px-2 text-xs text-muted-foreground hover:text-foreground"
-               >
-                  <Download className="mr-1 h-3.5 w-3.5" />{t('SettingsDialog.themes.importTheme')}
-               </Button>
+               {/* Icon-only to leave the heading room; the label lives in the tooltip + aria-label/title. */}
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => importInputRef.current?.click()}
+                        aria-label={t('SettingsDialog.themes.importTheme')}
+                        title={t('SettingsDialog.themes.importTheme')}
+                        className="h-6 w-6 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+                     >
+                        <Download className="h-3.5 w-3.5" />
+                     </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('SettingsDialog.themes.importTheme')}</TooltipContent>
+               </Tooltip>
             </div>
             {customEntries.length > 0 ? (
                <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis, restrictToParentElement]} onDragEnd={handleDragEnd}>
