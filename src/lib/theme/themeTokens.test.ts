@@ -154,18 +154,17 @@ describe('themeEditorFieldsEqual', () => {
       id: 'a', name: 'A', radius: '0.5rem',
       light: { ...sampleSet } as TokenSet, dark: { ...PRESET_THEMES['theme-neutral'].dark } as TokenSet,
       paper: CLASSIC_PAPER,
-      seedMode: '2-seed', seeds: { accent: '#111', neutral: '#222' },
+      generator: { tier: 3, separateModes: false, saturation: 'balanced', contrast: 'normal', seeds: { primary: '#111', background: '#222' } },
    };
 
    it('is true for clones, and ignores name/id differences', () => {
       expect(themeEditorFieldsEqual(base, { ...base, id: 'b', name: 'Renamed' })).toBe(true);
    });
 
-   it('is false when an editor field differs (light, radius, seedMode, seeds, or paper)', () => {
+   it('is false when an editor field differs (light, radius, paper, or generator)', () => {
       expect(themeEditorFieldsEqual(base, { ...base, radius: '1rem' })).toBe(false);
       expect(themeEditorFieldsEqual(base, { ...base, light: { ...base.light, background: 'lime' } as TokenSet })).toBe(false);
-      expect(themeEditorFieldsEqual(base, { ...base, seedMode: '3-seed' })).toBe(false);
-      expect(themeEditorFieldsEqual(base, { ...base, seeds: { accent: '#999', neutral: '#222' } })).toBe(false);
+      expect(themeEditorFieldsEqual(base, { ...base, generator: { ...base.generator!, saturation: 'vivid' } })).toBe(false);
       expect(themeEditorFieldsEqual(base, { ...base, paper: { ...CLASSIC_PAPER, 'paper-primary': 'lime' } })).toBe(false);
    });
 });

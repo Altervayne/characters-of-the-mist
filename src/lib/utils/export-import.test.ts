@@ -83,7 +83,7 @@ describe('CUSTOM_THEME export/import', () => {
       light: { background: '#fff' } as unknown as CustomTheme['light'],
       dark: { background: '#000' } as unknown as CustomTheme['dark'],
       paper: { 'paper-background': '#eee' } as unknown as CustomTheme['paper'],
-      seedMode: '3-seed', seeds: { primary: '#1', surface: '#2', accent: '#3', vivid: true },
+      generator: { tier: 3, separateModes: false, saturation: 'vivid', contrast: 'normal', seeds: { primary: '#1', background: '#2', accent: '#3' } },
    });
 
    it('references no assets (a theme is asset-free)', () => {
@@ -108,7 +108,7 @@ describe('CUSTOM_THEME export/import', () => {
       expect(isExportedCustomTheme(noPaper)).toBe(false);
    });
 
-   it('round-trips with a fresh id, preserving light/dark/radius and seedMode/seeds', () => {
+   it('round-trips with a fresh id, preserving light/dark/radius and the generator settings', () => {
       const theme = makeTheme();
       const file: ExportFile = { fileType: 'CUSTOM_THEME', game: 'NEUTRAL', content: theme };
       // The importer re-IDs the validated content (the exact shape the manager's handler builds).
@@ -117,8 +117,7 @@ describe('CUSTOM_THEME export/import', () => {
       expect(reIded.light).toEqual(theme.light);
       expect(reIded.dark).toEqual(theme.dark);
       expect(reIded.radius).toBe(theme.radius);
-      expect(reIded.seedMode).toBe('3-seed');
-      expect(reIded.seeds).toEqual(theme.seeds);
+      expect(reIded.generator).toEqual(theme.generator);
    });
 });
 

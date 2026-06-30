@@ -2,12 +2,12 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { derive2Seed, derive3Seed, derive4Seed, deriveExpressiveMode, deriveFromSeeds, deriveMode, derivePaper } from './deriveTheme';
+import { deriveFromGenerator, deriveGeneratedMode, derivePaper, randomGeneratorSettings } from './deriveTheme';
 import { CHROME_TOKEN_KEYS, CLASSIC_PAPER } from './themeTokens';
 import { colorToHsl, contrastRatio, parseColorToRgb } from '@/lib/color';
 
 // -- Type Imports --
-import type { TokenSet } from './themeTokens';
+import type { ContrastLevel, GeneratorTier, SaturationLevel, SeedSet, TokenSet } from './themeTokens';
 
 /*
  * The bulletproof proof: across a wide seed grid (hues all around the wheel, lightnesses from near-black to
@@ -27,176 +27,6 @@ const CONTRAST_PAIRS: [keyof TokenSet, keyof TokenSet][] = [
    ['primary-foreground', 'primary'],
    ['destructive-foreground', 'destructive'],
 ];
-
-/** A seed grid spanning the hue wheel and the lightness/saturation extremes. */
-function seedGrid(): string[] {
-   const seeds: string[] = [];
-   for (let hue = 0; hue < 360; hue += 30) {
-      for (const lightness of [4, 25, 50, 75, 96]) {
-         for (const saturation of [8, 100]) {
-            seeds.push(`hsl(${hue} ${saturation}% ${lightness}%)`);
-         }
-      }
-   }
-   return seeds;
-}
-
-const SEEDS = seedGrid();
-
-describe('deriveMode', () => {
-   it('produces a complete, parseable TokenSet for every key, in both modes', () => {
-      for (const mode of ['light', 'dark'] as const) {
-         const set = deriveMode('hsl(220 80% 50%)', 'hsl(220 30% 50%)', mode);
-         for (const key of CHROME_TOKEN_KEYS) {
-            expect(typeof set[key]).toBe('string');
-            expect(parseColorToRgb(set[key])).not.toBeNull();
-         }
-      }
-   });
-
-   // Heavy: ~28.8k palettes; given a wide timeout so it never flakes under parallel suite load.
-   it('clears the AA floor on every required pair across the whole seed grid, both modes', () => {
-      for (const accent of SEEDS) {
-         for (const neutral of SEEDS) {
-            for (const mode of ['light', 'dark'] as const) {
-               const set = deriveMode(accent, neutral, mode);
-               for (const [fg, bg] of CONTRAST_PAIRS) {
-                  const ratio = contrastRatio(set[fg], set[bg]);
-                  expect(ratio, `${mode} ${fg}/${bg} for accent=${accent} neutral=${neutral}`).toBeGreaterThanOrEqual(AA);
-               }
-            }
-         }
-      }
-   }, 30000);
-
-   it('keeps surfaces neutral-ish even from a vivid neutral seed (clamped saturation)', () => {
-      const set = deriveMode('hsl(0 0% 50%)', 'hsl(300 100% 50%)', 'light');
-      expect(colorToHsl(set.background)[1]).toBeLessThanOrEqual(14);
-   });
-
-   it('makes dark-mode surfaces darker than light-mode, and flips the foreground', () => {
-      const light = deriveMode('hsl(220 80% 50%)', 'hsl(220 30% 50%)', 'light');
-      const dark = deriveMode('hsl(220 80% 50%)', 'hsl(220 30% 50%)', 'dark');
-      expect(colorToHsl(dark.background)[2]).toBeLessThan(colorToHsl(light.background)[2]);
-      expect(colorToHsl(light.foreground)[2]).toBeLessThan(50); // dark text on a light bg
-      expect(colorToHsl(dark.foreground)[2]).toBeGreaterThan(50); // light text on a dark bg
-   });
-
-   it('always emits the safe red for destructive', () => {
-      expect(deriveMode('hsl(120 90% 50%)', 'hsl(120 20% 50%)', 'light').destructive).toBe('hsl(0 72% 44%)');
-      expect(deriveMode('hsl(120 90% 50%)', 'hsl(120 20% 50%)', 'dark').destructive).toBe('hsl(0 63% 47%)');
-   });
-});
-
-describe('derive2Seed / derive4Seed', () => {
-   it('2-seed produces a complete light + dark pair from one seed pair', () => {
-      const { light, dark } = derive2Seed('hsl(280 70% 45%)', 'hsl(280 20% 50%)');
-      for (const key of CHROME_TOKEN_KEYS) {
-         expect(parseColorToRgb(light[key])).not.toBeNull();
-         expect(parseColorToRgb(dark[key])).not.toBeNull();
-      }
-      // Same seeds, different modes -> different surfaces.
-      expect(light.background).not.toBe(dark.background);
-   });
-
-   it('4-seed drives each mode from its own pair (modes are independent)', () => {
-      const base = {
-         lightAccent: 'hsl(10 80% 50%)', lightNeutral: 'hsl(10 20% 50%)',
-         darkAccent: 'hsl(200 80% 55%)', darkNeutral: 'hsl(200 20% 50%)',
-      };
-      const result = derive4Seed(base);
-      // Swapping ONLY the dark seeds leaves the light palette byte-identical and changes the dark one.
-      const swapped = derive4Seed({ ...base, darkAccent: 'hsl(90 80% 55%)', darkNeutral: 'hsl(90 20% 50%)' });
-      expect(swapped.light).toEqual(result.light);
-      expect(swapped.dark).not.toEqual(result.dark);
-   });
-});
-
-describe('deriveFromSeeds', () => {
-   it('routes 2-seed to derive2Seed', () => {
-      const seeds = { accent: '#2563eb', neutral: '#6b7280' };
-      expect(deriveFromSeeds('2-seed', seeds)).toEqual(derive2Seed(seeds.accent, seeds.neutral));
-   });
-
-   it('routes 4-seed to derive4Seed', () => {
-      const seeds = { lightAccent: '#10b981', lightNeutral: '#9ca3af', darkAccent: '#f59e0b', darkNeutral: '#52525b' };
-      expect(deriveFromSeeds('4-seed', seeds)).toEqual(derive4Seed(seeds));
-   });
-
-   it('routes 3-seed to derive3Seed', () => {
-      const seeds = { primary: '#2563eb', surface: '#6b7280', accent: '#f59e0b', vivid: true };
-      expect(deriveFromSeeds('3-seed', seeds)).toEqual(derive3Seed(seeds));
-   });
-});
-
-/** A coarse seed grid for the 3-dimensional Expressive AA sweep (full grid cubed would be enormous). */
-function coarseSeeds(): string[] {
-   const seeds = [0, 60, 120, 180, 240, 300].map((hue) => `hsl(${hue} 80% 50%)`);
-   seeds.push('hsl(0 0% 10%)', 'hsl(0 0% 90%)', 'hsl(210 100% 50%)', 'hsl(40 100% 60%)', 'hsl(0 0% 50%)');
-   return seeds;
-}
-const COARSE = coarseSeeds();
-
-describe('deriveExpressiveMode / derive3Seed (Expressive)', () => {
-   it('produces a complete, parseable TokenSet in both modes and both vivid states', () => {
-      for (const mode of ['light', 'dark'] as const) {
-         for (const vivid of [false, true]) {
-            const set = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 50%)', 'hsl(45 90% 55%)', mode, vivid);
-            for (const key of CHROME_TOKEN_KEYS) {
-               expect(typeof set[key]).toBe('string');
-               expect(parseColorToRgb(set[key])).not.toBeNull();
-            }
-         }
-      }
-   });
-
-   // The whole point: surfaces and accent are tinted/real, NOT the safe near-gray output.
-   it('makes surfaces more saturated than the safe mode (a real tint, not near-gray)', () => {
-      const expr = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 80% 50%)', 'hsl(45 90% 55%)', 'light', false);
-      expect(colorToHsl(expr.background)[1]).toBeGreaterThan(14); // above the safe SURFACE_SAT_CAP
-   });
-
-   it('gives accent a real saturation, unlike the safe faint-tint accent', () => {
-      const expr = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 50%)', 'hsl(45 95% 55%)', 'light', true);
-      expect(colorToHsl(expr.accent)[1]).toBeGreaterThan(30); // above the safe ACCENT_SURFACE_SAT_CAP
-   });
-
-   it('vivid is bolder: surfaces carry more saturation than calm for a saturated surface seed', () => {
-      const calm = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 100% 50%)', 'hsl(45 90% 55%)', 'light', false);
-      const vivid = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 100% 50%)', 'hsl(45 90% 55%)', 'light', true);
-      expect(colorToHsl(vivid.background)[1]).toBeGreaterThan(colorToHsl(calm.background)[1]);
-   });
-
-   it('drives surface brightness from the surface seed (a darker light-mode seed yields a dimmer background)', () => {
-      const bright = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 95%)', 'hsl(45 90% 55%)', 'light', false);
-      const dim = deriveExpressiveMode('hsl(220 80% 50%)', 'hsl(30 60% 50%)', 'hsl(45 90% 55%)', 'light', false);
-      expect(colorToHsl(bright.background)[2]).toBeGreaterThan(colorToHsl(dim.background)[2]);
-   });
-
-   // Bold but still readable: every REQUIRED pair clears AA across the seed cube, both modes, both vivid.
-   it('clears the AA floor on every required pair across the Expressive seed cube (both modes, both vivid)', () => {
-      for (const primary of COARSE) {
-         for (const surface of COARSE) {
-            for (const accent of COARSE) {
-               for (const mode of ['light', 'dark'] as const) {
-                  for (const vivid of [false, true]) {
-                     const set = deriveExpressiveMode(primary, surface, accent, mode, vivid);
-                     for (const [fg, bg] of CONTRAST_PAIRS) {
-                        const ratio = contrastRatio(set[fg], set[bg]);
-                        expect(ratio, `${mode} vivid=${vivid} ${fg}/${bg} p=${primary} s=${surface} a=${accent}`).toBeGreaterThanOrEqual(AA);
-                     }
-                  }
-               }
-            }
-         }
-      }
-   }, 30000);
-
-   it('3-seed drives both modes from one shared seed set + vivid flag', () => {
-      const { light, dark } = derive3Seed({ primary: 'hsl(220 80% 50%)', surface: 'hsl(30 60% 50%)', accent: 'hsl(45 90% 55%)', vivid: true });
-      expect(light.background).not.toBe(dark.background);
-   });
-});
 
 describe('derivePaper', () => {
    const paper = derivePaper('hsl(200 80% 50%)', 'hsl(120 70% 50%)');
@@ -219,9 +49,139 @@ describe('derivePaper', () => {
       expect(contrastRatio(paper['paper-primary-foreground'], paper['paper-primary'])).toBeGreaterThanOrEqual(AA);
    });
 
-   it('each generator returns paper (classic base, header/accent from the seeds)', () => {
-      expect(derive2Seed('hsl(200 80% 50%)', 'hsl(0 0% 50%)').paper).toEqual(derivePaper('hsl(200 80% 50%)', 'hsl(200 80% 50%)'));
-      expect(derive3Seed({ primary: 'hsl(200 80% 50%)', surface: 'hsl(30 50% 50%)', accent: 'hsl(120 70% 50%)' }).paper).toEqual(derivePaper('hsl(200 80% 50%)', 'hsl(120 70% 50%)'));
-      expect(derive4Seed({ lightAccent: 'hsl(200 80% 50%)', lightNeutral: 'hsl(0 0% 50%)', darkAccent: 'hsl(50 80% 50%)', darkNeutral: 'hsl(0 0% 50%)' }).paper).toEqual(derivePaper('hsl(200 80% 50%)', 'hsl(200 80% 50%)'));
+   it('returns a complete, classic-rooted paper palette (header + accent re-hued)', () => {
+      const tinted = derivePaper('hsl(310 80% 50%)', 'hsl(90 70% 50%)');
+      expect(colorToHsl(tinted['paper-primary'])[0]).toBeCloseTo(310, -1);
+      expect(colorToHsl(tinted['paper-accent'])[0]).toBeCloseTo(90, -1);
+      expect(tinted['paper-background']).toBe(CLASSIC_PAPER['paper-background']);
+   });
+});
+
+/* ===== The unified generator engine ===== */
+
+const TIERS: GeneratorTier[] = [2, 3, 4];
+const SATURATIONS: SaturationLevel[] = ['minimal', 'balanced', 'vivid'];
+const CONTRASTS: ContrastLevel[] = ['soft', 'normal', 'contrasted'];
+
+/** A full seed set (extra roles are ignored at lower tiers). A spread of hues + the achromatic / yellow corners. */
+const GEN_SEEDS: SeedSet[] = [
+   { primary: 'hsl(220 80% 50%)', background: 'hsl(220 30% 50%)', accent: 'hsl(40 90% 55%)', secondary: 'hsl(160 40% 50%)' },
+   { primary: 'hsl(0 100% 50%)', background: 'hsl(0 60% 50%)', accent: 'hsl(120 100% 50%)', secondary: 'hsl(60 100% 50%)' },
+   { primary: 'hsl(60 100% 50%)', background: 'hsl(60 80% 50%)', accent: 'hsl(300 80% 50%)', secondary: 'hsl(180 70% 50%)' }, // yellow corners
+   { primary: 'hsl(0 0% 12%)', background: 'hsl(0 0% 60%)', accent: 'hsl(0 0% 50%)', secondary: 'hsl(0 0% 35%)' },             // achromatic
+   { primary: 'hsl(280 70% 45%)', background: 'hsl(200 50% 50%)', accent: 'hsl(100 85% 60%)', secondary: 'hsl(20 70% 50%)' },
+];
+
+describe('deriveGeneratedMode', () => {
+   const opts = { tier: 3 as GeneratorTier, saturation: 'balanced' as SaturationLevel, contrast: 'normal' as ContrastLevel };
+
+   it('produces a complete, parseable TokenSet for every key, in both modes', () => {
+      for (const mode of ['light', 'dark'] as const) {
+         const set = deriveGeneratedMode(GEN_SEEDS[0], opts, mode);
+         for (const key of CHROME_TOKEN_KEYS) {
+            expect(typeof set[key]).toBe('string');
+            expect(parseColorToRgb(set[key])).not.toBeNull();
+         }
+      }
+   });
+
+   it('saturation axis: vivid surfaces are more saturated than minimal', () => {
+      const minimal = deriveGeneratedMode(GEN_SEEDS[0], { ...opts, saturation: 'minimal' }, 'light');
+      const vivid = deriveGeneratedMode(GEN_SEEDS[0], { ...opts, saturation: 'vivid' }, 'light');
+      expect(colorToHsl(vivid.background)[1]).toBeGreaterThan(colorToHsl(minimal.background)[1]);
+   });
+
+   it('contrast axis: contrasted has a wider surface spread than soft', () => {
+      // Measure in dark mode, where surfaces rise from a low base without clamping at 100.
+      const soft = deriveGeneratedMode(GEN_SEEDS[0], { ...opts, contrast: 'soft' }, 'dark');
+      const contrasted = deriveGeneratedMode(GEN_SEEDS[0], { ...opts, contrast: 'contrasted' }, 'dark');
+      const spread = (set: TokenSet) => Math.abs(colorToHsl(set.border)[2] - colorToHsl(set.background)[2]);
+      expect(spread(contrasted)).toBeGreaterThan(spread(soft));
+   });
+
+   it('tier: 3 uses the accent seed hue; 2 derives the accent from the primary (so they differ)', () => {
+      const seeds: SeedSet = { primary: 'hsl(0 80% 50%)', background: 'hsl(0 20% 50%)', accent: 'hsl(120 80% 50%)' };
+      const tier3 = deriveGeneratedMode(seeds, { ...opts, tier: 3 }, 'light');
+      const tier2 = deriveGeneratedMode(seeds, { ...opts, tier: 2 }, 'light');
+      expect(colorToHsl(tier3.accent)[0]).toBeCloseTo(120, -1);          // the accent seed hue
+      expect(colorToHsl(tier2.accent)[0]).not.toBeCloseTo(120, -1);      // derived from the primary instead
+   });
+
+   it('tier 4 colors the secondary from the secondary seed (not a neutral surface step)', () => {
+      const seeds: SeedSet = { primary: 'hsl(0 80% 50%)', background: 'hsl(0 20% 50%)', accent: 'hsl(120 80% 50%)', secondary: 'hsl(280 70% 50%)' };
+      const tier4 = deriveGeneratedMode(seeds, { ...opts, tier: 4 }, 'light');
+      const tier3 = deriveGeneratedMode(seeds, { ...opts, tier: 3 }, 'light');
+      expect(colorToHsl(tier4.secondary)[0]).toBeCloseTo(280, -1);       // the secondary seed hue
+      expect(colorToHsl(tier3.secondary)[1]).toBeLessThan(colorToHsl(tier4.secondary)[1]); // tier 3 secondary is the quiet surface
+   });
+
+   // The guarantee: every tier x saturation x contrast combo, both modes, all seeds, clears AA on every required pair.
+   it('clears the AA floor on every required pair across the whole tier x saturation x contrast matrix', () => {
+      for (const seeds of GEN_SEEDS) {
+         for (const tier of TIERS) {
+            for (const saturation of SATURATIONS) {
+               for (const contrast of CONTRASTS) {
+                  for (const mode of ['light', 'dark'] as const) {
+                     const set = deriveGeneratedMode(seeds, { tier, saturation, contrast }, mode);
+                     for (const [fg, bg] of CONTRAST_PAIRS) {
+                        const ratio = contrastRatio(set[fg], set[bg]);
+                        expect(ratio, `${mode} t${tier}/${saturation}/${contrast} ${fg}/${bg} for ${JSON.stringify(seeds)}`).toBeGreaterThanOrEqual(AA);
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }, 30000);
+});
+
+describe('deriveFromGenerator', () => {
+   const settings = { tier: 3 as GeneratorTier, separateModes: false, saturation: 'vivid' as SaturationLevel, contrast: 'contrasted' as ContrastLevel, seeds: GEN_SEEDS[0] };
+
+   it('returns light + dark + paper', () => {
+      const { light, dark, paper } = deriveFromGenerator(settings);
+      for (const key of CHROME_TOKEN_KEYS) {
+         expect(parseColorToRgb(light[key])).not.toBeNull();
+         expect(parseColorToRgb(dark[key])).not.toBeNull();
+      }
+      expect(paper['paper-background']).toBeTruthy();
+   });
+
+   it('vivid + contrasted is bolder than minimal + soft (more surface saturation, wider spread)', () => {
+      const bold = deriveFromGenerator(settings);
+      const gentle = deriveFromGenerator({ ...settings, saturation: 'minimal', contrast: 'soft' });
+      expect(colorToHsl(bold.light.background)[1]).toBeGreaterThan(colorToHsl(gentle.light.background)[1]);
+      const spread = (set: TokenSet) => Math.abs(colorToHsl(set.border)[2] - colorToHsl(set.background)[2]);
+      expect(spread(bold.dark)).toBeGreaterThan(spread(gentle.dark));
+   });
+
+   it('separateModes drives each mode from its own seed set', () => {
+      const lightSeeds: SeedSet = { primary: 'hsl(30 80% 50%)', background: 'hsl(30 30% 50%)' };
+      const darkSeeds: SeedSet = { primary: 'hsl(200 80% 50%)', background: 'hsl(200 30% 50%)' };
+      const result = deriveFromGenerator({ tier: 2, separateModes: true, saturation: 'balanced', contrast: 'normal', seeds: { light: lightSeeds, dark: darkSeeds } });
+      // The light primary follows the light seed hue (orange), the dark primary the dark seed hue (blue).
+      expect(colorToHsl(result.light.primary)[0]).toBeCloseTo(30, -1);
+      expect(colorToHsl(result.dark.primary)[0]).toBeCloseTo(200, -1);
+   });
+});
+
+describe('randomGeneratorSettings', () => {
+   it('keeps the caller tier / separateModes, fills the tier roles, and always passes required-pair AA', () => {
+      for (let i = 0; i < 60; i++) {
+         const tier = TIERS[i % 3];
+         const separateModes = i % 2 === 0;
+         const settings = randomGeneratorSettings({ tier, separateModes });
+         expect(settings.tier).toBe(tier);
+         expect(settings.separateModes).toBe(separateModes);
+         expect(SATURATIONS).toContain(settings.saturation);
+         expect(CONTRASTS).toContain(settings.contrast);
+
+         const { light, dark } = deriveFromGenerator(settings);
+         for (const mode of [light, dark]) {
+            for (const [fg, bg] of CONTRAST_PAIRS) {
+               expect(contrastRatio(mode[fg], mode[bg]), `random t${tier} sep=${separateModes} ${fg}/${bg} ${JSON.stringify(settings)}`).toBeGreaterThanOrEqual(AA);
+            }
+         }
+      }
    });
 });

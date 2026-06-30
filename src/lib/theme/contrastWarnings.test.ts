@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
 import { CONTRAST_PAIRS, lowContrastPairs } from './contrastWarnings';
-import { derive2Seed } from './deriveTheme';
+import { deriveFromGenerator } from './deriveTheme';
 import { PRESET_THEMES } from './themeTokens';
 
 // -- Type Imports --
@@ -25,7 +25,7 @@ describe('lowContrastPairs', () => {
    });
 
    it('passes a derived theme (both modes clear the floor)', () => {
-      const { light, dark } = derive2Seed('hsl(280 70% 45%)', 'hsl(280 20% 50%)');
+      const { light, dark } = deriveFromGenerator({ tier: 3, separateModes: false, saturation: 'minimal', contrast: 'normal', seeds: { primary: 'hsl(280 70% 45%)', background: 'hsl(280 20% 50%)', accent: 'hsl(40 80% 55%)' } });
       expect(lowContrastPairs(light)).toEqual([]);
       expect(lowContrastPairs(dark)).toEqual([]);
    });

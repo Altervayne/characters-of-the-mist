@@ -73,41 +73,38 @@ export const TOKEN_GROUPS: { id: string; tokens: ChromeTokenKey[] }[] = [
    { id: 'lines', tokens: ['border', 'input'] },
 ];
 
-/**
- * The seed-generator modes. 2-seed / 4-seed are the strictly-safe (near-gray) generators; 3-seed is the
- * Expressive mode - tinted surfaces, a real accent, seed-driven brightness - chosen deliberately.
- */
-export type SeedMode = '2-seed' | '4-seed' | '3-seed';
+/* The unified generator's types: seed roles by tier + two modifier axes (saturation, contrast). */
 
-/** 2-seed inputs: a single accent + neutral pair drives both light and dark. */
-export interface TwoSeeds {
-   accent: string;
-   neutral: string;
-}
-
-/** 4-seed inputs: an independent accent + neutral pair per mode. */
-export interface FourSeeds {
-   lightAccent: string;
-   lightNeutral: string;
-   darkAccent: string;
-   darkNeutral: string;
-}
-
-/** 3-seed (Expressive) inputs: a primary, a surface tint, and a real accent; `vivid` scales the boldness. */
-export interface ThreeSeeds {
+/** The seed roles the generator fills by tier: accent appears at tier 3, secondary at tier 4. */
+export interface SeedSet {
    primary: string;
-   surface: string;
-   accent: string;
-   vivid?: boolean;
+   background: string;
+   accent?: string;
+   secondary?: string;
 }
 
-/** The seeds a theme was last generated from, kept so the panel restores them and can re-generate. */
-export type ThemeSeeds = TwoSeeds | FourSeeds | ThreeSeeds;
+/** How many seed roles the generator exposes: 2 (Primary + Background), 3 (+ Accent), 4 (+ Secondary). */
+export type GeneratorTier = 2 | 3 | 4;
+
+/** Saturation axis: near-gray surfaces -> moderate tint -> bold tinted surfaces + a real accent. */
+export type SaturationLevel = 'minimal' | 'balanced' | 'vivid';
+
+/** Contrast axis: a compressed gentle ramp -> the preset ramp -> a widened ramp with more-visible borders. */
+export type ContrastLevel = 'soft' | 'normal' | 'contrasted';
+
+/** Everything the unified generator needs. `seeds` is one set, or a light/dark pair when `separateModes`. */
+export interface GeneratorSettings {
+   tier: GeneratorTier;
+   separateModes: boolean;
+   saturation: SaturationLevel;
+   contrast: ContrastLevel;
+   seeds: SeedSet | { light: SeedSet; dark: SeedSet };
+}
 
 /**
  * A user-defined theme. `light` / `dark` are the resolved palettes that actually apply (the source of
- * truth); `radius` is the shared corner size. When the theme was filled from the seed generator,
- * `seedMode` + `seeds` record what produced it (manual edits afterwards win - they overwrite tokens).
+ * truth); `radius` is the shared corner size. When the theme was filled from the generator, `generator`
+ * records the settings that produced it (so the panel restores + re-generates; manual edits afterwards win).
  */
 export interface CustomTheme {
    id: string;
@@ -117,8 +114,7 @@ export interface CustomTheme {
    radius: string;
    // The game-agnostic paper palette (mode-agnostic): one value per token, applied the same in light + dark.
    paper: PaperSet;
-   seedMode?: SeedMode;
-   seeds?: ThemeSeeds;
+   generator?: GeneratorSettings;
 }
 
 /** A custom theme's active value (and CSS class) is `theme-custom-{id}`, so the preset class-swap just works. */
@@ -307,16 +303,15 @@ export function resolveActiveTheme(
 }
 
 /**
- * Whether two themes match on the EDITOR-owned fields (light, dark, radius, paper, seedMode, seeds) - the
- * fields a draft tracks. Name/id are excluded (not edited here). Used to tell when a draft has unsaved changes.
+ * Whether two themes match on the EDITOR-owned fields (light, dark, radius, paper, generator) - the fields a
+ * draft tracks. Name/id are excluded (not edited here). Used to tell when a draft has unsaved changes.
  */
 export function themeEditorFieldsEqual(a: CustomTheme, b: CustomTheme): boolean {
    return (
       a.radius === b.radius &&
-      a.seedMode === b.seedMode &&
       JSON.stringify(a.light) === JSON.stringify(b.light) &&
       JSON.stringify(a.dark) === JSON.stringify(b.dark) &&
       JSON.stringify(a.paper) === JSON.stringify(b.paper) &&
-      JSON.stringify(a.seeds ?? null) === JSON.stringify(b.seeds ?? null)
+      JSON.stringify(a.generator ?? null) === JSON.stringify(b.generator ?? null)
    );
 }

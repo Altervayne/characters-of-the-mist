@@ -113,7 +113,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             // Start (or restart) the live draft from a deep copy of the saved theme, so opening the editor
             // shows no change until the user edits.
             beginThemeDraft: (theme) => set({
-               themeDraft: { ...theme, light: { ...theme.light }, dark: { ...theme.dark }, paper: { ...theme.paper }, seeds: theme.seeds ? { ...theme.seeds } : undefined },
+               themeDraft: { ...theme, light: { ...theme.light }, dark: { ...theme.dark }, paper: { ...theme.paper }, generator: theme.generator ? { ...theme.generator } : undefined },
             }),
             patchThemeDraft: (patch) => set((state) => (state.themeDraft ? { themeDraft: { ...state.themeDraft, ...patch } } : {})),
             // The only write of editor-owned fields back to a saved theme. Name/id aren't editor-edited, so a
@@ -121,7 +121,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             saveThemeDraft: () => {
                const draft = get().themeDraft;
                if (!draft) return;
-               get().actions.updateCustomTheme(draft.id, { light: draft.light, dark: draft.dark, radius: draft.radius, paper: draft.paper, seedMode: draft.seedMode, seeds: draft.seeds });
+               get().actions.updateCustomTheme(draft.id, { light: draft.light, dark: draft.dark, radius: draft.radius, paper: draft.paper, generator: draft.generator });
             },
             discardThemeDraft: () => set({ themeDraft: null }),
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),

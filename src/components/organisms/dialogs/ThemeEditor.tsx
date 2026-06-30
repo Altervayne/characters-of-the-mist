@@ -20,14 +20,14 @@ import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThem
 import { emptyTracker } from '@/lib/trackers/emptyTracker';
 
 // -- Icon Imports --
-import { AlertTriangle, ChevronDown, ChevronRight, Info, Save, Sparkles } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, Info, Save, Shuffle, Sparkles } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { parseColorToRgb, rgbToHex } from '@/lib/color';
 import { readRecentColors } from '@/lib/recentColors';
 import { PAPER_GROUPS, PAPER_TOKEN_KEYS, PRESET_LABELS, PRESET_THEMES, TOKEN_GROUPS, themeEditorFieldsEqual } from '@/lib/theme/themeTokens';
-import { deriveFromSeeds } from '@/lib/theme/deriveTheme';
+import { deriveFromGenerator, randomGeneratorSettings } from '@/lib/theme/deriveTheme';
 import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
 import { useThemeSwitchGuard } from '@/components/organisms/dialogs/themeSwitchGuard';
 import { lowContrastPairs } from '@/lib/theme/contrastWarnings';
@@ -37,7 +37,7 @@ import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSett
 
 // -- Type Imports --
 import type { CSSProperties } from 'react';
-import type { ChromeTokenKey, CustomTheme, FourSeeds, PaperSet, PaperTokenKey, SeedMode, ThreeSeeds, TokenSet, TwoSeeds } from '@/lib/theme/themeTokens';
+import type { ChromeTokenKey, ContrastLevel, CustomTheme, GeneratorSettings, GeneratorTier, PaperSet, PaperTokenKey, SaturationLevel, SeedSet, TokenSet } from '@/lib/theme/themeTokens';
 import type { ContrastWarning } from '@/lib/theme/contrastWarnings';
 
 /*
@@ -57,30 +57,42 @@ const RADIUS_MIN = 0;
 const RADIUS_MAX = 1.5;
 const RADIUS_STEP = 0.05;
 
-/** The seed swatches open here when a theme has never been generated. */
-const DEFAULT_ACCENT_SEED = '#2563eb';
-const DEFAULT_NEUTRAL_SEED = '#6b7280';
-/** Expressive defaults: a blue primary, a neutral surface tint, and a contrasting amber accent. */
-const DEFAULT_ACCENT_CONTRAST_SEED = '#f59e0b';
-
 /** Any CSS color -> `#rrggbb` so the picker (hex-based) opens on the current value. */
 function toHex(color: string): string {
    const rgb = parseColorToRgb(color);
    return rgb ? rgbToHex(...rgb) : '#000000';
 }
 
-/** Restores the seed panel's inputs from a theme's saved seeds, falling back to the defaults. */
-function restoreSeeds(theme: CustomTheme): { two: TwoSeeds; four: FourSeeds; three: ThreeSeeds } {
-   const two: TwoSeeds = { accent: DEFAULT_ACCENT_SEED, neutral: DEFAULT_NEUTRAL_SEED };
-   const four: FourSeeds = { lightAccent: DEFAULT_ACCENT_SEED, lightNeutral: DEFAULT_NEUTRAL_SEED, darkAccent: DEFAULT_ACCENT_SEED, darkNeutral: DEFAULT_NEUTRAL_SEED };
-   const three: ThreeSeeds = { primary: DEFAULT_ACCENT_SEED, surface: DEFAULT_NEUTRAL_SEED, accent: DEFAULT_ACCENT_CONTRAST_SEED, vivid: false };
-   const seeds = theme.seeds;
-   // The three shapes are distinguished by their unique keys: `primary` (3-seed), `lightAccent` (4-seed),
-   // `accent` (2-seed).
-   if (seeds && 'primary' in seeds) { Object.assign(three, seeds); }
-   else if (seeds && 'lightAccent' in seeds) { Object.assign(four, seeds); }
-   else if (seeds && 'accent' in seeds) { two.accent = seeds.accent; two.neutral = seeds.neutral; }
-   return { two, four, three };
+/** A seed set with every role present, so the panel can show a value even for roles the current tier hides. */
+type FullSeedSet = { primary: string; background: string; accent: string; secondary: string };
+
+/** The seeds the panel opens on for a never-generated theme: a blue primary, a neutral surface, amber + violet. */
+const DEFAULT_SEEDS: FullSeedSet = { primary: '#2563eb', background: '#6b7280', accent: '#f59e0b', secondary: '#8b5cf6' };
+
+/** The panel state restored from a theme's `generator`, falling back to sensible defaults when there is none. */
+interface GeneratorPanelState {
+   tier: GeneratorTier;
+   separateModes: boolean;
+   saturation: SaturationLevel;
+   contrast: ContrastLevel;
+   light: FullSeedSet;
+   dark: FullSeedSet;
+}
+
+/** Restores the generator panel from a saved theme's `generator` (splitting light/dark seeds when separate). */
+function restoreGenerator(theme: CustomTheme): GeneratorPanelState {
+   const g = theme.generator;
+   if (!g) return { tier: 3, separateModes: false, saturation: 'balanced', contrast: 'normal', light: { ...DEFAULT_SEEDS }, dark: { ...DEFAULT_SEEDS } };
+   const lightSeeds = (g.separateModes ? (g.seeds as { light: SeedSet; dark: SeedSet }).light : (g.seeds as SeedSet)) ?? {};
+   const darkSeeds = (g.separateModes ? (g.seeds as { light: SeedSet; dark: SeedSet }).dark : (g.seeds as SeedSet)) ?? {};
+   return {
+      tier: g.tier,
+      separateModes: g.separateModes,
+      saturation: g.saturation,
+      contrast: g.contrast,
+      light: { ...DEFAULT_SEEDS, ...lightSeeds },
+      dark: { ...DEFAULT_SEEDS, ...darkSeeds },
+   };
 }
 
 /** One token's swatch for one mode: opens the shared picker, commits the chosen hex; flags low contrast. */
@@ -214,26 +226,99 @@ function SeedField({ label, info, value, onPick }: { label: string; info?: strin
    );
 }
 
+/** An evenly-split segmented control (tier / saturation / contrast), with a one-line note on the active option. */
+function SegmentedControl<T extends string | number>({ label, options, value, onChange }: {
+   label?: string;
+   options: { value: T; label: string; desc?: string }[];
+   value: T;
+   onChange: (value: T) => void;
+}) {
+   const active = options.find((option) => option.value === value);
+   return (
+      <div className="flex flex-col gap-1.5">
+         {label && <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>}
+         <div className="grid grid-cols-3 gap-1.5">
+            {options.map((option) => (
+               <Button key={option.value} variant={value === option.value ? 'default' : 'outline'} size="sm" onClick={() => onChange(option.value)} className="w-full cursor-pointer">
+                  {option.label}
+               </Button>
+            ))}
+         </div>
+         {active?.desc && <p className="text-xs text-muted-foreground">{active.desc}</p>}
+      </div>
+   );
+}
+
+/** The seed inputs for one mode, gated by tier (Accent at tier>=3, Secondary at tier 4). */
+function SeedGroup({ heading, seeds, onChange, tier }: { heading?: string; seeds: FullSeedSet; onChange: (next: FullSeedSet) => void; tier: GeneratorTier }) {
+   const { t } = useTranslation();
+   const set = (key: keyof FullSeedSet) => (hex: string) => onChange({ ...seeds, [key]: hex });
+   return (
+      <div className="flex flex-col gap-1.5">
+         {heading && <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{heading}</span>}
+         <div className="grid grid-cols-2 gap-3">
+            <SeedField label={t('SettingsDialog.themes.seeds.primary')} info={t('SettingsDialog.themes.seeds.primaryInfo')} value={seeds.primary} onPick={set('primary')} />
+            <SeedField label={t('SettingsDialog.themes.seeds.background')} info={t('SettingsDialog.themes.seeds.backgroundInfo')} value={seeds.background} onPick={set('background')} />
+            {tier >= 3 && <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={seeds.accent} onPick={set('accent')} />}
+            {tier >= 4 && <SeedField label={t('SettingsDialog.themes.seeds.secondary')} info={t('SettingsDialog.themes.seeds.secondaryInfo')} value={seeds.secondary} onPick={set('secondary')} />}
+         </div>
+      </div>
+   );
+}
+
 /** The collapsible, secondary "generate from seeds" accelerator (manual rows stay the primary way to author). */
 function SeedPanel({ theme }: { theme: CustomTheme }) {
    const { t } = useTranslation();
    const { patchThemeDraft } = useAppSettingsActions();
 
-   const restored = restoreSeeds(theme);
+   const restored = restoreGenerator(theme);
    const [open, setOpen] = useState(false);
-   const [mode, setMode] = useState<SeedMode>(theme.seedMode === '4-seed' ? '4-seed' : theme.seedMode === '3-seed' ? '3-seed' : '2-seed');
-   const [two, setTwo] = useState<TwoSeeds>(restored.two);
-   const [four, setFour] = useState<FourSeeds>(restored.four);
-   const [three, setThree] = useState<ThreeSeeds>(restored.three);
+   const [tier, setTier] = useState<GeneratorTier>(restored.tier);
+   const [separateModes, setSeparateModes] = useState(restored.separateModes);
+   const [saturation, setSaturation] = useState<SaturationLevel>(restored.saturation);
+   const [contrast, setContrast] = useState<ContrastLevel>(restored.contrast);
+   const [light, setLight] = useState<FullSeedSet>(restored.light);
+   const [dark, setDark] = useState<FullSeedSet>(restored.dark);
    const [confirming, setConfirming] = useState(false);
 
+   // Both Generate and Surprise me go through the draft (preview live, persist on Save). The `generator` is
+   // recorded so the panel restores + re-generates later.
+   const apply = (settings: GeneratorSettings) => {
+      const { light: l, dark: d, paper } = deriveFromGenerator(settings);
+      patchThemeDraft({ light: l, dark: d, paper, generator: settings });
+   };
+   const buildSettings = (s: { tier: GeneratorTier; separateModes: boolean; saturation: SaturationLevel; contrast: ContrastLevel; light: FullSeedSet; dark: FullSeedSet }): GeneratorSettings => ({
+      tier: s.tier, separateModes: s.separateModes, saturation: s.saturation, contrast: s.contrast,
+      seeds: s.separateModes ? { light: s.light, dark: s.dark } : s.light,
+   });
+
    const generate = () => {
-      const seeds = mode === '2-seed' ? two : mode === '3-seed' ? three : four;
-      const { light, dark, paper } = deriveFromSeeds(mode, seeds);
-      // Overwrite both palettes + paper in the draft from the seeds; radius is the manual slider's, untouched.
-      patchThemeDraft({ light, dark, paper, seedMode: mode, seeds });
+      apply(buildSettings({ tier, separateModes, saturation, contrast, light, dark }));
       setConfirming(false);
    };
+
+   // Surprise me: keep the user's tier + light/dark choice, roll seeds + both axes, reflect them, generate now.
+   const surprise = () => {
+      const rolled = randomGeneratorSettings({ tier, separateModes });
+      setSaturation(rolled.saturation);
+      setContrast(rolled.contrast);
+      const rolledLight = separateModes ? (rolled.seeds as { light: SeedSet; dark: SeedSet }).light : (rolled.seeds as SeedSet);
+      const rolledDark = separateModes ? (rolled.seeds as { light: SeedSet; dark: SeedSet }).dark : (rolled.seeds as SeedSet);
+      setLight({ ...DEFAULT_SEEDS, ...rolledLight });
+      setDark({ ...DEFAULT_SEEDS, ...rolledDark });
+      apply(rolled);
+   };
+
+   const saturationOptions = [
+      { value: 'minimal' as const, label: t('SettingsDialog.themes.seeds.saturationMinimal'), desc: t('SettingsDialog.themes.seeds.saturationMinimalDesc') },
+      { value: 'balanced' as const, label: t('SettingsDialog.themes.seeds.saturationBalanced'), desc: t('SettingsDialog.themes.seeds.saturationBalancedDesc') },
+      { value: 'vivid' as const, label: t('SettingsDialog.themes.seeds.saturationVivid'), desc: t('SettingsDialog.themes.seeds.saturationVividDesc') },
+   ];
+   const contrastOptions = [
+      { value: 'soft' as const, label: t('SettingsDialog.themes.seeds.contrastSoft'), desc: t('SettingsDialog.themes.seeds.contrastSoftDesc') },
+      { value: 'normal' as const, label: t('SettingsDialog.themes.seeds.contrastNormal'), desc: t('SettingsDialog.themes.seeds.contrastNormalDesc') },
+      { value: 'contrasted' as const, label: t('SettingsDialog.themes.seeds.contrastContrasted'), desc: t('SettingsDialog.themes.seeds.contrastContrastedDesc') },
+   ];
 
    return (
       <div className="rounded-md border border-dashed border-border">
@@ -249,70 +334,42 @@ function SeedPanel({ theme }: { theme: CustomTheme }) {
 
          {open && (
             <div className="flex flex-col gap-3 border-t border-border px-3 py-3">
-               {/* Mode picker: one evenly-split segmented control, with a one-line note on what it does. */}
-               <div className="flex flex-col gap-1.5">
-                  <div className="grid grid-cols-3 gap-1.5">
-                     <Button variant={mode === '2-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('2-seed')} className="w-full cursor-pointer">
-                        {t('SettingsDialog.themes.seeds.twoSeed')}
-                     </Button>
-                     <Button variant={mode === '3-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('3-seed')} className="w-full cursor-pointer">
-                        {t('SettingsDialog.themes.seeds.expressive')}
-                     </Button>
-                     <Button variant={mode === '4-seed' ? 'default' : 'outline'} size="sm" onClick={() => setMode('4-seed')} className="w-full cursor-pointer">
-                        {t('SettingsDialog.themes.seeds.fourSeed')}
-                     </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                     {t(`SettingsDialog.themes.seeds.${mode === '2-seed' ? 'twoSeedDesc' : mode === '3-seed' ? 'expressiveDesc' : 'fourSeedDesc'}`)}
-                  </p>
-               </div>
+               {/* Tier: how many seed roles to expose (Accent at 3, Secondary at 4). */}
+               <SegmentedControl
+                  value={tier}
+                  onChange={setTier}
+                  options={[
+                     { value: 2, label: t('SettingsDialog.themes.seeds.tier2') },
+                     { value: 3, label: t('SettingsDialog.themes.seeds.tier3') },
+                     { value: 4, label: t('SettingsDialog.themes.seeds.tier4') },
+                  ]}
+               />
 
-               {mode === '2-seed' ? (
-                  <div className="grid grid-cols-2 gap-3">
-                     <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={two.accent} onPick={(hex) => setTwo((s) => ({ ...s, accent: hex }))} />
-                     <SeedField label={t('SettingsDialog.themes.seeds.neutral')} info={t('SettingsDialog.themes.seeds.neutralInfo')} value={two.neutral} onPick={(hex) => setTwo((s) => ({ ...s, neutral: hex }))} />
-                  </div>
-               ) : mode === '3-seed' ? (
+               {/* Declare light/dark separately: doubles only the SEEDS; the tier + axes stay shared. */}
+               <Button variant={separateModes ? 'default' : 'outline'} size="sm" onClick={() => setSeparateModes((value) => !value)} className="w-full cursor-pointer">
+                  {t('SettingsDialog.themes.seeds.separateModes')}
+               </Button>
+
+               {/* Modifier axes. */}
+               <SegmentedControl label={t('SettingsDialog.themes.seeds.saturation')} value={saturation} onChange={setSaturation} options={saturationOptions} />
+               <SegmentedControl label={t('SettingsDialog.themes.seeds.contrast')} value={contrast} onChange={setContrast} options={contrastOptions} />
+
+               {/* Seeds: one group when shared, two aligned Light/Dark groups when separate. */}
+               {separateModes ? (
                   <div className="flex flex-col gap-3">
-                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        <SeedField label={t('SettingsDialog.themes.seeds.primary')} info={t('SettingsDialog.themes.seeds.primaryInfo')} value={three.primary} onPick={(hex) => setThree((s) => ({ ...s, primary: hex }))} />
-                        <SeedField label={t('SettingsDialog.themes.seeds.surface')} info={t('SettingsDialog.themes.seeds.surfaceInfo')} value={three.surface} onPick={(hex) => setThree((s) => ({ ...s, surface: hex }))} />
-                        <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={three.accent} onPick={(hex) => setThree((s) => ({ ...s, accent: hex }))} />
-                     </div>
-                     {/* Vivid scales the boldness (surface saturation, foreground tint, accent saturation). */}
-                     <div className="flex items-center gap-2">
-                        <Button
-                           variant={three.vivid ? 'default' : 'outline'}
-                           size="sm"
-                           onClick={() => setThree((s) => ({ ...s, vivid: !s.vivid }))}
-                           className="shrink-0 cursor-pointer"
-                        >
-                           {t('SettingsDialog.themes.seeds.vivid')}
-                        </Button>
-                        <span className="text-xs text-muted-foreground">{t('SettingsDialog.themes.seeds.vividHint')}</span>
-                     </div>
+                     <SeedGroup heading={t('SettingsDialog.themes.lightColumn')} seeds={light} onChange={setLight} tier={tier} />
+                     <SeedGroup heading={t('SettingsDialog.themes.darkColumn')} seeds={dark} onChange={setDark} tier={tier} />
                   </div>
                ) : (
-                  /* Light and Dark share the same two-column grid so Accent sits above Accent, Neutral above Neutral. */
-                  <div className="flex flex-col gap-3">
-                     <div className="flex flex-col gap-1.5">
-                        <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.lightColumn')}</span>
-                        <div className="grid grid-cols-2 gap-3">
-                           <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={four.lightAccent} onPick={(hex) => setFour((s) => ({ ...s, lightAccent: hex }))} />
-                           <SeedField label={t('SettingsDialog.themes.seeds.neutral')} info={t('SettingsDialog.themes.seeds.neutralInfo')} value={four.lightNeutral} onPick={(hex) => setFour((s) => ({ ...s, lightNeutral: hex }))} />
-                        </div>
-                     </div>
-                     <div className="flex flex-col gap-1.5">
-                        <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{t('SettingsDialog.themes.darkColumn')}</span>
-                        <div className="grid grid-cols-2 gap-3">
-                           <SeedField label={t('SettingsDialog.themes.seeds.accent')} info={t('SettingsDialog.themes.seeds.accentInfo')} value={four.darkAccent} onPick={(hex) => setFour((s) => ({ ...s, darkAccent: hex }))} />
-                           <SeedField label={t('SettingsDialog.themes.seeds.neutral')} info={t('SettingsDialog.themes.seeds.neutralInfo')} value={four.darkNeutral} onPick={(hex) => setFour((s) => ({ ...s, darkNeutral: hex }))} />
-                        </div>
-                     </div>
-                  </div>
+                  <SeedGroup seeds={light} onChange={setLight} tier={tier} />
                )}
 
-               <Button onClick={() => setConfirming(true)} className="w-full cursor-pointer">{t('SettingsDialog.themes.seeds.generate')}</Button>
+               <div className="flex gap-2">
+                  <Button onClick={() => setConfirming(true)} className="flex-1 cursor-pointer">{t('SettingsDialog.themes.seeds.generate')}</Button>
+                  <Button variant="outline" onClick={surprise} className="flex-1 cursor-pointer">
+                     <Shuffle className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.seeds.surprise')}
+                  </Button>
+               </div>
             </div>
          )}
 
