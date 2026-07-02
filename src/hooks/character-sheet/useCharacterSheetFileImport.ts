@@ -10,13 +10,14 @@ import { useDropzone } from 'react-dropzone';
 import { importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
 import { importBoard } from '@/lib/board/boardRepository';
-import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
+import { prepareImportedBoard } from '@/lib/board/importBoardReferencedCharacters';
 import { useThemeImport } from '@/lib/theme/useThemeImport';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
@@ -43,6 +44,7 @@ export function useCharacterSheetFileImport() {
    const { addImportedCard, addImportedTracker } = useCharacterActions();
    const { openCharacterTab, openBoardTab } = useTabManagerActions();
    const { setContextualGame } = useAppSettingsActions();
+   const { reloadCurrentFolder } = useDrawerActions();
    const importTheme = useThemeImport();
 
    const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -69,11 +71,19 @@ export function useCharacterSheetFileImport() {
          //  Full board (character-independent; always imported as a NEW board)
          // ==================
          if (fileType === 'FULL_BOARD') {
-            // Fresh, independent identity (connection-safe) so re-importing the same file never
-            // collides with an existing board id.
-            const reIded = reIdBoardAggregate(migratedContent as Board);
-            await importBoard(reIded);
-            await openBoardTab(reIded.id);
+            const board = migratedContent as Board;
+            // Rehydrate the board's referenced characters (link existing / recreate absent, ids kept),
+            // re-id for a fresh independent copy, then rewire the elements to the local characters.
+            const prepared = await prepareImportedBoard(
+               board,
+               importedData.embedded,
+               tNotifications('Drawer.importedFromBoardFolder', { board: board.name }),
+            );
+            await importBoard(prepared);
+            // The import may have written an "Imported from {board}" folder straight to the DB;
+            // re-read the current view so it shows without an app reload (a no-op on a pure link).
+            await reloadCurrentFolder();
+            await openBoardTab(prepared.id);
             toast.success(tNotifications('Notifications.board.imported'));
             return;
          }
@@ -120,7 +130,7 @@ export function useCharacterSheetFileImport() {
          console.error("Failed to import file:", error);
          toast.error(tNotifications('Notifications.general.importFailed'));
       }
-   }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, importTheme, tNotifications]);
+   }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, reloadCurrentFolder, importTheme, tNotifications]);
 
    const { getRootProps, isDragActive } = useDropzone({
       onDrop: onFileDrop,

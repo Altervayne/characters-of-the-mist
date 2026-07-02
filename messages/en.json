@@ -407,6 +407,7 @@
       "addFolder": "Add Folder",
       "folderNamePlaceholder": "Folder name...",
       "importedDrawerDefaultName": "Imported Drawer",
+      "importedFromBoardFolder": "Imported from {{board}}",
 
       "dropToImport": "Drop file here to import it to your Drawer",
 

@@ -20,7 +20,8 @@ import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { importBoard, loadBoard } from '@/lib/board/boardRepository';
-import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
+import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
+import { prepareImportedBoard } from '@/lib/board/importBoardReferencedCharacters';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -239,7 +240,11 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          // embeds any board image / card-copy art via collectFromBoard.
          const aggregate = await loadBoard(boardId);
          if (!aggregate) return;
-         await exportToFile(aggregate, 'FULL_BOARD', 'NEUTRAL', generateExportFilename('NEUTRAL', 'FULL_BOARD', aggregate.name));
+         // Embed the full data of every character the board's elements reference, so those live
+         // references survive on another machine (their portraits ride the assets map).
+         const characters = await collectBoardReferencedCharacters(aggregate);
+         const embedded = Object.keys(characters).length > 0 ? { characters } : undefined;
+         await exportToFile(aggregate, 'FULL_BOARD', 'NEUTRAL', generateExportFilename('NEUTRAL', 'FULL_BOARD', aggregate.name), embedded);
          toast.success(tNotifications('Notifications.board.exported'));
       } catch {
          toast.error(tNotifications('Notifications.general.exportError'));
@@ -254,11 +259,18 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          const importedData = await importFromFile(file);
          if (importedData.fileType === 'FULL_BOARD') {
             const migratedContent = harmonizeData(importedData.content, importedData.fileType) as Board;
-            // Fresh, independent identity (connection-safe) so re-importing the same file
-            // never collides with an existing board id.
-            const reIded = reIdBoardAggregate(migratedContent);
-            await importBoard(reIded);
-            await openBoardTab(reIded.id);
+            // Rehydrate the board's referenced characters (link existing / recreate absent, ids kept),
+            // re-id for a fresh independent copy, then rewire the elements to the local characters.
+            const prepared = await prepareImportedBoard(
+               migratedContent,
+               importedData.embedded,
+               t('Drawer.importedFromBoardFolder', { board: migratedContent.name }),
+            );
+            await importBoard(prepared);
+            // The import may have written an "Imported from {board}" folder straight to the DB;
+            // re-read the current view so it shows without an app reload (a no-op on a pure link).
+            await reloadCurrentFolder();
+            await openBoardTab(prepared.id);
             toast.success(tNotifications('Notifications.board.imported'));
          } else {
             toast.error(tNotifications('Notifications.general.importFailed'));

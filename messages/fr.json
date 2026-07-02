@@ -390,6 +390,7 @@
       "addFolder": "Créer un Dossier",
       "folderNamePlaceholder": "Nom du dossier...",
       "importedDrawerDefaultName": "Tiroir Importé",
+      "importedFromBoardFolder": "[TO COMPLETE]",
       "dropToImport": "Déposez vos fichiers ici pour les importer dans votre Tiroir",
       "Actions": {
          "addFolderTitle": "Créer un nouveau Dossier",

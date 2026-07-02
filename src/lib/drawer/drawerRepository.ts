@@ -13,6 +13,7 @@ import { DrawerInvalidOperationError, DrawerNotFoundError, DrawerTransactionErro
 // -- Type Imports --
 import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
 import type { Drawer, DrawerItem, DrawerItemContent, Folder, GameSystem, GeneralItemType } from '@/lib/types/drawer';
+import type { Character } from '@/lib/types/character';
 
 /*
  * Framework-agnostic data-access layer for the normalized drawer. Pure persistence:
@@ -319,6 +320,21 @@ export function getItem(itemId: string): Promise<DrawerItemRecord | undefined> {
 export async function listAllItemContents(): Promise<DrawerItemContent[]> {
    const items = await db.items.toArray();
    return items.map((item) => item.content);
+}
+
+/**
+ * Maps every saved character's id to the drawer item id that holds it (FULL_CHARACTER_SHEET items
+ * only). Backs the board-import dedup: a referenced character already in the drawer is linked to its
+ * existing item rather than recreated. On the vanishingly unlikely id collision the last item wins.
+ */
+export async function getCharacterItemIdMap(): Promise<Map<string, string>> {
+   const items = await db.items.where('type').equals('FULL_CHARACTER_SHEET').toArray();
+   const map = new Map<string, string>();
+   for (const item of items) {
+      const characterId = (item.content as Character).id;
+      if (characterId) map.set(characterId, item.id);
+   }
+   return map;
 }
 
 /**

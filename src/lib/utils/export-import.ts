@@ -21,6 +21,17 @@ export interface EmbeddedAsset {
    base64: string;
 }
 
+/**
+ * The full data of every entity the exported content only REFERENCES (not copies), so a reference
+ * survives on another machine: the importer recreates the entity locally and rewires the references to
+ * it. Typed by entity kind, each map keyed by the source id the references use. Optional and additive -
+ * absent when nothing is referenced. 2.0 embeds `characters` (a board's character elements); Portals
+ * extend it with boards/notes without reshaping the envelope.
+ */
+export interface EmbeddedEntities {
+   characters?: Record<string, Character>;
+}
+
 export interface ExportFile {
    fileType: ExportableItemType;
    game: GameSystem;
@@ -32,6 +43,12 @@ export interface ExportFile {
     * import exactly as before.
     */
    assets?: Record<string, EmbeddedAsset>;
+   /**
+    * The full data of every entity the `content` only references (2.0: a board's character elements),
+    * so the reference survives the trip. Optional and additive - only a `FULL_BOARD` with character
+    * elements carries it; every other export omits it.
+    */
+   embedded?: EmbeddedEntities;
 };
 
 /**
@@ -260,11 +277,11 @@ export function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
 
 /**
  * Builds the `assets` map for an export by reading each referenced asset's bytes and
- * base64-encoding them. A referenced asset that is missing from the store (e.g. a
- * dangling reference) is skipped, not fatal. Returns `undefined` when nothing embeds.
+ * base64-encoding them. Takes the already-collected id set (the caller can union in
+ * ids from embedded entities). A referenced asset that is missing from the store (e.g.
+ * a dangling reference) is skipped, not fatal. Returns `undefined` when nothing embeds.
  */
-async function buildEmbeddedAssets(content: ExportableContent): Promise<Record<string, EmbeddedAsset> | undefined> {
-   const ids = collectAssetIdsFromContent(content);
+async function buildEmbeddedAssets(ids: Set<string>): Promise<Record<string, EmbeddedAsset> | undefined> {
    if (ids.size === 0) return undefined;
 
    const assets: Record<string, EmbeddedAsset> = {};
@@ -321,16 +338,26 @@ export async function rehydrateEmbeddedAssets(assets: Record<string, EmbeddedAss
  * content in an ExportFile with metadata + version, and embeds the bytes of every
  * asset it references so the file is self-contained across devices. Async because
  * reading the referenced asset blobs is async.
+ *
+ * `embedded` carries the full data of entities the content only references (a board's
+ * character elements); the caller resolves them (kept out of here so this stays
+ * generic). Their own assets are unioned into the `assets` build so portraits ride along.
  */
-export async function exportToFile(item: ExportableContent, type: ExportableItemType, game: GameSystem, fileName: string) {
+export async function exportToFile(item: ExportableContent, type: ExportableItemType, game: GameSystem, fileName: string, embedded?: EmbeddedEntities) {
    const exportData: ExportFile = {
       fileType: type,
       game: game,
       version: APP_VERSION,
       content: item,
    };
+   if (embedded) exportData.embedded = embedded;
 
-   const assets = await buildEmbeddedAssets(item);
+   const ids = collectAssetIdsFromContent(item);
+   // Fold in the embedded characters' own assets (portraits) so they ride the same `assets` map.
+   if (embedded?.characters) {
+      for (const character of Object.values(embedded.characters)) collectFromCharacter(character, ids);
+   }
+   const assets = await buildEmbeddedAssets(ids);
    if (assets) exportData.assets = assets;
 
    const jsonString = JSON.stringify(exportData, null, 2);

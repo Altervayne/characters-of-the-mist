@@ -4,10 +4,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // -- Local Imports --
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
 import { hashBytes } from '@/lib/assets/processImage';
+import { storeAsset } from '@/lib/assets/assetRepository';
 import {
    base64ToBytes,
    blobToBase64,
    collectAssetIdsFromContent,
+   exportToFile,
    generateExportFilename,
    isExportedCustomTheme,
    rehydrateEmbeddedAssets,
@@ -16,6 +18,7 @@ import {
 // -- Type Imports --
 import type { EmbeddedAsset, ExportFile } from './export-import';
 import type { Card, Character } from '@/lib/types/character';
+import type { Board } from '@/lib/types/board';
 import type { Drawer, DrawerItem } from '@/lib/types/drawer';
 import type { CustomTheme } from '@/lib/theme/themeTokens';
 
@@ -118,6 +121,53 @@ describe('CUSTOM_THEME export/import', () => {
       expect(reIded.dark).toEqual(theme.dark);
       expect(reIded.radius).toBe(theme.radius);
       expect(reIded.generator).toEqual(theme.generator);
+   });
+});
+
+/**
+ * Runs an `exportToFile` call in the Node env by stubbing the browser download surface (no DOM here),
+ * capturing the generated blob and parsing it back to the envelope. Restores the globals afterwards.
+ */
+async function captureExport(run: () => Promise<void>): Promise<ExportFile> {
+   let captured: Blob | null = null;
+   const g = globalThis as unknown as { document?: unknown };
+   const priorDocument = g.document;
+   const priorCreate = (URL as { createObjectURL?: unknown }).createObjectURL;
+   const priorRevoke = (URL as { revokeObjectURL?: unknown }).revokeObjectURL;
+
+   g.document = { createElement: () => ({ href: '', download: '', click() {} }), body: { appendChild() {}, removeChild() {} } };
+   (URL as { createObjectURL: (b: Blob) => string }).createObjectURL = (blob) => { captured = blob; return 'blob:mock'; };
+   (URL as { revokeObjectURL: (u: string) => void }).revokeObjectURL = () => {};
+
+   try {
+      await run();
+   } finally {
+      g.document = priorDocument;
+      (URL as { createObjectURL?: unknown }).createObjectURL = priorCreate;
+      (URL as { revokeObjectURL?: unknown }).revokeObjectURL = priorRevoke;
+   }
+
+   if (!captured) throw new Error('no export was captured');
+   return JSON.parse(await (captured as Blob).text()) as ExportFile;
+}
+
+describe('exportToFile embedded entities', () => {
+   const board = (): Board => ({ id: 'b', name: 'Board', viewport: { x: 0, y: 0, zoom: 1 }, items: [] });
+
+   it('omits embedded when none is passed (byte-shape unchanged)', async () => {
+      const file = await captureExport(() => exportToFile(board(), 'FULL_BOARD', 'NEUTRAL', 'board'));
+      expect(file.embedded).toBeUndefined();
+   });
+
+   it('writes embedded.characters and folds their portrait assets into the assets map', async () => {
+      const bytes = new Uint8Array([3, 1, 4, 1, 5]);
+      await storeAsset({ hash: 'portrait-1', blob: new Blob([bytes], { type: 'image/webp' }), mimeType: 'image/webp', width: 2, height: 2, byteSize: bytes.length });
+      const char = character([imageCard('portrait-1')]);
+
+      const file = await captureExport(() => exportToFile(board(), 'FULL_BOARD', 'NEUTRAL', 'board', { characters: { 'old-1': char } }));
+
+      expect(file.embedded?.characters?.['old-1']).toEqual(char);
+      expect(file.assets?.['portrait-1']).toMatchObject({ mimeType: 'image/webp', width: 2, height: 2 });
    });
 });
 
