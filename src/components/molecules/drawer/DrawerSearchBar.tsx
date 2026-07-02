@@ -13,6 +13,9 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 // -- Component Imports --
 import { DrawerFiltersPanel } from '@/components/molecules/drawer/DrawerFiltersPanel';
 
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
 // -- Hook Imports --
 import { useDrawerSearch } from '@/hooks/drawer/useDrawerSearch';
 
@@ -22,7 +25,7 @@ import { useDrawerSearch } from '@/hooks/drawer/useDrawerSearch';
  * search state, so the Open side panel and the Expanded view stay in sync without forking the search.
  */
 
-export function DrawerSearchBar({ wide = false }: { wide?: boolean }) {
+export function DrawerSearchBar({ wide = false, isMobile = false }: { wide?: boolean; isMobile?: boolean }) {
    const { t } = useTranslation();
    const { text, setText, clear, isSearchActive, resultCount, activeFilterCount } = useDrawerSearch();
    const [filtersOpen, setFiltersOpen] = useState(false);
@@ -36,7 +39,7 @@ export function DrawerSearchBar({ wide = false }: { wide?: boolean }) {
                   value={text}
                   onChange={(event) => setText(event.target.value)}
                   placeholder={t('Drawer.search.placeholder')}
-                  className="h-9 pl-8 pr-20"
+                  className={cn('h-9 pl-8 pr-20', isMobile && 'h-11 text-base')}
                />
                {isSearchActive && (
                   <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -50,19 +53,19 @@ export function DrawerSearchBar({ wide = false }: { wide?: boolean }) {
             <Button
                variant={filtersOpen ? 'secondary' : 'ghost'}
                size="icon"
-               className="relative h-9 w-9 shrink-0 cursor-pointer"
+               className={cn('relative h-9 w-9 shrink-0 cursor-pointer', isMobile && 'h-11 w-11')}
                aria-label={t('Drawer.filters.title')}
                title={t('Drawer.filters.title')}
                onClick={() => setFiltersOpen((open) => !open)}
             >
-               <SlidersHorizontal className="h-4 w-4" />
+               <SlidersHorizontal className={isMobile ? 'h-5 w-5' : 'h-4 w-4'} />
                {activeFilterCount > 0 && (
                   <Badge className="absolute -right-1 -top-1 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] tabular-nums">{activeFilterCount}</Badge>
                )}
             </Button>
          </div>
 
-         {filtersOpen && <DrawerFiltersPanel wide={wide} />}
+         {filtersOpen && <DrawerFiltersPanel wide={wide} isMobile={isMobile} />}
       </div>
    );
 }

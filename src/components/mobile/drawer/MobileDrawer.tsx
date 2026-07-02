@@ -14,6 +14,8 @@ import MobileFolderItem from '@/components/mobile/drawer/MobileFolderItem';
 import MobileDrawerItem from '@/components/mobile/drawer/MobileDrawerItem';
 import MobileDrawerContextMenu from '@/components/mobile/drawer/MobileDrawerContextMenu';
 import MobileAddFolderSheet from '@/components/mobile/drawer/MobileAddFolderSheet';
+import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
+import { DrawerListRow } from '@/components/molecules/drawer/DrawerListRow';
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
 import { Badge } from '@/components/ui/badge';
 import { FolderCountLabel } from '@/components/mobile/shared/FolderCountLabel';
@@ -27,7 +29,7 @@ import {
 } from 'lucide-react';
 
 // -- Store Imports --
-import { useDrawerActions } from '@/lib/stores/drawerStore';
+import { useDrawerActions, useDrawerStore, isSearchFilterActive } from '@/lib/stores/drawerStore';
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Hook Imports --
@@ -44,6 +46,7 @@ import { triggerHaptic } from '@/lib/utils/haptics';
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
 import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
+import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 
 // -- Constants Imports --
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
@@ -177,7 +180,13 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	const { t } = useTranslation();
 
 	// Drawer state
-	const { addFolder, reloadCurrentFolder } = useDrawerActions();
+	const { addFolder, reloadCurrentFolder, clearSearch } = useDrawerActions();
+
+	// Search reads straight from the store (DrawerSearchBar owns the sole useDrawerSearch instance);
+	// when a search is active the body swaps browse -> results in the same space.
+	const isSearchActive = useDrawerStore((state) => isSearchFilterActive(state.searchCriteria));
+	const searchResults = useDrawerStore((state) => state.searchResults);
+	const isSearching = useDrawerStore((state) => state.isSearching);
 
 	// Folder navigation (current folder, contents, breadcrumb) via the shared hook
 	const { currentFolderId, navigateToFolder, currentItems, currentFolders, breadcrumbPath, childCounts } = useDrawerNavigation();
@@ -201,6 +210,16 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 	} | null>(null);
 	const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 	const [showAddFolderSheet, setShowAddFolderSheet] = useState(false);
+
+	// The search-result context menu (its own target + anchor, distinct from the browse long-press menu).
+	const [searchMenuTarget, setSearchMenuTarget] = useState<DrawerItemSummary | null>(null);
+	const [searchMenuPos, setSearchMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+	const openResultMenu = (summary: DrawerItemSummary, event: React.MouseEvent<HTMLButtonElement>) => {
+		const rect = event.currentTarget.getBoundingClientRect();
+		setSearchMenuTarget(summary);
+		setSearchMenuPos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+	};
 
    // Mobile Handedness
    const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
@@ -308,7 +327,35 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 
 	return (
 		<div className="h-full flex flex-col bg-background pt-safe" data-tutorial="drawer-content">
-			{/* Content */}
+			{/* Real search bar pinned at the top; its Filters toggle expands the panel inline (no sheet). */}
+			<div className="shrink-0 border-b border-border p-3">
+				<DrawerSearchBar isMobile />
+			</div>
+
+			{/* Body: the browse tree, or - while a search is active - the flat results IN THE SAME space
+			    (no overlay). Results are a plain list (no drag/reorder). */}
+			{isSearchActive ? (
+				<div className="flex-1 overflow-y-auto overflow-x-hidden p-3">
+					{isSearching ? (
+						<p className="py-8 text-center text-sm text-muted-foreground">{t('Drawer.search.searching')}</p>
+					) : searchResults && searchResults.length > 0 ? (
+						<div className="flex flex-col gap-1">
+							{searchResults.map((summary) => (
+								<button
+									key={summary.id}
+									type="button"
+									onClick={(event) => openResultMenu(summary, event)}
+									className="min-h-11 w-full rounded text-left hover:bg-muted cursor-pointer"
+								>
+									<DrawerListRow type={summary.type} name={summary.name} game={summary.game} createdAt={summary.createdAt} updatedAt={summary.updatedAt} />
+								</button>
+							))}
+						</div>
+					) : (
+						<p className="py-8 text-center text-sm text-muted-foreground">{t('Drawer.search.noMatches')}</p>
+					)}
+				</div>
+			) : (
 			<DndContext
 				sensors={sensors}
 				collisionDetection={closestCenter}
@@ -370,14 +417,17 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 					{activeItem ? renderItemOverlay(activeItem, isCompactView, isLeftHanded) : null}
 				</DragOverlay>
 			</DndContext>
+			)}
 
-			{/* Breadcrumbs navigation at bottom */}
+			{/* Breadcrumbs navigation at bottom - browse-only (hidden while searching, like desktop). */}
+			{!isSearchActive && (
 			<div className="border-t border-border">
             <MobileBreadcrumbs
                breadcrumbPath={breadcrumbPath}
                onNavigate={navigateToFolder}
 			   />
          </div>
+			)}
 
 			{/* Toolbar at bottom for thumb accessibility.
 			    Bottom padding is set inline as `calc(0.5rem + env(safe-area-inset-bottom))`
@@ -490,6 +540,17 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 				isOpen={showAddFolderSheet}
 				onClose={() => setShowAddFolderSheet(false)}
 				onConfirm={handleAddFolderConfirm}
+			/>
+
+			{/* Search-result context menu: its own target/anchor. Jump-to navigates + clears search, which
+			    swaps the body back to browse in that folder (no sheet to close). */}
+			<MobileDrawerContextMenu
+				isOpen={searchMenuTarget != null}
+				onClose={() => { setSearchMenuTarget(null); setSearchMenuPos(null); }}
+				target={searchMenuTarget ? { type: 'item', id: searchMenuTarget.id, name: searchMenuTarget.name } : null}
+				position={searchMenuPos}
+				onAddToCharacter={onAddToCharacter}
+				onJumpTo={searchMenuTarget ? () => { navigateToFolder(searchMenuTarget.parentFolderId); clearSearch(); } : undefined}
 			/>
 		</div>
 	);

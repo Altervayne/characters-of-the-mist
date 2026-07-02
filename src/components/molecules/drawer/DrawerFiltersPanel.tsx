@@ -76,7 +76,7 @@ function gameGlyph(game: GameSystem): React.ReactElement | null {
 }
 
 /** A labeled from/to date-range row, controlled from the stored range. */
-function DateRangeRow({ label, range, onChange }: { label: string; range?: [number, number]; onChange: (next?: [number, number]) => void }) {
+function DateRangeRow({ label, range, onChange, isMobile = false }: { label: string; range?: [number, number]; onChange: (next?: [number, number]) => void; isMobile?: boolean }) {
    const { t } = useTranslation();
    const fromValue = msToDateInput(range?.[0]);
    const toValue = msToDateInput(range?.[1]);
@@ -84,9 +84,9 @@ function DateRangeRow({ label, range, onChange }: { label: string; range?: [numb
       <div className="flex flex-col gap-1">
          <span className="text-xs font-medium text-muted-foreground">{label}</span>
          <div className="flex items-center gap-2">
-            <Input type="date" value={fromValue} aria-label={`${label} ${t('Drawer.filters.from')}`} onChange={(event) => onChange(buildRange(event.target.value, toValue))} className="h-8 flex-1 text-xs" />
+            <Input type="date" value={fromValue} aria-label={`${label} ${t('Drawer.filters.from')}`} onChange={(event) => onChange(buildRange(event.target.value, toValue))} className={cn('h-8 flex-1 text-xs', isMobile && 'h-10 text-sm')} />
             <span className="text-xs text-muted-foreground">{t('Drawer.filters.to')}</span>
-            <Input type="date" value={toValue} aria-label={`${label} ${t('Drawer.filters.to')}`} onChange={(event) => onChange(buildRange(fromValue, event.target.value))} className="h-8 flex-1 text-xs" />
+            <Input type="date" value={toValue} aria-label={`${label} ${t('Drawer.filters.to')}`} onChange={(event) => onChange(buildRange(fromValue, event.target.value))} className={cn('h-8 flex-1 text-xs', isMobile && 'h-10 text-sm')} />
          </div>
       </div>
    );
@@ -96,8 +96,10 @@ function DateRangeRow({ label, range, onChange }: { label: string; range?: [numb
  * @param wide - The roomy Library layout: the checkbox lists become multi-column grids and the two date
  *   ranges sit side by side, so the panel uses the horizontal space and stays short (no scroll). Default
  *   (the narrow side panel) keeps the single vertical scroll column.
+ * @param isMobile - Bigger tap targets for the touch search sheet (roomier rows + taller date inputs).
+ *   Default off, so desktop renders byte-identical.
  */
-export function DrawerFiltersPanel({ wide = false }: { wide?: boolean }) {
+export function DrawerFiltersPanel({ wide = false, isMobile = false }: { wide?: boolean; isMobile?: boolean }) {
    const { t } = useTranslation();
    const criteria = useDrawerStore((state) => state.searchCriteria);
    const { updateSearchCriteria, clearSearch } = useDrawerActions();
@@ -132,7 +134,7 @@ export function DrawerFiltersPanel({ wide = false }: { wide?: boolean }) {
             <span className="text-xs font-medium text-muted-foreground">{t('Drawer.filters.type')}</span>
             <div className={typeListClass}>
                {FILTERABLE_ITEM_TYPES.map((type) => (
-                  <label key={type} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
+                  <label key={type} className={cn('flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted', isMobile && 'py-2')}>
                      <Checkbox checked={selectedTypes.includes(type)} onCheckedChange={() => toggleType(type)} />
                      {getItemTypeIcon(type)}
                      <span className="text-sm">{t(`Drawer.filters.itemType.${type}`)}</span>
@@ -146,7 +148,7 @@ export function DrawerFiltersPanel({ wide = false }: { wide?: boolean }) {
             <span className="text-xs font-medium text-muted-foreground">{t('Drawer.filters.game')}</span>
             <div className={gameListClass}>
                {FILTERABLE_GAMES.map((game) => (
-                  <label key={game} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted">
+                  <label key={game} className={cn('flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-muted', isMobile && 'py-2')}>
                      <Checkbox checked={selectedGames.includes(game)} onCheckedChange={() => toggleGame(game)} />
                      {gameGlyph(game)}
                      <span className="text-sm">{t(`Drawer.Types.${game}`)}</span>
@@ -156,8 +158,8 @@ export function DrawerFiltersPanel({ wide = false }: { wide?: boolean }) {
          </div>
 
          <div className={datesClass}>
-            <DateRangeRow label={t('Drawer.filters.created')} range={criteria?.createdBetween} onChange={(next) => void updateSearchCriteria({ createdBetween: next })} />
-            <DateRangeRow label={t('Drawer.filters.updated')} range={criteria?.updatedBetween} onChange={(next) => void updateSearchCriteria({ updatedBetween: next })} />
+            <DateRangeRow label={t('Drawer.filters.created')} range={criteria?.createdBetween} onChange={(next) => void updateSearchCriteria({ createdBetween: next })} isMobile={isMobile} />
+            <DateRangeRow label={t('Drawer.filters.updated')} range={criteria?.updatedBetween} onChange={(next) => void updateSearchCriteria({ updatedBetween: next })} isMobile={isMobile} />
          </div>
       </div>
    );

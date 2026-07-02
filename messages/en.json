@@ -344,6 +344,9 @@
          "resultCount_other": "{{count}} results",
          "noMatches": "No items match your search.",
          "jumpTo": "Jump to folder",
+         "close": "Close search",
+         "searching": "Searching…",
+         "typeToSearch": "Type to search your drawer.",
          "created": "Created {{date}}",
          "updated": "Updated {{date}}",
          "unavailable": "This item is no longer available."

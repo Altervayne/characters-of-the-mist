@@ -18,7 +18,8 @@ import {
 	FolderInput,
 	Download,
 	Trash2,
-	PlusCircle
+	PlusCircle,
+	CornerUpRight
 } from 'lucide-react';
 
 // -- Store Imports --
@@ -46,6 +47,9 @@ interface MobileDrawerContextMenuProps {
 	target: { type: 'item' | 'folder'; id: string; name: string } | null;
 	position?: { x: number; y: number } | null;
 	onAddToCharacter?: (item: DrawerItem) => void;
+	/** When set (the search sheet's result menu), adds a "Jump to folder" row atop the list; the browse
+	    drawer omits it, so its menu is unchanged. */
+	onJumpTo?: () => void;
 }
 
 export default function MobileDrawerContextMenu({
@@ -53,7 +57,8 @@ export default function MobileDrawerContextMenu({
 	onClose,
 	target,
 	position,
-	onAddToCharacter
+	onAddToCharacter,
+	onJumpTo
 }: MobileDrawerContextMenuProps) {
 	const { t } = useTranslation();
 	const character = useCharacterStore((state) => state.character);
@@ -241,6 +246,18 @@ export default function MobileDrawerContextMenu({
             </div>
 
             <div className="flex flex-col p-1">
+               {/* Jump to folder (search results only): navigate browse to the item's folder, then leave search. */}
+               {onJumpTo && (
+                  <Button
+                     variant="ghost"
+                     className="w-full justify-start cursor-pointer"
+                     onClick={() => { onJumpTo(); onClose(); }}
+                  >
+                     <CornerUpRight className="w-4 h-4 mr-3" />
+                     {t('Drawer.search.jumpTo')}
+                  </Button>
+               )}
+
                {/* Add to Character (items only, if character loaded) */}
                {canAddToCharacter && (
                   <Button

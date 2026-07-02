@@ -330,6 +330,9 @@
          "resultCount_other": "[TO COMPLETE]",
          "noMatches": "[TO COMPLETE]",
          "jumpTo": "[TO COMPLETE]",
+         "close": "[TO COMPLETE]",
+         "searching": "[TO COMPLETE]",
+         "typeToSearch": "[TO COMPLETE]",
          "created": "[TO COMPLETE]",
          "updated": "[TO COMPLETE]",
          "unavailable": "[TO COMPLETE]"
