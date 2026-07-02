@@ -31,6 +31,9 @@ import { exportFolderAsNestedTree, getItem } from '@/lib/drawer/drawerRepository
 // -- Utils Imports --
 import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 
+// -- Utils Imports --
+import { readSafeAreaInsetBottom } from '@/lib/utils/safeArea';
+
 // -- Type Imports --
 import type { DrawerItem } from '@/lib/types/drawer';
 import type { DrawerItemRecord } from '@/lib/drawer/drawerRecords';
@@ -43,27 +46,6 @@ interface MobileDrawerContextMenuProps {
 	target: { type: 'item' | 'folder'; id: string; name: string } | null;
 	position?: { x: number; y: number } | null;
 	onAddToCharacter?: (item: DrawerItem) => void;
-}
-
-/**
- * Reads the bottom safe-area inset (the home-indicator gutter) in CSS pixels.
- *
- * `env(safe-area-inset-bottom)` cannot be read directly from JavaScript, so this
- * applies it to a throwaway off-screen element's padding and reads back the
- * resolved computed length. Returns 0 on devices/browsers without an inset (or
- * when the document does not set `viewport-fit=cover`).
- *
- * @returns The bottom safe-area inset in pixels (0 when none applies).
- */
-function readSafeAreaInsetBottom(): number {
-	const probe = document.createElement('div');
-	probe.style.position = 'absolute';
-	probe.style.visibility = 'hidden';
-	probe.style.paddingBottom = 'env(safe-area-inset-bottom)';
-	document.body.appendChild(probe);
-	const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-	document.body.removeChild(probe);
-	return inset;
 }
 
 export default function MobileDrawerContextMenu({

@@ -47,6 +47,8 @@
       "diceAddDie": "[TO COMPLETE]",
       "diceRemoveDie": "[TO COMPLETE]",
       "diceToggleNegative": "[TO COMPLETE]",
+      "diceMakePenaltyDie": "[TO COMPLETE]",
+      "diceMakeNormalDie": "[TO COMPLETE]",
       "diceCustomSidesPlaceholder": "[TO COMPLETE]",
       "diceAddCustomDie": "[TO COMPLETE]",
       "diceCommandLabel": "[TO COMPLETE]",

@@ -47,6 +47,8 @@
       "diceAddDie": "Add die",
       "diceRemoveDie": "Remove die",
       "diceToggleNegative": "Toggle penalty die",
+      "diceMakePenaltyDie": "Make penalty die",
+      "diceMakeNormalDie": "Make normal die",
       "diceCustomSidesPlaceholder": "sides",
       "diceAddCustomDie": "Add custom die",
       "diceCommandLabel": "Build from a command",

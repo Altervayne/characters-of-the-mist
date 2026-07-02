@@ -24,7 +24,7 @@ export function MobileDiceTraySheet() {
    const { setDiceTrayContent, setDiceTrayOpen } = useAppSettingsActions();
 
    return (
-      <MobileBottomSheet isOpen={isOpen} onClose={() => setDiceTrayOpen(false)}>
+      <MobileBottomSheet isOpen={isOpen} onClose={() => setDiceTrayOpen(false)} contentClassName="bg-card">
          <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <span className="text-base font-semibold">{t('DiceTray.title')}</span>
             <button
@@ -42,7 +42,7 @@ export function MobileDiceTraySheet() {
              tall tray (long history) scrollable instead of running off the top, and pb-safe clears the
              home indicator. */}
          <div className="max-h-[70dvh] overflow-y-auto pb-safe">
-            <DiceTray content={content} editable growToFill={false} showTitle={false} onChange={setDiceTrayContent} onCacheRoll={setDiceTrayContent} />
+            <DiceTray content={content} editable growToFill={false} showTitle={false} isMobile onChange={setDiceTrayContent} onCacheRoll={setDiceTrayContent} />
          </div>
       </MobileBottomSheet>
    );

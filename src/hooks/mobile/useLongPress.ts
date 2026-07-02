@@ -3,7 +3,7 @@ import { useRef, useState, useCallback, type TouchEvent } from 'react';
 // -- Utils Imports --
 import { triggerHaptic } from '@/lib/utils/haptics';
 
-interface Position {
+export interface Position {
 	x: number;
 	y: number;
 }
