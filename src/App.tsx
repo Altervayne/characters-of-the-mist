@@ -6,6 +6,7 @@ import { AppStartManagerProvider } from '@/components/providers/AppStartManager'
 import { ActiveCharacterStoreProvider } from '@/lib/character/ActiveCharacterStoreProvider';
 import { ActiveBoardStoreProvider } from '@/lib/board/ActiveBoardStoreProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { DevPreviewWarning, IS_DEV_PREVIEW } from '@/components/DevPreviewWarning';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import { router } from '@/router';
 import { useDeviceType } from '@/hooks/useDeviceType';
@@ -15,8 +16,16 @@ function AppContent() {
   const { isMobile } = useDeviceType();
 
   return (
-    <>
-      <RouterProvider router={router} />
+    // A flex column so the dev-preview banner (when present) reserves its height above the app instead of
+    // covering it. With no banner the app child fills the whole 100dvh - layout is unchanged.
+    <div className="flex h-[100dvh] w-[100dvw] flex-col overflow-hidden">
+      {/* Env-gated unstable-build warning; renders nothing in normal/production builds. */}
+      <DevPreviewWarning />
+      {/* On the dev preview, inset the app by the hazard frame's 6px so it sits inside the frame (the frame
+          draws in this gutter) instead of being overlapped. Top is already handled by the banner above. */}
+      <div className={`relative min-h-0 w-full flex-1 overflow-hidden${IS_DEV_PREVIEW ? ' px-1.5 pb-1.5' : ''}`}>
+        <RouterProvider router={router} />
+      </div>
       <PWAUpdatePrompt />
       <Toaster
         position={isMobile ? 'top-center' : 'bottom-center'}
@@ -31,7 +40,7 @@ function AppContent() {
           },
         }}
       />
-    </>
+    </div>
   );
 }
 

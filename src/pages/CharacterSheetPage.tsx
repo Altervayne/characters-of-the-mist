@@ -198,7 +198,7 @@ function DesktopCharacterSheetPage() {
       <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
          {/* The shell is a fixed viewport: `relative` anchors the Expanded overlay, `overflow-hidden`
              clips its recede off-screen so no state ever scrolls the page. */}
-         <div className="relative flex overflow-hidden bg-background text-foreground" style={{ height: '100dvh', width: '100dvw' }}>
+         <div className="relative flex overflow-hidden bg-background text-foreground" style={{ height: '100%', width: '100%' }}>
             {/* Raised above the Expanded overlay so the sidebar always stays exposed (the overlay's left
                 edge tucks behind it). */}
             <div className="relative z-40 flex">
