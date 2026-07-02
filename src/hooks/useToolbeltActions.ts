@@ -23,7 +23,8 @@ import {
    CreditCard,
    RectangleEllipsis,
    WalletCards,
-   FolderInput
+   FolderInput,
+   Dices
 } from 'lucide-react';
 
 // -- Other Library Imports --
@@ -35,6 +36,7 @@ import { useCharacterActions } from '@/lib/stores/characterStore';
 import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Hook Imports --
 import useCharacterTemporalStore from '@/hooks/useCharacterTemporalStore';
@@ -75,6 +77,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 	const { toggleIsEditing, setCardDialogOpen, setDrawerOpen } = useAppGeneralStateStore((state) => state.actions);
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
 
+	const { setDiceTrayOpen } = useAppSettingsActions();
+
 	const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
 	const { undo, redo, pastStates, futureStates } = useCharacterTemporalStore(
@@ -114,6 +118,17 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: isEditing ? (t('Toolbelt.playMode')) : (t('Toolbelt.editMode')),
 			icon: EditIcon,
 			onClick: () => toggleIsEditing(),
+			show: true
+		});
+
+		// ==================
+		//  Dice tray (the app-wide tray, shared with desktop; opens the mobile bottom sheet)
+		// ==================
+		globalActions.push({
+			id: 'dice',
+			label: t('Toolbelt.dice'),
+			icon: Dices,
+			onClick: () => setDiceTrayOpen(true),
 			show: true
 		});
 
@@ -527,6 +542,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		addStoryTheme,
 		setCardDialogOpen,
 		toggleIsEditing,
+		setDiceTrayOpen,
 		initiateItemDrop,
 		reloadCurrentFolder,
 		setDrawerOpen,

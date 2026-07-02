@@ -252,7 +252,9 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
                         <Plus className="h-5 w-5" />
                      </button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" sideOffset={6} className="w-auto p-2">
+                  {/* Above the app-modal overlay band (z-60) so the picker clears a host sheet (the mobile
+                      dice tray sits in a bottom sheet); already top-most on desktop/board, so no change there. */}
+                  <PopoverContent align="start" sideOffset={6} className="z-[70] w-auto p-2">
                      <div className="grid grid-cols-4 gap-1">
                         {QUICK_PICK.map((sides) => (
                            <button
@@ -553,7 +555,7 @@ function CommandPopover({ triggerLabel, placeholder, applyLabel, errorLabel, sto
                <Terminal className="h-5 w-5" />
             </button>
          </PopoverTrigger>
-         <PopoverContent align="start" sideOffset={6} className="w-64 p-2">
+         <PopoverContent align="start" sideOffset={6} className="z-[70] w-64 p-2">
             <div className="flex items-center gap-1">
                <input
                   type="text"

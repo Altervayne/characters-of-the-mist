@@ -17,6 +17,7 @@ import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
 import MobileAddCard from '@/components/mobile/menu/MobileAddCard';
 import MobileDrawer from '@/components/mobile/drawer/MobileDrawer';
 import MobileTutorial from '@/components/mobile/tutorial/MobileTutorial';
+import { MobileDiceTraySheet } from '@/components/mobile/dice/MobileDiceTraySheet';
 import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
 
 // -- Store Imports --
@@ -316,6 +317,9 @@ export default function MobileCharacterSheetPage() {
 					/>
 				)
 			)}
+
+			{/* App-wide dice tray (shared with desktop); overlays any tab, opened from the toolbelt. */}
+			<MobileDiceTraySheet />
 
 			{/* Mobile Tutorial */}
 			<MobileTutorial
