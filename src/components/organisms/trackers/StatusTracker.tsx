@@ -126,7 +126,9 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, i
                      <p className="text-base font-semibold px-2">{tracker.name ? tracker.name : `[${t('Trackers.statusNoName')}]`}</p>
                   )}
                </div>
-               {isEffectivelyEditing && (
+               {/* Delete is sheet-only chrome: on a board embed it's the board item toolbar's job, and it
+                   must never run the character-store remove on a preview's synthetic store. */}
+               {isEffectivelyEditing && !isBoardEmbed && !isDrawerPreview && (
                   <Button
                      variant="ghost"
                      size="icon"

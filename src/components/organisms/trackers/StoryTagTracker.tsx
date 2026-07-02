@@ -118,14 +118,18 @@ export function StoryTagTrackerCard({ tracker, isEditing=false, isDrawerPreview,
                         placeholder={t('Trackers.storyTagPlaceholder')}
                      />
                   </div>
-                  <Button
-                     variant="ghost"
-                     size="icon"
-                     className="h-8 w-8 text-destructive cursor-pointer"
-                     onClick={() => removeStoryTag(tracker.id)}
-                  >
-                     <Trash2 className="h-5 w-5" />
-                  </Button>
+                  {/* Delete is sheet-only chrome: on a board embed it's the board item toolbar's job, and it
+                      must never run the character-store remove on a preview's synthetic store. */}
+                  {!isBoardEmbed && !isDrawerPreview && (
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive cursor-pointer"
+                        onClick={() => removeStoryTag(tracker.id)}
+                     >
+                        <Trash2 className="h-5 w-5" />
+                     </Button>
+                  )}
                </>
             ) : (
                <>
