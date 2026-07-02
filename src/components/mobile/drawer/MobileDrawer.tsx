@@ -17,7 +17,7 @@ import MobileAddFolderSheet from '@/components/mobile/drawer/MobileAddFolderShee
 import { DrawerSearchBar } from '@/components/molecules/drawer/DrawerSearchBar';
 import { DrawerListRow } from '@/components/molecules/drawer/DrawerListRow';
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
-import { Badge } from '@/components/ui/badge';
+import { GameTag } from '@/components/molecules/GameTag';
 import { FolderCountLabel } from '@/components/mobile/shared/FolderCountLabel';
 import { IconButton } from '@/components/ui/icon-button';
 
@@ -25,7 +25,6 @@ import { IconButton } from '@/components/ui/icon-button';
 import {
    FolderPlus, List, Grid3x3, Download, Undo2, Redo2,
    Folder as FolderIcon, MoreHorizontal,
-   User, Layers, Users, Package, Heart, Tag as TagIcon, Sparkles, FileText,
 } from 'lucide-react';
 
 // -- Store Imports --
@@ -42,9 +41,10 @@ import { useDrawerUndoRedo } from '@/hooks/drawer/useDrawerUndoRedo';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/haptics';
+import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 
 // -- Type Imports --
-import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
+import type { DrawerItem } from '@/lib/types/drawer';
 import type { DrawerFolderRecord } from '@/lib/drawer/drawerRecords';
 import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 
@@ -64,43 +64,6 @@ import { DRAG_TYPES } from '@/lib/constants/dragDrop';
  * `@dnd-kit/modifiers` (not installed; do not add).
  */
 const restrictToVerticalAxis: Modifier = ({ transform }) => ({ ...transform, x: 0 });
-
-/**
- * Icon mapping for drawer items, duplicated from `MobileDrawerItem` so the
- * overlay snapshot stays a self-contained presentational copy without needing
- * to refactor the row component (kept narrow in scope).
- */
-const getItemIcon = (type: GeneralItemType) => {
-   switch (type) {
-      case 'CHARACTER_CARD': return User;
-      case 'CHARACTER_THEME': return Layers;
-      case 'GROUP_THEME': return Users;
-      case 'LOADOUT_THEME': return Package;
-      case 'STATUS_TRACKER': return Heart;
-      case 'STORY_TAG_TRACKER': return TagIcon;
-      case 'STORY_THEME_TRACKER': return Sparkles;
-      case 'FULL_CHARACTER_SHEET': return FileText;
-      default: return FileText;
-   }
-};
-
-const getGameBadgeVariant = (game: string): 'default' | 'secondary' | 'outline' => {
-   switch (game) {
-      case 'LEGENDS': return 'default';
-      case 'CITY_OF_MIST': return 'secondary';
-      case 'OTHERSCAPE': return 'outline';
-      default: return 'default';
-   }
-};
-
-const getGameDisplayName = (game: string) => {
-   switch (game) {
-      case 'LEGENDS': return 'Legend';
-      case 'CITY_OF_MIST': return 'City';
-      case 'OTHERSCAPE': return 'Otherscape';
-      default: return game;
-   }
-};
 
 /**
  * Render an overlay snapshot of a folder row that follows the pointer during a
@@ -134,7 +97,7 @@ const renderFolderOverlay = (folder: DrawerFolderRecord, folderCount: number, it
  * inline context-menu button on the handedness-leading edge.
  */
 const renderItemOverlay = (item: DrawerItem, isCompact: boolean, isLeftHanded: boolean) => {
-   const Icon = getItemIcon(item.type);
+   const Icon = getItemTypeIconComponent(item.type);
    return (
       <div className={cn(
          "flex rounded-lg border border-border bg-card shadow-2xl overflow-hidden",
@@ -148,12 +111,8 @@ const renderItemOverlay = (item: DrawerItem, isCompact: boolean, isLeftHanded: b
                   <div className="flex-1 min-w-0">
                      <p className="font-medium text-foreground break-words">{item.name}</p>
                      <div className="flex items-center gap-2 mt-1">
-                        {/* NEUTRAL items are game-agnostic: no game badge. */}
-                        {item.game !== 'NEUTRAL' && (
-                           <Badge variant={getGameBadgeVariant(item.game)} className="text-xs">
-                              {getGameDisplayName(item.game)}
-                           </Badge>
-                        )}
+                        {/* NEUTRAL items are game-agnostic: GameTag renders nothing for them. */}
+                        <GameTag game={item.game} />
                      </div>
                   </div>
                </div>
@@ -174,9 +133,10 @@ const renderItemOverlay = (item: DrawerItem, isCompact: boolean, isLeftHanded: b
 
 interface MobileDrawerProps {
 	onAddToCharacter?: (item: DrawerItem) => void;
+	onLoadCharacter?: (item: DrawerItem) => void;
 }
 
-export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
+export default function MobileDrawer({ onAddToCharacter, onLoadCharacter }: MobileDrawerProps) {
 	const { t } = useTranslation();
 
 	// Drawer state
@@ -257,7 +217,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
    // Drag-to-reorder (folders and items within the current folder). The drawer
    // uses the body of each row as the drag target (no dedicated grip), so the
    // TouchSensor activation delay is bumped to the platform long-press idiom
-   // (~500ms) - quick taps and scroll flings still fall through to their
+   // (500ms) - quick taps and scroll flings still fall through to their
    // normal behaviour, while a deliberate press-and-hold picks the row up.
    const DRAWER_LONG_PRESS_DELAY_MS = 500;
    const sensors = useMobileDragSensors(DRAWER_LONG_PRESS_DELAY_MS);
@@ -533,6 +493,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 				target={contextMenuTarget}
 				position={contextMenuPosition}
 				onAddToCharacter={onAddToCharacter}
+				onLoadCharacter={onLoadCharacter}
 			/>
 
 			{/* Add Folder Sheet */}
@@ -550,6 +511,7 @@ export default function MobileDrawer({ onAddToCharacter }: MobileDrawerProps) {
 				target={searchMenuTarget ? { type: 'item', id: searchMenuTarget.id, name: searchMenuTarget.name } : null}
 				position={searchMenuPos}
 				onAddToCharacter={onAddToCharacter}
+				onLoadCharacter={onLoadCharacter}
 				onJumpTo={searchMenuTarget ? () => { navigateToFolder(searchMenuTarget.parentFolderId); clearSearch(); } : undefined}
 			/>
 		</div>

@@ -19,7 +19,8 @@ import {
 	Download,
 	Trash2,
 	PlusCircle,
-	CornerUpRight
+	CornerUpRight,
+	UserRoundCheck
 } from 'lucide-react';
 
 // -- Store Imports --
@@ -47,6 +48,8 @@ interface MobileDrawerContextMenuProps {
 	target: { type: 'item' | 'folder'; id: string; name: string } | null;
 	position?: { x: number; y: number } | null;
 	onAddToCharacter?: (item: DrawerItem) => void;
+	/** Loads a saved character (FULL_CHARACTER_SHEET) as the active sheet; only that type offers it. */
+	onLoadCharacter?: (item: DrawerItem) => void;
 	/** When set (the search sheet's result menu), adds a "Jump to folder" row atop the list; the browse
 	    drawer omits it, so its menu is unchanged. */
 	onJumpTo?: () => void;
@@ -58,6 +61,7 @@ export default function MobileDrawerContextMenu({
 	target,
 	position,
 	onAddToCharacter,
+	onLoadCharacter,
 	onJumpTo
 }: MobileDrawerContextMenuProps) {
 	const { t } = useTranslation();
@@ -211,8 +215,18 @@ export default function MobileDrawerContextMenu({
 		}
 	};
 
-	// Can only add items to character if a character is loaded
-	const canAddToCharacter = !isFolder && !!character && !!onAddToCharacter;
+	const handleLoadCharacter = () => {
+		if (item && onLoadCharacter) {
+			onLoadCharacter(item);
+			onClose();
+		}
+	};
+
+	// A saved character loads INTO the sheet (replacing the active one) - no game-match needed. Every
+	// other addable item (cards/trackers) adds to the loaded character, which needs one present + a match.
+	const isSheetItem = item?.type === 'FULL_CHARACTER_SHEET';
+	const canLoadCharacter = isSheetItem && !!item && !!onLoadCharacter;
+	const canAddToCharacter = !isFolder && !isSheetItem && !!character && !!onAddToCharacter;
 
 	// Position the menu at the clamped coordinates once measured; before the
 	// layout effect runs, anchor at the raw finger position (size is unaffected
@@ -258,7 +272,19 @@ export default function MobileDrawerContextMenu({
                   </Button>
                )}
 
-               {/* Add to Character (items only, if character loaded) */}
+               {/* Load character in sheet (a saved character only): make it the active sheet. */}
+               {canLoadCharacter && (
+                  <Button
+                     variant="ghost"
+                     className="w-full justify-start cursor-pointer"
+                     onClick={handleLoadCharacter}
+                  >
+                     <UserRoundCheck className="w-4 h-4 mr-3" />
+                     {t('Drawer.Actions.loadCharacter')}
+                  </Button>
+               )}
+
+               {/* Add to Character (cards/trackers only, if a character is loaded) */}
                {canAddToCharacter && (
                   <Button
                      variant="ghost"

@@ -70,7 +70,7 @@ export async function rehydrateBoardReferencedCharacters(
  * Points every character element at its local drawer item: sets `sourceDrawerItemId` to the item id for
  * the element's `characterId` and clears the stale `lastKnown`. `characterId` is left as-is (it is the
  * preserved id and the tab key). An element whose character had no embed entry (unresolvable at export)
- * is left untouched, so it dangles gracefully as before. Pure - returns a new aggregate.
+ * is left untouched, so it dangles as before. Pure - returns a new aggregate.
  */
 export function rewireBoardCharacterElements(board: Board, drawerItemIdByCharacterId: Map<string, string>): Board {
    const items = board.items.map((item) => {

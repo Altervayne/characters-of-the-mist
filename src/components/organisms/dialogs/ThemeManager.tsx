@@ -45,7 +45,7 @@ type DragHandleProps = Pick<SortableChildProps, 'dragAttributes' | 'dragListener
 
 /*
  * The theme manager: a pinned Presets section + a scrollable Customs section. Each theme is a ROW whose body
- * applies it on click (active = selected), with a hover-revealed "..." menu (mirroring the drawer rows):
+ * applies it on click (active = selected), with a hover-revealed "..." menu:
  * presets are immutable so they only Duplicate; customs also Rename (inline) + Delete (confirmed). Duplicate
  * copies any entry's resolved token sets into a fresh custom and selects it. No light/dark control here.
  */
@@ -199,7 +199,7 @@ export function ThemeManager() {
             )}
             {/* `pr-8` keeps the truncated name clear of the overlaid menu trigger. */}
             {/* Runs to the row's right edge and truncates there; the hover `...` trigger sits over the end
-                with its frosted backing (matches the drawer rows). */}
+                with its frosted backing. */}
             <span className={cn('min-w-0 flex-1 truncate py-2 text-sm pr-1', dragHandle ? 'pl-1' : 'pl-3')}>{entry.label}</span>
 
             <DropdownMenu>

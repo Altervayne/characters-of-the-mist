@@ -4,14 +4,14 @@ import { AlertTriangle } from 'lucide-react';
 /*
  * The dev-preview build is compiled with VITE_DEV_PREVIEW=true (Vite INLINES env vars at build time, so this
  * is baked per-build). Production builds leave it unset, so IS_DEV_PREVIEW is false, the component renders
- * nothing, and the branch dead-code-eliminates. (A window.location.hostname check would be the way to toggle
- * per-domain without separate builds, but the owner asked for an env var, so it's the env var.)
+ * nothing, and the branch dead-code-eliminates. Gated on the build-time env var, not the hostname, so the
+ * warning is baked into the preview build and can never leak into production.
  */
 export const IS_DEV_PREVIEW = import.meta.env.VITE_DEV_PREVIEW === 'true';
 
 /** The warning every tester must read: hardcoded (dev-only), never themed, never translated. */
-const WARNING_TEXT = 'THIS IS A DEV PREVIEW. IT IS UNSTABLE, IT CAN AND WILL BREAK. DATA LOSS IS ALMOST GUARANTEED.';
-const WARNING_LINK = 'FOR THE STABLE APP, CLICK HERE';
+const WARNING_TEXT = 'This is a DEV PREVIEW. It is unstable, it can, and WILL break. Permanent data loss is nearly guaranteed.';
+const WARNING_LINK = 'To access the stable app, click here';
 
 /**
  * An unmissable, env-gated warning for the dev-preview domain: a red hazard frame around the whole viewport

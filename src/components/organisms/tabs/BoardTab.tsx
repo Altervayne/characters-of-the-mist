@@ -32,7 +32,7 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  *
  * Closing deletes the working board record, but a drawer-saved copy survives and reopens
  * - so closing is non-destructive once saved. A CLEAN board closes silently; a DIRTY one
- * shows the unsaved-changes warning first (mirrors the character tab).
+ * shows the unsaved-changes warning first.
  *
  * @param props.tab - The tab descriptor (its `id` is the board id keying the board store).
  * @param props.isActive - Whether this tab is the active one (drives the highlight).

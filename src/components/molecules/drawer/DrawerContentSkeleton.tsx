@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 /*
  * Loading skeletons for the ITEM area while navigating to a new folder (the store nulls the items view on
  * navigation, never on a reload / optimistic mutation). The folder list is served from the cache and is
- * always present, so it never needs a skeleton. A ~90ms threshold means an instant IndexedDB query never
+ * always present, so it never needs a skeleton. A 90ms threshold means an instant IndexedDB query never
  * flashes a skeleton - the items arrive first and the skeleton unmounts before it would appear; only a
  * load slow enough to notice fades one in. The shapes mirror the real rows / cards so the swap is seamless.
  */

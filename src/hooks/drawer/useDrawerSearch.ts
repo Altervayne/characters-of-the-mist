@@ -8,7 +8,7 @@ import { activeSearchFilters, isSearchFilterActive, useDrawerActions, useDrawerS
  * Owns the drawer search field's text + debounce, and exposes the store's search state.
  *
  * The text field MERGES into the active criteria (so it composes with the filter panel): a non-empty
- * value (debounced ~250ms) sets `text`; emptying it clears just `text` - returning to browse only when
+ * value (debounced 250ms) sets `text`; emptying it clears just `text` - returning to browse only when
  * no other filter remains. `isSearchActive` is any active filter (text OR types/games/dates), so
  * filtering by a type alone is a valid search; sort alone is not.
  *

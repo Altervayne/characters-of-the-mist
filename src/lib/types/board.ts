@@ -23,7 +23,7 @@ export type BoardGridType = 'dots' | 'lines' | 'none';
 
 /**
  * A board's background grid. `color` is optional - absent means a subtle theme default;
- * full color customization rides the ported color picker later (board-spec).
+ * full color customization rides the ported color picker later.
  */
 export interface BoardGrid {
    type: BoardGridType;
@@ -69,8 +69,8 @@ export interface JournalBoardContent {
 }
 
 /**
- * An embedded character card or tracker, in the reference-vs-copy model
- * (board-spec §5.2). A `copy` is a self-contained snapshot in `data`; a `reference` is a
+ * An embedded character card or tracker, in the reference-vs-copy model. A `copy` is a
+ * self-contained snapshot in `data`; a `reference` is a
  * live, read-only mirror of a drawer item (rendered from the drawer on each read).
  *
  * Both carry the originating `sourceDrawerItemId` so an item can be toggled either way:
@@ -156,12 +156,12 @@ export interface ConnectionBoardContent {
 
 /**
  * Stub for the Mist Engine Threat construct. Deliberately unmodelled here: it has
- * real game structure and gets its own sub-spec + research pass (board-spec §5.1).
+ * real game structure and gets its own research pass.
  * Kept in the union only so the kind is representable.
  */
 export interface ThreatBoardContent {
    kind: 'threat';
-   // TODO: Threat sub-spec - model name / tags / might / consequences here.
+   // TODO: model the Threat's name / tags / might / consequences here.
 }
 
 /** A board item's payload, discriminated by `kind` (mirrors the item's own `kind`). */

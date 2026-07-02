@@ -11,7 +11,7 @@ import type { DrawerItemContent } from '@/lib/types/drawer';
 /*
  * The live read-only mirror behind a board reference item: it reads its source drawer
  * item's content and re-reads when the drawer changes. This is the app's one cross-domain
- * live link (board-spec §5.2): edit at the source, the board reflects it. Never writes
+ * live link: edit at the source, the board reflects it. Never writes
  * back.
  *
  * In-session reactivity rides `drawerCommandEngine.subscribe` (fires on every drawer

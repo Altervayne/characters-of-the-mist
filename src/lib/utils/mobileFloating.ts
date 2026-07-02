@@ -8,7 +8,7 @@ const BOTTOM_NAV_HEIGHT_REM = 4;
  *  `MobileCardNavigationBar`) is `py-1.5` around a single row whose tallest cell is
  *  the title/dots column - the card title, a 24px row of compact card-indicator
  *  pills, and (when gesture tips are on) a swipe hint - about 4.25rem tall with the
- *  hint. That value clears the bar with the base gap (~1rem) on top. Excludes the
+ *  hint. That value clears the bar with the base gap (1rem) on top. Excludes the
  *  safe-area inset, which {@link getFloatingBottom} adds separately. */
 const CARDS_NAV_BAR_REM = 4.25;
 /** Gap from the bottom chrome (or the screen edge in FAB mode) up to the first cluster. */

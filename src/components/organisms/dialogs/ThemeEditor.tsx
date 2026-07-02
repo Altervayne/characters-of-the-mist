@@ -396,7 +396,7 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
 
    // Edits live in a draft, previewed across the whole app, and only reach the saved theme on Save. Start
    // the draft from the saved theme when this editor opens or switches themes (read fresh, so a rename made
-   // mid-edit isn't clobbered). The editor is keyed by id, so this is effectively a per-theme mount.
+   // mid-edit isn't clobbered). The editor is keyed by id, so it re-mounts per theme.
    const themeId = theme.id;
    useEffect(() => {
       const saved = useAppSettingsStore.getState().customThemes.find((entry) => entry.id === themeId);

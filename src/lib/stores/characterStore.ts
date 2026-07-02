@@ -156,8 +156,8 @@ const initialState: Pick<CharacterState, 'character' | 'hasUnsavedChanges'> = {
 
 /**
  * Builds a fresh, fully-formed character (with its generated id) for `game`,
- * without touching any store. The TabManager needs the character, and crucially
- * its id, *before* it can key an instance for it, so the
+ * without touching any store. The TabManager needs the character and its id
+ * *before* it can key an instance for it, so the
  * construction is extracted here as a pure helper. The `createCharacter` action
  * below delegates to it, so the "New Character" default name is shared.
  *

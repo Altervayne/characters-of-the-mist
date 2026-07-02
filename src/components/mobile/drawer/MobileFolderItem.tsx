@@ -38,7 +38,7 @@ interface MobileFolderItemProps {
  * types share one gesture model:
  *   - **Tap**: navigates into the folder (only folders have this; items have no
  *     tap action).
- *   - **Long-press (~500ms hold)**: arms a drag via dnd-kit's `TouchSensor` -
+ *   - **Long-press (500ms hold)**: arms a drag via dnd-kit's `TouchSensor` -
  *     the longer hold time is configured in `useMobileDragSensors` for the
  *     drawer specifically, so a quick tap stays a tap and a scroll fling stays
  *     a scroll, while a deliberate hold picks the row up.

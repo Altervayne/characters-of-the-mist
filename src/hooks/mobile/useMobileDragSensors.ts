@@ -21,7 +21,7 @@ import { useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
  *     a deliberate drag from a scroll fling. This is the default.
  *   - **Body-as-handle surfaces** (drawer items / folders): the row body itself
  *     is the drag target, sharing real estate with a tap action (folder navigate)
- *     and a context-menu corner button, so a longer ~500ms hold is required to
+ *     and a context-menu corner button, so a longer 500ms hold is required to
  *     unambiguously signal "drag this", matching the platform long-press idiom.
  *
  * Touch-only by design: these surfaces are mobile-only, and pointer/mouse drag

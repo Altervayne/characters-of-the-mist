@@ -111,7 +111,7 @@ export interface DrawerState {
       // Navigation + view
       setDrawerCurrentFolderId: (id: string | null) => Promise<void>;
       reloadCurrentFolder: () => Promise<void>;
-      // Search (parallel to browse; runs the phase-2 query layer)
+      // Search (parallel to browse; runs the query layer)
       applySearch: (criteria: DrawerItemQuery) => Promise<void>;
       /** Merges `partial` into the active criteria (null = empty) and re-runs the search. */
       updateSearchCriteria: (partial: Partial<DrawerItemQuery>) => Promise<void>;

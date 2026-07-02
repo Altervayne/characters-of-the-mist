@@ -161,6 +161,7 @@
          "exported": "Current character has been exported to downloads.",
          "exportFailedNoChar": "Export failed, No character found.",
          "imported": "Character file imported successfully.",
+         "loaded": "Character loaded.",
          "updated": "Character updated from file.",
          "reset": "Character sheet successfully reset.",
          "unloaded": "Character has been unloaded successfully.",
@@ -421,6 +422,7 @@
          "createFolder": "Create Folder",
 
          "addToCharacter": "Add to current Character",
+         "loadCharacter": "Load character in sheet",
 
          "selectFolder": "Select a destination",
          "selectThisFolder": "Move here",
@@ -469,7 +471,7 @@
          "unavailablePreview": "Preview is unavailable for this item.",
 
          "LEGENDS": "Legend in the Mist",
-         "OTHERSCAPE": "Otherscape",
+         "OTHERSCAPE": ":Otherscape",
          "CITY_OF_MIST": "City of Mist",
          "NEUTRAL": "Game-agnostic",
 

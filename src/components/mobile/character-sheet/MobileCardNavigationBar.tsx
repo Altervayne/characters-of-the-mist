@@ -47,7 +47,7 @@ interface MobileCardNavigationBarProps {
  * flip and reorder controls are grouped on the handedness-leading side (left for
  * left-handed, right otherwise) so they stay thumb-reachable while the prev/next
  * steppers remain at the outer edges. Flip toggles the current card's face via the
- * sheet's `onFlip`; note that for a card whose effective view mode is side-by-side
+ * sheet's `onFlip`; for a card whose effective view mode is side-by-side
  * this is a visual no-op (both faces already show), matching the prior
  * edge-swipe-flip semantics. Reorder (`onReorder`) enters the card drag-reorder
  * mode - the same action the toolbelt exposes, surfaced here as a discoverable

@@ -55,7 +55,7 @@ export interface BoardState {
    grid: BoardGrid;
    /** The linked drawer `FULL_BOARD` item, or `null` when this board was never saved. */
    drawerItemId: string | null;
-   /** True when the board differs from its saved drawer copy, or was never saved (mirrors the character flag). */
+   /** True when the board differs from its saved drawer copy, or was never saved. */
    hasUnsavedChanges: boolean;
    /**
     * Items keyed by id for O(1) optimistic updates; the canvas renders them sorted by
@@ -378,7 +378,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   const id = idMap.get(item.id)!;
                   newSpatialIds.push(id);
                   // Deep-copy the content so an embed copy is fully independent of its original (its own
-                  // `content.data`, so the two per-embed stores never share an object). Matches the drop.
+                  // `content.data`, so the two per-embed stores never share an object).
                   newRecords.push({ ...item, id, boardId, x: item.x + OFFSET, y: item.y + OFFSET, z: z++, content: structuredClone(item.content) });
                }
                // A connection is duplicated only when BOTH its endpoints were duplicated; the

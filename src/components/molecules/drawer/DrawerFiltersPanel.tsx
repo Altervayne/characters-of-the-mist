@@ -21,7 +21,7 @@ import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 /*
  * The drawer search Filters panel: type (multi), game (multi), and created/updated date ranges - all
  * feeding the same `DrawerItemQuery` via `updateSearchCriteria`. An empty multi-select means NO
- * constraint (phase-2 contract), so a fully-cleared panel returns to browse. Inline + scrollable for
+ * constraint, so a fully-cleared panel returns to browse. Inline + scrollable for
  * the narrow drawer; "Clear all" resets everything.
  */
 

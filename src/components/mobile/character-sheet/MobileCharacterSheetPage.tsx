@@ -23,12 +23,14 @@ import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoadin
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useIsBootHydrating } from '@/lib/character/characterPersistence';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
 import type { CreateCardOptions } from '@/lib/types/creation';
-import type { Card } from '@/lib/types/character';
+import type { Card, Character } from '@/lib/types/character';
+import type { DrawerItem } from '@/lib/types/drawer';
 
 type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'about' | 'patchNotes' | 'addCard';
 type SheetTab = 'trackers' | 'cards';
@@ -55,6 +57,7 @@ export default function MobileCharacterSheetPage() {
 	// Card creation state
 	const { t: tNotifications } = useTranslation();
 	const { addCard, updateCardDetails, addImportedCard, addImportedTracker } = useCharacterActions();
+	const { mobileOpenCharacter } = useTabManagerActions();
 	const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
 	const [newlyCreatedCardId, setNewlyCreatedCardId] = useState<string | null>(null);
 
@@ -227,6 +230,14 @@ export default function MobileCharacterSheetPage() {
 		}
 	};
 
+	// Load a saved character (its stored content, linked to its drawer item) as the active sheet - the
+	// mobile loader disposes the previous live instance and starts it clean (matching its saved copy).
+	const handleLoadCharacterFromDrawer = (item: DrawerItem) => {
+		mobileOpenCharacter(item.content as Character, item.id);
+		navigateToTab('sheet');
+		toast.success(tNotifications('Notifications.character.loaded'));
+	};
+
 	// While the active character is still being read from IndexedDB, show a neutral
 	// loading screen rather than flashing the
 	// main menu before the sheet resolves.
@@ -262,7 +273,7 @@ export default function MobileCharacterSheetPage() {
 					/>
 				)}
 				{activeTab === 'drawer' && (
-					<MobileDrawer onAddToCharacter={handleAddDrawerItemToCharacter} />
+					<MobileDrawer onAddToCharacter={handleAddDrawerItemToCharacter} onLoadCharacter={handleLoadCharacterFromDrawer} />
 				)}
 				{activeTab === 'menu' && (
 					<MobileMenu

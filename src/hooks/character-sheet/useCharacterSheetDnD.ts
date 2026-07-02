@@ -770,8 +770,8 @@ export function useCharacterSheetDnD() {
    }, [activeDragItem, initiateItemDrop]);
 
    /**
-    * Save a dragged tab's character to the drawer as a NEW linked copy (owner
-    * decision: never overwrites). The character is resolved from its OWN instance by
+    * Save a dragged tab's character to the drawer as a NEW linked copy - never
+    * overwrites an existing item. The character is resolved from its OWN instance by
     * id, so dragging a background tab saves the right character, not the active one.
     * The destination folder is derived from the drop target exactly as
     * {@link handleSheetToDrawerDrop} does, and the live character is linked to the new

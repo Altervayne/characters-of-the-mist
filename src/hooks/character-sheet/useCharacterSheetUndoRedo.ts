@@ -56,8 +56,8 @@ export function useCharacterSheetUndoRedo(isDrawerOpen: boolean) {
             return;
          }
 
-         // Otherwise the active character (still zundo; out of scope). A null instance
-         // (no character open) simply does nothing.
+         // Otherwise the active character, whose undo/redo is still zundo-based. A null
+         // instance (no character open) simply does nothing.
          const characterTemporal = getActiveCharacterStore()?.temporal.getState();
          const characterCanUndo = (characterTemporal?.pastStates.length ?? 0) > 1;
          const characterCanRedo = (characterTemporal?.futureStates.length ?? 0) > 0;

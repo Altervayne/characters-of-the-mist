@@ -68,7 +68,7 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
                   }
                >
                   {/* The whole row is the drag handle; the menu overlays it on hover (a sibling, so a menu
-                      click never starts a drag), mirroring the rich result card. */}
+                      click never starts a drag). */}
                   <div {...dragAttributes} {...dragListeners} className="cursor-grab">
                      <DrawerListRow
                         type={item.type}

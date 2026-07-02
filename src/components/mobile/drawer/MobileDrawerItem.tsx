@@ -2,21 +2,22 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { User, Layers, Users, Package, Heart, Tag, Sparkles, FileText, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
-import { Badge } from '@/components/ui/badge';
+import { GameTag } from '@/components/molecules/GameTag';
 
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
 // -- Type Imports --
-import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
+import type { DrawerItem } from '@/lib/types/drawer';
 
 
 
@@ -27,70 +28,18 @@ interface MobileDrawerItemProps {
 	isLeftHanded: boolean;
 }
 
-// Icon mapping for different item types
-const getItemIcon = (type: GeneralItemType) => {
-	switch (type) {
-		case 'CHARACTER_CARD':
-			return User;
-		case 'CHARACTER_THEME':
-			return Layers;
-		case 'GROUP_THEME':
-			return Users;
-		case 'LOADOUT_THEME':
-			return Package;
-		case 'STATUS_TRACKER':
-			return Heart;
-		case 'STORY_TAG_TRACKER':
-			return Tag;
-		case 'STORY_THEME_TRACKER':
-			return Sparkles;
-		case 'FULL_CHARACTER_SHEET':
-			return FileText;
-		default:
-			return FileText;
-	}
-};
-
-// Game badge color mapping
-const getGameBadgeVariant = (game: string) => {
-	switch (game) {
-		case 'LEGENDS':
-			return 'default';
-		case 'CITY_OF_MIST':
-			return 'secondary';
-		case 'OTHERSCAPE':
-			return 'outline';
-		default:
-			return 'default';
-	}
-};
-
-// Get display name for game system
-const getGameDisplayName = (game: string) => {
-	switch (game) {
-		case 'LEGENDS':
-			return 'Legend';
-		case 'CITY_OF_MIST':
-			return 'City';
-		case 'OTHERSCAPE':
-			return 'Otherscape';
-		default:
-			return game;
-	}
-};
-
 /**
  * A drawer item row on mobile: a long-press-to-drag body and an inline
  * context-menu button on the handedness-leading edge.
  *
  * The whole row body is the drag target - dnd-kit's `TouchSensor` is configured
- * with the drawer's longer ~500ms delay (see `useMobileDragSensors`), so a
+ * with the drawer's longer 500ms delay (see `useMobileDragSensors`), so a
  * deliberate press-and-hold picks the row up while a quick tap or a scroll
  * fling falls through to the normal touch behaviour. There is no dedicated
  * grip handle, reclaiming the horizontal space it used to occupy and letting
  * names use the row's full width (wrapping over multiple lines if needed).
  *
- * The `⋯` context-menu button placement differs by view. Compact view keeps it
+ * The `...` context-menu button placement differs by view. Compact view keeps it
  * as a real flex sibling beside the name, inside the same card. Rich view passes
  * it into the preview card's own title row (via `DrawerItemPreview`'s
  * `headerAction`) so it reads as that card's corner action instead of floating
@@ -112,7 +61,7 @@ export default function MobileDrawerItem({
 }: MobileDrawerItemProps) {
 	const { t } = useTranslation();
 
-	const Icon = getItemIcon(item.type);
+	const Icon = getItemTypeIconComponent(item.type);
 
 	// Shared context-menu button used by both layouts. Stops touch events from
 	// bubbling so a tap on the button never also begins a drag on the body.
@@ -153,8 +102,8 @@ export default function MobileDrawerItem({
 								className="flex flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
 							>
 								<div className="flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11">
-									<div className="shrink-0">
-										<Icon className="w-5 h-5 text-muted-foreground" />
+									<div className="shrink-0 p-2">
+										<Icon className="w-6 h-6 text-muted-foreground" />
 									</div>
 
 									<div className="flex-1 min-w-0">
@@ -162,12 +111,8 @@ export default function MobileDrawerItem({
 											{item.name}
 										</p>
 										<div className="flex items-center gap-2 mt-1">
-											{/* NEUTRAL items are game-agnostic: no game badge. */}
-											{item.game !== 'NEUTRAL' && (
-												<Badge variant={getGameBadgeVariant(item.game)} className="text-xs">
-													{getGameDisplayName(item.game)}
-												</Badge>
-											)}
+											{/* NEUTRAL items are game-agnostic: GameTag renders nothing for them. */}
+											<GameTag game={item.game} />
 										</div>
 									</div>
 								</div>

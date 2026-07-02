@@ -467,7 +467,7 @@ function DieContextMenu({ die, position, makePenaltyLabel, makeNormalLabel, remo
 /**
  * One die in the tray. Desktop keeps its hover-gated penalty/remove buttons; mobile shows a clean face
  * and opens a context menu on long-press (touch has no hover), with a subtle press-down cue. The
- * long-press hook is touch-only, so it is inert on desktop; it is still gated to mobile for clarity.
+ * long-press hook is touch-only, so it is inert on desktop; it is still gated to mobile anyway.
  */
 function DieCell({ die, face, editable, isMobile, penaltyLabel, removeLabel, stopDrag, onToggleNegative, onRemoveDie, onLongPress }: {
    die: DiceTrayDie;
