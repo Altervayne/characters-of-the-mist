@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { FileUp, Import, Save, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -25,6 +25,7 @@ import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
 import { undoActiveContext, redoActiveContext } from '@/lib/history/undoRouting';
+import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 
 // -- Type Imports --
 import type { Board } from '@/lib/types/board';
@@ -64,6 +65,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { setSideBySideView, toggleDiceTray } = useAppSettingsActions();
    const { setThemesOpen } = useAppGeneralStateActions();
    const { setTheme: setMode } = useTheme();
+   const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
    const { createBoardTab, closeActiveTab, setActiveTab } = useTabManagerActions();
 
    const openTabs = useTabManagerStore((state) => state.openTabs);
@@ -176,7 +178,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // ###   EXPORT GROUP   ###
       // ########################
       { id: 'exportCharacter', scope: 'character', label: t('CommandPalette.commands.exportCharacter'), keywords: ['export', 'character', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportCharacter },
+      { id: 'saveCharacterToDrawer', scope: 'character', label: t('CommandPalette.commands.saveCharacterToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'character'], icon: Save, group: t('CommandPalette.groups.export'), action: saveCharacterToDrawer },
       { id: 'exportBoard', scope: 'board', label: t('CommandPalette.commands.exportBoard'), keywords: ['export', 'board', 'save', 'file', '.cotm'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportBoard },
+      { id: 'saveBoardToDrawer', scope: 'board', label: t('CommandPalette.commands.saveBoardToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'board'], icon: Save, group: t('CommandPalette.groups.export'), action: saveBoardToDrawer },
       { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
 
       // #################################

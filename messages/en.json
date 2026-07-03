@@ -1051,7 +1051,9 @@
          "viewSideBySide": "Set: Card View: Side-by-Side",
 
          "exportCharacter": "Export: Full Character Sheet",
+         "saveCharacterToDrawer": "Save: Character to Drawer",
          "exportBoard": "Export: Board",
+         "saveBoardToDrawer": "Save: Board to Drawer",
          "exportDrawer": "Export: Full Drawer",
 
          "renameCharacter": "Rename: Character",

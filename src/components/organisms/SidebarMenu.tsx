@@ -16,8 +16,6 @@ import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLef
 import { cn } from '@/lib/utils';
 import { exportCharacterSheet, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
-import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
-import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { importBoard, loadBoard } from '@/lib/board/boardRepository';
 import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
@@ -32,11 +30,9 @@ import { ClearBoardControl } from '../molecules/ClearBoardControl';
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
-import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
+import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
-
-// -- Other Imports --
-import cuid from 'cuid';
+import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
@@ -64,14 +60,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const { t: tNotifications } = useTranslation();
 
    const character = useCharacterStore((state) => state.character);
-   const drawerCurrentFolderId = useDrawerStore((state) => state.currentFolderId);
-   // `loadCharacter` here is the Save-As relink (sets drawerItemId on the CURRENT
-   // active character), not a tab open, it stays a per-character action. Opening a
-   // *different* character (file import) and returning to the menu go through the
-   // TabManager.
+   // `loadCharacter` here replaces the CURRENT active character in place (update-from-file keeps its
+   // drawerItemId), not a tab open, so it stays a per-character action. Opening a *different* character
+   // (file import) and returning to the menu go through the TabManager.
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, setHasUnsavedChanges } = useCharacterActions();
    const { openCharacterTab, openBoardTab, deactivate } = useTabManagerActions();
-   const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
+   const { reloadCurrentFolder } = useDrawerActions();
 
    // The app-wide dice tray toggles a bottom panel (reachable from any window).
    const isDiceTrayOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
@@ -90,112 +84,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
 
 
-   const handleSaveCharacterToDrawer = async () => {
-      if (!character) return;
-
-      if (character.drawerItemId) {
-         const savedItemId = character.drawerItemId;
-         try {
-            // Atomic cross-store save: working record + the linked drawer item in one
-            // transaction.
-            const { linkedItemUpdated } = await saveCharacterToLinkedDrawerItem(character);
-            if (linkedItemUpdated) {
-               // The working record now matches its drawer copy.
-               setHasUnsavedChanges(false);
-               await reloadCurrentFolder();
-               const itemPath = await getDrawerItemDisplayPath(savedItemId);
-               toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
-            } else {
-               // The linked drawer item was deleted: fall back to Save As + notify.
-               handleSaveCharacterAsToDrawer();
-               toast(tNotifications('Notifications.character.linkedItemMissing'));
-            }
-         } catch {
-            toast.error(tNotifications('Notifications.drawer.actionFailed'));
-         }
-      } else {
-         handleSaveCharacterAsToDrawer();
-      }
-   };
-
-   const handleSaveCharacterAsToDrawer = () => {
-      if (!character) return;
-
-      const newItemId = cuid();
-      const characterWithDrawerId = { ...character, drawerItemId: newItemId };
-
-      loadCharacter(character, newItemId);
-      // loadCharacter sets the flag clean, but the change subscription fires on the new
-      // character reference and re-dirties it; assert clean once more after.
-      setHasUnsavedChanges(false);
-
-      if (!isDrawerOpen) {
-         onToggleDrawer();
-      }
-
-      initiateItemDrop({
-         game: character.game,
-         type: 'FULL_CHARACTER_SHEET',
-         content: characterWithDrawerId,
-         defaultName: character.name,
-         presetId: newItemId,
-         parentFolderId: drawerCurrentFolderId ?? undefined,
-      });
-   };
-
-   const handleSaveBoardToDrawer = async () => {
-      const store = getActiveBoardStore();
-      if (!store) return;
-      const { boardId, drawerItemId } = store.getState();
-      if (!boardId) return;
-
-      if (drawerItemId) {
-         try {
-            // Atomic cross-store save of the linked drawer copy, mirroring the character.
-            const result = await store.getState().actions.saveToDrawer();
-            if (result?.linkedItemUpdated) {
-               await reloadCurrentFolder();
-               const itemPath = await getDrawerItemDisplayPath(drawerItemId);
-               toast.success(`${tNotifications('Notifications.board.saved')} ${itemPath}`);
-            } else {
-               // The linked drawer item was deleted: fall back to Save As + notify.
-               await handleSaveBoardAsToDrawer();
-               toast(tNotifications('Notifications.board.linkedItemMissing'));
-            }
-         } catch {
-            toast.error(tNotifications('Notifications.drawer.actionFailed'));
-         }
-      } else {
-         await handleSaveBoardAsToDrawer();
-      }
-   };
-
-   const handleSaveBoardAsToDrawer = async () => {
-      const store = getActiveBoardStore();
-      if (!store) return;
-      const { boardId, name } = store.getState();
-      if (!boardId) return;
-
-      // Link the working board to a new drawer item id (also flushes the live viewport
-      // and marks the board clean); the returned aggregate seeds the drawer item content.
-      const newItemId = cuid();
-      const aggregate = await store.getState().actions.linkToDrawerItem(newItemId);
-      if (!aggregate) return;
-
-      if (!isDrawerOpen) {
-         onToggleDrawer();
-      }
-
-      // A board is game-agnostic -> a NEUTRAL drawer item; the naming window finalizes it.
-      initiateItemDrop({
-         game: 'NEUTRAL',
-         type: 'FULL_BOARD',
-         content: aggregate,
-         defaultName: name,
-         presetId: newItemId,
-         parentFolderId: drawerCurrentFolderId ?? undefined,
-      });
-   };
+   // Save-to-drawer (Save + Save-As, character + board) lives in a shared hook so the sidebar and the
+   // command palette drive one implementation.
+   const { saveCharacterToDrawer, saveCharacterAsToDrawer, saveBoardToDrawer, saveBoardAsToDrawer } = useSaveToDrawer();
 
    const handleExportCharacter = async () => {
       if (!character) return;
@@ -481,10 +372,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
-                        <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterToDrawer} Icon={Save}>
+                        <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={saveCharacterToDrawer} Icon={Save}>
                            {t('CharacterSheetPage.SidebarMenu.saveToDrawer')}
                         </SidebarButton>
-                        <SidebarButton data-tour="save-character-as-button" isCollapsed={isCollapsed} onClick={handleSaveCharacterAsToDrawer} Icon={SaveAll}>
+                        <SidebarButton data-tour="save-character-as-button" isCollapsed={isCollapsed} onClick={saveCharacterAsToDrawer} Icon={SaveAll}>
                            {t('CharacterSheetPage.SidebarMenu.saveToDrawerAs')}
                         </SidebarButton>
                         <SidebarButton data-tour="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
@@ -516,10 +407,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
-                        <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardToDrawer} Icon={Save}>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={saveBoardToDrawer} Icon={Save}>
                            {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawer')}
                         </SidebarButton>
-                        <SidebarButton isCollapsed={isCollapsed} onClick={handleSaveBoardAsToDrawer} Icon={SaveAll}>
+                        <SidebarButton isCollapsed={isCollapsed} onClick={saveBoardAsToDrawer} Icon={SaveAll}>
                            {t('CharacterSheetPage.SidebarMenu.saveBoardToDrawerAs')}
                         </SidebarButton>
                         <SidebarButton isCollapsed={isCollapsed} onClick={handleExportBoard} Icon={Upload}>
