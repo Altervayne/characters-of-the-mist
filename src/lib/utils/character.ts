@@ -96,6 +96,10 @@ export function deriveCardTitle(card: Card, t: TFunction): string {
       }
    }
 
+   if (card.cardType === 'IMAGE_CARD') {
+      return t('Cards.portraitCard');
+   }
+
    // Fallback to card type
    return t('Cards.themeCard');
 }

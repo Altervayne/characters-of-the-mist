@@ -517,7 +517,8 @@
       "crewCard": "Crew",
       "otherscapeCrewCard": "Crew",
       "otherscapeLoadoutCard": "Loadout",
-      "themeCard": "Theme"
+      "themeCard": "Theme",
+      "portraitCard": "Portrait"
    },
 
 
