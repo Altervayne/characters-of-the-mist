@@ -15,9 +15,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 // -- Component Imports --
 import { MobileBottomSheet } from '@/components/mobile/shared/MobileBottomSheet';
+import { EscapeHatchBanner } from '@/components/mobile/menu/EscapeHatchBanner';
 
 // -- Icon Imports --
-import { ChevronLeft, Check, MoreHorizontal, Palette, Copy, Plus, Pencil, Trash2, Upload, Download, LifeBuoy } from 'lucide-react';
+import { ChevronLeft, Check, MoreHorizontal, Palette, Copy, Plus, Pencil, Trash2, Upload, Download } from 'lucide-react';
 
 // -- Utils and Store Imports --
 import { cn } from '@/lib/utils';
@@ -220,20 +221,15 @@ export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps
                   </IconButton>
                )}
                <h2 className="flex-1 text-2xl font-bold">{t('SettingsDialog.themes.windowTitle')}</h2>
-               {/* FIXED colors on purpose: a broken custom theme must never be able to hide its own reset,
-                   so this uses no chrome tokens and no dark variant. */}
-               {isCustomActive && (
-                  <button
-                     type="button"
-                     onClick={() => setTheme('theme-neutral')}
-                     className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-900 shadow-md"
-                  >
-                     <LifeBuoy className="h-4 w-4" />
-                     {t('SettingsDialog.themes.escapeHatch')}
-                  </button>
-               )}
             </div>
          </div>
+
+         {/* Reset banner, shown only while a custom theme is active. */}
+         {isCustomActive && (
+            <div className="px-6 pb-2">
+               <EscapeHatchBanner onReset={() => setTheme('theme-neutral')} />
+            </div>
+         )}
 
          <div className="flex-1 px-6 pb-6 space-y-6">
             {/* Presets */}

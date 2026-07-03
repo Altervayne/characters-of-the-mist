@@ -9,6 +9,7 @@ import { IconButton } from '@/components/ui/icon-button';
 
 // -- Component Imports --
 import { MobileBottomSheet } from '@/components/mobile/shared/MobileBottomSheet';
+import { EscapeHatchBanner } from '@/components/mobile/menu/EscapeHatchBanner';
 import { ThemePreview } from '@/components/organisms/dialogs/ThemePreview';
 import { SeedPanel } from '@/components/organisms/theme/SeedPanel';
 import { PaperPreview } from '@/components/organisms/theme/PaperPreview';
@@ -17,7 +18,7 @@ import { HexInput } from '@/components/molecules/theme/HexInput';
 import { InfoTip } from '@/components/molecules/theme/InfoTip';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronDown, ChevronRight, Sun, Moon, Save, LifeBuoy, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronDown, ChevronRight, Sun, Moon, Save, SlidersHorizontal } from 'lucide-react';
 
 // -- Utils and Store Imports --
 import { cn } from '@/lib/utils';
@@ -113,7 +114,7 @@ export default function MobileThemeEditor({ onBack }: MobileThemeEditorProps) {
       <button
          type="button"
          onClick={() => setEditorMode(mode)}
-         className={cn('flex items-center gap-1.5 rounded px-3 py-1.5 text-sm cursor-pointer', editorMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
+         className={cn('flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm cursor-pointer', editorMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
       >
          {icon}{label}
       </button>
@@ -121,32 +122,28 @@ export default function MobileThemeEditor({ onBack }: MobileThemeEditorProps) {
 
    return (
       <div className="h-full flex flex-col">
-         {/* Sticky header: back (dirty-guarded), name + escape hatch, then the Light/Dark switch + Save. */}
+         {/* Sticky header: title row (back + name + Save), the Light/Dark switch, then the reset banner -
+             all pinned so a broken draft's reset is always one tap away. */}
          <div className="shrink-0 border-b border-border bg-background pt-safe">
             <div className="flex items-center gap-2 px-4 pt-2">
                <IconButton variant="ghost" size="lg" onClick={handleBack} className="h-10 w-10 p-0">
                   <ChevronLeft className="h-8 w-8" />
                </IconButton>
                <span className="min-w-0 flex-1 truncate text-lg font-semibold">{draft.name}</span>
-               {/* FIXED colors on purpose: a broken draft previews app-wide, so its reset must never be able
-                   to hide behind the theme it broke. No chrome tokens, no dark variant. */}
-               <button
-                  type="button"
-                  onClick={handleEscapeHatch}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-900 shadow-md"
-               >
-                  <LifeBuoy className="h-4 w-4" />
-                  {t('SettingsDialog.themes.escapeHatch')}
-               </button>
+               <Button onClick={saveThemeDraft} disabled={!dirty} className="h-10 shrink-0 cursor-pointer">
+                  <Save className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.saveChanges')}
+               </Button>
             </div>
-            <div className="flex items-center justify-between gap-2 px-4 py-2">
+            <div className="flex items-center gap-2 px-4 py-2">
                <div className="inline-flex rounded-md border border-border p-0.5">
                   {modeButton('light', <Sun className="h-4 w-4" />, t('SettingsDialog.light'))}
                   {modeButton('dark', <Moon className="h-4 w-4" />, t('SettingsDialog.dark'))}
                </div>
-               <Button onClick={saveThemeDraft} disabled={!dirty} className="h-10 cursor-pointer">
-                  <Save className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.saveChanges')}
-               </Button>
+            </div>
+            {/* Full-width reset banner. FIXED colors on purpose: a broken draft previews app-wide, so its
+                reset must never be able to hide behind the theme it broke. No chrome tokens, no dark variant. */}
+            <div className="border-t border-border px-4 py-2">
+               <EscapeHatchBanner onReset={handleEscapeHatch} />
             </div>
          </div>
 
