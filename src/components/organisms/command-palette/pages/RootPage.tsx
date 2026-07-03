@@ -27,6 +27,7 @@ export const RootPage = ({ commandGroups, onSelectCommand }: RootPageProps) => {
                      key={command.id}
                      onSelect={() => onSelectCommand(command)}
                      value={command.label}
+                     keywords={command.keywords}
                      className={commonItemClass}
                   >
                      <command.icon className="mr-2 h-4 w-4" />

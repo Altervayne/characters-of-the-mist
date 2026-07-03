@@ -19,6 +19,7 @@ import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 
 
@@ -34,9 +35,16 @@ export interface CommandAction {
    label: string;
    icon: React.ElementType;
    group: string;
+   /** Hidden alias tokens cmdk matches on alongside the label (English, not user-facing). */
+   keywords?: string[];
    action?: () => void;
    pageId?: string;
 }
+
+/** The workspace a command applies to. `global` shows everywhere; `character` only on a character tab. */
+type CommandScope = 'global' | 'character';
+
+type ScopedCommand = CommandAction & { scope: CommandScope };
 
 
 
@@ -47,6 +55,13 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView } = useAppSettingsActions();
    const { setTheme: setMode } = useTheme();
+
+   // The active workspace is the active tab's kind (null active = the menu). Character-only
+   // commands are offered on a character tab; a board tab and the menu get the global set.
+   const activeWorkspace = useTabManagerStore((state) => {
+      const active = state.openTabs.find((tab) => tab.id === state.activeTabId);
+      return active?.type ?? 'menu';
+   });
 
    const handleExportCharacter = async () => {
       if (!character) {
@@ -71,52 +86,50 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       }
    };
 
-   // Determine if creation commands should be shown
+   // Creation commands need a game with cards/trackers; NEUTRAL has none.
    const currentGame = character?.game;
    const showCreationCommands = currentGame && currentGame !== 'NEUTRAL';
 
-   // Each label starts with "PREFIX | " so users can narrow results by typing
-   // the prefix in the command palette. Groups: APP_ (general), STNG_ (settings),
-   // EXPT_ (export), CHAR_ (character), NEW_ (creation).
-   const staticCommands: CommandAction[] = [
+   // Labels are clean i18n text; cmdk narrows on `keywords` (English alias tokens) too.
+   const allCommands: ScopedCommand[] = [
 
       // #########################
       // ###   GENERAL GROUP   ###
       // #########################
-      { id: 'toggleEdit', label: `APP_EDIT | ${t('CommandPalette.commands.toggleEdit')}`, icon: Pencil, group: t('CommandPalette.groups.general'), action: onToggleEditMode },
-      { id: 'toggleDrawer', label: `APP_DRAW | ${t('CommandPalette.commands.toggleDrawer')}`, icon: PanelLeftOpen, group: t('CommandPalette.groups.general'), action: onToggleDrawer },
-      { id: 'openSettings', label: `APP_STNG | ${t('CommandPalette.commands.openSettings')}`, icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
+      { id: 'toggleEdit', scope: 'character', label: t('CommandPalette.commands.toggleEdit'), keywords: ['edit', 'toggle'], icon: Pencil, group: t('CommandPalette.groups.general'), action: onToggleEditMode },
+      { id: 'toggleDrawer', scope: 'global', label: t('CommandPalette.commands.toggleDrawer'), keywords: ['drawer', 'toggle'], icon: PanelLeftOpen, group: t('CommandPalette.groups.general'), action: onToggleDrawer },
+      { id: 'openSettings', scope: 'global', label: t('CommandPalette.commands.openSettings'), keywords: ['settings', 'preferences', 'config'], icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
 
       // ##########################
       // ###   SETTINGS GROUP   ###
       // ##########################
-      { id: 'setThemeModeLight', label: `STNG_LIGHT | ${t('CommandPalette.commands.setThemeModeLight')}`, icon: Sun, group: t('CommandPalette.groups.settings'), action: () => setMode('light') },
-      { id: 'setThemeModeDark', label: `STNG_DARK | ${t('CommandPalette.commands.setThemeModeDark')}`, icon: Moon, group: t('CommandPalette.groups.settings'), action: () => setMode('dark') },
-      { id: 'setThemePalette', label: `STNG_PAL | ${t('CommandPalette.commands.setThemePalette')}`, icon: Palette, group: t('CommandPalette.groups.settings'), pageId: 'setThemePalette' },
-      { id: 'viewFlipping', label: `STNG_FLIP | ${t('CommandPalette.commands.viewFlipping')}`, icon: FlipHorizontal, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(false) },
-      { id: 'viewSideBySide', label: `STNG_SBS | ${t('CommandPalette.commands.viewSideBySide')}`, icon: BookOpen, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(true) },
+      { id: 'setThemeModeLight', scope: 'global', label: t('CommandPalette.commands.setThemeModeLight'), keywords: ['light', 'mode', 'theme'], icon: Sun, group: t('CommandPalette.groups.settings'), action: () => setMode('light') },
+      { id: 'setThemeModeDark', scope: 'global', label: t('CommandPalette.commands.setThemeModeDark'), keywords: ['dark', 'mode', 'theme'], icon: Moon, group: t('CommandPalette.groups.settings'), action: () => setMode('dark') },
+      { id: 'setThemePalette', scope: 'global', label: t('CommandPalette.commands.setThemePalette'), keywords: ['palette', 'theme', 'color'], icon: Palette, group: t('CommandPalette.groups.settings'), pageId: 'setThemePalette' },
+      { id: 'viewFlipping', scope: 'character', label: t('CommandPalette.commands.viewFlipping'), keywords: ['flip', 'view', 'card'], icon: FlipHorizontal, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(false) },
+      { id: 'viewSideBySide', scope: 'character', label: t('CommandPalette.commands.viewSideBySide'), keywords: ['side', 'view', 'card'], icon: BookOpen, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(true) },
 
       // ########################
       // ###   EXPORT GROUP   ###
       // ########################
-      { id: 'exportCharacter', label: `EXPT_CHAR | ${t('CommandPalette.commands.exportCharacter')}`, icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportCharacter },
-      { id: 'exportDrawer', label: `EXPT_DRAW | ${t('CommandPalette.commands.exportDrawer')}`, icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
+      { id: 'exportCharacter', scope: 'character', label: t('CommandPalette.commands.exportCharacter'), keywords: ['export', 'character', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportCharacter },
+      { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
 
       // #################################
       // ###   CHARACTER SHEET GROUP   ###
       // #################################
-      { id: 'renameCharacter', label: `CHAR_REN | ${t('CommandPalette.commands.renameCharacter')}`, icon: Type, group: t('CommandPalette.groups.character'), pageId: 'renameCharacter' },
-      { id: 'resetCharacter', label: `CHAR_RESET | ${t('CommandPalette.commands.resetCharacter')}`, icon: Undo2, group: t('CommandPalette.groups.character'), action: resetCharacter },
+      { id: 'renameCharacter', scope: 'character', label: t('CommandPalette.commands.renameCharacter'), keywords: ['rename', 'character', 'name'], icon: Type, group: t('CommandPalette.groups.character'), pageId: 'renameCharacter' },
+      { id: 'resetCharacter', scope: 'character', label: t('CommandPalette.commands.resetCharacter'), keywords: ['reset', 'character', 'clear'], icon: Undo2, group: t('CommandPalette.groups.character'), action: resetCharacter },
 
       // ##########################
       // ###   CREATION GROUP   ###
       // ##########################
-      // Only show creation commands if the current game is not NEUTRAL
       ...(showCreationCommands ? [
-         { id: 'createCard', label: `NEW_CARD | ${t('CommandPalette.commands.createCard')}`, icon: FilePlus, group: t('CommandPalette.groups.creation'), pageId: 'createCard_Type' },
-         { id: 'createTracker', label: `NEW_TRCK | ${t('CommandPalette.commands.createTracker')}`, icon: ListPlus, group: t('CommandPalette.groups.creation'), pageId: 'createTracker_Type' },
+         { id: 'createCard', scope: 'character' as const, label: t('CommandPalette.commands.createCard'), keywords: ['create', 'new', 'card'], icon: FilePlus, group: t('CommandPalette.groups.creation'), pageId: 'createCard_Type' },
+         { id: 'createTracker', scope: 'character' as const, label: t('CommandPalette.commands.createTracker'), keywords: ['create', 'new', 'tracker', 'status', 'tag'], icon: ListPlus, group: t('CommandPalette.groups.creation'), pageId: 'createTracker_Type' },
       ] : []),
    ];
 
-   return staticCommands;
+   // A character tab gets everything; a board tab and the menu get only the global commands.
+   return allCommands.filter((command) => command.scope === 'global' || activeWorkspace === 'character');
 };

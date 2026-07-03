@@ -155,11 +155,14 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                )}
             >
                <Command
-                  filter={(value, search) => {
+                  filter={(value, search, keywords) => {
+                     // Wizard input pages are free-text, never a filtered list.
                      if (inputPages.includes(activePage)) {
                         return 1;
                      }
-                     return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                     // Root list: narrow on the clean label plus its hidden keyword aliases.
+                     const haystack = [value, ...(keywords ?? [])].join(' ').toLowerCase();
+                     return haystack.includes(search.toLowerCase()) ? 1 : 0;
                   }}
                   onKeyDown={(e) => {
                      if (e.key === 'Backspace' && !inputValue && activePage !== 'root') {
