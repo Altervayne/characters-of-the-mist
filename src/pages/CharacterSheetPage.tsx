@@ -161,7 +161,7 @@ function DesktopCharacterSheetPage() {
    // ###   UNDO/REDO SHORTCUT   ###
    // ##############################
 
-   useCharacterSheetUndoRedo(isDrawerOpen);
+   useCharacterSheetUndoRedo();
 
 
    // ###########################

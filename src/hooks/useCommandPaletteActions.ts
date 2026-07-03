@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { FileUp, Import, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -24,6 +24,7 @@ import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabMan
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
+import { undoActiveContext, redoActiveContext } from '@/lib/history/undoRouting';
 
 // -- Type Imports --
 import type { Board } from '@/lib/types/board';
@@ -134,6 +135,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'toggleDrawer', scope: 'global', label: t('CommandPalette.commands.toggleDrawer'), keywords: ['drawer', 'toggle'], icon: PanelLeftOpen, group: t('CommandPalette.groups.general'), action: onToggleDrawer },
       { id: 'openSettings', scope: 'global', label: t('CommandPalette.commands.openSettings'), keywords: ['settings', 'preferences', 'config'], icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
       { id: 'importFile', scope: 'global', label: t('CommandPalette.commands.importFile'), keywords: ['import', 'file', 'load', 'open', '.cotm'], icon: Import, group: t('CommandPalette.groups.general'), action: onImportFile },
+      // Undo/Redo route themselves (drawer / board / character), so they show in any workspace.
+      { id: 'undo', scope: 'global', label: t('CommandPalette.commands.undo'), keywords: ['undo', 'revert', 'back'], icon: Undo2, group: t('CommandPalette.groups.general'), action: undoActiveContext },
+      { id: 'redo', scope: 'global', label: t('CommandPalette.commands.redo'), keywords: ['redo', 'forward'], icon: Redo2, group: t('CommandPalette.groups.general'), action: redoActiveContext },
 
       // ######################
       // ###   TABS GROUP   ###

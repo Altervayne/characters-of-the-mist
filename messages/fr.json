@@ -946,6 +946,8 @@
          "openSettings": "Ouvrir : Paramètres",
          "toggleDiceTray": "[TO COMPLETE]",
          "importFile": "[TO COMPLETE]",
+         "undo": "[TO COMPLETE]",
+         "redo": "[TO COMPLETE]",
 
          "newCharacter": "[TO COMPLETE]",
          "newBoard": "[TO COMPLETE]",

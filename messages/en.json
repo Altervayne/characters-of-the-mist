@@ -1032,6 +1032,8 @@
          "openSettings": "Open: Settings",
          "toggleDiceTray": "Toggle: Dice Tray",
          "importFile": "Import: File",
+         "undo": "Undo",
+         "redo": "Redo",
 
          "newCharacter": "New: Character",
          "newBoard": "New: Board",
