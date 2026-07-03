@@ -70,7 +70,7 @@ export default function PWAUpdatePrompt() {
 			// onboarding/tutorial band (100+); see the mobile stacking ladder in
 			// global.css.
 			className="fixed inset-x-0 top-0 z-[70] flex justify-center px-4"
-			style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+			style={{ paddingTop: 'calc(1.75rem + env(safe-area-inset-top))' }}
 		>
 			<div className="flex w-full max-w-md items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-lg">
 				<RefreshCw className="h-5 w-5 shrink-0 text-primary" />

@@ -1049,6 +1049,7 @@
          "viewSideBySide": "Set: Card View: Side-by-Side",
 
          "exportCharacter": "Export: Full Character Sheet",
+         "exportBoard": "Export: Board",
          "exportDrawer": "Export: Full Drawer",
 
          "renameCharacter": "Rename: Character",

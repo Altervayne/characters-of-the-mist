@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { FileUp, Import, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
 
 // -- Utils Imports --
-import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
+import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -22,6 +22,11 @@ import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
+import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
+
+// -- Type Imports --
+import type { Board } from '@/lib/types/board';
 
 
 
@@ -43,8 +48,8 @@ export interface CommandAction {
    pageId?: string;
 }
 
-/** The workspace a command applies to. `global` shows everywhere; `character` only on a character tab. */
-type CommandScope = 'global' | 'character';
+/** The workspace a command applies to. `global` shows everywhere; `character`/`board` only on that tab kind. */
+type CommandScope = 'global' | 'character' | 'board';
 
 type ScopedCommand = CommandAction & { scope: CommandScope };
 
@@ -63,8 +68,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const openTabs = useTabManagerStore((state) => state.openTabs);
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
 
-   // The active workspace is the active tab's kind (null active = the menu). Character-only
-   // commands are offered on a character tab; a board tab and the menu get the global set.
+   // The active workspace is the active tab's kind (null active = the menu). A tab-scoped command shows
+   // only on its own kind (character/board); the menu gets the global set.
    const activeWorkspace = openTabs.find((tab) => tab.id === activeTabId)?.type ?? 'menu';
 
    // Neighbour tabs of the active one, wrapping at the ends. Only used when a tab is active
@@ -94,6 +99,24 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
          toast.success(tNotifications('Notifications.drawer.exported'));
       } catch {
          toast.error(tNotifications('Notifications.drawer.actionFailed'));
+      }
+   };
+
+   // Export the LIVE active board (unsaved edits included), embedding its referenced characters so the
+   // board survives on another machine. `exportToFile` folds each character's portrait into the asset map.
+   const handleExportBoard = async () => {
+      const store = getActiveBoardStore();
+      if (!store) return;
+      try {
+         const s = store.getState();
+         const board: Board = { id: s.boardId!, name: s.name, viewport: s.viewport, grid: s.grid, items: Object.values(s.items) };
+         const characters = await collectBoardReferencedCharacters(board);
+         const embedded = Object.keys(characters).length ? { characters } : undefined;
+         const fileName = generateExportFilename('NEUTRAL', 'FULL_BOARD', board.name);
+         await exportToFile(board, 'FULL_BOARD', 'NEUTRAL', fileName, embedded);
+         toast.success(tNotifications('Notifications.board.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.general.exportError'));
       }
    };
 
@@ -149,6 +172,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // ###   EXPORT GROUP   ###
       // ########################
       { id: 'exportCharacter', scope: 'character', label: t('CommandPalette.commands.exportCharacter'), keywords: ['export', 'character', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportCharacter },
+      { id: 'exportBoard', scope: 'board', label: t('CommandPalette.commands.exportBoard'), keywords: ['export', 'board', 'save', 'file', '.cotm'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportBoard },
       { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
 
       // #################################
@@ -167,5 +191,5 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    ];
 
    // A character tab gets everything; a board tab and the menu get only the global commands.
-   return allCommands.filter((command) => command.scope === 'global' || activeWorkspace === 'character');
+   return allCommands.filter((command) => command.scope === 'global' || command.scope === activeWorkspace);
 };
