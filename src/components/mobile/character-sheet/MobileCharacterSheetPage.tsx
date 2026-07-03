@@ -11,6 +11,7 @@ import MobileBottomTabs from '@/components/mobile/menu/MobileBottomTabs';
 import MobileFAB from '@/components/mobile/menu/MobileFAB';
 import MobileMenu from '@/components/mobile/menu/MobileMenu';
 import MobileSettings from '@/components/mobile/menu/MobileSettings';
+import MobileThemes from '@/components/mobile/menu/MobileThemes';
 import MobileAbout from '@/components/mobile/menu/MobileAbout';
 import MobilePatchNotes from '@/components/mobile/menu/MobilePatchNotes';
 import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
@@ -32,7 +33,7 @@ import type { CreateCardOptions } from '@/lib/types/creation';
 import type { Card, Character } from '@/lib/types/character';
 import type { DrawerItem } from '@/lib/types/drawer';
 
-type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'about' | 'patchNotes' | 'addCard';
+type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'themes' | 'about' | 'patchNotes' | 'addCard';
 type SheetTab = 'trackers' | 'cards';
 type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
@@ -286,8 +287,12 @@ export default function MobileCharacterSheetPage() {
 					<MobileSettings
 						onStartTour={handleStartTour}
 						onRestartOnboarding={handleRestartOnboarding}
+						onOpenThemes={() => navigateToTab('themes')}
 						onBack={() => navigateToTab('menu')}
 					/>
+				)}
+				{activeTab === 'themes' && (
+					<MobileThemes onBack={() => navigateToTab('settings')} />
 				)}
 				{activeTab === 'about' && (
 					<MobileAbout onBack={() => navigateToTab('menu')} />
@@ -306,8 +311,8 @@ export default function MobileCharacterSheetPage() {
 				)}
 			</div>
 
-			{/* Navigation - Hidden when reordering cards or in settings/about/patchNotes/addCard */}
-			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'about' && activeTab !== 'patchNotes' && activeTab !== 'addCard' && (
+			{/* Navigation - Hidden when reordering cards or in settings/themes/about/patchNotes/addCard */}
+			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'themes' && activeTab !== 'about' && activeTab !== 'patchNotes' && activeTab !== 'addCard' && (
 				!isMobileFABMode ? (
 					<MobileBottomTabs
 						activeTab={activeTab as NavigationTabId}

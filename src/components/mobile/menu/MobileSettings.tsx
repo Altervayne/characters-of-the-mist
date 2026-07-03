@@ -32,7 +32,8 @@ import {
    PanelsRightBottom,
    Eye,
    EyeOff,
-   Lightbulb
+   Lightbulb,
+   Palette
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -56,6 +57,7 @@ import { useLegacyBlobRemovable } from '@/hooks/useLegacyBlobRemovable';
 
 // -- Utils Imports --
 import { IconButton } from '@/components/ui/icon-button';
+import { PRESET_LABELS, customThemeClass, customThemeIdFromClass } from '@/lib/theme/themeTokens';
 
 const locales = [
 	{ code: 'en', name: 'English' },
@@ -66,19 +68,23 @@ const locales = [
 interface MobileSettingsProps {
 	onStartTour?: () => void;
 	onRestartOnboarding?: () => void;
+	onOpenThemes?: () => void;
 	onBack?: () => void;
 }
 
-export default function MobileSettings({ onStartTour, onRestartOnboarding, onBack }: MobileSettingsProps) {
+export default function MobileSettings({ onStartTour, onRestartOnboarding, onOpenThemes, onBack }: MobileSettingsProps) {
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.split('-')[0] || 'en';
 
 	const { resolvedTheme, setTheme: setMode } = useTheme();
 
-	const { theme: colorTheme, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
-	const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
+	const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
+	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
 
-	const colorThemeOptions = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
+	// The active theme's display name: a preset label, or the custom's own name.
+	const activeThemeName = customThemeIdFromClass(colorTheme)
+		? (customThemes.find((theme) => customThemeClass(theme.id) === colorTheme)?.name ?? colorTheme)
+		: (PRESET_LABELS[colorTheme] ?? colorTheme);
 
 	const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
 	const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
@@ -119,11 +125,6 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 		setHasSeenTrackerSelectHint(false);
 		setHasSeenDrawerMenuHint(false);
 		toast.success(t('Notifications.general.gestureTipsReset'));
-	};
-
-	const formatThemeName = (themeName: string) => {
-		if (themeName === 'theme-city-of-mist') return "City of Mist";
-		return themeName.replace('theme-', '').charAt(0).toUpperCase() + themeName.slice(7);
 	};
 
 	return (
@@ -168,21 +169,18 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onBac
 						</Select>
 					</div>
 
-					{/* Accent Color */}
+					{/* Theme: opens the dedicated Themes screen (select presets/customs, import, manage). */}
 					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.accentColor')}</Label>
-						<Select value={colorTheme} onValueChange={setColorTheme}>
-							<SelectTrigger className="h-12 text-base">
-								<SelectValue placeholder={t('SettingsDialog.selectThemePlaceholder')} />
-							</SelectTrigger>
-							<SelectContent>
-								{colorThemeOptions.map(themeName => (
-									<SelectItem key={themeName} value={themeName} className="text-base py-3">
-										{formatThemeName(themeName)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<Label className="text-sm font-semibold">{t('SettingsDialog.themes.windowTitle')}</Label>
+						<Button
+							onClick={onOpenThemes}
+							variant="default"
+							className="w-full h-12 text-base justify-start"
+						>
+							<Palette className="mr-3 h-5 w-5 shrink-0" />
+							<span className="flex-1 text-left truncate">{activeThemeName}</span>
+							<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+						</Button>
 					</div>
 
 					{/* Appearance (Light/Dark) */}

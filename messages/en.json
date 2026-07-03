@@ -577,6 +577,7 @@
          "presetsHeading": "Presets",
          "customsHeading": "Your themes",
          "noCustoms": "No custom themes yet. Duplicate a preset to start one.",
+         "noCustomsMobile": "No custom themes yet. Import one, or create one on desktop.",
          "actionsMenu": "Theme actions",
          "reorder": "Drag to reorder",
          "export": "Export",
