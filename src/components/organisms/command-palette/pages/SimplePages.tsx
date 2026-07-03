@@ -12,11 +12,15 @@ import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
+// -- Constants --
+import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
+
 // -- Local Imports --
 import { commonItemClass } from '../constants';
 
 // -- Type Imports --
 import type { ThemeName } from '@/lib/stores/appSettingsStore';
+import type { GameSystem } from '@/lib/types/drawer';
 
 
 
@@ -82,6 +86,38 @@ export const SetThemePalettePage = () => {
                <span>{t(`CommandPalette.themes.${theme}`)}</span>
             </Command.Item>
          ))}
+      </Command.Group>
+   );
+};
+
+
+
+// ############################
+// ###   NEW CHARACTER      ###
+// ############################
+interface NewCharacter_GamePageProps {
+   onSelect: (game: GameSystem) => void;
+};
+
+export const NewCharacter_GamePage = ({ onSelect }: NewCharacter_GamePageProps) => {
+   const { t } = useTranslation();
+
+   return (
+      <Command.Group heading={t('CommandPalette.groups.tabs')}>
+         {GAME_CARD_OPTIONS.map(({ game, titleKey }) => {
+            const { Icon } = GAME_VISUALS[game];
+            return (
+               <Command.Item
+                  key={game}
+                  onSelect={() => onSelect(game)}
+                  value={t(titleKey)}
+                  className={commonItemClass}
+               >
+                  <Icon className="mr-2 h-4 w-4" />
+                  <span>{t(titleKey)}</span>
+               </Command.Item>
+            );
+         })}
       </Command.Group>
    );
 };

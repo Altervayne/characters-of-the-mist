@@ -1010,6 +1010,7 @@
 
       "groups": {
          "general": "General",
+         "tabs": "Tabs",
          "settings": "Settings",
          "export": "Exports",
          "character": "Character Sheet",
@@ -1026,6 +1027,13 @@
          "toggleEdit": "Toggle: Edit Mode",
          "toggleDrawer": "Toggle: Drawer",
          "openSettings": "Open: Settings",
+         "toggleDiceTray": "Toggle: Dice Tray",
+
+         "newCharacter": "New: Character",
+         "newBoard": "New: Board",
+         "closeTab": "Close: Current Tab",
+         "nextTab": "Switch: Next Tab",
+         "prevTab": "Switch: Previous Tab",
 
          "setThemeModeLight": "Set: Theme Mode: Light",
          "setThemeModeDark": "Set: Theme Mode: Dark",

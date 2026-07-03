@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, Undo2, FilePlus, ListPlus } from 'lucide-react';
+import { FileUp, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, Undo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
@@ -19,7 +19,7 @@ import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
-import { useTabManagerStore } from '@/lib/character/tabManagerStore';
+import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 
 
@@ -53,15 +53,23 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
-   const { setSideBySideView } = useAppSettingsActions();
+   const { setSideBySideView, toggleDiceTray } = useAppSettingsActions();
    const { setTheme: setMode } = useTheme();
+   const { createBoardTab, closeActiveTab, setActiveTab } = useTabManagerActions();
+
+   const openTabs = useTabManagerStore((state) => state.openTabs);
+   const activeTabId = useTabManagerStore((state) => state.activeTabId);
 
    // The active workspace is the active tab's kind (null active = the menu). Character-only
    // commands are offered on a character tab; a board tab and the menu get the global set.
-   const activeWorkspace = useTabManagerStore((state) => {
-      const active = state.openTabs.find((tab) => tab.id === state.activeTabId);
-      return active?.type ?? 'menu';
-   });
+   const activeWorkspace = openTabs.find((tab) => tab.id === activeTabId)?.type ?? 'menu';
+
+   // Neighbour tabs of the active one, wrapping at the ends. Only used when a tab is active
+   // and there's more than one, so the index is always valid.
+   const activeIndex = openTabs.findIndex((tab) => tab.id === activeTabId);
+   const nextTabId = openTabs.length > 0 ? openTabs[(activeIndex + 1) % openTabs.length]?.id : undefined;
+   const prevTabId = openTabs.length > 0 ? openTabs[(activeIndex - 1 + openTabs.length) % openTabs.length]?.id : undefined;
+   const hasActiveTab = activeTabId !== null;
 
    const handleExportCharacter = async () => {
       if (!character) {
@@ -99,6 +107,21 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'toggleEdit', scope: 'character', label: t('CommandPalette.commands.toggleEdit'), keywords: ['edit', 'toggle'], icon: Pencil, group: t('CommandPalette.groups.general'), action: onToggleEditMode },
       { id: 'toggleDrawer', scope: 'global', label: t('CommandPalette.commands.toggleDrawer'), keywords: ['drawer', 'toggle'], icon: PanelLeftOpen, group: t('CommandPalette.groups.general'), action: onToggleDrawer },
       { id: 'openSettings', scope: 'global', label: t('CommandPalette.commands.openSettings'), keywords: ['settings', 'preferences', 'config'], icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
+      { id: 'toggleDiceTray', scope: 'global', label: t('CommandPalette.commands.toggleDiceTray'), keywords: ['dice', 'roll', 'tray'], icon: Dices, group: t('CommandPalette.groups.general'), action: toggleDiceTray },
+
+      // ######################
+      // ###   TABS GROUP   ###
+      // ######################
+      // New character/board are always available; close/next/prev only when the tab state warrants.
+      { id: 'newCharacter', scope: 'global', label: t('CommandPalette.commands.newCharacter'), keywords: ['tab', 'new', 'character', 'sheet'], icon: UserPlus, group: t('CommandPalette.groups.tabs'), pageId: 'newCharacter_Game' },
+      { id: 'newBoard', scope: 'global', label: t('CommandPalette.commands.newBoard'), keywords: ['tab', 'new', 'board'], icon: LayoutGrid, group: t('CommandPalette.groups.tabs'), action: () => { void createBoardTab(); } },
+      ...(hasActiveTab ? [
+         { id: 'closeTab', scope: 'global' as const, label: t('CommandPalette.commands.closeTab'), keywords: ['tab', 'close'], icon: X, group: t('CommandPalette.groups.tabs'), action: closeActiveTab },
+      ] : []),
+      ...(hasActiveTab && openTabs.length > 1 ? [
+         { id: 'nextTab', scope: 'global' as const, label: t('CommandPalette.commands.nextTab'), keywords: ['tab', 'next', 'switch'], icon: ChevronRight, group: t('CommandPalette.groups.tabs'), action: () => nextTabId && setActiveTab(nextTabId) },
+         { id: 'prevTab', scope: 'global' as const, label: t('CommandPalette.commands.prevTab'), keywords: ['tab', 'previous', 'switch'], icon: ChevronLeft, group: t('CommandPalette.groups.tabs'), action: () => prevTabId && setActiveTab(prevTabId) },
+      ] : []),
 
       // ##########################
       // ###   SETTINGS GROUP   ###

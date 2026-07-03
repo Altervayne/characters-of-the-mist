@@ -13,13 +13,14 @@ import { cn } from '@/lib/utils';
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useCommandPaletteNavigation } from '@/hooks/command-palette/useCommandPaletteNavigation';
 import { useCommandPaletteWizard } from '@/hooks/command-palette/useCommandPaletteWizard';
 
 // -- Local Imports --
 import { commandVariants } from './constants';
 import { RootPage } from './pages/RootPage';
-import { RenameCharacterPage, SetThemePalettePage } from './pages/SimplePages';
+import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage } from './pages/SimplePages';
 import {
    CreateCard_TypePage,
    CreateCard_LegendsThemeTypePage,
@@ -47,6 +48,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    const { t } = useTranslation();
    const { t: tNotify } = useTranslation();
    const { addCard, addStatus, addStoryTag } = useCharacterActions();
+   const { createCharacterTab } = useTabManagerActions();
    const character = useCharacterStore((state) => state.character);
    const currentGame = character?.game;
    const isOpen = useAppGeneralStateStore((state) => state.isCommandPaletteOpen);
@@ -195,6 +197,12 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                      {activePage === 'root' && (<RootPage commandGroups={commandGroups} onSelectCommand={onSelectCommand} />)}
                      {activePage === 'renameCharacter' && (<RenameCharacterPage inputValue={inputValue} />)}
                      {activePage === 'setThemePalette' && (<SetThemePalettePage />)}
+                     {activePage === 'newCharacter_Game' && (
+                        <NewCharacter_GamePage onSelect={(game) => {
+                           createCharacterTab(game);
+                           setCommandPaletteOpen(false);
+                        }} />
+                     )}
 
 
 

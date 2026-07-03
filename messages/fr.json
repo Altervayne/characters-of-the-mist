@@ -928,6 +928,7 @@
       "label": "Palette de Commandes",
       "groups": {
          "general": "Général",
+         "tabs": "[TO COMPLETE]",
          "settings": "Paramètres",
          "export": "Exports",
          "character": "Fiche de Personnage",
@@ -940,6 +941,13 @@
          "toggleEdit": "Basculer : Mode Édition",
          "toggleDrawer": "Basculer : Tiroir",
          "openSettings": "Ouvrir : Paramètres",
+         "toggleDiceTray": "[TO COMPLETE]",
+
+         "newCharacter": "[TO COMPLETE]",
+         "newBoard": "[TO COMPLETE]",
+         "closeTab": "[TO COMPLETE]",
+         "nextTab": "[TO COMPLETE]",
+         "prevTab": "[TO COMPLETE]",
          "setThemeModeLight": "Définir : Mode de Couleur : Clair",
          "setThemeModeDark": "Définir : Mode de Couleur : Sombre",
          "setThemePalette": "Définir : Palette : [...]",
