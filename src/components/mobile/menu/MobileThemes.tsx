@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -16,17 +17,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MobileBottomSheet } from '@/components/mobile/shared/MobileBottomSheet';
 
 // -- Icon Imports --
-import { ChevronLeft, Check, MoreHorizontal, Pencil, Trash2, Upload, Download, LifeBuoy } from 'lucide-react';
+import { ChevronLeft, Check, MoreHorizontal, Palette, Copy, Plus, Pencil, Trash2, Upload, Download, LifeBuoy } from 'lucide-react';
 
 // -- Utils and Store Imports --
 import { cn } from '@/lib/utils';
 import { PRESET_LABELS, PRESET_THEMES, customThemeClass, customThemeIdFromClass } from '@/lib/theme/themeTokens';
 import { exportCustomTheme, importFromFile } from '@/lib/utils/export-import';
 import { useThemeImport } from '@/lib/theme/useThemeImport';
+import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
-import type { CustomTheme, TokenSet } from '@/lib/theme/themeTokens';
+import type { CustomTheme, PaperSet, TokenSet } from '@/lib/theme/themeTokens';
 import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
 
 /*
@@ -36,34 +38,40 @@ import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
  * now, so this screen only selects and imports fully-formed themes.
  */
 
-/** A selectable theme entry with the light palette its preview strip draws from. */
+/** A selectable theme entry: its active value, label, and the palettes its preview/duplicate draw from. */
 interface ThemeEntry {
    value: ActiveTheme;
    label: string;
    isCustom: boolean;
-   light: TokenSet;
+   source: { light: TokenSet; dark: TokenSet; radius: string; paper: PaperSet };
 }
 
 /** A mini three-stripe preview of a theme's background / primary / accent, so a theme reads at a glance. */
-function ThemeSwatch({ light }: { light: TokenSet }) {
+function ThemeSwatch({ tokens }: { tokens: TokenSet }) {
    return (
       <span className="flex h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border">
-         <span className="flex-1" style={{ backgroundColor: light.background }} />
-         <span className="flex-1" style={{ backgroundColor: light.primary }} />
-         <span className="flex-1" style={{ backgroundColor: light.accent }} />
+         <span className="flex-1" style={{ backgroundColor: tokens.background }} />
+         <span className="flex-1" style={{ backgroundColor: tokens.primary }} />
+         <span className="flex-1" style={{ backgroundColor: tokens.accent }} />
       </span>
    );
 }
 
 interface MobileThemesProps {
    onBack?: () => void;
+   onOpenEditor?: () => void;
 }
 
-export default function MobileThemes({ onBack }: MobileThemesProps) {
+export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps) {
    const { t } = useTranslation();
+   const { resolvedTheme } = useTheme();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
    const { setTheme, updateCustomTheme, deleteCustomTheme } = useAppSettingsActions();
+   const createCustomFrom = useCreateCustomTheme();
+
+   // Row previews follow the app's current appearance, so a theme reads as it actually renders right now.
+   const swatchMode = resolvedTheme === 'dark' ? 'dark' : 'light';
 
    const [renamingId, setRenamingId] = useState<string | null>(null);
    const [renameDraft, setRenameDraft] = useState('');
@@ -79,14 +87,30 @@ export default function MobileThemes({ onBack }: MobileThemesProps) {
       value: value as ActiveTheme,
       label: PRESET_LABELS[value],
       isCustom: false,
-      light: PRESET_THEMES[value].light,
+      source: PRESET_THEMES[value],
    }));
    const customEntries: ThemeEntry[] = customThemes.map((theme) => ({
       value: customThemeClass(theme.id),
       label: theme.name,
       isCustom: true,
-      light: theme.light,
+      source: { light: theme.light, dark: theme.dark, radius: theme.radius, paper: theme.paper },
    }));
+
+   // Edit a custom: select it if it is not the active one, then open the editor (which edits the active custom).
+   const editTheme = (entry: ThemeEntry) => {
+      if (activeTheme !== entry.value) setTheme(entry.value);
+      onOpenEditor?.();
+   };
+   // Duplicate any entry into a new editable custom (created + selected), then open the editor on it.
+   const duplicateTheme = (entry: ThemeEntry) => {
+      createCustomFrom(entry.source, t('SettingsDialog.themes.copyName', { name: entry.label }));
+      onOpenEditor?.();
+   };
+   // Start a fresh custom from the Neutral preset, then open the editor on it.
+   const createNewTheme = () => {
+      createCustomFrom(PRESET_THEMES['theme-neutral'], t('SettingsDialog.themes.newThemeName'));
+      onOpenEditor?.();
+   };
 
    const startRename = (id: string, current: string) => { setRenamingId(id); setRenameDraft(current); };
    const commitRename = () => {
@@ -132,36 +156,53 @@ export default function MobileThemes({ onBack }: MobileThemesProps) {
                isActive ? 'border-primary bg-accent text-accent-foreground' : 'border-border hover:bg-muted',
             )}
          >
-            <ThemeSwatch light={entry.light} />
+            <ThemeSwatch tokens={entry.source[swatchMode]} />
             <span className="min-w-0 flex-1 truncate text-base font-medium">{entry.label}</span>
             {isActive && <Check className="h-5 w-5 shrink-0 text-primary" />}
-            {customId && (
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
-                     <Button variant="ghost" size="icon" aria-label={t('SettingsDialog.themes.actionsMenu')} className="h-11 w-11 shrink-0 cursor-pointer">
-                        <MoreHorizontal className="h-5 w-5" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent onClick={(event) => event.stopPropagation()}>
-                     <DropdownMenuItem onClick={() => startRename(customId, entry.label)} className="cursor-pointer">
-                        <Pencil className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.rename')}</span>
+            <DropdownMenu>
+               <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
+                  <Button variant="ghost" size="icon" aria-label={t('SettingsDialog.themes.actionsMenu')} className="h-11 w-11 shrink-0 cursor-pointer">
+                     <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent onClick={(event) => event.stopPropagation()}>
+                  {/* Presets can only be duplicated (into an editable custom); customs also edit/rename/delete. */}
+                  {customId && (
+                     <DropdownMenuItem onClick={() => editTheme(entry)} className="cursor-pointer">
+                        <Palette className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.edit')}</span>
                      </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => exportTheme(customId)} className="cursor-pointer">
-                        <Upload className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.export')}</span>
-                     </DropdownMenuItem>
-                     <DropdownMenuItem
-                        onClick={() => setPendingDelete(customThemes.find((theme) => theme.id === customId) ?? null)}
-                        className="cursor-pointer text-destructive"
-                     >
-                        <Trash2 className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.delete')}</span>
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            )}
+                  )}
+                  <DropdownMenuItem onClick={() => duplicateTheme(entry)} className="cursor-pointer">
+                     <Copy className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.duplicate')}</span>
+                  </DropdownMenuItem>
+                  {customId && (
+                     <>
+                        <DropdownMenuItem onClick={() => startRename(customId, entry.label)} className="cursor-pointer">
+                           <Pencil className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.rename')}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => exportTheme(customId)} className="cursor-pointer">
+                           <Upload className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.export')}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                           onClick={() => setPendingDelete(customThemes.find((theme) => theme.id === customId) ?? null)}
+                           className="cursor-pointer text-destructive"
+                        >
+                           <Trash2 className="mr-2 h-4 w-4" /><span>{t('SettingsDialog.themes.delete')}</span>
+                        </DropdownMenuItem>
+                     </>
+                  )}
+               </DropdownMenuContent>
+            </DropdownMenu>
          </div>
       );
    };
 
+   const newButton = (
+      <Button className="w-full h-12 justify-start text-base" onClick={createNewTheme}>
+         <Plus className="mr-3 h-5 w-5 shrink-0" />
+         <span>{t('SettingsDialog.themes.newTheme')}</span>
+      </Button>
+   );
    const importButton = (
       <Button variant="outline" className="w-full h-12 justify-start text-base" onClick={() => importInputRef.current?.click()}>
          <Download className="mr-3 h-5 w-5 shrink-0" />
@@ -207,11 +248,13 @@ export default function MobileThemes({ onBack }: MobileThemesProps) {
                {customEntries.length > 0 ? (
                   <>
                      <div className="space-y-2">{customEntries.map(renderRow)}</div>
+                     {newButton}
                      {importButton}
                   </>
                ) : (
                   <div className="space-y-2">
                      <p className="text-sm text-muted-foreground">{t('SettingsDialog.themes.noCustomsMobile')}</p>
+                     {newButton}
                      {importButton}
                   </div>
                )}
