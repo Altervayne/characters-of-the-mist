@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { Command } from 'cmdk';
+import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { CornerDownLeft, Palette } from 'lucide-react';
+import { CornerDownLeft, Palette, Dices } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -14,6 +15,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Theme Imports --
 import { customThemeClass } from '@/lib/theme/themeTokens';
+import { parseDiceCommand } from '@/lib/dice/diceCommand';
 
 // -- Constants --
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
@@ -142,5 +144,41 @@ export const NewCharacter_GamePage = ({ onSelect }: NewCharacter_GamePageProps) 
             );
          })}
       </Command.Group>
+   );
+};
+
+
+
+// ####################
+// ###   ROLL DICE  ###
+// ####################
+interface RollDicePageProps {
+   inputValue: string;
+};
+
+export const RollDicePage = ({ inputValue }: RollDicePageProps) => {
+   const { t } = useTranslation();
+   const content = useAppSettingsStore((state) => state.diceTray.content);
+   const { startDiceTrayRoll } = useAppSettingsActions();
+   const { setCommandPaletteOpen } = useAppGeneralStateActions();
+   const text = t('CommandPalette.actions.rollFormula', { formula: inputValue || '...' });
+
+   // A formula is a full setup: it REPLACES the tray's dice + modifiers, keeps its history + title, then the
+   // app tray rolls it with its own animation. A bad parse stays on the page (a toast, never a half-set tray).
+   const handleSelect = () => {
+      const result = parseDiceCommand(inputValue);
+      if ('error' in result) {
+         toast.error(t('BoardView.diceCommandError'));
+         return;
+      }
+      startDiceTrayRoll({ ...content, dice: result.dice, modifiers: result.modifiers });
+      setCommandPaletteOpen(false);
+   };
+
+   return (
+      <Command.Item onSelect={handleSelect} value={text} className={commonItemClass}>
+         <Dices className="mr-2 h-4 w-4" />
+         <span>{text}</span>
+      </Command.Item>
    );
 };

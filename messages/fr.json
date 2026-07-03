@@ -903,6 +903,7 @@
       "placeholder_25": "Ce doit être le pire cuivre que j'aie jamais vu...",
       "placeholders": {
          "renameCharacter": "Nouveau nom de Personnage...",
+         "rollDice": "[TO COMPLETE]",
          "newCardName": "Nom du Trait Principal de la Carte...",
          "themeType": "Sélectionnez le Type de Carte...",
          "themebook": "Sélectionnez ou créez un Thème...",
@@ -914,6 +915,7 @@
       },
       "actions": {
          "renameTo": "Renommer en : \"{{name}}\"",
+         "rollFormula": "[TO COMPLETE]",
          "createWith": "Créer avec : \"{{name}}\"",
          "setPowerTags": "Nombre de Traits d'Atout: {{count}}",
          "setWeaknessTags": "Nombre de Traits de Contrainte: {{count}}"
@@ -929,6 +931,7 @@
       "groups": {
          "general": "Général",
          "tabs": "[TO COMPLETE]",
+         "dice": "[TO COMPLETE]",
          "settings": "Paramètres",
          "export": "Exports",
          "character": "Fiche de Personnage",
@@ -949,6 +952,7 @@
          "closeTab": "[TO COMPLETE]",
          "nextTab": "[TO COMPLETE]",
          "prevTab": "[TO COMPLETE]",
+         "rollDice": "[TO COMPLETE]",
          "setThemeModeLight": "Définir : Mode de Couleur : Clair",
          "setThemeModeDark": "Définir : Mode de Couleur : Sombre",
          "setThemePalette": "Définir : Palette : [...]",

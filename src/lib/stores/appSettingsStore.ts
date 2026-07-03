@@ -39,6 +39,9 @@ interface AppSettingsState {
    // and rolls write straight to `content`, so the configured dice/modifiers and the last roll survive a
    // reload. `isOpen` is the panel's slide state.
    diceTray: { content: DiceTrayContent; isOpen: boolean };
+   // A one-shot "roll the app tray now" request (armed by the palette's Roll command). Transient: excluded
+   // from persistence so a reload never auto-rolls; the tray clears it once it has rolled.
+   pendingDiceRoll: boolean;
    actions: {
       setTheme: (theme: ActiveTheme) => void;
       addCustomTheme: (theme: CustomTheme) => void;
@@ -65,6 +68,8 @@ interface AppSettingsState {
       setDiceTrayContent: (content: DiceTrayContent) => void;
       toggleDiceTray: () => void;
       setDiceTrayOpen: (isOpen: boolean) => void;
+      startDiceTrayRoll: (content: DiceTrayContent) => void;
+      clearPendingDiceRoll: () => void;
    };
 }
 
@@ -89,6 +94,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          hasSeenTrackerSelectHint: false,
          hasSeenDrawerMenuHint: false,
          diceTray: { content: { dice: [], modifiers: [] }, isOpen: false },
+         pendingDiceRoll: false,
          actions: {
             setTheme: (theme) => set({ theme }),
             addCustomTheme: (theme) => set((state) => ({ customThemes: [...state.customThemes, theme] })),
@@ -141,6 +147,10 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setDiceTrayContent: (content) => set((state) => ({ diceTray: { ...state.diceTray, content } })),
             toggleDiceTray: () => set((state) => ({ diceTray: { ...state.diceTray, isOpen: !state.diceTray.isOpen } })),
             setDiceTrayOpen: (isOpen) => set((state) => ({ diceTray: { ...state.diceTray, isOpen } })),
+            // Set the setup, open the tray, and arm the one-shot roll in one update, so the tray rolls the
+            // new dice/modifiers (not stale ones). The tray runs its own animated roll, then clears the flag.
+            startDiceTrayRoll: (content) => set((state) => ({ diceTray: { ...state.diceTray, content, isOpen: true }, pendingDiceRoll: true })),
+            clearPendingDiceRoll: () => set({ pendingDiceRoll: false }),
          },
       }),
       {

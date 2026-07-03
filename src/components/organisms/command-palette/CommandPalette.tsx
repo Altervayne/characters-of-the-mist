@@ -20,7 +20,7 @@ import { useCommandPaletteWizard } from '@/hooks/command-palette/useCommandPalet
 // -- Local Imports --
 import { commandVariants } from './constants';
 import { RootPage } from './pages/RootPage';
-import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage } from './pages/SimplePages';
+import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage } from './pages/SimplePages';
 import {
    CreateCard_TypePage,
    CreateCard_LegendsThemeTypePage,
@@ -43,6 +43,29 @@ interface CommandPaletteProps {
 };
 
 
+/**
+ * Ranks a root command against the search: a label match beats a keyword match, a prefix beats a
+ * mid-string one, and earlier keywords (a command's primary identity) rank higher - so typing "roll"
+ * surfaces Roll before Toggle Dice Tray, while "dice"/"die" surfaces the tray first. 0 = no match (hidden).
+ */
+function scoreCommand(label: string, search: string, keywords: string[] = []): number {
+   const query = search.trim().toLowerCase();
+   if (query === '') return 1;
+   const value = label.toLowerCase();
+
+   let score = value.includes(query) ? (value.startsWith(query) ? 1 : 0.6) : 0;
+
+   keywords.forEach((keyword, index) => {
+      const kw = keyword.toLowerCase();
+      if (!kw.includes(query)) return;
+      const base = kw.startsWith(query) ? 0.9 : 0.5;
+      // Earlier keywords weigh more, so a command's primary term outranks an incidental alias.
+      const weight = Math.max(0.3, 1 - index * 0.08);
+      score = Math.max(score, base * weight);
+   });
+
+   return score;
+}
 
 export function CommandPalette({ commands }: CommandPaletteProps) {
    const { t } = useTranslation();
@@ -133,6 +156,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
 
    const inputPages = [
       'renameCharacter',
+      'rollDice',
       'createCard_Themebook',
       'createCard_MainTag',
       'createCard_PowerTags',
@@ -162,9 +186,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                      if (inputPages.includes(activePage)) {
                         return 1;
                      }
-                     // Root list: narrow on the clean label plus its hidden keyword aliases.
-                     const haystack = [value, ...(keywords ?? [])].join(' ').toLowerCase();
-                     return haystack.includes(search.toLowerCase()) ? 1 : 0;
+                     // Root list: rank by relevance over the clean label + its hidden keyword aliases, so the
+                     // most on-point command sorts to the top (cmdk orders items and groups by this score).
+                     return scoreCommand(value, search, keywords);
                   }}
                   onKeyDown={(e) => {
                      if (e.key === 'Backspace' && !inputValue && activePage !== 'root') {
@@ -203,6 +227,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                            setCommandPaletteOpen(false);
                         }} />
                      )}
+                     {activePage === 'rollDice' && (<RollDicePage inputValue={inputValue} />)}
 
 
 

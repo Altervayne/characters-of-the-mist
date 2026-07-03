@@ -66,9 +66,14 @@ interface DiceTrayProps {
    /** Grow the interactive controls to comfortable touch targets (and un-hide the per-die buttons, which
        are hover-gated on desktop). Off by default, so desktop + board render exactly as before. */
    isMobile?: boolean;
+   /** One-shot external roll request: when it flips true, the tray runs its own animated roll. The app-wide
+       tray uses it (the palette's Roll command arms it); the board + mobile pass nothing, so it stays off. */
+   pendingRoll?: boolean;
+   /** Fired once the external roll request has been handled, so the host can clear the flag. */
+   onPendingRollHandled?: () => void;
 }
 
-export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill = false, showTitle = true, onTitleFocus, isMobile = false }: DiceTrayProps) {
+export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill = false, showTitle = true, onTitleFocus, isMobile = false, pendingRoll = false, onPendingRollHandled }: DiceTrayProps) {
    const { t } = useTranslation();
 
    // Normalize legacy trays (count-map dice, flat modifier); every commit spreads this, so
@@ -196,6 +201,18 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
       };
       rafRef.current = requestAnimationFrame(tick);
    };
+
+   // Honor an external roll request (the app-wide tray's palette command). A ref keeps the latest `roll`
+   // closure without pulling it into the roll effect's deps, so the one-shot fires only when `pendingRoll`
+   // flips - freshly mounted with a request, or flipped while already open - and rolls the current setup
+   // once. The sync effect is declared first, so the ref is fresh before the roll effect reads it.
+   const rollRef = useRef(roll);
+   useEffect(() => { rollRef.current = roll; });
+   useEffect(() => {
+      if (!pendingRoll) return;
+      rollRef.current();
+      onPendingRollHandled?.();
+   }, [pendingRoll, onPendingRollHandled]);
 
    // Resting faces/breakdown come from the cached lastRoll; during a roll, from the live state.
    const faceOf = (id: string): number | null => (liveFaces ? liveFaces[id] ?? null : tray.lastRoll?.faces[id] ?? null);

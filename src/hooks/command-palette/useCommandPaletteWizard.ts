@@ -51,6 +51,8 @@ export function useCommandPaletteWizard(isOpen: boolean, activePage: string) {
          switch (activePage) {
             case 'renameCharacter': newPlaceholder = t('CommandPalette.placeholders.renameCharacter'); break;
 
+            case 'rollDice': newPlaceholder = t('CommandPalette.placeholders.rollDice'); break;
+
             case 'createCard_ThemeType': newPlaceholder = t('CommandPalette.placeholders.themeType'); break;
             case 'createCard_Themebook': newPlaceholder = t('CommandPalette.placeholders.themebook'); break;
             case 'createCard_MainTag': newPlaceholder = t('CommandPalette.placeholders.mainTagName'); break;

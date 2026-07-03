@@ -977,6 +977,7 @@
 
       "placeholders": {
          "renameCharacter": "New character name...",
+         "rollDice": "Enter a dice formula, e.g. 2d6+3...",
 
 
          "newCardName": "Main tag name for the new card...",
@@ -993,6 +994,7 @@
 
       "actions": {
          "renameTo": "Rename to: \"{{name}}\"",
+         "rollFormula": "Roll: \"{{formula}}\"",
          "createWith": "Create with: \"{{name}}\"",
          "setPowerTags": "Set Power Tags: {{count}}",
          "setWeaknessTags": "Set Weakness Tags: {{count}}"
@@ -1011,6 +1013,7 @@
       "groups": {
          "general": "General",
          "tabs": "Tabs",
+         "dice": "Dice",
          "settings": "Settings",
          "export": "Exports",
          "character": "Character Sheet",
@@ -1035,6 +1038,8 @@
          "closeTab": "Close: Current Tab",
          "nextTab": "Switch: Next Tab",
          "prevTab": "Switch: Previous Tab",
+
+         "rollDice": "Roll: Dice",
 
          "setThemeModeLight": "Set: Theme Mode: Light",
          "setThemeModeDark": "Set: Theme Mode: Dark",

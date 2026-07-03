@@ -25,7 +25,8 @@ export function DiceTrayPanel() {
    const { t } = useTranslation();
    const content = useAppSettingsStore((state) => state.diceTray.content);
    const isOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
-   const { setDiceTrayContent, setDiceTrayOpen } = useAppSettingsActions();
+   const pendingRoll = useAppSettingsStore((state) => state.pendingDiceRoll);
+   const { setDiceTrayContent, setDiceTrayOpen, clearPendingDiceRoll } = useAppSettingsActions();
 
    return (
       <AnimatePresence>
@@ -53,7 +54,7 @@ export function DiceTrayPanel() {
                   {/* The core migrates content defensively on read; both writes go straight to the persisted
                       setting (no undo). growToFill off - the panel sizes to its content; showTitle off - the
                       app-wide tray is a generic "roll from anywhere" tray, not a named one. */}
-                  <DiceTray content={content} editable onChange={setDiceTrayContent} onCacheRoll={setDiceTrayContent} growToFill={false} showTitle={false} />
+                  <DiceTray content={content} editable onChange={setDiceTrayContent} onCacheRoll={setDiceTrayContent} growToFill={false} showTitle={false} pendingRoll={pendingRoll} onPendingRollHandled={clearPendingDiceRoll} />
                </div>
             </motion.div>
          )}

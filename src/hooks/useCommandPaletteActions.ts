@@ -110,7 +110,6 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'toggleEdit', scope: 'character', label: t('CommandPalette.commands.toggleEdit'), keywords: ['edit', 'toggle'], icon: Pencil, group: t('CommandPalette.groups.general'), action: onToggleEditMode },
       { id: 'toggleDrawer', scope: 'global', label: t('CommandPalette.commands.toggleDrawer'), keywords: ['drawer', 'toggle'], icon: PanelLeftOpen, group: t('CommandPalette.groups.general'), action: onToggleDrawer },
       { id: 'openSettings', scope: 'global', label: t('CommandPalette.commands.openSettings'), keywords: ['settings', 'preferences', 'config'], icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
-      { id: 'toggleDiceTray', scope: 'global', label: t('CommandPalette.commands.toggleDiceTray'), keywords: ['dice', 'roll', 'tray'], icon: Dices, group: t('CommandPalette.groups.general'), action: toggleDiceTray },
       { id: 'importFile', scope: 'global', label: t('CommandPalette.commands.importFile'), keywords: ['import', 'file', 'load', 'open', '.cotm'], icon: Import, group: t('CommandPalette.groups.general'), action: onImportFile },
 
       // ######################
@@ -126,6 +125,15 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
          { id: 'nextTab', scope: 'global' as const, label: t('CommandPalette.commands.nextTab'), keywords: ['tab', 'next', 'switch'], icon: ChevronRight, group: t('CommandPalette.groups.tabs'), action: () => nextTabId && setActiveTab(nextTabId) },
          { id: 'prevTab', scope: 'global' as const, label: t('CommandPalette.commands.prevTab'), keywords: ['tab', 'previous', 'switch'], icon: ChevronLeft, group: t('CommandPalette.groups.tabs'), action: () => prevTabId && setActiveTab(prevTabId) },
       ] : []),
+
+      // ######################
+      // ###   DICE GROUP   ###
+      // ######################
+      // Both dice commands share a group so the search score ranks them (Roll leads "roll"; the tray toggle
+      // leads "dice"/"die") - cmdk sorts within a group, not across, so they must sit together.
+      { id: 'toggleDiceTray', scope: 'global', label: t('CommandPalette.commands.toggleDiceTray'), keywords: ['dice', 'die', 'tray', 'roll'], icon: Dices, group: t('CommandPalette.groups.dice'), action: toggleDiceTray },
+      // Type a formula on the next page; the app tray applies it, opens, and rolls it.
+      { id: 'rollDice', scope: 'global', label: t('CommandPalette.commands.rollDice'), keywords: ['roll', 'd20', 'd6', 'dice', 'die', 'tray'], icon: Dices, group: t('CommandPalette.groups.dice'), pageId: 'rollDice' },
 
       // ##########################
       // ###   SETTINGS GROUP   ###
