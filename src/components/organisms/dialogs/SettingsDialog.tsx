@@ -22,13 +22,13 @@ import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinu
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
 import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyDrawerBackupDialog';
 import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/LegacyCharacterBackupDialog';
-import { ThemesDialog } from '@/components/organisms/dialogs/ThemesDialog';
 
 // -- Theme Imports --
 import { PRESET_LABELS, customThemeClass } from '@/lib/theme/themeTokens';
 
 // -- Store and Hook Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
 import { clearAllAssets } from '@/lib/assets/assetRepository';
 import { clearAllBoards } from '@/lib/board/boardRepository';
@@ -136,6 +136,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
    const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode } = useAppSettingsStore();
    const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode } = useAppSettingsActions();
+   const { setThemesOpen } = useAppGeneralStateActions();
 
    // The quick selector: presets + customs (so any theme is one click away without opening the manager).
    const themeOptions = [
@@ -143,7 +144,6 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
       ...customThemes.map((custom) => ({ value: customThemeClass(custom.id), label: custom.name })),
    ];
 
-   const [isThemesDialogOpen, setIsThemesDialogOpen] = useState(false);
    const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
    const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
    const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
@@ -259,7 +259,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                               ))}
                            </SelectContent>
                         </Select>
-                        <Button variant="outline" onClick={() => setIsThemesDialogOpen(true)} title={t('SettingsDialog.themes.manage')} className="shrink-0 cursor-pointer">
+                        <Button variant="outline" onClick={() => setThemesOpen(true)} title={t('SettingsDialog.themes.manage')} className="shrink-0 cursor-pointer">
                            <Palette className="h-4 w-4 shrink-0" />
                            <span className="sr-only">{t('SettingsDialog.themes.manage')}</span>
                         </Button>
@@ -464,11 +464,6 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
             </DialogContent>
          </Dialog>
-
-         <ThemesDialog
-            isOpen={isThemesDialogOpen}
-            onOpenChange={setIsThemesDialogOpen}
-         />
 
          <MigrationDialog
             isOpen={isMigrationDialogOpen}

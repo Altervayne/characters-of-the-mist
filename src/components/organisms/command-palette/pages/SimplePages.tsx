@@ -9,8 +9,11 @@ import { CornerDownLeft, Palette } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
-import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+
+// -- Theme Imports --
+import { customThemeClass } from '@/lib/theme/themeTokens';
 
 // -- Constants --
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
@@ -65,28 +68,48 @@ export const SetThemePalettePage = () => {
    const { t } = useTranslation();
    const { setTheme } = useAppSettingsActions();
    const { setCommandPaletteOpen } = useAppGeneralStateActions();
+   const customThemes = useAppSettingsStore((state) => state.customThemes);
 
-   const availableThemes: ThemeName[] = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
+   const presetThemes: ThemeName[] = ['theme-neutral', 'theme-legends', 'theme-otherscape', 'theme-city-of-mist'];
 
-   const handleSelect = (theme: ThemeName) => {
-      setTheme(theme);
+   const handleSelect = (theme: string) => {
+      setTheme(theme as ThemeName);
       setCommandPaletteOpen(false);
    };
 
    return (
-      <Command.Group heading={t('CommandPalette.groups.themePalette')}>
-         {availableThemes.map((theme) => (
-            <Command.Item
-               key={theme}
-               onSelect={() => handleSelect(theme)}
-               value={t(`CommandPalette.themes.${theme}`)}
-               className={commonItemClass}
-            >
-               <Palette className="mr-2 h-4 w-4" />
-               <span>{t(`CommandPalette.themes.${theme}`)}</span>
-            </Command.Item>
-         ))}
-      </Command.Group>
+      <>
+         <Command.Group heading={t('SettingsDialog.themes.presetsHeading')}>
+            {presetThemes.map((theme) => (
+               <Command.Item
+                  key={theme}
+                  onSelect={() => handleSelect(theme)}
+                  value={t(`CommandPalette.themes.${theme}`)}
+                  className={commonItemClass}
+               >
+                  <Palette className="mr-2 h-4 w-4" />
+                  <span>{t(`CommandPalette.themes.${theme}`)}</span>
+               </Command.Item>
+            ))}
+         </Command.Group>
+
+         {/* Custom themes: applied by their class, labeled by the user's name (not an i18n key). */}
+         {customThemes.length > 0 && (
+            <Command.Group heading={t('SettingsDialog.themes.customsHeading')}>
+               {customThemes.map((custom) => (
+                  <Command.Item
+                     key={custom.id}
+                     onSelect={() => handleSelect(customThemeClass(custom.id))}
+                     value={custom.name}
+                     className={commonItemClass}
+                  >
+                     <Palette className="mr-2 h-4 w-4" />
+                     <span>{custom.name}</span>
+                  </Command.Item>
+               ))}
+            </Command.Group>
+         )}
+      </>
    );
 };
 

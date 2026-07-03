@@ -1038,6 +1038,7 @@
          "setThemeModeLight": "Set: Theme Mode: Light",
          "setThemeModeDark": "Set: Theme Mode: Dark",
          "setThemePalette": "Set: Theme Palette: [...]",
+         "manageThemes": "Open: Themes Manager",
          "viewFlipping": "Set: Card View: Flipping",
          "viewSideBySide": "Set: Card View: Side-by-Side",
 

@@ -20,6 +20,7 @@ interface AppGeneralState {
 
    // Dialogs
    isSettingsOpen: boolean;
+   isThemesOpen: boolean;
    isInfoOpen: boolean;
    isCardDialogOpen: boolean;
    isWelcomeDialogOpen: boolean;
@@ -58,6 +59,7 @@ interface AppGeneralState {
 
       // Dialogs
       setSettingsOpen: (isOpen: boolean) => void;
+      setThemesOpen: (isOpen: boolean) => void;
       setInfoOpen: (isOpen: boolean) => void;
       setCardDialogOpen: (isOpen: boolean) => void;
       setWelcomeDialogOpen: (isOpen: boolean) => void;
@@ -100,6 +102,7 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
 
    // Dialogs
    isSettingsOpen: false,
+   isThemesOpen: false,
    isInfoOpen: false,
    isCardDialogOpen: false,
    isWelcomeDialogOpen: false,
@@ -135,6 +138,7 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
 
       // Dialogs
       setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
+      setThemesOpen: (isOpen) => set({ isThemesOpen: isOpen }),
       setInfoOpen: (isOpen) => set({ isInfoOpen: isOpen }),
       setCardDialogOpen: (isOpen) => set({ isCardDialogOpen: isOpen }),
       setWelcomeDialogOpen: (isOpen) => set({ isWelcomeDialogOpen: isOpen }),

@@ -36,6 +36,7 @@ import { BoardView } from '@/components/organisms/board/BoardView';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
+import { ThemesDialog } from '@/components/organisms/dialogs/ThemesDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
 import MobileCharacterSheetPage from '@/components/mobile/character-sheet/MobileCharacterSheetPage';
@@ -77,9 +78,10 @@ function DesktopCharacterSheetPage() {
    const isSidebarCollapsed = useAppSettingsStore((state) => state.isSidebarCollapsed);
    const isEditing = useAppGeneralStateStore((state) => state.isEditing);
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
+   const isThemesOpen = useAppGeneralStateStore((state) => state.isThemesOpen);
    const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const isTourOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
-   const { setDrawerOpen, setIsEditing, setSettingsOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
+   const { setDrawerOpen, setIsEditing, setSettingsOpen, setThemesOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
    const { setSidebarCollapsed, toggleSidebarCollapsed } = useAppSettingsActions();
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
@@ -340,12 +342,16 @@ function DesktopCharacterSheetPage() {
             modal={!isTourOpen}
             game={character?.game ?? 'LEGENDS'}
          />
-         <SettingsDialog 
+         <SettingsDialog
             isOpen={isSettingsOpen}
             onOpenChange={setSettingsOpen}
             onStartTour={handleStartTour}
          />
-         <InfoDialog 
+         <ThemesDialog
+            isOpen={isThemesOpen}
+            onOpenChange={setThemesOpen}
+         />
+         <InfoDialog
             isOpen={isInfoOpen}
             onOpenChange={setInfoOpen}
          />

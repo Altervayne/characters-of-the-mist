@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, Undo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { FileUp, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
@@ -19,6 +19,7 @@ import { exportCharacterSheet, exportDrawer } from '@/lib/utils/export-import';
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 
@@ -54,6 +55,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView, toggleDiceTray } = useAppSettingsActions();
+   const { setThemesOpen } = useAppGeneralStateActions();
    const { setTheme: setMode } = useTheme();
    const { createBoardTab, closeActiveTab, setActiveTab } = useTabManagerActions();
 
@@ -129,6 +131,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setThemeModeLight', scope: 'global', label: t('CommandPalette.commands.setThemeModeLight'), keywords: ['light', 'mode', 'theme'], icon: Sun, group: t('CommandPalette.groups.settings'), action: () => setMode('light') },
       { id: 'setThemeModeDark', scope: 'global', label: t('CommandPalette.commands.setThemeModeDark'), keywords: ['dark', 'mode', 'theme'], icon: Moon, group: t('CommandPalette.groups.settings'), action: () => setMode('dark') },
       { id: 'setThemePalette', scope: 'global', label: t('CommandPalette.commands.setThemePalette'), keywords: ['palette', 'theme', 'color'], icon: Palette, group: t('CommandPalette.groups.settings'), pageId: 'setThemePalette' },
+      { id: 'manageThemes', scope: 'global', label: t('CommandPalette.commands.manageThemes'), keywords: ['theme', 'themes', 'editor', 'manage', 'custom', 'palette'], icon: SwatchBook, group: t('CommandPalette.groups.settings'), action: () => setThemesOpen(true) },
       { id: 'viewFlipping', scope: 'character', label: t('CommandPalette.commands.viewFlipping'), keywords: ['flip', 'view', 'card'], icon: FlipHorizontal, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(false) },
       { id: 'viewSideBySide', scope: 'character', label: t('CommandPalette.commands.viewSideBySide'), keywords: ['side', 'view', 'card'], icon: BookOpen, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(true) },
 
