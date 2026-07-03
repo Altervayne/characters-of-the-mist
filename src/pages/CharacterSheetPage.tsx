@@ -144,7 +144,7 @@ function DesktopCharacterSheetPage() {
 
    const { handleExportComponent } = useCharacterSheetExport();
 
-   const { getRootProps, isDragActive: isFileDragActive } = useCharacterSheetFileImport();
+   const { getRootProps, isDragActive: isFileDragActive, handleFileSelected, triggerImport, formRef, fileInputRef } = useCharacterSheetFileImport();
 
 
    // ##########################################
@@ -172,6 +172,7 @@ function DesktopCharacterSheetPage() {
       onToggleEditMode: () => setIsEditing(!isEditing),
       onToggleDrawer: () => setDrawerOpen(!isDrawerOpen),
       onOpenSettings: () => setSettingsOpen(true),
+      onImportFile: triggerImport,
    });
 
 
@@ -328,6 +329,11 @@ function DesktopCharacterSheetPage() {
          {/* App-wide dice tray: a bottom panel overlaying any tab (mounted at the shell, not a page). */}
          <DiceTrayPanel />
 
+
+         {/* Hidden picker for the palette's "Import file" command; routes through the shared drop importer. */}
+         <form ref={formRef} className="hidden">
+            <input ref={fileInputRef} type="file" accept=".cotm,.json" onChange={handleFileSelected} />
+         </form>
 
          {/* DIALOGS START */}
          <CommandPalette

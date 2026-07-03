@@ -1028,6 +1028,7 @@
          "toggleDrawer": "Toggle: Drawer",
          "openSettings": "Open: Settings",
          "toggleDiceTray": "Toggle: Dice Tray",
+         "importFile": "Import: File",
 
          "newCharacter": "New: Character",
          "newBoard": "New: Board",

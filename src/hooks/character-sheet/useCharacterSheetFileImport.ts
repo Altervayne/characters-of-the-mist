@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useCallback } from 'react';
+import { useCallback, useRef, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -26,17 +26,17 @@ import type { Board } from '@/lib/types/board';
 
 
 /**
- * Wires the character sheet's file-drop import zone.
+ * Universal file import for the character sheet, behind both a drop zone and a
+ * file picker.
  *
- * Accepts dropped .cotm/.json files, parses and harmonizes them, then dispatches
- * to the correct store action: a full character sheet replaces the loaded
- * character, while an individual card or tracker is imported into the current
- * character (after validating that a character is loaded and its game matches).
- * Uses react-dropzone configured for drop-only interaction (no click, no
- * keyboard).
+ * Parses and harmonizes a .cotm/.json file, then routes by type: a full character
+ * sheet or board opens as a tab (the board rehydrates its referenced characters),
+ * a custom theme is added and selected, and an individual card or tracker imports
+ * onto the loaded character (after validating a character is loaded and its game
+ * matches). The drop zone and the picker share the same `importFile` router.
  *
- * @returns The dropzone root props for the drop container and the active-drag
- *   flag used to render the drop overlay.
+ * @returns The dropzone root props and active-drag flag, plus the picker plumbing:
+ *   `triggerImport` (opens the OS picker), the change handler, and the form/input refs.
  */
 export function useCharacterSheetFileImport() {
    const { t: tNotifications } = useTranslation();
@@ -47,10 +47,10 @@ export function useCharacterSheetFileImport() {
    const { reloadCurrentFolder } = useDrawerActions();
    const importTheme = useThemeImport();
 
-   const onFileDrop = useCallback(async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (!file) return;
+   const formRef = useRef<HTMLFormElement>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
 
+   const importFile = useCallback(async (file: File) => {
       try {
          const importedData = await importFromFile(file);
          const migratedContent = harmonizeData(importedData.content, importedData.fileType);
@@ -132,12 +132,27 @@ export function useCharacterSheetFileImport() {
       }
    }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, reloadCurrentFolder, importTheme, tNotifications]);
 
+   const onDrop = useCallback((acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (file) importFile(file);
+   }, [importFile]);
+
    const { getRootProps, isDragActive } = useDropzone({
-      onDrop: onFileDrop,
+      onDrop,
       noClick: true,
       noKeyboard: true,
       accept: { 'application/json': ['.cotm', '.json'] },
    });
 
-   return { getRootProps, isDragActive };
+   // Picker path: the change handler routes the pick through the same `importFile`, then
+   // resets the form so re-picking the same file fires `change` again.
+   const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) await importFile(file);
+      formRef.current?.reset();
+   };
+
+   const triggerImport = () => fileInputRef.current?.click();
+
+   return { getRootProps, isDragActive, handleFileSelected, triggerImport, formRef, fileInputRef };
 }
