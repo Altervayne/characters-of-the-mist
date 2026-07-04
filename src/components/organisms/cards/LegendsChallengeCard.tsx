@@ -72,6 +72,15 @@ function TagPill({ tag }: { tag: Tag }) {
    );
 }
 
+/** A threat's name: a filled card-accent pill (holds its shape as the flavor wraps beside it). */
+function ThreatPill({ tag }: { tag: string }) {
+   return (
+      <span className="inline-flex shrink-0 items-center rounded-full bg-card-accent px-2 py-0.5 align-baseline text-xs font-semibold text-card-paper-bg">
+         {tag}
+      </span>
+   );
+}
+
 export const LegendsChallengeCard = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
       ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick }, ref) => {
@@ -186,17 +195,26 @@ export const LegendsChallengeCard = React.memo(
                         {details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)}
                      </div>
 
-                     {/* Threats & Consequences: a tag/name, its flavor, and a dotted consequence list. */}
+                     {/* Threats & Consequences: a threat-name pill with its flavor inline, over a skull-bulleted list. */}
                      <CardSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Swords} />
                      <div className="flex flex-col gap-2 p-2">
                         {details.abilities.map((ability) => (
                            <div key={ability.id} className="space-y-1">
-                              <p className="text-sm font-bold">{ability.tag}</p>
-                              {ability.flavor && <MentionMarkdown text={ability.flavor} onMentionClick={mentionClick} className="text-xs" />}
+                              {/* Inline flow (not flex) so the flavor flows word-by-word right after the pill and wraps. */}
+                              <div className="text-xs leading-snug">
+                                 <ThreatPill tag={ability.tag} />
+                                 {ability.flavor && <>{' '}<MentionMarkdown text={ability.flavor} onMentionClick={mentionClick} className="inline [&_p]:my-0 [&_p]:inline" /></>}
+                              </div>
                               {ability.consequences.length > 0 && (
-                                 <ul className="list-disc space-y-0.5 pl-4 text-xs">
+                                 <ul className="list-none space-y-0.5 text-xs">
                                     {ability.consequences.map((consequence, index) => (
-                                       <li key={index}><MentionMarkdown text={consequence} onMentionClick={mentionClick} /></li>
+                                       <li key={index} className="flex items-start gap-1.5">
+                                          {/* Skull in a header-colored rhombus (rotated square); the icon counter-rotates to stay upright. */}
+                                          <span className="mt-0.5 flex h-3.5 w-3.5 shrink-0 rotate-45 items-center justify-center rounded-[2px] bg-card-header-bg">
+                                             <Skull className="h-2.5 w-2.5 -rotate-45 text-card-header-fg" strokeWidth={2.75} />
+                                          </span>
+                                          <MentionMarkdown text={consequence} onMentionClick={mentionClick} className="min-w-0 [&_p]:my-0" />
+                                       </li>
                                     ))}
                                  </ul>
                               )}
