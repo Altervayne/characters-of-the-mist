@@ -2,6 +2,9 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// -- Other Library Imports --
+import toast from 'react-hot-toast';
+
 // -- Basic UI Imports --
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -15,17 +18,22 @@ import { cn } from '@/lib/utils';
 import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
+import { MentionText } from '@/components/molecules/challenge/MentionText';
 
 // -- Store and Hook Imports --
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useCardViewMode } from '@/hooks/useCardViewMode';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 
+// -- Utils Imports --
+import { applyStatusTier } from '@/lib/trackers/applyStatusTier';
+
 // -- Type Imports --
 import type { CardComponentProps } from '@/components/organisms/cards/resolveCardComponent';
 import type { ChallengeStatus, LegendsChallengeDetails, Tag } from '@/lib/types/character';
+import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
  * The GM Challenge Card (LitM). Front = image / name / italic types / star level / flavor; back = Limits /
@@ -66,9 +74,10 @@ function TagPill({ tag }: { tag: Tag }) {
 
 export const LegendsChallengeCard = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
-      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport }, ref) => {
+      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick }, ref) => {
          const { t } = useTranslation();
          const actions = useCharacterActions();
+         const character = useCharacterStore((state) => state.character);
          const details = card.details as LegendsChallengeDetails;
 
          const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
@@ -80,6 +89,38 @@ export const LegendsChallengeCard = React.memo(
 
          const name = card.title || t('Cards.challenge.untitled');
          const stars = Math.max(0, Math.min(10, details.challengeLevel));
+
+         // A tapped mention applies to the active character: a status create-or-RAISES (bubble-up, no
+         // duplicate); a tag de-dupes by name. Only wired on the interactive sheet card (see below).
+         const handleMentionClick = (segment: MentionSegment) => {
+            if (segment.type === 'status') {
+               const wanted = segment.name.trim().toLowerCase();
+               const existing = character?.trackers.statuses.find((status) => status.name.trim().toLowerCase() === wanted);
+               if (existing) {
+                  actions.updateStatus(existing.id, { tiers: applyStatusTier(existing.tiers, segment.tier) });
+                  toast.success(t('Cards.challenge.mention.raised', { name: segment.name }));
+               } else {
+                  const id = actions.addStatus(segment.name);
+                  actions.updateStatus(id, { tiers: applyStatusTier(Array(6).fill(false), segment.tier) });
+                  toast.success(t('Cards.challenge.mention.applied', { name: segment.name }));
+               }
+               return;
+            }
+            if (segment.type === 'tag') {
+               const wanted = segment.name.trim().toLowerCase();
+               if (character?.trackers.storyTags.some((tag) => tag.name.trim().toLowerCase() === wanted)) {
+                  toast(t('Cards.challenge.mention.alreadyExists', { name: segment.name }));
+                  return;
+               }
+               actions.addStoryTag(segment.name);
+               toast.success(t('Cards.challenge.mention.applied', { name: segment.name }));
+            }
+         };
+         // A board embed routes taps to the board (create-only, via `onMentionClick`); the live sheet card
+         // uses the create-or-raise handler above; a static preview / drawer snapshot stays plain.
+         const mentionClick = isBoardEmbed
+            ? onMentionClick
+            : (!isDrawerPreview && !isSnapshot) ? handleMentionClick : undefined;
 
          const cardShell = cn(
             isMobile ? 'w-full h-full' : 'w-62.5 h-150',
@@ -120,7 +161,7 @@ export const LegendsChallengeCard = React.memo(
 
                {!isDrawerPreview && (
                   <div className="min-w-0 grow overflow-y-auto overflow-x-hidden overscroll-contain">
-                     <p className="whitespace-pre-wrap p-2 text-sm">{details.flavor}</p>
+                     <p className="whitespace-pre-wrap p-2 text-sm"><MentionText text={details.flavor} onMentionClick={mentionClick} /></p>
                   </div>
                )}
             </Card>
@@ -151,11 +192,11 @@ export const LegendsChallengeCard = React.memo(
                         {details.abilities.map((ability) => (
                            <div key={ability.id} className="space-y-1">
                               <p className="text-sm font-bold">{ability.tag}</p>
-                              {ability.flavor && <p className="whitespace-pre-wrap text-xs">{ability.flavor}</p>}
+                              {ability.flavor && <p className="whitespace-pre-wrap text-xs"><MentionText text={ability.flavor} onMentionClick={mentionClick} /></p>}
                               {ability.consequences.length > 0 && (
                                  <ul className="list-disc space-y-0.5 pl-4 text-xs">
                                     {ability.consequences.map((consequence, index) => (
-                                       <li key={index} className="whitespace-pre-wrap">{consequence}</li>
+                                       <li key={index} className="whitespace-pre-wrap"><MentionText text={consequence} onMentionClick={mentionClick} /></li>
                                     ))}
                                  </ul>
                               )}

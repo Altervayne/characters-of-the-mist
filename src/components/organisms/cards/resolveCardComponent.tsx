@@ -16,6 +16,7 @@ import type { DraggableAttributes } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import type { Card as CardData } from '@/lib/types/character';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
+import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 
 
@@ -40,6 +41,8 @@ export interface CardComponentProps {
    dragListeners?: SyntheticListenerMap;
    onEditCard?: () => void;
    onExport?: () => void;
+   /** Tapped-mention handler; only the Challenge Card reads it (board embed routes it to the board). */
+   onMentionClick?: (segment: MentionSegment) => void;
 }
 
 export type CardComponent = NamedExoticComponent<CardComponentProps & RefAttributes<HTMLDivElement>>;

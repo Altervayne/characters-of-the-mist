@@ -121,7 +121,8 @@ export interface CharacterState {
       updateBlandTag: (cardId: string, listName: BlandTagListName, tagId: string, name: string) => void;
       removeBlandTag: (cardId: string, listName: BlandTagListName, tagId: string) => void;
       // Tracker Actions
-      addStatus: (name?: string) => void;
+      /** Appends a status tracker and returns its id, so a caller can set its tiers (e.g. a tapped mention). */
+      addStatus: (name?: string) => string;
       addStoryTag: (name?: string) => void;
       addStoryTheme: (name?: string) => void;
       addImportedTracker: (tracker: Tracker, index?: number) => void;
@@ -687,10 +688,10 @@ export function createCharacterStore() {
                },
                // Tracker Actions
                addStatus: (name) => {
+                  const newStatus: StatusTracker = { ...emptyTracker('STATUS'), name: name || '' };
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const newStatus: StatusTracker = { ...emptyTracker('STATUS'), name: name || '' };
                      return {
                         character: {
                            ...state.character,
@@ -704,6 +705,7 @@ export function createCharacterStore() {
                         }
                      };
                   });
+                  return newStatus.id;
                },
                addStoryTag: (name) => {
                   set(state => {

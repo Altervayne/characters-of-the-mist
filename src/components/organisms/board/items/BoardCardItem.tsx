@@ -1,5 +1,10 @@
 // -- React Imports --
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
+// -- Other Library Imports --
+import cuid from 'cuid';
+import toast from 'react-hot-toast';
 
 // -- Icon Imports --
 import { RefreshCw } from 'lucide-react';
@@ -12,10 +17,15 @@ import { InteractiveEmbed } from './InteractiveEmbed';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+
+// -- Utils Imports --
+import { trackerBoardItemForMention } from '@/lib/board/mintTrackerFromMention';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, CardBoardContent } from '@/lib/types/board';
 import type { Card as CardData, CardViewMode } from '@/lib/types/character';
+import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
  * An embedded drawer CARD on the board. Copy/reference machinery lives in {@link EmbeddedItem}:
@@ -37,6 +47,23 @@ interface BoardCardItemProps {
 }
 
 export function BoardCardItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete }: BoardCardItemProps) {
+   const { t } = useTranslation();
+   // Per-tap cascade so repeated mints from the same challenge don't stack exactly.
+   const cascadeRef = useRef(0);
+
+   // Tapping a mention on the interactive COPY mints a fresh board-native tracker beside the challenge
+   // (create-only - the board isn't single-owner, so no raise/dedup). It must go through the BOARD store,
+   // not character actions, which would hit the embed's throwaway per-embed store.
+   const handleMentionClick = (segment: MentionSegment) => {
+      const boardStore = getActiveBoardStore();
+      const spec = trackerBoardItemForMention(segment, item, cascadeRef.current);
+      if (!boardStore || !spec) return;
+      cascadeRef.current += 1;
+      const z = Object.values(boardStore.getState().items).reduce((max, entry) => Math.max(max, entry.z), -1) + 1;
+      void boardStore.getState().actions.addItem({ id: cuid(), z, ...spec });
+      if (segment.type !== 'text') toast.success(t('BoardView.mentionAdded', { name: segment.name }));
+   };
+
    return (
       <EmbeddedItem
          item={item}
@@ -54,7 +81,7 @@ export function BoardCardItem({ item, content, isSelected, toolbarSlot, onConten
                isSelected={isSelected}
                toolbarSlot={toolbarSlot}
                onCommit={onCommit}
-               render={(live, isEditing) => <InteractiveCard card={live as CardData} isEditing={isEditing} />}
+               render={(live, isEditing) => <InteractiveCard card={live as CardData} isEditing={isEditing} onMentionClick={handleMentionClick} />}
                // Image cards have no back, so they get neither control. Others get a view-mode toggle, plus
                // the flip button only in flip mode (in side-by-side both faces show, so flipping is moot).
                renderToolbarExtras={(live) => {
@@ -75,15 +102,16 @@ export function BoardCardItem({ item, content, isSelected, toolbarSlot, onConten
 }
 
 /** Resolves and renders a card as its real component, live and interactive (board-embed mode). */
-function InteractiveCard({ card, isEditing }: { card: CardData; isEditing: boolean }) {
+function InteractiveCard({ card, isEditing, onMentionClick }: { card: CardData; isEditing: boolean; onMentionClick: (segment: MentionSegment) => void }) {
    const { t } = useTranslation();
    const Component = resolveCardComponent(card.cardType, card.details.game);
    if (!Component) return <EmbeddedFallback label={t('BoardView.embeddedUnavailable')} />;
    // `resolveCardComponent` returns one of the stable module-level organisms, so the
    // static-components rule is a false positive here (same as CardRenderer / the snapshot below).
    // Side-by-side lays the faces out horizontally (the default row); the box width-fits to suit.
+   // Only the Challenge Card reads `onMentionClick`; every other card ignores it.
    // eslint-disable-next-line react-hooks/static-components
-   return <Component card={card} isBoardEmbed isEditing={isEditing} />;
+   return <Component card={card} isBoardEmbed isEditing={isEditing} onMentionClick={onMentionClick} />;
 }
 
 /** Toggles the embed's card between flip and side-by-side via the host store; persists into `content.data`. */

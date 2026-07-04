@@ -113,6 +113,7 @@
       "imageToggleFit": "[TO COMPLETE]",
       "imageUploadFailed": "[TO COMPLETE]",
       "embeddedUnavailable": "[TO COMPLETE]",
+      "mentionAdded": "[TO COMPLETE]",
       "linkedBadge": "[TO COMPLETE]",
       "makeReference": "[TO COMPLETE]",
       "convertToCopy": "[TO COMPLETE]",
@@ -490,7 +491,12 @@
          "limits": "[TO COMPLETE]",
          "tagsAndStatuses": "[TO COMPLETE]",
          "threatsAndConsequences": "[TO COMPLETE]",
-         "untitled": "[TO COMPLETE]"
+         "untitled": "[TO COMPLETE]",
+         "mention": {
+            "applied": "[TO COMPLETE]",
+            "raised": "[TO COMPLETE]",
+            "alreadyExists": "[TO COMPLETE]"
+         }
       }
    },
    "ChallengeCard": {

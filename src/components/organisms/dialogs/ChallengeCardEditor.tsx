@@ -19,6 +19,9 @@ import { Image as ImageIcon, Loader2, Minus, Plus, Trash2, Upload, X } from 'luc
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
+// -- Component Imports --
+import { MentionText } from '@/components/molecules/challenge/MentionText';
+
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
@@ -165,6 +168,7 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
          {/* Flavor. */}
          <Field label={t('ChallengeCard.editor.flavor')}>
             <Textarea value={flavor} onChange={(event) => setFlavor(event.target.value)} placeholder={t('ChallengeCard.editor.flavorPlaceholder')} className="min-h-20 resize-none" />
+            <MentionPreview text={flavor} />
          </Field>
 
          {/* Limits: the win-conditions. */}
@@ -269,6 +273,16 @@ function ListSection({ label, addLabel, onAdd, children }: { label: string; addL
    );
 }
 
+/** A live styled preview of authored text, shown once it carries a `[bracket]` mention. */
+function MentionPreview({ text }: { text: string }) {
+   if (!text.includes('[')) return null;
+   return (
+      <div className="whitespace-pre-wrap rounded bg-muted/50 px-2 py-1 text-xs leading-relaxed">
+         <MentionText text={text} />
+      </div>
+   );
+}
+
 /** A `{ name, tier }` row (limits + statuses). */
 function StatusRow({ status, namePlaceholder, onChange, onRemove, removeLabel }: {
    status: ChallengeStatus;
@@ -296,17 +310,21 @@ function AbilityRow({ ability, onChange, onRemove }: { ability: ChallengeAbility
             <IconButton onClick={onRemove} label={t('ChallengeCard.editor.removeAbility')}><Trash2 className="h-4 w-4" /></IconButton>
          </div>
          <Textarea value={ability.flavor} onChange={(event) => onChange({ ...ability, flavor: event.target.value })} placeholder={t('ChallengeCard.editor.abilityFlavorPlaceholder')} className="min-h-14 resize-none text-sm" />
+         <MentionPreview text={ability.flavor} />
          <div className="flex flex-col gap-1.5 pl-2">
             <Label className="text-xs font-semibold text-muted-foreground">{t('ChallengeCard.editor.consequences')}</Label>
             {ability.consequences.map((consequence, index) => (
-               <div key={index} className="flex items-center gap-2">
-                  <Input
-                     value={consequence}
-                     onChange={(event) => onChange({ ...ability, consequences: ability.consequences.map((entry, entryIndex) => (entryIndex === index ? event.target.value : entry)) })}
-                     placeholder={t('ChallengeCard.editor.consequencePlaceholder')}
-                     className="h-8 text-sm"
-                  />
-                  <IconButton onClick={() => onChange({ ...ability, consequences: ability.consequences.filter((_, entryIndex) => entryIndex !== index) })} label={t('ChallengeCard.editor.remove')}><Trash2 className="h-4 w-4" /></IconButton>
+               <div key={index} className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                     <Input
+                        value={consequence}
+                        onChange={(event) => onChange({ ...ability, consequences: ability.consequences.map((entry, entryIndex) => (entryIndex === index ? event.target.value : entry)) })}
+                        placeholder={t('ChallengeCard.editor.consequencePlaceholder')}
+                        className="h-8 text-sm"
+                     />
+                     <IconButton onClick={() => onChange({ ...ability, consequences: ability.consequences.filter((_, entryIndex) => entryIndex !== index) })} label={t('ChallengeCard.editor.remove')}><Trash2 className="h-4 w-4" /></IconButton>
+                  </div>
+                  <MentionPreview text={consequence} />
                </div>
             ))}
             <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ ...ability, consequences: [...ability.consequences, ''] })} className="cursor-pointer border border-dashed">

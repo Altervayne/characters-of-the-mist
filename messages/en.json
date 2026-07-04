@@ -113,6 +113,7 @@
       "imageToggleFit": "Toggle cover / contain",
       "imageUploadFailed": "Could not process that image.",
       "embeddedUnavailable": "Preview unavailable",
+      "mentionAdded": "Added {{name}}",
       "linkedBadge": "Linked to drawer item",
       "makeReference": "Link to drawer item",
       "convertToCopy": "Convert to copy",
@@ -524,7 +525,12 @@
          "limits": "Limits",
          "tagsAndStatuses": "Tags & Statuses",
          "threatsAndConsequences": "Threats & Consequences",
-         "untitled": "Untitled Challenge"
+         "untitled": "Untitled Challenge",
+         "mention": {
+            "applied": "Applied {{name}}",
+            "raised": "Raised {{name}}",
+            "alreadyExists": "{{name}} already applied"
+         }
       }
    },
 
