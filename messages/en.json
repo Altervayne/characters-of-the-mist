@@ -269,6 +269,7 @@
 
       "addCard": "Add Card",
       "addPortrait": "Add Portrait",
+      "addChallenge": "Add Challenge",
       "dropToLoadCharacter": "Drop Character Sheet Item here to load the full character. Be careful, this will replace your currently active character.",
       "dropToOpenBoard": "Drop to open board",
       "dropToImport": "Drop a file here to import it. A board opens as a new board, a full character replaces your active one, and a card or tracker imports into the loaded character.",
@@ -518,11 +519,56 @@
       "otherscapeCrewCard": "Crew",
       "otherscapeLoadoutCard": "Loadout",
       "themeCard": "Theme",
-      "portraitCard": "Portrait"
+      "portraitCard": "Portrait",
+      "challenge": {
+         "limits": "Limits",
+         "tagsAndStatuses": "Tags & Statuses",
+         "threatsAndConsequences": "Threats & Consequences",
+         "untitled": "Untitled Challenge"
+      }
    },
 
 
 
+   "ChallengeCard": {
+      "editor": {
+         "title": "Edit Challenge Card",
+         "description": "Set the challenge's name, types, level, image, flavor, limits, statuses, tags, and threats.",
+         "name": "Name",
+         "namePlaceholder": "e.g. Pack of Hyenas",
+         "types": "Types",
+         "addType": "Add",
+         "removeType": "Remove type",
+         "customTypePlaceholder": "Custom type...",
+         "challengeLevel": "Challenge Level",
+         "image": "Image",
+         "setImage": "Set image",
+         "changeImage": "Change",
+         "removeImage": "Remove",
+         "flavor": "Flavor",
+         "flavorPlaceholder": "What the players see...",
+         "limits": "Limits",
+         "addLimit": "Add Limit",
+         "limitNamePlaceholder": "e.g. Burn",
+         "statuses": "Statuses",
+         "addStatus": "Add Status",
+         "statusNamePlaceholder": "e.g. bloodied",
+         "tags": "Tags",
+         "addTag": "Add Tag",
+         "tagNamePlaceholder": "e.g. fast",
+         "abilities": "Threats & Consequences",
+         "addAbility": "Add Threat",
+         "abilityTagPlaceholder": "Threat name...",
+         "abilityFlavorPlaceholder": "What it does...",
+         "removeAbility": "Remove threat",
+         "consequences": "Consequences",
+         "addConsequence": "Add Consequence",
+         "consequencePlaceholder": "A consequence...",
+         "remove": "Remove",
+         "cancel": "Cancel",
+         "save": "Save"
+      }
+   },
    "CreateCardDialog": {
       "title": "Create a Theme Card",
       "editTitle": "Edit a Theme Card",
@@ -1061,6 +1107,7 @@
 
          "createCard": "Create: Theme Card",
          "createTracker": "Create: Tracker",
+         "createChallengeCard": "Create: Challenge Card",
          
          "cardTypeCharacter": "Type: Character Theme",
          "cardTypeFellowship": "Type: Fellowship Theme",

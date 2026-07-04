@@ -388,6 +388,19 @@
    --card-destructive-bg:  hsl(10 79% 83%);
    --card-destructive-fg:  hsl(214 14% 22%);
 }
+/* GM Challenge Card: an ominous dark-crimson header on aged parchment. */
+.card-type-challenge {
+   --card-header-bg:       hsl(0 52% 30%);
+   --card-header-fg:       hsl(40 68% 92%);
+   --card-paper-bg:        hsl(34 44% 88%);
+   --card-paper-fg:        hsl(0 20% 18%);
+   --card-accent:          hsl(0 55% 32%);
+   --card-border:          hsl(0 20% 18%);
+   --card-popover-bg:      hsl(12 34% 80%);
+   --card-popover-fg:      hsl(0 35% 24%);
+   --card-destructive-bg:  hsl(10 79% 83%);
+   --card-destructive-fg:  hsl(0 20% 18%);
+}
 
 /* --- City of Mist Card Themes --- */
 .card-type-mythos-com {

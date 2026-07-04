@@ -9,6 +9,7 @@ import { HeroCard } from '@/components/organisms/cards/HeroCard';
 import { RiftCard } from '@/components/organisms/cards/RiftCard';
 import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
 import { ImageCard } from '@/components/organisms/cards/ImageCard';
+import { LegendsChallengeCard } from '@/components/organisms/cards/LegendsChallengeCard';
 
 // -- Type Imports --
 import type { DraggableAttributes } from '@dnd-kit/core';
@@ -71,6 +72,9 @@ export function resolveCardComponent(cardType: GeneralItemType, game: GameSystem
       if (game === 'LEGENDS') return HeroCard;
       if (game === 'CITY_OF_MIST') return RiftCard;
       if (game === 'OTHERSCAPE') return OtherscapeCharacterCard;
+   }
+   if (cardType === 'CHALLENGE_CARD') {
+      if (game === 'LEGENDS') return LegendsChallengeCard;
    }
    // Portraits are game-agnostic: the same renderer for every game.
    if (cardType === 'IMAGE_CARD') return ImageCard;

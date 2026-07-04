@@ -8,6 +8,7 @@ export type GeneralItemType =
    | 'GROUP_THEME'
    | 'LOADOUT_THEME'
    | 'IMAGE_CARD'
+   | 'CHALLENGE_CARD'
    | 'STATUS_TRACKER'
    | 'STORY_TAG_TRACKER'
    | 'STORY_THEME_TRACKER'

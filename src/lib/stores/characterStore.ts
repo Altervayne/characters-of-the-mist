@@ -4,7 +4,7 @@ import { temporal } from 'zundo';
 import cuid from 'cuid';
 
 // -- Utils Imports --
-import { createNewCharacter } from '../utils/character';
+import { createNewCharacter, emptyLegendsChallengeDetails } from '../utils/character';
 import { deepReId } from '../utils/drawer';
 import { emptyTracker } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
@@ -99,12 +99,16 @@ export interface CharacterState {
       addImportedCard: (card: Card, index?: number) => boolean;
       /** Appends one empty portrait (IMAGE_CARD); no-op if the sheet already has one. */
       addPortrait: () => void;
+      /** Appends a blank Challenge Card (LEGENDS) and returns its id, so the caller opens the editor. */
+      addChallengeCard: () => string;
       /** Sets (or clears, with `null`) a portrait card's image asset. */
       setCardImage: (cardId: string, assetId: string | null) => void;
       /** Sets a portrait card's display size (px), clamped to the card bounds. */
       setCardSize: (cardId: string, width: number, height: number) => void;
       deleteCard: (cardId: string) => void;
       updateCardDetails: (cardId: string, newDetails: Partial<CardDetails>) => void;
+      /** Sets a card's display title (the challenge card's name lives here). */
+      updateCardTitle: (cardId: string, title: string) => void;
       reorderCards: (startIndex: number, endIndex: number) => void;
       flipCard: (cardId: string) => void;
       updateCardViewMode: (cardId: string, viewMode: CardViewMode | null) => void;
@@ -428,6 +432,24 @@ export function createCharacterStore() {
                      return { character: { ...state.character, cards: [...state.character.cards, newCard] } };
                   });
                },
+               addChallengeCard: () => {
+                  const newCardId = cuid();
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     // A challenge carries its own game (LEGENDS for now), regardless of the sheet's game.
+                     const newCard: Card = {
+                        id: newCardId,
+                        title: '',
+                        order: state.character.cards.length,
+                        isFlipped: false,
+                        cardType: 'CHALLENGE_CARD',
+                        details: emptyLegendsChallengeDetails(),
+                     };
+                     return { character: { ...state.character, cards: [...state.character.cards, newCard] } };
+                  });
+                  return newCardId;
+               },
                setCardImage: (cardId, assetId) => {
                   set((state) => {
                      if (!state.character) return {};
@@ -500,6 +522,13 @@ export function createCharacterStore() {
                      }
 
                      return updatedState;
+                  });
+               },
+               updateCardTitle: (cardId, title) => {
+                  set(state => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return updateCardInState(state, cardId, card => ({ ...card, title }));
                   });
                },
                reorderCards: (startIndex, endIndex) => {

@@ -101,6 +101,36 @@ export interface LegendsHeroDetails {
    backpack: Tag[];
 }
 
+// A challenge's status/limit: the app's real status shape (name + tier), so a clicked mention can mint a
+// real StatusTracker. Rendered compactly as a `name-tier` pill on the card.
+export interface ChallengeStatus {
+   id: string;
+   name: string;
+   tier: number;
+}
+
+// One "Threats & Consequences" entry: a tag/name, its flavor, and a dotted consequence list.
+export interface ChallengeAbility {
+   id: string;
+   tag: string;
+   flavor: string;
+   consequences: string[];
+}
+
+// A GM Challenge Card (LitM): a current obstacle/adversary. Front = image / name (Card.title) / italic
+// types / star level / flavor; back = Limits / Tags & Statuses / Threats & Consequences.
+export interface LegendsChallengeDetails {
+   game: 'LEGENDS';
+   assetId: string | null;
+   types: string[];
+   challengeLevel: number;
+   flavor: string;
+   limits: ChallengeStatus[];
+   statuses: ChallengeStatus[];
+   tags: Tag[];
+   abilities: ChallengeAbility[];
+}
+
 
 // ==================
 //  METRO: OTHERSCAPE
@@ -228,6 +258,7 @@ export type CardDetails =
    | LegendsThemeDetails
    | LegendsFellowshipDetails
    | LegendsHeroDetails
+   | LegendsChallengeDetails
    | OtherscapeThemeDetails
    | OtherscapeCrewDetails
    | OtherscapeLoadoutDetails

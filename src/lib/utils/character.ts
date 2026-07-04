@@ -3,7 +3,7 @@ import cuid from 'cuid';
 
 // -- Types Imports --
 import type { TFunction } from 'i18next';
-import type { Card, CardDetails, Character, CityRiftDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
+import type { Card, CardDetails, Character, CityRiftDetails, LegendsChallengeDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
 import type { GameSystem } from '../types/drawer';
 
 /**
@@ -100,6 +100,11 @@ export function deriveCardTitle(card: Card, t: TFunction): string {
       return t('Cards.portraitCard');
    }
 
+   // Challenge cards carry their own name (the challenge's identity).
+   if (card.cardType === 'CHALLENGE_CARD') {
+      return card.title || t('Cards.challenge.untitled');
+   }
+
    // Fallback to card type
    return t('Cards.themeCard');
 }
@@ -124,6 +129,11 @@ export function emptyCharacterCardDetails(game: GameSystem, characterName: strin
       default:
          return { game: 'LEGENDS', characterName, fellowshipRelationships: [], promise: 0, quintessences: [], backpack: [] };
    }
+}
+
+/** The empty details for a fresh Challenge Card (LitM): every list starts empty, level at 1. */
+export function emptyLegendsChallengeDetails(): LegendsChallengeDetails {
+   return { game: 'LEGENDS', assetId: null, types: [], challengeLevel: 1, flavor: '', limits: [], statuses: [], tags: [], abilities: [] };
 }
 
 export function createNewCharacter(name: string, game: GameSystem): Character {

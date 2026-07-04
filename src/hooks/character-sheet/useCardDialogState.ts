@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
@@ -30,16 +31,31 @@ import type { CreateCardOptions } from '@/lib/types/creation';
  */
 export function useCardDialogState() {
    const { t: tNotifications } = useTranslation();
-   const { addCard, updateCardDetails } = useCharacterActions();
+   const { addCard, updateCardDetails, addChallengeCard } = useCharacterActions();
    const isCardDialogOpen = useAppGeneralStateStore((state) => state.isCardDialogOpen);
    const { setCardDialogOpen } = useAppGeneralStateActions();
    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
    const [cardToEdit, setCardToEdit] = useState<CardData | null>(null);
+   // Challenge cards are too rich for the generic dialog: they route to their own editor.
+   const [challengeCardToEdit, setChallengeCardToEdit] = useState<CardData | null>(null);
 
    const handleEditCard = (card: CardData) => {
+      if (card.cardType === 'CHALLENGE_CARD') {
+         setChallengeCardToEdit(card);
+         return;
+      }
       setDialogMode('edit');
       setCardToEdit(card);
       setCardDialogOpen(true);
+   };
+
+   const closeChallengeEditor = () => setChallengeCardToEdit(null);
+
+   // Create a blank challenge and drop straight into its editor.
+   const handleCreateChallenge = () => {
+      const id = addChallengeCard();
+      const newCard = getActiveCharacterStore()?.getState().character?.cards.find((card) => card.id === id) ?? null;
+      if (newCard) setChallengeCardToEdit(newCard);
    };
 
    const handleAddCardClick = () => {
@@ -63,6 +79,9 @@ export function useCardDialogState() {
       setCardDialogOpen,
       dialogMode,
       cardToEdit,
+      challengeCardToEdit,
+      closeChallengeEditor,
+      handleCreateChallenge,
       handleEditCard,
       handleAddCardClick,
       handleDialogConfirm,

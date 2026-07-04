@@ -13,6 +13,7 @@ import { Sortable, DragLayoutWrapper } from '@/components/dnd';
 import { CardRenderer } from '@/components/organisms/cards/CardRenderer';
 import { AddCardButton } from '@/components/molecules/AddThemeCardButton';
 import { AddPortraitButton } from '@/components/molecules/AddPortraitButton';
+import { AddChallengeCardButton } from '@/components/molecules/AddChallengeCardButton';
 
 // -- Type Imports --
 import type { Character, Card as CardData } from '@/lib/types/character';
@@ -26,6 +27,7 @@ interface CardsSectionProps {
    onEditCard: (card: CardData) => void;
    onAddCard: () => void;
    onAddPortrait: () => void;
+   onAddChallenge: () => void;
    cardIds: string[];
    /** Highlight the section as the landing spot for a compatible card-type drawer drag. */
    isDropTarget?: boolean;
@@ -46,6 +48,7 @@ export function CardsSection({
    onEditCard,
    onAddCard,
    onAddPortrait,
+   onAddChallenge,
    cardIds,
    isDropTarget = false,
 }: CardsSectionProps) {
@@ -93,6 +96,7 @@ export function CardsSection({
          </SortableContext>
          {isEditing && <AddCardButton onClick={onAddCard} />}
          {isEditing && !hasPortrait && <AddPortraitButton onClick={onAddPortrait} />}
+         {isEditing && <AddChallengeCardButton onClick={onAddChallenge} />}
       </div>
    );
 }

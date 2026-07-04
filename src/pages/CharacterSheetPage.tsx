@@ -26,6 +26,7 @@ import { CharacterNameHeader } from '@/components/molecules/CharacterNameHeader'
 import { FileDragOverlay } from '@/components/molecules/FileDragOverlay';
 import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
+import { ChallengeCardEditor } from '@/components/organisms/dialogs/ChallengeCardEditor';
 import { Drawer } from '@/components/organisms/drawer/Drawer';
 import { ExpandedDrawer } from '@/components/organisms/drawer/ExpandedDrawer';
 import { DiceTrayPanel } from '@/components/organisms/dice/DiceTrayPanel';
@@ -132,6 +133,9 @@ function DesktopCharacterSheetPage() {
       setCardDialogOpen,
       dialogMode,
       cardToEdit,
+      challengeCardToEdit,
+      closeChallengeEditor,
+      handleCreateChallenge,
       handleEditCard,
       handleAddCardClick,
       handleDialogConfirm,
@@ -173,6 +177,7 @@ function DesktopCharacterSheetPage() {
       onToggleDrawer: () => setDrawerOpen(!isDrawerOpen),
       onOpenSettings: () => setSettingsOpen(true),
       onImportFile: triggerImport,
+      onCreateChallenge: handleCreateChallenge,
    });
 
 
@@ -267,6 +272,7 @@ function DesktopCharacterSheetPage() {
                                  onEditCard={handleEditCard}
                                  onAddCard={handleAddCardClick}
                                  onAddPortrait={addPortrait}
+                                 onAddChallenge={handleCreateChallenge}
                                  cardIds={cardIds}
                                  isDropTarget={sheetHighlight === 'cards'}
                               />
@@ -347,6 +353,12 @@ function DesktopCharacterSheetPage() {
             cardData={cardToEdit ?? undefined}
             modal={!isTourOpen}
             game={character?.game ?? 'LEGENDS'}
+         />
+         <ChallengeCardEditor
+            isOpen={!!challengeCardToEdit}
+            onOpenChange={(open) => { if (!open) closeChallengeEditor(); }}
+            card={challengeCardToEdit}
+            modal={!isTourOpen}
          />
          <SettingsDialog
             isOpen={isSettingsOpen}
