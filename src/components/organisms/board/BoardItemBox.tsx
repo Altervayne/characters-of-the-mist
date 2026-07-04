@@ -338,7 +338,9 @@ export function BoardItemBox({
             // color survives collapse; an uncolored zone keeps the neutral card bar.
             style={isCollapsedZone && zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
             className={cn(
-               'relative h-full w-full select-none',
+               // A plain arrow: the body selects on click but never moves (that's the toolbar handle) or
+               // pans, so it must not inherit the canvas grab or show a misleading finger.
+               'relative h-full w-full cursor-default select-none',
                // An embed brings its own rounded border, so the box neither clips (which would
                // double-round and crop the flip's back face) nor draws chrome.
                !isZone && !isEmbed && 'overflow-hidden',
@@ -348,7 +350,7 @@ export function BoardItemBox({
                // embed is bare (its own visuals) with just a ring; every other kind is a bordered card.
                isCollapsedZone
                   ? cn(
-                       'overflow-hidden cursor-pointer rounded-md border shadow-sm',
+                       'overflow-hidden rounded-md border shadow-sm',
                        !zoneColor && 'bg-card',
                        isSelected ? 'ring-2 ring-primary' : 'hover:border-primary/50',
                        !zoneColor && (isSelected ? 'border-primary' : 'border-border'),
@@ -356,11 +358,11 @@ export function BoardItemBox({
                   : isZone
                      ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
                      : isPin
-                        ? cn('rounded-full', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
+                        ? cn('rounded-full', isSelected && 'ring-2 ring-primary')
                         : isEmbed
                            // Match the ring radius to the embed's own corners: a card is rounded-xl, a tracker rounded-lg.
-                           ? cn(item.kind === 'card' ? 'rounded-xl' : 'rounded-lg', isSelected ? 'ring-2 ring-primary' : 'cursor-pointer')
-                           : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border cursor-pointer hover:border-primary/50'),
+                           ? cn(item.kind === 'card' ? 'rounded-xl' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
+                           : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary/50'),
             )}
          >
             {/* A measured kind wraps the body so the box can measure it. A MIN-HEIGHT kind fills the
