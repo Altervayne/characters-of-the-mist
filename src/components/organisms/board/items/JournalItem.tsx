@@ -18,6 +18,7 @@ import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 
 // -- Hook Imports --
 import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
+import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, JournalBoardContent } from '@/lib/types/board';
@@ -73,6 +74,9 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    const commit = () => {
       if (text !== activePage.text) onContentChange({ ...journal, pages: pages.map((page) => (page.id === activePage.id ? { ...page, text } : page)) });
    };
+
+   // A tab switch unmounts the board without a blur; flush the active page's buffer so it isn't lost.
+   useCommitOnUnmount(commit);
 
    const goPrev = () => { commit(); setIndex(Math.max(0, pageIndex - 1)); };
    const goNext = () => { commit(); setIndex(Math.min(pages.length - 1, pageIndex + 1)); };
@@ -235,6 +239,9 @@ function BookmarkTab({
       const trimmed = value.trim();
       if (trimmed !== (label ?? '')) onLabelCommit(trimmed);
    };
+
+   // A tab switch unmounts the tab without a blur; flush the label buffer so it isn't lost.
+   useCommitOnUnmount(commit);
 
    return (
       <div

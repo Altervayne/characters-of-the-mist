@@ -13,6 +13,7 @@ import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 
 // -- Hook Imports --
 import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
+import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, PostItBoardContent } from '@/lib/types/board';
@@ -99,6 +100,10 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
    const commitText = () => {
       if (text !== content.text) onContentChange({ ...content, text });
    };
+
+   // A tab switch unmounts the board without a blur; flush the text (and any pending color) so it isn't lost.
+   useCommitOnUnmount(commitText);
+   useCommitOnUnmount(commitPendingColor);
 
    return (
       <div className="h-full w-full" style={{ backgroundColor: background, color: textColor }}>

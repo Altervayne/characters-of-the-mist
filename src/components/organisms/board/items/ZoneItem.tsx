@@ -13,6 +13,9 @@ import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 // -- Component Imports --
 import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 
+// -- Hook Imports --
+import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
+
 // -- Type Imports --
 import type { BoardItemContent, ZoneBoardContent } from '@/lib/types/board';
 
@@ -89,6 +92,10 @@ export function ZoneItem({ content, isSelected, toolbarSlot, memberCount, onCont
       // eslint-disable-next-line react-hooks/set-state-in-effect -- commit (and clear) a pending color after the deselect render
       if (!isSelected) commitPendingColor();
    }, [isSelected, commitPendingColor]);
+
+   // A tab switch unmounts the board without a blur / deselect; flush the label (and any pending color).
+   useCommitOnUnmount(commitLabel);
+   useCommitOnUnmount(commitPendingColor);
 
    const toggleCollapse = () => onContentChange({ ...content, collapsed: !collapsed });
 
