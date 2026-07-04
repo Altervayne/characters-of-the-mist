@@ -44,9 +44,9 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
 
    switch (content.kind) {
       case 'post-it':
-         return <PostItItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <PostItItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'journal':
-         return <JournalItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} sideSlot={sideSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <JournalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} sideSlot={sideSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'image':
          return <ImageItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'pin':

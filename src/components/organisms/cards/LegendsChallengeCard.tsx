@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
-import { MentionText } from '@/components/molecules/challenge/MentionText';
+import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
@@ -161,7 +161,7 @@ export const LegendsChallengeCard = React.memo(
 
                {!isDrawerPreview && (
                   <div className="min-w-0 grow overflow-y-auto overflow-x-hidden overscroll-contain">
-                     <p className="whitespace-pre-wrap p-2 text-sm"><MentionText text={details.flavor} onMentionClick={mentionClick} /></p>
+                     <MentionMarkdown text={details.flavor} onMentionClick={mentionClick} className="p-2 text-sm" />
                   </div>
                )}
             </Card>
@@ -192,11 +192,11 @@ export const LegendsChallengeCard = React.memo(
                         {details.abilities.map((ability) => (
                            <div key={ability.id} className="space-y-1">
                               <p className="text-sm font-bold">{ability.tag}</p>
-                              {ability.flavor && <p className="whitespace-pre-wrap text-xs"><MentionText text={ability.flavor} onMentionClick={mentionClick} /></p>}
+                              {ability.flavor && <MentionMarkdown text={ability.flavor} onMentionClick={mentionClick} className="text-xs" />}
                               {ability.consequences.length > 0 && (
                                  <ul className="list-disc space-y-0.5 pl-4 text-xs">
                                     {ability.consequences.map((consequence, index) => (
-                                       <li key={index} className="whitespace-pre-wrap"><MentionText text={consequence} onMentionClick={mentionClick} /></li>
+                                       <li key={index}><MentionMarkdown text={consequence} onMentionClick={mentionClick} /></li>
                                     ))}
                                  </ul>
                               )}

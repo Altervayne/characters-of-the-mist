@@ -1,10 +1,5 @@
 // -- React Imports --
-import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-
-// -- Other Library Imports --
-import cuid from 'cuid';
-import toast from 'react-hot-toast';
 
 // -- Icon Imports --
 import { RefreshCw } from 'lucide-react';
@@ -15,12 +10,9 @@ import { ViewModeIcon } from '@/components/molecules/ToolbarHandle';
 import { EmbeddedItem, EmbeddedFallback } from './EmbeddedItem';
 import { InteractiveEmbed } from './InteractiveEmbed';
 
-// -- Store Imports --
+// -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
-import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
-
-// -- Utils Imports --
-import { trackerBoardItemForMention } from '@/lib/board/mintTrackerFromMention';
+import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, CardBoardContent } from '@/lib/types/board';
@@ -47,22 +39,8 @@ interface BoardCardItemProps {
 }
 
 export function BoardCardItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete }: BoardCardItemProps) {
-   const { t } = useTranslation();
-   // Per-tap cascade so repeated mints from the same challenge don't stack exactly.
-   const cascadeRef = useRef(0);
-
-   // Tapping a mention on the interactive COPY mints a fresh board-native tracker beside the challenge
-   // (create-only - the board isn't single-owner, so no raise/dedup). It must go through the BOARD store,
-   // not character actions, which would hit the embed's throwaway per-embed store.
-   const handleMentionClick = (segment: MentionSegment) => {
-      const boardStore = getActiveBoardStore();
-      const spec = trackerBoardItemForMention(segment, item, cascadeRef.current);
-      if (!boardStore || !spec) return;
-      cascadeRef.current += 1;
-      const z = Object.values(boardStore.getState().items).reduce((max, entry) => Math.max(max, entry.z), -1) + 1;
-      void boardStore.getState().actions.addItem({ id: cuid(), z, ...spec });
-      if (segment.type !== 'text') toast.success(t('BoardView.mentionAdded', { name: segment.name }));
-   };
+   // Tapping a mention on the interactive COPY mints a fresh board-native tracker beside the challenge.
+   const handleMentionClick = useBoardMentionMint(item);
 
    return (
       <EmbeddedItem

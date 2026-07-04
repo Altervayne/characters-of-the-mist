@@ -11,8 +11,11 @@ import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 
+// -- Hook Imports --
+import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
+
 // -- Type Imports --
-import type { BoardItemContent, PostItBoardContent } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent, PostItBoardContent } from '@/lib/types/board';
 
 /*
  * A sticky-note board item: a single editable text field filling the box. The text is
@@ -34,6 +37,8 @@ const DEFAULT_POSTIT_COLOR = '#fde68a';
 const PASTEL_PALETTE = ['#fde68a', '#fecaca', '#fbcfe8', '#ddd6fe', '#bfdbfe', '#a7f3d0', '#fed7aa', '#e2e8f0', '#a5f3fc'] as const;
 
 interface PostItItemProps {
+   /** The board item (its rect anchors a minted mention tracker beside the note). */
+   item: BoardItem;
    content: PostItBoardContent;
    isSelected: boolean;
    /** The selection toolbar's action slot; the color control portals here. */
@@ -42,8 +47,10 @@ interface PostItItemProps {
    onRequestSelect: () => void;
 }
 
-export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: PostItItemProps) {
+export function PostItItem({ item, content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: PostItItemProps) {
    const { t } = useTranslation();
+   // A tapped `{mention}` in the note mints a fresh tracker beside it (create-only, board scope).
+   const handleMentionClick = useBoardMentionMint(item);
    const [text, setText] = useState(content.text);
    // Re-sync from the store on an external change (undo/redo) using React's
    // adjust-state-during-render pattern. While typing the stored text is unchanged
@@ -116,7 +123,7 @@ export function PostItItem({ content, isSelected, toolbarSlot, onContentChange, 
             // on this scroll element (not a wrapper), so the selected textarea's scrollbar sits at the
             // post-it's edge while the text stays inset - matching the journal.
             <div className="h-full w-full overflow-hidden p-2.5">
-               <NoteMarkdown content={text} />
+               <NoteMarkdown content={text} onMentionClick={handleMentionClick} />
             </div>
          ) : null}
 

@@ -20,7 +20,7 @@ import { Image as ImageIcon, Loader2, Minus, Plus, Trash2, Upload, X } from 'luc
 import { cn } from '@/lib/utils';
 
 // -- Component Imports --
-import { MentionText } from '@/components/molecules/challenge/MentionText';
+import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -273,12 +273,12 @@ function ListSection({ label, addLabel, onAdd, children }: { label: string; addL
    );
 }
 
-/** A live styled preview of authored text, shown once it carries a `[bracket]` mention. */
+/** A live styled preview of authored text, shown once it carries a `{brace}` mention. */
 function MentionPreview({ text }: { text: string }) {
-   if (!text.includes('[')) return null;
+   if (!text.includes('{')) return null;
    return (
-      <div className="whitespace-pre-wrap rounded bg-muted/50 px-2 py-1 text-xs leading-relaxed">
-         <MentionText text={text} />
+      <div className="rounded bg-muted/50 px-2 py-1 text-xs leading-relaxed">
+         <MentionMarkdown text={text} />
       </div>
    );
 }

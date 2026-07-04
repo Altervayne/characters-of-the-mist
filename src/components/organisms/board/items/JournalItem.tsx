@@ -16,8 +16,11 @@ import { migrateJournalContent, withPageRemoved } from '@/lib/board/journalConte
 // -- Component Imports --
 import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 
+// -- Hook Imports --
+import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
+
 // -- Type Imports --
-import type { BoardItemContent, JournalBoardContent } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent, JournalBoardContent } from '@/lib/types/board';
 
 /*
  * A paged note: one editable plain-text page at a time, with prev/next, a page indicator,
@@ -28,6 +31,8 @@ import type { BoardItemContent, JournalBoardContent } from '@/lib/types/board';
  */
 
 interface JournalItemProps {
+   /** The board item (its rect anchors a minted mention tracker beside the journal). */
+   item: BoardItem;
    content: JournalBoardContent;
    isSelected: boolean;
    /** The selection toolbar's action slot; add/remove-page + bookmark portal here, nav stays in the body. */
@@ -38,8 +43,10 @@ interface JournalItemProps {
    onRequestSelect: () => void;
 }
 
-export function JournalItem({ content, isSelected, toolbarSlot, sideSlot, onContentChange, onRequestSelect }: JournalItemProps) {
+export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, onContentChange, onRequestSelect }: JournalItemProps) {
    const { t } = useTranslation();
+   // A tapped `{mention}` in the page mints a fresh tracker beside the journal (create-only, board scope).
+   const handleMentionClick = useBoardMentionMint(item);
 
    // Normalize legacy string-page journals to id'd pages; every commit spreads this so the
    // migration persists on the first edit.
@@ -159,7 +166,7 @@ export function JournalItem({ content, isSelected, toolbarSlot, sideSlot, onCont
          ) : (
             // Clip at rest (no scrollbar on a resting page); the textarea scrolls when selected.
             <div className="min-h-0 flex-1 overflow-hidden p-2">
-               {text.trim() ? <NoteMarkdown content={text} /> : null}
+               {text.trim() ? <NoteMarkdown content={text} onMentionClick={handleMentionClick} /> : null}
             </div>
          )}
 
