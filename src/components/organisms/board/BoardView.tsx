@@ -22,6 +22,7 @@ import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
+import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -1017,6 +1018,9 @@ function BoardNameField({ name, placeholder, onCommit }: { name: string; placeho
       if (trimmed && trimmed !== name) onCommit(trimmed);
       else setText(name); // empty or unchanged -> revert to the stored name
    };
+
+   // A tab switch unmounts the board without a blur; flush the buffered name so it isn't lost.
+   useCommitOnUnmount(commit);
 
    return (
       <div className="relative shrink-0">

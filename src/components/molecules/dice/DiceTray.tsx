@@ -19,6 +19,7 @@ import { formatRelativeItemDate } from '@/lib/drawer/itemDateDisplay';
 
 // -- Hook Imports --
 import { useLongPress } from '@/hooks/mobile/useLongPress';
+import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 
 // -- Utils Imports --
 import { readSafeAreaInsetBottom } from '@/lib/utils/safeArea';
@@ -109,6 +110,9 @@ export function DiceTray({ content, editable, onChange, onCacheRoll, growToFill 
       const trimmed = title.trim();
       if (trimmed !== (tray.title ?? '')) onChange({ ...tray, title: trimmed });
    };
+
+   // The board host unmounts on a tab switch without a blur; flush the buffered title so it isn't lost.
+   useCommitOnUnmount(commitTitle);
 
    const addDie = (sides: number) => {
       onChange({ ...tray, dice: [...dice, { id: cuid(), sides }] });
@@ -567,6 +571,9 @@ function ModifierRow({
       const trimmed = label.trim();
       if (trimmed !== (modifier.label ?? '')) onChangeLabel(trimmed);
    };
+
+   // The board host unmounts on a tab switch without a blur; flush the buffered label so it isn't lost.
+   useCommitOnUnmount(commit);
 
    return (
       <div className="flex items-center gap-1">

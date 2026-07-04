@@ -2,7 +2,6 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Custom Hooks --
-import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 import { useDeviceType } from '@/hooks/useDeviceType';
 import { useCharacterSheetDnD } from '@/hooks/character-sheet/useCharacterSheetDnD';
 import { useCharacterSheetFileImport } from '@/hooks/character-sheet/useCharacterSheetFileImport';
@@ -151,16 +150,6 @@ function DesktopCharacterSheetPage() {
    const { getRootProps, isDragActive: isFileDragActive, handleFileSelected, triggerImport, formRef, fileInputRef } = useCharacterSheetFileImport();
 
 
-   // ##########################################
-   // ###   CHARACTER NAME INPUT DEBOUNCER   ###
-   // ##########################################
-
-   const [localName, setLocalName] = useInputDebouncer(
-      character?.name ?? '',
-      (value) => updateCharacterName(value)
-   );
-
-
    // ##############################
    // ###   UNDO/REDO SHORTCUT   ###
    // ##############################
@@ -245,8 +234,9 @@ function DesktopCharacterSheetPage() {
                   ) : character ? (
                      <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
                         <CharacterNameHeader
-                           value={localName}
-                           onChange={setLocalName}
+                           key={character.id}
+                           name={character.name}
+                           onCommit={updateCharacterName}
                            placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
                         />
 

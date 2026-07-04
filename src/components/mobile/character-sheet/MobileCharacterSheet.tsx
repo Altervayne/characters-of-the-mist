@@ -20,7 +20,6 @@ import { Check } from 'lucide-react';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 import { useMobileSaveToDrawer } from '@/hooks/mobile/useMobileSaveToDrawer';
 import { useMobileCardSheetGestures } from '@/hooks/mobile/useMobileCardSheetGestures';
 
@@ -123,12 +122,6 @@ export default function MobileCharacterSheet({
 	// Save to Drawer sheet state (mobile hook)
 	const { isSaveToDrawerOpen, setIsSaveToDrawerOpen, saveToDrawerDefaultName, openSaveToDrawer, handleConfirmSaveToDrawer } = useMobileSaveToDrawer();
 
-	// Character name input with debouncing
-	const [localName, setLocalName] = useInputDebouncer(
-		character?.name || '',
-		(value) => updateCharacterName(value)
-	);
-
 	// Safe card index (clamp to valid range)
 	const safeCardIndex = character && character.cards.length > 0
 		? Math.min(currentCardIndex, character.cards.length - 1)
@@ -196,8 +189,9 @@ export default function MobileCharacterSheet({
 		<div className="flex flex-col h-full">
 			{/* Character Name Header */}
 			<MobileCharacterNameHeader
-				value={localName}
-				onChange={setLocalName}
+				key={character.id}
+				name={character.name}
+				onCommit={updateCharacterName}
 				placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
 			/>
 

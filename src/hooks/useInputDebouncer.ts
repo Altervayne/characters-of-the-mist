@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Hook for debouncing input values with automatic external state synchronization.
@@ -38,6 +38,22 @@ export function useInputDebouncer<T>(
     }, delay);
     return () => clearTimeout(handler);
   }, [localValue, externalValue, onUpdate, delay]);
+
+  // Flush the pending edit on unmount. The debounce timer's cleanup cancels its
+  // write, so a tab/character switch (which unmounts the surface without a blur)
+  // would otherwise drop the last keystrokes. The latest-ref is mandatory: it
+  // holds the current render's closure so the flush commits the value the field
+  // was bound to when it last rendered — not a stale first-render one. Dirty-
+  // guarded (localValue !== externalValue) so a debounce that already fired no-ops.
+  const flushRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    flushRef.current = () => {
+      if (externalValue !== localValue) {
+        onUpdate(localValue);
+      }
+    };
+  });
+  useEffect(() => () => flushRef.current(), []);
 
   // Sync external changes (e.g., undo/redo) back into local state. This also
   // short-circuits any pending debounce: once localValue equals externalValue,
