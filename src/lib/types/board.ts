@@ -66,11 +66,17 @@ export interface JournalBookmark {
    label?: string;
 }
 
-/** Paged notes with id'd pages and bookmarks (side tabs that jump to a page). */
+/**
+ * A journal on the board, in the copy model: a self-contained snapshot of a {@link Journal} in `data`,
+ * carrying the originating `sourceDrawerItemId` when it came from (or was Save-As'd to) the drawer.
+ * Copy-ONLY - a journal is its own content, so there is no live-mirror reference variant. This is the
+ * copy half of {@link EmbeddedBoardContent}, without inheriting a `reference` mode a journal can't honor.
+ */
 export interface JournalBoardContent {
    kind: 'journal';
-   pages: JournalPage[];
-   bookmarks: JournalBookmark[];
+   mode: 'copy';
+   sourceDrawerItemId?: string;
+   data: Journal;
 }
 
 /**

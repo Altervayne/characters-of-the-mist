@@ -15,7 +15,7 @@ import { detachToCopy, toReferenceContent } from '@/lib/board/referenceContent';
 import { BoardItemSaveMenu } from './BoardItemSaveMenu';
 
 // -- Type Imports --
-import type { BoardItem, BoardItemContent, CardBoardContent, PostItBoardContent, TrackerBoardContent } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent, CardBoardContent, JournalBoardContent, PostItBoardContent, TrackerBoardContent } from '@/lib/types/board';
 
 /*
  * Shared chrome for an embedded card/tracker item: it resolves copy vs reference, renders
@@ -27,8 +27,8 @@ import type { BoardItem, BoardItemContent, CardBoardContent, PostItBoardContent,
 
 interface EmbeddedItemProps {
    item: BoardItem;
-   // A card/tracker copy-or-reference, or a copy-only post-it (whose reference branches stay dormant).
-   content: CardBoardContent | TrackerBoardContent | PostItBoardContent;
+   // A card/tracker copy-or-reference, or a copy-only note (post-it/journal, whose reference branches stay dormant).
+   content: CardBoardContent | TrackerBoardContent | PostItBoardContent | JournalBoardContent;
    isSelected: boolean;
    /** The selection toolbar's per-kind slot, forwarded to an interactive copy's own chrome. */
    toolbarSlot?: HTMLElement | null;
@@ -82,9 +82,9 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
    // A copy can no longer become a reference - only a full character sheet has the save-back
    // round-trip that justifies a live link (a future, separate capability). The reference type
    // and machinery stay dormant for that case; an existing reference still detaches to a copy.
-   // A post-it never references, so this toggle is unreachable for it (guarded for the narrow type).
+   // A note (post-it/journal) never references, so this toggle is unreachable for it (guarded for the narrow type).
    const detach = (): void => {
-      if (content.kind === 'post-it') return;
+      if (content.kind === 'post-it' || content.kind === 'journal') return;
       onContentChange(detachToCopy(content, liveContent));
    };
 

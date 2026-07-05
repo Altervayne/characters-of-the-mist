@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES, EMBEDDED_POSTIT_SIZE } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES, EMBEDDED_POSTIT_SIZE, EMBEDDED_JOURNAL_SIZE } from './embedDrawerItem';
 import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
@@ -82,6 +82,41 @@ describe('embeddedSpecForDrawerItem', () => {
       // Deep-independent: mutating the source note must not reach the board copy.
       (source.content as { text: string }).text = 'edited';
       expect((spec!.content as { data: { text: string } }).data.text).toBe('Bandit Ambush');
+   });
+
+   it('re-embeds a saved JOURNAL as a source-bearing copy with a FRESH top-level id, keeping pages + bookmarks intact', () => {
+      const source = makeDrawerItem('JOURNAL', {
+         id: 'journal-src',
+         pages: [
+            { id: 'page-a', text: 'Session one' },
+            { id: 'page-b', text: 'Session two' },
+         ],
+         bookmarks: [
+            { id: 'bm-1', pageId: 'page-a', label: 'Start' },
+            { id: 'bm-2', pageId: 'page-b', label: 'The heist' },
+         ],
+      } as unknown as DrawerItemContent);
+
+      const spec = embeddedSpecForDrawerItem(source);
+      expect(spec).not.toBeNull();
+      expect(spec).toMatchObject({ kind: 'journal', width: EMBEDDED_JOURNAL_SIZE.width, height: EMBEDDED_JOURNAL_SIZE.height });
+      // Source-bearing copy: keeps the Save write-back link.
+      expect(spec!.content).toMatchObject({ kind: 'journal', mode: 'copy', sourceDrawerItemId: 'item-1' });
+
+      const data = (spec!.content as { data: { id: string; pages: { id: string }[]; bookmarks: { pageId: string }[] } }).data;
+      // A fresh TOP-LEVEL id makes the board copy independent of the drawer twin's journal id...
+      expect(data.id).not.toBe('journal-src');
+      // ...but page ids and bookmark pageId references are left UNTOUCHED (the deepReId landmine dodged):
+      // a blind re-ID would rewrite page ids while leaving `pageId` alone, orphaning every bookmark.
+      expect(data.pages.map((page) => page.id)).toEqual(['page-a', 'page-b']);
+      expect(data.bookmarks.map((bookmark) => bookmark.pageId)).toEqual(['page-a', 'page-b']);
+      // Every bookmark still resolves to a real page after the re-embed - no strays.
+      const pageIds = new Set(data.pages.map((page) => page.id));
+      expect(data.bookmarks.every((bookmark) => pageIds.has(bookmark.pageId))).toBe(true);
+
+      // Deep-independent: mutating the source journal must not reach the board copy.
+      (source.content as { pages: { text: string }[] }).pages[0].text = 'edited';
+      expect((spec!.content as { data: { pages: { text: string }[] } }).data.pages[0].text).toBe('Session one');
    });
 
    it('drops a saved character sheet as a read-only character REFERENCE (no copy, records source + character ids)', () => {

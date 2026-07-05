@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { migrateJournalContent, withPageRemoved } from './journalContent';
 
 // -- Type Imports --
-import type { JournalBoardContent } from '@/lib/types/board';
+import type { Journal } from '@/lib/types/board';
 
 /*
  * Tests for the journal page/bookmark helpers: the legacy string-pages migration and the
@@ -14,7 +14,7 @@ import type { JournalBoardContent } from '@/lib/types/board';
 
 describe('migrateJournalContent', () => {
    it('turns a legacy string-pages journal into id\'d pages (text + order preserved) with empty bookmarks', () => {
-      const legacy = { kind: 'journal', pages: ['one', 'two', 'three'] } as unknown as JournalBoardContent;
+      const legacy = { id: 'j1', pages: ['one', 'two', 'three'] } as unknown as Journal;
       const migrated = migrateJournalContent(legacy);
       expect(migrated.pages.map((p) => p.text)).toEqual(['one', 'two', 'three']);
       expect(migrated.pages.every((p) => typeof p.id === 'string' && p.id.length > 0)).toBe(true);
@@ -23,14 +23,14 @@ describe('migrateJournalContent', () => {
    });
 
    it('is idempotent for a journal already on the object shape', () => {
-      const objectShape: JournalBoardContent = { kind: 'journal', pages: [{ id: 'p1', text: 'a' }], bookmarks: [] };
+      const objectShape: Journal = { id: 'j1', pages: [{ id: 'p1', text: 'a' }], bookmarks: [] };
       expect(migrateJournalContent(objectShape)).toBe(objectShape);
    });
 });
 
 describe('withPageRemoved', () => {
-   const content: JournalBoardContent = {
-      kind: 'journal',
+   const content: Journal = {
+      id: 'j1',
       pages: [{ id: 'p1', text: 'a' }, { id: 'p2', text: 'b' }, { id: 'p3', text: 'c' }],
       bookmarks: [{ id: 'b1', pageId: 'p1', label: 'First' }, { id: 'b2', pageId: 'p3', label: 'Third' }],
    };
@@ -47,7 +47,7 @@ describe('withPageRemoved', () => {
    });
 
    it('removing the last page leaves one fresh empty page and no bookmarks', () => {
-      const single: JournalBoardContent = { kind: 'journal', pages: [{ id: 'only', text: 'x' }], bookmarks: [{ id: 'b', pageId: 'only' }] };
+      const single: Journal = { id: 'j1', pages: [{ id: 'only', text: 'x' }], bookmarks: [{ id: 'b', pageId: 'only' }] };
       const result = withPageRemoved(single, 'only');
       expect(result.pages).toHaveLength(1);
       expect(result.pages[0].text).toBe('');

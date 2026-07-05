@@ -50,10 +50,14 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    const handleMentionClick = useBoardMentionMint(item);
 
    // Normalize legacy string-page journals to id'd pages; every commit spreads this so the
-   // migration persists on the first edit.
-   const journal = useMemo(() => migrateJournalContent(content), [content]);
+   // migration persists on the first edit. The journal is the copy's inner `data` aggregate.
+   const journal = useMemo(() => migrateJournalContent(content.data), [content.data]);
    const pages = journal.pages.length > 0 ? journal.pages : [{ id: '_', text: '' }];
    const bookmarks = journal.bookmarks;
+
+   // Commits a new inner journal aggregate onto the copy's `content.data`, keeping the copy wrapper
+   // (kind / mode / sourceDrawerItemId) intact so the Save-back link survives every edit.
+   const commitJournal = (next: typeof journal) => onContentChange({ ...content, data: next });
 
    const [index, setIndex] = useState(0);
    const pageIndex = Math.min(index, pages.length - 1);
@@ -72,7 +76,7 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    const stopDrag = (event: ReactPointerEvent) => event.stopPropagation();
 
    const commit = () => {
-      if (text !== activePage.text) onContentChange({ ...journal, pages: pages.map((page) => (page.id === activePage.id ? { ...page, text } : page)) });
+      if (text !== activePage.text) commitJournal({ ...journal, pages: pages.map((page) => (page.id === activePage.id ? { ...page, text } : page)) });
    };
 
    // A tab switch unmounts the board without a blur; flush the active page's buffer so it isn't lost.
@@ -85,13 +89,13 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
       // Keep the current edit, append a fresh page, and jump to it.
       const kept = pages.map((page) => (page.id === activePage.id ? { ...page, text } : page));
       const next = [...kept, { id: cuid(), text: '' }];
-      onContentChange({ ...journal, pages: next });
+      commitJournal({ ...journal, pages: next });
       setIndex(next.length - 1);
    };
 
    const removePage = () => {
       const result = withPageRemoved({ ...journal, pages }, activePage.id);
-      onContentChange(result);
+      commitJournal(result);
       setIndex(Math.min(pageIndex, result.pages.length - 1));
    };
 
@@ -100,11 +104,11 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
       const next = isBookmarked
          ? bookmarks.filter((bookmark) => bookmark.pageId !== activePage.id)
          : [...bookmarks, { id: cuid(), pageId: activePage.id, label: '' }];
-      onContentChange({ ...journal, bookmarks: next });
+      commitJournal({ ...journal, bookmarks: next });
    };
-   const removeBookmark = (id: string) => onContentChange({ ...journal, bookmarks: bookmarks.filter((bookmark) => bookmark.id !== id) });
+   const removeBookmark = (id: string) => commitJournal({ ...journal, bookmarks: bookmarks.filter((bookmark) => bookmark.id !== id) });
    const setBookmarkLabel = (id: string, label: string) =>
-      onContentChange({ ...journal, bookmarks: bookmarks.map((bookmark) => (bookmark.id === id ? { ...bookmark, label } : bookmark)) });
+      commitJournal({ ...journal, bookmarks: bookmarks.map((bookmark) => (bookmark.id === id ? { ...bookmark, label } : bookmark)) });
 
    const jumpToPage = (pageId: string) => {
       const target = pages.findIndex((page) => page.id === pageId);

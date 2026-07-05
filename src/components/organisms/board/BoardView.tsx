@@ -101,7 +101,8 @@ function emptyContent(kind: CreatableKind): BoardItemContent {
          // Board-born copy: source-less (Save-As only), a fresh standalone note in `data`.
          return { kind: 'post-it', mode: 'copy', data: { id: cuid(), text: '' } };
       case 'journal':
-         return { kind: 'journal', pages: [{ id: cuid(), text: '' }], bookmarks: [] };
+         // Board-born copy: source-less (Save-As only), a fresh standalone journal in `data`.
+         return { kind: 'journal', mode: 'copy', data: { id: cuid(), pages: [{ id: cuid(), text: '' }], bookmarks: [] } };
       case 'image':
          return { kind: 'image', assetId: null, fit: 'cover' };
       case 'pin':
@@ -645,7 +646,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          return;
       }
 
-      if ((content.kind !== 'card' && content.kind !== 'tracker' && content.kind !== 'post-it') || content.mode !== 'copy') {
+      if ((content.kind !== 'card' && content.kind !== 'tracker' && content.kind !== 'post-it' && content.kind !== 'journal') || content.mode !== 'copy') {
          toast.error(t('Notifications.board.itemNotSaveable'));
          return;
       }

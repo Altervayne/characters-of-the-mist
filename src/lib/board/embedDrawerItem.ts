@@ -6,7 +6,7 @@ import cuid from 'cuid';
 
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
-import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent, PostItBoardContent, PostItNote } from '@/lib/types/board';
+import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent, PostItBoardContent, PostItNote, JournalBoardContent, Journal } from '@/lib/types/board';
 import type { Card, Character, ImageCardDetails, Tracker } from '@/lib/types/character';
 
 /*
@@ -46,6 +46,9 @@ export const CHARACTER_ELEMENT_SIZE = { width: 360, height: 132 } as const;
 /** Native footprint of a re-embedded post-it, matching a fresh board sticky. */
 export const EMBEDDED_POSTIT_SIZE = { width: 180, height: 180 } as const;
 
+/** Native footprint of a re-embedded journal, matching a fresh board journal. */
+export const EMBEDDED_JOURNAL_SIZE = { width: 260, height: 320 } as const;
+
 // An IMAGE_CARD is NOT here: it drops as a native image item, not an embedded card.
 const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME', 'CHALLENGE_CARD']);
 
@@ -56,10 +59,10 @@ function trackerEmbedSize(trackerType: string | undefined): { width: number; hei
 
 /** The spec for a board item built from a drawer item: its kind, default size, and content. */
 export interface EmbeddedBoardSpec {
-   kind: 'card' | 'tracker' | 'image' | 'character' | 'post-it';
+   kind: 'card' | 'tracker' | 'image' | 'character' | 'post-it' | 'journal';
    width: number;
    height: number;
-   content: CardBoardContent | TrackerBoardContent | ImageBoardContent | CharacterBoardContent | PostItBoardContent;
+   content: CardBoardContent | TrackerBoardContent | ImageBoardContent | CharacterBoardContent | PostItBoardContent | JournalBoardContent;
 }
 
 /**
@@ -145,6 +148,21 @@ export function embeddedSpecForDrawerItem(item: DrawerItem): EmbeddedBoardSpec |
          width: EMBEDDED_POSTIT_SIZE.width,
          height: EMBEDDED_POSTIT_SIZE.height,
          content: { kind: 'post-it', mode: 'copy', sourceDrawerItemId: item.id, data },
+      };
+   }
+   if (item.type === 'JOURNAL') {
+      // A saved journal drops as a source-bearing COPY. Only the journal's TOP-LEVEL id is regenerated
+      // (deep-cloned first, so the copy is independent of the drawer twin); the pages keep their ids and
+      // the bookmarks keep their `pageId` references, so NO bookmark is stranded. A blind `deepReId` here
+      // would rewrite every page id while leaving the differently-named `pageId` untouched, orphaning every
+      // bookmark - the same landmine `addItem`/import exempt JOURNAL from, guarded here on the re-embed path.
+      const journal = structuredClone(item.content as Journal);
+      const data: Journal = { ...journal, id: cuid() };
+      return {
+         kind: 'journal',
+         width: EMBEDDED_JOURNAL_SIZE.width,
+         height: EMBEDDED_JOURNAL_SIZE.height,
+         content: { kind: 'journal', mode: 'copy', sourceDrawerItemId: item.id, data },
       };
    }
    // A drawer card/tracker wraps the same aggregate a sheet component is, so the shared mapping does

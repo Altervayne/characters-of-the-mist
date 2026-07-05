@@ -282,7 +282,11 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             return command.getCreatedItemId() ?? '';
          },
          addImportedItem: async (itemContent, itemType, game, parentFolderId) => {
-            const freshContent = deepReId(itemContent);
+            // A JOURNAL is exempt from re-ID for the same reason `addItem` is: `deepReId` regenerates every
+            // page's `id` while leaving each bookmark's `pageId` (a different field name) untouched, so a
+            // blind re-ID would orphan every bookmark. An imported journal keeps its own ids (self-contained
+            // in the file); other imported content is re-ID'd so it can't collide with an existing item.
+            const freshContent = itemType === 'JOURNAL' ? itemContent : deepReId(itemContent);
             const name = 'title' in freshContent ? freshContent.title : 'name' in freshContent ? freshContent.name : '';
             await runMutation(createCreateItemCommand({ name, game, type: itemType, content: freshContent, parentFolderId: parentFolderId ?? null }));
          },

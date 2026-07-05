@@ -28,7 +28,7 @@ import { boardContentBounds, itemCenter } from '@/lib/board/boardMiniMap';
 // -- Type Imports --
 import type { ReactElement } from 'react';
 import type { DrawerItem, Folder as FolderType, GameSystem } from '@/lib/types/drawer';
-import type { Board, ConnectionBoardContent, PinBoardContent, PostItBoardContent, PostItNote, ZoneBoardContent } from '@/lib/types/board';
+import type { Board, ConnectionBoardContent, Journal, PinBoardContent, PostItBoardContent, PostItNote, ZoneBoardContent } from '@/lib/types/board';
 
 /** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
 function gameGlyph(game: GameSystem): ReactElement | null {
@@ -61,6 +61,59 @@ function PostItPreview({ note }: { note: PostItNote }) {
          ) : (
             <div className="flex h-full w-full items-center justify-center p-2.5 text-center text-xs opacity-50">
                {t('BoardView.postItPlaceholder')}
+            </div>
+         )}
+      </div>
+   );
+}
+
+/**
+ * Static preview of a saved journal: page 1's text on the themed `bg-card` panel, a stacked-pages edge on
+ * the right signalling multi-page, a page count, and faint bookmark tab stubs when the journal has any.
+ * A journal is CHROME end to end - unlike a post-it there is NO content-color exception, so every surface
+ * here is an app token. Guarded: pages/bookmarks are read defensively (an empty or odd journal renders the
+ * placeholder rather than throwing) - a preview must never crash.
+ */
+function JournalPreview({ journal }: { journal: Journal }) {
+   const { t } = useTranslation();
+   const pages = Array.isArray(journal?.pages) ? journal.pages : [];
+   const bookmarks = Array.isArray(journal?.bookmarks) ? journal.bookmarks : [];
+   const firstText = typeof pages[0]?.text === 'string' ? pages[0].text : '';
+   const pageCount = Math.max(pages.length, 1);
+   const multiPage = pageCount > 1;
+
+   return (
+      <div className="relative w-45 h-45">
+         {/* Stacked-pages edge: faint offset panels behind the top page, only when multi-page. */}
+         {multiPage && (
+            <>
+               <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-md border border-border bg-muted" />
+               <div className="absolute inset-0 translate-x-[3px] translate-y-[3px] rounded-md border border-border bg-card" />
+            </>
+         )}
+
+         {/* Top page: the themed card panel with page 1's clipped Markdown (or a placeholder when empty). */}
+         <div className="absolute inset-0 flex flex-col overflow-hidden rounded-md border border-border bg-card text-card-foreground">
+            <div className="min-h-0 flex-1 overflow-hidden p-2.5 text-sm leading-snug">
+               {firstText.trim() ? (
+                  <NoteMarkdown content={firstText} />
+               ) : (
+                  <span className="text-xs text-muted-foreground/50">{t('BoardView.journalPlaceholder')}</span>
+               )}
+            </div>
+            {/* Page count, on muted chrome. */}
+            <div className="shrink-0 border-t border-border px-2 py-1 text-[10px] text-muted-foreground">
+               {t('Drawer.Types.journalPageCount', { count: pageCount })}
+            </div>
+         </div>
+
+         {/* Bookmark tab stubs: faint chrome tabs at the right edge, capped so a heavily-tabbed journal
+             doesn't overrun the thumbnail. Purely indicative - no labels, no interaction. */}
+         {bookmarks.length > 0 && (
+            <div className="absolute right-0 top-6 flex flex-col items-end gap-1">
+               {bookmarks.slice(0, 3).map((bookmark) => (
+                  <div key={bookmark.id} className="h-2 w-3 rounded-l-sm border border-r-0 border-border bg-muted" />
+               ))}
             </div>
          )}
       </div>
@@ -238,6 +291,10 @@ export function DrawerItemPreview({
 
          if (type === 'POST_IT') {
             return <PostItPreview note={content as PostItNote} />;
+         }
+
+         if (type === 'JOURNAL') {
+            return <JournalPreview journal={content as Journal} />;
          }
       }
 

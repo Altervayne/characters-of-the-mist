@@ -1,7 +1,7 @@
 // -- Component Imports --
 import { BoardPostItItem } from './BoardPostItItem';
 import { ZoneItem } from './ZoneItem';
-import { JournalItem } from './JournalItem';
+import { BoardJournalItem } from './BoardJournalItem';
 import { ImageItem } from './ImageItem';
 import { PinItem } from './PinItem';
 import { DiceTrayItem } from './DiceTrayItem';
@@ -13,11 +13,11 @@ import { CharacterBoardItem } from './CharacterBoardItem';
 import type { BoardItem, BoardItemContent } from '@/lib/types/board';
 
 /*
- * Picks the per-kind body for a board item. The board-native kinds (post-it, journal,
- * image) render their real, editable body; embedded card/tracker copies render the real
- * card/tracker component read-only; every other kind (threat, connection) falls back to
- * a generic labelled box. Content edits are dispatched through `onContentChange`,
- * already bound to this item's id by the box.
+ * Picks the per-kind body for a board item. The note copies (post-it, journal) render their real,
+ * editable body wrapped in the shared embed chrome (copy/source + Save-back); the native image kind
+ * renders its editable body directly; embedded card/tracker copies render the real card/tracker
+ * component read-only; every other kind (threat, connection) falls back to a generic labelled box.
+ * Content edits are dispatched through `onContentChange`, already bound to this item's id by the box.
  */
 
 interface BoardItemBodyProps {
@@ -48,7 +48,7 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
       case 'post-it':
          return <BoardPostItItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onAdoptSource={onAdoptSource} onDelete={onDelete} onRequestSelect={onRequestSelect} />;
       case 'journal':
-         return <JournalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} sideSlot={sideSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <BoardJournalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} sideSlot={sideSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onAdoptSource={onAdoptSource} onDelete={onDelete} onRequestSelect={onRequestSelect} />;
       case 'image':
          return <ImageItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'pin':

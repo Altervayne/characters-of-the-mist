@@ -486,6 +486,7 @@
          "POST_IT": "[TO COMPLETE]",
          "JOURNAL": "[TO COMPLETE]",
          "boardItemCount": "[TO COMPLETE]",
+         "journalPageCount": "[TO COMPLETE]",
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"
       }

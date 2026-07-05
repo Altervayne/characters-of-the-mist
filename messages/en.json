@@ -519,6 +519,7 @@
          "POST_IT": "Post-it",
          "JOURNAL": "Journal",
          "boardItemCount": "{{count}} item(s)",
+         "journalPageCount": "{{count}} page(s)",
 
          "cards": "Card(s)",
          "trackers": "Tracker(s)"
