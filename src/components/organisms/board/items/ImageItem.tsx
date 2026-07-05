@@ -7,17 +7,22 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { Image as ImageIcon, ImageOff, Loader2, Scaling, Upload } from 'lucide-react';
+import { Image as ImageIcon, ImageOff, Loader2, SaveAll, Scaling, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
+import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Pipeline / Asset Store --
 import { processImage } from '@/lib/assets/processImage';
 import { storeAsset } from '@/lib/assets/assetRepository';
+
+// -- Save-Back --
+import { runSaveImageToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
 // -- Type Imports --
 import type { BoardItemContent, ImageBoardContent } from '@/lib/types/board';
@@ -43,9 +48,20 @@ export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, o
    const { url, isLoading } = useAssetObjectUrl(content.assetId);
    const [isProcessing, setIsProcessing] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
+   const { setDrawerOpen } = useAppGeneralStateActions();
 
    const showSpinner = isProcessing || (content.assetId !== null && isLoading);
    const openPicker = () => fileInputRef.current?.click();
+
+   // Save As: mint this image as a game-agnostic IMAGE_CARD in the drawer. Mint only - an image has no
+   // source link, so there is no write-back and nothing to adopt. Reads the drawer/app state directly (a
+   // one-shot action, not a subscription).
+   const saveImageToDrawer = () => runSaveImageToDrawerAs(content, {
+      t,
+      drawerCurrentFolderId: useDrawerStore.getState().currentFolderId,
+      isDrawerOpen: useAppGeneralStateStore.getState().isDrawerOpen,
+      setDrawerOpen,
+   });
 
    const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -102,6 +118,9 @@ export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, o
                </ImageControl>
                <ImageControl title={t('BoardView.imageChange')} onClick={openPicker}>
                   <ImageIcon className="h-4 w-4" />
+               </ImageControl>
+               <ImageControl title={t('BoardView.saveItemToDrawerAs')} onClick={saveImageToDrawer}>
+                  <SaveAll className="h-4 w-4" />
                </ImageControl>
                <ImageControl title={t('BoardView.imageRemove')} destructive onClick={removeImage}>
                   <ImageOff className="h-4 w-4" />

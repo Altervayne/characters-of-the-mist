@@ -5,11 +5,15 @@ import cuid from 'cuid';
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 
+// -- Constant Imports --
+import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
+
 // -- Utils Imports --
 import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 
 // -- Type Imports --
-import type { Card, Tracker } from '@/lib/types/character';
+import type { Card, ImageCardDetails, Tracker } from '@/lib/types/character';
+import type { ImageBoardContent } from '@/lib/types/board';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
 /*
@@ -114,4 +118,39 @@ export function saveBoardItemAsToDrawer(innerData: unknown, folderId?: string): 
    });
 
    return id;
+}
+
+/**
+ * Converts a board image ({@link ImageBoardContent}) into a game-agnostic IMAGE_CARD `Card` - the same
+ * aggregate a portrait card is (mirrors `addPortrait`), so it round-trips through the shared drawer save
+ * and drops back onto a board as a native image. `assetId`/`fit` carry over; a default size seeds the
+ * portrait footprint the sheet card reuses.
+ */
+export function imageBoardContentToCard(image: ImageBoardContent, title: string): Card {
+   const details: ImageCardDetails = {
+      game: 'NEUTRAL',
+      assetId: image.assetId,
+      fit: image.fit,
+      width: DEFAULT_IMAGE_CARD_SIZE.width,
+      height: DEFAULT_IMAGE_CARD_SIZE.height,
+   };
+   return {
+      id: cuid(),
+      title,
+      order: 0,
+      isFlipped: false,
+      cardType: 'IMAGE_CARD',
+      details,
+   };
+}
+
+/**
+ * "Save As" of a board IMAGE: build a game-agnostic IMAGE_CARD from the image content and mint it into the
+ * drawer under a fresh id (mint only - a board image has no source link to write back to and no editable
+ * aggregate, so there is no adopt). Returns the new drawer id, or `null` when the image has no asset yet
+ * (nothing to save).
+ */
+export function saveBoardImageAsToDrawer(image: ImageBoardContent, title: string, folderId?: string): string | null {
+   if (image.assetId === null) return null;
+   return saveBoardItemAsToDrawer(imageBoardContentToCard(image, title), folderId);
 }

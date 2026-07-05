@@ -24,7 +24,7 @@ import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
-import { runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
+import { runSaveImageToDrawerAs, runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -613,26 +613,43 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const { clearBoardAction, setDrawerOpen } = useAppGeneralStateActions();
 
    /*
-    * Saves the sole-selected copy card/tracker to the drawer via the same orchestration the toolbar kebab
-    * runs (`asNew` = Save As, else Save with a transparent Save-As fallback for a dangling source). The
-    * canvas owns the selection, so the palette routes here rather than reaching into board state. No-op with
-    * an explanatory toast when nothing usable is selected; other kinds (pin/image/post-it/journal/character
-    * ref/reference-mode) have no drawer save yet.
+    * Saves the sole-selected item to the drawer via the same orchestration the toolbar affordances run.
+    * A copy card/tracker: `asNew` = Save As, else Save with a transparent Save-As fallback for a dangling
+    * source. An image is Save-As only (mint an IMAGE_CARD, no source to write back to), so a Save request
+    * on an image transparently mints too - mirroring a source-less card. The canvas owns the selection, so
+    * the palette routes here rather than reaching into board state. No-op with an explanatory toast when
+    * nothing usable is selected; the remaining kinds (pin/post-it/journal/character ref) have no drawer
+    * save yet.
     */
    const saveSelectedItemToDrawer = (asNew: boolean) => {
       const id = selectedIds.size === 1 ? [...selectedIds][0] : null;
       const item = id ? items[id] : undefined;
       const content = item?.content;
-      if (!content || (content.kind !== 'card' && content.kind !== 'tracker') || content.mode !== 'copy') {
+      if (!content) {
          toast.error(t('Notifications.board.itemNotSaveable'));
          return;
       }
+
       const drawerState = useDrawerStore.getState();
-      const deps = {
+      const baseDeps = {
          t,
          drawerCurrentFolderId: drawerState.currentFolderId,
          isDrawerOpen: useAppGeneralStateStore.getState().isDrawerOpen,
          setDrawerOpen,
+      };
+
+      // A board image is mint-only (no source, no adopt); Save and Save As both mint an IMAGE_CARD.
+      if (content.kind === 'image') {
+         runSaveImageToDrawerAs(content, baseDeps);
+         return;
+      }
+
+      if ((content.kind !== 'card' && content.kind !== 'tracker') || content.mode !== 'copy') {
+         toast.error(t('Notifications.board.itemNotSaveable'));
+         return;
+      }
+      const deps = {
+         ...baseDeps,
          onAdoptSource: (sourceDrawerItemId: string) => { void actions.adoptItemDrawerSource(id!, sourceDrawerItemId); },
       };
       if (asNew) runSaveItemToDrawerAs(content, deps);

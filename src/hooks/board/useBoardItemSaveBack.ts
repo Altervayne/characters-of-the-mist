@@ -8,11 +8,14 @@ import type { TFunction } from 'i18next';
 
 // -- Utils Imports --
 import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
-import { saveBoardItemAsToDrawer, saveBoardItemToLinkedDrawerItem } from '@/lib/board/boardItemSaveBack';
+import { saveBoardImageAsToDrawer, saveBoardItemAsToDrawer, saveBoardItemToLinkedDrawerItem } from '@/lib/board/boardItemSaveBack';
 
 // -- Store Imports --
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+
+// -- Type Imports --
+import type { ImageBoardContent } from '@/lib/types/board';
 
 /*
  * Save-back for a board card/tracker copy, shared by the item's overflow menu AND the command palette so the
@@ -79,6 +82,25 @@ export async function runSaveItemToDrawer(content: BoardItemSaveContent, deps: B
    } catch {
       toast.error(deps.t('Notifications.drawer.actionFailed'));
    }
+}
+
+/**
+ * "Save As" of a board IMAGE: mint a game-agnostic IMAGE_CARD into the drawer and open the naming window.
+ * Mint only - a board image has no source link and no editable aggregate, so there is no write-back and no
+ * adopt (unlike a card/tracker copy). A source-less image guards to a toast (nothing to save).
+ */
+export function runSaveImageToDrawerAs(
+   image: ImageBoardContent,
+   deps: Pick<BoardItemSaveDeps, 't' | 'drawerCurrentFolderId' | 'isDrawerOpen' | 'setDrawerOpen'>,
+): void {
+   const title = deps.t('BoardView.imageDefaultTitle');
+   const newId = saveBoardImageAsToDrawer(image, title, deps.drawerCurrentFolderId ?? undefined);
+   if (!newId) {
+      // A board image with no asset has nothing to save.
+      toast.error(deps.t('Notifications.board.imageNotSaveable'));
+      return;
+   }
+   if (!deps.isDrawerOpen) deps.setDrawerOpen(true);
 }
 
 interface UseBoardItemSaveBackArgs {

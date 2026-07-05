@@ -8,10 +8,13 @@ import {
    normalizeBoardItemInner,
    saveBoardItemToLinkedDrawerItem,
    saveBoardItemAsToDrawer,
+   imageBoardContentToCard,
+   saveBoardImageAsToDrawer,
 } from './boardItemSaveBack';
 
 // -- Type Imports --
-import type { Card, StatusTracker } from '@/lib/types/character';
+import type { Card, ImageCardDetails, StatusTracker } from '@/lib/types/character';
+import type { ImageBoardContent } from '@/lib/types/board';
 import type { DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
 
 /*
@@ -172,6 +175,43 @@ describe('saveBoardItemAsToDrawer (Save As / mint + queue)', () => {
    it('falls back to a placeholder name when the card has no title', () => {
       saveBoardItemAsToDrawer(makeCardData({ title: '' }));
       expect(useDrawerStore.getState().pendingItem!.defaultName).toBe('New Item');
+   });
+});
+
+describe('imageBoardContentToCard (board image -> IMAGE_CARD)', () => {
+   it('builds a game-agnostic IMAGE_CARD carrying the asset + fit, face-up', () => {
+      const image: ImageBoardContent = { kind: 'image', assetId: 'asset-hash', fit: 'contain' };
+      const card = imageBoardContentToCard(image, 'My Image');
+
+      expect(card.cardType).toBe('IMAGE_CARD');
+      expect(card.title).toBe('My Image');
+      expect(card.isFlipped).toBe(false);
+      const details = card.details as ImageCardDetails;
+      expect(details.game).toBe('NEUTRAL');
+      expect(details.assetId).toBe('asset-hash');
+      expect(details.fit).toBe('contain');
+      // Seeds the portrait footprint the sheet card reuses.
+      expect(details.width).toBeGreaterThan(0);
+      expect(details.height).toBeGreaterThan(0);
+   });
+
+   it('routes through the shared save so it queues as an IMAGE_CARD / NEUTRAL', () => {
+      const id = saveBoardImageAsToDrawer({ kind: 'image', assetId: 'asset-hash', fit: 'cover' }, 'My Image', 'folder-3');
+
+      expect(id).toBeTruthy();
+      const pending = useDrawerStore.getState().pendingItem!;
+      expect(pending.presetId).toBe(id);
+      expect(pending.type).toBe('IMAGE_CARD');
+      expect(pending.game).toBe('NEUTRAL');
+      expect(pending.parentFolderId).toBe('folder-3');
+      expect(pending.defaultName).toBe('My Image');
+      expect((pending.content as Card).cardType).toBe('IMAGE_CARD');
+   });
+
+   it('returns null and queues nothing when the image has no asset (assetId: null)', () => {
+      const id = saveBoardImageAsToDrawer({ kind: 'image', assetId: null, fit: 'cover' }, 'Empty');
+      expect(id).toBeNull();
+      expect(useDrawerStore.getState().pendingItem).toBeNull();
    });
 });
 
