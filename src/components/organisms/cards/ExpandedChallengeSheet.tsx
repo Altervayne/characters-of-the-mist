@@ -7,13 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Skull, Star, Swords, Tags } from 'lucide-react';
+import { Loader2, Skull, Star, Swords, Tags, Trash2, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
+// -- Store and Hook Imports --
+import { useImageUpload } from '@/hooks/useImageUpload';
+
 // -- Component Imports --
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
+import { ChallengeTypeSelector } from '@/components/molecules/ChallengeTypeSelector';
 import { AbilityEditRow, AddRowButton, LimitPill, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
 import type { RowListOps } from '@/components/organisms/cards/challengeCardEditRows';
 
@@ -51,6 +55,10 @@ interface ExpandedChallengeSheetProps {
    setLocalTitle: (value: string) => void;
    /** Commits the challenge level (star rating) immediately on click; clamped 0-10 by the host. */
    commitLevel: (level: number) => void;
+   /** Commits the card art immediately on pick/remove (edit mode only); reads live details in the host. */
+   commitImage: (assetId: string | null) => void;
+   /** Commits the challenge types immediately on toggle/add/remove (edit mode only); reads live details in the host. */
+   commitTypes: (types: string[]) => void;
    /** The single-field list ops (limits / statuses / tags), read-live-then-patch-by-id (see RowListOps),
     *  identical to the small card's; no isBoardEmbed branch. */
    limitOps: RowListOps<ChallengeStatus>;
@@ -77,9 +85,9 @@ function SheetSectionHeader({ title, icon: Icon }: { title: string; icon: typeof
    );
 }
 
-/** A bracketed empty-state line, shown in read mode when a list has no entries. */
+/** A bracketed empty-state line, shown in read mode when a list has no entries; muted but clearly legible. */
 function EmptyState({ label }: { label: string }) {
-   return <p className="text-xs text-card-paper-fg/50">{`[${label}]`}</p>;
+   return <p className="text-sm italic text-card-paper-fg/70">{`[${label}]`}</p>;
 }
 
 /**
@@ -110,6 +118,81 @@ function StarRating({ level, onChange }: { level: number; onChange: (level: numb
    );
 }
 
+/**
+ * The card-art band on the sheet's left: a fixed-width matte the portrait sits on (object-contain, never
+ * cropped). Read mode is a plain display driven by the resolved `url`. Edit mode turns the band into a
+ * picker - clicking it (or the change button) opens the file input; a remove button clears back to null.
+ * Both commit discretely through `commitImage` (host reads live details), so no debounce is needed.
+ */
+function SheetImageBand({ url, name, isEditing, commitImage }: {
+   url: string | null;
+   name: string;
+   isEditing: boolean;
+   commitImage: (assetId: string | null) => void;
+}) {
+   const { t } = useTranslation();
+   const { fileInputRef, open, isProcessing, handleFileSelected } = useImageUpload(commitImage);
+
+   // Shared matte look (fixed height, contain-fit); each caller supplies its own width. The band's
+   // height sets the top block's height - the right column is capped to it and scrolls (see below).
+   const matte = 'flex h-52 items-center justify-center overflow-hidden rounded-lg bg-card-popover-bg/60';
+
+   if (!isEditing) {
+      return (
+         <div className={cn(matte, 'w-52 shrink-0')}>
+            {url ? (
+               <img src={url} alt={name} title={name} className="h-full w-full object-contain" />
+            ) : (
+               <Skull className="h-14 w-14 text-card-paper-fg/30" />
+            )}
+         </div>
+      );
+   }
+
+   return (
+      <div className="flex w-52 shrink-0 flex-col gap-1.5">
+         <button
+            type="button"
+            onClick={open}
+            title={url ? t('ChallengeCard.editor.changeImage') : t('ChallengeCard.editor.setImage')}
+            className={cn(matte, 'w-full cursor-pointer transition-colors hover:bg-card-popover-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-card-accent/50')}
+         >
+            {isProcessing ? (
+               <Loader2 className="h-6 w-6 animate-spin text-card-paper-fg/50" />
+            ) : url ? (
+               <img src={url} alt={name} title={name} className="h-full w-full object-contain" />
+            ) : (
+               <div className="flex flex-col items-center gap-1 text-card-paper-fg/50">
+                  <Upload className="h-6 w-6" />
+                  <span className="text-xs">{t('ChallengeCard.editor.setImage')}</span>
+               </div>
+            )}
+         </button>
+         {url && (
+            <div className="flex items-center gap-1">
+               <button
+                  type="button"
+                  onClick={open}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-md bg-card-popover-bg/40 px-2 py-1 text-xs text-card-paper-fg/80 transition-colors hover:bg-card-popover-bg cursor-pointer"
+               >
+                  <Upload className="h-3.5 w-3.5" />{t('ChallengeCard.editor.changeImage')}
+               </button>
+               <button
+                  type="button"
+                  onClick={() => commitImage(null)}
+                  title={t('ChallengeCard.editor.removeImage')}
+                  aria-label={t('ChallengeCard.editor.removeImage')}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-card-paper-fg/60 transition-colors hover:bg-card-popover-bg hover:text-card-paper-fg cursor-pointer"
+               >
+                  <Trash2 className="h-3.5 w-3.5" />
+               </button>
+            </div>
+         )}
+         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+      </div>
+   );
+}
+
 export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallengeSheetProps>(function ExpandedChallengeSheet({
    details,
    name,
@@ -121,6 +204,8 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
    localTitle,
    setLocalTitle,
    commitLevel,
+   commitImage,
+   commitTypes,
    limitOps,
    statusOps,
    tagOps,
@@ -133,61 +218,67 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
 
    return (
       <div ref={ref} className={cn('flex h-full w-full flex-col overflow-hidden rounded-xl border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg', CARD_TYPE_CLASS)}>
-         {/* Top block, a VERTICAL stack (image band -> title + stars row -> types -> flavor), grouped
-             by spacing (no dividers). */}
-         <div className="flex shrink-0 flex-col gap-1.5 p-4">
-            {/* Minimal-crop art on a full-width card-token matte: object-contain so a tall portrait survives the wide ratio. */}
-            <div className="flex h-40 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-card-popover-bg/60">
-               {url ? (
-                  <img src={url} alt={name} title={name} className="h-full w-full object-contain" />
-               ) : (
-                  <Skull className="h-14 w-14 text-card-paper-fg/30" />
-               )}
-            </div>
+         {/* Top block, HORIZONTAL: the card-art band on the LEFT, a right column stacking title + stars
+             (one row) -> types -> flavor. Grouped by spacing (no dividers). The image band is a fixed
+             height (h-52); `items-start` caps the right column to that height rather than letting a long
+             flavor grow the block, and the flavor area scrolls inside it (see below). */}
+         <div className="flex shrink-0 items-start gap-4 p-4">
+            <SheetImageBand url={url} name={name} isEditing={isEditing} commitImage={commitImage} />
 
-            {/* Stars sit immediately after the name (wrapping below only when the name runs long). The
-                expanded sheet is the full edit surface, so name + level are both editable here. */}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-               {isEditing ? (
-                  <Input
-                     value={localTitle}
-                     onChange={(event) => setLocalTitle(event.target.value)}
-                     placeholder={t('Cards.challenge.namePlaceholder')}
-                     className="h-auto min-w-0 flex-1 border-0 bg-card-popover-bg/40 px-2 py-1 text-3xl font-bold leading-tight text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
-                  />
-               ) : (
-                  <h2 className="text-3xl font-bold leading-tight">{name}</h2>
-               )}
-               {isEditing ? (
-                  <StarRating level={stars} onChange={commitLevel} />
-               ) : (
-                  <div className="flex shrink-0 items-center gap-0.5 text-card-accent">
-                     {Array.from({ length: stars }).map((_, index) => (
-                        <Star key={index} className="h-5 w-5 fill-current" />
-                     ))}
-                  </div>
-               )}
-            </div>
-
-            {details.types.length > 0 && (
-               <p className="text-sm italic text-card-paper-fg/70">{details.types.join(' · ')}</p>
-            )}
-
-            {isEditing ? (
-               <div className="flex flex-col gap-1">
-                  <Textarea
-                     value={localFlavor}
-                     onChange={(event) => setLocalFlavor(event.target.value)}
-                     placeholder={t('Cards.challenge.flavorPlaceholder')}
-                     className="min-h-16 resize-none border-0 bg-card-popover-bg/40 text-sm text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
-                  />
-                  {localFlavor.includes('{') && (
-                     <MentionMarkdown text={localFlavor} className="rounded bg-card-popover-bg/40 px-2 py-1 text-xs leading-relaxed" />
+            {/* Right column: title + level on one row, then types, then flavor. Bounded to the image
+                band's height (h-52); title·stars + types stay pinned while the flavor scrolls. */}
+            <div className="flex h-52 min-w-0 flex-1 flex-col gap-1.5">
+               {/* Stars sit immediately after the name (wrapping below only when the name runs long). The
+                   expanded sheet is the full edit surface, so name + level are both editable here. */}
+               <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  {isEditing ? (
+                     <Input
+                        value={localTitle}
+                        onChange={(event) => setLocalTitle(event.target.value)}
+                        placeholder={t('Cards.challenge.namePlaceholder')}
+                        className="h-auto min-w-0 flex-1 border-0 bg-card-popover-bg/40 px-2 py-1 text-3xl font-bold leading-tight text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
+                     />
+                  ) : (
+                     <h2 className="text-3xl font-bold leading-tight">{name}</h2>
+                  )}
+                  {isEditing ? (
+                     <StarRating level={stars} onChange={commitLevel} />
+                  ) : (
+                     <div className="flex shrink-0 items-center gap-0.5 text-card-accent">
+                        {Array.from({ length: stars }).map((_, index) => (
+                           <Star key={index} className="h-5 w-5 fill-current" />
+                        ))}
+                     </div>
                   )}
                </div>
-            ) : (
-               <MentionMarkdown text={details.flavor} onMentionClick={mentionClick} className="text-sm" />
-            )}
+
+               {/* Types: read mode shows the joined list; edit mode renders the shared selector (card-skinned). */}
+               {isEditing ? (
+                  <ChallengeTypeSelector types={details.types} onChange={commitTypes} variant="card" className="shrink-0" />
+               ) : details.types.length > 0 ? (
+                  <p className="shrink-0 text-sm italic text-card-paper-fg/70">{details.types.join(' · ')}</p>
+               ) : null}
+
+               {/* Flavor: the block's own scroll well, so a long flavor (read) or the flavor editor (edit)
+                   scrolls in place rather than pushing the top block past the image band's height. A faint
+                   inset panel (both modes) reads it as a deliberate flavor block, not a lone floating field -
+                   read mode matches the edit textarea's look. */}
+               {isEditing ? (
+                  <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
+                     <Textarea
+                        value={localFlavor}
+                        onChange={(event) => setLocalFlavor(event.target.value)}
+                        placeholder={t('Cards.challenge.flavorPlaceholder')}
+                        className="min-h-16 resize-none border-0 bg-card-popover-bg/40 text-sm text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
+                     />
+                     {localFlavor.includes('{') && (
+                        <MentionMarkdown text={localFlavor} className="rounded bg-card-popover-bg/40 px-2 py-1 text-xs leading-relaxed" />
+                     )}
+                  </div>
+               ) : (
+                  <MentionMarkdown text={details.flavor} onMentionClick={mentionClick} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md bg-card-popover-bg/40 px-2 py-1.5 text-sm" />
+               )}
+            </div>
          </div>
 
          {/* Horizontal divider, then the two-column body: the middle column is a real grid cell (w-px),

@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Star, Skull, Swords, Tags, Pencil } from 'lucide-react';
+import { Star, Skull, Shield, Tags, Pencil } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -32,6 +32,7 @@ import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useCardViewMode } from '@/hooks/useCardViewMode';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
+import { useManualScroll } from '@/hooks/useManualScroll';
 
 // -- Utils Imports --
 import { applyStatusTier } from '@/lib/trackers/applyStatusTier';
@@ -67,6 +68,15 @@ export const LegendsChallengeCard = React.memo(
          const globalCardViewMode = useAppSettingsStore((state) => state.isSideBySideView ? 'SIDE_BY_SIDE' : 'FLIP');
          const effectiveViewMode = useMemo(() => card.viewMode || globalCardViewMode, [card.viewMode, globalCardViewMode]);
          const { handleCycleViewMode } = useCardViewMode(card);
+
+         // Back sections each scroll their own overflow with a pinned header; board-wheel-scroll works over
+         // every well (mirrors the theme card's tags/quest/improvements wells).
+         const limitsScrollRef = useRef<HTMLDivElement>(null);
+         const tagsScrollRef = useRef<HTMLDivElement>(null);
+         const threatsScrollRef = useRef<HTMLDivElement>(null);
+         useManualScroll(limitsScrollRef);
+         useManualScroll(tagsScrollRef);
+         useManualScroll(threatsScrollRef);
 
          const name = card.title || t('Cards.challenge.untitled');
          const stars = Math.max(0, Math.min(10, details.challengeLevel));
@@ -140,6 +150,19 @@ export const LegendsChallengeCard = React.memo(
          const commitLevel = (level: number) => {
             const next = Math.max(0, Math.min(10, level));
             actions.updateCardDetails(card.id, { ...liveDetails(), challengeLevel: next });
+         };
+
+         // The card art (assetId), committed immediately on pick or remove from the expanded sheet - a
+         // discrete click, so no debounce or unmount-flush. Reads live details so it can't stomp a sibling.
+         const commitImage = (assetId: string | null) => {
+            actions.updateCardDetails(card.id, { ...liveDetails(), assetId });
+         };
+
+         // The challenge types, committed immediately on toggle / add / remove from the expanded sheet -
+         // a discrete click like the level and image, so no debounce. Reads live details so it can't
+         // stomp a sibling field mid-flush.
+         const commitTypes = (types: string[]) => {
+            actions.updateCardDetails(card.id, { ...liveDetails(), types });
          };
 
          // A tapped mention applies to the active character: a status create-or-RAISES (bubble-up, no
@@ -242,10 +265,15 @@ export const LegendsChallengeCard = React.memo(
             <Card className={cardShell}>
                <CardHeaderMolecule title={name} />
 
+               {/* Back is three per-section wells: each has a PINNED CardSectionHeader (it never scrolls, so
+                   it doubles as the divider) over its own scroll well. Limits and Tags & Statuses size to their
+                   content, capped (max-h + shrink-0) so a long list scrolls in place instead of stealing height;
+                   Threats & Consequences grows to fill whatever is left, since it's the meatiest. Each well
+                   scrolls its own overflow so a heavy section can't starve the others. */}
                <CardContent className="flex min-h-0 grow flex-col overflow-hidden p-0">
-                  <div className="min-w-0 grow overflow-y-auto overflow-x-hidden overscroll-contain">
-                     {/* Limits: the statuses required to defeat it. */}
-                     <CardSectionHeader title={t('Cards.challenge.limits')} icon={Skull} />
+                  {/* Limits: the statuses required to defeat it. */}
+                  <CardSectionHeader title={t('Cards.challenge.limits')} icon={Shield} />
+                  <div ref={limitsScrollRef} className="max-h-24 min-w-0 shrink-0 overflow-y-auto overflow-x-hidden overscroll-contain">
                      {isEditing ? (
                         <div className="flex flex-col gap-1 p-2">
                            {details.limits.map((limit) => (
@@ -265,12 +293,14 @@ export const LegendsChallengeCard = React.memo(
                         <div className="flex flex-wrap gap-1 p-2">
                            {details.limits.length > 0
                               ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} />)
-                              : <p className="text-xs text-card-paper-fg/50">{`[${t('Cards.challenge.noLimits')}]`}</p>}
+                              : <p className="text-sm italic text-card-paper-fg/70">{`[${t('Cards.challenge.noLimits')}]`}</p>}
                         </div>
                      )}
+                  </div>
 
-                     {/* The challenge's own statuses + tags. */}
-                     <CardSectionHeader title={t('Cards.challenge.tagsAndStatuses')} icon={Tags} />
+                  {/* The challenge's own statuses + tags. */}
+                  <CardSectionHeader title={t('Cards.challenge.tagsAndStatuses')} icon={Tags} />
+                  <div ref={tagsScrollRef} className="max-h-24 min-w-0 shrink-0 overflow-y-auto overflow-x-hidden overscroll-contain">
                      {isEditing ? (
                         <div className="flex flex-col gap-2 p-2">
                            <div className="flex flex-col gap-1">
@@ -305,15 +335,18 @@ export const LegendsChallengeCard = React.memo(
                         <div className="flex flex-wrap items-center gap-1 p-2">
                            {details.statuses.length > 0
                               ? details.statuses.map((status) => <StatusPill key={status.id} status={status} />)
-                              : <p className="text-xs text-card-paper-fg/50">{`[${t('Cards.challenge.noStatuses')}]`}</p>}
+                              : <p className="text-sm italic text-card-paper-fg/70">{`[${t('Cards.challenge.noStatuses')}]`}</p>}
                            {details.tags.length > 0
                               ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
-                              : <p className="text-xs text-card-paper-fg/50">{`[${t('Cards.challenge.noTags')}]`}</p>}
+                              : <p className="text-sm italic text-card-paper-fg/70">{`[${t('Cards.challenge.noTags')}]`}</p>}
                         </div>
                      )}
+                  </div>
 
-                     {/* Threats & Consequences: a threat-name pill with its flavor inline, over a skull-bulleted list. */}
-                     <CardSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Swords} />
+                  {/* Threats & Consequences: a threat-name pill with its flavor inline, over a skull-bulleted
+                      list. The meatiest section - grows to fill the height the other two don't claim. */}
+                  <CardSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Skull} />
+                  <div ref={threatsScrollRef} className="min-h-16 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
                      <div className="flex flex-col gap-2 p-2">
                         {details.abilities.map((ability) => (
                            <div key={ability.id} className="space-y-1">
@@ -364,6 +397,8 @@ export const LegendsChallengeCard = React.memo(
                   localTitle={localTitle}
                   setLocalTitle={setLocalTitle}
                   commitLevel={commitLevel}
+                  commitImage={commitImage}
+                  commitTypes={commitTypes}
                   limitOps={limitOps}
                   statusOps={statusOps}
                   tagOps={tagOps}

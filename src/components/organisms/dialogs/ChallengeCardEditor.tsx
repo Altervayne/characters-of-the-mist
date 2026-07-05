@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -13,24 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
 // -- Icon Imports --
-import { Image as ImageIcon, Loader2, Minus, Plus, Trash2, Upload, X } from 'lucide-react';
-
-// -- Utils Imports --
-import { cn } from '@/lib/utils';
+import { Image as ImageIcon, Loader2, Minus, Plus, Trash2, Upload } from 'lucide-react';
 
 // -- Component Imports --
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
+import { ChallengeTypeSelector } from '@/components/molecules/ChallengeTypeSelector';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
-
-// -- Pipeline / Asset Store --
-import { processImage } from '@/lib/assets/processImage';
-import { storeAsset } from '@/lib/assets/assetRepository';
-
-// -- Constants --
-import { LEGENDS_CHALLENGE_TYPES } from '@/lib/constants/challengeCard';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 // -- Shared Factories --
 import { addRow, newAbility, newConsequence, newStatus, newTag, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
@@ -85,16 +77,6 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
    const [statuses, setStatuses] = useState<ChallengeStatus[]>(details.statuses);
    const [tags, setTags] = useState<BlandTag[]>(details.tags);
    const [abilities, setAbilities] = useState<ChallengeAbility[]>(details.abilities);
-   const [customType, setCustomType] = useState('');
-
-   const toggleType = (type: string) =>
-      setTypes((current) => (current.includes(type) ? current.filter((entry) => entry !== type) : [...current, type]));
-
-   const addCustomType = () => {
-      const trimmed = customType.trim();
-      if (trimmed && !types.includes(trimmed)) setTypes((current) => [...current, trimmed]);
-      setCustomType('');
-   };
 
    const handleSave = () => {
       updateCardTitle(card.id, title.trim());
@@ -104,9 +86,6 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
       onDone();
    };
 
-   // Custom types are those the user added beyond the suggested list; shown as removable chips.
-   const customTypes = types.filter((type) => !LEGENDS_CHALLENGE_TYPES.includes(type as (typeof LEGENDS_CHALLENGE_TYPES)[number]));
-
    return (
       <div className="flex flex-col gap-5">
          {/* Name. */}
@@ -114,43 +93,9 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
             <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t('ChallengeCard.editor.namePlaceholder')} />
          </Field>
 
-         {/* Types: suggested toggles + custom entry. */}
+         {/* Types: suggested toggles + custom entry (shared control, chrome-skinned here). */}
          <Field label={t('ChallengeCard.editor.types')}>
-            <div className="flex flex-wrap gap-1.5">
-               {LEGENDS_CHALLENGE_TYPES.map((type) => (
-                  <button
-                     key={type}
-                     type="button"
-                     onClick={() => toggleType(type)}
-                     className={cn(
-                        'rounded-full border px-2.5 py-1 text-xs font-medium cursor-pointer transition-colors',
-                        types.includes(type) ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-foreground',
-                     )}
-                  >
-                     {type}
-                  </button>
-               ))}
-            </div>
-            {customTypes.length > 0 && (
-               <div className="mt-2 flex flex-wrap gap-1.5">
-                  {customTypes.map((type) => (
-                     <span key={type} className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                        {type}
-                        <button type="button" onClick={() => toggleType(type)} className="cursor-pointer" aria-label={t('ChallengeCard.editor.removeType')}><X className="h-3 w-3" /></button>
-                     </span>
-                  ))}
-               </div>
-            )}
-            <div className="mt-2 flex items-center gap-2">
-               <Input
-                  value={customType}
-                  onChange={(event) => setCustomType(event.target.value)}
-                  onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addCustomType(); } }}
-                  placeholder={t('ChallengeCard.editor.customTypePlaceholder')}
-                  className="h-8 text-sm"
-               />
-               <Button type="button" variant="outline" size="sm" onClick={addCustomType} className="cursor-pointer">{t('ChallengeCard.editor.addType')}</Button>
-            </div>
+            <ChallengeTypeSelector types={types} onChange={setTypes} variant="chrome" />
          </Field>
 
          {/* Challenge level (1-10) + image side by side. */}
@@ -358,25 +303,8 @@ function IconButton({ onClick, label, children }: { onClick: () => void; label: 
 function ImagePicker({ assetId, onChange }: { assetId: string | null; onChange: (assetId: string | null) => void }) {
    const { t } = useTranslation();
    const { url, isLoading } = useAssetObjectUrl(assetId);
-   const [isProcessing, setIsProcessing] = useState(false);
-   const fileInputRef = useRef<HTMLInputElement>(null);
+   const { fileInputRef, open, isProcessing, handleFileSelected } = useImageUpload(onChange);
    const showSpinner = isProcessing || (assetId !== null && isLoading);
-
-   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      event.target.value = '';
-      if (!file) return;
-      setIsProcessing(true);
-      try {
-         const processed = await processImage(file);
-         const hash = await storeAsset(processed);
-         onChange(hash);
-      } catch {
-         toast.error(t('ImageCard.uploadFailed'));
-      } finally {
-         setIsProcessing(false);
-      }
-   };
 
    return (
       <div className="flex items-center gap-2">
@@ -390,7 +318,7 @@ function ImagePicker({ assetId, onChange }: { assetId: string | null; onChange: 
             )}
          </div>
          <div className="flex flex-col gap-1">
-            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+            <Button type="button" variant="outline" size="sm" onClick={open} className="cursor-pointer">
                <Upload className="mr-1 h-4 w-4" />{url ? t('ChallengeCard.editor.changeImage') : t('ChallengeCard.editor.setImage')}
             </Button>
             {url && (
