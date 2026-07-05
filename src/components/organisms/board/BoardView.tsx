@@ -98,7 +98,8 @@ const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
 function emptyContent(kind: CreatableKind): BoardItemContent {
    switch (kind) {
       case 'post-it':
-         return { kind: 'post-it', text: '' };
+         // Board-born copy: source-less (Save-As only), a fresh standalone note in `data`.
+         return { kind: 'post-it', mode: 'copy', data: { id: cuid(), text: '' } };
       case 'journal':
          return { kind: 'journal', pages: [{ id: cuid(), text: '' }], bookmarks: [] };
       case 'image':
@@ -644,7 +645,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          return;
       }
 
-      if ((content.kind !== 'card' && content.kind !== 'tracker') || content.mode !== 'copy') {
+      if ((content.kind !== 'card' && content.kind !== 'tracker' && content.kind !== 'post-it') || content.mode !== 'copy') {
          toast.error(t('Notifications.board.itemNotSaveable'));
          return;
       }

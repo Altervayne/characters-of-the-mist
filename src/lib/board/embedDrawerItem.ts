@@ -1,9 +1,12 @@
 // -- Constant Imports --
 import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '@/lib/constants/imageCard';
 
+// -- Other Library Imports --
+import cuid from 'cuid';
+
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
-import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent } from '@/lib/types/board';
+import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent, PostItBoardContent, PostItNote } from '@/lib/types/board';
 import type { Card, Character, ImageCardDetails, Tracker } from '@/lib/types/character';
 
 /*
@@ -40,6 +43,9 @@ export const EXPANDED_CARD_SIZE = { width: 900, height: 560 } as const;
 /** Default footprint of a character reference element. Wide enough that a theme row's type + themebook stay readable; the overview grows the height to fit its rows. */
 export const CHARACTER_ELEMENT_SIZE = { width: 360, height: 132 } as const;
 
+/** Native footprint of a re-embedded post-it, matching a fresh board sticky. */
+export const EMBEDDED_POSTIT_SIZE = { width: 180, height: 180 } as const;
+
 // An IMAGE_CARD is NOT here: it drops as a native image item, not an embedded card.
 const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME', 'CHALLENGE_CARD']);
 
@@ -50,10 +56,10 @@ function trackerEmbedSize(trackerType: string | undefined): { width: number; hei
 
 /** The spec for a board item built from a drawer item: its kind, default size, and content. */
 export interface EmbeddedBoardSpec {
-   kind: 'card' | 'tracker' | 'image' | 'character';
+   kind: 'card' | 'tracker' | 'image' | 'character' | 'post-it';
    width: number;
    height: number;
-   content: CardBoardContent | TrackerBoardContent | ImageBoardContent | CharacterBoardContent;
+   content: CardBoardContent | TrackerBoardContent | ImageBoardContent | CharacterBoardContent | PostItBoardContent;
 }
 
 /**
@@ -127,6 +133,18 @@ export function embeddedSpecForDrawerItem(item: DrawerItem): EmbeddedBoardSpec |
          width: CHARACTER_ELEMENT_SIZE.width,
          height: CHARACTER_ELEMENT_SIZE.height,
          content: { kind: 'character', sourceDrawerItemId: item.id, characterId },
+      };
+   }
+   if (item.type === 'POST_IT') {
+      // A saved post-it drops as a source-bearing COPY: a fresh note id makes the board copy independent
+      // of the drawer twin, while `sourceDrawerItemId` keeps the Save write-back link.
+      const note = item.content as PostItNote;
+      const data: PostItNote = { ...note, id: cuid() };
+      return {
+         kind: 'post-it',
+         width: EMBEDDED_POSTIT_SIZE.width,
+         height: EMBEDDED_POSTIT_SIZE.height,
+         content: { kind: 'post-it', mode: 'copy', sourceDrawerItemId: item.id, data },
       };
    }
    // A drawer card/tracker wraps the same aggregate a sheet component is, so the shared mapping does

@@ -51,7 +51,7 @@ describe('zoneContaining', () => {
    });
 
    it('ignores non-zone items as candidates', () => {
-      const notAZone: BoardItem = { id: 'P', kind: 'post-it', x: 0, y: 0, width: 200, height: 200, z: 9, content: { kind: 'post-it', text: '' } };
+      const notAZone: BoardItem = { id: 'P', kind: 'post-it', x: 0, y: 0, width: 200, height: 200, z: 9, content: { kind: 'post-it', mode: 'copy', data: { id: 'n13', text: '' } } };
       expect(zoneContaining(at('item', 100, 100), [notAZone])).toBeNull();
    });
 });
@@ -59,7 +59,7 @@ describe('zoneContaining', () => {
 describe('zoneContentMinSize', () => {
    const zoneAt = { x: 100, y: 100 };
    function member(id: string, x: number, y: number, width: number, height: number): BoardItem {
-      return { id, kind: 'post-it', x, y, width, height, z: 0, zoneId: 'Z', content: { kind: 'post-it', text: id } };
+      return { id, kind: 'post-it', x, y, width, height, z: 0, zoneId: 'Z', content: { kind: 'post-it', mode: 'copy', data: { id: 'n14', text: id } } };
    }
 
    it('floors at MIN_ITEM_SIZE on both axes when the zone has no members', () => {

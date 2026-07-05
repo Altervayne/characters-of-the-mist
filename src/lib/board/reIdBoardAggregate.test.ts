@@ -20,8 +20,8 @@ function makeBoard(): Board {
       viewport: { x: 5, y: 6, zoom: 2 },
       drawerItemId: 'drawer-old',
       items: [
-         { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, zoneId: 'zone', content: { kind: 'post-it', text: 'a' } },
-         { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, zoneId: 'ghost', content: { kind: 'post-it', text: 'b' } },
+         { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, zoneId: 'zone', content: { kind: 'post-it', mode: 'copy', data: { id: 'n15', text: 'a' } } },
+         { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, zoneId: 'ghost', content: { kind: 'post-it', mode: 'copy', data: { id: 'n16', text: 'b' } } },
          { id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 2, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#f00' } } },
          { id: 'ref', kind: 'card', x: 20, y: 20, width: 100, height: 100, z: 3, content: { kind: 'card', mode: 'reference', sourceDrawerItemId: 'src-1' } },
          { id: 'char', kind: 'character', x: 30, y: 30, width: 280, height: 132, z: 5, content: { kind: 'character', sourceDrawerItemId: 'char-src', characterId: 'char-instance' } },
@@ -62,8 +62,8 @@ describe('reIdBoardAggregate', () => {
       const result = reIdBoardAggregate(board);
 
       const zone = result.items.find((i) => i.kind === 'zone')!;
-      const memberA = result.items.find((i) => i.content.kind === 'post-it' && i.content.text === 'a')!;
-      const memberB = result.items.find((i) => i.content.kind === 'post-it' && i.content.text === 'b')!;
+      const memberA = result.items.find((i) => i.content.kind === 'post-it' && i.content.data.text === 'a')!;
+      const memberB = result.items.find((i) => i.content.kind === 'post-it' && i.content.data.text === 'b')!;
       // 'a' followed its zone to the new id; 'b' pointed at a zone not in the set, so it cleared.
       expect(memberA.zoneId).toBe(zone.id);
       expect(memberA.zoneId).not.toBe('zone');

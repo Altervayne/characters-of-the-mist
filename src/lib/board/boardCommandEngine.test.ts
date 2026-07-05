@@ -38,7 +38,7 @@ function makeItem(id: string, boardId: string, z: number, overrides: Partial<Boa
       width: 100,
       height: 100,
       z,
-      content: { kind: 'post-it', text: id },
+      content: { kind: 'post-it', mode: 'copy', data: { id: 'n31', text: id } },
       ...overrides,
    };
 }
@@ -162,7 +162,7 @@ describe('command round-trips', () => {
 
    it('delete item: undo re-adds the captured record verbatim (id-stable), redo deletes again', async () => {
       const board = await repository.createBoard('Board');
-      const record = makeItem('item-1', board.id, 7, { x: 5, y: 6, content: { kind: 'post-it', text: 'keep me' } });
+      const record = makeItem('item-1', board.id, 7, { x: 5, y: 6, content: { kind: 'post-it', mode: 'copy', data: { id: 'n32', text: 'keep me' } } });
       await repository.addItem(record);
 
       const engine = createBoardCommandEngine();

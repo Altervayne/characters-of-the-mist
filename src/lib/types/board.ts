@@ -40,12 +40,17 @@ export interface ImageBoardContent {
    fit: 'cover' | 'contain';
 }
 
-/** A quick single-text sticky note. */
+/**
+ * A sticky note on the board, in the copy model: a self-contained snapshot of a {@link PostItNote} in
+ * `data`, carrying the originating `sourceDrawerItemId` when it came from (or was Save-As'd to) the
+ * drawer. Copy-ONLY - a note is its own content, so there is no live-mirror reference variant. This is
+ * the copy half of {@link EmbeddedBoardContent}, without inheriting a `reference` mode a note can't honor.
+ */
 export interface PostItBoardContent {
    kind: 'post-it';
-   text: string;
-   /** Background color (hex). Absent on notes created before colors existed - defaulted to amber on read. */
-   color?: string;
+   mode: 'copy';
+   sourceDrawerItemId?: string;
+   data: PostItNote;
 }
 
 /** One journal page: a stable id (so bookmarks reference it, not an index) and its text. */

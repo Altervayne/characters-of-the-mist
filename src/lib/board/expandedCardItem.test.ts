@@ -28,7 +28,7 @@ describe('isExpandedCardItem', () => {
    });
 
    it('is false for a non-card item', () => {
-      const postIt: BoardItem = { id: 'p1', kind: 'post-it', x: 0, y: 0, width: 180, height: 180, z: 0, content: { kind: 'post-it', text: '' } };
+      const postIt: BoardItem = { id: 'p1', kind: 'post-it', x: 0, y: 0, width: 180, height: 180, z: 0, content: { kind: 'post-it', mode: 'copy', data: { id: 'n1', text: '' } } };
       expect(isExpandedCardItem(postIt)).toBe(false);
    });
 });

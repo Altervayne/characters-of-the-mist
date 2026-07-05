@@ -13,7 +13,7 @@ import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 
 // -- Type Imports --
 import type { Card, ImageCardDetails, Tracker } from '@/lib/types/character';
-import type { ImageBoardContent } from '@/lib/types/board';
+import type { ImageBoardContent, PostItNote } from '@/lib/types/board';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
 /*
@@ -24,13 +24,13 @@ import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
  * caller decides when, never on unmount.
  */
 
-/** The inner aggregate of a board card/tracker copy, normalized and ready to store, plus its drawer routing. */
+/** The inner aggregate of a board copy (card/tracker/post-it), normalized and ready to store, plus its drawer routing. */
 export interface NormalizedBoardItemInner {
-   /** The clean inner aggregate (deep-cloned, `isFlipped` zeroed) to write as the drawer item content. */
-   content: Card | Tracker;
-   /** The drawer game segment - `details.game` for a card, `NEUTRAL` for a (game-agnostic) tracker. */
+   /** The clean inner aggregate (deep-cloned, `isFlipped` zeroed for a card) to write as the drawer item content. */
+   content: Card | Tracker | PostItNote;
+   /** The drawer game segment - `details.game` for a card, `NEUTRAL` for a (game-agnostic) tracker/post-it. */
    game: GameSystem;
-   /** The drawer item type - the card's `cardType`, or the tracker's `*_TRACKER` type. */
+   /** The drawer item type - the card's `cardType`, the tracker's `*_TRACKER` type, or `POST_IT`. */
    type: GeneralItemType;
 }
 
@@ -48,13 +48,13 @@ export interface NormalizedBoardItemInner {
  * card/tracker copy always maps).
  */
 export function normalizeBoardItemInner(data: unknown): NormalizedBoardItemInner | null {
-   const inner = structuredClone(data) as Card | Tracker;
+   const inner = structuredClone(data) as Card | Tracker | PostItNote;
 
    const storable = mapItemToStorableInfo(inner);
    if (!storable) return null;
    const [type, game] = storable;
 
-   // A card is stored face-up; a tracker has no flip. `isFlipped` lives only on a card.
+   // A card is stored face-up; a tracker / post-it has no flip. `isFlipped` lives only on a card.
    if ('cardType' in inner) inner.isFlipped = false;
 
    return { content: inner, game, type };
@@ -106,7 +106,13 @@ export function saveBoardItemAsToDrawer(innerData: unknown, folderId?: string): 
    if (!normalized) return null;
 
    const id = cuid();
-   const defaultName = 'title' in normalized.content ? normalized.content.title : normalized.content.name;
+   // A card names by `title`, a tracker by `name`, a post-it by its first line of text (its own content).
+   const inner = normalized.content;
+   const defaultName = 'title' in inner
+      ? inner.title
+      : 'name' in inner
+         ? inner.name
+         : inner.text.split('\n')[0];
 
    useDrawerStore.getState().actions.initiateItemDrop({
       game: normalized.game,

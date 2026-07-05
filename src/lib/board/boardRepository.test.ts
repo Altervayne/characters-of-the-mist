@@ -29,14 +29,14 @@ function makeItem(id: string, boardId: string, z: number, overrides: Partial<Boa
       width: 100,
       height: 100,
       z,
-      content: { kind: 'post-it', text: id },
+      content: { kind: 'post-it', mode: 'copy', data: { id: 'n17', text: id } },
       ...overrides,
    };
 }
 
 /** Builds an assembled board item (no `boardId`) for aggregate fixtures. */
 function makeBoardItem(id: string, overrides: Partial<BoardItem> = {}): BoardItem {
-   return { id, kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: id }, ...overrides };
+   return { id, kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', mode: 'copy', data: { id: 'n18', text: id } }, ...overrides };
 }
 
 beforeEach(async () => {
@@ -99,12 +99,12 @@ describe('board item CRUD', () => {
       const board = await repository.createBoard('Board');
       await repository.addItem(makeItem('item-1', board.id, 0));
 
-      expect((await repository.getItem('item-1'))?.content).toEqual({ kind: 'post-it', text: 'item-1' });
+      expect((await repository.getItem('item-1'))?.content).toEqual({ kind: 'post-it', mode: 'copy', data: { id: 'n17', text: 'item-1' } });
 
-      await repository.updateItem('item-1', { x: 200, content: { kind: 'post-it', text: 'edited' } });
+      await repository.updateItem('item-1', { x: 200, content: { kind: 'post-it', mode: 'copy', data: { id: 'n20', text: 'edited' } } });
       const updated = await repository.getItem('item-1');
       expect(updated?.x).toBe(200);
-      expect(updated?.content).toEqual({ kind: 'post-it', text: 'edited' });
+      expect(updated?.content).toEqual({ kind: 'post-it', mode: 'copy', data: { id: 'n20', text: 'edited' } });
 
       await repository.deleteItem('item-1');
       expect(await repository.getItem('item-1')).toBeUndefined();
@@ -215,8 +215,8 @@ describe('importBoard / loadBoard round-trip', () => {
          drawerItemId: 'drawer-1',
          grid: { type: 'lines' },
          items: [
-            { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: 'a' } },
-            { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, content: { kind: 'post-it', text: 'b' } },
+            { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', mode: 'copy', data: { id: 'n22', text: 'a' } } },
+            { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, content: { kind: 'post-it', mode: 'copy', data: { id: 'n23', text: 'b' } } },
             { id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 2, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#f00' } } },
          ],
       };

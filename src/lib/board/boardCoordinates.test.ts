@@ -9,7 +9,7 @@ import type { BoardItem, Viewport } from '@/lib/types/board';
 
 /** A minimal spatial board item for fit tests (content irrelevant to the geometry). */
 function spatial(id: string, x: number, y: number, width: number, height: number): BoardItem {
-   return { id, kind: 'post-it', x, y, width, height, z: 0, content: { kind: 'post-it', text: '' } };
+   return { id, kind: 'post-it', x, y, width, height, z: 0, content: { kind: 'post-it', mode: 'copy', data: { id: 'n25', text: '' } } };
 }
 
 /*

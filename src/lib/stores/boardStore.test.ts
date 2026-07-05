@@ -31,7 +31,7 @@ function makeItem(id: string, z: number, overrides: Partial<BoardItem> = {}): Bo
       width: 100,
       height: 100,
       z,
-      content: { kind: 'post-it', text: id },
+      content: { kind: 'post-it', mode: 'copy', data: { id: 'n2', text: id } },
       ...overrides,
    };
 }
@@ -182,16 +182,16 @@ describe('mutating actions', () => {
 
    it('updateItemContent persists new content, undo restores the old content', async () => {
       const board = await repository.createBoard('Board');
-      await repository.addItem(makeRecord('item-1', board.id, 0, { content: { kind: 'post-it', text: 'old' } }));
+      await repository.addItem(makeRecord('item-1', board.id, 0, { content: { kind: 'post-it', mode: 'copy', data: { id: 'n3', text: 'old' } } }));
       const store = createBoardStore();
       await store.getState().actions.hydrate(board.id);
 
-      await store.getState().actions.updateItemContent('item-1', { kind: 'post-it', text: 'new' });
-      expect(store.getState().items['item-1'].content).toEqual({ kind: 'post-it', text: 'new' });
-      expect((await repository.getItem('item-1'))?.content).toEqual({ kind: 'post-it', text: 'new' });
+      await store.getState().actions.updateItemContent('item-1', { kind: 'post-it', mode: 'copy', data: { id: 'n4', text: 'new' } });
+      expect(store.getState().items['item-1'].content).toEqual({ kind: 'post-it', mode: 'copy', data: { id: 'n4', text: 'new' } });
+      expect((await repository.getItem('item-1'))?.content).toEqual({ kind: 'post-it', mode: 'copy', data: { id: 'n4', text: 'new' } });
 
       await store.getState().actions.undo();
-      expect(store.getState().items['item-1'].content).toEqual({ kind: 'post-it', text: 'old' });
+      expect(store.getState().items['item-1'].content).toEqual({ kind: 'post-it', mode: 'copy', data: { id: 'n3', text: 'old' } });
    });
 
    it('deleteItem removes optimistically and persists, undo restores the record', async () => {
@@ -334,7 +334,7 @@ describe('lastModifiedStore', () => {
       expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
 
       reset();
-      await actions.updateItemContent('a', { kind: 'post-it', text: 'edited' });
+      await actions.updateItemContent('a', { kind: 'post-it', mode: 'copy', data: { id: 'n8', text: 'edited' } });
       expect(useAppGeneralStateStore.getState().lastModifiedStore).toBe('board');
 
       reset();

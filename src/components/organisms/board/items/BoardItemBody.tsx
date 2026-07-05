@@ -1,5 +1,5 @@
 // -- Component Imports --
-import { PostItItem } from './PostItItem';
+import { BoardPostItItem } from './BoardPostItItem';
 import { ZoneItem } from './ZoneItem';
 import { JournalItem } from './JournalItem';
 import { ImageItem } from './ImageItem';
@@ -46,7 +46,7 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
 
    switch (content.kind) {
       case 'post-it':
-         return <PostItItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <BoardPostItItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onAdoptSource={onAdoptSource} onDelete={onDelete} onRequestSelect={onRequestSelect} />;
       case 'journal':
          return <JournalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} sideSlot={sideSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       case 'image':

@@ -93,9 +93,9 @@ function item(id: string, content: BoardItem['content']): BoardItem {
 describe('connectionsReferencing', () => {
    it('finds connections referencing an item as `from` or `to`, ignoring unrelated ones', () => {
       const items: Record<string, BoardItem> = {
-         a: item('a', { kind: 'post-it', text: '' }),
-         b: item('b', { kind: 'post-it', text: '' }),
-         c: item('c', { kind: 'post-it', text: '' }),
+         a: item('a', { kind: 'post-it', mode: 'copy', data: { id: 'n26', text: '' } }),
+         b: item('b', { kind: 'post-it', mode: 'copy', data: { id: 'n27', text: '' } }),
+         c: item('c', { kind: 'post-it', mode: 'copy', data: { id: 'n28', text: '' } }),
          'conn-ab': item('conn-ab', { kind: 'connection', from: 'a', to: 'b', style: { width: 2, color: '#fff' } }),
          'conn-ca': item('conn-ca', { kind: 'connection', from: 'c', to: 'a', style: { width: 2, color: '#fff' } }),
          'conn-bc': item('conn-bc', { kind: 'connection', from: 'b', to: 'c', style: { width: 2, color: '#fff' } }),
@@ -118,8 +118,8 @@ describe('cascade delete (no orphan connections)', () => {
       const store = createBoardStore();
       await store.getState().actions.hydrate(board.id);
       const add = store.getState().actions.addItem;
-      await add({ id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', text: '' } });
-      await add({ id: 'b', kind: 'post-it', x: 200, y: 0, width: 100, height: 100, z: 1, content: { kind: 'post-it', text: '' } });
+      await add({ id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', mode: 'copy', data: { id: 'n29', text: '' } } });
+      await add({ id: 'b', kind: 'post-it', x: 200, y: 0, width: 100, height: 100, z: 1, content: { kind: 'post-it', mode: 'copy', data: { id: 'n30', text: '' } } });
       await add({ id: 'conn', kind: 'connection', x: 0, y: 0, width: 0, height: 0, z: 2, content: { kind: 'connection', from: 'a', to: 'b', style: { width: 3, color: '#3b82f6' } } });
 
       // The cascade BoardView performs: delete connections referencing 'a', then 'a'.

@@ -66,7 +66,7 @@ function seedBoardItem(id: string, kind: 'image' | 'post-it', assetId: string | 
       width: 100,
       height: 100,
       z: 0,
-      content: kind === 'image' ? { kind: 'image', assetId, fit: 'cover' } : { kind: 'post-it', text: '' },
+      content: kind === 'image' ? { kind: 'image', assetId, fit: 'cover' } : { kind: 'post-it', mode: 'copy', data: { id: 'n33', text: '' } },
    });
 }
 

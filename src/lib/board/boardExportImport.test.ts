@@ -21,7 +21,7 @@ import type { EmbeddedAsset } from '@/lib/utils/export-import';
  */
 
 function rec(id: string, boardId: string, z: number, overrides: Partial<BoardItemRecord> = {}): BoardItemRecord {
-   return { id, boardId, kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z, content: { kind: 'post-it', text: id }, ...overrides };
+   return { id, boardId, kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z, content: { kind: 'post-it', mode: 'copy', data: { id: 'n24', text: id } }, ...overrides };
 }
 
 beforeEach(async () => {

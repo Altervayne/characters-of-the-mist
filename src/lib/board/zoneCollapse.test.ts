@@ -15,10 +15,10 @@ import type { BoardItem } from '@/lib/types/board';
 
 const zoneCollapsed: BoardItem = { id: 'Z', kind: 'zone', x: 100, y: 100, width: 400, height: 300, z: 0, content: { kind: 'zone', collapsed: true } };
 const zoneOpen: BoardItem = { id: 'O', kind: 'zone', x: 0, y: 0, width: 400, height: 300, z: 0, content: { kind: 'zone', collapsed: false } };
-const memberOfCollapsed: BoardItem = { id: 'm1', kind: 'post-it', x: 150, y: 150, width: 50, height: 50, z: 1, zoneId: 'Z', content: { kind: 'post-it', text: 'a' } };
-const memberOfCollapsed2: BoardItem = { id: 'm2', kind: 'post-it', x: 300, y: 200, width: 50, height: 50, z: 2, zoneId: 'Z', content: { kind: 'post-it', text: 'b' } };
-const memberOfOpen: BoardItem = { id: 'o1', kind: 'post-it', x: 50, y: 50, width: 50, height: 50, z: 1, zoneId: 'O', content: { kind: 'post-it', text: 'c' } };
-const outsider: BoardItem = { id: 'out', kind: 'post-it', x: 900, y: 900, width: 50, height: 50, z: 1, content: { kind: 'post-it', text: 'd' } };
+const memberOfCollapsed: BoardItem = { id: 'm1', kind: 'post-it', x: 150, y: 150, width: 50, height: 50, z: 1, zoneId: 'Z', content: { kind: 'post-it', mode: 'copy', data: { id: 'n9', text: 'a' } } };
+const memberOfCollapsed2: BoardItem = { id: 'm2', kind: 'post-it', x: 300, y: 200, width: 50, height: 50, z: 2, zoneId: 'Z', content: { kind: 'post-it', mode: 'copy', data: { id: 'n10', text: 'b' } } };
+const memberOfOpen: BoardItem = { id: 'o1', kind: 'post-it', x: 50, y: 50, width: 50, height: 50, z: 1, zoneId: 'O', content: { kind: 'post-it', mode: 'copy', data: { id: 'n11', text: 'c' } } };
+const outsider: BoardItem = { id: 'out', kind: 'post-it', x: 900, y: 900, width: 50, height: 50, z: 1, content: { kind: 'post-it', mode: 'copy', data: { id: 'n12', text: 'd' } } };
 
 const items: Record<string, BoardItem> = { Z: zoneCollapsed, O: zoneOpen, m1: memberOfCollapsed, m2: memberOfCollapsed2, o1: memberOfOpen, out: outsider };
 const collapsed = new Set(['Z']);

@@ -7,6 +7,7 @@ import { Folder, GripVertical, LayoutGrid } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { readableTextColor } from '@/lib/color';
 
 // -- Component Imports --
 import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
@@ -14,6 +15,7 @@ import { StatusTrackerCard } from '@/components/organisms/trackers/StatusTracker
 import { StoryTagTrackerCard } from '@/components/organisms/trackers/StoryTagTracker';
 import { CharacterSheetPreview } from '@/components/molecules/CharacterSheetPreview';
 import { StoryThemeTrackerCard } from '@/components/organisms/trackers/StoryThemeTracker';
+import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 import { FitToBox } from '@/components/molecules/drawer/FitToBox';
 import { ItemDateLabel } from '@/components/molecules/drawer/ItemDateLabel';
 import { IconTooltip } from '@/components/molecules/drawer/IconTooltip';
@@ -26,7 +28,7 @@ import { boardContentBounds, itemCenter } from '@/lib/board/boardMiniMap';
 // -- Type Imports --
 import type { ReactElement } from 'react';
 import type { DrawerItem, Folder as FolderType, GameSystem } from '@/lib/types/drawer';
-import type { Board, ConnectionBoardContent, PinBoardContent, PostItBoardContent, ZoneBoardContent } from '@/lib/types/board';
+import type { Board, ConnectionBoardContent, PinBoardContent, PostItBoardContent, PostItNote, ZoneBoardContent } from '@/lib/types/board';
 
 /** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
 function gameGlyph(game: GameSystem): ReactElement | null {
@@ -39,6 +41,31 @@ function gameGlyph(game: GameSystem): ReactElement | null {
 
 /** The board's default note color, mirrored from the post-it item (a color-less note reads amber). */
 const SCHEMATIC_POSTIT_COLOR = '#fde68a';
+
+/**
+ * Static preview of a saved post-it: the note's own colored sticky at a fixed footprint, its Markdown
+ * clipped, no textarea / color toolbar. The `color` is USER CONTENT (the note the user made), so the
+ * stored hex renders as-is with a luminance-derived readable text color - it is NOT washed to a theme
+ * token. Everything around it (the preview frame, meta row) stays app-token chrome, handled by the card.
+ */
+function PostItPreview({ note }: { note: PostItNote }) {
+   const { t } = useTranslation();
+   const background = note.color ?? SCHEMATIC_POSTIT_COLOR;
+   const textColor = readableTextColor(background);
+   return (
+      <div className="h-45 w-45 overflow-hidden" style={{ backgroundColor: background, color: textColor }}>
+         {note.text.trim() ? (
+            <div className="h-full w-full overflow-hidden p-2.5">
+               <NoteMarkdown content={note.text} />
+            </div>
+         ) : (
+            <div className="flex h-full w-full items-center justify-center p-2.5 text-center text-xs opacity-50">
+               {t('BoardView.postItPlaceholder')}
+            </div>
+         )}
+      </div>
+   );
+}
 
 /**
  * Cheap board thumbnail: a schematic mini-map. Each item is a small block at its scaled board position
@@ -109,7 +136,7 @@ function BoardPreview({ board }: { board: Board }) {
             {/* Every other item: a block in its content color (post-it / pin) or a neutral theme block. */}
             {blocks.map((item) => {
                const ownColor = item.kind === 'post-it'
-                  ? (item.content as PostItBoardContent).color ?? SCHEMATIC_POSTIT_COLOR
+                  ? (item.content as PostItBoardContent).data.color ?? SCHEMATIC_POSTIT_COLOR
                   : item.kind === 'pin'
                      ? (item.content as PinBoardContent).color
                      : null;
@@ -207,6 +234,10 @@ export function DrawerItemPreview({
 
          if (type === 'FULL_BOARD') {
             return <BoardPreview board={content as Board} />;
+         }
+
+         if (type === 'POST_IT') {
+            return <PostItPreview note={content as PostItNote} />;
          }
       }
 

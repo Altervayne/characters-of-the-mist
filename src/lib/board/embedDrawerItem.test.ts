@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES, EMBEDDED_POSTIT_SIZE } from './embedDrawerItem';
 import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
@@ -65,6 +65,23 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(spec).not.toBeNull();
       expect(spec).toMatchObject({ kind: 'card', width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
       expect(spec!.content).toMatchObject({ kind: 'card', mode: 'copy', sourceDrawerItemId: 'item-1' });
+   });
+
+   it('re-embeds a saved POST_IT as a source-bearing copy with a FRESH note id (independent of the drawer twin)', () => {
+      const source = makeDrawerItem('POST_IT', { id: 'note-src', text: 'Bandit Ambush', color: '#bfdbfe' } as unknown as DrawerItemContent);
+
+      const spec = embeddedSpecForDrawerItem(source);
+      expect(spec).not.toBeNull();
+      expect(spec).toMatchObject({ kind: 'post-it', width: EMBEDDED_POSTIT_SIZE.width, height: EMBEDDED_POSTIT_SIZE.height });
+      // Source-bearing copy: keeps the Save write-back link and carries the note's text + color forward.
+      expect(spec!.content).toMatchObject({ kind: 'post-it', mode: 'copy', sourceDrawerItemId: 'item-1', data: { text: 'Bandit Ambush', color: '#bfdbfe' } });
+      // A fresh note id makes the board copy independent of the drawer twin's note id.
+      const copied = spec!.content as { data: { id: string } };
+      expect(copied.data.id).not.toBe('note-src');
+
+      // Deep-independent: mutating the source note must not reach the board copy.
+      (source.content as { text: string }).text = 'edited';
+      expect((spec!.content as { data: { text: string } }).data.text).toBe('Bandit Ambush');
    });
 
    it('drops a saved character sheet as a read-only character REFERENCE (no copy, records source + character ids)', () => {

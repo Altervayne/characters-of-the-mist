@@ -52,20 +52,21 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
    const { t } = useTranslation();
    // A tapped `{mention}` in the note mints a fresh tracker beside it (create-only, board scope).
    const handleMentionClick = useBoardMentionMint(item);
-   const [text, setText] = useState(content.text);
+   const note = content.data;
+   const [text, setText] = useState(note.text);
    // Re-sync from the store on an external change (undo/redo) using React's
    // adjust-state-during-render pattern. While typing the stored text is unchanged
    // (commit is on blur), so this never clobbers in-progress edits.
-   const [syncedText, setSyncedText] = useState(content.text);
-   if (content.text !== syncedText) {
-      setSyncedText(content.text);
-      setText(content.text);
+   const [syncedText, setSyncedText] = useState(note.text);
+   if (note.text !== syncedText) {
+      setSyncedText(note.text);
+      setText(note.text);
    }
 
    // The in-progress color while the picker is open (so the box previews live before the
    // single undoable commit). `color: undefined` previews a removal back to amber.
    const [pending, setPending] = useState<{ color: string | undefined } | null>(null);
-   const background = pending ? pending.color ?? DEFAULT_POSTIT_COLOR : content.color ?? DEFAULT_POSTIT_COLOR;
+   const background = pending ? pending.color ?? DEFAULT_POSTIT_COLOR : note.color ?? DEFAULT_POSTIT_COLOR;
    const textColor = readableTextColor(background);
 
    // The commit reads everything it needs from refs, so it is correct whether it fires from
@@ -81,8 +82,9 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
       if (!change) return;
       const next = change.color;
       const current = contentRef.current;
-      if (next !== current.color) {
-         onContentChange(next ? { kind: 'post-it', text: textRef.current, color: next } : { kind: 'post-it', text: textRef.current });
+      if (next !== current.data.color) {
+         const nextNote = next ? { ...current.data, text: textRef.current, color: next } : { ...current.data, text: textRef.current, color: undefined };
+         onContentChange({ ...current, data: nextNote });
          // Only colors picked from the full picker (not a curated pastel) join recents.
          if (next && next !== DEFAULT_POSTIT_COLOR && !PASTEL_PALETTE.includes(next as (typeof PASTEL_PALETTE)[number])) pushRecentColor(next);
       }
@@ -98,7 +100,7 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
    }, [isSelected, commitPendingColor]);
 
    const commitText = () => {
-      if (text !== content.text) onContentChange({ ...content, text });
+      if (text !== note.text) onContentChange({ ...content, data: { ...content.data, text } });
    };
 
    // A tab switch unmounts the board without a blur; flush the text (and any pending color) so it isn't lost.

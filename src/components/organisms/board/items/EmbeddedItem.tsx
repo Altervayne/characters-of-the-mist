@@ -15,7 +15,7 @@ import { detachToCopy, toReferenceContent } from '@/lib/board/referenceContent';
 import { BoardItemSaveMenu } from './BoardItemSaveMenu';
 
 // -- Type Imports --
-import type { BoardItem, BoardItemContent, CardBoardContent, TrackerBoardContent } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent, CardBoardContent, PostItBoardContent, TrackerBoardContent } from '@/lib/types/board';
 
 /*
  * Shared chrome for an embedded card/tracker item: it resolves copy vs reference, renders
@@ -27,7 +27,8 @@ import type { BoardItem, BoardItemContent, CardBoardContent, TrackerBoardContent
 
 interface EmbeddedItemProps {
    item: BoardItem;
-   content: CardBoardContent | TrackerBoardContent;
+   // A card/tracker copy-or-reference, or a copy-only post-it (whose reference branches stay dormant).
+   content: CardBoardContent | TrackerBoardContent | PostItBoardContent;
    isSelected: boolean;
    /** The selection toolbar's per-kind slot, forwarded to an interactive copy's own chrome. */
    toolbarSlot?: HTMLElement | null;
@@ -70,6 +71,8 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
    // changed - a write on every read would flood the engine. A direct (non-command) write
    // keeps a passive source edit off the board undo stack.
    useEffect(() => {
+      // A post-it is copy-only (mode is always 'copy'), so `isReference` is already false for it and this
+      // whole cache path is dead - the reference-only narrowing below drops it without an extra guard.
       if (!isReference || !sourceId || status !== 'live' || liveContent == null) return;
       const cached = content.mode === 'reference' ? content.lastKnown : undefined;
       if (serialize(liveContent) === serialize(cached)) return;
@@ -79,7 +82,11 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
    // A copy can no longer become a reference - only a full character sheet has the save-back
    // round-trip that justifies a live link (a future, separate capability). The reference type
    // and machinery stay dormant for that case; an existing reference still detaches to a copy.
-   const detach = (): void => onContentChange(detachToCopy(content, liveContent));
+   // A post-it never references, so this toggle is unreachable for it (guarded for the narrow type).
+   const detach = (): void => {
+      if (content.kind === 'post-it') return;
+      onContentChange(detachToCopy(content, liveContent));
+   };
 
    // Dangling reference: never error or vanish - offer convert-to-copy (if recoverable) / remove.
    if (isReference && status === 'dangling') {
