@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -182,6 +182,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'saveCharacterToDrawer', scope: 'character', label: t('CommandPalette.commands.saveCharacterToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'character'], icon: Save, group: t('CommandPalette.groups.export'), action: saveCharacterToDrawer },
       { id: 'exportBoard', scope: 'board', label: t('CommandPalette.commands.exportBoard'), keywords: ['export', 'board', 'save', 'file', '.cotm'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportBoard },
       { id: 'saveBoardToDrawer', scope: 'board', label: t('CommandPalette.commands.saveBoardToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'board'], icon: Save, group: t('CommandPalette.groups.export'), action: saveBoardToDrawer },
+      // The selected board card/tracker copy saves to the drawer. The canvas owns the selection, so both
+      // route through requestBoardAction (like createChallengeOnBoard); the board guards an unusable selection.
+      { id: 'saveItemToDrawer', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'item', 'card', 'tracker'], icon: Save, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawer') },
+      { id: 'saveItemToDrawerAs', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawerAs'), keywords: ['save', 'as', 'drawer', 'store', 'fork', 'copy', 'item', 'card', 'tracker'], icon: SaveAll, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawerAs') },
       { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
 
       // #################################

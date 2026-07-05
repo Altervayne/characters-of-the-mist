@@ -184,6 +184,7 @@
          "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item.",
          "itemSaved": "Item saved to",
          "itemLinkedItemMissing": "The linked drawer save no longer exists, so the item was saved as a new one.",
+         "itemNotSaveable": "Select a card or tracker on the board to save it to the drawer.",
          "exported": "Board exported to downloads.",
          "imported": "Board file imported successfully.",
          "updated": "Board updated from file.",
@@ -1141,6 +1142,8 @@
          "saveCharacterToDrawer": "Save: Character to Drawer",
          "exportBoard": "Export: Board",
          "saveBoardToDrawer": "Save: Board to Drawer",
+         "saveItemToDrawer": "Save: Selected Item to Drawer",
+         "saveItemToDrawerAs": "Save: Selected Item to Drawer As…",
          "exportDrawer": "Export: Full Drawer",
 
          "renameCharacter": "Rename: Character",

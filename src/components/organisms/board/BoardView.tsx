@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
 import { useDroppable } from '@dnd-kit/core';
 import { AnimatePresence, motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
@@ -23,6 +24,7 @@ import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
+import { runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
@@ -35,6 +37,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- React Imports --
 import type { CSSProperties } from 'react';
@@ -607,17 +610,47 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedIds(new Set([id]));
    };
 
-   // The command palette has no cursor point to drop at, so it requests a creation through this
-   // one-shot store signal instead; the active board consumes it at the current view's center and
-   // clears it. Runs only while this canvas is mounted, so it can't fire on a background board.
-   const pendingBoardAction = useAppGeneralStateStore((state) => state.pendingBoardAction);
-   const { clearBoardAction } = useAppGeneralStateActions();
-   useEffect(() => {
-      if (pendingBoardAction === 'createChallenge') {
-         createChallengeAt(viewCenter);
-         clearBoardAction();
+   const { clearBoardAction, setDrawerOpen } = useAppGeneralStateActions();
+
+   /*
+    * Saves the sole-selected copy card/tracker to the drawer via the same orchestration the toolbar kebab
+    * runs (`asNew` = Save As, else Save with a transparent Save-As fallback for a dangling source). The
+    * canvas owns the selection, so the palette routes here rather than reaching into board state. No-op with
+    * an explanatory toast when nothing usable is selected; other kinds (pin/image/post-it/journal/character
+    * ref/reference-mode) have no drawer save yet.
+    */
+   const saveSelectedItemToDrawer = (asNew: boolean) => {
+      const id = selectedIds.size === 1 ? [...selectedIds][0] : null;
+      const item = id ? items[id] : undefined;
+      const content = item?.content;
+      if (!content || (content.kind !== 'card' && content.kind !== 'tracker') || content.mode !== 'copy') {
+         toast.error(t('Notifications.board.itemNotSaveable'));
+         return;
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- createChallengeAt/viewCenter change every render; only the action id should re-trigger this.
+      const drawerState = useDrawerStore.getState();
+      const deps = {
+         t,
+         drawerCurrentFolderId: drawerState.currentFolderId,
+         isDrawerOpen: useAppGeneralStateStore.getState().isDrawerOpen,
+         setDrawerOpen,
+         onAdoptSource: (sourceDrawerItemId: string) => { void actions.adoptItemDrawerSource(id!, sourceDrawerItemId); },
+      };
+      if (asNew) runSaveItemToDrawerAs(content, deps);
+      else void runSaveItemToDrawer(content, deps);
+   };
+
+   // The command palette has no cursor point to drop at and doesn't know the selection, so it requests
+   // actions through this one-shot store signal instead; the active board consumes it against its own
+   // view center / selection and clears it. Runs only while this canvas is mounted, so it can't fire on
+   // a background board.
+   const pendingBoardAction = useAppGeneralStateStore((state) => state.pendingBoardAction);
+   useEffect(() => {
+      if (!pendingBoardAction) return;
+      if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
+      else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
+      else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
+      clearBoardAction();
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
    }, [pendingBoardAction, clearBoardAction]);
 
    /** Palette add: drop the new item centered in the current view (the radial uses the cursor point). */

@@ -7,6 +7,13 @@ type StoreName = 'character' | 'drawer' | 'board';
 
 export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 
+/*
+ * A one-shot request the palette hands the active board (which owns the drop point and the selection):
+ * mint a challenge at the view center, or save the selected copy card/tracker back to the drawer / as a
+ * new drawer item. The canvas consumes it against its own state and clears it.
+ */
+export type BoardAction = 'createChallenge' | 'saveItemToDrawer' | 'saveItemToDrawerAs';
+
 interface AppGeneralState {
    // Undo/Redo Context
    lastModifiedStore: StoreName | null;
@@ -46,8 +53,9 @@ interface AppGeneralState {
    mobileDrawerSnapPoint: MobileDrawerSnapPoint;
 
    // A one-shot request the active board consumes and clears (e.g. a palette command minting an item
-   // with no cursor point to drop at). Null when nothing is pending.
-   pendingBoardAction: 'createChallenge' | null;
+   // with no cursor point to drop at, or one saving the selection to the drawer). Null when nothing is
+   // pending. The canvas owns the drop point AND the selection, so the palette signals through here.
+   pendingBoardAction: BoardAction | null;
 
    actions: {
       // Undo/Redo Context
@@ -90,7 +98,7 @@ interface AppGeneralState {
       setMobileDrawerSnapPoint: (snapPoint: MobileDrawerSnapPoint) => void;
 
       // Pending board action
-      requestBoardAction: (action: 'createChallenge') => void;
+      requestBoardAction: (action: BoardAction) => void;
       clearBoardAction: () => void;
    };
 }
