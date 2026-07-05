@@ -234,6 +234,12 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
       harmonizedData.folders = harmonizedData.folders.map(subFolder => harmonizeData(subFolder, 'FOLDER'));
    } else if (isDrawerItem(harmonizedData)) {
       harmonizedData.content = harmonizeData(harmonizedData.content, harmonizedData.type);
+      // The item WRAPPER carries its own `game`, read by DrawerItemPreview for the type label.
+      // Trackers are theme-agnostic now, so a tracker wrapper is forced to NEUTRAL - SET, never
+      // delete: an absent `game` breaks the `t('Drawer.Types.<game>')` label. Idempotent.
+      if (TRACKER_ITEM_TYPES.has(harmonizedData.type)) {
+         harmonizedData.game = 'NEUTRAL';
+      }
    }
 
    return harmonizedData as T;

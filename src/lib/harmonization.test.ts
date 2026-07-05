@@ -7,6 +7,7 @@ import { LEGACY_IMAGE_CARD_SIZE } from './constants/imageCard';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
+import type { Drawer, DrawerItem } from '@/lib/types/drawer';
 
 /*
  * Tests for the harmonization backfill of image-card sizes: cards created before the
@@ -100,5 +101,180 @@ describe('harmonization: tracker game strip', () => {
       const harmonized = harmonizeData(tracker, 'STATUS_TRACKER') as typeof tracker;
       expect(harmonized).not.toHaveProperty('game');
       expect(harmonized).toMatchObject({ trackerType: 'STATUS', name: 'Hurt' });
+   });
+});
+
+/*
+ * Drawer-level harmonization: the file-import leg hands a whole Drawer / Folder / loose item to
+ * `harmonizeData`, which must recurse the tree and migrate each item - content AND wrapper. These
+ * cases were the test gap that let the import-wiring bug survive.
+ */
+
+/** A tracker drawer-item wrapper (its own `game`) around a tracker content (its own `game`). */
+function statusTrackerItem(id: string): DrawerItem {
+   return {
+      id,
+      game: 'LEGENDS',
+      type: 'STATUS_TRACKER',
+      name: 'Wounded',
+      content: { id: `${id}-c`, name: 'Wounded', game: 'LEGENDS', trackerType: 'STATUS', tiers: [false] },
+   } as unknown as DrawerItem;
+}
+
+/** A pre-1.3.0 LEGENDS character-card wrapper whose backpack is the old `BlandTag[]` shape. */
+function legacyBackpackCharacterCardItem(id: string): DrawerItem {
+   return {
+      id,
+      game: 'LEGENDS',
+      type: 'FULL_CHARACTER_SHEET',
+      name: 'Adventurer',
+      content: {
+         id: `${id}-c`,
+         name: 'Adventurer',
+         game: 'LEGENDS',
+         trackers: { statuses: [], storyTags: [], storyThemes: [] },
+         cards: [
+            {
+               id: `${id}-card`,
+               title: 'Backpack',
+               order: 0,
+               isFlipped: false,
+               cardType: 'CHARACTER_CARD',
+               details: { game: 'LEGENDS', backpack: [{ id: 'b1', name: 'Rope' }, { id: 'b2', name: 'Torch' }] },
+            },
+         ],
+      },
+   } as unknown as DrawerItem;
+}
+
+const trackerContent = (item: DrawerItem) => item.content as unknown as Record<string, unknown>;
+
+describe('harmonization: drawer-level walk', () => {
+   it('strips tracker content game and neutralizes the tracker wrapper on a full drawer', () => {
+      const drawer: Drawer = {
+         version: '1.3.1',
+         folders: [],
+         rootItems: [statusTrackerItem('s1')],
+      };
+
+      const harmonized = harmonizeData(drawer, 'FULL_DRAWER') as Drawer;
+      const item = harmonized.rootItems[0];
+
+      // Wrapper game SET to NEUTRAL (never deleted - the preview label reads it).
+      expect(item.game).toBe('NEUTRAL');
+      expect(item).toHaveProperty('game');
+      // Content game stripped.
+      expect(trackerContent(item)).not.toHaveProperty('game');
+      expect(trackerContent(item)).toMatchObject({ trackerType: 'STATUS', name: 'Wounded' });
+   });
+
+   it('upgrades a Hero backpack BlandTag[] to Tag[] through the drawer walk', () => {
+      const drawer: Drawer = {
+         version: '1.2.0',
+         folders: [],
+         rootItems: [legacyBackpackCharacterCardItem('h1')],
+      };
+
+      const harmonized = harmonizeData(drawer, 'FULL_DRAWER') as Drawer;
+      const character = harmonized.rootItems[0].content as unknown as Character;
+      const backpack = (character.cards[0].details as unknown as { backpack: Array<Record<string, unknown>> }).backpack;
+
+      // BlandTag { id, name } becomes Tag { id, name, isActive, isScratched }.
+      expect(backpack).toHaveLength(2);
+      backpack.forEach((tag) => {
+         expect(tag).toMatchObject({ isActive: false, isScratched: false });
+         expect(typeof tag.name).toBe('string');
+      });
+      expect(backpack[0]).toMatchObject({ name: 'Rope' });
+   });
+
+   it('recurses into nested folders, migrating items at every depth', () => {
+      const drawer: Drawer = {
+         version: '1.3.1',
+         folders: [
+            {
+               id: 'f1',
+               name: 'Outer',
+               items: [statusTrackerItem('nested-1')],
+               folders: [
+                  { id: 'f2', name: 'Inner', items: [statusTrackerItem('nested-2')], folders: [] },
+               ],
+            },
+         ],
+         rootItems: [],
+      };
+
+      const harmonized = harmonizeData(drawer, 'FULL_DRAWER') as Drawer;
+      const outerItem = harmonized.folders[0].items[0];
+      const innerItem = harmonized.folders[0].folders[0].items[0];
+
+      for (const item of [outerItem, innerItem]) {
+         expect(item.game).toBe('NEUTRAL');
+         expect(trackerContent(item)).not.toHaveProperty('game');
+      }
+   });
+
+   it('migrates a loose folder import (harmonizeData with FOLDER)', () => {
+      const folder = {
+         id: 'f1',
+         name: 'Loose',
+         items: [statusTrackerItem('loose-1')],
+         folders: [],
+      };
+
+      const harmonized = harmonizeData(folder, 'FOLDER') as typeof folder;
+      const item = harmonized.items[0];
+
+      expect(item.game).toBe('NEUTRAL');
+      expect(trackerContent(item)).not.toHaveProperty('game');
+   });
+
+   it('migrates a loose imported tracker (bare content, not wrapped)', () => {
+      // The loose-item import path passes the bare content with its type, not a DrawerItem wrapper.
+      const tracker = { id: 's1', name: 'Bleeding', game: 'CITY_OF_MIST', trackerType: 'STATUS', tiers: [false, false] };
+      const harmonized = harmonizeData(tracker, 'STATUS_TRACKER') as typeof tracker;
+
+      expect(harmonized).not.toHaveProperty('game');
+      expect(harmonized).toMatchObject({ trackerType: 'STATUS', name: 'Bleeding' });
+   });
+
+   it('is idempotent: a second drawer walk changes nothing', () => {
+      const drawer: Drawer = {
+         version: '1.3.1',
+         folders: [{ id: 'f1', name: 'F', items: [statusTrackerItem('s1')], folders: [] }],
+         rootItems: [statusTrackerItem('s2')],
+      };
+
+      const once = harmonizeData(drawer, 'FULL_DRAWER') as Drawer;
+      const twice = harmonizeData(structuredClone(once), 'FULL_DRAWER') as Drawer;
+      expect(twice).toEqual(once);
+   });
+});
+
+/*
+ * Import-path guard: the drawer file-import must harmonize the parsed payload before persisting
+ * (the wiring gap). This asserts the exact call the hook now makes - `harmonizeData(content,
+ * 'FULL_DRAWER')` on a raw 1.x drawer - yields a fully-migrated payload, so an un-harmonized drawer
+ * can no longer reach the store.
+ */
+describe('harmonization: drawer file-import path', () => {
+   it('a raw 1.x FULL_DRAWER payload is fully migrated by the import harmonize call', () => {
+      // Shape of `importedData.content` for a FULL_DRAWER file, verbatim from a 1.x export.
+      const rawImportedContent: Drawer = {
+         version: '1.3.1',
+         folders: [{ id: 'f1', name: 'Party', items: [legacyBackpackCharacterCardItem('h1')], folders: [] }],
+         rootItems: [statusTrackerItem('s1')],
+      };
+
+      // Exactly what useDrawerFileImport / useMobileMenuFileImport now do before importDrawerAsFolder.
+      const migrated = harmonizeData(rawImportedContent, 'FULL_DRAWER') as Drawer;
+
+      const looseTracker = migrated.rootItems[0];
+      expect(looseTracker.game).toBe('NEUTRAL');
+      expect(trackerContent(looseTracker)).not.toHaveProperty('game');
+
+      const character = migrated.folders[0].items[0].content as unknown as Character;
+      const backpack = (character.cards[0].details as unknown as { backpack: Array<Record<string, unknown>> }).backpack;
+      expect(backpack[0]).toMatchObject({ isActive: false, isScratched: false });
    });
 });

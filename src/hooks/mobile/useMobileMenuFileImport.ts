@@ -78,7 +78,11 @@ export function useMobileMenuFileImport() {
          const importedData = await importFromFile(file);
 
          if (importedData.fileType === 'FULL_DRAWER') {
-            importDrawerAsFolder(importedData.content as Drawer, deriveDrawerFolderName(file.name, t('Drawer.importedDrawerDefaultName')));
+            // Harmonize before persisting, mirroring the character branch above and the desktop
+            // drawer import - a 1.x drawer is migrated (tracker game strip + wrapper NEUTRAL, tag
+            // upgrades) as the harmonizer recurses its tree.
+            const migrated = harmonizeData(importedData.content, importedData.fileType);
+            importDrawerAsFolder(migrated as Drawer, deriveDrawerFolderName(file.name, t('Drawer.importedDrawerDefaultName')));
             toast.success(t('Notifications.drawer.importedAsFolder'));
          } else {
             toast.error(t('Notifications.general.importFailed'));

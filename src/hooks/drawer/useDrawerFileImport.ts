@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 
 // -- Utils Imports --
 import { deriveDrawerFolderName, exportDrawer, importFromFile } from '@/lib/utils/export-import';
+import { harmonizeData } from '@/lib/harmonization';
 
 // -- Store Imports --
 import { useDrawerActions } from '@/lib/stores/drawerStore';
@@ -47,18 +48,23 @@ export function useDrawerFileImport(currentFolderId: string | null) {
 
       try {
          const importedData = await importFromFile(file);
+         // Harmonize the parsed payload BEFORE persisting - file import is the only path 1.x data
+         // takes into 2.0, so a drawer / folder / loose item must be migrated the same way the
+         // character path migrates its sheet. `harmonizeData` recurses into the drawer / folder
+         // tree and normalizes each item (tracker content + wrapper game, tag-list upgrades).
+         const migratedContent = harmonizeData(importedData.content, importedData.fileType);
 
          switch (importedData.fileType) {
             case 'FULL_DRAWER':
                importDrawerAsFolder(
-                  importedData.content as DrawerType,
+                  migratedContent as DrawerType,
                   deriveDrawerFolderName(file.name, tNotifications('Drawer.importedDrawerDefaultName'))
                );
                toast.success(tNotifications('Notifications.drawer.importedAsFolder'));
                break;
 
             case 'FOLDER':
-               addImportedFolder(importedData.content as FolderType, currentFolderId ?? undefined);
+               addImportedFolder(migratedContent as FolderType, currentFolderId ?? undefined);
                toast.success(tNotifications('Notifications.drawer.importSuccess'));
                break;
 
@@ -68,7 +74,7 @@ export function useDrawerFileImport(currentFolderId: string | null) {
                break;
 
             default:
-               addImportedItem(importedData.content as DrawerItemContent, importedData.fileType, importedData.game, currentFolderId ?? undefined);
+               addImportedItem(migratedContent as DrawerItemContent, importedData.fileType, importedData.game, currentFolderId ?? undefined);
                toast.success(tNotifications('Notifications.drawer.importSuccess'));
                break;
          }
