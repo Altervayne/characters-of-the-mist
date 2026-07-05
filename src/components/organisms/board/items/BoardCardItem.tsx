@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Maximize2, RefreshCw } from 'lucide-react';
+import { Maximize2, Minimize2, RefreshCw } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -28,7 +28,9 @@ import type { MentionSegment } from '@/lib/challenge/parseMentions';
  * via {@link InteractiveEmbed} (its own per-embed character store, seeded with the single card),
  * with edits committed back to `content.data`. Each board card carries its own view mode (flip by
  * default, never the global side-by-side); side-by-side lays the two faces out horizontally and the
- * box width-fits the card's natural width (grows to both faces, shrinks back to one on flip).
+ * box width-fits the card's natural width (grows to both faces, shrinks back to one on flip). A
+ * challenge card also has an EXPANDED display mode (`card.expanded`, persisted): the board item renders
+ * its landscape sheet in place of the flip card, and the box uses the fixed expanded footprint.
  */
 interface BoardCardItemProps {
    item: BoardItem;
@@ -36,16 +38,12 @@ interface BoardCardItemProps {
    isSelected: boolean;
    /** The selection toolbar's per-kind slot (the interactive copy's Edit/Flip/Expand portal here). */
    toolbarSlot: HTMLElement | null;
-   /** Whether this item's expanded challenge overlay is open (board-view `expandedItemId`, ephemeral). */
-   isExpanded: boolean;
-   /** Requests this item's expanded overlay open/close. */
-   onExpandedChange: (expanded: boolean) => void;
    onContentChange: (content: BoardItemContent) => void;
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
    onDelete: (id: string) => void;
 }
 
-export function BoardCardItem({ item, content, isSelected, toolbarSlot, isExpanded, onExpandedChange, onContentChange, onCacheLastKnown, onDelete }: BoardCardItemProps) {
+export function BoardCardItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete }: BoardCardItemProps) {
    // Tapping a mention on the interactive COPY mints a fresh board-native tracker beside the challenge.
    const handleMentionClick = useBoardMentionMint(item);
 
@@ -66,23 +64,24 @@ export function BoardCardItem({ item, content, isSelected, toolbarSlot, isExpand
                isSelected={isSelected}
                toolbarSlot={toolbarSlot}
                onCommit={onCommit}
-               isExpanded={isExpanded}
-               onExpandedChange={onExpandedChange}
-               render={(live, isEditing, expanded) => (
-                  <InteractiveCard card={live as CardData} isEditing={isEditing} isExpanded={expanded} onMentionClick={handleMentionClick} onCollapse={() => onExpandedChange(false)} />
+               render={(live, isEditing) => (
+                  <InteractiveCard card={live as CardData} isEditing={isEditing} onMentionClick={handleMentionClick} />
                )}
                // Image cards have no back, so they get neither control. Others get a view-mode toggle, plus
                // the flip button only in flip mode (in side-by-side both faces show, so flipping is moot).
-               // A challenge card also gets an Expand affordance for its landscape overlay sheet.
-               renderToolbarExtras={(live, expand) => {
+               // A challenge card also gets a Card <-> Expanded toggle; in Expanded mode the flip / view-mode
+               // controls are moot (the landscape sheet shows everything), so only the collapse toggle stays.
+               renderToolbarExtras={(live) => {
                   const card = live as CardData;
                   if (card.cardType === 'IMAGE_CARD') return null;
+                  const isChallenge = card.cardType === 'CHALLENGE_CARD';
+                  const isExpanded = isChallenge && card.expanded === true;
                   const isFlip = (card.viewMode ?? 'FLIP') === 'FLIP';
                   return (
                      <>
-                        {card.cardType === 'CHALLENGE_CARD' && <CardExpandButton isExpanded={expand.isExpanded} onExpandedChange={expand.onExpandedChange} />}
-                        <CardViewModeButton cardId={card.id} viewMode={card.viewMode} />
-                        {isFlip && <CardFlipButton cardId={card.id} />}
+                        {isChallenge && <CardExpandButton cardId={card.id} isExpanded={isExpanded} />}
+                        {!isExpanded && <CardViewModeButton cardId={card.id} viewMode={card.viewMode} />}
+                        {!isExpanded && isFlip && <CardFlipButton cardId={card.id} />}
                      </>
                   );
                }}
@@ -93,16 +92,17 @@ export function BoardCardItem({ item, content, isSelected, toolbarSlot, isExpand
 }
 
 /** Resolves and renders a card as its real component, live and interactive (board-embed mode). */
-function InteractiveCard({ card, isEditing, isExpanded, onMentionClick, onCollapse }: { card: CardData; isEditing: boolean; isExpanded: boolean; onMentionClick: (segment: MentionSegment) => void; onCollapse: () => void }) {
+function InteractiveCard({ card, isEditing, onMentionClick }: { card: CardData; isEditing: boolean; onMentionClick: (segment: MentionSegment) => void }) {
    const { t } = useTranslation();
    const Component = resolveCardComponent(card.cardType, card.details.game);
    if (!Component) return <EmbeddedFallback label={t('BoardView.embeddedUnavailable')} />;
    // `resolveCardComponent` returns one of the stable module-level organisms, so the
    // static-components rule is a false positive here (same as CardRenderer / the snapshot below).
    // Side-by-side lays the faces out horizontally (the default row); the box width-fits to suit.
-   // Only the Challenge Card reads `onMentionClick` / `isExpanded` / `onCollapse`; every other card ignores them.
+   // Only the Challenge Card reads `onMentionClick` / `isExpanded` (the latter from `card.expanded`);
+   // every other card ignores them.
    // eslint-disable-next-line react-hooks/static-components
-   return <Component card={card} isBoardEmbed isEditing={isEditing} isExpanded={isExpanded} onMentionClick={onMentionClick} onCollapse={onCollapse} />;
+   return <Component card={card} isBoardEmbed isEditing={isEditing} isExpanded={card.expanded === true} onMentionClick={onMentionClick} />;
 }
 
 /** Toggles the embed's card between flip and side-by-side via the host store; persists into `content.data`. */
@@ -127,22 +127,28 @@ function CardViewModeButton({ cardId, viewMode }: { cardId: string; viewMode?: C
    );
 }
 
-/** Toggles the challenge card's expanded overlay sheet (board-view `expandedItemId`, ephemeral - not persisted). */
-function CardExpandButton({ isExpanded, onExpandedChange }: { isExpanded: boolean; onExpandedChange: (expanded: boolean) => void }) {
+/**
+ * Toggles the challenge card's board display mode between Card and Expanded via the host store; the new
+ * `expanded` flag syncs into `content.data` and persists (survives reload / export). Maximize2 expands,
+ * Minimize2 collapses - mirroring how the flip / view-mode controls toggle a card's presentation.
+ */
+function CardExpandButton({ cardId, isExpanded }: { cardId: string; isExpanded: boolean }) {
    const { t } = useTranslation();
+   const { setCardExpanded } = useCharacterActions();
+   const label = isExpanded ? t('BoardView.collapseEmbed') : t('BoardView.expandEmbed');
    return (
       <button
          type="button"
-         title={t('BoardView.expandEmbed')}
-         aria-label={t('BoardView.expandEmbed')}
+         title={label}
+         aria-label={label}
          onPointerDown={(event) => event.stopPropagation()}
-         onClick={() => onExpandedChange(!isExpanded)}
+         onClick={() => setCardExpanded(cardId, !isExpanded)}
          className={cn(
             'flex cursor-pointer items-center justify-center rounded p-1',
             isExpanded ? 'bg-muted text-primary' : 'text-popover-foreground hover:bg-muted',
          )}
       >
-         <Maximize2 className="h-4 w-4" />
+         {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
       </button>
    );
 }

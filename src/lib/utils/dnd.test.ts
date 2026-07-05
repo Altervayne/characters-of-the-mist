@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { customCollisionDetection } from './dnd';
+import { customCollisionDetection, mapItemToStorableInfo, sheetSectionForItemType } from './dnd';
+import type { Card } from '@/lib/types/character';
 
 /*
  * Tests for the drawer-item branch of customCollisionDetection. The in-drawer MOVE
@@ -162,5 +163,16 @@ describe('customCollisionDetection, saved character (FULL_CHARACTER_SHEET) reord
          }),
       );
       expect(result).toHaveLength(0);
+   });
+});
+
+describe('mapItemToStorableInfo / sheetSectionForItemType - Challenge Card', () => {
+   it('maps a challenge card to CHALLENGE_CARD, carrying its own (LEGENDS) game', () => {
+      const challenge = { cardType: 'CHALLENGE_CARD', details: { game: 'LEGENDS' } } as unknown as Card;
+      expect(mapItemToStorableInfo(challenge)).toEqual(['CHALLENGE_CARD', 'LEGENDS']);
+   });
+
+   it('sections a challenge card under cards, alongside the other card types', () => {
+      expect(sheetSectionForItemType('CHALLENGE_CARD')).toBe('cards');
    });
 });

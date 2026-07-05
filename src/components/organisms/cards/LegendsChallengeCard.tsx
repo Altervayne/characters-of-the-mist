@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -54,7 +54,7 @@ const CARD_TYPE_CLASS = 'card-type-challenge';
 
 export const LegendsChallengeCard = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
-      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick, isExpanded = false, onCollapse }, ref) => {
+      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick, isExpanded = false }, ref) => {
          const { t } = useTranslation();
          const actions = useCharacterActions();
          const storeInstance = useActiveCharacterInstance();
@@ -76,6 +76,14 @@ export const LegendsChallengeCard = React.memo(
          const [localFlavor, setLocalFlavor] = useInputDebouncer(
             details.flavor,
             (value) => actions.updateCardDetails(card.id, { flavor: value }),
+         );
+
+         // Name (`card.title`). Same above-the-branch, unmount-safe buffer as flavor - one hook, so
+         // toggling edit or collapsing the sheet never remounts the field and drops a pending edit. Only
+         // the expanded sheet edits the name inline; the small card keeps it dialog-only.
+         const [localTitle, setLocalTitle] = useInputDebouncer(
+            card.title,
+            (value) => actions.updateCardTitle(card.id, value),
          );
 
          // Limits / statuses / tags (back) list mutations. Each edit re-derives the full next list and
@@ -127,13 +135,12 @@ export const LegendsChallengeCard = React.memo(
          };
          const removeAbilityById = (id: string) => commitAbilities(removeRowById(liveDetails().abilities, id));
 
-         // The expanded sheet's OWN read/edit flag - distinct from the small card's `isEditing` and
-         // defaulting to READ, so opening the overlay to read a threat aloud never inherits a stray
-         // pencil. Kept above the flip/expanded branches so it never remounts a field mid-edit, and
-         // reset to read whenever the sheet closes so the next open starts clean.
-         const [expandedIsEditing, setExpandedIsEditing] = useState(false);
-         // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the sheet's edit flag once it closes
-         useEffect(() => { if (!isExpanded) setExpandedIsEditing(false); }, [isExpanded]);
+         // The challenge level (star rating), committed immediately on click - discrete, like the row tier
+         // steppers, no debounce. Reads live details so it can't stomp a sibling field, and clamps 0-10.
+         const commitLevel = (level: number) => {
+            const next = Math.max(0, Math.min(10, level));
+            actions.updateCardDetails(card.id, { ...liveDetails(), challengeLevel: next });
+         };
 
          // A tapped mention applies to the active character: a status create-or-RAISES (bubble-up, no
          // duplicate); a tag de-dupes by name. Only wired on the interactive sheet card (see below).
@@ -336,57 +343,62 @@ export const LegendsChallengeCard = React.memo(
             </Card>
          );
 
-         return (
-            <>
-               <CardFlipWrapper
+         // Expanded is an IN-PLACE board display mode: the board item box is sized to the landscape
+         // footprint (see BoardItemBox) and this card renders the sheet directly in place of the flip
+         // card - no overlay, no scrim. The sheet renders from inside this card's per-embed store subtree,
+         // so it shares the SAME store instance the board tile already has (one store per item, no
+         // split-brain writes) and reuses this card's own flavor buffer + commit closures (one set of
+         // hooks, two consumers). Read vs. edit rides the same `isEditing` the board item's toolbar edit
+         // toggle already drives - the sheet owns no private pencil. Board embed only.
+         if (isExpanded) {
+            return (
+               <ExpandedChallengeSheet
                   ref={ref}
-                  effectiveViewMode={effectiveViewMode}
-                  isDrawerPreview={isDrawerPreview ?? false}
-                  isBoardEmbed={isBoardEmbed}
-                  isSnapshot={isSnapshot}
-                  useVerticalStack={useVerticalStack}
-                  card={card}
-                  isHovered={isHovered}
-                  hoverHandlers={hoverHandlers}
+                  details={details}
+                  name={name}
+                  stars={stars}
+                  url={url}
                   isEditing={isEditing}
-                  dragAttributes={dragAttributes}
-                  dragListeners={dragListeners}
-                  cardTheme={CARD_TYPE_CLASS}
-                  onExport={onExport}
-                  onCycleViewMode={handleCycleViewMode}
-                  onFlip={() => actions.flipCard(card.id)}
-                  onDelete={() => actions.deleteCard(card.id)}
-                  // Editing opens the dedicated Challenge editor (routed by the sheet on cardType).
-                  onEditCard={onEditCard}
-                  cardFront={CardFront}
-                  cardBack={CardBack}
+                  localFlavor={localFlavor}
+                  setLocalFlavor={setLocalFlavor}
+                  localTitle={localTitle}
+                  setLocalTitle={setLocalTitle}
+                  commitLevel={commitLevel}
+                  limitOps={limitOps}
+                  statusOps={statusOps}
+                  tagOps={tagOps}
+                  commitAbilityById={commitAbilityById}
+                  addAbility={addAbility}
+                  removeAbilityById={removeAbilityById}
+                  mentionClick={mentionClick}
                />
+            );
+         }
 
-               {/* The expanded overlay renders from HERE (inside this card's per-embed store subtree), so
-                   it shares the SAME store instance the board tile already has - one store per item, no
-                   split-brain writes. It reuses this card's own flavor buffer + commit closures too, so
-                   there is one set of hooks with two consumers. Board embed only. */}
-               {isExpanded && onCollapse && (
-                  <ExpandedChallengeSheet
-                     details={details}
-                     name={name}
-                     stars={stars}
-                     url={url}
-                     expandedIsEditing={expandedIsEditing}
-                     onToggleEditing={() => setExpandedIsEditing((value) => !value)}
-                     localFlavor={localFlavor}
-                     setLocalFlavor={setLocalFlavor}
-                     limitOps={limitOps}
-                     statusOps={statusOps}
-                     tagOps={tagOps}
-                     commitAbilityById={commitAbilityById}
-                     addAbility={addAbility}
-                     removeAbilityById={removeAbilityById}
-                     mentionClick={mentionClick}
-                     onClose={onCollapse}
-                  />
-               )}
-            </>
+         return (
+            <CardFlipWrapper
+               ref={ref}
+               effectiveViewMode={effectiveViewMode}
+               isDrawerPreview={isDrawerPreview ?? false}
+               isBoardEmbed={isBoardEmbed}
+               isSnapshot={isSnapshot}
+               useVerticalStack={useVerticalStack}
+               card={card}
+               isHovered={isHovered}
+               hoverHandlers={hoverHandlers}
+               isEditing={isEditing}
+               dragAttributes={dragAttributes}
+               dragListeners={dragListeners}
+               cardTheme={CARD_TYPE_CLASS}
+               onExport={onExport}
+               onCycleViewMode={handleCycleViewMode}
+               onFlip={() => actions.flipCard(card.id)}
+               onDelete={() => actions.deleteCard(card.id)}
+               // Editing opens the dedicated Challenge editor (routed by the sheet on cardType).
+               onEditCard={onEditCard}
+               cardFront={CardFront}
+               cardBack={CardBack}
+            />
          );
       },
    ),

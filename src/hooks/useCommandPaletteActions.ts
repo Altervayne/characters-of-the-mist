@@ -64,7 +64,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView, toggleDiceTray } = useAppSettingsActions();
-   const { setThemesOpen } = useAppGeneralStateActions();
+   const { setThemesOpen, requestBoardAction } = useAppGeneralStateActions();
    const { setTheme: setMode } = useTheme();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
    const { createBoardTab, closeActiveTab, setActiveTab } = useTabManagerActions();
@@ -199,6 +199,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       ] : []),
       // A challenge carries its own game, so it's creatable on any character tab (not gated on the game).
       { id: 'createChallenge', scope: 'character', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new'], icon: Skull, group: t('CommandPalette.groups.creation'), action: onCreateChallenge },
+      // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
+      // active canvas consumes this request since it owns the drop point + selection/expand state.
+      { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },
    ];
 
    // A character tab gets everything; a board tab and the menu get only the global commands.

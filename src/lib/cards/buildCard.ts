@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Utils Imports --
-import { emptyCharacterCardDetails } from '@/lib/utils/character';
+import { emptyCharacterCardDetails, emptyLegendsChallengeDetails } from '@/lib/utils/character';
 
 // -- Type Imports --
 import type {
@@ -48,6 +48,11 @@ export function buildCard(game: GameSystem, options: CreateCardOptions, characte
 
    if (options.cardType === 'CHARACTER_CARD') {
       return { ...base, cardType: 'CHARACTER_CARD', title: characterCardTitle(game), details: emptyCharacterCardDetails(game, characterName ?? '') };
+   }
+
+   // A challenge carries its own game (LEGENDS), regardless of `game` - same as the sheet's addChallengeCard.
+   if (options.cardType === 'CHALLENGE_CARD') {
+      return { ...base, cardType: 'CHALLENGE_CARD', title: '', details: emptyLegendsChallengeDetails() };
    }
 
    if (game === 'LEGENDS') {

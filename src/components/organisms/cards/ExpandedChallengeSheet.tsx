@@ -1,13 +1,13 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { forwardRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Pencil, Skull, Star, Swords, Tags, X } from 'lucide-react';
+import { Skull, Star, Swords, Tags } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -25,12 +25,12 @@ import type { BlandTag, ChallengeAbility, ChallengeStatus, LegendsChallengeDetai
 import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
- * The expanded Challenge view: a landscape SHEET (not a card face) shown as a viewport-anchored overlay
- * over a themed scrim, board-only. It reuses the small card's row/pill controls and the SAME commit
- * closures + debounced flavor state (passed down, so there is one set of hooks with two consumers), and
- * carries its OWN read/edit flag (`expandedIsEditing`, defaulting to read) - distinct from the small
- * card's `isEditing`, so opening the sheet to read never inherits a stray pencil. Close is the X / Escape
- * only (never a backdrop click), so an in-progress edit is never lost to a stray dismiss.
+ * The expanded Challenge view: a landscape SHEET (not a card face) rendered IN PLACE inside the board
+ * item box (Card <-> Expanded is a persisted display mode, toggled from the board toolbar - there is no
+ * overlay, scrim, or close button here). It reuses the small card's row/pill controls and the SAME
+ * commit closures + debounced flavor state (passed down, so there is one set of hooks with two
+ * consumers). Read vs. edit is driven by the SAME `isEditing` the board item's own toolbar edit toggle
+ * provides - the sheet reads that flag to switch read<->edit, it does not own a private pencil.
  */
 
 const CARD_TYPE_CLASS = 'card-type-challenge';
@@ -41,12 +41,16 @@ interface ExpandedChallengeSheetProps {
    stars: number;
    /** The card art object URL (already resolved by the host card, so the sheet shares the same load). */
    url: string | null;
-   /** The sheet's own read/edit toggle + its setter (state owned by the host card, above the flip branch). */
-   expandedIsEditing: boolean;
-   onToggleEditing: () => void;
+   /** Read vs. edit, driven by the board item's own toolbar edit toggle (the sheet reads it, never toggles it). */
+   isEditing: boolean;
    /** The debounced flavor buffer + setter, shared with the small card (one hook, two consumers). */
    localFlavor: string;
    setLocalFlavor: (value: string) => void;
+   /** The debounced name buffer + setter (edits `card.title`); unmount-safe, like the flavor buffer. */
+   localTitle: string;
+   setLocalTitle: (value: string) => void;
+   /** Commits the challenge level (star rating) immediately on click; clamped 0-10 by the host. */
+   commitLevel: (level: number) => void;
    /** The single-field list ops (limits / statuses / tags), read-live-then-patch-by-id (see RowListOps),
     *  identical to the small card's; no isBoardEmbed branch. */
    limitOps: RowListOps<ChallengeStatus>;
@@ -61,7 +65,6 @@ interface ExpandedChallengeSheetProps {
    removeAbilityById: (abilityId: string) => void;
    /** Tapped-mention handler (routes to the board on an embed); undefined leaves pills inert. */
    mentionClick: ((segment: MentionSegment) => void) | undefined;
-   onClose: () => void;
 }
 
 /** A section label inside the sheet body (card-token styled, one type-step up from the small card). */
@@ -79,15 +82,45 @@ function EmptyState({ label }: { label: string }) {
    return <p className="text-xs text-card-paper-fg/50">{`[${label}]`}</p>;
 }
 
-export function ExpandedChallengeSheet({
+/**
+ * The edit-mode challenge level: ten clickable stars filled up to `level`. Clicking star N sets the
+ * level to N; clicking the star that already equals the level steps it down to N-1, so 0 is reachable.
+ * Read mode renders the filled stars directly (no empty slots) - this is the edit affordance only.
+ */
+function StarRating({ level, onChange }: { level: number; onChange: (level: number) => void }) {
+   const { t } = useTranslation();
+   return (
+      <div className="flex shrink-0 items-center gap-0.5 text-card-accent">
+         {Array.from({ length: 10 }).map((_, index) => {
+            const value = index + 1;
+            const filled = value <= level;
+            return (
+               <button
+                  key={value}
+                  type="button"
+                  aria-label={t('Cards.challenge.setLevel', { level: value })}
+                  onClick={() => onChange(value === level ? value - 1 : value)}
+                  className="cursor-pointer rounded-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-card-accent/50"
+               >
+                  <Star className={cn('h-5 w-5', filled ? 'fill-current' : 'fill-none opacity-40')} />
+               </button>
+            );
+         })}
+      </div>
+   );
+}
+
+export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallengeSheetProps>(function ExpandedChallengeSheet({
    details,
    name,
    stars,
    url,
-   expandedIsEditing,
-   onToggleEditing,
+   isEditing,
    localFlavor,
    setLocalFlavor,
+   localTitle,
+   setLocalTitle,
+   commitLevel,
    limitOps,
    statusOps,
    tagOps,
@@ -95,217 +128,185 @@ export function ExpandedChallengeSheet({
    addAbility,
    removeAbilityById,
    mentionClick,
-   onClose,
-}: ExpandedChallengeSheetProps) {
+}, ref) {
    const { t } = useTranslation();
 
-   // Escape closes the sheet (never a backdrop click, so an in-progress edit can't be lost to a stray
-   // dismiss). Captured at the window so it fires regardless of focus inside the sheet's own fields.
-   useEffect(() => {
-      const onKeyDown = (event: KeyboardEvent) => {
-         if (event.key === 'Escape') {
-            event.stopPropagation();
-            onClose();
-         }
-      };
-      window.addEventListener('keydown', onKeyDown, true);
-      return () => window.removeEventListener('keydown', onKeyDown, true);
-   }, [onClose]);
-
-   return createPortal(
-      // The scrim: an app-theme token dim (never black), above the canvas and immune to board zoom. It
-      // is inert to a click-through-close on purpose; only the X / Escape dismiss.
-      <div className="fixed inset-0 z-[80] flex items-center justify-center bg-foreground/40 backdrop-blur-sm">
-         <div className={cn('flex w-225 h-140 flex-col overflow-hidden rounded-xl border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-2xl', CARD_TYPE_CLASS)}>
-            {/* Top block: image matte + title/stars + types + flavor, grouped by spacing (no dividers). */}
-            <div className="relative flex shrink-0 gap-4 p-4">
-               {/* Minimal-crop art on a card-token matte: object-contain so a tall portrait survives the wide ratio. */}
-               <div className="flex h-40 w-64 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-card-popover-bg/60">
-                  {url ? (
-                     <img src={url} alt={name} title={name} className="h-full w-full object-contain" />
-                  ) : (
-                     <Skull className="h-14 w-14 text-card-paper-fg/30" />
-                  )}
-               </div>
-
-               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <div className="flex items-start justify-between gap-3">
-                     <h2 className="min-w-0 text-3xl font-bold leading-tight">{name}</h2>
-                     <div className="flex shrink-0 items-center gap-0.5 pt-1 text-card-accent">
-                        {Array.from({ length: stars }).map((_, index) => (
-                           <Star key={index} className="h-5 w-5 fill-current" />
-                        ))}
-                     </div>
-                  </div>
-
-                  {details.types.length > 0 && (
-                     <p className="text-sm italic text-card-paper-fg/70">{details.types.join(' · ')}</p>
-                  )}
-
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                     {expandedIsEditing ? (
-                        <div className="flex flex-col gap-1">
-                           <Textarea
-                              value={localFlavor}
-                              onChange={(event) => setLocalFlavor(event.target.value)}
-                              placeholder={t('Cards.challenge.flavorPlaceholder')}
-                              className="min-h-16 resize-none border-0 bg-card-popover-bg/40 text-sm text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
-                           />
-                           {localFlavor.includes('{') && (
-                              <MentionMarkdown text={localFlavor} className="rounded bg-card-popover-bg/40 px-2 py-1 text-xs leading-relaxed" />
-                           )}
-                        </div>
-                     ) : (
-                        <MentionMarkdown text={details.flavor} onMentionClick={mentionClick} className="text-sm" />
-                     )}
-                  </div>
-               </div>
-
-               {/* Sheet chrome: the edit pencil + close X, top-right of the sheet itself. */}
-               <div className="absolute right-3 top-3 flex items-center gap-1">
-                  <button
-                     type="button"
-                     title={t('Cards.challenge.expanded.editToggle')}
-                     aria-label={t('Cards.challenge.expanded.editToggle')}
-                     onClick={onToggleEditing}
-                     className={cn(
-                        'flex h-8 w-8 items-center justify-center rounded cursor-pointer',
-                        expandedIsEditing ? 'bg-card-accent/20 text-card-accent' : 'text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg',
-                     )}
-                  >
-                     <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                     type="button"
-                     title={t('Common.close')}
-                     aria-label={t('Common.close')}
-                     onClick={onClose}
-                     className="flex h-8 w-8 items-center justify-center rounded text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg cursor-pointer"
-                  >
-                     <X className="h-4 w-4" />
-                  </button>
-               </div>
+   return (
+      <div ref={ref} className={cn('flex h-full w-full flex-col overflow-hidden rounded-xl border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg', CARD_TYPE_CLASS)}>
+         {/* Top block, a VERTICAL stack (image band -> title + stars row -> types -> flavor), grouped
+             by spacing (no dividers). */}
+         <div className="flex shrink-0 flex-col gap-1.5 p-4">
+            {/* Minimal-crop art on a full-width card-token matte: object-contain so a tall portrait survives the wide ratio. */}
+            <div className="flex h-40 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-card-popover-bg/60">
+               {url ? (
+                  <img src={url} alt={name} title={name} className="h-full w-full object-contain" />
+               ) : (
+                  <Skull className="h-14 w-14 text-card-paper-fg/30" />
+               )}
             </div>
 
-            {/* Horizontal divider, then the two-column body: the middle column is a real grid cell (w-px),
-                not a border, so each column scrolls independently without breaking the rule. */}
-            <div className="border-t border-card-accent/30" />
-            <div className="grid min-h-0 flex-1 grid-cols-[1fr_auto_2fr]">
-               {/* LEFT third: Limits + Tags & Statuses, its own scroll well. */}
-               <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
-                  <section>
-                     <SheetSectionHeader title={t('Cards.challenge.limits')} icon={Skull} />
-                     {expandedIsEditing ? (
+            {/* Stars sit immediately after the name (wrapping below only when the name runs long). The
+                expanded sheet is the full edit surface, so name + level are both editable here. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+               {isEditing ? (
+                  <Input
+                     value={localTitle}
+                     onChange={(event) => setLocalTitle(event.target.value)}
+                     placeholder={t('Cards.challenge.namePlaceholder')}
+                     className="h-auto min-w-0 flex-1 border-0 bg-card-popover-bg/40 px-2 py-1 text-3xl font-bold leading-tight text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
+                  />
+               ) : (
+                  <h2 className="text-3xl font-bold leading-tight">{name}</h2>
+               )}
+               {isEditing ? (
+                  <StarRating level={stars} onChange={commitLevel} />
+               ) : (
+                  <div className="flex shrink-0 items-center gap-0.5 text-card-accent">
+                     {Array.from({ length: stars }).map((_, index) => (
+                        <Star key={index} className="h-5 w-5 fill-current" />
+                     ))}
+                  </div>
+               )}
+            </div>
+
+            {details.types.length > 0 && (
+               <p className="text-sm italic text-card-paper-fg/70">{details.types.join(' · ')}</p>
+            )}
+
+            {isEditing ? (
+               <div className="flex flex-col gap-1">
+                  <Textarea
+                     value={localFlavor}
+                     onChange={(event) => setLocalFlavor(event.target.value)}
+                     placeholder={t('Cards.challenge.flavorPlaceholder')}
+                     className="min-h-16 resize-none border-0 bg-card-popover-bg/40 text-sm text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
+                  />
+                  {localFlavor.includes('{') && (
+                     <MentionMarkdown text={localFlavor} className="rounded bg-card-popover-bg/40 px-2 py-1 text-xs leading-relaxed" />
+                  )}
+               </div>
+            ) : (
+               <MentionMarkdown text={details.flavor} onMentionClick={mentionClick} className="text-sm" />
+            )}
+         </div>
+
+         {/* Horizontal divider, then the two-column body: the middle column is a real grid cell (w-px),
+             not a border, so each column scrolls independently without breaking the rule. */}
+         <div className="border-t border-card-accent/30" />
+         <div className="grid min-h-0 flex-1 grid-cols-[1fr_auto_2fr]">
+            {/* LEFT third: Limits + Tags & Statuses, its own scroll well. */}
+            <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
+               <section>
+                  <SheetSectionHeader title={t('Cards.challenge.limits')} icon={Skull} />
+                  {isEditing ? (
+                     <div className="flex flex-col gap-1">
+                        {details.limits.map((limit) => (
+                           <StatusEditRow
+                              key={limit.id}
+                              status={limit}
+                              namePlaceholder={t('Cards.challenge.limitNamePlaceholder')}
+                              onCommitName={(name) => limitOps.commitById(limit.id, { name })}
+                              onCommitTier={(tier) => limitOps.commitById(limit.id, { tier })}
+                              onRemove={() => limitOps.removeById(limit.id)}
+                              removeLabel={t('Cards.challenge.remove')}
+                           />
+                        ))}
+                        <AddRowButton label={t('Cards.challenge.addLimit')} onClick={limitOps.add} />
+                     </div>
+                  ) : (
+                     <div className="flex flex-wrap gap-1">
+                        {details.limits.length > 0
+                           ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} />)
+                           : <EmptyState label={t('Cards.challenge.noLimits')} />}
+                     </div>
+                  )}
+               </section>
+
+               <section className="mt-4">
+                  <SheetSectionHeader title={t('Cards.challenge.tagsAndStatuses')} icon={Tags} />
+                  {isEditing ? (
+                     <div className="flex flex-col gap-2">
                         <div className="flex flex-col gap-1">
-                           {details.limits.map((limit) => (
+                           {details.statuses.map((status) => (
                               <StatusEditRow
-                                 key={limit.id}
-                                 status={limit}
-                                 namePlaceholder={t('Cards.challenge.limitNamePlaceholder')}
-                                 onCommitName={(name) => limitOps.commitById(limit.id, { name })}
-                                 onCommitTier={(tier) => limitOps.commitById(limit.id, { tier })}
-                                 onRemove={() => limitOps.removeById(limit.id)}
+                                 key={status.id}
+                                 status={status}
+                                 namePlaceholder={t('Cards.challenge.statusNamePlaceholder')}
+                                 onCommitName={(name) => statusOps.commitById(status.id, { name })}
+                                 onCommitTier={(tier) => statusOps.commitById(status.id, { tier })}
+                                 onRemove={() => statusOps.removeById(status.id)}
                                  removeLabel={t('Cards.challenge.remove')}
                               />
                            ))}
-                           <AddRowButton label={t('Cards.challenge.addLimit')} onClick={limitOps.add} />
+                           <AddRowButton label={t('Cards.challenge.addStatus')} onClick={statusOps.add} />
                         </div>
-                     ) : (
-                        <div className="flex flex-wrap gap-1">
-                           {details.limits.length > 0
-                              ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} />)
-                              : <EmptyState label={t('Cards.challenge.noLimits')} />}
+                        <div className="flex flex-col gap-1">
+                           {details.tags.map((tag) => (
+                              <TagEditRow
+                                 key={tag.id}
+                                 tag={tag}
+                                 namePlaceholder={t('Cards.challenge.tagNamePlaceholder')}
+                                 onCommitName={(name) => tagOps.commitById(tag.id, { name })}
+                                 onRemove={() => tagOps.removeById(tag.id)}
+                                 removeLabel={t('Cards.challenge.remove')}
+                              />
+                           ))}
+                           <AddRowButton label={t('Cards.challenge.addTag')} onClick={tagOps.add} />
                         </div>
-                     )}
-                  </section>
-
-                  <section className="mt-4">
-                     <SheetSectionHeader title={t('Cards.challenge.tagsAndStatuses')} icon={Tags} />
-                     {expandedIsEditing ? (
-                        <div className="flex flex-col gap-2">
-                           <div className="flex flex-col gap-1">
-                              {details.statuses.map((status) => (
-                                 <StatusEditRow
-                                    key={status.id}
-                                    status={status}
-                                    namePlaceholder={t('Cards.challenge.statusNamePlaceholder')}
-                                    onCommitName={(name) => statusOps.commitById(status.id, { name })}
-                                    onCommitTier={(tier) => statusOps.commitById(status.id, { tier })}
-                                    onRemove={() => statusOps.removeById(status.id)}
-                                    removeLabel={t('Cards.challenge.remove')}
-                                 />
-                              ))}
-                              <AddRowButton label={t('Cards.challenge.addStatus')} onClick={statusOps.add} />
-                           </div>
-                           <div className="flex flex-col gap-1">
-                              {details.tags.map((tag) => (
-                                 <TagEditRow
-                                    key={tag.id}
-                                    tag={tag}
-                                    namePlaceholder={t('Cards.challenge.tagNamePlaceholder')}
-                                    onCommitName={(name) => tagOps.commitById(tag.id, { name })}
-                                    onRemove={() => tagOps.removeById(tag.id)}
-                                    removeLabel={t('Cards.challenge.remove')}
-                                 />
-                              ))}
-                              <AddRowButton label={t('Cards.challenge.addTag')} onClick={tagOps.add} />
-                           </div>
-                        </div>
-                     ) : (
-                        <div className="flex flex-wrap items-center gap-1">
-                           {details.statuses.length > 0
-                              ? details.statuses.map((status) => <StatusPill key={status.id} status={status} />)
-                              : <EmptyState label={t('Cards.challenge.noStatuses')} />}
-                           {details.tags.length > 0
-                              ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
-                              : <EmptyState label={t('Cards.challenge.noTags')} />}
-                        </div>
-                     )}
-                  </section>
-               </div>
-
-               {/* The divider column: a real grid cell, not a border. */}
-               <div className="w-px bg-card-accent/30" />
-
-               {/* RIGHT two-thirds: the full Threats & Consequences, its own scroll well. Edit mode
-                   accordions to the focused ability (see ThreatsEditor); read mode is flat + scannable. */}
-               <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
-                  <SheetSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Swords} />
-                  {expandedIsEditing ? (
-                     <ThreatsEditor abilities={details.abilities} commitAbilityById={commitAbilityById} addAbility={addAbility} removeAbilityById={removeAbilityById} />
-                  ) : details.abilities.length > 0 ? (
-                     <div className="flex flex-col gap-3">
-                        {details.abilities.map((ability) => (
-                           <div key={ability.id} className="space-y-1">
-                              <div className="text-sm leading-snug">
-                                 <ThreatPill tag={ability.tag} />
-                                 {ability.flavor && <>{' '}<MentionMarkdown text={ability.flavor} onMentionClick={mentionClick} className="inline [&_p]:my-0 [&_p]:inline" /></>}
-                              </div>
-                              {ability.consequences.length > 0 && (
-                                 <ul className="list-none space-y-0.5 text-sm">
-                                    {ability.consequences.map((consequence) => (
-                                       <li key={consequence.id} className="flex items-start gap-1.5">
-                                          <span className="mt-1 flex h-3.5 w-3.5 shrink-0 rotate-45 items-center justify-center rounded-[2px] bg-card-header-bg">
-                                             <Skull className="h-2.5 w-2.5 -rotate-45 text-card-header-fg" strokeWidth={2.75} />
-                                          </span>
-                                          <MentionMarkdown text={consequence.text} onMentionClick={mentionClick} className="min-w-0 [&_p]:my-0" />
-                                       </li>
-                                    ))}
-                                 </ul>
-                              )}
-                           </div>
-                        ))}
                      </div>
                   ) : (
-                     <EmptyState label={t('Cards.challenge.noThreats')} />
+                     <div className="flex flex-wrap items-center gap-1">
+                        {details.statuses.length > 0
+                           ? details.statuses.map((status) => <StatusPill key={status.id} status={status} />)
+                           : <EmptyState label={t('Cards.challenge.noStatuses')} />}
+                        {details.tags.length > 0
+                           ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
+                           : <EmptyState label={t('Cards.challenge.noTags')} />}
+                     </div>
                   )}
-               </div>
+               </section>
+            </div>
+
+            {/* The divider column: a real grid cell, not a border. */}
+            <div className="w-px bg-card-accent/30" />
+
+            {/* RIGHT two-thirds: the full Threats & Consequences, its own scroll well. Edit mode
+                accordions to the focused ability (see ThreatsEditor); read mode is flat + scannable. */}
+            <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
+               <SheetSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Swords} />
+               {isEditing ? (
+                  <ThreatsEditor abilities={details.abilities} commitAbilityById={commitAbilityById} addAbility={addAbility} removeAbilityById={removeAbilityById} />
+               ) : details.abilities.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                     {details.abilities.map((ability) => (
+                        <div key={ability.id} className="space-y-1">
+                           <div className="text-sm leading-snug">
+                              <ThreatPill tag={ability.tag} />
+                              {ability.flavor && <>{' '}<MentionMarkdown text={ability.flavor} onMentionClick={mentionClick} className="inline [&_p]:my-0 [&_p]:inline" /></>}
+                           </div>
+                           {ability.consequences.length > 0 && (
+                              <ul className="list-none space-y-0.5 text-sm">
+                                 {ability.consequences.map((consequence) => (
+                                    <li key={consequence.id} className="flex items-start gap-1.5">
+                                       <span className="mt-1 flex h-3.5 w-3.5 shrink-0 rotate-45 items-center justify-center rounded-[2px] bg-card-header-bg">
+                                          <Skull className="h-2.5 w-2.5 -rotate-45 text-card-header-fg" strokeWidth={2.75} />
+                                       </span>
+                                       <MentionMarkdown text={consequence.text} onMentionClick={mentionClick} className="min-w-0 [&_p]:my-0" />
+                                    </li>
+                                 ))}
+                              </ul>
+                           )}
+                        </div>
+                     ))}
+                  </div>
+               ) : (
+                  <EmptyState label={t('Cards.challenge.noThreats')} />
+               )}
             </div>
          </div>
-      </div>,
-      document.body,
+      </div>
    );
-}
+});
 
 /**
  * The edit-mode Threats & Consequences accordion: the focused ability shows its full inputs in a subtle

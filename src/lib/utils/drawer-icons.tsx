@@ -1,4 +1,4 @@
-import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image, LayoutGrid } from 'lucide-react';
+import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image, LayoutGrid, Skull } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
@@ -25,6 +25,8 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
          return WalletCards;
       case 'IMAGE_CARD':
          return Image;
+      case 'CHALLENGE_CARD':
+         return Skull;
       case 'FULL_BOARD':
          return LayoutGrid;
       default:

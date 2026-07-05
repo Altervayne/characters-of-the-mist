@@ -112,6 +112,8 @@ export interface CharacterState {
       reorderCards: (startIndex: number, endIndex: number) => void;
       flipCard: (cardId: string) => void;
       updateCardViewMode: (cardId: string, viewMode: CardViewMode | null) => void;
+      /** Sets a card's board display mode (expanded landscape sheet vs the normal card). */
+      setCardExpanded: (cardId: string, expanded: boolean) => void;
       // Tag Actions
       addTag: (cardId: string, listName: TagListName) => void;
       updateTag: (cardId: string, listName: TagListName, tagId: string, updatedTag: Partial<Tag>) => void;
@@ -558,6 +560,15 @@ export function createCharacterStore() {
                      return updateCardInState(state, cardId, card => ({
                         ...card,
                         viewMode: viewMode,
+                     }));
+                  });
+               },
+               setCardExpanded: (cardId, expanded) => {
+                  set(state => {
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return updateCardInState(state, cardId, card => ({
+                        ...card,
+                        expanded,
                      }));
                   });
                },

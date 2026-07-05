@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { screenDeltaToWorld } from '@/lib/board/boardCoordinates';
 import { MIN_ITEM_SIZE, computeResize, effectiveHeight, fitContentHeight, fitContentWidth, shouldSyncMeasuredHeight, shouldSyncMeasuredSize } from '@/lib/board/boardResize';
 import { COLLAPSED_BAR_HEIGHT, COLLAPSED_BAR_WIDTH } from '@/lib/board/zoneCollapse';
+import { EXPANDED_CARD_SIZE } from '@/lib/board/embedDrawerItem';
+import { isExpandedCardItem } from '@/lib/board/expandedCardItem';
 import { ZONE_TITLE_BAR_HEIGHT } from './items/ZoneItem';
 
 // -- Component Imports --
@@ -94,10 +96,6 @@ interface BoardItemBoxProps {
    resizeMin?: { width: number; height: number };
    /** Stacking band for this box: selection raises it via z-index, NOT a DOM re-order (no remount). */
    zIndex?: number;
-   /** Whether this item's expanded challenge overlay is open (board-view `expandedItemId`, ephemeral). */
-   isExpanded?: boolean;
-   /** Requests this item's expanded overlay open/close. */
-   onExpandedChange?: (id: string, expanded: boolean) => void;
 }
 
 /** A live drag rect during a move/resize gesture (world coords); `null` when idle. */
@@ -129,8 +127,6 @@ export function BoardItemBox({
    backLayer,
    resizeMin,
    zIndex,
-   isExpanded = false,
-   onExpandedChange,
 }: BoardItemBoxProps) {
    // Live resize rect (full rect during a resize); the commit reads from the ref so it
    // never depends on a stale closure. The group move offset is owned by the canvas and
@@ -146,10 +142,14 @@ export function BoardItemBox({
    // (tabs show when unselected too); state-backed like the toolbar slot.
    const [sideSlot, setSideSlot] = useState<HTMLDivElement | null>(null);
 
+   // An expanded challenge card is a FIXED landscape sheet, not the portrait fit-width card: it opts
+   // out of every content-measure so the box uses the exact expanded footprint (see below), bypassing
+   // the ResizeObserver that hugs the card's own width.
+   const isExpandedCard = isExpandedCardItem(item);
    const minHeight = isMinHeight(item.kind);
    const fitContent = isFitContent(item.kind);
-   const fitWidth = isFitWidth(item.kind);
-   const measures = measuresContent(item.kind);
+   const fitWidth = isFitWidth(item.kind) && !isExpandedCard;
+   const measures = measuresContent(item.kind) && !isExpandedCard;
    // A measured kind drives one axis from its content. HEIGHT kinds: the wrapper fills the body and
    // grows with content (min-h-full); the natural height is its height MINUS any flexible fill spacer
    // (a kind that pins a footer marks the spacer with data-board-fill-spacer, so the slack lives in the
@@ -283,8 +283,10 @@ export function BoardItemBox({
          : rect.height;
    // A fit-width card renders at its measured content width exactly (its single/double-face footprint);
    // every other kind keeps its rect width. The synced width feeds the rect-based board systems too.
-   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : fitWidth ? fitContentWidth(rect.width, contentWidth) : rect.width;
-   const boxHeight = isCollapsedZone ? COLLAPSED_BAR_HEIGHT : renderHeight;
+   // An expanded challenge card renders at the fixed landscape footprint on BOTH axes (its stored
+   // portrait width/height are preserved for when it collapses back to a card).
+   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : isExpandedCard ? EXPANDED_CARD_SIZE.width : fitWidth ? fitContentWidth(rect.width, contentWidth) : rect.width;
+   const boxHeight = isCollapsedZone ? COLLAPSED_BAR_HEIGHT : isExpandedCard ? EXPANDED_CARD_SIZE.height : renderHeight;
 
    const body = (
       <BoardItemBody
@@ -293,8 +295,6 @@ export function BoardItemBox({
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
          memberCount={memberCount}
-         isExpanded={isExpanded}
-         onExpandedChange={(expanded) => onExpandedChange?.(item.id, expanded)}
          onContentChange={(content) => onUpdateContent(item.id, content)}
          onCacheLastKnown={onCacheLastKnown}
          onDelete={onDelete}

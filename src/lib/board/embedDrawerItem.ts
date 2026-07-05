@@ -30,11 +30,17 @@ const DEFAULT_TRACKER_SIZE = { width: 220, height: 100 } as const;
 /** Native footprint of a theme / character card (the sheet's `w-62.5 h-150`); the embed renders at this size. */
 export const EMBEDDED_CARD_SIZE = { width: 250, height: 600 } as const;
 
+/**
+ * Fixed landscape footprint of an EXPANDED challenge card (its board display mode). The box uses this
+ * exact size instead of the portrait fit-width, so the expanded sheet gets its wide sheet dimensions.
+ */
+export const EXPANDED_CARD_SIZE = { width: 900, height: 560 } as const;
+
 /** Default footprint of a character reference element. Wide enough that a theme row's type + themebook stay readable; the overview grows the height to fit its rows. */
 export const CHARACTER_ELEMENT_SIZE = { width: 360, height: 132 } as const;
 
 // An IMAGE_CARD is NOT here: it drops as a native image item, not an embedded card.
-const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME']);
+const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME', 'CHALLENGE_CARD']);
 const TRACKER_TYPES = new Set<GeneralItemType>(['STATUS_TRACKER', 'STORY_TAG_TRACKER', 'STORY_THEME_TRACKER']);
 
 /** The native footprint for an embedded tracker, by its `trackerType`. */

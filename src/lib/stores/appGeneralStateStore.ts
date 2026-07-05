@@ -45,6 +45,10 @@ interface AppGeneralState {
    // Mobile Drawer
    mobileDrawerSnapPoint: MobileDrawerSnapPoint;
 
+   // A one-shot request the active board consumes and clears (e.g. a palette command minting an item
+   // with no cursor point to drop at). Null when nothing is pending.
+   pendingBoardAction: 'createChallenge' | null;
+
    actions: {
       // Undo/Redo Context
       setLastModifiedStore: (storeName: StoreName) => void;
@@ -84,6 +88,10 @@ interface AppGeneralState {
 
       // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint: MobileDrawerSnapPoint) => void;
+
+      // Pending board action
+      requestBoardAction: (action: 'createChallenge') => void;
+      clearBoardAction: () => void;
    };
 }
 
@@ -124,6 +132,9 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    // Mobile Drawer
    mobileDrawerSnapPoint: 'closed',
 
+   // Pending board action
+   pendingBoardAction: null,
+
    actions: {
       // Undo/Redo Context
       setLastModifiedStore: (storeName) => set({ lastModifiedStore: storeName }),
@@ -163,6 +174,10 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
 
       // Mobile Drawer
       setMobileDrawerSnapPoint: (snapPoint) => set({ mobileDrawerSnapPoint: snapPoint }),
+
+      // Pending board action
+      requestBoardAction: (action) => set({ pendingBoardAction: action }),
+      clearBoardAction: () => set({ pendingBoardAction: null }),
    },
 }));
 

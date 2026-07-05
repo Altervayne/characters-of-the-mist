@@ -24,6 +24,7 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
          case 'GROUP_THEME': return ['GROUP_THEME', game];
          case 'LOADOUT_THEME': return ['LOADOUT_THEME', game];
          case 'IMAGE_CARD': return ['IMAGE_CARD', game];
+         case 'CHALLENGE_CARD': return ['CHALLENGE_CARD', game];
          default: return null;
       }
    }
@@ -55,6 +56,7 @@ export function sheetSectionForItemType(type: GeneralItemType): 'cards' | 'track
       case 'GROUP_THEME':
       case 'LOADOUT_THEME':
       case 'IMAGE_CARD':
+      case 'CHALLENGE_CARD':
          return 'cards';
       case 'STATUS_TRACKER':
       case 'STORY_TAG_TRACKER':

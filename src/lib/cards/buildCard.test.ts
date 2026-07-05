@@ -61,4 +61,11 @@ describe('buildCard', () => {
    it('returns null for a game/type combo with no card (never offered by the dialog)', () => {
       expect(buildCard('LEGENDS', themeOptions({ cardType: 'LOADOUT_THEME' }))).toBeNull();
    });
+
+   it('builds a fresh Challenge Card regardless of the requested game', () => {
+      const challenge = buildCard('CITY_OF_MIST', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 })!;
+      expect(challenge.cardType).toBe('CHALLENGE_CARD');
+      expect(challenge.details.game).toBe('LEGENDS');
+      expect((challenge.details as { challengeLevel: number }).challengeLevel).toBe(1);
+   });
 });

@@ -280,7 +280,13 @@ export interface Card {
    order: number;
    isFlipped: boolean;
    viewMode?: CardViewMode | null;
-   cardType: GeneralItemType; 
+   /**
+    * Board display mode, orthogonal to `viewMode`: when set the board item renders the card's
+    * expanded landscape sheet in place of the flip card (challenge card only). Absent reads as
+    * the normal card display, so existing boards default correctly.
+    */
+   expanded?: boolean;
+   cardType: GeneralItemType;
    details: CardDetails;
 }
 

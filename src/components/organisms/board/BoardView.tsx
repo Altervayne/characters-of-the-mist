@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, Square, StickyNote, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, Skull, Square, StickyNote, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
+import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- React Imports --
 import type { CSSProperties } from 'react';
@@ -177,9 +178,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
    // Selection is ephemeral: a local set, never persisted or routed through commands.
    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-   // The board item whose expanded challenge overlay is open (at most one). Ephemeral view state - never
-   // in the store/`content`, never undoable - so it lives here beside the selection.
-   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
    const [isPanning, setIsPanning] = useState(false);
    // A Shift+background marquee (null when idle); a plain drag pans instead. Corners are in
    // client coords; the clip origin is captured at start so the overlay + world math never
@@ -197,11 +195,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          else next.add(id);
          return next;
       });
-   }, []);
-
-   /** Opens/closes an item's expanded overlay; at most one is open, so opening one replaces any other. */
-   const handleExpandedChange = useCallback((id: string, expanded: boolean) => {
-      setExpandedItemId(expanded ? id : (current) => (current === id ? null : current));
    }, []);
 
    // Cross-surface drop target for dragging a drawer card/tracker onto the canvas. Only
@@ -335,7 +328,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const handleDelete = useCallback(
       (id: string) => {
          void actions.deleteItems([id]);
-         setExpandedItemId((current) => (current === id ? null : current));
          setSelectedIds((prev) => {
             if (!prev.has(id)) return prev;
             const next = new Set(prev);
@@ -350,7 +342,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const handleDeleteSelection = useCallback(() => {
       if (selectedIds.size === 0) return;
       void actions.deleteItems([...selectedIds]);
-      setExpandedItemId((current) => (current != null && selectedIds.has(current) ? null : current));
       setSelectedIds(new Set());
    }, [actions, selectedIds]);
 
@@ -597,6 +588,38 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedIds(new Set([id]));
    };
 
+   /**
+    * Mints a fresh Challenge Card at `worldCenter`: a board-native COPY (no drawer source, no creation
+    * form - a challenge has none of the theme wizardry), selected AND dropped straight into its Expanded
+    * display mode so a GM goes from "wants a threat" to typing its name with no extra click. Expanded is
+    * a persisted card field, so the item keeps its stored portrait footprint for when it collapses back.
+    */
+   const createChallengeAt = (worldCenter: Point) => {
+      const card = buildCard('LEGENDS', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 });
+      if (!card) return;
+      const zValues = sortedItems.map((item) => item.z);
+      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+      const { width, height } = EMBEDDED_CARD_SIZE;
+      const id = cuid();
+      const placement = { id, x: worldCenter.x - width / 2, y: worldCenter.y - height / 2, width, height };
+      const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+      void actions.addItem({ ...placement, kind: 'card', z, zoneId, content: { kind: 'card', mode: 'copy', data: { ...card, expanded: true } } });
+      setSelectedIds(new Set([id]));
+   };
+
+   // The command palette has no cursor point to drop at, so it requests a creation through this
+   // one-shot store signal instead; the active board consumes it at the current view's center and
+   // clears it. Runs only while this canvas is mounted, so it can't fire on a background board.
+   const pendingBoardAction = useAppGeneralStateStore((state) => state.pendingBoardAction);
+   const { clearBoardAction } = useAppGeneralStateActions();
+   useEffect(() => {
+      if (pendingBoardAction === 'createChallenge') {
+         createChallengeAt(viewCenter);
+         clearBoardAction();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- createChallengeAt/viewCenter change every render; only the action id should re-trigger this.
+   }, [pendingBoardAction, clearBoardAction]);
+
    /** Palette add: drop the new item centered in the current view (the radial uses the cursor point). */
    const handleAddItem = (kind: CreatableKind) => {
       const el = clipRef.current;
@@ -695,8 +718,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onDelete={handleDelete}
             onConnectStart={handleConnectStart}
             backLayer={backLayer}
-            isExpanded={item.id === expandedItemId}
-            onExpandedChange={handleExpandedChange}
          />
       );
    };
@@ -745,6 +766,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                           onSelect: () => setPendingCard({ game, world: radial.world, screen: radial.screen }),
                        };
                     }),
+                 },
+                 {
+                    // A peer leaf, not nested under a game: a challenge is always LEGENDS-flavored (no
+                    // theme wizardry to configure), so it drops immediately - no creation popover.
+                    id: 'challenge',
+                    icon: <Skull className="h-5 w-5" />,
+                    label: t('BoardView.addChallenge'),
+                    onSelect: () => createChallengeAt(radial.world),
                  },
               ],
            },

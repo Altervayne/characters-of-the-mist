@@ -120,6 +120,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
          textType = "Portrait"
          break;
 
+      case "CHALLENGE_CARD":
+         textType = "Challenge-Card"
+         break;
+
       case "CUSTOM_THEME":
          textType = "Theme"
          break;

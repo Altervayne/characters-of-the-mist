@@ -54,6 +54,18 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(embeddedSpecForDrawerItem(makeDrawerItem('FOLDER', {} as DrawerItemContent))).toBeNull();
    });
 
+   it('embeds a CHALLENGE_CARD as a card copy, sized to the native card footprint (not null)', () => {
+      const source = makeDrawerItem(
+         'CHALLENGE_CARD',
+         { cardType: 'CHALLENGE_CARD', details: { game: 'LEGENDS', challengeLevel: 1 } } as unknown as DrawerItemContent,
+      );
+
+      const spec = embeddedSpecForDrawerItem(source);
+      expect(spec).not.toBeNull();
+      expect(spec).toMatchObject({ kind: 'card', width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
+      expect(spec!.content).toMatchObject({ kind: 'card', mode: 'copy', sourceDrawerItemId: 'item-1' });
+   });
+
    it('drops a saved character sheet as a read-only character REFERENCE (no copy, records source + character ids)', () => {
       // The content is the Character; its id keys the open-tab lookup, the drawer id is the saved source.
       const spec = embeddedSpecForDrawerItem(makeDrawerItem('FULL_CHARACTER_SHEET', { id: 'char-1', name: 'Aria' } as unknown as DrawerItemContent));
