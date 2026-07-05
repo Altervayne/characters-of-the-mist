@@ -19,8 +19,8 @@ const challengeDetails = (): LegendsChallengeDetails => ({
    flavor: 'A snarling pack circles the camp.',
    limits: [{ id: 'l1', name: 'Burn', tier: 4 }],
    statuses: [{ id: 's1', name: 'bloodied', tier: 2 }],
-   tags: [{ id: 'tg1', name: 'fast', isActive: false, isScratched: false }],
-   abilities: [{ id: 'a1', tag: 'Lunge', flavor: 'It leaps for the throat.', consequences: ['You are knocked prone.'] }],
+   tags: [{ id: 'tg1', name: 'fast' }],
+   abilities: [{ id: 'a1', tag: 'Lunge', flavor: 'It leaps for the throat.', consequences: [{ id: 'c1', text: 'You are knocked prone.' }] }],
 });
 
 const challengeCard = (title: string): Card => ({

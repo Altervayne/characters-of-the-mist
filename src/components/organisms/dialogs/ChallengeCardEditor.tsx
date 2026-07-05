@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
-import cuid from 'cuid';
 
 // -- Basic UI Imports --
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,8 +32,11 @@ import { storeAsset } from '@/lib/assets/assetRepository';
 // -- Constants --
 import { LEGENDS_CHALLENGE_TYPES } from '@/lib/constants/challengeCard';
 
+// -- Shared Factories --
+import { addRow, newAbility, newConsequence, newStatus, newTag, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
+
 // -- Type Imports --
-import type { Card as CardData, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails, Tag } from '@/lib/types/character';
+import type { BlandTag, Card as CardData, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
 
 /*
  * The GM Challenge Card editor: a dedicated dialog over the full LegendsChallengeDetails (too rich for
@@ -50,10 +52,6 @@ interface ChallengeCardEditorProps {
    card: CardData | null;
    modal?: boolean;
 }
-
-const newStatus = (): ChallengeStatus => ({ id: cuid(), name: '', tier: 1 });
-const newTag = (): Tag => ({ id: cuid(), name: '', isActive: false, isScratched: false });
-const newAbility = (): ChallengeAbility => ({ id: cuid(), tag: '', flavor: '', consequences: [] });
 
 export function ChallengeCardEditor({ isOpen, onOpenChange, card, modal = true }: ChallengeCardEditorProps) {
    const { t } = useTranslation();
@@ -85,7 +83,7 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
    const [flavor, setFlavor] = useState(details.flavor);
    const [limits, setLimits] = useState<ChallengeStatus[]>(details.limits);
    const [statuses, setStatuses] = useState<ChallengeStatus[]>(details.statuses);
-   const [tags, setTags] = useState<Tag[]>(details.tags);
+   const [tags, setTags] = useState<BlandTag[]>(details.tags);
    const [abilities, setAbilities] = useState<ChallengeAbility[]>(details.abilities);
    const [customType, setCustomType] = useState('');
 
@@ -313,21 +311,21 @@ function AbilityRow({ ability, onChange, onRemove }: { ability: ChallengeAbility
          <MentionPreview text={ability.flavor} />
          <div className="flex flex-col gap-1.5 pl-2">
             <Label className="text-xs font-semibold text-muted-foreground">{t('ChallengeCard.editor.consequences')}</Label>
-            {ability.consequences.map((consequence, index) => (
-               <div key={index} className="flex flex-col gap-1">
+            {ability.consequences.map((consequence) => (
+               <div key={consequence.id} className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                      <Input
-                        value={consequence}
-                        onChange={(event) => onChange({ ...ability, consequences: ability.consequences.map((entry, entryIndex) => (entryIndex === index ? event.target.value : entry)) })}
+                        value={consequence.text}
+                        onChange={(event) => onChange({ ...ability, consequences: updateRowById(ability.consequences, consequence.id, { text: event.target.value }) })}
                         placeholder={t('ChallengeCard.editor.consequencePlaceholder')}
                         className="h-8 text-sm"
                      />
-                     <IconButton onClick={() => onChange({ ...ability, consequences: ability.consequences.filter((_, entryIndex) => entryIndex !== index) })} label={t('ChallengeCard.editor.remove')}><Trash2 className="h-4 w-4" /></IconButton>
+                     <IconButton onClick={() => onChange({ ...ability, consequences: removeRowById(ability.consequences, consequence.id) })} label={t('ChallengeCard.editor.remove')}><Trash2 className="h-4 w-4" /></IconButton>
                   </div>
-                  <MentionPreview text={consequence} />
+                  <MentionPreview text={consequence.text} />
                </div>
             ))}
-            <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ ...ability, consequences: [...ability.consequences, ''] })} className="cursor-pointer border border-dashed">
+            <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ ...ability, consequences: addRow(ability.consequences, newConsequence()) })} className="cursor-pointer border border-dashed">
                <Plus className="mr-1 h-4 w-4" />{t('ChallengeCard.editor.addConsequence')}
             </Button>
          </div>

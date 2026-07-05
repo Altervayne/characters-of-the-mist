@@ -114,7 +114,7 @@ export interface ChallengeAbility {
    id: string;
    tag: string;
    flavor: string;
-   consequences: string[];
+   consequences: { id: string; text: string }[];
 }
 
 // A GM Challenge Card (LitM): a current obstacle/adversary. Front = image / name (Card.title) / italic
@@ -127,7 +127,7 @@ export interface LegendsChallengeDetails {
    flavor: string;
    limits: ChallengeStatus[];
    statuses: ChallengeStatus[];
-   tags: Tag[];
+   tags: BlandTag[];
    abilities: ChallengeAbility[];
 }
 
