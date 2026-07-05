@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -8,10 +8,9 @@ import toast from 'react-hot-toast';
 // -- Basic UI Imports --
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
-import { Star, Skull, Swords, Tags, Minus, Plus, Trash2, Pencil } from 'lucide-react';
+import { Star, Skull, Swords, Tags, Pencil } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -21,9 +20,13 @@ import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
+import { AddRowButton, LimitPill, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
+import type { RowListOps } from '@/components/organisms/cards/challengeCardEditRows';
+import { ExpandedChallengeSheet } from '@/components/organisms/cards/ExpandedChallengeSheet';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
+import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useCardViewMode } from '@/hooks/useCardViewMode';
@@ -32,11 +35,11 @@ import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
 // -- Utils Imports --
 import { applyStatusTier } from '@/lib/trackers/applyStatusTier';
-import { addRow, newStatus, newTag, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
+import { addRow, newAbility, newStatus, newTag, patchAbilityById, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
 import type { CardComponentProps } from '@/components/organisms/cards/resolveCardComponent';
-import type { BlandTag, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
 import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
@@ -49,139 +52,12 @@ import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 const CARD_TYPE_CLASS = 'card-type-challenge';
 
-/** The challenge's win-conditions: an outlined `name-tier` pill on the parchment. */
-function LimitPill({ status }: { status: ChallengeStatus }) {
-   return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-card-border/40 bg-card-popover-bg px-2 py-0.5 text-xs font-semibold text-card-popover-fg">
-         <span>{status.name}</span>
-         <span className="tabular-nums opacity-80">{status.tier}</span>
-      </span>
-   );
-}
-
-/** The challenge's own status: a green `name-tier` pill (fixed game-content color). */
-function StatusPill({ status }: { status: ChallengeStatus }) {
-   return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-700 px-2 py-0.5 text-xs font-semibold text-green-50">
-         <span>{status.name}</span>
-         <span className="tabular-nums opacity-90">{status.tier}</span>
-      </span>
-   );
-}
-
-/** The challenge's own tag: a yellow italic pill (fixed game-content color). */
-function TagPill({ tag }: { tag: BlandTag }) {
-   return (
-      <span className="inline-flex items-center rounded-full bg-yellow-500 px-2 py-0.5 text-xs font-medium italic text-yellow-950">
-         {tag.name}
-      </span>
-   );
-}
-
-/** A tight `-  N  +` stepper pill, styled like `LimitPill` (card tokens). Commits immediately on click. */
-function TierStepperPill({ tier, onChange }: { tier: number; onChange: (next: number) => void }) {
-   return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-card-border/40 bg-card-popover-bg px-1 py-0.5 text-card-popover-fg">
-         <button
-            type="button"
-            onClick={() => onChange(Math.max(0, tier - 1))}
-            className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-card-paper-fg/10 cursor-pointer"
-         >
-            <Minus className="h-3 w-3" />
-         </button>
-         <span className="w-4 text-center text-xs tabular-nums">{tier}</span>
-         <button
-            type="button"
-            onClick={() => onChange(tier + 1)}
-            className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-card-paper-fg/10 cursor-pointer"
-         >
-            <Plus className="h-3 w-3" />
-         </button>
-      </span>
-   );
-}
-
-/** An editable Limit/Status row: `[name input] [tier stepper] [Trash2]`. Shared by both sections (both are `ChallengeStatus`). */
-function StatusEditRow({ status, namePlaceholder, onCommitName, onCommitTier, onRemove, removeLabel }: {
-   status: ChallengeStatus;
-   namePlaceholder: string;
-   onCommitName: (name: string) => void;
-   onCommitTier: (tier: number) => void;
-   onRemove: () => void;
-   removeLabel: string;
-}) {
-   // Hook state stays above any conditional so toggling edit mode never remounts this row mid-edit.
-   const [localName, setLocalName] = useInputDebouncer(status.name, onCommitName);
-
-   return (
-      <div className="flex items-center gap-1.5">
-         <Input
-            value={localName}
-            onChange={(event) => setLocalName(event.target.value)}
-            placeholder={namePlaceholder}
-            className="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 py-0.5 text-xs shadow-none text-card-paper-fg placeholder:text-card-paper-fg/50 focus-visible:ring-card-accent/50"
-         />
-         <TierStepperPill tier={status.tier} onChange={onCommitTier} />
-         <button type="button" onClick={onRemove} title={removeLabel} aria-label={removeLabel} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg cursor-pointer">
-            <Trash2 className="h-3.5 w-3.5" />
-         </button>
-      </div>
-   );
-}
-
-/** An editable Tag row: `[name input] [Trash2]` (name-only, no icon-well). */
-function TagEditRow({ tag, namePlaceholder, onCommitName, onRemove, removeLabel }: {
-   tag: BlandTag;
-   namePlaceholder: string;
-   onCommitName: (name: string) => void;
-   onRemove: () => void;
-   removeLabel: string;
-}) {
-   const [localName, setLocalName] = useInputDebouncer(tag.name, onCommitName);
-
-   return (
-      <div className="flex items-center gap-1.5">
-         <Input
-            value={localName}
-            onChange={(event) => setLocalName(event.target.value)}
-            placeholder={namePlaceholder}
-            className="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 py-0.5 text-xs italic shadow-none text-card-paper-fg placeholder:text-card-paper-fg/50 focus-visible:ring-card-accent/50"
-         />
-         <button type="button" onClick={onRemove} title={removeLabel} aria-label={removeLabel} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg cursor-pointer">
-            <Trash2 className="h-3.5 w-3.5" />
-         </button>
-      </div>
-   );
-}
-
-/** A dashed ghost "add row" button, card-token styled so it doesn't wash out on the challenge palette. */
-function AddRowButton({ label, onClick }: { label: string; onClick: () => void }) {
-   return (
-      <button
-         type="button"
-         onClick={onClick}
-         className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-card-border/40 py-1 text-xs text-card-paper-fg/70 hover:bg-card-paper-fg/10 cursor-pointer"
-      >
-         <Plus className="h-3.5 w-3.5" />
-         {label}
-      </button>
-   );
-}
-
-/** A threat's name: a filled card-accent pill (holds its shape as the flavor wraps beside it). */
-function ThreatPill({ tag }: { tag: string }) {
-   return (
-      <span className="inline-flex shrink-0 items-center rounded-full bg-card-accent px-2 py-0.5 align-baseline text-xs font-semibold text-card-paper-bg">
-         {tag}
-      </span>
-   );
-}
-
 export const LegendsChallengeCard = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
-      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick }, ref) => {
+      ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick, isExpanded = false, onCollapse }, ref) => {
          const { t } = useTranslation();
          const actions = useCharacterActions();
+         const storeInstance = useActiveCharacterInstance();
          const character = useCharacterStore((state) => state.character);
          const details = card.details as LegendsChallengeDetails;
 
@@ -208,6 +84,56 @@ export const LegendsChallengeCard = React.memo(
          const commitLimits = (next: ChallengeStatus[]) => actions.updateCardDetails(card.id, { limits: next });
          const commitStatuses = (next: ChallengeStatus[]) => actions.updateCardDetails(card.id, { statuses: next });
          const commitTags = (next: BlandTag[]) => actions.updateCardDetails(card.id, { tags: next });
+         const commitAbilities = (next: ChallengeAbility[]) => actions.updateCardDetails(card.id, { abilities: next });
+
+         // Reads the LIVE details straight from the store at commit time, so a debounced field's
+         // unmount-flush patches whatever the store holds NOW - not a snapshot captured at render. Every
+         // debounced row commit built by this component composes over this, so two fields flushing together
+         // can't clobber: `set` is synchronous, so the second read already carries the first's write. Falls
+         // back to the render's `details` only if the card just vanished (nothing to write in that case).
+         const liveDetails = () =>
+            (storeInstance.getState().character?.cards.find((c) => c.id === card.id)?.details as LegendsChallengeDetails | undefined) ?? details;
+
+         // Patches one ability by id against the live abilities - the sheet's tag + flavor + per-consequence
+         // debouncers all commit through here, so no unmount-flush can stomp a sibling field.
+         const commitAbilityById = (abilityId: string, mutate: (current: ChallengeAbility) => ChallengeAbility) => {
+            commitAbilities(patchAbilityById(liveDetails().abilities, abilityId, mutate));
+         };
+
+         // The same read-live-then-patch-by-id discipline for the single-field limit / status / tag rows.
+         // Each has one debounced field today, so it only clobbers a SIBLING row in the same list (two
+         // limit names flushing together) rather than its own pair - but the guard is identical and cheap.
+         const commitLimitById = (id: string, updates: Partial<ChallengeStatus>) => commitLimits(updateRowById(liveDetails().limits, id, updates));
+         const commitStatusById = (id: string, updates: Partial<ChallengeStatus>) => commitStatuses(updateRowById(liveDetails().statuses, id, updates));
+         const commitTagById = (id: string, updates: Partial<BlandTag>) => commitTags(updateRowById(liveDetails().tags, id, updates));
+         const removeLimitById = (id: string) => commitLimits(removeRowById(liveDetails().limits, id));
+         const removeStatusById = (id: string) => commitStatuses(removeRowById(liveDetails().statuses, id));
+         const removeTagById = (id: string) => commitTags(removeRowById(liveDetails().tags, id));
+         const addLimit = () => commitLimits(addRow(liveDetails().limits, newStatus()));
+         const addStatus = () => commitStatuses(addRow(liveDetails().statuses, newStatus()));
+         const addTag = () => commitTags(addRow(liveDetails().tags, newTag()));
+
+         // The same by-id ops bundled for the expanded sheet, which renders its own copy of these rows.
+         const limitOps: RowListOps<ChallengeStatus> = { commitById: commitLimitById, removeById: removeLimitById, add: addLimit };
+         const statusOps: RowListOps<ChallengeStatus> = { commitById: commitStatusById, removeById: removeStatusById, add: addStatus };
+         const tagOps: RowListOps<BlandTag> = { commitById: commitTagById, removeById: removeTagById, add: addTag };
+
+         // Whole-row add/remove for the threats accordion, also against live abilities. `addAbility`
+         // returns the new id so the accordion can focus the fresh row it just appended.
+         const addAbility = (): string => {
+            const row = newAbility();
+            commitAbilities(addRow(liveDetails().abilities, row));
+            return row.id;
+         };
+         const removeAbilityById = (id: string) => commitAbilities(removeRowById(liveDetails().abilities, id));
+
+         // The expanded sheet's OWN read/edit flag - distinct from the small card's `isEditing` and
+         // defaulting to READ, so opening the overlay to read a threat aloud never inherits a stray
+         // pencil. Kept above the flip/expanded branches so it never remounts a field mid-edit, and
+         // reset to read whenever the sheet closes so the next open starts clean.
+         const [expandedIsEditing, setExpandedIsEditing] = useState(false);
+         // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the sheet's edit flag once it closes
+         useEffect(() => { if (!isExpanded) setExpandedIsEditing(false); }, [isExpanded]);
 
          // A tapped mention applies to the active character: a status create-or-RAISES (bubble-up, no
          // duplicate); a tag de-dupes by name. Only wired on the interactive sheet card (see below).
@@ -320,13 +246,13 @@ export const LegendsChallengeCard = React.memo(
                                  key={limit.id}
                                  status={limit}
                                  namePlaceholder={t('Cards.challenge.limitNamePlaceholder')}
-                                 onCommitName={(name) => commitLimits(updateRowById(details.limits, limit.id, { name }))}
-                                 onCommitTier={(tier) => commitLimits(updateRowById(details.limits, limit.id, { tier }))}
-                                 onRemove={() => commitLimits(removeRowById(details.limits, limit.id))}
+                                 onCommitName={(name) => commitLimitById(limit.id, { name })}
+                                 onCommitTier={(tier) => commitLimitById(limit.id, { tier })}
+                                 onRemove={() => removeLimitById(limit.id)}
                                  removeLabel={t('Cards.challenge.remove')}
                               />
                            ))}
-                           <AddRowButton label={t('Cards.challenge.addLimit')} onClick={() => commitLimits(addRow(details.limits, newStatus()))} />
+                           <AddRowButton label={t('Cards.challenge.addLimit')} onClick={addLimit} />
                         </div>
                      ) : (
                         <div className="flex flex-wrap gap-1 p-2">
@@ -346,13 +272,13 @@ export const LegendsChallengeCard = React.memo(
                                     key={status.id}
                                     status={status}
                                     namePlaceholder={t('Cards.challenge.statusNamePlaceholder')}
-                                    onCommitName={(name) => commitStatuses(updateRowById(details.statuses, status.id, { name }))}
-                                    onCommitTier={(tier) => commitStatuses(updateRowById(details.statuses, status.id, { tier }))}
-                                    onRemove={() => commitStatuses(removeRowById(details.statuses, status.id))}
+                                    onCommitName={(name) => commitStatusById(status.id, { name })}
+                                    onCommitTier={(tier) => commitStatusById(status.id, { tier })}
+                                    onRemove={() => removeStatusById(status.id)}
                                     removeLabel={t('Cards.challenge.remove')}
                                  />
                               ))}
-                              <AddRowButton label={t('Cards.challenge.addStatus')} onClick={() => commitStatuses(addRow(details.statuses, newStatus()))} />
+                              <AddRowButton label={t('Cards.challenge.addStatus')} onClick={addStatus} />
                            </div>
                            <div className="flex flex-col gap-1">
                               {details.tags.map((tag) => (
@@ -360,12 +286,12 @@ export const LegendsChallengeCard = React.memo(
                                     key={tag.id}
                                     tag={tag}
                                     namePlaceholder={t('Cards.challenge.tagNamePlaceholder')}
-                                    onCommitName={(name) => commitTags(updateRowById(details.tags, tag.id, { name }))}
-                                    onRemove={() => commitTags(removeRowById(details.tags, tag.id))}
+                                    onCommitName={(name) => commitTagById(tag.id, { name })}
+                                    onRemove={() => removeTagById(tag.id)}
                                     removeLabel={t('Cards.challenge.remove')}
                                  />
                               ))}
-                              <AddRowButton label={t('Cards.challenge.addTag')} onClick={() => commitTags(addRow(details.tags, newTag()))} />
+                              <AddRowButton label={t('Cards.challenge.addTag')} onClick={addTag} />
                            </div>
                         </div>
                      ) : (
@@ -411,29 +337,56 @@ export const LegendsChallengeCard = React.memo(
          );
 
          return (
-            <CardFlipWrapper
-               ref={ref}
-               effectiveViewMode={effectiveViewMode}
-               isDrawerPreview={isDrawerPreview ?? false}
-               isBoardEmbed={isBoardEmbed}
-               isSnapshot={isSnapshot}
-               useVerticalStack={useVerticalStack}
-               card={card}
-               isHovered={isHovered}
-               hoverHandlers={hoverHandlers}
-               isEditing={isEditing}
-               dragAttributes={dragAttributes}
-               dragListeners={dragListeners}
-               cardTheme={CARD_TYPE_CLASS}
-               onExport={onExport}
-               onCycleViewMode={handleCycleViewMode}
-               onFlip={() => actions.flipCard(card.id)}
-               onDelete={() => actions.deleteCard(card.id)}
-               // Editing opens the dedicated Challenge editor (routed by the sheet on cardType).
-               onEditCard={onEditCard}
-               cardFront={CardFront}
-               cardBack={CardBack}
-            />
+            <>
+               <CardFlipWrapper
+                  ref={ref}
+                  effectiveViewMode={effectiveViewMode}
+                  isDrawerPreview={isDrawerPreview ?? false}
+                  isBoardEmbed={isBoardEmbed}
+                  isSnapshot={isSnapshot}
+                  useVerticalStack={useVerticalStack}
+                  card={card}
+                  isHovered={isHovered}
+                  hoverHandlers={hoverHandlers}
+                  isEditing={isEditing}
+                  dragAttributes={dragAttributes}
+                  dragListeners={dragListeners}
+                  cardTheme={CARD_TYPE_CLASS}
+                  onExport={onExport}
+                  onCycleViewMode={handleCycleViewMode}
+                  onFlip={() => actions.flipCard(card.id)}
+                  onDelete={() => actions.deleteCard(card.id)}
+                  // Editing opens the dedicated Challenge editor (routed by the sheet on cardType).
+                  onEditCard={onEditCard}
+                  cardFront={CardFront}
+                  cardBack={CardBack}
+               />
+
+               {/* The expanded overlay renders from HERE (inside this card's per-embed store subtree), so
+                   it shares the SAME store instance the board tile already has - one store per item, no
+                   split-brain writes. It reuses this card's own flavor buffer + commit closures too, so
+                   there is one set of hooks with two consumers. Board embed only. */}
+               {isExpanded && onCollapse && (
+                  <ExpandedChallengeSheet
+                     details={details}
+                     name={name}
+                     stars={stars}
+                     url={url}
+                     expandedIsEditing={expandedIsEditing}
+                     onToggleEditing={() => setExpandedIsEditing((value) => !value)}
+                     localFlavor={localFlavor}
+                     setLocalFlavor={setLocalFlavor}
+                     limitOps={limitOps}
+                     statusOps={statusOps}
+                     tagOps={tagOps}
+                     commitAbilityById={commitAbilityById}
+                     addAbility={addAbility}
+                     removeAbilityById={removeAbilityById}
+                     mentionClick={mentionClick}
+                     onClose={onCollapse}
+                  />
+               )}
+            </>
          );
       },
    ),

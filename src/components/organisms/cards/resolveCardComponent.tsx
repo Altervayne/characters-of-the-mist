@@ -43,6 +43,10 @@ export interface CardComponentProps {
    onExport?: () => void;
    /** Tapped-mention handler; only the Challenge Card reads it (board embed routes it to the board). */
    onMentionClick?: (segment: MentionSegment) => void;
+   /** Board embed only: whether the expanded overlay sheet is open (Challenge Card reads it). */
+   isExpanded?: boolean;
+   /** Board embed only: request the expanded sheet close (the X / Escape route here). */
+   onCollapse?: () => void;
 }
 
 export type CardComponent = NamedExoticComponent<CardComponentProps & RefAttributes<HTMLDivElement>>;

@@ -34,16 +34,25 @@ interface InteractiveEmbedProps {
    toolbarSlot: HTMLElement | null;
    /** Commits an edited item back to the board copy (one undoable command). */
    onCommit: (next: unknown) => void;
-   /** Renders the live item as its real component, in board-embed mode, given the ephemeral edit state. */
-   render: (liveData: unknown, isEditing: boolean) => ReactNode;
    /**
-    * Extra per-kind toolbar actions (e.g. a card's Flip), rendered in the toolbar slot beside Edit.
-    * Rendered inside the host provider, so the buttons can drive the local store via `useCharacterActions`.
+    * Whether this embed's expanded overlay is open (board-view state, ephemeral). The overlay renders
+    * from the SAME store instance this host provides, so the card gets it via `render` - never a second
+    * `useEmbedCharacterStore`. Only the challenge card uses it; other kinds ignore it.
     */
-   renderToolbarExtras?: (liveData: unknown) => ReactNode;
+   isExpanded?: boolean;
+   /** Requests the expanded overlay open/close (routes to the board-view `expandedItemId`). */
+   onExpandedChange?: (expanded: boolean) => void;
+   /** Renders the live item as its real component, in board-embed mode, given the ephemeral edit + expanded state. */
+   render: (liveData: unknown, isEditing: boolean, isExpanded: boolean) => ReactNode;
+   /**
+    * Extra per-kind toolbar actions (e.g. a card's Flip / Expand), rendered in the toolbar slot beside
+    * Edit. Rendered inside the host provider, so the buttons can drive the local store via
+    * `useCharacterActions` and toggle the expanded overlay.
+    */
+   renderToolbarExtras?: (liveData: unknown, expand: { isExpanded: boolean; onExpandedChange: (expanded: boolean) => void }) => ReactNode;
 }
 
-export function InteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit, render, renderToolbarExtras }: InteractiveEmbedProps) {
+export function InteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit, isExpanded = false, onExpandedChange, render, renderToolbarExtras }: InteractiveEmbedProps) {
    const { t } = useTranslation();
    const store = useEmbedCharacterStore({ slot, data, onCommit });
    // The live item from the host store, so the component re-renders on every edit.
@@ -81,7 +90,7 @@ export function InteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit
                isSelected ? 'pointer-events-auto' : 'pointer-events-none',
             )}
          >
-            {liveData != null ? render(liveData, isEditing) : null}
+            {liveData != null ? render(liveData, isEditing, isExpanded) : null}
          </div>
 
          {isSelected && toolbarSlot && createPortal(
@@ -99,7 +108,7 @@ export function InteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit
                >
                   <Pencil className="h-4 w-4" />
                </button>
-               {renderToolbarExtras?.(liveData)}
+               {renderToolbarExtras?.(liveData, { isExpanded, onExpandedChange: (value) => onExpandedChange?.(value) })}
             </>,
             toolbarSlot,
          )}

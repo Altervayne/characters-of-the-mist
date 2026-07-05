@@ -94,6 +94,10 @@ interface BoardItemBoxProps {
    resizeMin?: { width: number; height: number };
    /** Stacking band for this box: selection raises it via z-index, NOT a DOM re-order (no remount). */
    zIndex?: number;
+   /** Whether this item's expanded challenge overlay is open (board-view `expandedItemId`, ephemeral). */
+   isExpanded?: boolean;
+   /** Requests this item's expanded overlay open/close. */
+   onExpandedChange?: (id: string, expanded: boolean) => void;
 }
 
 /** A live drag rect during a move/resize gesture (world coords); `null` when idle. */
@@ -125,6 +129,8 @@ export function BoardItemBox({
    backLayer,
    resizeMin,
    zIndex,
+   isExpanded = false,
+   onExpandedChange,
 }: BoardItemBoxProps) {
    // Live resize rect (full rect during a resize); the commit reads from the ref so it
    // never depends on a stale closure. The group move offset is owned by the canvas and
@@ -287,6 +293,8 @@ export function BoardItemBox({
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
          memberCount={memberCount}
+         isExpanded={isExpanded}
+         onExpandedChange={(expanded) => onExpandedChange?.(item.id, expanded)}
          onContentChange={(content) => onUpdateContent(item.id, content)}
          onCacheLastKnown={onCacheLastKnown}
          onDelete={onDelete}

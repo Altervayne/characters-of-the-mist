@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { addRow, newAbility, newConsequence, newStatus, newTag, removeRowById, updateRowById } from './challengeCardFactories';
-import type { BlandTag, ChallengeStatus } from '@/lib/types/character';
+import { addRow, newAbility, newConsequence, newStatus, newTag, patchAbilityById, removeRowById, resolveExpandedFocus, updateRowById } from './challengeCardFactories';
+import type { BlandTag, ChallengeAbility, ChallengeStatus } from '@/lib/types/character';
 
 /*
  * The Challenge Card's shared row factories + pure list helpers: fresh row shapes/ids for
@@ -120,5 +120,54 @@ describe('removeRowById', () => {
    it('is a no-op when the id is absent', () => {
       const original = list();
       expect(removeRowById(original, 'missing')).toEqual(original);
+   });
+});
+
+describe('patchAbilityById', () => {
+   const abilities = (): ChallengeAbility[] => [
+      { id: 'a1', tag: 'Bite', flavor: 'sinks in', consequences: [] },
+      { id: 'a2', tag: 'Claw', flavor: '', consequences: [] },
+   ];
+
+   it('runs the mutator over the LIVE matching row and returns a new array', () => {
+      const original = abilities();
+
+      const result = patchAbilityById(original, 'a1', (current) => ({ ...current, tag: 'Gore' }));
+
+      expect(result).toEqual([
+         { id: 'a1', tag: 'Gore', flavor: 'sinks in', consequences: [] },
+         { id: 'a2', tag: 'Claw', flavor: '', consequences: [] },
+      ]);
+      expect(original).toEqual(abilities());
+      expect(result).not.toBe(original);
+   });
+
+   it('returns the same array reference (no-op) when the id is absent', () => {
+      const original = abilities();
+      expect(patchAbilityById(original, 'missing', (current) => ({ ...current, tag: 'x' }))).toBe(original);
+   });
+});
+
+describe('resolveExpandedFocus', () => {
+   const abilities = (): ChallengeAbility[] => [
+      { id: 'a1', tag: 'Bite', flavor: '', consequences: [] },
+      { id: 'a2', tag: 'Claw', flavor: '', consequences: [] },
+   ];
+
+   it('keeps the current focus while its ability still exists', () => {
+      expect(resolveExpandedFocus(abilities(), 'a2')).toBe('a2');
+   });
+
+   it('falls back to the first ability when the focused id was removed', () => {
+      expect(resolveExpandedFocus(abilities(), 'gone')).toBe('a1');
+   });
+
+   it('falls back to the first ability when nothing is focused yet', () => {
+      expect(resolveExpandedFocus(abilities(), null)).toBe('a1');
+   });
+
+   it('resolves to null on an empty list', () => {
+      expect(resolveExpandedFocus([], 'a1')).toBeNull();
+      expect(resolveExpandedFocus([], null)).toBeNull();
    });
 });

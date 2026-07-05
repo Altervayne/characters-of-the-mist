@@ -177,6 +177,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
    // Selection is ephemeral: a local set, never persisted or routed through commands.
    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+   // The board item whose expanded challenge overlay is open (at most one). Ephemeral view state - never
+   // in the store/`content`, never undoable - so it lives here beside the selection.
+   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
    const [isPanning, setIsPanning] = useState(false);
    // A Shift+background marquee (null when idle); a plain drag pans instead. Corners are in
    // client coords; the clip origin is captured at start so the overlay + world math never
@@ -194,6 +197,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          else next.add(id);
          return next;
       });
+   }, []);
+
+   /** Opens/closes an item's expanded overlay; at most one is open, so opening one replaces any other. */
+   const handleExpandedChange = useCallback((id: string, expanded: boolean) => {
+      setExpandedItemId(expanded ? id : (current) => (current === id ? null : current));
    }, []);
 
    // Cross-surface drop target for dragging a drawer card/tracker onto the canvas. Only
@@ -327,6 +335,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const handleDelete = useCallback(
       (id: string) => {
          void actions.deleteItems([id]);
+         setExpandedItemId((current) => (current === id ? null : current));
          setSelectedIds((prev) => {
             if (!prev.has(id)) return prev;
             const next = new Set(prev);
@@ -341,6 +350,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const handleDeleteSelection = useCallback(() => {
       if (selectedIds.size === 0) return;
       void actions.deleteItems([...selectedIds]);
+      setExpandedItemId((current) => (current != null && selectedIds.has(current) ? null : current));
       setSelectedIds(new Set());
    }, [actions, selectedIds]);
 
@@ -685,6 +695,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onDelete={handleDelete}
             onConnectStart={handleConnectStart}
             backLayer={backLayer}
+            isExpanded={item.id === expandedItemId}
+            onExpandedChange={handleExpandedChange}
          />
       );
    };

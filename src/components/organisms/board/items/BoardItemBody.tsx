@@ -29,6 +29,10 @@ interface BoardItemBodyProps {
    sideSlot: HTMLElement | null;
    /** A zone's member count, for its collapsed-bar badge (undefined for non-zones). */
    memberCount?: number;
+   /** Whether this item's expanded challenge overlay is open (board-view `expandedItemId`, ephemeral). */
+   isExpanded: boolean;
+   /** Requests this item's expanded overlay open/close. */
+   onExpandedChange: (expanded: boolean) => void;
    /** Commits new content for this item (one undoable command per edit session). */
    onContentChange: (content: BoardItemContent) => void;
    /** Caches a reference's last-known snapshot via a direct (non-undoable) write. */
@@ -39,7 +43,7 @@ interface BoardItemBodyProps {
    onRequestSelect: () => void;
 }
 
-export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onDelete, onRequestSelect }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, isExpanded, onExpandedChange, onContentChange, onCacheLastKnown, onDelete, onRequestSelect }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
@@ -56,7 +60,7 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
       case 'dice-tray':
          return <DiceTrayItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onRequestSelect={onRequestSelect} />;
       case 'card':
-         return <BoardCardItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+         return <BoardCardItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} isExpanded={isExpanded} onExpandedChange={onExpandedChange} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'tracker':
          return <BoardTrackerItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'character':
