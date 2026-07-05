@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useEffect, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
@@ -11,6 +12,7 @@ import { cn } from '@/lib/utils';
 // -- Board Imports --
 import { useReferencedDrawerItem } from '@/lib/board/useReferencedDrawerItem';
 import { detachToCopy, toReferenceContent } from '@/lib/board/referenceContent';
+import { BoardItemSaveMenu } from './BoardItemSaveMenu';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, CardBoardContent, TrackerBoardContent } from '@/lib/types/board';
@@ -33,6 +35,8 @@ interface EmbeddedItemProps {
    onContentChange: (content: BoardItemContent) => void;
    /** Caches a reference's last-known snapshot via a direct write (not undoable). */
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
+   /** Adopts a Save-As drawer id onto this copy's source link via a direct write (not undoable). */
+   onAdoptSource: (id: string, sourceDrawerItemId: string) => void;
    onDelete: (id: string) => void;
    /** Renders the resolved card/tracker data as its real component (snapshot, read-only). */
    renderSnapshot: (data: unknown) => ReactNode;
@@ -54,7 +58,7 @@ function serialize(value: unknown): string | undefined {
    return value === undefined ? undefined : JSON.stringify(value);
 }
 
-export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, onContentChange, onCacheLastKnown, onDelete, renderSnapshot, renderInteractive }: EmbeddedItemProps) {
+export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, renderSnapshot, renderInteractive }: EmbeddedItemProps) {
    const { t } = useTranslation();
 
    const isReference = content.mode === 'reference';
@@ -123,6 +127,16 @@ export function EmbeddedItem({ item, content, isSelected, toolbarSlot = null, on
             </div>
          ) : (
             <EmbeddedFallback label={t('BoardView.embeddedUnavailable')} />
+         )}
+
+         {/* Save-back overflow: a selected copy can Save (write back to its drawer twin) / Save As (mint a
+             new drawer item). Portals into the per-kind toolbar slot beside the copy's own Edit / Flip. */}
+         {isSelected && content.mode === 'copy' && toolbarSlot && createPortal(
+            <BoardItemSaveMenu
+               content={content}
+               onAdoptSource={(sourceDrawerItemId) => onAdoptSource(item.id, sourceDrawerItemId)}
+            />,
+            toolbarSlot,
          )}
 
          {/* Linked badge: always shown on a reference, so it reads distinct from a copy. */}

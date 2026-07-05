@@ -29,6 +29,8 @@ interface BoardTrackerItemProps {
    toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
+   /** Adopts a Save-As drawer id onto the copy's source link via a direct (non-undoable) write. */
+   onAdoptSource: (id: string, sourceDrawerItemId: string) => void;
    onDelete: (id: string) => void;
 }
 
@@ -39,7 +41,7 @@ function trackerSlot(tracker: Tracker): EmbedSlot {
    return 'storyThemes';
 }
 
-export function BoardTrackerItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete }: BoardTrackerItemProps) {
+export function BoardTrackerItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onAdoptSource, onDelete }: BoardTrackerItemProps) {
    return (
       <EmbeddedItem
          item={item}
@@ -48,6 +50,7 @@ export function BoardTrackerItem({ item, content, isSelected, toolbarSlot, onCon
          toolbarSlot={toolbarSlot}
          onContentChange={onContentChange}
          onCacheLastKnown={onCacheLastKnown}
+         onAdoptSource={onAdoptSource}
          onDelete={onDelete}
          renderSnapshot={(data) => <TrackerSnapshot data={data} />}
          renderInteractive={({ data, isSelected, toolbarSlot, onCommit }) => (

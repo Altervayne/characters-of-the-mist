@@ -105,6 +105,12 @@ export interface BoardState {
        * command - so a passive source-driven re-read never lands on the board undo stack.
        */
       cacheReferenceLastKnown: (id: string, content: BoardItemContent) => Promise<void>;
+      /**
+       * Adopts a freshly minted drawer id onto a copy item's `content.sourceDrawerItemId` via a
+       * DIRECT repo write, never a command - a Save-As link is bookkeeping, not a user edit, so it
+       * must never land on the undo stack (Ctrl+Z would silently unlink the twin it just created).
+       */
+      adoptItemDrawerSource: (id: string, sourceDrawerItemId: string) => Promise<void>;
       deleteItem: (id: string) => Promise<void>;
       /** Sets the camera and debounce-persists it. The viewport is never undoable. */
       setViewport: (viewport: Viewport) => void;
@@ -464,6 +470,22 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                // its source must never pollute the board's undo stack or Ctrl+Z routing.
                const existing = get().items[id];
                if (!existing) return;
+               set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
+               try {
+                  await updateItem(id, { content });
+               } catch (error) {
+                  set({ error: toErrorMessage(error) });
+               }
+            },
+
+            adoptItemDrawerSource: async (id, sourceDrawerItemId) => {
+               // NOT a command and NOT markBoardModified: adopting a Save-As drawer id is
+               // bookkeeping, not a user edit - it must never land on the undo stack (else Ctrl+Z
+               // would unlink the twin it just created before undoing the real prior edit). Merges
+               // just the source id; a copy content always carries `data`, so the merge is total.
+               const existing = get().items[id];
+               if (!existing) return;
+               const content = { ...existing.content, sourceDrawerItemId } as BoardItemContent;
                set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                try {
                   await updateItem(id, { content });

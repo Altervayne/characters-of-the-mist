@@ -33,13 +33,15 @@ interface BoardItemBodyProps {
    onContentChange: (content: BoardItemContent) => void;
    /** Caches a reference's last-known snapshot via a direct (non-undoable) write. */
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
+   /** Adopts a Save-As drawer id onto a copy's source link via a direct (non-undoable) write. */
+   onAdoptSource: (id: string, sourceDrawerItemId: string) => void;
    /** Removes this item (used by a dangling reference's placeholder). */
    onDelete: (id: string) => void;
    /** Selects this item (used by text fields that stop pointer propagation). */
    onRequestSelect: () => void;
 }
 
-export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onDelete, onRequestSelect }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
@@ -56,9 +58,9 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
       case 'dice-tray':
          return <DiceTrayItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onRequestSelect={onRequestSelect} />;
       case 'card':
-         return <BoardCardItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+         return <BoardCardItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onAdoptSource={onAdoptSource} onDelete={onDelete} />;
       case 'tracker':
-         return <BoardTrackerItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+         return <BoardTrackerItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onAdoptSource={onAdoptSource} onDelete={onDelete} />;
       case 'character':
          return <CharacterBoardItem item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       default:

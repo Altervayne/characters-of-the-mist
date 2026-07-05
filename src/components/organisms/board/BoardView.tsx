@@ -713,6 +713,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onSyncSize={actions.syncItemSize}
             onUpdateContent={actions.updateItemContent}
             onCacheLastKnown={actions.cacheReferenceLastKnown}
+            onAdoptSource={actions.adoptItemDrawerSource}
             onBringToFront={actions.bringToFront}
             onSendToBack={actions.sendToBack}
             onDelete={handleDelete}

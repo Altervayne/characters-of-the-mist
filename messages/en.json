@@ -129,7 +129,10 @@
       "lineStyleSolid": "Solid",
       "lineStyleDashed": "Dashed",
       "lineStyleDotted": "Dotted",
-      "deleteConnection": "Delete connection"
+      "deleteConnection": "Delete connection",
+      "itemActions": "More actions",
+      "saveItemToDrawer": "Save to drawer",
+      "saveItemToDrawerAs": "Save to drawer as…"
    },
    "DragPuck": {
       "openAsTab": "Open as tab",
@@ -179,6 +182,8 @@
       "board": {
          "saved": "Board saved to",
          "linkedItemMissing": "The linked drawer save no longer exists, so the board was saved as a new item.",
+         "itemSaved": "Item saved to",
+         "itemLinkedItemMissing": "The linked drawer save no longer exists, so the item was saved as a new one.",
          "exported": "Board exported to downloads.",
          "imported": "Board file imported successfully.",
          "updated": "Board updated from file.",

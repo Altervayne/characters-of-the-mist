@@ -40,10 +40,12 @@ interface BoardCardItemProps {
    toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
+   /** Adopts a Save-As drawer id onto the copy's source link via a direct (non-undoable) write. */
+   onAdoptSource: (id: string, sourceDrawerItemId: string) => void;
    onDelete: (id: string) => void;
 }
 
-export function BoardCardItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete }: BoardCardItemProps) {
+export function BoardCardItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onAdoptSource, onDelete }: BoardCardItemProps) {
    // Tapping a mention on the interactive COPY mints a fresh board-native tracker beside the challenge.
    const handleMentionClick = useBoardMentionMint(item);
 
@@ -55,6 +57,7 @@ export function BoardCardItem({ item, content, isSelected, toolbarSlot, onConten
          toolbarSlot={toolbarSlot}
          onContentChange={onContentChange}
          onCacheLastKnown={onCacheLastKnown}
+         onAdoptSource={onAdoptSource}
          onDelete={onDelete}
          renderSnapshot={(data) => <CardSnapshot data={data} />}
          renderInteractive={({ data, isSelected, toolbarSlot, onCommit }) => (

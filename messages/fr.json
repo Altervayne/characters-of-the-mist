@@ -129,7 +129,10 @@
       "lineStyleSolid": "[TO COMPLETE]",
       "lineStyleDashed": "[TO COMPLETE]",
       "lineStyleDotted": "[TO COMPLETE]",
-      "deleteConnection": "[TO COMPLETE]"
+      "deleteConnection": "[TO COMPLETE]",
+      "itemActions": "[TO COMPLETE]",
+      "saveItemToDrawer": "[TO COMPLETE]",
+      "saveItemToDrawerAs": "[TO COMPLETE]"
    },
    "DragPuck": {
       "openAsTab": "[TO COMPLETE]",
@@ -179,6 +182,8 @@
       "board": {
          "saved": "[TO COMPLETE]",
          "linkedItemMissing": "[TO COMPLETE]",
+         "itemSaved": "[TO COMPLETE]",
+         "itemLinkedItemMissing": "[TO COMPLETE]",
          "exported": "[TO COMPLETE]",
          "imported": "[TO COMPLETE]",
          "updated": "[TO COMPLETE]",

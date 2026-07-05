@@ -85,6 +85,8 @@ interface BoardItemBoxProps {
    onUpdateContent: (id: string, content: BoardItemContent) => void;
    /** Direct (non-undoable) cache write for a reference item's last-known snapshot. */
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
+   /** Direct (non-undoable) adopt of a Save-As drawer id onto a copy item's source link. */
+   onAdoptSource: (id: string, sourceDrawerItemId: string) => void;
    onBringToFront: (id: string) => void;
    onSendToBack: (id: string) => void;
    onDelete: (id: string) => void;
@@ -120,6 +122,7 @@ export function BoardItemBox({
    onSyncSize,
    onUpdateContent,
    onCacheLastKnown,
+   onAdoptSource,
    onBringToFront,
    onSendToBack,
    onDelete,
@@ -297,6 +300,7 @@ export function BoardItemBox({
          memberCount={memberCount}
          onContentChange={(content) => onUpdateContent(item.id, content)}
          onCacheLastKnown={onCacheLastKnown}
+         onAdoptSource={onAdoptSource}
          onDelete={onDelete}
          onRequestSelect={() => onSelect(item.id, false)}
       />
