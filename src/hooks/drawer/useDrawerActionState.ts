@@ -165,8 +165,10 @@ export function useDrawerActionState(currentFolderId: string | null) {
 
             case 'add-item':
                if (value && isPendingTarget(target)) {
-                  const { game, type, content, parentFolderId } = target;
-                  await addItem(value, game, type, content, parentFolderId);
+                  const { game, type, content, parentFolderId, presetId } = target;
+                  // `presetId` links the created item to a preset id (a Save-As id a caller minted).
+                  // A bare card/tracker has no `drawerItemId` to sniff, so it must ride through here.
+                  await addItem(value, game, type, content, parentFolderId, presetId);
                   toast.success(tNotifications('Notifications.drawer.itemCreated'));
                }
                clearPendingItemDrop();

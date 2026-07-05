@@ -98,7 +98,7 @@ export interface DrawerState {
       moveFolder: (folderId: string, destinationFolderId?: string) => Promise<void>;
       reorderFolders: (parentFolderId: string | null, oldIndex: number, newIndex: number) => Promise<void>;
       // Item actions
-      addItem: (name: string, game: GameSystem, type: GeneralItemType, content: DrawerItemContent, parentFolderId?: string) => Promise<string>;
+      addItem: (name: string, game: GameSystem, type: GeneralItemType, content: DrawerItemContent, parentFolderId?: string, presetId?: string) => Promise<string>;
       addImportedItem: (itemContent: DrawerItemContent, itemType: GeneralItemType, game: GameSystem, parentFolderId?: string) => Promise<void>;
       renameItem: (itemId: string, newName: string) => Promise<void>;
       deleteItem: (itemId: string) => Promise<void>;
@@ -260,19 +260,22 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          // ==================
          //  Item actions
          // ==================
-         addItem: async (name, game, type, content, parentFolderId) => {
+         addItem: async (name, game, type, content, parentFolderId, presetId) => {
             // Preserve the old store's semantics: a caller-preset id from the
             // content's `drawerItemId` becomes the item id, and the content is
             // deep-re-ID'd so the drawer copy is independent of the live source.
             // `deepReId` regenerates `id` fields only, leaving `drawerItemId`
-            // intact, so the preset id still matches the stored content.
-            const presetId = 'drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined;
+            // intact, so the preset id still matches the stored content. An
+            // explicit `presetId` wins over the content-derived one: a bare
+            // card/tracker (a saved board item) has no `drawerItemId` to sniff, so
+            // its Save-As threads the id in directly.
+            const resolvedPresetId = presetId ?? ('drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined);
             // A FULL_BOARD aggregate must NOT be re-ID'd: its item ids are referenced by
             // connection endpoints (`from`/`to`) and its board id keys the focus-or-open
             // round-trip, so re-iding would orphan connections and change identity. Other
             // content stays re-ID'd so the drawer copy is independent of the live source.
             const freshContent = type === 'FULL_BOARD' ? content : deepReId(content);
-            const command = createCreateItemCommand({ id: presetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
+            const command = createCreateItemCommand({ id: resolvedPresetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
             await runMutation(command);
             return command.getCreatedItemId() ?? '';
          },
