@@ -297,6 +297,12 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    //  If dragging from sheet (card or tracker)
    // ==================
    if (activeDataType === 'sheet-card' || activeDataType === 'sheet-tracker') {
+      // Dropping a sheet card/tracker onto the board canvas embeds a copy (board tab only, so the
+      // zone is absent elsewhere and never competes with the drawer/reorder targets below).
+      const boardDroppables = args.droppableContainers.filter((container) => container.id === 'board-drop-zone');
+      const boardCollisions = pointerWithin({ ...args, droppableContainers: boardDroppables });
+      if (boardCollisions.length > 0) return boardCollisions;
+
       // First priority: drawer drop zones (current folder)
       const drawerZoneDroppables = args.droppableContainers.filter((container) => {
          const id = container.id.toString();

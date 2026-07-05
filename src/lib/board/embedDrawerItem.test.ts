@@ -2,12 +2,13 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES } from './embedDrawerItem';
 import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
 import type { DrawerItemContent } from '@/lib/types/drawer';
+import type { Card, Tracker } from '@/lib/types/character';
 
 /*
  * Tests for the drawer-item -> embedded-board-item spec. The key guarantee is that the
@@ -98,6 +99,66 @@ describe('embeddedSpecForDrawerItem', () => {
       expect(spec).toMatchObject({ width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
    });
 
+   it('shares the mapping with the drawer path, keyed off the drawer item content', () => {
+      // The drawer path delegates to embeddedSpecForComponent(item.content), so a drawer card and its
+      // bare content produce the same spec bar the drawer-only source id.
+      const card = { cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS', themeType: 'Origin' } } as unknown as Card;
+      const fromComponent = embeddedSpecForComponent(card);
+      const fromDrawer = embeddedSpecForDrawerItem(makeDrawerItem('CHARACTER_THEME', card as unknown as DrawerItemContent));
+      expect(fromComponent).toMatchObject({ kind: 'card', width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
+      expect(fromDrawer).toMatchObject({ kind: 'card', width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
+   });
+});
+
+/*
+ * Tests for the shared card/tracker -> board spec used off the character sheet (a bare Card | Tracker,
+ * no drawer wrapper). A sheet component is a self-contained COPY with NO `sourceDrawerItemId`.
+ */
+describe('embeddedSpecForComponent', () => {
+   it('embeds a sheet card as a deep copy with NO drawer source id', () => {
+      const card = { cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS', themeType: 'Origin' } } as unknown as Card;
+      const spec = embeddedSpecForComponent(card);
+      expect(spec).not.toBeNull();
+      expect(spec!.kind).toBe('card');
+      expect(spec).toMatchObject({ width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
+      expect(spec!.content).toMatchObject({ kind: 'card', mode: 'copy' });
+      // A sheet component is not from the drawer, so it carries no source id.
+      expect(spec!.content).not.toHaveProperty('sourceDrawerItemId');
+
+      // Deep copy: a later edit to the source card must not reach the board copy.
+      (card as { details: { themeType: string } }).details.themeType = 'Adventure';
+      const copied = spec!.content as { data: { details: { themeType: string } } };
+      expect(copied.data.details.themeType).toBe('Origin');
+   });
+
+   it('embeds a CHALLENGE_CARD from the sheet as a card copy (not null)', () => {
+      const card = { cardType: 'CHALLENGE_CARD', details: { game: 'LEGENDS', challengeLevel: 1 } } as unknown as Card;
+      const spec = embeddedSpecForComponent(card);
+      expect(spec).toMatchObject({ kind: 'card', width: EMBEDDED_CARD_SIZE.width, height: EMBEDDED_CARD_SIZE.height });
+      expect(spec!.content).toMatchObject({ kind: 'card', mode: 'copy' });
+   });
+
+   it('embeds a sheet tracker as a copy sized to its native footprint, no drawer source id', () => {
+      const status = embeddedSpecForComponent({ trackerType: 'STATUS', name: 'Wounded' } as unknown as Tracker);
+      expect(status).toMatchObject({ kind: 'tracker', ...EMBEDDED_TRACKER_SIZES.STATUS });
+      expect(status!.content).toMatchObject({ kind: 'tracker', mode: 'copy' });
+      expect(status!.content).not.toHaveProperty('sourceDrawerItemId');
+
+      const theme = embeddedSpecForComponent({ trackerType: 'STORY_THEME', name: 'Theme' } as unknown as Tracker);
+      expect(theme).toMatchObject({ kind: 'tracker', ...EMBEDDED_TRACKER_SIZES.STORY_THEME });
+   });
+
+   it('drops a sheet IMAGE_CARD as a NATIVE image item, not an embed', () => {
+      const spec = embeddedSpecForComponent(
+         { cardType: 'IMAGE_CARD', details: { game: 'NEUTRAL', assetId: 'hash-1', fit: 'contain', width: 320, height: 240 } } as unknown as Card,
+      );
+      expect(spec).toMatchObject({ kind: 'image', width: 320, height: 240, content: { kind: 'image', assetId: 'hash-1', fit: 'contain' } });
+      expect(spec!.content).not.toHaveProperty('mode');
+      expect(spec!.content).not.toHaveProperty('sourceDrawerItemId');
+   });
+});
+
+describe('embeddedSpecForDrawerItem (image)', () => {
    it('drops an image card as a NATIVE image item (not an embed), carrying asset/fit/size', () => {
       const withSize = embeddedSpecForDrawerItem(
          makeDrawerItem('IMAGE_CARD', { cardType: 'IMAGE_CARD', details: { game: 'NEUTRAL', assetId: 'hash-1', fit: 'contain', width: 320, height: 240 } } as unknown as DrawerItemContent),

@@ -30,7 +30,7 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 // -- Board Imports --
 import { screenToWorld } from '@/lib/board/boardCoordinates';
 import { zoneContaining } from '@/lib/board/zoneMembership';
-import { embeddedSpecForDrawerItem, characterElementSpec } from '@/lib/board/embedDrawerItem';
+import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec } from '@/lib/board/embedDrawerItem';
 import { importBoard } from '@/lib/board/boardRepository';
 
 // -- Type Imports --
@@ -841,6 +841,22 @@ export function useCharacterSheetDnD() {
          if (wasDrawerReceded) setDrawerReceded(true);
       };
 
+      // Embeds the dragged sheet component as a self-contained board copy at the drop point.
+      // Shared by SCENARIO 2.0a's two entry paths: the dnd-kit `board-drop-zone` hit, and the
+      // geometry fallback for a board tab reached by a mid-drag spring nav (see below).
+      const dropSheetItemOnBoard = () => {
+         const boardStore = getActiveBoardStore();
+         if (!boardStore || !activeDragItem) return;
+         const spec = embeddedSpecForComponent(activeDragItem as CardData | Tracker);
+         if (!spec) return;
+         void boardStore.getState().actions.addItem({
+            ...boardDropPlacement(boardStore, dropPointer, spec),
+            kind: spec.kind,
+            content: spec.content,
+         });
+         contractIfExpanded();
+      };
+
       setActiveDragItem(null);
       setIsOverDrawer(false);
       setOverDragId(null);
@@ -945,6 +961,28 @@ export function useCharacterSheetDnD() {
                return;
             }
             // Already in the current folder → fall through to the dnd-kit reorder path below.
+         }
+      }
+
+      // ##################################################
+      // ###   Sheet → board via mid-drag spring nav    ###
+      // ##################################################
+      // A sheet item dropped on the board after spring-navigating to the board tab MID-DRAG:
+      // BoardView's `board-drop-zone` droppable mounts during the drag, so dnd-kit never measures
+      // it and `over` is not `board-drop-zone` (often null), which would fall through to the reorder
+      // path below. Resolve it by real cursor geometry instead, matching how the drawer force-morph
+      // and nav-grace already trust the live pointer over dnd-kit's `over`. Guarded so it fires ONLY
+      // for a sheet drag with a live board tab and a real pointer inside the board canvas, so it can
+      // never hijack a sheet or drawer target. Runs BEFORE the `over` null-guard for the null case.
+      if (dragKind === 'sheet-item' && dropPointer && getActiveBoardStore()) {
+         const clip = document.querySelector('[data-board-clip]') as HTMLElement | null;
+         const rect = clip?.getBoundingClientRect() ?? null;
+         const overBoard = !!rect &&
+            dropPointer.x >= rect.left && dropPointer.x <= rect.right &&
+            dropPointer.y >= rect.top && dropPointer.y <= rect.bottom;
+         if (overBoard) {
+            dropSheetItemOnBoard();
+            return;
          }
       }
 
@@ -1137,6 +1175,19 @@ export function useCharacterSheetDnD() {
       // ###   BRANCH 2: Dragging FROM the Sheet   ###
       // #############################################
       if (activeType?.startsWith('sheet-')) {
+
+         // ==================
+         //  SCENARIO 2.0a: Dropping a card/tracker onto the board canvas
+         // ==================
+         // Mirrors the drawer's board drop (SCENARIO 1.0): a board is game-agnostic, so there is NO
+         // game gate. The sheet component becomes a self-contained COPY (no `sourceDrawerItemId`, it is
+         // not from the drawer); an image drops as a native image. The board zone only exists on a board
+         // tab, so a sheet drag reaches it only when a board is active. The geometry fallback above
+         // handles the mid-drag spring-nav case where this dnd-kit target is not yet measured.
+         if (overIdStr === 'board-drop-zone') {
+            dropSheetItemOnBoard();
+            return;
+         }
 
          // ==================
          //  SCENARIO 2.0: Dropping on a DIFFERENT character's sheet (after tab auto-nav)

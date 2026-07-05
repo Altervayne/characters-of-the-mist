@@ -4,14 +4,15 @@ import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '@/lib/
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
 import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent } from '@/lib/types/board';
-import type { Character, ImageCardDetails } from '@/lib/types/character';
+import type { Card, Character, ImageCardDetails, Tracker } from '@/lib/types/character';
 
 /*
- * Turns a dragged drawer card/tracker into the spec for a board item. A card/tracker drops as a
- * COPY: the content is deep-copied so the board item is self-contained and a later drawer edit can
- * never mutate it, and it records `sourceDrawerItemId`. An IMAGE_CARD is just an image, so it drops
- * as the board's NATIVE image item (no embed, no copy/reference). Full sheets, full boards, and
- * folders are not droppable here and return `null` (the caller no-ops without a toast).
+ * Turns a card/tracker into the spec for a board item, whether it came from the drawer or straight
+ * off the character sheet. A card/tracker drops as a COPY: the content is deep-copied so the board
+ * item is self-contained and a later edit can never mutate it. A drawer-sourced copy also records
+ * `sourceDrawerItemId`; a sheet component is a bare copy with no source. An IMAGE_CARD is just an
+ * image, so it drops as the board's NATIVE image item (no embed, no copy/reference). Full sheets,
+ * full boards, and folders are not droppable here and return `null` (the caller no-ops).
  */
 
 /**
@@ -41,11 +42,9 @@ export const CHARACTER_ELEMENT_SIZE = { width: 360, height: 132 } as const;
 
 // An IMAGE_CARD is NOT here: it drops as a native image item, not an embedded card.
 const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME', 'CHALLENGE_CARD']);
-const TRACKER_TYPES = new Set<GeneralItemType>(['STATUS_TRACKER', 'STORY_TAG_TRACKER', 'STORY_THEME_TRACKER']);
 
 /** The native footprint for an embedded tracker, by its `trackerType`. */
-function trackerEmbedSize(item: DrawerItem): { width: number; height: number } {
-   const trackerType = (item.content as { trackerType?: string }).trackerType;
+function trackerEmbedSize(trackerType: string | undefined): { width: number; height: number } {
    return (trackerType && EMBEDDED_TRACKER_SIZES[trackerType]) || DEFAULT_TRACKER_SIZE;
 }
 
@@ -74,6 +73,47 @@ export function characterElementSpec(character: { id: string; drawerItemId?: str
 }
 
 /**
+ * Builds the board-item spec for a bare sheet component (a `Card` or `Tracker`), or `null` when it is
+ * not droppable. Keyed off the component's own discriminant (`cardType` / `trackerType`), which are the
+ * same `GeneralItemType` / tracker-type values the drawer path keys off, so BOTH paths share this
+ * mapping. The result is a self-contained COPY with NO `sourceDrawerItemId` (it is not from the drawer);
+ * an IMAGE_CARD becomes the native image item. {@link embeddedSpecForDrawerItem} wraps this to layer the
+ * drawer source id on and to add the full-sheet reference case.
+ */
+export function embeddedSpecForComponent(component: Card | Tracker): EmbeddedBoardSpec | null {
+   if ('cardType' in component) {
+      if (component.cardType === 'IMAGE_CARD') {
+         const details = (component as { details?: ImageCardDetails }).details;
+         return {
+            kind: 'image',
+            width: details?.width ? clampCardWidth(details.width) : DEFAULT_IMAGE_CARD_SIZE.width,
+            height: details?.height ? clampCardHeight(details.height) : DEFAULT_IMAGE_CARD_SIZE.height,
+            content: { kind: 'image', assetId: details?.assetId ?? null, fit: details?.fit ?? 'cover' },
+         };
+      }
+      if (CARD_TYPES.has(component.cardType)) {
+         return {
+            kind: 'card',
+            width: EMBEDDED_CARD_SIZE.width,
+            height: EMBEDDED_CARD_SIZE.height,
+            content: { kind: 'card', mode: 'copy', data: structuredClone(component) },
+         };
+      }
+      return null;
+   }
+   if ('trackerType' in component && component.trackerType in EMBEDDED_TRACKER_SIZES) {
+      const size = trackerEmbedSize(component.trackerType);
+      return {
+         kind: 'tracker',
+         width: size.width,
+         height: size.height,
+         content: { kind: 'tracker', mode: 'copy', data: structuredClone(component) },
+      };
+   }
+   return null;
+}
+
+/**
  * Builds the board-item spec for `item`, or `null` when the item is not droppable. A card/tracker
  * becomes an embedded COPY (deep-copied content, recording the source id); an image card becomes a
  * native image item; a saved full character sheet becomes a live read-only character REFERENCE.
@@ -89,31 +129,11 @@ export function embeddedSpecForDrawerItem(item: DrawerItem): EmbeddedBoardSpec |
          content: { kind: 'character', sourceDrawerItemId: item.id, characterId },
       };
    }
-   if (item.type === 'IMAGE_CARD') {
-      const details = (item.content as { details?: ImageCardDetails }).details;
-      return {
-         kind: 'image',
-         width: details?.width ? clampCardWidth(details.width) : DEFAULT_IMAGE_CARD_SIZE.width,
-         height: details?.height ? clampCardHeight(details.height) : DEFAULT_IMAGE_CARD_SIZE.height,
-         content: { kind: 'image', assetId: details?.assetId ?? null, fit: details?.fit ?? 'cover' },
-      };
+   // A drawer card/tracker wraps the same aggregate a sheet component is, so the shared mapping does
+   // the work; the drawer path only layers its own `sourceDrawerItemId` onto an embedded copy.
+   const spec = embeddedSpecForComponent(item.content as Card | Tracker);
+   if (spec && (spec.content.kind === 'card' || spec.content.kind === 'tracker') && spec.content.mode === 'copy') {
+      spec.content.sourceDrawerItemId = item.id;
    }
-   if (CARD_TYPES.has(item.type)) {
-      return {
-         kind: 'card',
-         width: EMBEDDED_CARD_SIZE.width,
-         height: EMBEDDED_CARD_SIZE.height,
-         content: { kind: 'card', mode: 'copy', sourceDrawerItemId: item.id, data: structuredClone(item.content) },
-      };
-   }
-   if (TRACKER_TYPES.has(item.type)) {
-      const size = trackerEmbedSize(item);
-      return {
-         kind: 'tracker',
-         width: size.width,
-         height: size.height,
-         content: { kind: 'tracker', mode: 'copy', sourceDrawerItemId: item.id, data: structuredClone(item.content) },
-      };
-   }
-   return null;
+   return spec;
 }
