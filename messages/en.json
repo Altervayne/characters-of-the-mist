@@ -516,6 +516,8 @@
 
          "IMAGE_CARD": "Portrait",
          "FULL_BOARD": "Board",
+         "POST_IT": "Post-it",
+         "JOURNAL": "Journal",
          "boardItemCount": "{{count}} item(s)",
 
          "cards": "Card(s)",

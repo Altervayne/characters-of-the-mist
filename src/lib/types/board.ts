@@ -69,6 +69,30 @@ export interface JournalBoardContent {
 }
 
 /**
+ * A post-it note as a standalone, serializable aggregate - the shape both the drawer item `content`
+ * and the board copy's `data` snapshot hold (like one `Card` is shared by sheet, drawer, and board).
+ * Distinct from {@link PostItBoardContent}, whose `kind` discriminant is a board-item tag: this carries
+ * only the note itself. `color` is optional (absent reads as the default amber).
+ */
+export interface PostItNote {
+   id: string;
+   text: string;
+   color?: string;
+}
+
+/**
+ * A journal as a standalone, serializable aggregate - the drawer `content` / board `data` snapshot
+ * counterpart to {@link JournalBoardContent} (minus the board-item `kind` tag). Pages carry stable ids;
+ * bookmarks reference a page by `pageId`, never by index, so the aggregate stays internally consistent
+ * through clone and save-back.
+ */
+export interface Journal {
+   id: string;
+   pages: JournalPage[];
+   bookmarks: JournalBookmark[];
+}
+
+/**
  * An embedded character card or tracker, in the reference-vs-copy model. A `copy` is a
  * self-contained snapshot in `data`; a `reference` is a
  * live, read-only mirror of a drawer item (rendered from the drawer on each read).

@@ -1,14 +1,15 @@
 // -- Type Imports --
 import type { Card, Tracker, Character } from './character.ts';
-import type { Board } from './board.ts';
+import type { Board, PostItNote, Journal } from './board.ts';
 import type { GameSystem, GeneralItemType } from './common.ts';
 
 // Re-export common types for backward compatibility
 export type { GameSystem, GeneralItemType };
 
 // A drawer item wraps one saved aggregate: a card, a tracker, a whole character
-// (`FULL_CHARACTER_SHEET`), or a whole board (`FULL_BOARD`).
-export type DrawerItemContent = Card | Tracker | Character | Board;
+// (`FULL_CHARACTER_SHEET`), a whole board (`FULL_BOARD`), a post-it (`POST_IT`), or
+// a journal (`JOURNAL`).
+export type DrawerItemContent = Card | Tracker | Character | Board | PostItNote | Journal;
 
 export interface DrawerItem {
    id: string;

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 // -- Local Imports --
 import { customCollisionDetection, mapItemToStorableInfo, sheetSectionForItemType } from './dnd';
 import type { Card } from '@/lib/types/character';
+import type { Journal, PostItNote } from '@/lib/types/board';
 
 /*
  * Tests for the drawer-item branch of customCollisionDetection. The in-drawer MOVE
@@ -174,5 +175,26 @@ describe('mapItemToStorableInfo / sheetSectionForItemType - Challenge Card', () 
 
    it('sections a challenge card under cards, alongside the other card types', () => {
       expect(sheetSectionForItemType('CHALLENGE_CARD')).toBe('cards');
+   });
+});
+
+describe('mapItemToStorableInfo - post-it & journal notes (game-agnostic)', () => {
+   it('maps a post-it note to POST_IT, NEUTRAL', () => {
+      const note: PostItNote = { id: 'p1', text: 'Scene framing questions', color: '#fde68a' };
+      expect(mapItemToStorableInfo(note)).toEqual(['POST_IT', 'NEUTRAL']);
+   });
+
+   it('maps a color-less post-it note to POST_IT, NEUTRAL', () => {
+      const note: PostItNote = { id: 'p2', text: 'No color set' };
+      expect(mapItemToStorableInfo(note)).toEqual(['POST_IT', 'NEUTRAL']);
+   });
+
+   it('maps a journal to JOURNAL, NEUTRAL', () => {
+      const journal: Journal = {
+         id: 'j1',
+         pages: [{ id: 'pg1', text: 'Session one' }],
+         bookmarks: [{ id: 'bm1', pageId: 'pg1', label: 'Start' }],
+      };
+      expect(mapItemToStorableInfo(journal)).toEqual(['JOURNAL', 'NEUTRAL']);
    });
 });

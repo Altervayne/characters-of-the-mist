@@ -483,6 +483,8 @@
          "OTHERSCAPE_STORY_THEME_TRACKER": "Suivi de Thème Narratif",
          "IMAGE_CARD": "[TO COMPLETE]",
          "FULL_BOARD": "[TO COMPLETE]",
+         "POST_IT": "[TO COMPLETE]",
+         "JOURNAL": "[TO COMPLETE]",
          "boardItemCount": "[TO COMPLETE]",
          "cards": "Carte(s)",
          "trackers": "Suivi(s)"

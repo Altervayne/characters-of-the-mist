@@ -270,18 +270,20 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             // card/tracker (a saved board item) has no `drawerItemId` to sniff, so
             // its Save-As threads the id in directly.
             const resolvedPresetId = presetId ?? ('drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined);
-            // A FULL_BOARD aggregate must NOT be re-ID'd: its item ids are referenced by
-            // connection endpoints (`from`/`to`) and its board id keys the focus-or-open
-            // round-trip, so re-iding would orphan connections and change identity. Other
-            // content stays re-ID'd so the drawer copy is independent of the live source.
-            const freshContent = type === 'FULL_BOARD' ? content : deepReId(content);
+            // A FULL_BOARD or JOURNAL aggregate must NOT be re-ID'd. A board's item ids are
+            // referenced by connection endpoints (`from`/`to`) and its board id keys the
+            // focus-or-open round-trip. A journal's bookmarks reference pages by `pageId`, a
+            // field `deepReId` leaves untouched while it regenerates every page's `id` - so a
+            // blind re-ID would orphan every bookmark. Both are exempt; other content stays
+            // re-ID'd so the drawer copy is independent of the live source.
+            const freshContent = type === 'FULL_BOARD' || type === 'JOURNAL' ? content : deepReId(content);
             const command = createCreateItemCommand({ id: resolvedPresetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
             await runMutation(command);
             return command.getCreatedItemId() ?? '';
          },
          addImportedItem: async (itemContent, itemType, game, parentFolderId) => {
             const freshContent = deepReId(itemContent);
-            const name = 'title' in freshContent ? freshContent.title : freshContent.name;
+            const name = 'title' in freshContent ? freshContent.title : 'name' in freshContent ? freshContent.name : '';
             await runMutation(createCreateItemCommand({ name, game, type: itemType, content: freshContent, parentFolderId: parentFolderId ?? null }));
          },
          renameItem: async (itemId, newName) => {

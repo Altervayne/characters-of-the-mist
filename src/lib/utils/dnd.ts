@@ -2,6 +2,7 @@ import { closestCenter, pointerWithin } from "@dnd-kit/core";
 import type { Collision, CollisionDetection } from "@dnd-kit/core";
 import type { DrawerItem, GameSystem, GeneralItemType } from "../types/drawer";
 import type { Card, Tracker } from "../types/character";
+import type { Journal, PostItNote } from "../types/board";
 import type { SortingStrategy } from "@dnd-kit/sortable";
 import { resolveSortableOverId, resolveSortableOverId2D } from "./dragFeedback";
 import { useAppGeneralStateStore } from "../stores/appGeneralStateStore";
@@ -15,7 +16,7 @@ import { useAppGeneralStateStore } from "../stores/appGeneralStateStore";
  * Converts a character sheet card or tracker into drawer-compatible storage info.
  * Returns a tuple of [item type, game system] - useful when saving items to the drawer.
  */
-export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, GameSystem] | null {
+export function mapItemToStorableInfo(item: Card | Tracker | PostItNote | Journal): [GeneralItemType, GameSystem] | null {
    if ('cardType' in item) {
       const game: GameSystem = item.details.game;
       switch (item.cardType) {
@@ -38,6 +39,10 @@ export function mapItemToStorableInfo(item: Card | Tracker): [GeneralItemType, G
          default: return null;
       }
    }
+   // Post-its and journals are game-agnostic notes: they save to the drawer as NEUTRAL. A journal owns
+   // `pages`; a post-it owns `text` - disjoint shapes, so the presence of `pages` splits them cleanly.
+   if ('pages' in item) return ['JOURNAL', 'NEUTRAL'];
+   if ('text' in item) return ['POST_IT', 'NEUTRAL'];
    return null;
 };
 
