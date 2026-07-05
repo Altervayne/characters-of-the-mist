@@ -97,6 +97,17 @@ const ensureImageCardSize = (card: Card): Card => {
 
 
 /**
+ * Backfills the `journals` array on a character: sheet journals are a 2.0 addition, so a 1.x
+ * `FULL_CHARACTER_SHEET` imported through the harmonizer arrives without the field and code
+ * reading `character.journals` would crash. Idempotent and version-independent - a sheet that
+ * already carries the array passes through unchanged.
+ */
+const ensureCharacterJournals = (character: Character): Character => {
+   if (Array.isArray(character.journals)) return character;
+   return { ...character, journals: [] };
+};
+
+/**
  * Drops the defunct `game` from a tracker: trackers are theme-agnostic now and render from their
  * context character's game (the app theme when there is none), so a stored `game` is dead weight.
  * Idempotent - a tracker without the field passes through unchanged.
@@ -216,6 +227,7 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
    if (isCharacter(harmonizedData)) {
       harmonizedData = { ...harmonizedData, cards: harmonizedData.cards.map(ensureImageCardSize) };
       harmonizedData = stripCharacterTrackerGames(harmonizedData as Character);
+      harmonizedData = ensureCharacterJournals(harmonizedData as Character);
    } else if (isCard(harmonizedData) && dataType === 'IMAGE_CARD') {
       harmonizedData = ensureImageCardSize(harmonizedData);
    } else if (TRACKER_ITEM_TYPES.has(dataType as GeneralItemType)) {

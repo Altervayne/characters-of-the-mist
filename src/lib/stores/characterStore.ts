@@ -16,6 +16,7 @@ import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStore
 
 // -- Type Imports --
 import type { Character, Card, Tag, LegendsThemeDetails, OtherscapeThemeDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails, ImageCardDetails } from '@/lib/types/character';
+import type { Journal } from '@/lib/types/board';
 import type { GeneralItemType, GameSystem } from '../types/drawer';
 import type { CreateCardOptions } from '../types/creation';
 
@@ -114,6 +115,9 @@ export interface CharacterState {
       updateCardViewMode: (cardId: string, viewMode: CardViewMode | null) => void;
       /** Sets a card's board display mode (expanded landscape sheet vs the normal card). */
       setCardExpanded: (cardId: string, expanded: boolean) => void;
+      // Journal Actions
+      /** Appends a bare, empty Journal (the character's own notebook) to `character.journals`. */
+      addJournal: () => void;
       // Tag Actions
       addTag: (cardId: string, listName: TagListName) => void;
       updateTag: (cardId: string, listName: TagListName, tagId: string, updatedTag: Partial<Tag>) => void;
@@ -570,6 +574,16 @@ export function createCharacterStore() {
                         ...card,
                         expanded,
                      }));
+                  });
+               },
+               // Journal Actions
+               addJournal: () => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     // A bare, game-agnostic aggregate: a fresh notebook with no pages or bookmarks.
+                     const newJournal: Journal = { id: cuid(), pages: [], bookmarks: [] };
+                     return { character: { ...state.character, journals: [...state.character.journals, newJournal] } };
                   });
                },
                // Tag Actions

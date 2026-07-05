@@ -140,6 +140,7 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
    const baseCharacter: Omit<Character, 'cards' | 'game'> = {
       id: cuid(),
       name: name,
+      journals: [],
       trackers: {
          statuses: [],
          storyTags: [],

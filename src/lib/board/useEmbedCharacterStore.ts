@@ -47,6 +47,7 @@ export function seedCharacter(slot: EmbedSlot, data: unknown): Character {
       name: 'Embed',
       game: embedGame(data),
       cards: [],
+      journals: [],
       trackers: { statuses: [], storyTags: [], storyThemes: [] },
    };
    if (slot === 'cards') return { ...base, cards: [data as Card] };

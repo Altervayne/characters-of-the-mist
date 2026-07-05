@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, Dices, FilePlus2, Frame, Grid3x3, Grip, Image as ImageIcon, LayoutGrid, ListChecks, MapPin, Maximize, NotebookText, Plus, Skull, Square, StickyNote, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, Plus, Skull, Square, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
+import { CREATABLE_REGISTRY, CREATABLE_BY_KIND, type CreatableKind } from '@/lib/creation/creatableRegistry';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import { runSaveImageToDrawerAs, runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
@@ -57,22 +58,6 @@ import type { CreateCardOptions } from '@/lib/types/creation';
  * drawer items, connections, and threats are later prompts.
  */
 
-/** The board-native item kinds the palette can create. */
-type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zone';
-
-/** A fresh pin's color (classic corkboard red). */
-const DEFAULT_PIN_COLOR = '#ef4444';
-
-/** The create actions, in ring order: each kind's palette icon + label key (reused by the radial). */
-const RADIAL_CREATE: { kind: CreatableKind; Icon: typeof StickyNote; labelKey: string }[] = [
-   { kind: 'post-it', Icon: StickyNote, labelKey: 'addPostIt' },
-   { kind: 'journal', Icon: NotebookText, labelKey: 'addJournal' },
-   { kind: 'image', Icon: ImageIcon, labelKey: 'addImage' },
-   { kind: 'pin', Icon: MapPin, labelKey: 'addPin' },
-   { kind: 'dice-tray', Icon: Dices, labelKey: 'addDiceTray' },
-   { kind: 'zone', Icon: Frame, labelKey: 'addZone' },
-];
-
 /**
  * The tracker create actions, in ring order. `itemType` maps each `TrackerType` to its drawer item
  * type so the radial pulls the SAME glyph as the drawer list view (via `getItemTypeIconComponent`),
@@ -83,36 +68,6 @@ const RADIAL_TRACKERS: { id: string; trackerType: TrackerType; itemType: General
    { id: 'story-tag', trackerType: 'STORY_TAG', itemType: 'STORY_TAG_TRACKER', labelKey: 'Trackers.addStoryTag' },
    { id: 'story-theme', trackerType: 'STORY_THEME', itemType: 'STORY_THEME_TRACKER', labelKey: 'Trackers.addStoryTheme' },
 ];
-
-/** Default size (world units) per creatable kind. A pin is a small fixed dot. */
-const ITEM_SIZE: Record<CreatableKind, { width: number; height: number }> = {
-   'post-it': { width: 180, height: 180 },
-   journal: { width: 260, height: 320 },
-   image: { width: 240, height: 180 },
-   pin: { width: 28, height: 28 },
-   'dice-tray': { width: 220, height: 260 },
-   zone: { width: 360, height: 280 },
-};
-
-/** A fresh, empty content payload for a new item of `kind`. */
-function emptyContent(kind: CreatableKind): BoardItemContent {
-   switch (kind) {
-      case 'post-it':
-         // Board-born copy: source-less (Save-As only), a fresh standalone note in `data`.
-         return { kind: 'post-it', mode: 'copy', data: { id: cuid(), text: '' } };
-      case 'journal':
-         // Board-born copy: source-less (Save-As only), a fresh standalone journal in `data`.
-         return { kind: 'journal', mode: 'copy', data: { id: cuid(), pages: [{ id: cuid(), text: '' }], bookmarks: [] } };
-      case 'image':
-         return { kind: 'image', assetId: null, fit: 'cover' };
-      case 'pin':
-         return { kind: 'pin', color: DEFAULT_PIN_COLOR };
-      case 'dice-tray':
-         return { kind: 'dice-tray', title: '', dice: [{ id: cuid(), sides: 6 }, { id: cuid(), sides: 6 }], modifiers: [] };
-      case 'zone':
-         return { kind: 'zone', collapsed: false };
-   }
-}
 
 /** Rebuilds a connection's content with a new style, preserving its endpoints. The style carries
  *  the full set (width + color + dash), so any single-facet edit keeps the others. */
@@ -550,12 +505,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const createItemAt = (kind: CreatableKind, worldCenter: Point) => {
       const zValues = sortedItems.map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
-      const size = ITEM_SIZE[kind];
+      const size = CREATABLE_BY_KIND[kind].defaultSize;
       const id = cuid();
       const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
       // A non-zone item created over a zone joins it (same center-in-rectangle rule as a drop).
       const zoneId = kind === 'zone' ? undefined : zoneContaining(placement, zoneItems) ?? undefined;
-      void actions.addItem({ ...placement, kind, z, zoneId, content: emptyContent(kind) });
+      void actions.addItem({ ...placement, kind, z, zoneId, content: CREATABLE_BY_KIND[kind].makeContent() });
       setSelectedIds(new Set([id]));
    };
 
@@ -784,7 +739,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
               id: 'new-board',
               icon: <Plus className="h-5 w-5" />,
               label: t('BoardView.radialNewBoardElement'),
-              children: RADIAL_CREATE.map(({ kind, Icon, labelKey }) => ({
+              children: CREATABLE_REGISTRY.map(({ kind, icon: Icon, labelKey }) => ({
                  id: kind,
                  icon: <Icon className="h-5 w-5" />,
                  label: t(`BoardView.${labelKey}`),
@@ -960,24 +915,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
                   <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  <ToolbarButton title={t('BoardView.addPostIt')} onClick={() => handleAddItem('post-it')}>
-                     <StickyNote className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton title={t('BoardView.addJournal')} onClick={() => handleAddItem('journal')}>
-                     <NotebookText className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton title={t('BoardView.addImage')} onClick={() => handleAddItem('image')}>
-                     <ImageIcon className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton title={t('BoardView.addPin')} onClick={() => handleAddItem('pin')}>
-                     <MapPin className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton title={t('BoardView.addDiceTray')} onClick={() => handleAddItem('dice-tray')}>
-                     <Dices className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton title={t('BoardView.addZone')} onClick={() => handleAddItem('zone')}>
-                     <Frame className="h-4 w-4" />
-                  </ToolbarButton>
+                  {CREATABLE_REGISTRY.map(({ kind, icon: Icon, labelKey }) => (
+                     <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
+                        <Icon className="h-4 w-4" />
+                     </ToolbarButton>
+                  ))}
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
                      {gridIcon(grid.type)}

@@ -197,6 +197,7 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
       name: legacyData.name,
       game: 'LEGENDS',
       cards: [heroCard, ...themeCards.map((card, index) => ({ ...card, order: index + 1 }))],
+      journals: [],
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],
@@ -313,6 +314,7 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
       name: legacyData.name,
       game: 'CITY_OF_MIST',
       cards: [riftCard, ...themeCards.map((card, index) => ({ ...card, order: index + 1 }))],
+      journals: [],
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],
@@ -460,6 +462,7 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
          ...themeCards.map((card, index) => ({ ...card, order: index + 1 })),
          { ...loadoutCard, order: themeCards.length + 1 }
       ],
+      journals: [],
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],

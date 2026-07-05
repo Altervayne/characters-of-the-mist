@@ -1,5 +1,6 @@
 // -- Type Imports --
 import type { GameSystem, GeneralItemType } from "./common.ts";
+import type { Journal } from "./board.ts";
 
 
 
@@ -297,6 +298,9 @@ export interface Character {
    version?: string;
    drawerItemId?: string;
    cards: Card[];
+   // Sibling to `cards`/`trackers`: the character's own paged notebooks. Reuses the board/drawer
+   // `Journal` aggregate verbatim (one shape, three homes); empty is `[]`, never absent.
+   journals: Journal[];
    trackers: {
       statuses: StatusTracker[];
       storyTags: StoryTagTracker[];

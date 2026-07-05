@@ -76,6 +76,35 @@ describe('harmonization: image-card normalization', () => {
    });
 });
 
+describe('harmonization: sheet journals backfill', () => {
+   /** A 1.x character sheet, predating `journals` (the field is absent). */
+   function legacySheetWithoutJournals(): Character {
+      return {
+         id: 'char-1',
+         name: 'Hero',
+         game: 'LEGENDS',
+         version: '2.0.0',
+         cards: [],
+         trackers: { statuses: [], storyTags: [], storyThemes: [] },
+      } as unknown as Character;
+   }
+
+   it('backfills a missing journals field with an empty array', () => {
+      const harmonized = harmonizeData(legacySheetWithoutJournals(), 'FULL_CHARACTER_SHEET');
+      expect(harmonized.journals).toEqual([]);
+   });
+
+   it('is idempotent: a sheet that already has journals passes through unchanged', () => {
+      const journals = [{ id: 'j1', pages: [{ id: 'p1', text: 'note' }], bookmarks: [] }];
+      const sheet = { ...legacySheetWithoutJournals(), journals } as Character;
+
+      const harmonized = harmonizeData(sheet, 'FULL_CHARACTER_SHEET');
+
+      expect(harmonized.journals).toBe(journals);
+      expect(harmonized.journals).toEqual(journals);
+   });
+});
+
 describe('harmonization: tracker game strip', () => {
    it('drops the defunct game from every tracker on a character', () => {
       const character = {

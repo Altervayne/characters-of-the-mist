@@ -148,3 +148,37 @@ describe('setCardSize', () => {
       expect(imageCards(store)[0].details).toMatchObject({ width: 300, height: MAX_CARD_HEIGHT_PX });
    });
 });
+
+describe('addJournal', () => {
+   it('appends a bare, empty Journal with a generated id', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+
+      const journals = store.getState().character!.journals;
+      expect(journals).toHaveLength(1);
+      expect(typeof journals[0].id).toBe('string');
+      expect(journals[0].id).not.toBe('');
+      expect(journals[0].pages).toEqual([]);
+      expect(journals[0].bookmarks).toEqual([]);
+   });
+
+   it('appends (never replaces): each call adds a distinct journal', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      store.getState().actions.addJournal();
+
+      const journals = store.getState().character!.journals;
+      expect(journals).toHaveLength(2);
+      expect(journals[0].id).not.toBe(journals[1].id);
+   });
+
+   it('is undoable: undo removes the added journal', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      expect(store.getState().character!.journals).toHaveLength(1);
+
+      store.temporal.getState().undo();
+
+      expect(store.getState().character!.journals).toHaveLength(0);
+   });
+});
