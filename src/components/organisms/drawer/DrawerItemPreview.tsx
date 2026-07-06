@@ -121,10 +121,11 @@ function JournalPreview({ journal }: { journal: Journal }) {
 }
 
 /**
- * Static preview of a saved Note: the document title and the top of its body on the themed `bg-card`
- * panel - a clipped thumbnail of the page, not a reader. A note is CHROME end to end (no content-color
- * exception, unlike a post-it), so every surface here is an app token. Guarded: title/body are read
- * defensively so an odd note renders the placeholder rather than throwing - a preview must never crash.
+ * Static preview of a saved Note: the document title and the top of its body on the PAPER palette -
+ * a clipped thumbnail of the page, not a reader. It renders on `--paper-*` (parchment by default, and
+ * re-themed by a custom theme's paper tokens) to match the note surface itself, NOT app `--card-*`
+ * (which game themes override). Guarded: title/body are read defensively so an odd note renders the
+ * placeholder rather than throwing - a preview must never crash.
  */
 function NotePreview({ note }: { note: Note }) {
    const { t } = useTranslation();
@@ -132,15 +133,15 @@ function NotePreview({ note }: { note: Note }) {
    const body = typeof note?.body === 'string' ? note.body : '';
 
    return (
-      <div className="flex h-45 w-45 flex-col overflow-hidden rounded-md border border-border bg-card text-card-foreground">
+      <div className="flex h-45 w-45 flex-col overflow-hidden rounded-md border border-paper-border bg-paper-background text-paper-foreground">
          {title.trim() ? (
-            <div className="shrink-0 border-b border-border px-2.5 py-1.5 text-sm font-semibold truncate">{title}</div>
+            <div className="shrink-0 border-b border-paper-border px-2.5 py-1.5 text-sm font-semibold truncate">{title}</div>
          ) : null}
          <div className="min-h-0 flex-1 overflow-hidden p-2.5 text-sm leading-snug">
             {body.trim() ? (
                <NoteMarkdown content={body} />
             ) : (
-               <span className="text-xs text-muted-foreground/50">{t('NoteView.emptyPreview')}</span>
+               <span className="text-xs text-paper-foreground/50">{t('NoteView.emptyPreview')}</span>
             )}
          </div>
       </div>

@@ -6,6 +6,7 @@ import { APP_VERSION } from '../config';
 import { getAsset, storeAsset } from '@/lib/assets/assetRepository';
 import { hashBytes } from '@/lib/assets/processImage';
 import type { ProcessedImage } from '@/lib/assets/processImage';
+import { collectFromNote } from '@/lib/notes/noteAssets';
 
 // `CUSTOM_THEME` is a 2.0-native type (themes live in app settings, not the drawer); it rides the same
 // envelope as everything else. A board (`FULL_BOARD`) rides it too.
@@ -212,11 +213,13 @@ function collectFromCharacter(character: Character, into: Set<string>): void {
    for (const card of character.cards) collectFromCard(card, into);
 }
 
-/** A drawer item's content is a character (has `cards`), a card (has `details`), or a tracker (neither). */
+/** A drawer item's content is a character (has `cards`), a note (has `body`), a card (has `details`), or a tracker (none). */
 function collectFromItem(item: DrawerItem, into: Set<string>): void {
    const content = item.content;
    if (Array.isArray((content as Character).cards)) {
       collectFromCharacter(content as Character, into);
+   } else if (typeof (content as Note).body === 'string') {
+      collectFromNote(content as Note, into);
    } else if ('details' in content) {
       collectFromCard(content as Card, into);
    }
@@ -242,7 +245,7 @@ function collectFromBoard(board: Board, into: Set<string>): void {
 
 /**
  * Collects every asset hash referenced by `content`, whatever it is: a character, a
- * single card, or a folder/drawer of them. Trackers reference nothing.
+ * single card, a note (inline images), or a folder/drawer of them. Trackers reference nothing.
  *
  * @param content - The item being exported.
  * @returns The set of referenced asset hashes.
@@ -261,6 +264,8 @@ export function collectAssetIdsFromContent(content: ExportableContent): Set<stri
       collectFromFolder(content, ids); // Folder
    } else if (Array.isArray((content as Character).cards)) {
       collectFromCharacter(content as Character, ids);
+   } else if (typeof (content as Note).body === 'string') {
+      collectFromNote(content as Note, ids); // Note: inline images in the markdown body
    } else if ('details' in content) {
       collectFromCard(content as Card, ids);
    }

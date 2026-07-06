@@ -141,6 +141,16 @@ export async function importNote(note: Note, drawerItemId: string | null): Promi
    await db.notes.put(record);
 }
 
+/**
+ * Lists EVERY working note aggregate, for the asset GC's reference scan (a note's inline images live
+ * in its `body`, so an unsaved open note's art would be reclaimed if the sweep never saw it). Reads
+ * the whole `notes` table; the sweep runs rarely, so the full read is fine.
+ */
+export async function listAllNotes(): Promise<Note[]> {
+   const records = await db.notes.toArray();
+   return records.map(recordToNote);
+}
+
 /** Deletes every note row (powers "Reset app"), mirroring `clearAllBoards`. */
 export async function clearAllNotes(): Promise<void> {
    await db.notes.clear();

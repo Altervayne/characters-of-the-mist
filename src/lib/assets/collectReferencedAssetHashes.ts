@@ -2,11 +2,13 @@
 import { listCharacters } from '@/lib/character/characterRepository';
 import { listAllItemContents } from '@/lib/drawer/drawerRepository';
 import { listAllBoardItems } from '@/lib/board/boardRepository';
+import { listAllNotes } from '@/lib/notes/noteRepository';
+import { collectFromNote } from '@/lib/notes/noteAssets';
 
 // -- Type Imports --
 import type { Card, Character } from '@/lib/types/character';
 import type { DrawerItemContent } from '@/lib/types/drawer';
-import type { Board, BoardItemContent } from '@/lib/types/board';
+import type { Board, BoardItemContent, Note } from '@/lib/types/board';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
 
 /*
@@ -34,15 +36,17 @@ function collectFromCharacter(character: Character, into: Set<string>): void {
 
 /**
  * A drawer item's content is a character (has `cards`), a board (has `viewport` + `items`),
- * a card (has `details`), or a tracker (none of these). A drawer-saved board is an inline
- * aggregate - its art is NOT in the normalized `boardItems` table - so it is walked here
- * (otherwise a saved-then-closed board's images would be reclaimed).
+ * a note (has `body`), a card (has `details`), or a tracker (none of these). A drawer-saved
+ * board or note is an inline aggregate - its art is NOT in the normalized item tables - so it
+ * is walked here (otherwise a saved-then-closed board/note's images would be reclaimed).
  */
 function collectFromItemContent(content: DrawerItemContent, into: Set<string>): void {
    if (Array.isArray((content as Character).cards)) {
       collectFromCharacter(content as Character, into);
    } else if ('viewport' in content && Array.isArray((content as Board).items)) {
       for (const item of (content as Board).items) collectFromBoardItemContent(item.content, into);
+   } else if (typeof (content as Note).body === 'string') {
+      collectFromNote(content as Note, into);
    } else if ('details' in content) {
       collectFromCard(content as Card, into);
    }
@@ -71,8 +75,9 @@ function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
 
 /**
  * Collects every asset hash currently referenced anywhere in stored data: every
- * character's cards, every drawer item whose content is a card or a character, and
- * every board's image items.
+ * character's cards, every drawer item whose content is a card / character / note, every
+ * board's image items, and every WORKING note's inline images (the `notes` table - an
+ * open note's images aren't in the drawer until it is saved).
  *
  * @returns The set of referenced hashes. Anything in the asset store NOT in this
  *   set is an orphan candidate for the sweep (subject to the grace window).
@@ -80,15 +85,17 @@ function collectFromBoardItem(item: BoardItemRecord, into: Set<string>): void {
 export async function collectReferencedAssetHashes(): Promise<Set<string>> {
    const referenced = new Set<string>();
 
-   const [characterRecords, itemContents, boardItems] = await Promise.all([
+   const [characterRecords, itemContents, boardItems, notes] = await Promise.all([
       listCharacters(),
       listAllItemContents(),
       listAllBoardItems(),
+      listAllNotes(),
    ]);
 
    for (const record of characterRecords) collectFromCharacter(record.character, referenced);
    for (const content of itemContents) collectFromItemContent(content, referenced);
    for (const item of boardItems) collectFromBoardItem(item, referenced);
+   for (const note of notes) collectFromNote(note, referenced);
 
    return referenced;
 }

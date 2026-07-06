@@ -78,6 +78,12 @@ describe('collectAssetIdsFromContent', () => {
       expect(collectAssetIdsFromContent(imageCard('')).size).toBe(0);
       expect(collectAssetIdsFromContent(character([])).size).toBe(0);
    });
+
+   it('finds inline-image hashes in a note body (so an exported note bundles its images)', () => {
+      // The SAME grammar the GC uses, exercised through the export path - the two must never drift.
+      const note = { id: 'n1', title: 'Handout', body: '![a map](asset:1234abcd5678)\n\n![](asset:9999ffff0000)' };
+      expect(collectAssetIdsFromContent(note)).toEqual(new Set(['1234abcd5678', '9999ffff0000']));
+   });
 });
 
 describe('CUSTOM_THEME export/import', () => {

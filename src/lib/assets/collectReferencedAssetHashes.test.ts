@@ -85,6 +85,18 @@ function seedBoardCardCopy(id: string, assetId: string) {
    });
 }
 
+/** Adds a working note row directly, whose `body` carries inline `asset:` image references. */
+function seedNote(id: string, body: string) {
+   return drawerDatabase.notes.add({
+      id,
+      title: id,
+      body,
+      updatedAt: 0,
+      drawerItemId: null,
+      schemaVersion: 1,
+   });
+}
+
 /** Adds an embedded board CARD REFERENCE; its `lastKnown` may carry art, but references are not scanned. */
 function seedBoardCardReference(id: string, sourceDrawerItemId: string, lastKnownAssetId: string) {
    return drawerDatabase.boardItems.add({
@@ -104,6 +116,7 @@ beforeEach(async () => {
    await drawerDatabase.characters.clear();
    await drawerDatabase.items.clear();
    await drawerDatabase.boardItems.clear();
+   await drawerDatabase.notes.clear();
 });
 
 describe('collectReferencedAssetHashes', () => {
@@ -194,5 +207,23 @@ describe('collectReferencedAssetHashes', () => {
       const referenced = await collectReferencedAssetHashes();
 
       expect(referenced.has('asset-stale')).toBe(false);
+   });
+
+   it('finds the inline-image hash in a WORKING note body (so the sweep keeps an open note\'s images)', async () => {
+      // A note open in a tab isn't in the drawer yet; its images live in the `notes` table and would
+      // be reclaimed if the GC never walked it - the exact days-later silent loss the helper guards.
+      await seedNote('note-working', '# Handout\n\n![a map](asset:aaaa111122223333)');
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.has('aaaa111122223333')).toBe(true);
+   });
+
+   it('finds the inline-image hash in a DRAWER-saved note (item content is an inline aggregate)', async () => {
+      await seedDrawerItem('note-item', { id: 'n1', title: 'Saved', body: '![](asset:bbbb444455556666)' } as DrawerItemContent);
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.has('bbbb444455556666')).toBe(true);
    });
 });
