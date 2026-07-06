@@ -1,4 +1,5 @@
 // -- React Imports --
+import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Custom Hooks --
@@ -32,8 +33,6 @@ import { DiceTrayPanel } from '@/components/organisms/dice/DiceTrayPanel';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
-import { BoardView } from '@/components/organisms/board/BoardView';
-import { NoteView } from '@/components/organisms/note/NoteView';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
 import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
@@ -52,6 +51,14 @@ import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
+
+// The note and board surfaces are deferred: each pulls in a heavy stack (the
+// note editor drags in the whole markdown/inspector chain, the board its canvas
+// engine) that only the matching tab needs. Splitting them off keeps the sheet's
+// first paint lean; the async chunks are still glob-precached, so both stay
+// fully offline.
+const NoteView = lazy(() => import('@/components/organisms/note/NoteView').then((m) => ({ default: m.NoteView })));
+const BoardView = lazy(() => import('@/components/organisms/board/BoardView').then((m) => ({ default: m.BoardView })));
 
 function DesktopCharacterSheetPage() {
    // ==================
@@ -235,9 +242,13 @@ function DesktopCharacterSheetPage() {
                    sheet/menu so they sit below the strip rather than over it. */}
                <div className="relative flex-1 min-h-0">
                   { activeNote ? (
-                     <NoteView />
+                     <Suspense fallback={<CharacterBootLoading />}>
+                        <NoteView />
+                     </Suspense>
                   ) : activeBoard ? (
-                     <BoardView />
+                     <Suspense fallback={<CharacterBootLoading />}>
+                        <BoardView />
+                     </Suspense>
                   ) : character ? (
                      <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
                         <CharacterNameHeader

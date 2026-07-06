@@ -75,9 +75,14 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Precache the built app shell so it loads with no network. The large
-        // single JS chunk sits just under Workbox's 2 MiB default cache limit.
+        // Precache the built app shell so it loads with no network. The bundle
+        // is split into per-vendor chunks (see build.rollupOptions), each well
+        // under the per-file cap, so all of them precache with room to spare.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        // Headroom over Workbox's 2 MiB default per-file cap: a safety net so a
+        // future heavy chunk is never silently dropped from the precache (which
+        // would break offline). The real guard is keeping every chunk small.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // SPA fallback: any offline navigation resolves to the cached shell so
         // client-side routes keep working without a server round-trip.
         navigateFallback: 'index.html',
@@ -113,6 +118,71 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split the vendor deps into stable, logical chunks so no single file
+        // approaches Workbox's per-file precache cap and everything stays
+        // precached (100% offline). Each seam isolates a self-contained
+        // dependency cluster, so churn in one library never re-hashes the
+        // others - keeping most precache entries reusable across releases.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+
+          // The markdown rendering stack: react-markdown plus the entire
+          // unified/remark/rehype/micromark/mdast/hast/unist/vfile ecosystem and
+          // its many leaf utilities. By far the heaviest cluster; kept apart so
+          // it can also be deferred with the surfaces that render prose.
+          if (/[\\/]node_modules[\\/](react-markdown|remark|rehype|remark-gfm|unified|micromark|mdast|mdast-util-|micromark-|hast-util-|hastscript|property-information|space-separated-tokens|comma-separated-tokens|unist-util-|vfile|vfile-message|trim-lines|zwitch|longest-streak|ccount|markdown-table|escape-string-regexp|decode-named-character-reference|character-entities|html-url-attributes|bail|is-plain-obj|trough|devlop|estree-util-|estree-walker)/.test(id)) {
+            return 'markdown-vendor'
+          }
+
+          // React core + router: the framework foundation, changes rarely.
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|use-sync-external-store)[\\/]/.test(id)) {
+            return 'react-vendor'
+          }
+
+          // Radix UI primitives + cmdk (built on the same primitives).
+          if (/[\\/]node_modules[\\/](@radix-ui|cmdk)[\\/]/.test(id)) {
+            return 'radix-vendor'
+          }
+
+          // Animation engine.
+          if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) {
+            return 'motion-vendor'
+          }
+
+          // Drag-and-drop engine.
+          if (/[\\/]node_modules[\\/]@dnd-kit[\\/]/.test(id)) {
+            return 'dnd-vendor'
+          }
+
+          // IndexedDB data layer.
+          if (/[\\/]node_modules[\\/]dexie[\\/]/.test(id)) {
+            return 'dexie-vendor'
+          }
+
+          // Localization runtime + language detector.
+          if (/[\\/]node_modules[\\/](i18next|react-i18next|i18next-browser-languagedetector)[\\/]/.test(id)) {
+            return 'i18n-vendor'
+          }
+
+          // Guided-tour library (only loaded when a tour starts).
+          if (/[\\/]node_modules[\\/]driver\.js[\\/]/.test(id)) {
+            return 'tour-vendor'
+          }
+
+          // State stores + undo history.
+          if (/[\\/]node_modules[\\/](zustand|zundo)[\\/]/.test(id)) {
+            return 'state-vendor'
+          }
+
+          // Everything else falls to Rollup's default vendor grouping.
+          return 'vendor'
+        }
+      }
+    }
+  },
   server: {
     port: 5173
   }
