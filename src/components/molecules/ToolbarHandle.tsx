@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
+import type { ReactNode } from 'react';
 
 // -- Other Library Imports --
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,6 +40,13 @@ interface ToolbarHandleProps {
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
    side?: "left" | "right" | "top" | "bottom";
+   /**
+    * Extra action nodes rendered in the toolbar row beside the grip, for a card whose structural
+    * controls live inside the grab toolbar (the sheet journal portals its add/remove-page + bookmark
+    * controls here). Only mounted while the toolbar is hovered, so a portal target set from here
+    * re-targets on hover/un-hover with the toolbar.
+    */
+   extraActions?: ReactNode;
 };
 
 interface sideVariants {
@@ -73,6 +81,13 @@ const variants: sideVariants = {
 
 
 
+/**
+ * The shared class for a toolbar action button (`<Button variant="outline" size="icon">`). Exported so a
+ * card that portals its own controls INTO this toolbar (the sheet journal) styles them identically to the
+ * built-in grip/delete/flip buttons rather than copying the string.
+ */
+export const TOOLBAR_ACTION_BUTTON_CLASS = "h-7 w-7 cursor-pointer bg-card-paper-bg text-card-paper-fg";
+
 export const ViewModeIcon = ({ mode }: { mode: CardViewMode | null | undefined }) => {
    if (mode === 'SIDE_BY_SIDE') return <BookOpen className="h-4 w-4" />;
    if (mode === 'FLIP') return <FlipHorizontal className="h-4 w-4" />;
@@ -92,7 +107,8 @@ const ViewModeTooltip = ({ mode }: { mode: CardViewMode | null | undefined }) =>
 export function ToolbarHandle({ isEditing, isHovered, cardTheme, onDelete,
                               onFlip, onEditCard, onExport, onCycleViewMode,
                               onStoryTagNegative, onUpgradeStoryTag, onDowngradeStoryTheme,
-                              isStoryTagNegative, cardViewMode, dragAttributes, dragListeners, side = "left" }: ToolbarHandleProps) {
+                              isStoryTagNegative, cardViewMode, dragAttributes, dragListeners, side = "left",
+                              extraActions }: ToolbarHandleProps) {
    return (
       <AnimatePresence>
          {isHovered && (
@@ -159,6 +175,11 @@ export function ToolbarHandle({ isEditing, isHovered, cardTheme, onDelete,
                   <div className="flex items-center justify-center cursor-grab text-card-popover-fg h-7 w-7" {...dragAttributes} {...dragListeners}>
                      { side === "left" || side === "right" ? <GripVertical /> : <GripHorizontal /> }
                   </div>
+
+                  {/* Structural controls a card keeps in the grab toolbar (the journal's add/remove-page +
+                      bookmark, portaled here). Rendered bare so the host's `display:contents` slot lets its
+                      buttons sit as direct flex children of this row - identical spacing to grip/delete. */}
+                  { extraActions }
 
                   { onStoryTagNegative && (
                      <Button 

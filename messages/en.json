@@ -110,6 +110,8 @@
       "journalBookmark": "Bookmark page",
       "journalRemoveBookmark": "Remove bookmark",
       "journalBookmarkPlaceholder": "Bookmark",
+      "journalBookmarks": "Bookmarks",
+      "journalNoBookmarks": "No bookmarks yet",
       "imageUpload": "Upload image",
       "imageChange": "Change image",
       "imageRemove": "Remove image",

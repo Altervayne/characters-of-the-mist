@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Bookmark, BookmarkMinus, ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react';
+import { Bookmark, BookmarkMinus, BookMarked, ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -15,6 +15,8 @@ import { migrateJournalContent, withPageRemoved } from '@/lib/board/journalConte
 
 // -- Component Imports --
 import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 // -- Hook Imports --
 import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
@@ -25,6 +27,7 @@ import { useJournalViewStore } from '@/lib/stores/journalViewStore';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, JournalBoardContent } from '@/lib/types/board';
+import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
  * A paged note: one editable plain-text page at a time, with prev/next, a page indicator,
@@ -43,14 +46,34 @@ interface JournalItemProps {
    toolbarSlot: HTMLElement | null;
    /** A non-clipped slot at the box's right edge; the bookmark tabs portal here so they protrude. */
    sideSlot: HTMLElement | null;
+   /**
+    * When set, the portaled structural controls (add/remove page, bookmark) render as the host's toolbar
+    * `<Button>` with this className, so a sheet journal's grip toolbar is pixel-identical to a card's.
+    * The board leaves it undefined and keeps the compact `ControlButton` in its own selection toolbar.
+    */
+   toolbarControlClassName?: string;
+   /**
+    * How the bookmark list is presented. `'side-tabs'` (default, the board) portals protruding tabs into
+    * `sideSlot`. `'popover'` (the sheet) instead renders a Bookmarks button in the persistent nav row that
+    * opens a body-portaled list - so it floats above `flex-wrap` neighbours instead of being z-buried by them.
+    */
+   bookmarkMode?: 'side-tabs' | 'popover';
+   /**
+    * Overrides the tapped-mention handler. The board leaves it undefined and mints a board-native tracker
+    * (`useBoardMentionMint`); the sheet journal passes the on-sheet create-or-raise handler so a tap creates
+    * a status/tag on the active character (its fake zero-rect host means the board mint would no-op).
+    */
+   onMentionClick?: (segment: MentionSegment) => void;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
 }
 
-export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, onContentChange, onRequestSelect }: JournalItemProps) {
+export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, toolbarControlClassName, bookmarkMode = 'side-tabs', onMentionClick, onContentChange, onRequestSelect }: JournalItemProps) {
    const { t } = useTranslation();
-   // A tapped `{mention}` in the page mints a fresh tracker beside the journal (create-only, board scope).
-   const handleMentionClick = useBoardMentionMint(item);
+   // A tapped `{mention}` mints a board-native tracker beside the journal (create-only, board scope); a host
+   // that supplies its own handler (the sheet journal → create-or-raise on the character) overrides it.
+   const boardMint = useBoardMentionMint(item);
+   const handleMentionClick = onMentionClick ?? boardMint;
 
    // Normalize legacy string-page journals to id'd pages; every commit spreads this so the
    // migration persists on the first edit. The journal is the copy's inner `data` aggregate.
@@ -142,12 +165,56 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
             <ControlButton title={t('BoardView.nextPage')} disabled={pageIndex === pages.length - 1} onPointerDown={stopDrag} onClick={goNext}>
                <ChevronRight className="h-3.5 w-3.5" />
             </ControlButton>
+
+            {/* Popover-mode (the sheet) puts the bookmark LIST in the always-visible nav row - the side
+                tabs are a reading affordance, so their replacement stays visible too. A body-portaled
+                popover floats above flex-wrap neighbours (no z-fighting). Always clickable, so the empty
+                state is reachable. */}
+            {bookmarkMode === 'popover' && (
+               <Popover>
+                  <PopoverTrigger asChild>
+                     <button
+                        type="button"
+                        title={t('BoardView.journalBookmarks')}
+                        aria-label={t('BoardView.journalBookmarks')}
+                        onPointerDown={stopDrag}
+                        className="flex items-center justify-center rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                     >
+                        <BookMarked className="h-3.5 w-3.5" />
+                     </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-60 p-1.5" onOpenAutoFocus={(event) => event.preventDefault()}>
+                     {tabs.length === 0 ? (
+                        <div className="rounded-md border-2 border-dashed border-border bg-muted/50 px-3 py-4 text-center text-xs text-muted-foreground">
+                           {t('BoardView.journalNoBookmarks')}
+                        </div>
+                     ) : (
+                     <div className="flex flex-col gap-0.5">
+                        {tabs.map(({ bookmark, page }) => (
+                           <BookmarkListRow
+                              key={bookmark.id}
+                              label={bookmark.label}
+                              pageNumber={page + 1}
+                              active={page === pageIndex}
+                              editable={isSelected}
+                              placeholder={t('BoardView.journalBookmarkPlaceholder')}
+                              removeLabel={t('BoardView.journalRemoveBookmark')}
+                              onJump={() => jumpToPage(bookmark.pageId)}
+                              onRemove={() => removeBookmark(bookmark.id)}
+                              onLabelCommit={(value) => setBookmarkLabel(bookmark.id, value)}
+                           />
+                        ))}
+                     </div>
+                     )}
+                  </PopoverContent>
+               </Popover>
+            )}
          </div>
 
          {/* Structural actions live in the selection toolbar. */}
          {isSelected && toolbarSlot && createPortal(
             <>
-               <ControlButton title={t('BoardView.addPage')} onPointerDown={stopDrag} onClick={addPage}>
+               <ControlButton title={t('BoardView.addPage')} onPointerDown={stopDrag} onClick={addPage} toolbarClassName={toolbarControlClassName}>
                   <Plus className="h-4 w-4" />
                </ControlButton>
                <ControlButton
@@ -155,10 +222,11 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
                   disabled={pages.length === 1 && (pages[0]?.text ?? '') === '' && text === ''}
                   onPointerDown={stopDrag}
                   onClick={removePage}
+                  toolbarClassName={toolbarControlClassName}
                >
                   <Minus className="h-4 w-4" />
                </ControlButton>
-               <ControlButton title={isBookmarked ? t('BoardView.journalRemoveBookmark') : t('BoardView.journalBookmark')} onPointerDown={stopDrag} onClick={toggleBookmark}>
+               <ControlButton title={isBookmarked ? t('BoardView.journalRemoveBookmark') : t('BoardView.journalBookmark')} onPointerDown={stopDrag} onClick={toggleBookmark} toolbarClassName={toolbarControlClassName}>
                   {isBookmarked ? <BookmarkMinus className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
                </ControlButton>
             </>,
@@ -186,10 +254,11 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
             </div>
          )}
 
-         {/* Bookmark side tabs: portaled into the box's non-clipped side slot so they protrude
-             past the right edge (the body keeps clipping its text). Still body-scaled + in page
-             order. The wrapper stops the pointer so a tab miss never starts a canvas pan. */}
-         {sideSlot && tabs.length > 0 && createPortal(
+         {/* Bookmark side tabs (board default): portaled into the box's non-clipped side slot so they
+             protrude past the right edge (the body keeps clipping its text). Still body-scaled + in page
+             order. The wrapper stops the pointer so a tab miss never starts a canvas pan. The sheet uses
+             `bookmarkMode='popover'` instead (the protruding tabs z-bury under flex-wrap neighbours). */}
+         {bookmarkMode === 'side-tabs' && sideSlot && tabs.length > 0 && createPortal(
             <div onPointerDown={stopDrag} className="mt-9 flex flex-col items-start gap-1">
                {tabs.map(({ bookmark, page }) => (
                   <BookmarkTab
@@ -302,20 +371,130 @@ function BookmarkTab({
    );
 }
 
-/** A small icon control in the journal's bar; stops the drag and fires its click. */
+/**
+ * One row in the sheet journal's Bookmarks popover list: the same functionality the side tab gives (jump
+ * to its page, an editable label while editing, a remove control), laid out as a horizontal list row
+ * inside a body-portaled popover so it floats above flex-wrap neighbours instead of z-burying under them.
+ */
+function BookmarkListRow({
+   label,
+   pageNumber,
+   active,
+   editable,
+   placeholder,
+   removeLabel,
+   onJump,
+   onRemove,
+   onLabelCommit,
+}: {
+   label?: string;
+   pageNumber: number;
+   active: boolean;
+   editable: boolean;
+   placeholder: string;
+   removeLabel: string;
+   onJump: () => void;
+   onRemove: () => void;
+   onLabelCommit: (value: string) => void;
+}) {
+   const [value, setValue] = useState(label ?? '');
+   const [synced, setSynced] = useState(label ?? '');
+   if ((label ?? '') !== synced) {
+      setSynced(label ?? '');
+      setValue(label ?? '');
+   }
+   const commit = () => {
+      const trimmed = value.trim();
+      if (trimmed !== (label ?? '')) onLabelCommit(trimmed);
+   };
+   // A remount (tab switch / popover close) flushes the label buffer so an edit isn't lost.
+   useCommitOnUnmount(commit);
+
+   return (
+      <div className={cn(
+         'flex items-center gap-1 rounded-sm px-1.5 py-1 text-xs',
+         active ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',
+      )}>
+         {/* The page badge doubles as the jump target, so a labelled row still shows (and jumps to) its page. */}
+         <button
+            type="button"
+            aria-label={String(pageNumber)}
+            onClick={onJump}
+            className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded bg-muted px-1 tabular-nums text-[0.65rem] text-muted-foreground hover:bg-primary hover:text-primary-foreground cursor-pointer"
+         >
+            {pageNumber}
+         </button>
+         {editable ? (
+            <input
+               type="text"
+               value={value}
+               onChange={(event) => setValue(event.target.value)}
+               onBlur={commit}
+               placeholder={placeholder}
+               className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground/50"
+            />
+         ) : (
+            <button
+               type="button"
+               title={label && label.length > 0 ? label : undefined}
+               onClick={onJump}
+               className="min-w-0 flex-1 truncate text-left cursor-pointer"
+            >
+               {label && label.length > 0 ? label : placeholder}
+            </button>
+         )}
+         {editable && (
+            <button
+               type="button"
+               title={removeLabel}
+               aria-label={removeLabel}
+               onClick={onRemove}
+               className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-background/50 hover:text-destructive cursor-pointer"
+            >
+               <X className="h-3 w-3" />
+            </button>
+         )}
+      </div>
+   );
+}
+
+/**
+ * A small icon control in the journal's bar; stops the drag and fires its click. The board's default is a
+ * compact transparent button; a host that hosts these in its own card toolbar passes `toolbarClassName`,
+ * which switches to the shared `<Button variant="outline" size="icon">` with that className so the control
+ * is pixel-identical to the toolbar's other buttons (grip / delete / flip).
+ */
 function ControlButton({
    title,
    disabled = false,
    onClick,
    onPointerDown,
+   toolbarClassName,
    children,
 }: {
    title: string;
    disabled?: boolean;
    onClick: () => void;
    onPointerDown: (event: ReactPointerEvent) => void;
+   toolbarClassName?: string;
    children: React.ReactNode;
 }) {
+   if (toolbarClassName) {
+      return (
+         <Button
+            variant="outline"
+            size="icon"
+            title={title}
+            aria-label={title}
+            disabled={disabled}
+            onPointerDown={onPointerDown}
+            onClick={onClick}
+            className={toolbarClassName}
+         >
+            {children}
+         </Button>
+      );
+   }
    return (
       <button
          type="button"

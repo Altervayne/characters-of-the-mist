@@ -6,10 +6,11 @@ import { motion } from 'framer-motion';
 
 // -- Component Imports --
 import { JournalItem } from '@/components/organisms/board/items/JournalItem';
-import { ToolbarHandle } from '@/components/molecules/ToolbarHandle';
+import { ToolbarHandle, TOOLBAR_ACTION_BUTTON_CLASS } from '@/components/molecules/ToolbarHandle';
 
 // -- Hook Imports --
 import { useToolbarHover } from '@/hooks/useToolbarHover';
+import { useSheetMentionCreate } from '@/hooks/character-sheet/useSheetMentionCreate';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -29,10 +30,13 @@ import type { BoardItem, BoardItemContent, JournalBoardContent } from '@/lib/typ
  * journal has no use for). The body speaks the copy wrapper (`content.data`), so this host wraps the
  * bare `Journal` on the way in and unwraps it back onto `character.journals` on every edit.
  *
- * The body portals its page/bookmark controls into `toolbarSlot` and its bookmark tabs into `sideSlot`,
- * both owned here. Editing follows the sheet's edit mode: in edit mode the page is an editable textarea
- * and the controls show; at rest the page renders its Markdown. There is no board to mint onto, so a
- * tapped mention no-ops (the body's mint handler guards on an active board).
+ * The body portals its page structural controls into `toolbarSlot` (owned here, inside the grab toolbar).
+ * Bookmarks use `bookmarkMode='popover'`: instead of the board's protruding side tabs (which z-bury under
+ * flex-wrap neighbours on the sheet), the body renders a Bookmarks button that opens a body-portaled list.
+ * Editing follows the sheet's edit mode: in edit mode the page is an editable textarea and the controls
+ * show; at rest the page renders its Markdown. A tapped `{mention}` creates on the active character via the
+ * shared sheet handler (create-or-raise a status, de-dupe a tag) - the same source the challenge card uses -
+ * rather than minting on a board.
  */
 
 interface SheetJournalCardProps {
@@ -50,10 +54,11 @@ const SHEET_HOST_RECT: BoardItem = { id: '', kind: 'journal', z: 0, x: 0, y: 0, 
 export function SheetJournalCard({ journal, isEditing, dragAttributes, dragListeners }: SheetJournalCardProps) {
    const { updateJournal, removeJournal } = useCharacterActions();
    const { isHovered, hoverHandlers } = useToolbarHover();
+   // A tapped mention in the page create-or-raises a status / de-dupes a tag on the active character.
+   const handleMentionClick = useSheetMentionCreate();
 
-   // State-backed slots so the body re-renders to portal into them once they mount.
+   // State-backed slot so the body re-renders to portal its structural controls in once it mounts.
    const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
-   const [sideSlot, setSideSlot] = useState<HTMLDivElement | null>(null);
 
    // The body edits a board copy wrapper; hand it the bare aggregate as `data` and unwrap on write.
    const content: JournalBoardContent = { kind: 'journal', mode: 'copy', data: journal };
@@ -70,31 +75,27 @@ export function SheetJournalCard({ journal, isEditing, dragAttributes, dragListe
             dragListeners={dragListeners}
             onDelete={() => removeJournal(journal.id)}
             cardTheme="card-type-image"
+            // The body's structural controls (add/remove page, bookmark) portal into this slot, which lives
+            // inside the grab toolbar. Only present while editing (those are edit-only actions), so at rest
+            // the toolbar reads exactly like a card's: just the grip. `display:contents` lets the portaled
+            // buttons sit as direct flex children of the toolbar row - identical spacing to grip/delete.
+            extraActions={isEditing ? <div ref={setToolbarSlot} className="contents" /> : undefined}
          />
-         {/* The outer box is NOT clipped: the clip lives on the inner wrapper (shaping the page body to
-             the card), leaving the sideSlot free to protrude - the same non-clipped context the board's
-             BoardItemBox gives its bookmark tabs. */}
-         <div className="relative min-w-62.5 w-62.5 h-150 rounded-lg border-2 border-border bg-card text-card-foreground z-0">
-            {/* Inner clip: rounds and clips only the page body to the card shape. */}
-            <div className="absolute inset-0 overflow-hidden rounded-lg">
-               {/* The body's structural controls (add/remove page, bookmark) portal here while editing. */}
-               <div ref={setToolbarSlot} className="absolute right-1 top-1 z-10 flex items-center gap-0.5" />
-
-               <JournalItem
-                  item={SHEET_HOST_RECT}
-                  content={content}
-                  isSelected={isEditing}
-                  toolbarSlot={toolbarSlot}
-                  sideSlot={sideSlot}
-                  onContentChange={handleContentChange}
-                  onRequestSelect={() => {}}
-               />
-            </div>
-
-            {/* Unclipped side slot at the right edge (sibling of the clip, child of the un-clipped box):
-                the body's bookmark tabs portal here so they protrude into the flex-wrap gap. The high
-                z-index keeps them above the neighbouring card they extend toward. */}
-            <div ref={setSideSlot} className="absolute left-full top-0 z-20" />
+         {/* Bookmarks use a body-portaled popover (not protruding tabs), so the card body simply clips its
+             page content to the card shape - no side slot to keep un-clipped. */}
+         <div className="relative min-w-62.5 w-62.5 h-150 overflow-hidden rounded-lg border-2 border-border bg-card text-card-foreground z-0">
+            <JournalItem
+               item={SHEET_HOST_RECT}
+               content={content}
+               isSelected={isEditing}
+               toolbarSlot={toolbarSlot}
+               sideSlot={null}
+               toolbarControlClassName={TOOLBAR_ACTION_BUTTON_CLASS}
+               bookmarkMode="popover"
+               onMentionClick={handleMentionClick}
+               onContentChange={handleContentChange}
+               onRequestSelect={() => {}}
+            />
          </div>
       </motion.div>
    );

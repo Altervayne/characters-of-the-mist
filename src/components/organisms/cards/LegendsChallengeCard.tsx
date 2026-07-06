@@ -2,9 +2,6 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
-
 // -- Basic UI Imports --
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +22,7 @@ import type { RowListOps } from '@/components/organisms/cards/challengeCardEditR
 import { ExpandedChallengeSheet } from '@/components/organisms/cards/ExpandedChallengeSheet';
 
 // -- Store and Hook Imports --
-import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
+import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
@@ -33,15 +30,14 @@ import { useCardViewMode } from '@/hooks/useCardViewMode';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 import { useManualScroll } from '@/hooks/useManualScroll';
+import { useSheetMentionCreate } from '@/hooks/character-sheet/useSheetMentionCreate';
 
 // -- Utils Imports --
-import { applyStatusTier } from '@/lib/trackers/applyStatusTier';
 import { addRow, newAbility, newStatus, newTag, patchAbilityById, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
 import type { CardComponentProps } from '@/components/organisms/cards/resolveCardComponent';
 import type { BlandTag, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
-import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
  * The GM Challenge Card (LitM). Front = image / name / italic types / star level / flavor; back = Limits /
@@ -59,7 +55,6 @@ export const LegendsChallengeCard = React.memo(
          const { t } = useTranslation();
          const actions = useCharacterActions();
          const storeInstance = useActiveCharacterInstance();
-         const character = useCharacterStore((state) => state.character);
          const details = card.details as LegendsChallengeDetails;
 
          const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
@@ -166,31 +161,9 @@ export const LegendsChallengeCard = React.memo(
          };
 
          // A tapped mention applies to the active character: a status create-or-RAISES (bubble-up, no
-         // duplicate); a tag de-dupes by name. Only wired on the interactive sheet card (see below).
-         const handleMentionClick = (segment: MentionSegment) => {
-            if (segment.type === 'status') {
-               const wanted = segment.name.trim().toLowerCase();
-               const existing = character?.trackers.statuses.find((status) => status.name.trim().toLowerCase() === wanted);
-               if (existing) {
-                  actions.updateStatus(existing.id, { tiers: applyStatusTier(existing.tiers, segment.tier) });
-                  toast.success(t('Cards.challenge.mention.raised', { name: segment.name }));
-               } else {
-                  const id = actions.addStatus(segment.name);
-                  actions.updateStatus(id, { tiers: applyStatusTier(Array(6).fill(false), segment.tier) });
-                  toast.success(t('Cards.challenge.mention.applied', { name: segment.name }));
-               }
-               return;
-            }
-            if (segment.type === 'tag') {
-               const wanted = segment.name.trim().toLowerCase();
-               if (character?.trackers.storyTags.some((tag) => tag.name.trim().toLowerCase() === wanted)) {
-                  toast(t('Cards.challenge.mention.alreadyExists', { name: segment.name }));
-                  return;
-               }
-               actions.addStoryTag(segment.name);
-               toast.success(t('Cards.challenge.mention.applied', { name: segment.name }));
-            }
-         };
+         // duplicate); a tag de-dupes by name. The shared sheet hook owns that logic (also used by the
+         // sheet journal), so both surfaces create on the active character from one source.
+         const handleMentionClick = useSheetMentionCreate();
          // A board embed routes taps to the board (create-only, via `onMentionClick`); the live sheet card
          // uses the create-or-raise handler above; a static preview / drawer snapshot stays plain.
          const mentionClick = isBoardEmbed
