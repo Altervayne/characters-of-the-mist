@@ -28,6 +28,7 @@
       }
    },
    "BoardView": {
+      "otherElements": "Other Elements…",
       "addPostIt": "Add post-it",
       "addJournal": "Add journal",
       "addImage": "Add image",

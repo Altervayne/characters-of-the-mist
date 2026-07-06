@@ -28,6 +28,7 @@
       }
    },
    "BoardView": {
+      "otherElements": "[TO COMPLETE]",
       "addPostIt": "[TO COMPLETE]",
       "addJournal": "[TO COMPLETE]",
       "addImage": "[TO COMPLETE]",

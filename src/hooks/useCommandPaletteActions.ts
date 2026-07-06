@@ -26,6 +26,7 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
 import { undoActiveContext, redoActiveContext } from '@/lib/history/undoRouting';
 import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
+import { CREATABLE_REGISTRY } from '@/lib/creation/creatableRegistry';
 
 // -- Type Imports --
 import type { Board } from '@/lib/types/board';
@@ -56,6 +57,11 @@ export interface CommandAction {
 type CommandScope = 'global' | 'character' | 'board';
 
 type ScopedCommand = CommandAction & { scope: CommandScope };
+
+/** PascalCases a hyphenated creatable kind for a stable command id (`post-it` -> `PostIt`, `zone` -> `Zone`). */
+function boardCommandId(kind: string): string {
+   return kind.split('-').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+}
 
 
 
@@ -209,6 +215,18 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
       // active canvas consumes this request since it owns the drop point + selection/expand state.
       { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },
+      // The board-native element create commands, mirroring the toolbar/radial. Icon + label come from
+      // the shared registry so the palette can't drift from the other surfaces; each drops at view center
+      // via the same `create:<kind>` bridge (the canvas owns the drop point).
+      ...CREATABLE_REGISTRY.map((entry) => ({
+         id: `create${boardCommandId(entry.kind)}OnBoard`,
+         scope: 'board' as const,
+         label: t(`BoardView.${entry.labelKey}`),
+         keywords: ['create', 'new', 'board', entry.kind],
+         icon: entry.icon,
+         group: t('CommandPalette.groups.creation'),
+         action: () => requestBoardAction(`create:${entry.kind}`),
+      })),
    ];
 
    // A character tab gets everything; a board tab and the menu get only the global commands.

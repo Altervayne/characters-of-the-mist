@@ -32,6 +32,7 @@ import { BoardItemBox } from './BoardItemBox';
 import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
+import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
@@ -623,17 +624,36 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
+      else if (pendingBoardAction.startsWith('create:')) createItemAt(pendingBoardAction.slice('create:'.length) as CreatableKind, viewCenter);
       clearBoardAction();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
    }, [pendingBoardAction, clearBoardAction]);
 
    /** Palette add: drop the new item centered in the current view (the radial uses the cursor point). */
    const handleAddItem = (kind: CreatableKind) => {
+      createItemAt(kind, currentViewCenter());
+   };
+
+   /** The current view's world center + the clip's center screen point (for a menu-driven create/anchor). */
+   const currentViewCenter = (): Point => {
+      const el = clipRef.current;
+      if (!el) return viewCenter;
+      const rect = el.getBoundingClientRect();
+      return screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
+   };
+
+   /**
+    * The "Add Game Element" menu's card row: open the card creation popover for `game`, anchored at the
+    * clip's center (the drop lands there on confirm) - mirroring the radial's per-game card flow, but
+    * centered since the menu isn't cursor-placed.
+    */
+   const handlePickCardGame = (game: GameSystem) => {
       const el = clipRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
-      createItemAt(kind, center);
+      const screen = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      const world = screenToWorld(screen.x, screen.y, { left: rect.left, top: rect.top }, viewportRef.current);
+      setPendingCard({ game, world, screen });
    };
 
    /**
@@ -920,6 +940,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                         <Icon className="h-4 w-4" />
                      </ToolbarButton>
                   ))}
+                  <BoardAddGameElementMenu
+                     onAddTracker={(trackerType) => createTrackerAt(trackerType, currentViewCenter())}
+                     onPickCardGame={handlePickCardGame}
+                     onAddChallenge={() => createChallengeAt(currentViewCenter())}
+                  />
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
                      {gridIcon(grid.type)}
