@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 
 // -- Local Imports --
-import { parseImageHint } from '@/lib/notes/noteImageHint';
+import { parseImageHint, resizeWidthPct } from '@/lib/notes/noteImageHint';
 
 // -- Type Imports --
 import type { ImageToken, NoteImageAlign } from '@/lib/notes/noteImageHint';
@@ -67,12 +67,11 @@ export function NoteImageInspector({ token, getColumnWidth, onAlign, onWidth, on
    const [dragPct, setDragPct] = useState<number | null>(null);
    const dragState = useRef<{ startX: number; colW: number; startPct: number } | null>(null);
 
-   /** Clicking an align segment: floats default to their band midpoint, center keeps its width, full pins 100. */
+   /** Clicking an align segment: full pins 100, everything else carries the current width across (the
+       serializer clamps it into the new band), so re-aligning a sized image never discards its size. */
    const handleAlign = (align: NoteImageAlign) => {
       if (align === 'full') return onAlign('full', 100);
-      // Keep the current width if it's already valid for the target; else the target's medium preset.
-      const width = align === layout.align ? layout.widthPct : SIZE_PRESETS[align].medium;
-      onAlign(align, width);
+      onAlign(align, layout.widthPct);
    };
 
    // Plain handlers (bound to DOM spans, not memoized children) - no useCallback needed.
@@ -87,11 +86,10 @@ export function NoteImageInspector({ token, getColumnWidth, onAlign, onWidth, on
    const handlePointerMove = (event: React.PointerEvent) => {
       const state = dragState.current;
       if (!state) return;
-      // Drag maps pointer delta to % of the column; snap to 5% steps for round numbers.
-      const rawPct = state.startPct + ((event.clientX - state.startX) / state.colW) * 100;
-      const snapped = Math.round(rawPct / 5) * 5;
+      // Drag maps pointer delta to % of the column, snapped to 5% (the parser clamps into the align band).
+      const snapped = resizeWidthPct(state.startPct, event.clientX - state.startX, state.colW);
       setDragPct(snapped);
-      onWidth(snapped); // parser clamps into the align's band
+      onWidth(snapped);
    };
 
    const handlePointerUp = (event: React.PointerEvent) => {

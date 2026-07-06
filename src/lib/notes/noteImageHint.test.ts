@@ -7,6 +7,7 @@ import {
    findImageTokens,
    glueImageToNextParagraph,
    parseImageHint,
+   resizeWidthPct,
    rewriteImageHintAt,
    serializeImageHint,
    setImageAlignAt,
@@ -152,6 +153,27 @@ describe('rewriteImageHintAt', () => {
    it('is a no-op when the offset does not start a token', () => {
       const body = 'no image here';
       expect(rewriteImageHintAt(body, 3, { align: 'left', widthPct: 40 })).toBe(body);
+   });
+});
+
+describe('resizeWidthPct', () => {
+   it('maps a rightward drag to a wider snapped percent', () => {
+      // +300px over a 600px column = +50% → 40 + 50 = 90, snapped to 90.
+      expect(resizeWidthPct(40, 300, 600)).toBe(90);
+   });
+
+   it('maps a leftward drag to a narrower snapped percent', () => {
+      // -150px over 600px = -25% → 55 - 25 = 30.
+      expect(resizeWidthPct(55, -150, 600)).toBe(30);
+   });
+
+   it('snaps to 5% steps', () => {
+      // +20px over 600px = +3.33% → 43.33, snapped to 45 (nearest 5).
+      expect(resizeWidthPct(40, 20, 600)).toBe(45);
+   });
+
+   it('is safe against a zero column width', () => {
+      expect(resizeWidthPct(40, 100, 0)).toBeGreaterThan(40);
    });
 });
 

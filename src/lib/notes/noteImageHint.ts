@@ -192,6 +192,18 @@ export function rewriteImageHintAt(
    return body.slice(0, index) + rebuilt + body.slice(index + length);
 }
 
+/**
+ * Maps a resize-drag delta to a snapped width percent of the prose column. `startPct` is the width at
+ * pointer-down, `deltaPx` the horizontal drag distance, `columnPx` the column width cached at pointer-down.
+ * Snaps to 5% steps (round numbers); the caller's `parseImageHint`/`rewriteImageHintAt` clamps into the
+ * align band. Pure - the drag handler is a thin wrapper so the math is unit-tested without a pointer.
+ */
+export function resizeWidthPct(startPct: number, deltaPx: number, columnPx: number): number {
+   const safeColumn = columnPx > 0 ? columnPx : 1;
+   const raw = startPct + (deltaPx / safeColumn) * 100;
+   return Math.round(raw / 5) * 5;
+}
+
 // ==================
 //  Auto-glue: a floated image wraps only when it opens the paragraph it should wrap into
 // ==================
