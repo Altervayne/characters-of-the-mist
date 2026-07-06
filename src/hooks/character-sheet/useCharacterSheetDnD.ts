@@ -32,9 +32,10 @@ import { screenToWorld } from '@/lib/board/boardCoordinates';
 import { zoneContaining } from '@/lib/board/zoneMembership';
 import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec } from '@/lib/board/embedDrawerItem';
 import { importBoard } from '@/lib/board/boardRepository';
+import { importNote } from '@/lib/notes/noteRepository';
 
 // -- Type Imports --
-import type { Board, Journal } from '@/lib/types/board';
+import type { Board, Journal, Note } from '@/lib/types/board';
 import type { BoardStore } from '@/lib/stores/boardStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
@@ -125,7 +126,7 @@ export function useCharacterSheetDnD() {
    const character = useCharacterStore((state) => state.character);
    const { reorderSheetLayout, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker, addImportedJournal } = useCharacterActions();
-   const { openCharacterTab, openBoardTab, reorderTabs, setActiveTab } = useTabManagerActions();
+   const { openCharacterTab, openBoardTab, openNoteTab, reorderTabs, setActiveTab } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
    const currentFolderView = useDrawerStore((state) => state.currentFolderView);
@@ -1079,6 +1080,17 @@ export function useCharacterSheetDnD() {
                   void importBoard(boardData).then(() => openBoardTab(boardData.id));
                }
                contractIfExpanded();
+            } else if (draggedItem?.type === 'NOTE') {
+               // A note opens like a board: focus its tab if already open (don't re-import, so live
+               // unsaved edits aren't clobbered), else materialize the drawer copy into the working
+               // note table (linked to the drawer item) and open it by id.
+               const noteData = draggedItem.content as Note;
+               if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === noteData.id)) {
+                  setActiveTab(noteData.id);
+               } else {
+                  void importNote(noteData, draggedItem.id).then(() => openNoteTab(noteData.id));
+               }
+               contractIfExpanded();
             }
             return;
          }
@@ -1100,6 +1112,12 @@ export function useCharacterSheetDnD() {
                // board's live state is never clobbered.
                const boardData = draggedItem.content as Board;
                void importBoard(boardData).then(() => openBoardTab(boardData.id));
+               contractIfExpanded();
+            } else if (draggedItem?.type === 'NOTE') {
+               // Same as a board: materialize the drawer copy into the working note table (linked to
+               // the drawer item), then focus-or-open its tab (by note id).
+               const noteData = draggedItem.content as Note;
+               void importNote(noteData, draggedItem.id).then(() => openNoteTab(noteData.id));
                contractIfExpanded();
             }
             return;
@@ -1275,6 +1293,7 @@ export function useCharacterSheetDnD() {
       saveTabToDrawer,
       openCharacterTab,
       openBoardTab,
+      openNoteTab,
       reorderTabs,
       setActiveTab,
       setContextualGame,

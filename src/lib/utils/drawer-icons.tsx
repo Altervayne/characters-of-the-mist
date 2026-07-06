@@ -1,4 +1,4 @@
-import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image, LayoutGrid, Skull, StickyNote, NotebookText } from 'lucide-react';
+import { FileUser, IdCard, FileText, FileHeart, CreditCard, RectangleEllipsis, WalletCards, Image, LayoutGrid, Skull, StickyNote, NotebookText, NotebookPen } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 
@@ -31,6 +31,8 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
          return StickyNote;
       case 'JOURNAL':
          return NotebookText;
+      case 'NOTE':
+         return NotebookPen;
       case 'FULL_BOARD':
          return LayoutGrid;
       default:
@@ -41,11 +43,11 @@ export function getItemTypeIconComponent(type: GeneralItemType): LucideIcon {
 /**
  * Returns the `Drawer.Types` i18n key for an item's type label. Game-specific cards
  * are keyed `${game}_${type}` (a Legends "Hero Card" vs an Otherscape "Merc Card"), but
- * game-agnostic NEUTRAL types (IMAGE_CARD, FULL_BOARD, POST_IT, JOURNAL) have ONE label key,
- * not one per game.
+ * game-agnostic NEUTRAL types (IMAGE_CARD, FULL_BOARD, POST_IT, JOURNAL, NOTE) have ONE label
+ * key, not one per game.
  */
 export function getItemTypeLabelKey(game: GameSystem, type: GeneralItemType): string {
-   return type === 'IMAGE_CARD' || type === 'FULL_BOARD' || type === 'POST_IT' || type === 'JOURNAL'
+   return type === 'IMAGE_CARD' || type === 'FULL_BOARD' || type === 'POST_IT' || type === 'JOURNAL' || type === 'NOTE'
       ? type
       : `${game}_${type}`;
 }

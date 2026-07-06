@@ -48,6 +48,7 @@ import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSett
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
 import { clearAllAssets } from '@/lib/assets/assetRepository';
 import { clearAllBoards } from '@/lib/board/boardRepository';
+import { clearAllNotes } from '@/lib/notes/noteRepository';
 import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
@@ -98,6 +99,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onOpe
 		await clearAllCharacterData();
 		await clearAllAssets();
 		await clearAllBoards();
+		await clearAllNotes();
 		clearWorkspace();
 		await clearAllDrawerData();
 		drawerCommandEngine.clear();

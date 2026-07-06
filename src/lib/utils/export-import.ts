@@ -1,6 +1,6 @@
 import type { Card, Tracker, Character, LegendsThemeDetails, LegendsHeroDetails } from '@/lib/types/character';
 import type { Drawer, DrawerItem, Folder, GameSystem, GeneralItemType } from '../types/drawer';
-import type { Board, BoardItemContent, PostItNote, Journal } from '@/lib/types/board';
+import type { Board, BoardItemContent, PostItNote, Journal, Note } from '@/lib/types/board';
 import type { CustomTheme } from '@/lib/theme/themeTokens';
 import { APP_VERSION } from '../config';
 import { getAsset, storeAsset } from '@/lib/assets/assetRepository';
@@ -10,7 +10,7 @@ import type { ProcessedImage } from '@/lib/assets/processImage';
 // `CUSTOM_THEME` is a 2.0-native type (themes live in app settings, not the drawer); it rides the same
 // envelope as everything else. A board (`FULL_BOARD`) rides it too.
 export type ExportableItemType = GeneralItemType | 'CUSTOM_THEME';
-export type ExportableContent = Card | Tracker | Character | Folder | Drawer | Board | CustomTheme | PostItNote | Journal;
+export type ExportableContent = Card | Tracker | Character | Folder | Drawer | Board | CustomTheme | PostItNote | Journal | Note;
 
 /** One asset's bytes carried inside an exported file so the file is self-contained. */
 export interface EmbeddedAsset {
@@ -126,6 +126,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
 
       case "JOURNAL":
          textType = "Journal"
+         break;
+
+      case "NOTE":
+         textType = "Note"
          break;
 
       case "CUSTOM_THEME":

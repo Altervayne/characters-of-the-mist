@@ -22,6 +22,8 @@ import { readWorkspace, writeWorkspace } from './workspaceSession';
 import { getEffectiveDeviceType } from '@/hooks/useDeviceType';
 import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
 import { createBoard, deleteBoard, loadBoard } from '@/lib/board/boardRepository';
+import { disposeNoteInstance, getOrCreateNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
+import { createNote, deleteNote, getNote } from '@/lib/notes/noteRepository';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
@@ -44,16 +46,16 @@ import type { Workspace } from './workspaceSession';
  * Boot is platform-aware (`runCharacterBoot`): desktop hydrates all tabs (active
  * first), mobile hydrates only the active one.
  *
- * TAB KINDS: tabs are now either characters or boards. The two kinds live in separate
- * registries (character + board), but the TabManager owns the single active pointer
- * across both: exactly one tab is active, and activating one kind parks the other's
- * registry (a board tab parks the character registry on the menu fallback, so no sheet
- * shows). Boards are desktop-only; the `mobile*` actions and `bootMobile` never touch
- * them. No UI creates a board tab yet (board-5), so the board paths are dormant.
+ * TAB KINDS: tabs are characters, boards, or notes. The three kinds live in separate
+ * registries (character + board + note), but the TabManager owns the single active pointer
+ * across all three: exactly one tab is active, and activating one kind PARKS the other two
+ * (a board or note tab parks the character registry on the menu fallback, so no sheet
+ * shows; and clears whichever of the board/note pointers it isn't). Boards and notes are
+ * desktop-only; the `mobile*` actions and `bootMobile` never touch them.
  */
 
-/** The kind of a tab. Boards are desktop-only and have no UI entry point yet (board-5). */
-export type TabType = 'character' | 'board';
+/** The kind of a tab. Boards and notes are desktop-only. */
+export type TabType = 'character' | 'board' | 'note';
 
 /** Default name for a freshly created board, until the board UI lets the user rename it. */
 const DEFAULT_BOARD_NAME = 'New Board';
@@ -81,6 +83,10 @@ interface TabManagerState {
       createBoardTab: () => Promise<void>;
       /** Opens board `boardId`; focuses its tab if already open, else hydrates + appends + activates. Desktop-only. */
       openBoardTab: (boardId: string) => Promise<void>;
+      /** Creates a brand-new note, appends it as a tab, hydrates its instance, and activates it. Desktop-only. */
+      createNoteTab: () => Promise<void>;
+      /** Opens note `noteId`; focuses its tab if already open, else hydrates + appends + activates. Desktop-only. */
+      openNoteTab: (noteId: string) => Promise<void>;
       /** Closes tab `id` (dispose + delete its record) and activates a neighbour, or the menu when none remain. */
       closeTab: (id: string) => void;
       /** Convenience: closes the currently active tab. */
@@ -112,32 +118,55 @@ function persistWorkspace(): void {
 //  Active-pointer coordination (exactly one tab active across both registries)
 // ==================
 
-/** Activates a character: point the character registry at it, clear the board pointer. Pointer-only. */
+/*
+ * Active-pointer coordination is a THREE-way park: exactly one of the character / board /
+ * note registries is pointed at a real instance, and the other two are cleared (board/note
+ * to `null`, character to its menu fallback so no sheet shows). Every activate-function
+ * below sets ALL THREE pointers, so activating any kind can never leave a stale surface
+ * from another kind still pointed at.
+ */
+
+/** Activates a character: point the character registry at it, clear the board AND note pointers. Pointer-only. */
 function activateCharacterPointers(id: string): void {
    setActiveInstance(id);
    setActiveBoardInstance(null);
+   setActiveNoteInstance(null);
 }
 
 /**
- * Activates a board: park the character registry on the menu fallback (so no sheet
- * shows) and point the board registry at the board. Pointer-only.
+ * Activates a board: park the character registry on the menu fallback (so no sheet shows),
+ * point the board registry at the board, and clear the note pointer. Pointer-only.
  */
 function activateBoardPointers(id: string): void {
    getMenuFallbackInstance();
    setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
    setActiveBoardInstance(id);
+   setActiveNoteInstance(null);
 }
 
-/** Points both registries at the menu: character fallback, no board. Pointer-only. */
+/**
+ * Activates a note: park the character registry on the menu fallback (so no sheet shows),
+ * clear the board pointer, and point the note registry at the note. Pointer-only.
+ */
+function activateNotePointers(id: string): void {
+   getMenuFallbackInstance();
+   setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
+   setActiveBoardInstance(null);
+   setActiveNoteInstance(id);
+}
+
+/** Points every registry at the menu: character fallback, no board, no note. Pointer-only. */
 function activateMenuPointers(): void {
    getMenuFallbackInstance();
    setActiveInstance(SINGLE_ACTIVE_INSTANCE_ID);
    setActiveBoardInstance(null);
+   setActiveNoteInstance(null);
 }
 
 /** Applies the coordination rule for whichever kind `tab` is. Pointer-only. */
 function activatePointersForTab(tab: OpenTab): void {
    if (tab.type === 'board') activateBoardPointers(tab.id);
+   else if (tab.type === 'note') activateNotePointers(tab.id);
    else activateCharacterPointers(tab.id);
 }
 
@@ -164,6 +193,18 @@ function appendAndActivateBoard(id: string): void {
       openTabs: state.openTabs.some((tab) => tab.id === id)
          ? state.openTabs
          : [...state.openTabs, { id, type: 'board' }],
+      activeTabId: id,
+   }));
+   persistWorkspace();
+}
+
+/** Note counterpart of {@link appendAndActivate}: appends/focuses a note tab and activates it. */
+function appendAndActivateNote(id: string): void {
+   activateNotePointers(id);
+   useTabManagerStore.setState((state) => ({
+      openTabs: state.openTabs.some((tab) => tab.id === id)
+         ? state.openTabs
+         : [...state.openTabs, { id, type: 'note' }],
       activeTabId: id,
    }));
    persistWorkspace();
@@ -240,6 +281,24 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          await instance.getState().actions.hydrate(boardId);
          appendAndActivateBoard(boardId);
       },
+      createNoteTab: async () => {
+         // The note row must exist before we can key a tab/instance by its id.
+         const note = await createNote();
+         const instance = getOrCreateNoteInstance(note.id);
+         await instance.getState().actions.hydrate(note.id);
+         appendAndActivateNote(note.id);
+      },
+      openNoteTab: async (noteId) => {
+         // Focus-or-add: an already-open note is focused, never re-hydrated (which would
+         // clobber its unsaved edits).
+         if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === noteId)) {
+            useTabManagerStore.getState().actions.setActiveTab(noteId);
+            return;
+         }
+         const instance = getOrCreateNoteInstance(noteId);
+         await instance.getState().actions.hydrate(noteId);
+         appendAndActivateNote(noteId);
+      },
       closeTab: (id) => {
          const { openTabs, activeTabId } = useTabManagerStore.getState();
          const index = openTabs.findIndex((tab) => tab.id === id);
@@ -253,6 +312,11 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
             disposeBoardInstance(id);
             void deleteBoard(id).catch((error) => {
                console.error('Failed to delete closed board record:', error);
+            });
+         } else if (closing.type === 'note') {
+            disposeNoteInstance(id);
+            void deleteNote(id).catch((error) => {
+               console.error('Failed to delete closed note record:', error);
             });
          } else {
             // Discard the handle WITHOUT flushing (no point saving what we delete).
@@ -299,6 +363,18 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
             persistWorkspace();
             // Device-flip safety net: hydrate on demand if this board was never loaded.
             if (instance.getState().boardId === null) {
+               void instance.getState().actions.hydrate(id);
+            }
+            return;
+         }
+
+         if (tab.type === 'note') {
+            const instance = getOrCreateNoteInstance(id);
+            activateNotePointers(id); // keep-alive: previous active instance is left intact
+            useTabManagerStore.setState({ activeTabId: id });
+            persistWorkspace();
+            // Device-flip safety net: hydrate on demand if this note was never loaded.
+            if (instance.getState().noteId === null) {
                void instance.getState().actions.hydrate(id);
             }
             return;
@@ -397,9 +473,24 @@ async function hydrateBoardInstanceFromStorage(id: string): Promise<boolean> {
    return true;
 }
 
+/**
+ * Note counterpart of {@link hydrateBoardInstanceFromStorage}: creates the note instance
+ * and loads it from IndexedDB. Notes have no persistence handle (the note store
+ * debounce-saves onto its row). Returns `false` when no record exists, so boot prunes a
+ * stale note tab.
+ */
+async function hydrateNoteInstanceFromStorage(id: string): Promise<boolean> {
+   if (!(await getNote(id))) return false;
+   const instance = getOrCreateNoteInstance(id);
+   await instance.getState().actions.hydrate(id);
+   return true;
+}
+
 /** Hydrates `tab` from storage by kind. Returns `false` when its record is missing. */
 function hydrateTabFromStorage(tab: OpenTab): Promise<boolean> {
-   return tab.type === 'board' ? hydrateBoardInstanceFromStorage(tab.id) : hydrateInstanceFromStorage(tab.id);
+   if (tab.type === 'board') return hydrateBoardInstanceFromStorage(tab.id);
+   if (tab.type === 'note') return hydrateNoteInstanceFromStorage(tab.id);
+   return hydrateInstanceFromStorage(tab.id);
 }
 
 /**
@@ -467,8 +558,8 @@ async function bootMobile(workspace: Workspace): Promise<void> {
    const intendedActiveTab = intendedActiveId !== null ? tabs.find((tab) => tab.id === intendedActiveId) ?? null : null;
 
    let activeId: string | null = null;
-   // Boards are desktop-only: never hydrate or activate a board tab on mobile (it stays
-   // a dormant id in `openTabs`). A board intended-active lands on the menu instead.
+   // Boards and notes are desktop-only: never hydrate or activate one on mobile (they stay
+   // dormant ids in `openTabs`). A board/note intended-active lands on the menu instead.
    if (intendedActiveTab?.type === 'character' && (await hydrateInstanceFromStorage(intendedActiveTab.id))) {
       activeId = intendedActiveTab.id;
       activateCharacterPointers(activeId);

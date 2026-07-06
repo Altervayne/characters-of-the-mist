@@ -8,6 +8,7 @@
    "Tabs": {
       "untitled": "[TO COMPLETE]",
       "untitledBoard": "[TO COMPLETE]",
+      "untitledNote": "[TO COMPLETE]",
       "closeTab": "[TO COMPLETE]",
       "newTab": "[TO COMPLETE]",
       "scrollLeft": "[TO COMPLETE]",
@@ -17,8 +18,11 @@
          "description": "[TO COMPLETE]",
          "characterSheetType": "[TO COMPLETE]",
          "boardType": "[TO COMPLETE]",
+         "workspaceType": "[TO COMPLETE]",
          "newBoardTitle": "[TO COMPLETE]",
-         "newBoardSubtitle": "[TO COMPLETE]"
+         "newBoardSubtitle": "[TO COMPLETE]",
+         "newNoteTitle": "[TO COMPLETE]",
+         "newNoteSubtitle": "[TO COMPLETE]"
       },
       "closeTabDialog": {
          "title": "[TO COMPLETE]",
@@ -26,6 +30,13 @@
          "closeWithoutSaving": "[TO COMPLETE]",
          "cancel": "[TO COMPLETE]"
       }
+   },
+   "NoteView": {
+      "titlePlaceholder": "[TO COMPLETE]",
+      "bodyPlaceholder": "[TO COMPLETE]",
+      "emptyPreview": "[TO COMPLETE]",
+      "edit": "[TO COMPLETE]",
+      "preview": "[TO COMPLETE]"
    },
    "BoardView": {
       "otherElements": "[TO COMPLETE]",
@@ -195,6 +206,12 @@
          "updated": "[TO COMPLETE]",
          "cleared": "[TO COMPLETE]"
       },
+      "note": {
+         "saved": "[TO COMPLETE]",
+         "linkedItemMissing": "[TO COMPLETE]",
+         "exported": "[TO COMPLETE]",
+         "imported": "[TO COMPLETE]"
+      },
       "theme": {
          "exported": "[TO COMPLETE]",
          "imported": "[TO COMPLETE]"
@@ -284,6 +301,7 @@
       "removeJournal": "[TO COMPLETE]",
       "dropToLoadCharacter": "Déposez un Objet Fiche de Personnage ici pour charger le personnage entier. Soyez prudent, cette action remplacera votre personnage actif.",
       "dropToOpenBoard": "[TO COMPLETE]",
+      "dropToOpenNote": "[TO COMPLETE]",
       "dropToImport": "[TO COMPLETE]",
       "cannotDropWrongGame": "[TO COMPLETE]",
       "SidebarMenu": {
@@ -299,6 +317,10 @@
          "saveBoardToDrawerAs": "[TO COMPLETE]",
          "exportBoard": "[TO COMPLETE]",
          "importBoard": "[TO COMPLETE]",
+         "saveNoteToDrawer": "[TO COMPLETE]",
+         "saveNoteToDrawerAs": "[TO COMPLETE]",
+         "exportNote": "[TO COMPLETE]",
+         "importNote": "[TO COMPLETE]",
          "exportCharacter": "Exporter le Perso.",
          "importCharacter": "Importer le Perso.",
          "importComponent": "Importer un Composant",
@@ -388,7 +410,8 @@
             "STORY_TAG_TRACKER": "[TO COMPLETE]",
             "STORY_THEME_TRACKER": "[TO COMPLETE]",
             "IMAGE_CARD": "[TO COMPLETE]",
-            "FULL_BOARD": "[TO COMPLETE]"
+            "FULL_BOARD": "[TO COMPLETE]",
+            "NOTE": "[TO COMPLETE]"
          }
       },
       "toggleView": "Change la vue des Objets du tiroir entre prévisualisation riche et liste simple",
@@ -491,6 +514,7 @@
          "FULL_BOARD": "[TO COMPLETE]",
          "POST_IT": "[TO COMPLETE]",
          "JOURNAL": "[TO COMPLETE]",
+         "NOTE": "[TO COMPLETE]",
          "boardItemCount": "[TO COMPLETE]",
          "journalPageCount": "[TO COMPLETE]",
          "cards": "Carte(s)",
@@ -1053,6 +1077,7 @@
 
          "newCharacter": "[TO COMPLETE]",
          "newBoard": "[TO COMPLETE]",
+         "newNote": "[TO COMPLETE]",
          "closeTab": "[TO COMPLETE]",
          "nextTab": "[TO COMPLETE]",
          "prevTab": "[TO COMPLETE]",

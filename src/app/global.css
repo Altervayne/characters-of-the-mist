@@ -39,6 +39,13 @@
    --color-card-popover-fg:         var(--card-popover-fg);
    --color-card-destructive-bg:     var(--card-destructive-bg);
    --color-card-destructive-fg:     var(--card-destructive-fg);
+
+   /* The paper palette itself (not the card-* mapping): a Note is a document ON paper, so it binds
+      straight to these - never hijacked by a game theme's card-paper override, and re-themed by a
+      custom theme's --paper-*. */
+   --color-paper-background:        var(--paper-background);
+   --color-paper-foreground:        var(--paper-foreground);
+   --color-paper-border:            var(--paper-border);
 }
 
 [class*="card-type-"] input::placeholder,

@@ -73,6 +73,19 @@ export const BOARD_VISUAL = {
    gradient: 'bg-gradient-to-br from-emerald-500 to-green-600',
 } as const;
 
+/**
+ * The Note's fixed identity accent - sky/indigo, deliberately outside the games' palette (Legends amber,
+ * City purple, Otherscape cyan) and the board's emerald, so a note tab never reads as another kind. A
+ * feature-identity colour like the game brands above, NOT a theme token. Shared by the note tab badge,
+ * its drag clone, and the New Tab "New Note" card so the three can't drift.
+ */
+export const NOTE_VISUAL = {
+   /** Coloured icon on a card (the New Tab note card's glyph). */
+   accentText: 'text-sky-500',
+   /** The solid wash behind a white note glyph (the tab badge + its drag clone, the chooser card). */
+   gradient: 'bg-gradient-to-br from-sky-500 to-indigo-600',
+} as const;
+
 /** A selectable game in the MainMenu / New Tab pickers, with its translation keys. */
 export interface GameCardOption {
    game: GameSystem;

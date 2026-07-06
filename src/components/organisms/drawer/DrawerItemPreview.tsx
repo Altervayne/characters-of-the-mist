@@ -28,7 +28,7 @@ import { boardContentBounds, itemCenter } from '@/lib/board/boardMiniMap';
 // -- Type Imports --
 import type { ReactElement } from 'react';
 import type { DrawerItem, Folder as FolderType, GameSystem } from '@/lib/types/drawer';
-import type { Board, ConnectionBoardContent, Journal, PinBoardContent, PostItBoardContent, PostItNote, ZoneBoardContent } from '@/lib/types/board';
+import type { Board, ConnectionBoardContent, Journal, Note, PinBoardContent, PostItBoardContent, PostItNote, ZoneBoardContent } from '@/lib/types/board';
 
 /** The game glyph element (resolved in this module helper, not in render); neutral items have none. */
 function gameGlyph(game: GameSystem): ReactElement | null {
@@ -116,6 +116,33 @@ function JournalPreview({ journal }: { journal: Journal }) {
                ))}
             </div>
          )}
+      </div>
+   );
+}
+
+/**
+ * Static preview of a saved Note: the document title and the top of its body on the themed `bg-card`
+ * panel - a clipped thumbnail of the page, not a reader. A note is CHROME end to end (no content-color
+ * exception, unlike a post-it), so every surface here is an app token. Guarded: title/body are read
+ * defensively so an odd note renders the placeholder rather than throwing - a preview must never crash.
+ */
+function NotePreview({ note }: { note: Note }) {
+   const { t } = useTranslation();
+   const title = typeof note?.title === 'string' ? note.title : '';
+   const body = typeof note?.body === 'string' ? note.body : '';
+
+   return (
+      <div className="flex h-45 w-45 flex-col overflow-hidden rounded-md border border-border bg-card text-card-foreground">
+         {title.trim() ? (
+            <div className="shrink-0 border-b border-border px-2.5 py-1.5 text-sm font-semibold truncate">{title}</div>
+         ) : null}
+         <div className="min-h-0 flex-1 overflow-hidden p-2.5 text-sm leading-snug">
+            {body.trim() ? (
+               <NoteMarkdown content={body} />
+            ) : (
+               <span className="text-xs text-muted-foreground/50">{t('NoteView.emptyPreview')}</span>
+            )}
+         </div>
       </div>
    );
 }
@@ -295,6 +322,10 @@ export function DrawerItemPreview({
 
          if (type === 'JOURNAL') {
             return <JournalPreview journal={content as Journal} />;
+         }
+
+         if (type === 'NOTE') {
+            return <NotePreview note={content as Note} />;
          }
       }
 

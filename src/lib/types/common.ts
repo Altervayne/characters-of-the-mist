@@ -14,6 +14,7 @@ export type GeneralItemType =
    | 'STORY_THEME_TRACKER'
    | 'POST_IT'
    | 'JOURNAL'
+   | 'NOTE'
    | 'FULL_CHARACTER_SHEET'
    | 'FULL_BOARD';
 

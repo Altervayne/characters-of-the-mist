@@ -9,6 +9,7 @@ import cuid from 'cuid';
 import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
@@ -138,5 +139,59 @@ export function useSaveToDrawer() {
       });
    };
 
-   return { saveCharacterToDrawer, saveCharacterAsToDrawer, saveBoardToDrawer, saveBoardAsToDrawer };
+   const saveNoteToDrawer = async () => {
+      const store = getActiveNoteStore();
+      if (!store) return;
+      const { noteId, drawerItemId } = store.getState();
+      if (!noteId) return;
+
+      if (drawerItemId) {
+         try {
+            // Atomic cross-store save of the linked drawer copy, mirroring the board.
+            const result = await store.getState().actions.saveToDrawer();
+            if (result?.linkedItemUpdated) {
+               await reloadCurrentFolder();
+               const itemPath = await getDrawerItemDisplayPath(drawerItemId);
+               toast.success(`${tNotifications('Notifications.note.saved')} ${itemPath}`);
+            } else {
+               // The linked drawer item was deleted: fall back to Save As + notify.
+               await saveNoteAsToDrawer();
+               toast(tNotifications('Notifications.note.linkedItemMissing'));
+            }
+         } catch {
+            toast.error(tNotifications('Notifications.drawer.actionFailed'));
+         }
+      } else {
+         await saveNoteAsToDrawer();
+      }
+   };
+
+   const saveNoteAsToDrawer = async () => {
+      const store = getActiveNoteStore();
+      if (!store) return;
+      const { noteId, note } = store.getState();
+      if (!noteId || !note) return;
+
+      // Link the working note to a new drawer item id (also flushes the live document
+      // and marks the note clean); the returned aggregate seeds the drawer item content.
+      const newItemId = cuid();
+      const aggregate = await store.getState().actions.linkToDrawerItem(newItemId);
+      if (!aggregate) return;
+
+      if (!isDrawerOpen) {
+         setDrawerOpen(true);
+      }
+
+      // A note is game-agnostic -> a NEUTRAL drawer item; the naming window finalizes it.
+      initiateItemDrop({
+         game: 'NEUTRAL',
+         type: 'NOTE',
+         content: aggregate,
+         defaultName: note.title,
+         presetId: newItemId,
+         parentFolderId: drawerCurrentFolderId ?? undefined,
+      });
+   };
+
+   return { saveCharacterToDrawer, saveCharacterAsToDrawer, saveBoardToDrawer, saveBoardAsToDrawer, saveNoteToDrawer, saveNoteAsToDrawer };
 }

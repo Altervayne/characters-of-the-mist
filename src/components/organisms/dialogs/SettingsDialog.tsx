@@ -32,6 +32,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { clearAllCharacterData } from '@/lib/character/characterRepository';
 import { clearAllAssets } from '@/lib/assets/assetRepository';
 import { clearAllBoards } from '@/lib/board/boardRepository';
+import { clearAllNotes } from '@/lib/notes/noteRepository';
 import { runSweep, estimateStorageUsage } from '@/lib/assets/assetGarbageCollector';
 import { clearWorkspace } from '@/lib/character/workspaceSession';
 import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
@@ -156,6 +157,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
       await clearAllCharacterData();
       await clearAllAssets();
       await clearAllBoards();
+      await clearAllNotes();
       clearWorkspace();
       await clearAllDrawerData();
       drawerCommandEngine.clear();

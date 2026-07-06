@@ -6,7 +6,7 @@ import type { CreatableKind } from '@/lib/creation/creatableRegistry';
 
 
 
-type StoreName = 'character' | 'drawer' | 'board';
+type StoreName = 'character' | 'drawer' | 'board' | 'note';
 
 export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 

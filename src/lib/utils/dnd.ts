@@ -200,11 +200,11 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    }
 
    // ==================
-   //  If dragging a full character sheet or a full board
+   //  If dragging a full character sheet, a full board, or a note
    // ==================
-   // A saved board joins this branch: like a character it opens onto the tab strip (its
-   // `main-character-drop-zone` collision is a harmless no-op at drop), and it never drops
-   // as a component, so it reuses the same tab-strip-priority + sibling-reorder routing.
+   // A saved board or note joins this branch: like a character each opens onto the tab strip
+   // (its `main-character-drop-zone` collision is a harmless no-op at drop), and neither drops
+   // as a component, so they reuse the same tab-strip-priority + sibling-reorder routing.
    // A saved character is a `drawer-item` whose `item.type` is FULL_CHARACTER_SHEET, so
    // it needs BOTH its own high-priority targets AND the ordinary sibling reorder.
    // Priority 1 (pointerWithin): load onto the sheet / open as a tab. In-drawer MOVES
@@ -216,7 +216,7 @@ export const customCollisionDetection: CollisionDetection = (args) => {
    // is always a different row (handleDragEnd's reorder no-ops on a self drop). This
    // mirrors the regular `drawer-item` branch's reorder, kept LAST so the sheet/tab
    // targets still win.
-   if (draggedItemType === 'FULL_CHARACTER_SHEET' || draggedItemType === 'FULL_BOARD') {
+   if (draggedItemType === 'FULL_CHARACTER_SHEET' || draggedItemType === 'FULL_BOARD' || draggedItemType === 'NOTE') {
       // A drawer character over the board canvas adds an element (board tab only, so the
       // zone is absent elsewhere and never competes below). A board never drops onto a
       // board, so FULL_BOARD skips this and keeps its tab-strip routing.

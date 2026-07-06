@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -74,7 +74,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { setThemesOpen, requestBoardAction } = useAppGeneralStateActions();
    const { setTheme: setMode } = useTheme();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
-   const { createBoardTab, closeActiveTab, setActiveTab } = useTabManagerActions();
+   const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab } = useTabManagerActions();
 
    const openTabs = useTabManagerStore((state) => state.openTabs);
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
@@ -155,6 +155,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // New character/board are always available; close/next/prev only when the tab state warrants.
       { id: 'newCharacter', scope: 'global', label: t('CommandPalette.commands.newCharacter'), keywords: ['tab', 'new', 'character', 'sheet'], icon: UserPlus, group: t('CommandPalette.groups.tabs'), pageId: 'newCharacter_Game' },
       { id: 'newBoard', scope: 'global', label: t('CommandPalette.commands.newBoard'), keywords: ['tab', 'new', 'board'], icon: LayoutGrid, group: t('CommandPalette.groups.tabs'), action: () => { void createBoardTab(); } },
+      { id: 'newNote', scope: 'global', label: t('CommandPalette.commands.newNote'), keywords: ['tab', 'new', 'note', 'document', 'handout'], icon: NotebookPen, group: t('CommandPalette.groups.tabs'), action: () => { void createNoteTab(); } },
       ...(hasActiveTab ? [
          { id: 'closeTab', scope: 'global' as const, label: t('CommandPalette.commands.closeTab'), keywords: ['tab', 'close'], icon: X, group: t('CommandPalette.groups.tabs'), action: closeActiveTab },
       ] : []),

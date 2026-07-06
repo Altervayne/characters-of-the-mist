@@ -20,6 +20,8 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { importBoard, loadBoard } from '@/lib/board/boardRepository';
 import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
 import { prepareImportedBoard } from '@/lib/board/importBoardReferencedCharacters';
+import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
+import { importNote, loadNote } from '@/lib/notes/noteRepository';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -36,11 +38,11 @@ import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
-import type { Board } from '@/lib/types/board';
+import type { Board, Note } from '@/lib/types/board';
 
 
 
-type WindowTypes = 'MAIN_MENU' | 'PLAY_AREA' | 'BOARD';
+type WindowTypes = 'MAIN_MENU' | 'PLAY_AREA' | 'BOARD' | 'NOTE';
 
 interface SidebarMenuProps {
    isEditing: boolean;
@@ -64,7 +66,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // drawerItemId), not a tab open, so it stays a per-character action. Opening a *different* character
    // (file import) and returning to the menu go through the TabManager.
    const { loadCharacter, addImportedCard, addImportedTracker, resetCharacter, setHasUnsavedChanges } = useCharacterActions();
-   const { openCharacterTab, openBoardTab, deactivate } = useTabManagerActions();
+   const { openCharacterTab, openBoardTab, openNoteTab, deactivate } = useTabManagerActions();
    const { reloadCurrentFolder } = useDrawerActions();
 
    // The app-wide dice tray toggles a bottom panel (reachable from any window).
@@ -81,12 +83,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const characterUpdateFormRef = useRef<HTMLFormElement>(null);
    const boardUpdateInputRef = useRef<HTMLInputElement>(null);
    const boardUpdateFormRef = useRef<HTMLFormElement>(null);
+   const noteImportInputRef = useRef<HTMLInputElement>(null);
+   const noteFormRef = useRef<HTMLFormElement>(null);
 
 
 
-   // Save-to-drawer (Save + Save-As, character + board) lives in a shared hook so the sidebar and the
-   // command palette drive one implementation.
-   const { saveCharacterToDrawer, saveCharacterAsToDrawer, saveBoardToDrawer, saveBoardAsToDrawer } = useSaveToDrawer();
+   // Save-to-drawer (Save + Save-As, character + board + note) lives in a shared hook so the sidebar and
+   // the command palette drive one implementation.
+   const { saveCharacterToDrawer, saveCharacterAsToDrawer, saveBoardToDrawer, saveBoardAsToDrawer, saveNoteToDrawer, saveNoteAsToDrawer } = useSaveToDrawer();
 
    const handleExportCharacter = async () => {
       if (!character) return;
@@ -172,6 +176,47 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       }
 
       boardFormRef.current?.reset();
+   };
+
+   const handleExportNote = async () => {
+      const store = getActiveNoteStore();
+      if (!store) return;
+      const { noteId } = store.getState();
+      if (!noteId) return;
+      try {
+         // Serialize from the repo (the note store debounce-saves onto its row). A note is a flat
+         // document with no asset references yet, so the generic export needs no embed.
+         const aggregate = await loadNote(noteId);
+         if (!aggregate) return;
+         await exportToFile(aggregate, 'NOTE', 'NEUTRAL', generateExportFilename('NEUTRAL', 'NOTE', aggregate.title));
+         toast.success(tNotifications('Notifications.note.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.general.exportError'));
+      }
+   };
+
+   const handleNoteFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+         const importedData = await importFromFile(file);
+         if (importedData.fileType === 'NOTE') {
+            // A note is 2.0-native (no harmonize step); materialize the imported copy into the working
+            // table (unlinked, so a first save routes to Save-As), then open its tab by id.
+            const note = importedData.content as Note;
+            await importNote(note, null);
+            await openNoteTab(note.id);
+            toast.success(tNotifications('Notifications.note.imported'));
+         } else {
+            toast.error(tNotifications('Notifications.general.importFailed'));
+         }
+      } catch (error) {
+         console.error("Failed to import note file:", error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+
+      noteFormRef.current?.reset();
    };
 
    const handleComponentFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -432,6 +477,25 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   </>
                }
 
+               { activeWindow === 'NOTE' &&
+                  <motion.section layout transition={{ duration: 0.2 }} className={cn(
+                     "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
+                  )}>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={saveNoteToDrawer} Icon={Save}>
+                        {t('CharacterSheetPage.SidebarMenu.saveNoteToDrawer')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={saveNoteAsToDrawer} Icon={SaveAll}>
+                        {t('CharacterSheetPage.SidebarMenu.saveNoteToDrawerAs')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={handleExportNote} Icon={Upload}>
+                        {t('CharacterSheetPage.SidebarMenu.exportNote')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={() => noteImportInputRef.current?.click()} Icon={Download}>
+                        {t('CharacterSheetPage.SidebarMenu.importNote')}
+                     </SidebarButton>
+                  </motion.section>
+               }
+
                { activeWindow === 'MAIN_MENU' &&
                   <motion.section layout transition={{ duration: 0.2 }} className={cn(
                      "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
@@ -443,6 +507,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <SidebarButton isCollapsed={isCollapsed} onClick={() => boardImportInputRef.current?.click()} Icon={Download}>
                         {t('CharacterSheetPage.SidebarMenu.importBoard')}
                      </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={() => noteImportInputRef.current?.click()} Icon={Download}>
+                        {t('CharacterSheetPage.SidebarMenu.importNote')}
+                     </SidebarButton>
                   </motion.section>
                }
             </div>
@@ -452,7 +519,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                {/* "Open menu" is a navigation action (leave the sheet/board, go home), set
                    apart from the meta utilities below by a divider. It has nowhere to go
                    from the main menu itself, so it shows in the play area and on a board. */}
-               { (activeWindow === 'PLAY_AREA' || activeWindow === 'BOARD') &&
+               { (activeWindow === 'PLAY_AREA' || activeWindow === 'BOARD' || activeWindow === 'NOTE') &&
                   <motion.section layout transition={{ duration: 0.2 }} className={cn(
                      "flex flex-col items-center gap-2 p-2 bg-card border-t-2 border-b border-border"
                   )}>
@@ -517,6 +584,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   type="file"
                   ref={boardUpdateInputRef}
                   onChange={handleBoardUpdateFileSelected}
+                  accept=".cotm,application/json"
+               />
+            </form>
+            <form ref={noteFormRef} className="hidden">
+               <input
+                  type="file"
+                  ref={noteImportInputRef}
+                  onChange={handleNoteFileSelected}
                   accept=".cotm,application/json"
                />
             </form>

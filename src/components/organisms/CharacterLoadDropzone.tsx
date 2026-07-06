@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useDroppable } from '@dnd-kit/core';
 
 // -- Icon Imports --
-import { LayoutGrid, Upload } from 'lucide-react';
+import { LayoutGrid, NotebookPen, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -33,7 +33,7 @@ const overlayVariants: Variants = {
 
 interface CharacterLoadDropZoneProps {
    activeDragItem: CardData | Tracker | Journal | DrawerItem | FolderType | null;
-   /** A board is the active window: the board owns a character drop (it makes an element), so this load-to-tab zone steps aside. */
+   /** A board or note owns the surface: it captures a character drop, so this load-to-tab zone steps aside. */
    isBoardActive?: boolean;
 }
 
@@ -43,11 +43,13 @@ export function CharacterLoadDropZone({ activeDragItem, isBoardActive = false }:
    const { t: t } = useTranslation();
 
    const dragType = activeDragItem && 'content' in activeDragItem ? activeDragItem.type : null;
-   // A character loads to a tab here, but is disabled on a board (the board makes an element instead).
-   // A board always opens its tab - it is never embedded - so the zone is active in every window.
+   // A character loads to a tab here, but is disabled while a board/note owns the surface (there the
+   // board makes an element; a note takes the whole tab). A board or note always opens its own tab -
+   // never embedded here - so those zones are active in every window.
    const isCharacterDrag = dragType === 'FULL_CHARACTER_SHEET' && !isBoardActive;
    const isBoardDrag = dragType === 'FULL_BOARD';
-   const isActive = isCharacterDrag || isBoardDrag;
+   const isNoteDrag = dragType === 'NOTE';
+   const isActive = isCharacterDrag || isBoardDrag || isNoteDrag;
 
    const { setNodeRef, isOver } = useDroppable({
       id: 'main-character-drop-zone',
@@ -71,8 +73,8 @@ export function CharacterLoadDropZone({ activeDragItem, isBoardActive = false }:
                   { 'bg-primary/10': isOver }
                )}
             >
-               {isBoardDrag ? <LayoutGrid className="mx-auto h-12 w-12" /> : <Upload className="mx-auto h-12 w-12" />}
-               <p className="mt-2 font-semibold">{t(isBoardDrag ? 'CharacterSheetPage.dropToOpenBoard' : 'CharacterSheetPage.dropToLoadCharacter')}</p>
+               {isBoardDrag ? <LayoutGrid className="mx-auto h-12 w-12" /> : isNoteDrag ? <NotebookPen className="mx-auto h-12 w-12" /> : <Upload className="mx-auto h-12 w-12" />}
+               <p className="mt-2 font-semibold">{t(isBoardDrag ? 'CharacterSheetPage.dropToOpenBoard' : isNoteDrag ? 'CharacterSheetPage.dropToOpenNote' : 'CharacterSheetPage.dropToLoadCharacter')}</p>
             </div>
          )}
       </motion.div>

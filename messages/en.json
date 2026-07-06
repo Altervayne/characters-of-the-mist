@@ -8,6 +8,7 @@
    "Tabs": {
       "untitled": "Untitled character",
       "untitledBoard": "Untitled board",
+      "untitledNote": "Untitled note",
       "closeTab": "Close tab",
       "newTab": "New tab",
       "scrollLeft": "Scroll tabs left",
@@ -17,8 +18,11 @@
          "description": "Choose what kind of tab to open.",
          "characterSheetType": "Character Sheet",
          "boardType": "Board",
+         "workspaceType": "Workspace",
          "newBoardTitle": "New board",
-         "newBoardSubtitle": "A freeform canvas"
+         "newBoardSubtitle": "A freeform canvas",
+         "newNoteTitle": "New note",
+         "newNoteSubtitle": "A markdown document"
       },
       "closeTabDialog": {
          "title": "Close this tab?",
@@ -26,6 +30,13 @@
          "closeWithoutSaving": "Close without saving",
          "cancel": "Cancel"
       }
+   },
+   "NoteView": {
+      "titlePlaceholder": "Untitled note",
+      "bodyPlaceholder": "Write your document in Markdown…",
+      "emptyPreview": "This note is empty. Switch to Edit to start writing.",
+      "edit": "Edit",
+      "preview": "Preview"
    },
    "BoardView": {
       "otherElements": "Other Elements…",
@@ -195,6 +206,12 @@
          "updated": "Board updated from file.",
          "cleared": "Board cleared."
       },
+      "note": {
+         "saved": "Note saved to",
+         "linkedItemMissing": "The linked drawer save no longer exists, so the note was saved as a new item.",
+         "exported": "Note exported to downloads.",
+         "imported": "Note file imported successfully."
+      },
       "theme": {
          "exported": "Theme exported to downloads.",
          "imported": "Theme imported."
@@ -290,6 +307,7 @@
       "removeJournal": "Remove Journal",
       "dropToLoadCharacter": "Drop Character Sheet Item here to load the full character. Be careful, this will replace your currently active character.",
       "dropToOpenBoard": "Drop to open board",
+      "dropToOpenNote": "Drop to open note",
       "dropToImport": "Drop a file here to import it. A board opens as a new board, a full character replaces your active one, and a card or tracker imports into the loaded character.",
       "cannotDropWrongGame": "Can't drop here, this component is for a different game system.",
 
@@ -309,6 +327,10 @@
          "saveBoardToDrawerAs": "Save Board As...",
          "exportBoard": "Export Board",
          "importBoard": "Import Board",
+         "saveNoteToDrawer": "Save Note",
+         "saveNoteToDrawerAs": "Save Note As...",
+         "exportNote": "Export Note",
+         "importNote": "Import Note",
          "exportCharacter": "Export Character",
          "importCharacter": "Import Character",
          "importComponent": "Import Component",
@@ -402,7 +424,8 @@
             "STORY_TAG_TRACKER": "Story tag",
             "STORY_THEME_TRACKER": "Story theme",
             "IMAGE_CARD": "Image",
-            "FULL_BOARD": "Board"
+            "FULL_BOARD": "Board",
+            "NOTE": "Note"
          }
       },
       "toggleView": "Toggle view mode between rich preview and list entry for Drawer Items",
@@ -524,6 +547,7 @@
          "FULL_BOARD": "Board",
          "POST_IT": "Post-it",
          "JOURNAL": "Journal",
+         "NOTE": "Note",
          "boardItemCount": "{{count}} item(s)",
          "journalPageCount": "{{count}} page(s)",
 
@@ -1139,6 +1163,7 @@
 
          "newCharacter": "New: Character",
          "newBoard": "New: Board",
+         "newNote": "New: Note",
          "closeTab": "Close: Current Tab",
          "nextTab": "Switch: Next Tab",
          "prevTab": "Switch: Previous Tab",

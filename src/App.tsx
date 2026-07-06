@@ -5,6 +5,7 @@ import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
 import { ActiveCharacterStoreProvider } from '@/lib/character/ActiveCharacterStoreProvider';
 import { ActiveBoardStoreProvider } from '@/lib/board/ActiveBoardStoreProvider';
+import { ActiveNoteStoreProvider } from '@/lib/notes/ActiveNoteStoreProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DevPreviewWarning, IS_DEV_PREVIEW } from '@/components/DevPreviewWarning';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
@@ -62,11 +63,16 @@ export default function App() {
               until a board tab is opened: it resolves null under a character tab or the
               menu, so the app behaves identically for characters. */}
           <ActiveBoardStoreProvider>
-            <AppStartManagerProvider>
-              <ErrorBoundary>
-                <AppContent />
-              </ErrorBoundary>
-            </AppStartManagerProvider>
+            {/* Parallel resolution layer for the active note store (Notes epic). Inert
+                until a note tab is opened: it resolves null under a character/board tab or
+                the menu, so the app behaves identically for the other tab kinds. */}
+            <ActiveNoteStoreProvider>
+              <AppStartManagerProvider>
+                <ErrorBoundary>
+                  <AppContent />
+                </ErrorBoundary>
+              </AppStartManagerProvider>
+            </ActiveNoteStoreProvider>
           </ActiveBoardStoreProvider>
         </ActiveCharacterStoreProvider>
       </ThemeClassManager>

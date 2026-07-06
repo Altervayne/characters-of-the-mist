@@ -270,13 +270,14 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             // card/tracker (a saved board item) has no `drawerItemId` to sniff, so
             // its Save-As threads the id in directly.
             const resolvedPresetId = presetId ?? ('drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined);
-            // A FULL_BOARD or JOURNAL aggregate must NOT be re-ID'd. A board's item ids are
-            // referenced by connection endpoints (`from`/`to`) and its board id keys the
+            // A FULL_BOARD, JOURNAL, or NOTE aggregate must NOT be re-ID'd. A board's item ids
+            // are referenced by connection endpoints (`from`/`to`) and its board id keys the
             // focus-or-open round-trip. A journal's bookmarks reference pages by `pageId`, a
             // field `deepReId` leaves untouched while it regenerates every page's `id` - so a
-            // blind re-ID would orphan every bookmark. Both are exempt; other content stays
+            // blind re-ID would orphan every bookmark. A note's id keys its own focus-or-open
+            // round-trip the same way a board's does. All three are exempt; other content stays
             // re-ID'd so the drawer copy is independent of the live source.
-            const freshContent = type === 'FULL_BOARD' || type === 'JOURNAL' ? content : deepReId(content);
+            const freshContent = type === 'FULL_BOARD' || type === 'JOURNAL' || type === 'NOTE' ? content : deepReId(content);
             const command = createCreateItemCommand({ id: resolvedPresetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
             await runMutation(command);
             return command.getCreatedItemId() ?? '';
@@ -284,9 +285,10 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          addImportedItem: async (itemContent, itemType, game, parentFolderId) => {
             // A JOURNAL is exempt from re-ID for the same reason `addItem` is: `deepReId` regenerates every
             // page's `id` while leaving each bookmark's `pageId` (a different field name) untouched, so a
-            // blind re-ID would orphan every bookmark. An imported journal keeps its own ids (self-contained
-            // in the file); other imported content is re-ID'd so it can't collide with an existing item.
-            const freshContent = itemType === 'JOURNAL' ? itemContent : deepReId(itemContent);
+            // blind re-ID would orphan every bookmark. A NOTE keeps its id too (it keys the focus-or-open
+            // round-trip). Both keep their own ids (self-contained in the file); other imported content is
+            // re-ID'd so it can't collide with an existing item.
+            const freshContent = itemType === 'JOURNAL' || itemType === 'NOTE' ? itemContent : deepReId(itemContent);
             const name = 'title' in freshContent ? freshContent.title : 'name' in freshContent ? freshContent.name : '';
             await runMutation(createCreateItemCommand({ name, game, type: itemType, content: freshContent, parentFolderId: parentFolderId ?? null }));
          },

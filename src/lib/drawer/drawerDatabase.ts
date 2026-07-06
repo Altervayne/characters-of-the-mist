@@ -6,6 +6,7 @@ import type { DrawerFolderRecord, DrawerItemRecord, DrawerMetaRecord } from './d
 import type { CharacterRecord } from '@/lib/character/characterRecords';
 import type { AssetRecord } from '@/lib/assets/assetRecords';
 import type { BoardRecord, BoardItemRecord } from '@/lib/board/boardRecords';
+import type { NoteRecord } from '@/lib/notes/noteRecords';
 
 /**
  * The Dexie database for the normalized drawer.
@@ -53,6 +54,8 @@ export class DrawerDatabase extends Dexie {
    boards!: EntityTable<BoardRecord, 'id'>;
    /** Flat board-item rows, content stored inline (version(4)). */
    boardItems!: EntityTable<BoardItemRecord, 'id'>;
+   /** One row per working Note, the whole flat document stored inline (version(6)). */
+   notes!: EntityTable<NoteRecord, 'id'>;
 
    constructor() {
       super('CharactersOfTheMistDrawerDatabase');
@@ -101,6 +104,14 @@ export class DrawerDatabase extends Dexie {
             if (typeof item.createdAt !== 'number') item.createdAt = Date.now();
             if (typeof item.updatedAt !== 'number') item.updatedAt = item.createdAt;
          });
+      });
+
+      // version(6): purely additive - declares only the NEW `notes` store (one row per
+      // working Note, keyed by `id`, indexed on `updatedAt` for future recents ordering).
+      // The whole flat document is stored unindexed. An existing database upgrades by
+      // creating one empty store with no transform of existing data.
+      this.version(6).stores({
+         notes: 'id, updatedAt',
       });
    }
 }

@@ -31,7 +31,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -101,6 +101,34 @@ export interface Journal {
    id: string;
    pages: JournalPage[];
    bookmarks: JournalBookmark[];
+}
+
+/**
+ * A Note as a standalone, serializable aggregate: a single FLAT markdown document (title + one
+ * continuous `body`), distinct from a {@link Journal}'s paged, bookmarked notebook - the flatness IS
+ * the firewall between the two. The body carries inline `{brace}` mentions and (from a later phase)
+ * `![](asset:<hash>)` image references, all inside the one string. It is the shape held by the drawer
+ * item `content`, the board copy's `data`, and the tab-backed Note store alike (one aggregate, three
+ * homes), the way one `Journal`/`Card` is shared across surfaces.
+ */
+export interface Note {
+   id: string;
+   title: string;
+   body: string;
+}
+
+/**
+ * A Note on the board, in the copy model: a self-contained snapshot of a {@link Note} in `data`,
+ * carrying the originating `sourceDrawerItemId` when it came from (or was Save-As'd to) the drawer.
+ * Copy-ONLY - a Note is its own content, so there is no live-mirror reference variant. Mirrors
+ * {@link JournalBoardContent}. Board-embed WIRING lands in a later phase; the type exists now so the
+ * kind is representable end to end.
+ */
+export interface NoteBoardContent {
+   kind: 'note';
+   mode: 'copy';
+   sourceDrawerItemId?: string;
+   data: Note;
 }
 
 /**
@@ -204,6 +232,7 @@ export type BoardItemContent =
    | ImageBoardContent
    | PostItBoardContent
    | JournalBoardContent
+   | NoteBoardContent
    | CardBoardContent
    | TrackerBoardContent
    | ConnectionBoardContent

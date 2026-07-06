@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, NotebookPen } from 'lucide-react';
 
 // -- Component Imports --
 import { GameCard } from '@/components/molecules/GameCard';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 
 // -- Constants --
-import { GAME_VISUALS, GAME_CARD_OPTIONS, BOARD_VISUAL } from '@/lib/constants/gameVisuals';
+import { GAME_VISUALS, GAME_CARD_OPTIONS, BOARD_VISUAL, NOTE_VISUAL } from '@/lib/constants/gameVisuals';
 
 // -- Type Imports --
 import type { GameSystem } from '@/lib/types/drawer';
@@ -32,7 +32,7 @@ interface TabTypeChooserProps {
 
 export function TabTypeChooser({ onChoose }: TabTypeChooserProps) {
    const { t } = useTranslation();
-   const { createCharacterTab, createBoardTab } = useTabManagerActions();
+   const { createCharacterTab, createBoardTab, createNoteTab } = useTabManagerActions();
 
    const pickGame = (game: GameSystem) => {
       createCharacterTab(game);
@@ -42,6 +42,12 @@ export function TabTypeChooser({ onChoose }: TabTypeChooserProps) {
    const pickBoard = () => {
       // The board row materializes asynchronously; the chooser can dismiss at once.
       void createBoardTab();
+      onChoose?.();
+   };
+
+   const pickNote = () => {
+      // The note row materializes asynchronously; the chooser can dismiss at once.
+      void createNoteTab();
       onChoose?.();
    };
 
@@ -68,17 +74,27 @@ export function TabTypeChooser({ onChoose }: TabTypeChooserProps) {
             </div>
          </section>
 
-         {/* Board: one full-width card, spanning the row to read as the distinct second type. */}
+         {/* Workspaces: the board + note, side by side, as the distinct second family of tab types. */}
          <section className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold text-muted-foreground">{t('Tabs.newTabDialog.boardType')}</h3>
-            <GameCard
-               isSelected={false}
-               onClick={pickBoard}
-               title={t('Tabs.newTabDialog.newBoardTitle')}
-               subtitle={t('Tabs.newTabDialog.newBoardSubtitle')}
-               gradient={BOARD_VISUAL.gradient}
-               icon={<LayoutGrid className={cn('h-6 w-6', BOARD_VISUAL.accentText)} />}
-            />
+            <h3 className="text-sm font-semibold text-muted-foreground">{t('Tabs.newTabDialog.workspaceType')}</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+               <GameCard
+                  isSelected={false}
+                  onClick={pickBoard}
+                  title={t('Tabs.newTabDialog.newBoardTitle')}
+                  subtitle={t('Tabs.newTabDialog.newBoardSubtitle')}
+                  gradient={BOARD_VISUAL.gradient}
+                  icon={<LayoutGrid className={cn('h-6 w-6', BOARD_VISUAL.accentText)} />}
+               />
+               <GameCard
+                  isSelected={false}
+                  onClick={pickNote}
+                  title={t('Tabs.newTabDialog.newNoteTitle')}
+                  subtitle={t('Tabs.newTabDialog.newNoteSubtitle')}
+                  gradient={NOTE_VISUAL.gradient}
+                  icon={<NotebookPen className={cn('h-6 w-6', NOTE_VISUAL.accentText)} />}
+               />
+            </div>
          </section>
       </div>
    );

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
 
 // -- Icon Imports --
-import { LayoutGrid, X } from 'lucide-react';
+import { LayoutGrid, NotebookPen, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -14,9 +14,10 @@ import { cn } from '@/lib/utils';
 // -- Store Imports --
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
+import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
 
 // -- Constants --
-import { getGameVisual, BOARD_VISUAL } from '@/lib/constants/gameVisuals';
+import { getGameVisual, BOARD_VISUAL, NOTE_VISUAL } from '@/lib/constants/gameVisuals';
 
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
@@ -32,7 +33,9 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  * @param props.tab - The tab being dragged (its `type` selects the kind, its `id` keys the store read).
  */
 export function TabDragPreview({ tab }: { tab: OpenTab }) {
-   return tab.type === 'board' ? <BoardTabPreview tab={tab} /> : <CharacterTabPreview tab={tab} />;
+   if (tab.type === 'board') return <BoardTabPreview tab={tab} />;
+   if (tab.type === 'note') return <NoteTabPreview tab={tab} />;
+   return <CharacterTabPreview tab={tab} />;
 }
 
 /** The shared free-floating chip: rounded on all four corners (the real tab is rounded-top only) with a shadow. */
@@ -91,6 +94,27 @@ function BoardTabPreview({ tab }: { tab: OpenTab }) {
                className={cn('ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25', BOARD_VISUAL.gradient)}
             >
                <LayoutGrid className="h-4 w-4 text-white" />
+            </div>
+         }
+      />
+   );
+}
+
+function NoteTabPreview({ tab }: { tab: OpenTab }) {
+   const { t } = useTranslation();
+   const instance = useMemo(() => getOrCreateNoteInstance(tab.id), [tab.id]);
+   const title = useStore(instance, (state) => state.note?.title);
+   const label = title && title.trim().length > 0 ? title : t('Tabs.untitledNote');
+
+   return (
+      <TabPreviewChip
+         label={label}
+         icon={
+            <div
+               aria-hidden
+               className={cn('ml-2 my-1.5 flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-white/25', NOTE_VISUAL.gradient)}
+            >
+               <NotebookPen className="h-4 w-4 text-white" />
             </div>
          }
       />
