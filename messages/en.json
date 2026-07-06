@@ -577,6 +577,9 @@
             "raised": "Raised {{name}}",
             "alreadyExists": "{{name}} already applied"
          }
+      },
+      "journal": {
+         "untitled": "Untitled Journal"
       }
    },
 

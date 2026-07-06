@@ -543,6 +543,9 @@
             "raised": "[TO COMPLETE]",
             "alreadyExists": "[TO COMPLETE]"
          }
+      },
+      "journal": {
+         "untitled": "[TO COMPLETE]"
       }
    },
    "ChallengeCard": {

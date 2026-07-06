@@ -123,6 +123,8 @@ export interface CharacterState {
       // Journal Actions
       /** Appends a bare, empty Journal (the character's own notebook) to `character.journals`. */
       addJournal: () => void;
+      /** Imports a journal onto the sheet as a COPY: a fresh top-level id, pages/bookmarks preserved. */
+      addImportedJournal: (journal: Journal) => void;
       /** Replaces a journal in `character.journals` with an edited aggregate (page/bookmark edits). */
       updateJournal: (journalId: string, journal: Journal) => void;
       /** Removes a journal from `character.journals`. */
@@ -632,6 +634,24 @@ export function createCharacterStore() {
                            ...state.character,
                            journals: [...state.character.journals, newJournal],
                            sheetLayout: appendSheetLayoutEntry(state.character.sheetLayout, { kind: 'journal', id: newJournal.id }),
+                        },
+                     };
+                  });
+               },
+               addImportedJournal: (journal) => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     // A COPY: deep-clone, then regenerate ONLY the top-level id. Pages keep their ids and
+                     // bookmarks keep their `pageId` references, so no bookmark is stranded (a blind deepReId
+                     // would rewrite page ids and orphan every bookmark). Append its manifest entry too, or the
+                     // imported journal renders but can't reorder (the pre-manifest bug).
+                     const copy: Journal = { ...structuredClone(journal), id: cuid() };
+                     return {
+                        character: {
+                           ...state.character,
+                           journals: [...state.character.journals, copy],
+                           sheetLayout: appendSheetLayoutEntry(state.character.sheetLayout, { kind: 'journal', id: copy.id }),
                         },
                      };
                   });

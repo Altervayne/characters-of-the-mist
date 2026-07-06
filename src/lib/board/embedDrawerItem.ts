@@ -89,7 +89,20 @@ export function characterElementSpec(character: { id: string; drawerItemId?: str
  * an IMAGE_CARD becomes the native image item. {@link embeddedSpecForDrawerItem} wraps this to layer the
  * drawer source id on and to add the full-sheet reference case.
  */
-export function embeddedSpecForComponent(component: Card | Tracker): EmbeddedBoardSpec | null {
+export function embeddedSpecForComponent(component: Card | Tracker | Journal): EmbeddedBoardSpec | null {
+   // A bare Journal (no cardType/trackerType) drops as a self-contained COPY, no drawer source. Its
+   // top-level id is regenerated so the board copy is independent, while pages keep their ids and the
+   // bookmarks keep their `pageId` references (no stranded bookmark) - mirrors the drawer JOURNAL branch.
+   if ('pages' in component && 'bookmarks' in component) {
+      const journal = structuredClone(component);
+      const data: Journal = { ...journal, id: cuid() };
+      return {
+         kind: 'journal',
+         width: EMBEDDED_JOURNAL_SIZE.width,
+         height: EMBEDDED_JOURNAL_SIZE.height,
+         content: { kind: 'journal', mode: 'copy', data },
+      };
+   }
    if ('cardType' in component) {
       if (component.cardType === 'IMAGE_CARD') {
          const details = (component as { details?: ImageCardDetails }).details;

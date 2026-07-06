@@ -62,6 +62,7 @@ export function sheetSectionForItemType(type: GeneralItemType): 'cards' | 'track
       case 'LOADOUT_THEME':
       case 'IMAGE_CARD':
       case 'CHALLENGE_CARD':
+      case 'JOURNAL':
          return 'cards';
       case 'STATUS_TRACKER':
       case 'STORY_TAG_TRACKER':

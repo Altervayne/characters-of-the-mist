@@ -197,4 +197,8 @@ describe('mapItemToStorableInfo - post-it & journal notes (game-agnostic)', () =
       };
       expect(mapItemToStorableInfo(journal)).toEqual(['JOURNAL', 'NEUTRAL']);
    });
+
+   it('sections a JOURNAL drawer item under cards (a journal is a card-footprint element)', () => {
+      expect(sheetSectionForItemType('JOURNAL')).toBe('cards');
+   });
 });

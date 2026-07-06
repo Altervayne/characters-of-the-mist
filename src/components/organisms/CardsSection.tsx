@@ -19,13 +19,14 @@ import { resolveSheetLayout } from '@/lib/character/sheetLayout';
 
 // -- Type Imports --
 import type { Character, Card as CardData } from '@/lib/types/character';
+import type { Journal } from '@/lib/types/board';
 
 
 
 interface CardsSectionProps {
    character: Character;
    isEditing: boolean;
-   onExport: (item: CardData) => void;
+   onExport: (item: CardData | Journal) => void;
    onEditCard: (card: CardData) => void;
    onAddCard: () => void;
    onAddPortrait: () => void;
@@ -120,6 +121,7 @@ export function CardsSection({
                            <SheetJournalCard
                               journal={journal}
                               isEditing={isEditing}
+                              onExport={() => onExport(journal)}
                               dragAttributes={dragAttributes}
                               dragListeners={dragListeners}
                            />

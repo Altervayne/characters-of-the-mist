@@ -124,6 +124,10 @@ export function generateExportFilename(game: GameSystem, type: ExportableItemTyp
          textType = "Challenge-Card"
          break;
 
+      case "JOURNAL":
+         textType = "Journal"
+         break;
+
       case "CUSTOM_THEME":
          textType = "Theme"
          break;

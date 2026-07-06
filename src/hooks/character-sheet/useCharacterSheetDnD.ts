@@ -124,7 +124,7 @@ export function useCharacterSheetDnD() {
 
    const character = useCharacterStore((state) => state.character);
    const { reorderSheetLayout, reorderStatuses, reorderStoryTags, reorderStoryThemes,
-            addImportedCard, addImportedTracker } = useCharacterActions();
+            addImportedCard, addImportedTracker, addImportedJournal } = useCharacterActions();
    const { openCharacterTab, openBoardTab, reorderTabs, setActiveTab } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
    // view is the reorder scope for any in-drawer drag.
@@ -746,17 +746,21 @@ export function useCharacterSheetDnD() {
          destinationFolderId = over.data.current?.destinationId ?? undefined;
       }
 
-      const storableInfo = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
+      // A card, tracker, OR journal: mapItemToStorableInfo forks on the shape (a journal → ['JOURNAL','NEUTRAL']).
+      const storableInfo = mapItemToStorableInfo(activeDragItem as CardData | Tracker | Journal);
       if (!storableInfo) return;
       const [generalType, gameSystem] = storableInfo;
 
       const itemContentCopy = JSON.parse(JSON.stringify(activeDragItem));
       if ('isFlipped' in itemContentCopy) itemContentCopy.isFlipped = false;
 
+      // A card names by `title`, a tracker by `name`, a journal by the first line of its first page -
+      // each aggregate names off its own content (mirrors the board save-back).
       const rawName = 'title' in activeDragItem ? activeDragItem.title :
-                     'name' in activeDragItem ? activeDragItem.name : '';
-      // Keep the drawer item from landing blank when the card has no title (a portrait
-      // can be cleared to an empty title).
+                     'name' in activeDragItem ? activeDragItem.name :
+                     'pages' in activeDragItem ? (activeDragItem.pages[0]?.text ?? '').split('\n')[0] : '';
+      // Keep the drawer item from landing blank when the content has no name (a portrait can be cleared
+      // to an empty title; a fresh journal has no page text).
       const fallbackName = generalType === 'IMAGE_CARD' ? 'Portrait' : 'New Item';
       const defaultName = rawName?.trim() ? rawName : fallbackName;
 
@@ -847,7 +851,9 @@ export function useCharacterSheetDnD() {
       const dropSheetItemOnBoard = () => {
          const boardStore = getActiveBoardStore();
          if (!boardStore || !activeDragItem) return;
-         const spec = embeddedSpecForComponent(activeDragItem as CardData | Tracker);
+         // A card, tracker, OR journal: embeddedSpecForComponent forks on the shape (a bare Journal drops
+         // as a board journal copy), so no separate journal branch is needed here.
+         const spec = embeddedSpecForComponent(activeDragItem as CardData | Tracker | Journal);
          if (!spec) return;
          void boardStore.getState().actions.addItem({
             ...boardDropPlacement(boardStore, dropPointer, spec),
@@ -1132,6 +1138,7 @@ export function useCharacterSheetDnD() {
                               overIdStr === 'tracker-drop-zone' ||
                               overIdStr === 'card-drop-zone' ||
                               overType === 'sheet-card' ||
+                              overType === 'sheet-journal' ||
                               overType === 'sheet-tracker';
 
          if (isOverSheet) {
@@ -1143,10 +1150,11 @@ export function useCharacterSheetDnD() {
             const isTrackerType = draggedItem.type === 'STATUS_TRACKER' || draggedItem.type === 'STORY_TAG_TRACKER' || draggedItem.type === 'STORY_THEME_TRACKER';
             const isImageCard = draggedItem.type === 'IMAGE_CARD';
             const isCardType = draggedItem.type === 'CHARACTER_CARD' || draggedItem.type === 'CHARACTER_THEME' || draggedItem.type === 'GROUP_THEME' || draggedItem.type === 'LOADOUT_THEME' || isImageCard;
+            const isJournalType = draggedItem.type === 'JOURNAL';
 
             // Only sheet components add here; a FULL_CHARACTER_SHEET over the sheet is
             // not a failure (it opens a tab via its own zone), so don't toast for it.
-            if (!isTrackerType && !isCardType) return;
+            if (!isTrackerType && !isCardType && !isJournalType) return;
 
             // Game mismatch: the drop can't land, tell the user why instead of a silent
             // no-op. NEUTRAL items are game-agnostic, so they skip this gate.
@@ -1157,6 +1165,10 @@ export function useCharacterSheetDnD() {
 
             if (isTrackerType) {
                addImportedTracker(draggedItem.content as Tracker);
+               toast.success(tNotifications('Notifications.character.componentImported'));
+            } else if (isJournalType) {
+               // A bare journal (game-agnostic): import a copy onto the sheet (fresh id, pages/bookmarks kept).
+               addImportedJournal(draggedItem.content as Journal);
                toast.success(tNotifications('Notifications.character.componentImported'));
             } else if (isCardType) {
                const added = addImportedCard(draggedItem.content as CardData);
@@ -1176,19 +1188,12 @@ export function useCharacterSheetDnD() {
       // #############################################
       if (activeType?.startsWith('sheet-')) {
 
-         // A sheet JOURNAL has no board-embed / drawer-save / cross-character-import path yet (those are
-         // card/tracker-only, and routing a bare Journal through mapItemToStorableInfo / embed specs
-         // produces garbage). Its only sheet drag is a reorder within the manifest space, so handle that
-         // and stop before the card/tracker scenarios below.
-         if (activeType === DRAG_TYPES.SHEET_JOURNAL) {
-            if ((overType === DRAG_TYPES.SHEET_CARD || overType === DRAG_TYPES.SHEET_JOURNAL) && character) {
-               handleSheetLayoutReorder(active.id as string, over.id as string);
-            }
-            return;
-         }
+         // A sheet JOURNAL (SHEET_JOURNAL) rides the SAME scenarios below as a card - board drop, drawer
+         // save, cross-character import, reorder - each of which forks explicitly on the journal shape (its
+         // bare aggregate has no cardType/trackerType). It saves a COPY and stays put, mirroring a card.
 
          // ==================
-         //  SCENARIO 2.0a: Dropping a card/tracker onto the board canvas
+         //  SCENARIO 2.0a: Dropping a card/tracker/journal onto the board canvas
          // ==================
          // Mirrors the drawer's board drop (SCENARIO 1.0): a board is game-agnostic, so there is NO
          // game gate. The sheet component becomes a self-contained COPY (no `sourceDrawerItemId`, it is
@@ -1212,7 +1217,7 @@ export function useCharacterSheetDnD() {
             character && activeDragItem && overIsSheetZone &&
             dragSourceCharacterIdRef.current && dragSourceCharacterIdRef.current !== character.id
          ) {
-            const info = mapItemToStorableInfo(activeDragItem as CardData | Tracker);
+            const info = mapItemToStorableInfo(activeDragItem as CardData | Tracker | Journal);
             // NEUTRAL items are game-agnostic; every other component must match the sheet's game.
             if (info && (info[1] === 'NEUTRAL' || info[1] === character.game)) {
                if ('cardType' in activeDragItem) {
@@ -1224,6 +1229,10 @@ export function useCharacterSheetDnD() {
                   }
                } else if ('trackerType' in activeDragItem) {
                   addImportedTracker(activeDragItem as Tracker);
+                  toast.success(tNotifications('Notifications.character.componentImported'));
+               } else if ('pages' in activeDragItem) {
+                  // A bare journal (no cardType/trackerType): import a copy onto the now-active character.
+                  addImportedJournal(activeDragItem as Journal);
                   toast.success(tNotifications('Notifications.character.componentImported'));
                }
             }
@@ -1271,6 +1280,7 @@ export function useCharacterSheetDnD() {
       setContextualGame,
       addImportedTracker,
       addImportedCard,
+      addImportedJournal,
       tNotifications,
       clearDragFeedback,
       contractDrawer,

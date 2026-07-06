@@ -43,6 +43,8 @@ interface SheetJournalCardProps {
    journal: Journal;
    /** The sheet's edit mode: drives the body's edit textarea + its structural controls, and the toolbar delete. */
    isEditing: boolean;
+   /** Exports the journal to a `.cotm` file, wired to the toolbar's export button (shown on hover, like a card). */
+   onExport?: () => void;
    dragAttributes?: DraggableAttributes;
    dragListeners?: SyntheticListenerMap;
 }
@@ -51,7 +53,7 @@ interface SheetJournalCardProps {
 // so a zero rect is inert.
 const SHEET_HOST_RECT: BoardItem = { id: '', kind: 'journal', z: 0, x: 0, y: 0, width: 250, height: 600, content: { kind: 'journal', mode: 'copy', data: { id: '', pages: [], bookmarks: [] } } };
 
-export function SheetJournalCard({ journal, isEditing, dragAttributes, dragListeners }: SheetJournalCardProps) {
+export function SheetJournalCard({ journal, isEditing, onExport, dragAttributes, dragListeners }: SheetJournalCardProps) {
    const { updateJournal, removeJournal } = useCharacterActions();
    const { isHovered, hoverHandlers } = useToolbarHover();
    // A tapped mention in the page create-or-raises a status / de-dupes a tag on the active character.
@@ -74,6 +76,7 @@ export function SheetJournalCard({ journal, isEditing, dragAttributes, dragListe
             dragAttributes={dragAttributes}
             dragListeners={dragListeners}
             onDelete={() => removeJournal(journal.id)}
+            onExport={onExport}
             cardTheme="card-type-image"
             // The body's structural controls (add/remove page, bookmark) portal into this slot, which lives
             // inside the grab toolbar. Only present while editing (those are edit-only actions), so at rest

@@ -226,6 +226,48 @@ describe('removeJournal', () => {
    });
 });
 
+describe('addImportedJournal', () => {
+   const imported = {
+      id: 'src-journal',
+      pages: [{ id: 'p-a', text: 'One' }, { id: 'p-b', text: 'Two' }],
+      bookmarks: [{ id: 'bm', pageId: 'p-b', label: 'Second' }],
+   };
+
+   it('appends a COPY with a fresh top-level id, pages + bookmarks preserved (no stranded bookmark)', () => {
+      const store = makeStore();
+      store.getState().actions.addImportedJournal(imported);
+
+      const journals = store.getState().character!.journals;
+      expect(journals).toHaveLength(1);
+      const copy = journals[0];
+      // Fresh top-level id...
+      expect(copy.id).not.toBe('src-journal');
+      // ...but page ids and the bookmark's pageId are untouched, so the bookmark still resolves.
+      expect(copy.pages.map((p) => p.id)).toEqual(['p-a', 'p-b']);
+      expect(copy.bookmarks[0].pageId).toBe('p-b');
+      const pageIds = new Set(copy.pages.map((p) => p.id));
+      expect(copy.bookmarks.every((b) => pageIds.has(b.pageId))).toBe(true);
+   });
+
+   it('appends a sheetLayout entry for the imported journal (so it can reorder)', () => {
+      const store = makeStore();
+      store.getState().actions.addImportedJournal(imported);
+
+      const { journals, sheetLayout } = store.getState().character!;
+      expect(sheetLayout).toContainEqual({ kind: 'journal', id: journals[0].id });
+      // The manifest covers every card + journal exactly once.
+      expect(sheetLayout).toHaveLength(store.getState().character!.cards.length + journals.length);
+   });
+
+   it('is a deep copy: editing the source after import never reaches the stored journal', () => {
+      const store = makeStore();
+      const source = structuredClone(imported);
+      store.getState().actions.addImportedJournal(source);
+      source.pages[0].text = 'edited';
+      expect(store.getState().character!.journals[0].pages[0].text).toBe('One');
+   });
+});
+
 describe('sheetLayout manifest cascade', () => {
    const layout = (store: ReturnType<typeof makeStore>) => store.getState().character!.sheetLayout;
 

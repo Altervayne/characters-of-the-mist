@@ -9,6 +9,7 @@ import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
 import type { DrawerItemContent } from '@/lib/types/drawer';
 import type { Card, Tracker } from '@/lib/types/character';
+import type { Journal } from '@/lib/types/board';
 
 /*
  * Tests for the drawer-item -> embedded-board-item spec. The key guarantee is that the
@@ -207,6 +208,31 @@ describe('embeddedSpecForComponent', () => {
       expect(spec).toMatchObject({ kind: 'image', width: 320, height: 240, content: { kind: 'image', assetId: 'hash-1', fit: 'contain' } });
       expect(spec!.content).not.toHaveProperty('mode');
       expect(spec!.content).not.toHaveProperty('sourceDrawerItemId');
+   });
+
+   it('embeds a sheet JOURNAL as a copy with a FRESH top-level id and NO drawer source, pages + bookmarks intact', () => {
+      const journal: Journal = {
+         id: 'journal-src',
+         pages: [{ id: 'page-a', text: 'Session one' }, { id: 'page-b', text: 'Session two' }],
+         bookmarks: [{ id: 'bm-1', pageId: 'page-a', label: 'Start' }],
+      };
+      const spec = embeddedSpecForComponent(journal);
+      expect(spec).toMatchObject({ kind: 'journal', width: EMBEDDED_JOURNAL_SIZE.width, height: EMBEDDED_JOURNAL_SIZE.height });
+      expect(spec!.content).toMatchObject({ kind: 'journal', mode: 'copy' });
+      // A sheet component carries NO drawer source id.
+      expect(spec!.content).not.toHaveProperty('sourceDrawerItemId');
+
+      const data = (spec!.content as { data: { id: string; pages: { id: string; text: string }[]; bookmarks: { pageId: string }[] } }).data;
+      // Fresh top-level id, but page ids + bookmark pageId references untouched (deepReId landmine dodged).
+      expect(data.id).not.toBe('journal-src');
+      expect(data.pages.map((page) => page.id)).toEqual(['page-a', 'page-b']);
+      expect(data.bookmarks.map((bookmark) => bookmark.pageId)).toEqual(['page-a']);
+      const pageIds = new Set(data.pages.map((page) => page.id));
+      expect(data.bookmarks.every((bookmark) => pageIds.has(bookmark.pageId))).toBe(true);
+
+      // Deep copy: a later edit to the source journal must not reach the board copy.
+      journal.pages[0].text = 'edited';
+      expect(data.pages[0].text).toBe('Session one');
    });
 });
 
