@@ -278,7 +278,6 @@ export type CardViewMode = 'FLIP' | 'SIDE_BY_SIDE';
 export interface Card {
    id: string;
    title: string;
-   order: number;
    isFlipped: boolean;
    viewMode?: CardViewMode | null;
    /**
@@ -291,6 +290,15 @@ export interface Card {
    details: CardDetails;
 }
 
+// One reference in the sheet's ordered layout: a card or a journal, resolved by id. The manifest
+// owns ORDER; `cards`/`journals` stay the normalized stores of record. Every id appears exactly
+// once (a permutation-with-completeness over `cards` + `journals`), so the sheet renders one
+// reorderable space where cards and journals interleave.
+export interface SheetLayoutEntry {
+   kind: 'card' | 'journal';
+   id: string;
+}
+
 export interface Character {
    id: string;
    name: string;
@@ -301,6 +309,9 @@ export interface Character {
    // Sibling to `cards`/`trackers`: the character's own paged notebooks. Reuses the board/drawer
    // `Journal` aggregate verbatim (one shape, three homes); empty is `[]`, never absent.
    journals: Journal[];
+   // The ordered layout of the cards region: a flat list of references into `cards`/`journals`.
+   // Order lives here, not on the content; `cards`/`journals` remain the stores of record.
+   sheetLayout: SheetLayoutEntry[];
    trackers: {
       statuses: StatusTracker[];
       storyTags: StoryTagTracker[];

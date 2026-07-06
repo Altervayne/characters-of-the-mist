@@ -146,7 +146,6 @@ export function imageBoardContentToCard(image: ImageBoardContent, title: string)
    return {
       id: cuid(),
       title,
-      order: 0,
       isFlipped: false,
       cardType: 'IMAGE_CARD',
       details,

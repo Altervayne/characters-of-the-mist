@@ -279,9 +279,12 @@
       "newCharacterName": "New Character",
       "characterNamePlaceholder": "Character Name...",
 
+      "addElement": "Add…",
       "addCard": "Add Card",
       "addPortrait": "Add Portrait",
       "addChallenge": "Add Challenge",
+      "addJournal": "Add Journal",
+      "removeJournal": "Remove Journal",
       "dropToLoadCharacter": "Drop Character Sheet Item here to load the full character. Be careful, this will replace your currently active character.",
       "dropToOpenBoard": "Drop to open board",
       "dropToImport": "Drop a file here to import it. A board opens as a new board, a full character replaces your active one, and a card or tracker imports into the loaded character.",
@@ -1157,7 +1160,8 @@
          "createCard": "Create: Theme Card",
          "createTracker": "Create: Tracker",
          "createChallengeCard": "Create: Challenge Card",
-         
+         "createJournal": "Create: Journal",
+
          "cardTypeCharacter": "Type: Character Theme",
          "cardTypeFellowship": "Type: Fellowship Theme",
          "cardTypeCrew": "Type: Crew Theme",

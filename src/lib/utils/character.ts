@@ -141,6 +141,7 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
       id: cuid(),
       name: name,
       journals: [],
+      sheetLayout: [],
       trackers: {
          statuses: [],
          storyTags: [],
@@ -151,32 +152,20 @@ export function createNewCharacter(name: string, game: GameSystem): Character {
 
 
    switch (game) {
-      case 'CITY_OF_MIST':
-         return {
-            ...baseCharacter,
-            game: 'CITY_OF_MIST',
-            cards: [
-               { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Character Card', order: 0, isFlipped: false, details: emptyCharacterCardDetails('CITY_OF_MIST', name) },
-            ],
-         };
+      case 'CITY_OF_MIST': {
+         const card: Card = { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Character Card', isFlipped: false, details: emptyCharacterCardDetails('CITY_OF_MIST', name) };
+         return { ...baseCharacter, game: 'CITY_OF_MIST', cards: [card], sheetLayout: [{ kind: 'card', id: card.id }] };
+      }
 
-      case 'OTHERSCAPE':
-         return {
-            ...baseCharacter,
-            game: 'OTHERSCAPE',
-            cards: [
-               { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Character Card', order: 0, isFlipped: false, details: emptyCharacterCardDetails('OTHERSCAPE', name) },
-            ],
-         };
+      case 'OTHERSCAPE': {
+         const card: Card = { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Character Card', isFlipped: false, details: emptyCharacterCardDetails('OTHERSCAPE', name) };
+         return { ...baseCharacter, game: 'OTHERSCAPE', cards: [card], sheetLayout: [{ kind: 'card', id: card.id }] };
+      }
 
       case 'LEGENDS':
-      default:
-         return {
-            ...baseCharacter,
-            game: 'LEGENDS',
-            cards: [
-               { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Hero Card', order: 0, isFlipped: false, details: emptyCharacterCardDetails('LEGENDS', name) },
-            ],
-         };
+      default: {
+         const card: Card = { id: cuid(), cardType: 'CHARACTER_CARD', title: 'Hero Card', isFlipped: false, details: emptyCharacterCardDetails('LEGENDS', name) };
+         return { ...baseCharacter, game: 'LEGENDS', cards: [card], sheetLayout: [{ kind: 'card', id: card.id }] };
+      }
    }
 }

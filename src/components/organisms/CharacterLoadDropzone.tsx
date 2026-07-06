@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 // -- Type Imports --
 import type { Variants } from 'framer-motion';
 import type { Card as CardData, Tracker } from '@/lib/types/character';
+import type { Journal } from '@/lib/types/board';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
 
 
@@ -31,7 +32,7 @@ const overlayVariants: Variants = {
 };
 
 interface CharacterLoadDropZoneProps {
-   activeDragItem: CardData | Tracker | DrawerItem | FolderType | null;
+   activeDragItem: CardData | Tracker | Journal | DrawerItem | FolderType | null;
    /** A board is the active window: the board owns a character drop (it makes an element), so this load-to-tab zone steps aside. */
    isBoardActive?: boolean;
 }

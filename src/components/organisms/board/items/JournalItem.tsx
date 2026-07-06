@@ -20,6 +20,9 @@ import { NoteMarkdown } from '@/components/molecules/NoteMarkdown';
 import { useBoardMentionMint } from '@/hooks/board/useBoardMentionMint';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 
+// -- Store Imports --
+import { useJournalViewStore } from '@/lib/stores/journalViewStore';
+
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, JournalBoardContent } from '@/lib/types/board';
 
@@ -59,8 +62,13 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    // (kind / mode / sourceDrawerItemId) intact so the Save-back link survives every edit.
    const commitJournal = (next: typeof journal) => onContentChange({ ...content, data: next });
 
-   const [index, setIndex] = useState(0);
-   const pageIndex = Math.min(index, pages.length - 1);
+   // The current page is EPHEMERAL view state (not character data): read/write an id-keyed store so it
+   // survives the sheet's tab-switch unmount, and one store serves both the sheet journal and its board
+   // copy (same journal id). Clamp on read - a stored index can outlive a page deletion.
+   const storedIndex = useJournalViewStore((state) => state.journalView[journal.id] ?? 0);
+   const setJournalPage = useJournalViewStore((state) => state.setJournalPage);
+   const pageIndex = Math.min(storedIndex, pages.length - 1);
+   const setIndex = (next: number) => setJournalPage(journal.id, next);
    const activePage = pages[pageIndex];
    const [text, setText] = useState(activePage.text);
 

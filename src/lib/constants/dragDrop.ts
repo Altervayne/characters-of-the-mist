@@ -10,6 +10,7 @@ export const DROP_ZONES = {
 
 export const DRAG_TYPES = {
    SHEET_CARD: 'sheet-card',
+   SHEET_JOURNAL: 'sheet-journal',
    DRAWER_CARD: 'drawer-card',
    DRAWER_TRACKER: 'drawer-tracker',
    DRAWER_FOLDER: 'drawer-folder',

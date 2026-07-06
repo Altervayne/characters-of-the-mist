@@ -66,7 +66,7 @@ function DesktopCharacterSheetPage() {
    // page never re-derives the active tab type.
    const activeBoard = useActiveBoardInstance();
    const isBootHydrating = useIsBootHydrating();
-   const { updateCharacterName, addStatus, addStoryTag, addPortrait } = useCharacterActions();
+   const { updateCharacterName, addStatus, addStoryTag, addPortrait, addJournal } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
 
    // ==================
@@ -98,7 +98,6 @@ function DesktopCharacterSheetPage() {
       statusIds,
       storyTagIds,
       storyThemeIds,
-      cardIds,
       handleDragStart,
       handleDragOver,
       handleDragEnd,
@@ -167,6 +166,7 @@ function DesktopCharacterSheetPage() {
       onOpenSettings: () => setSettingsOpen(true),
       onImportFile: triggerImport,
       onCreateChallenge: handleCreateChallenge,
+      onCreateJournal: addJournal,
    });
 
 
@@ -263,7 +263,7 @@ function DesktopCharacterSheetPage() {
                                  onAddCard={handleAddCardClick}
                                  onAddPortrait={addPortrait}
                                  onAddChallenge={handleCreateChallenge}
-                                 cardIds={cardIds}
+                                 onAddJournal={addJournal}
                                  isDropTarget={sheetHighlight === 'cards'}
                               />
                            </SheetMainDropZone>

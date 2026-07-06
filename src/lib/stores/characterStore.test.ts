@@ -182,3 +182,126 @@ describe('addJournal', () => {
       expect(store.getState().character!.journals).toHaveLength(0);
    });
 });
+
+describe('updateJournal', () => {
+   it('replaces the matching journal with the edited aggregate', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      const id = store.getState().character!.journals[0].id;
+
+      const edited = { id, pages: [{ id: 'p1', text: 'hello' }], bookmarks: [{ id: 'b1', pageId: 'p1', label: '' }] };
+      store.getState().actions.updateJournal(id, edited);
+
+      const journals = store.getState().character!.journals;
+      expect(journals).toHaveLength(1);
+      expect(journals[0]).toEqual(edited);
+   });
+
+   it('leaves other journals untouched', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      store.getState().actions.addJournal();
+      const [first, second] = store.getState().character!.journals;
+
+      store.getState().actions.updateJournal(second.id, { ...second, pages: [{ id: 'p', text: 'x' }] });
+
+      const journals = store.getState().character!.journals;
+      expect(journals[0]).toEqual(first);
+      expect(journals[1].pages).toEqual([{ id: 'p', text: 'x' }]);
+   });
+});
+
+describe('removeJournal', () => {
+   it('removes only the matching journal', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      store.getState().actions.addJournal();
+      const [first, second] = store.getState().character!.journals;
+
+      store.getState().actions.removeJournal(first.id);
+
+      const journals = store.getState().character!.journals;
+      expect(journals).toHaveLength(1);
+      expect(journals[0].id).toBe(second.id);
+   });
+});
+
+describe('sheetLayout manifest cascade', () => {
+   const layout = (store: ReturnType<typeof makeStore>) => store.getState().character!.sheetLayout;
+
+   it('a new character starts with a manifest matching its starter card', () => {
+      const store = makeStore(); // one CHARACTER_CARD
+      const cards = store.getState().character!.cards;
+      expect(layout(store)).toEqual([{ kind: 'card', id: cards[0].id }]);
+   });
+
+   it('addPortrait appends a card entry to the manifest', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      const portraitId = imageCards(store)[0].id;
+      expect(layout(store)).toContainEqual({ kind: 'card', id: portraitId });
+      // Exactly one entry per content id (no dupes).
+      expect(layout(store)).toHaveLength(store.getState().character!.cards.length);
+   });
+
+   it('addJournal appends a journal entry to the manifest', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      const journalId = store.getState().character!.journals[0].id;
+      expect(layout(store)).toContainEqual({ kind: 'journal', id: journalId });
+   });
+
+   it('deleteCard splices the card entry (no stranded ghost slot)', () => {
+      const store = makeStore();
+      store.getState().actions.addPortrait();
+      const portraitId = imageCards(store)[0].id;
+
+      store.getState().actions.deleteCard(portraitId);
+
+      expect(layout(store).some((entry) => entry.id === portraitId)).toBe(false);
+      // The manifest still covers every remaining card + journal exactly once.
+      const remaining = store.getState().character!;
+      expect(layout(store)).toHaveLength(remaining.cards.length + remaining.journals.length);
+   });
+
+   it('removeJournal splices the journal entry', () => {
+      const store = makeStore();
+      store.getState().actions.addJournal();
+      const journalId = store.getState().character!.journals[0].id;
+
+      store.getState().actions.removeJournal(journalId);
+
+      expect(layout(store).some((entry) => entry.id === journalId)).toBe(false);
+   });
+});
+
+describe('reorderSheetLayout', () => {
+   it('moves a journal ahead of the starter card (cards + journals share one ordered space)', () => {
+      const store = makeStore();
+      const cardId = store.getState().character!.cards[0].id;
+      store.getState().actions.addJournal();
+      const journalId = store.getState().character!.journals[0].id;
+
+      // Manifest starts [card, journal]; move the journal onto the card's slot.
+      store.getState().actions.reorderSheetLayout(journalId, cardId);
+
+      expect(store.getState().character!.sheetLayout).toEqual([
+         { kind: 'journal', id: journalId },
+         { kind: 'card', id: cardId },
+      ]);
+   });
+
+   it('leaves cards/journals content arrays untouched (order lives only in the manifest)', () => {
+      const store = makeStore();
+      const cardsBefore = store.getState().character!.cards;
+      store.getState().actions.addJournal();
+      const journalsBefore = store.getState().character!.journals;
+      const [cardId] = store.getState().character!.cards.map((c) => c.id);
+      const journalId = journalsBefore[0].id;
+
+      store.getState().actions.reorderSheetLayout(journalId, cardId);
+
+      expect(store.getState().character!.cards).toBe(cardsBefore);
+      expect(store.getState().character!.journals).toBe(journalsBefore);
+   });
+});

@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -38,6 +38,7 @@ interface CommandActionArgs {
    onOpenSettings: () => void;
    onImportFile: () => void;
    onCreateChallenge: () => void;
+   onCreateJournal: () => void;
 }
 
 export interface CommandAction {
@@ -58,7 +59,7 @@ type ScopedCommand = CommandAction & { scope: CommandScope };
 
 
 
-export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onOpenSettings, onImportFile, onCreateChallenge }: CommandActionArgs): CommandAction[] {
+export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onOpenSettings, onImportFile, onCreateChallenge, onCreateJournal }: CommandActionArgs): CommandAction[] {
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
@@ -203,6 +204,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       ] : []),
       // A challenge carries its own game, so it's creatable on any character tab (not gated on the game).
       { id: 'createChallenge', scope: 'character', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new'], icon: Skull, group: t('CommandPalette.groups.creation'), action: onCreateChallenge },
+      // A journal is game-agnostic (the character's own notebook), so it's creatable on any character tab too.
+      { id: 'createJournal', scope: 'character', label: t('CommandPalette.commands.createJournal'), keywords: ['journal', 'notebook', 'notes', 'pages', 'create', 'new'], icon: NotebookText, group: t('CommandPalette.groups.creation'), action: onCreateJournal },
       // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
       // active canvas consumes this request since it owns the drop point + selection/expand state.
       { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },

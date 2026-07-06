@@ -26,7 +26,6 @@ const challengeDetails = (): LegendsChallengeDetails => ({
 const challengeCard = (title: string): Card => ({
    id: 'c1',
    title,
-   order: 0,
    isFlipped: false,
    cardType: 'CHALLENGE_CARD',
    details: challengeDetails(),

@@ -1,6 +1,7 @@
 import { APP_VERSION } from "./config";
 import { compare } from 'semver';
 import { LEGACY_IMAGE_CARD_SIZE } from './constants/imageCard';
+import { buildSheetLayout } from './character/sheetLayout';
 import type { GeneralItemType, Drawer, DrawerItem, Folder } from './types/drawer';
 import type { Card, Character, Tag } from './types/character';
 
@@ -105,6 +106,29 @@ const ensureImageCardSize = (card: Card): Card => {
 const ensureCharacterJournals = (character: Character): Character => {
    if (Array.isArray(character.journals)) return character;
    return { ...character, journals: [] };
+};
+
+/**
+ * Drops the defunct `order` from a card: the sheet's ordered layout lives in `character.sheetLayout`
+ * now, so `Card.order` is dead weight (it only ever mirrored the array index). The FIRST field
+ * removal - idempotent, and a card without it passes through unchanged.
+ */
+const dropCardOrder = (card: Card): Card => {
+   if (!('order' in card)) return card;
+   const rest = { ...(card as Card & { order?: unknown }) };
+   delete rest.order;
+   return rest;
+};
+
+/**
+ * Backfills the sheet layout manifest: order used to live on the (now-removed) `Card.order` and an
+ * implicit cards-then-journals render; the manifest makes it explicit. A 1.x sheet arrives without
+ * it, so build the behavior-preserving default (every card in array order, then every journal).
+ * Idempotent - a sheet that already carries a manifest passes through unchanged.
+ */
+const ensureSheetLayout = (character: Character): Character => {
+   if (Array.isArray(character.sheetLayout)) return character;
+   return { ...character, sheetLayout: buildSheetLayout(character) };
 };
 
 /**
@@ -225,11 +249,14 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
    // with the legacy footprint. This is NOT version-gated (cards carry no version and
    // saved characters already sit at the current version), so it runs on every load.
    if (isCharacter(harmonizedData)) {
-      harmonizedData = { ...harmonizedData, cards: harmonizedData.cards.map(ensureImageCardSize) };
+      // Card path: backfill image sizes AND drop the defunct `Card.order` (order lives in the manifest now).
+      harmonizedData = { ...harmonizedData, cards: harmonizedData.cards.map((card) => dropCardOrder(ensureImageCardSize(card))) };
       harmonizedData = stripCharacterTrackerGames(harmonizedData as Character);
       harmonizedData = ensureCharacterJournals(harmonizedData as Character);
+      // The manifest backfill reads the final cards + journals, so it runs last.
+      harmonizedData = ensureSheetLayout(harmonizedData as Character);
    } else if (isCard(harmonizedData) && dataType === 'IMAGE_CARD') {
-      harmonizedData = ensureImageCardSize(harmonizedData);
+      harmonizedData = dropCardOrder(ensureImageCardSize(harmonizedData));
    } else if (TRACKER_ITEM_TYPES.has(dataType as GeneralItemType)) {
       // A standalone tracker saved in the drawer: its content IS the tracker; drop its dead `game`.
       harmonizedData = stripTrackerGame(harmonizedData);

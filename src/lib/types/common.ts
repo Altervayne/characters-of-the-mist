@@ -26,6 +26,7 @@ export type GeneralItemType =
  */
 export type DragItemType =
    | 'sheet-card'
+   | 'sheet-journal'
    | 'drawer-card'
    | 'drawer-tracker'
    | 'drawer-folder'

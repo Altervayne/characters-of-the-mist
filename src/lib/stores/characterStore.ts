@@ -14,6 +14,9 @@ import { DEFAULT_IMAGE_CARD_SIZE, clampCardWidth, clampCardHeight } from '../con
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 import { useActiveCharacterInstance } from '@/lib/character/ActiveCharacterStoreContext';
 
+// -- Sheet layout manifest --
+import { appendSheetLayoutEntry, removeSheetLayoutEntry, reorderSheetLayoutEntries } from '@/lib/character/sheetLayout';
+
 // -- Type Imports --
 import type { Character, Card, Tag, LegendsThemeDetails, OtherscapeThemeDetails, OtherscapeCharacterDetails, StatusTracker, StoryTagTracker, Tracker, LegendsHeroDetails, LegendsFellowshipDetails, FellowshipRelationship, BlandTag, CardDetails, CardViewMode, StoryThemeTracker, CrewMember, CityRiftDetails, ImageCardDetails } from '@/lib/types/character';
 import type { Journal } from '@/lib/types/board';
@@ -111,6 +114,8 @@ export interface CharacterState {
       /** Sets a card's display title (the challenge card's name lives here). */
       updateCardTitle: (cardId: string, title: string) => void;
       reorderCards: (startIndex: number, endIndex: number) => void;
+      /** Kind-agnostic sheet reorder: moves the manifest entry for `fromId` to `toId`'s slot. */
+      reorderSheetLayout: (fromId: string, toId: string) => void;
       flipCard: (cardId: string) => void;
       updateCardViewMode: (cardId: string, viewMode: CardViewMode | null) => void;
       /** Sets a card's board display mode (expanded landscape sheet vs the normal card). */
@@ -118,6 +123,10 @@ export interface CharacterState {
       // Journal Actions
       /** Appends a bare, empty Journal (the character's own notebook) to `character.journals`. */
       addJournal: () => void;
+      /** Replaces a journal in `character.journals` with an edited aggregate (page/bookmark edits). */
+      updateJournal: (journalId: string, journal: Journal) => void;
+      /** Removes a journal from `character.journals`. */
+      removeJournal: (journalId: string) => void;
       // Tag Actions
       addTag: (cardId: string, listName: TagListName) => void;
       updateTag: (cardId: string, listName: TagListName, tagId: string, updatedTag: Partial<Tag>) => void;
@@ -334,9 +343,8 @@ export function createCharacterStore() {
 
                      // The card construction lives in the shared `buildCard` factory; the sheet keeps its
                      // familiar "<name>'s ..." titles by passing the character name, and its insertion order.
-                     const built = buildCard(state.character.game, options, state.character.name);
-                     if (!built) return {};
-                     const newCard: Card = { ...built, order: state.character.cards.length };
+                     const newCard = buildCard(state.character.game, options, state.character.name);
+                     if (!newCard) return {};
                      newCardId = newCard.id;
 
                      const updatedCards = [...state.character.cards, newCard];
@@ -350,6 +358,7 @@ export function createCharacterStore() {
                         character: {
                            ...state.character,
                            cards: updatedCardsWithEssence,
+                           sheetLayout: appendSheetLayoutEntry(state.character.sheetLayout, { kind: 'card', id: newCard.id }),
                         },
                      };
                   });
@@ -373,17 +382,24 @@ export function createCharacterStore() {
                      const newCardCopy = deepReId(card);
                      let finalCards: Card[];
                      let newCharacterName = state.character.name;
+                     // Track the manifest entry for the new card: a replaced character card takes the
+                     // ousted card's slot; an appended card gets a fresh trailing entry.
+                     let sheetLayout = state.character.sheetLayout;
 
                      const uniqueCharacterCardTypes: GeneralItemType[] = ['CHARACTER_CARD'];
 
                      if (uniqueCharacterCardTypes.includes(newCardCopy.cardType)) {
                         const originalUniqueCard = state.character.cards.find(c => uniqueCharacterCardTypes.includes(c.cardType));
-                        const originalOrder = originalUniqueCard ? originalUniqueCard.order : 0;
-                        newCardCopy.order = originalOrder;
 
-                        finalCards = state.character.cards.map(c => 
+                        finalCards = state.character.cards.map(c =>
                            uniqueCharacterCardTypes.includes(c.cardType) ? newCardCopy : c
                         );
+
+                        // The replaced card's manifest slot points at its now-dead id; repoint it to the
+                        // new copy in place so the layout order is preserved. No original card → append.
+                        sheetLayout = originalUniqueCard
+                           ? sheetLayout.map((entry) => (entry.id === originalUniqueCard.id ? { kind: 'card', id: newCardCopy.id } : entry))
+                           : appendSheetLayoutEntry(sheetLayout, { kind: 'card', id: newCardCopy.id });
 
                         if (newCardCopy.details.game === 'LEGENDS') {
                            newCharacterName = (newCardCopy.details as LegendsHeroDetails).characterName;
@@ -396,7 +412,8 @@ export function createCharacterStore() {
                         const insertionIndex = index ?? newCards.length;
                         newCards.splice(insertionIndex, 0, newCardCopy);
 
-                        finalCards = newCards.map((c, idx) => ({ ...c, order: idx }));
+                        finalCards = newCards;
+                        sheetLayout = appendSheetLayoutEntry(sheetLayout, { kind: 'card', id: newCardCopy.id });
                      }
 
                      // Update essence count for Otherscape characters
@@ -409,6 +426,7 @@ export function createCharacterStore() {
                            ...state.character,
                            name: newCharacterName,
                            cards: updatedCardsWithEssence,
+                           sheetLayout,
                         },
                      };
                   });
@@ -424,7 +442,6 @@ export function createCharacterStore() {
                      const newCard: Card = {
                         id: cuid(),
                         title: 'Portrait',
-                        order: state.character.cards.length,
                         isFlipped: false,
                         cardType: 'IMAGE_CARD',
                         details: {
@@ -436,7 +453,13 @@ export function createCharacterStore() {
                            height: DEFAULT_IMAGE_CARD_SIZE.height,
                         } as ImageCardDetails,
                      };
-                     return { character: { ...state.character, cards: [...state.character.cards, newCard] } };
+                     return {
+                        character: {
+                           ...state.character,
+                           cards: [...state.character.cards, newCard],
+                           sheetLayout: appendSheetLayoutEntry(state.character.sheetLayout, { kind: 'card', id: newCard.id }),
+                        },
+                     };
                   });
                },
                addChallengeCard: () => {
@@ -448,12 +471,17 @@ export function createCharacterStore() {
                      const newCard: Card = {
                         id: newCardId,
                         title: '',
-                        order: state.character.cards.length,
                         isFlipped: false,
                         cardType: 'CHALLENGE_CARD',
                         details: emptyLegendsChallengeDetails(),
                      };
-                     return { character: { ...state.character, cards: [...state.character.cards, newCard] } };
+                     return {
+                        character: {
+                           ...state.character,
+                           cards: [...state.character.cards, newCard],
+                           sheetLayout: appendSheetLayoutEntry(state.character.sheetLayout, { kind: 'card', id: newCard.id }),
+                        },
+                     };
                   });
                   return newCardId;
                },
@@ -496,6 +524,7 @@ export function createCharacterStore() {
                         character: {
                            ...state.character,
                            cards: updatedCardsWithEssence,
+                           sheetLayout: removeSheetLayoutEntry(state.character.sheetLayout, cardId),
                         },
                      };
                   });
@@ -542,12 +571,27 @@ export function createCharacterStore() {
                   set(state => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     const result = Array.from(state.character.cards);
-                     const [removed] = result.splice(startIndex, 1);
-                     result.splice(endIndex, 0, removed);
-                     const orderedCards = result.map((card, index) => ({ ...card, order: index }));
-                     return { character: { ...state.character, cards: orderedCards } };
+                     // Mobile's card-only reorder (its carousel maps `cards` directly). Re-sync the
+                     // manifest's card entries to the new card order so the desktop sheet - which
+                     // renders by the manifest - stays coherent with what mobile set (journals keep
+                     // their manifest slots relative to the surrounding cards).
+                     const cards = Array.from(state.character.cards);
+                     const [moved] = cards.splice(startIndex, 1);
+                     cards.splice(endIndex, 0, moved);
+                     const orderedCardIds = cards.map((card) => card.id);
+                     let cardCursor = 0;
+                     const sheetLayout = state.character.sheetLayout.map((entry) =>
+                        entry.kind === 'card' ? { kind: 'card' as const, id: orderedCardIds[cardCursor++] } : entry,
+                     );
+                     return { character: { ...state.character, cards, sheetLayout } };
                   })
+               },
+               reorderSheetLayout: (fromId, toId) => {
+                  set(state => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return { character: { ...state.character, sheetLayout: reorderSheetLayoutEntries(state.character.sheetLayout, fromId, toId) } };
+                  });
                },
                flipCard: (cardId) => {
                   set(state => {
@@ -583,7 +627,38 @@ export function createCharacterStore() {
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                      // A bare, game-agnostic aggregate: a fresh notebook with no pages or bookmarks.
                      const newJournal: Journal = { id: cuid(), pages: [], bookmarks: [] };
-                     return { character: { ...state.character, journals: [...state.character.journals, newJournal] } };
+                     return {
+                        character: {
+                           ...state.character,
+                           journals: [...state.character.journals, newJournal],
+                           sheetLayout: appendSheetLayoutEntry(state.character.sheetLayout, { kind: 'journal', id: newJournal.id }),
+                        },
+                     };
+                  });
+               },
+               updateJournal: (journalId, journal) => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return {
+                        character: {
+                           ...state.character,
+                           journals: state.character.journals.map((entry) => (entry.id === journalId ? journal : entry)),
+                        },
+                     };
+                  });
+               },
+               removeJournal: (journalId) => {
+                  set((state) => {
+                     if (!state.character) return {};
+                     useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
+                     return {
+                        character: {
+                           ...state.character,
+                           journals: state.character.journals.filter((entry) => entry.id !== journalId),
+                           sheetLayout: removeSheetLayoutEntry(state.character.sheetLayout, journalId),
+                        },
+                     };
                   });
                },
                // Tag Actions

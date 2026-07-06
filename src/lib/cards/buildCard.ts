@@ -44,7 +44,7 @@ function characterCardTitle(game: GameSystem): string {
  * with no card (the dialog never offers one). `characterName` is optional - the board omits it.
  */
 export function buildCard(game: GameSystem, options: CreateCardOptions, characterName?: string): Card | null {
-   const base = { id: cuid(), order: 0, isFlipped: false };
+   const base = { id: cuid(), isFlipped: false };
 
    if (options.cardType === 'CHARACTER_CARD') {
       return { ...base, cardType: 'CHARACTER_CARD', title: characterCardTitle(game), details: emptyCharacterCardDetails(game, characterName ?? '') };

@@ -129,7 +129,7 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
       name: typeof tag === 'string' ? tag : tag.name,
    });
 
-   const themeCards: Card[] = themes.map((theme, index) => {
+   const themeCards: Card[] = themes.map((theme) => {
       if (!theme.isEmpty && theme.content) {
          const { content } = theme;
          const legendsContent = content as LegacyLegendsThemeContent;
@@ -153,7 +153,6 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
          const newCard: Card = {
             id: cuid(),
             title: legendsContent.mainTag.name,
-            order: index,
             isFlipped: false,
             cardType: 'CHARACTER_THEME',
             details: themeDetails,
@@ -179,7 +178,6 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
    const heroCard: Card = {
       id: cuid(),
       title: 'Hero Card',
-      order: 0,
       isFlipped: false,
       cardType: 'CHARACTER_CARD',
       details: heroDetails,
@@ -192,12 +190,14 @@ function transformLegacyLegendsCharacter(legacyData: LegacyCharacter): MigratedC
       tiers: status.level,
    }));
 
+   const legendsCards = [heroCard, ...themeCards];
    const newCharacter: Character = {
       id: cuid(),
       name: legacyData.name,
       game: 'LEGENDS',
-      cards: [heroCard, ...themeCards.map((card, index) => ({ ...card, order: index + 1 }))],
+      cards: legendsCards,
       journals: [],
+      sheetLayout: legendsCards.map((card) => ({ kind: 'card', id: card.id })),
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],
@@ -235,7 +235,7 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
       name: typeof tag === 'string' ? tag : tag.name,
    });
 
-   const themeCards: Card[] = themes.map((theme, index) => {
+   const themeCards: Card[] = themes.map((theme) => {
       if (!theme.isEmpty && theme.content) {
          const { content } = theme;
          const cityContent = content as LegacyCityThemeContent;
@@ -269,7 +269,6 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
          const newCard: Card = {
             id: cuid(),
             title: cityContent.mainTag.name,
-            order: index,
             isFlipped: false,
             cardType: 'CHARACTER_THEME',
             details: themeDetails,
@@ -296,7 +295,6 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
    const riftCard: Card = {
       id: cuid(),
       title: 'Rift Card',
-      order: 0,
       isFlipped: false,
       cardType: 'CHARACTER_CARD',
       details: riftDetails,
@@ -309,12 +307,14 @@ function transformLegacyCityCharacter(legacyData: LegacyCharacter): MigratedChar
       tiers: status.level,
    }));
 
+   const cityCards = [riftCard, ...themeCards];
    const newCharacter: Character = {
       id: cuid(),
       name: legacyData.name,
       game: 'CITY_OF_MIST',
-      cards: [riftCard, ...themeCards.map((card, index) => ({ ...card, order: index + 1 }))],
+      cards: cityCards,
       journals: [],
+      sheetLayout: cityCards.map((card) => ({ kind: 'card', id: card.id })),
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],
@@ -345,7 +345,7 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
       name: typeof tag === 'string' ? tag : tag.name,
    });
 
-   const themeCards: Card[] = themes.map((theme, index) => {
+   const themeCards: Card[] = themes.map((theme) => {
       if (!theme.isEmpty && theme.content) {
          const { content } = theme;
          const othContent = content as LegacyOtherscapeThemeContent;
@@ -381,7 +381,6 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
          const newCard: Card = {
             id: cuid(),
             title: othContent.mainTag.name,
-            order: index,
             isFlipped: false,
             cardType: 'CHARACTER_THEME',
             details: themeDetails,
@@ -413,7 +412,6 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
    const loadoutCard: Card = {
       id: cuid(),
       title: 'Loadout',
-      order: themeCards.length,
       isFlipped: false,
       cardType: 'LOADOUT_THEME',
       details: loadoutDetails,
@@ -439,7 +437,6 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
    const characterCard: Card = {
       id: cuid(),
       title: 'Character Card',
-      order: 0,
       isFlipped: false,
       cardType: 'CHARACTER_CARD',
       details: characterDetails,
@@ -453,16 +450,14 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
       tiers: status.level,
    }));
 
+   const otherscapeCards = [characterCard, ...themeCards, loadoutCard];
    const newCharacter: Character = {
       id: cuid(),
       name: legacyData.name,
       game: 'OTHERSCAPE',
-      cards: [
-         characterCard,
-         ...themeCards.map((card, index) => ({ ...card, order: index + 1 })),
-         { ...loadoutCard, order: themeCards.length + 1 }
-      ],
+      cards: otherscapeCards,
       journals: [],
+      sheetLayout: otherscapeCards.map((card) => ({ kind: 'card', id: card.id })),
       trackers: {
          statuses: deconstructedTrackers,
          storyTags: [],

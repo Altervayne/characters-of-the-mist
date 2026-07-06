@@ -48,9 +48,13 @@ export function seedCharacter(slot: EmbedSlot, data: unknown): Character {
       game: embedGame(data),
       cards: [],
       journals: [],
+      sheetLayout: [],
       trackers: { statuses: [], storyTags: [], storyThemes: [] },
    };
-   if (slot === 'cards') return { ...base, cards: [data as Card] };
+   if (slot === 'cards') {
+      const card = data as Card;
+      return { ...base, cards: [card], sheetLayout: [{ kind: 'card', id: card.id }] };
+   }
    return { ...base, trackers: { ...base.trackers, [slot]: [data] } };
 }
 

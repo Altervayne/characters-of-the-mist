@@ -105,6 +105,49 @@ describe('harmonization: sheet journals backfill', () => {
    });
 });
 
+describe('harmonization: sheet layout manifest', () => {
+   /** A 1.x sheet with two cards and one journal but no manifest and stray `Card.order` fields. */
+   function legacySheetWithoutManifest(): Character {
+      return {
+         id: 'char-1',
+         name: 'Hero',
+         game: 'LEGENDS',
+         version: '2.0.0',
+         journals: [{ id: 'j1', pages: [], bookmarks: [] }],
+         cards: [
+            { id: 'c1', title: 'A', order: 0, isFlipped: false, cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } },
+            { id: 'c2', title: 'B', order: 1, isFlipped: false, cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } },
+         ],
+         trackers: { statuses: [], storyTags: [], storyThemes: [] },
+      } as unknown as Character;
+   }
+
+   it('backfills a missing manifest: every card in order, then every journal', () => {
+      const harmonized = harmonizeData(legacySheetWithoutManifest(), 'FULL_CHARACTER_SHEET');
+      expect(harmonized.sheetLayout).toEqual([
+         { kind: 'card', id: 'c1' },
+         { kind: 'card', id: 'c2' },
+         { kind: 'journal', id: 'j1' },
+      ]);
+   });
+
+   it('drops the defunct Card.order in the same pass (first field removal)', () => {
+      const harmonized = harmonizeData(legacySheetWithoutManifest(), 'FULL_CHARACTER_SHEET');
+      harmonized.cards.forEach((card) => expect(card).not.toHaveProperty('order'));
+   });
+
+   it('is idempotent: a sheet that already has a valid manifest passes through', () => {
+      const sheet = { ...legacySheetWithoutManifest(), sheetLayout: [{ kind: 'card', id: 'c2' }, { kind: 'journal', id: 'j1' }, { kind: 'card', id: 'c1' }] } as unknown as Character;
+      const harmonized = harmonizeData(sheet, 'FULL_CHARACTER_SHEET');
+      // The pre-existing (hand-sorted) manifest is preserved, not rebuilt to the default order.
+      expect(harmonized.sheetLayout).toEqual([
+         { kind: 'card', id: 'c2' },
+         { kind: 'journal', id: 'j1' },
+         { kind: 'card', id: 'c1' },
+      ]);
+   });
+});
+
 describe('harmonization: tracker game strip', () => {
    it('drops the defunct game from every tracker on a character', () => {
       const character = {

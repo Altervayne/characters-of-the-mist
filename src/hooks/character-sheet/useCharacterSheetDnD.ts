@@ -34,7 +34,7 @@ import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSp
 import { importBoard } from '@/lib/board/boardRepository';
 
 // -- Type Imports --
-import type { Board } from '@/lib/types/board';
+import type { Board, Journal } from '@/lib/types/board';
 import type { BoardStore } from '@/lib/stores/boardStore';
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
 import type { DrawerItem, Folder as FolderType } from '@/lib/types/drawer';
@@ -123,7 +123,7 @@ export function useCharacterSheetDnD() {
    const { t: tNotifications } = useTranslation();
 
    const character = useCharacterStore((state) => state.character);
-   const { reorderCards, reorderStatuses, reorderStoryTags, reorderStoryThemes,
+   const { reorderSheetLayout, reorderStatuses, reorderStoryTags, reorderStoryThemes,
             addImportedCard, addImportedTracker } = useCharacterActions();
    const { openCharacterTab, openBoardTab, reorderTabs, setActiveTab } = useTabManagerActions();
    // The drawer renders a single folder at a time, so the loaded current-folder
@@ -137,7 +137,7 @@ export function useCharacterSheetDnD() {
    //  Utility & Library States
    // ==================
    const [isOverDrawer, setIsOverDrawer] = useState(false);
-   const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | DrawerItem | FolderType | null>(null);
+   const [activeDragItem, setActiveDragItem] = useState<CardData | Tracker | Journal | DrawerItem | FolderType | null>(null);
    const [overDragId, setOverDragId] = useState<string | null>(null);
    // The tab being dragged (the strip shares this DndContext); drives the overlay's
    // tab-preview branch. Separate from `activeDragItem` since a tab is not a sheet item.
@@ -584,7 +584,7 @@ export function useCharacterSheetDnD() {
          return;
       }
 
-      const allSheetItems = [...(character?.cards || []), ...(character?.trackers.statuses || []), ...(character?.trackers.storyTags || []), ...(character?.trackers.storyThemes || [])];
+      const allSheetItems = [...(character?.cards || []), ...(character?.journals || []), ...(character?.trackers.statuses || []), ...(character?.trackers.storyTags || []), ...(character?.trackers.storyThemes || [])];
       const item = allSheetItems.find(i => i.id === active.id);
       if (item) {
          setActiveDragItem(item);
@@ -681,15 +681,15 @@ export function useCharacterSheetDnD() {
    }, [updateContext, character]);
 
    /**
-    * Handle reordering cards on the character sheet
+    * Reorder a sheet element (card OR journal) via the ordered manifest. Kind-agnostic: both live in
+    * one SortableContext keyed by manifest id, so the drop is a manifest move by id - never an index
+    * into a single content array (which would return -1 for a journal id and silently teleport it home).
     */
-   const handleSheetCardReorder = useCallback((activeId: string, overId: string) => {
+   const handleSheetLayoutReorder = useCallback((activeId: string, overId: string) => {
       if (!character) return;
-      const oldIndex = character.cards.findIndex(item => item.id === activeId);
-      const overIndex = character.cards.findIndex(item => item.id === overId);
       // Live shuffle: dnd-kit's `over` already reflects the shuffled position, so land on it.
-      if (oldIndex !== -1 && overIndex !== -1) reorderCards(oldIndex, overIndex);
-   }, [character, reorderCards]);
+      reorderSheetLayout(activeId, overId);
+   }, [character, reorderSheetLayout]);
 
    /**
     * Handle reordering trackers on the character sheet
@@ -1176,6 +1176,17 @@ export function useCharacterSheetDnD() {
       // #############################################
       if (activeType?.startsWith('sheet-')) {
 
+         // A sheet JOURNAL has no board-embed / drawer-save / cross-character-import path yet (those are
+         // card/tracker-only, and routing a bare Journal through mapItemToStorableInfo / embed specs
+         // produces garbage). Its only sheet drag is a reorder within the manifest space, so handle that
+         // and stop before the card/tracker scenarios below.
+         if (activeType === DRAG_TYPES.SHEET_JOURNAL) {
+            if ((overType === DRAG_TYPES.SHEET_CARD || overType === DRAG_TYPES.SHEET_JOURNAL) && character) {
+               handleSheetLayoutReorder(active.id as string, over.id as string);
+            }
+            return;
+         }
+
          // ==================
          //  SCENARIO 2.0a: Dropping a card/tracker onto the board canvas
          // ==================
@@ -1231,8 +1242,12 @@ export function useCharacterSheetDnD() {
          //  SCENARIO 2.2: Reordering ON the sheet
          // ==================
          if (overType?.startsWith('sheet-') && character) {
-            if (activeType === DRAG_TYPES.SHEET_CARD && overType === DRAG_TYPES.SHEET_CARD) {
-               handleSheetCardReorder(active.id as string, over.id as string);
+            // Cards and journals share one manifest space: a card-or-journal reorder lands on any
+            // card-or-journal target, resolved by id through reorderSheetLayout.
+            const isLayoutDrag = activeType === DRAG_TYPES.SHEET_CARD || activeType === DRAG_TYPES.SHEET_JOURNAL;
+            const overIsLayout = overType === DRAG_TYPES.SHEET_CARD || overType === DRAG_TYPES.SHEET_JOURNAL;
+            if (isLayoutDrag && overIsLayout) {
+               handleSheetLayoutReorder(active.id as string, over.id as string);
             } else if (activeType === DRAG_TYPES.SHEET_TRACKER) {
                handleSheetTrackerReorder(active, over);
             }
@@ -1245,7 +1260,7 @@ export function useCharacterSheetDnD() {
       reorderFolders,
       moveItem,
       reorderItems,
-      handleSheetCardReorder,
+      handleSheetLayoutReorder,
       handleSheetTrackerReorder,
       handleSheetToDrawerDrop,
       saveTabToDrawer,

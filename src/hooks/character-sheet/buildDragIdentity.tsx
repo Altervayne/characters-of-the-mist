@@ -19,6 +19,7 @@ import { mapItemToStorableInfo } from '@/lib/utils/dnd';
 import type { DragKind } from '@/lib/utils/dragFeedback';
 import type { DrawerItem, Folder } from '@/lib/types/drawer';
 import type { Card, Tracker } from '@/lib/types/character';
+import type { Journal } from '@/lib/types/board';
 
 /** Inputs for {@link buildDragIdentity}. */
 interface BuildDragIdentityParams {
@@ -26,8 +27,8 @@ interface BuildDragIdentityParams {
    kind: DragKind;
    /** The @dnd-kit active descriptor (source of the dragged item's data). */
    active: DragStartEvent['active'];
-   /** The resolved sheet card/tracker, supplied only for sheet-item drags. */
-   sheetItem?: Card | Tracker | null;
+   /** The resolved sheet card/tracker/journal, supplied only for sheet-item drags. */
+   sheetItem?: Card | Tracker | Journal | null;
    /** Fallback label for a tab whose character has no name yet. */
    untitledLabel: string;
 }
@@ -62,10 +63,14 @@ export function buildDragIdentity({ kind, active, sheetItem, untitledLabel }: Bu
    }
 
    if (kind === 'sheet-item' && sheetItem) {
+      // A journal has no title/name; lead with its type icon and a generic label so the pill still reads.
+      const storable = mapItemToStorableInfo(sheetItem);
+      if ('pages' in sheetItem) {
+         return <DragIdentityPill icon={storable ? getItemTypeIconComponent(storable[0]) : undefined} label={untitledLabel} />;
+      }
       const label = ('title' in sheetItem ? sheetItem.title : sheetItem.name)?.trim();
       if (!label) return null;
       // Lead with the card/tracker's drawer item-type icon (via its storable mapping).
-      const storable = mapItemToStorableInfo(sheetItem);
       return <DragIdentityPill icon={storable ? getItemTypeIconComponent(storable[0]) : undefined} label={label} />;
    }
 
