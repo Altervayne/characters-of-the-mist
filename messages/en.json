@@ -34,24 +34,14 @@
    "NoteView": {
       "titlePlaceholder": "Untitled note",
       "bodyPlaceholder": "Write your document in Markdown…",
-      "emptyPreview": "This note is empty. Switch to Edit to start writing.",
-      "edit": "Edit",
-      "preview": "Preview",
+      "emptyPreview": "This note is empty. Switch to Live to start writing.",
+      "mode": {
+         "reading": "Reading",
+         "live": "Live",
+         "source": "Source"
+      },
       "insertImage": "Insert image",
-      "imageInsertFailed": "Couldn't add that image. Try another file.",
-      "imageInspector": {
-         "align": "Alignment",
-         "align_left": "Float left",
-         "align_center": "Center",
-         "align_right": "Float right",
-         "align_full": "Full width",
-         "size": "Size",
-         "size_small": "S",
-         "size_medium": "M",
-         "size_large": "L",
-         "resize": "Resize image",
-         "captionPlaceholder": "Caption (optional)"
-      }
+      "imageInsertFailed": "Couldn't add that image. Try another file."
    },
    "BoardView": {
       "otherElements": "Other Elements…",

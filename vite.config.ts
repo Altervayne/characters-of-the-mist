@@ -177,6 +177,13 @@ export default defineConfig({
             return 'state-vendor'
           }
 
+          // CodeMirror 6 editor stack (state/view/language/commands/lang-markdown) + its Lezer parsers.
+          // Only the Notes editor imports it, and NoteView is React.lazy - so this chunk is pulled by the
+          // lazy NoteView chunk and stays deferred + precached, never in the eager vendor bundle.
+          if (/[\\/]node_modules[\\/](@codemirror|@lezer|crelt|w3c-keyname|style-mod)[\\/]/.test(id)) {
+            return 'codemirror-vendor'
+          }
+
           // Everything else falls to Rollup's default vendor grouping.
           return 'vendor'
         }

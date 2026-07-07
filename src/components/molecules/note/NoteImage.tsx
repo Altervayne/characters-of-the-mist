@@ -6,6 +6,7 @@ import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 
 // -- Local Imports --
 import { parseImageHint } from '@/lib/notes/noteImageHint';
+import { IMAGE_ALIGN_MAX_HEIGHT, IMAGE_ALIGN_WRAPPER, IMAGE_INNER, IMAGE_PLACEHOLDER, imageCaptionClass } from './noteImageClasses';
 
 // -- Type Imports --
 import type { NoteImageAlign } from '@/lib/notes/noteImageHint';
@@ -13,10 +14,11 @@ import type { NoteImageAlign } from '@/lib/notes/noteImageHint';
 /*
  * The Note surface's OWN inline-image renderer. Inline images ride inside the markdown body as
  * `![alt](asset:<hash> "align width")`, a custom `asset:` scheme + a layout hint in the title. This
- * resolves the hash through `useAssetObjectUrl` and renders the image in-flow on the Paper palette,
- * forking on align: center/full render a block "figure" (block-styled spans, NOT <figure>/<figcaption>,
- * which are invalid inside react-markdown's image-wrapping <p>); left/right render an inline float that
- * prose wraps around (the token is glued to the start of its paragraph in the body, so the float opens it).
+ * resolves the hash through `useAssetObjectUrl` and renders the image in-flow on the Paper palette as an
+ * aligned BLOCK (left / center / right / full) with NO text wrapping beside it - block-styled spans, NOT
+ * <figure>/<figcaption>, which are invalid inside react-markdown's image-wrapping <p>. Reading and the CM6
+ * Live editor render the identical block (shared `noteImageClasses`), so a mode switch never jumps. Images
+ * do not float: a float is out of normal flow, which blinds the Live editor's cursor line-math.
  *
  * SAFETY: it renders an <img> ONLY for the `asset:` scheme. Any other src - `http(s):`, a bare path,
  * anything - falls back to alt text only, so an imported (untrusted) note can never phone home on display.
@@ -33,33 +35,11 @@ function assetHashFromSrc(src: string | undefined): string | null {
    return match ? match[1] : null;
 }
 
-/** The outer-wrapper classes per align (Juno's spec). Center/full are block; left/right float and clear their side. */
-const ALIGN_WRAPPER: Record<NoteImageAlign, string> = {
-   left: 'float-left mr-6 mb-3 mt-1 clear-left',
-   right: 'float-right ml-6 mb-3 mt-1 clear-right',
-   center: 'mx-auto my-6 block',
-   full: 'my-8 block w-full',
-};
-
-/** Max-height cap per align: a taller float strands its wrapping text, so floats cap lower than center/full. */
-const ALIGN_MAX_HEIGHT: Record<NoteImageAlign, string> = {
-   left: 'max-h-[28rem]',
-   right: 'max-h-[28rem]',
-   center: 'max-h-[36rem]',
-   full: 'max-h-[36rem]',
-};
-
-/** Caption placement per align: centered under center/full; left-aligned + tighter under a float. */
-function captionClass(align: NoteImageAlign): string {
-   return align === 'left' || align === 'right'
-      ? 'mt-1.5 block text-left text-sm italic text-paper-foreground/60'
-      : 'mt-2 block text-center text-sm italic text-paper-foreground/60';
-}
-
 /**
- * A block-styled "figure" span for one asset image, forked on align. `full` pins to 100% of the measure;
- * every other align applies `widthPct` as an inline `width` against the prose column. `break-inside-avoid`
- * keeps the image + caption from splitting a page (print-ready, harmless on screen).
+ * A block-styled "figure" span for one asset image, aligned within the measure. `full` pins to 100% of the
+ * measure; every other align applies `widthPct` as an inline `width` against the prose column.
+ * `break-inside-avoid` keeps the image + caption from splitting a page (print-ready, harmless on screen).
+ * The class-strings are the shared `noteImageClasses`, so the CM6 live-editor widget renders an identical figure.
  */
 function AssetFigure({ hash, alt, align, widthPct }: { hash: string; alt: string; align: NoteImageAlign; widthPct: number }) {
    const { url } = useAssetObjectUrl(hash);
@@ -67,16 +47,14 @@ function AssetFigure({ hash, alt, align, widthPct }: { hash: string; alt: string
    const widthStyle = align === 'full' ? undefined : { width: `${widthPct}%` };
 
    return (
-      <span className={cn('break-inside-avoid', ALIGN_WRAPPER[align])} style={widthStyle}>
+      <span className={cn('break-inside-avoid', IMAGE_ALIGN_WRAPPER[align])} style={widthStyle}>
          {url ? (
-            <img src={url} alt={alt} className={cn('block h-auto w-full rounded-md object-contain', ALIGN_MAX_HEIGHT[align])} />
+            <img src={url} alt={alt} className={cn(IMAGE_INNER, IMAGE_ALIGN_MAX_HEIGHT[align])} />
          ) : (
             // Loading, or a missing/reclaimed blob: a quiet placeholder frame, never a broken-image glyph.
-            <span className="flex aspect-video w-full items-center justify-center rounded-md border border-dashed border-paper-border text-sm text-paper-foreground/50">
-               {alt || '…'}
-            </span>
+            <span className={IMAGE_PLACEHOLDER}>{alt || '…'}</span>
          )}
-         {alt ? <span className={captionClass(align)}>{alt}</span> : null}
+         {alt ? <span className={imageCaptionClass(align)}>{alt}</span> : null}
       </span>
    );
 }

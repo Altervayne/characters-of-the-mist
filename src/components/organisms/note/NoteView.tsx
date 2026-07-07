@@ -1,12 +1,12 @@
 // -- React Imports --
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useStore } from 'zustand';
 
 // -- Icon Imports --
-import { Eye, ImagePlus, Loader2, Pencil } from 'lucide-react';
+import { BookOpen, Code, ImagePlus, Loader2, PenLine } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -18,30 +18,30 @@ import { useNoteImageInsertion } from '@/hooks/useNoteImageInsertion';
 
 // -- Component Imports --
 import { NoteDocument } from '@/components/molecules/NoteDocument';
-import { NoteImageInspector } from '@/components/molecules/note/NoteImageInspector';
+import { NoteEditor } from '@/components/organisms/note/NoteEditor';
 
 // -- Store Imports --
 import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
 
-// -- Local Imports --
-import { activeImageTokenAt, parseImageHint, rewriteImageHintAt, setImageAlignAt } from '@/lib/notes/noteImageHint';
-
 // -- Type Imports --
-import type { NoteImageAlign } from '@/lib/notes/noteImageHint';
+import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
 
 /*
- * The Note tab surface: a full-width document editor with an Edit <-> Preview toggle, PREVIEW as
- * the resting state (a newly opened Note shows the finished handout, not a text box - that default
- * is what sells "real document"). It reads the ACTIVE NOTE instance (never the character context)
- * and only mounts when a note tab is active.
+ * The Note tab surface: the document editor on the paper sheet. It reads the ACTIVE NOTE instance (never the
+ * character context) and only mounts when a note tab is active.
  *
- * Preview = the {@link NoteDocument} renderer (document typography + a 68ch centered measure), with
- * mentions rendered free and inline `asset:` images resolved. Edit = a full-width textarea bound
- * through `useInputDebouncer` (so the buffer flushes on unmount), plus an explicit `flush` on unmount
- * via `useCommitOnUnmount`: a tab switch UNMOUNTS the surface with no blur, so without the flush the
- * last keystroke is lost. Inline images insert via the toolbar button, a clipboard paste, or a file
- * drop - all through one upload + caret-splice path.
+ * Three modes, one CM6 surface for the two editable ones:
+ *  - READING = the finished handout via {@link NoteDocument} (react-markdown), non-editable, CM6 unmounted.
+ *  - LIVE    = the home mode: the CM6 editor renders the document inline (syntax hidden off-cursor, mention
+ *    pills, inline resizable/alignable image widgets) while you type in the same surface.
+ *  - SOURCE  = the CM6 editor with raw markdown + syntax highlighting, decorations off (the escape hatch).
+ *
+ * Data-loss guard: a tab switch UNMOUNTS with no blur, so the store `flush` runs on unmount AND the CM6
+ * editor flushes its final buffer on destroy - the last keystroke is never lost. Image align/resize/caption
+ * are done ON the inline image widget in Live (the docked inspector is retired).
  */
+
+type NoteMode = 'reading' | 'live' | 'source';
 
 export function NoteView() {
    const store = useActiveNoteInstance();
@@ -49,7 +49,7 @@ export function NoteView() {
    return <NoteSurface key={store.getState().noteId ?? 'note'} />;
 }
 
-/** The editable surface, remounted per note id so its debounced buffers never cross documents. */
+/** The editable surface, remounted per note id so its buffers never cross documents. */
 function NoteSurface() {
    const { t } = useTranslation();
    const store = useActiveNoteInstance()!;
@@ -57,80 +57,29 @@ function NoteSurface() {
    const note = useStore(store, (state) => state.note);
    const { updateTitle, updateBody, flush } = store.getState().actions;
 
-   // Preview is the RESTING state: a Note opens looking like the finished document.
-   const [isEditing, setIsEditing] = useState(false);
+   // A note opens in LIVE - the home mode where you both see AND touch the document (Overseer-locked).
+   const [mode, setMode] = useState<NoteMode>('live');
+   const isEditing = mode === 'live' || mode === 'source';
 
-   // Buffer title + body locally; the hook flushes each on unmount. The explicit store flush
-   // below is the belt to that suspenders - it forces an immediate row write on unmount.
+   // Buffer title + body locally; the debouncer flushes each on unmount. The store `flush` is the belt.
    const [localTitle, setLocalTitle] = useInputDebouncer(note?.title ?? '', updateTitle);
    const [localBody, setLocalBody] = useInputDebouncer(note?.body ?? '', updateBody);
-
-   // A tab switch unmounts this surface with no blur; force-persist the current document so the
-   // last edit is never dropped to a cancelled debounce (the flagged data-loss trap).
    useCommitOnUnmount(flush);
 
-   // Inline-image insertion (button / paste / drop). `getBody` reads a live ref, not the render
-   // closure, so a splice landing after the async upload never overwrites intervening keystrokes.
-   const textareaRef = useRef<HTMLTextAreaElement>(null);
-   const columnRef = useRef<HTMLDivElement>(null);
-   const bodyRef = useRef(localBody);
-   useEffect(() => { bodyRef.current = localBody; }, [localBody]);
-   const getBody = useCallback(() => bodyRef.current, []);
-   // Caret-anchored image inspector: the active image is the token whose span holds the textarea caret.
-   // Tracked on every caret move (select/click/key/input); an insert lands the caret in its new token.
-   const [caret, setCaret] = useState<number | null>(null);
-   const { fileInputRef, open: openImagePicker, isProcessing, handleFileSelected, handlePaste, handleDrop } =
-      useNoteImageInsertion({ textareaRef, getBody, setBody: setLocalBody, onCaretMoved: setCaret });
-   const syncCaret = useCallback(() => {
-      const textarea = textareaRef.current;
-      setCaret(textarea ? textarea.selectionStart : null);
-   }, []);
-   const activeToken = caret !== null ? activeImageTokenAt(localBody, caret) : null;
+   // The CM6 editor handle (splice at real offsets), for image insertion.
+   const editorRef = useRef<NoteEditorHandle>(null);
 
-   // The column width for the resize drag→% math (read fresh on pointer-down).
-   const getColumnWidth = useCallback(() => columnRef.current?.getBoundingClientRect().width ?? 0, []);
-
-   /**
-    * Applies a body transform to the ACTIVE image token and restores the caret INSIDE the (rewritten)
-    * token, so the inspector stays open on it. The token's start offset is stable across a hint rewrite.
-    */
-   const applyToActiveToken = useCallback((transform: (body: string, index: number) => string) => {
-      const current = caret;
-      if (current === null) return;
-      const token = activeImageTokenAt(bodyRef.current, current);
-      if (!token) return;
-      const nextBody = transform(bodyRef.current, token.index);
-      setLocalBody(nextBody);
-      // Keep the caret just inside the token so `activeImageTokenAt` still resolves it → inspector persists.
-      const nextCaret = token.index + 1;
-      setCaret(nextCaret);
-      requestAnimationFrame(() => {
-         const textarea = textareaRef.current;
-         if (textarea) {
-            textarea.focus();
-            textarea.setSelectionRange(nextCaret, nextCaret);
-         }
-      });
-   }, [caret, setLocalBody]);
-
-   const handleAlign = useCallback((align: NoteImageAlign, widthPct: number) => {
-      applyToActiveToken((body, index) => setImageAlignAt(body, index, align, widthPct));
-   }, [applyToActiveToken]);
-
-   const handleWidth = useCallback((widthPct: number) => {
-      applyToActiveToken((body, index) => {
-         const token = activeImageTokenAt(body, index)!;
-         const { align } = parseImageHint(token.title);
-         return rewriteImageHintAt(body, index, { align, widthPct });
-      });
-   }, [applyToActiveToken]);
-
-   const handleCaption = useCallback((alt: string) => {
-      applyToActiveToken((body, index) => {
-         const token = activeImageTokenAt(body, index)!;
-         return rewriteImageHintAt(body, index, parseImageHint(token.title), alt);
-      });
-   }, [applyToActiveToken]);
+   /** Splices a snippet into the CM6 doc at the caret, landing the caret INSIDE the new token (after `![`). */
+   const spliceAdapter = useMemo(() => ({
+      spliceAtCaret: (snippet: string) => {
+         const editor = editorRef.current;
+         if (!editor) return;
+         const from = editor.getCaret();
+         editor.splice(from, from, snippet, from + 2);
+      },
+   }), []);
+   const { fileInputRef, open: openImagePicker, isProcessing, handleFileSelected, handleImageEvent } =
+      useNoteImageInsertion({ adapter: spliceAdapter });
 
    if (!note) return null;
 
@@ -145,8 +94,7 @@ function NoteSurface() {
                className="min-w-0 flex-1 bg-transparent text-2xl font-bold text-popover-foreground focus:outline-none"
                placeholder={t('NoteView.titlePlaceholder')}
             />
-            {/* Insert-image button: edit mode only. Uploads via the shared pipeline and splices the
-                asset markdown at the caret. */}
+            {/* Insert-image button: editable modes only. Uploads via the shared pipeline and splices into CM6. */}
             {isEditing && (
                <button
                   type="button"
@@ -159,56 +107,26 @@ function NoteSurface() {
                   {t('NoteView.insertImage')}
                </button>
             )}
-            <button
-               type="button"
-               onClick={() => setIsEditing((editing) => !editing)}
-               className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted cursor-pointer"
-               aria-pressed={isEditing}
-            >
-               {isEditing ? <Eye className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-               {isEditing ? t('NoteView.preview') : t('NoteView.edit')}
-            </button>
+            <ModeToggle mode={mode} onChange={setMode} />
             {/* Hidden picker for the insert-image button; the paste/drop paths never touch it. */}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
          </header>
 
          {/* Document body: the desk - the app-chrome backdrop the paper sheet floats and scrolls on. */}
          <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 py-8 md:px-8 md:py-12">
-            {/* The paper sheet: the document lives ON it, dressed in the Paper palette - parchment by
-                default, re-themed by a custom theme's --paper-* tokens, so custom themes reach Notes for
-                free. Both modes share the sheet, so toggling edit/preview stays on the same page. */}
+            {/* The paper sheet: parchment by default, re-themed by a custom theme's --paper-* tokens. Both
+                modes share the sheet, so toggling reading/editing stays on the same page. */}
             <div className="mx-auto w-full max-w-[46rem] rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-lg shadow-black/5">
-               <div ref={columnRef} className="px-6 py-10 sm:px-10 md:px-16 md:py-16">
+               <div className="px-6 py-10 sm:px-10 md:px-16 md:py-16">
                   {isEditing ? (
-                     <>
-                        {/* Caret-anchored image inspector: appears while the caret sits in an image token. */}
-                        {activeToken && (
-                           <NoteImageInspector
-                              token={activeToken}
-                              getColumnWidth={getColumnWidth}
-                              onAlign={handleAlign}
-                              onWidth={handleWidth}
-                              onCaption={handleCaption}
-                           />
-                        )}
-                        <textarea
-                           ref={textareaRef}
-                           value={localBody}
-                           onChange={(event) => { setLocalBody(event.target.value); syncCaret(); }}
-                           onSelect={syncCaret}
-                           onKeyUp={syncCaret}
-                           onClick={syncCaret}
-                           onFocus={syncCaret}
-                           onPaste={handlePaste}
-                           onDrop={handleDrop}
-                           className={cn(
-                              'min-h-[60vh] w-full resize-none bg-transparent font-mono text-sm leading-relaxed text-paper-foreground',
-                              'placeholder:text-paper-foreground/40 focus:outline-none',
-                           )}
-                           placeholder={t('NoteView.bodyPlaceholder')}
-                           spellCheck
-                        />
-                     </>
+                     <NoteEditor
+                        ref={editorRef}
+                        value={localBody}
+                        onChange={setLocalBody}
+                        onImageEvent={handleImageEvent}
+                        live={mode === 'live'}
+                        placeholder={t('NoteView.bodyPlaceholder')}
+                     />
                   ) : note.body.trim() ? (
                      <NoteDocument body={note.body} />
                   ) : (
@@ -220,5 +138,34 @@ function NoteSurface() {
             </div>
          </div>
       </main>
+   );
+}
+
+/*
+ * The mode toggle: a 3-segment control (theme-token chrome) in the note header - Reading / Live / Source,
+ * Obsidian's order and idiom. One is always active; icons BookOpen / PenLine / Code.
+ */
+function ModeToggle({ mode, onChange }: { mode: NoteMode; onChange: (mode: NoteMode) => void }) {
+   const { t } = useTranslation();
+   const segment = (active: boolean) =>
+      cn(
+         'flex items-center gap-1.5 rounded px-2.5 py-1 text-sm cursor-pointer',
+         active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+      );
+   return (
+      <div className="inline-flex shrink-0 items-center rounded-md border border-border p-0.5">
+         <button type="button" onClick={() => onChange('reading')} aria-pressed={mode === 'reading'} className={segment(mode === 'reading')}>
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('NoteView.mode.reading')}</span>
+         </button>
+         <button type="button" onClick={() => onChange('live')} aria-pressed={mode === 'live'} className={segment(mode === 'live')}>
+            <PenLine className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('NoteView.mode.live')}</span>
+         </button>
+         <button type="button" onClick={() => onChange('source')} aria-pressed={mode === 'source'} className={segment(mode === 'source')}>
+            <Code className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('NoteView.mode.source')}</span>
+         </button>
+      </div>
    );
 }

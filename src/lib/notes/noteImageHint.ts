@@ -2,9 +2,9 @@
  * The layout hint grammar for a Note's inline images. Everything rides in the image TITLE
  * (`![alt](asset:HASH "align width")`) - no new markdown, no sidecar state, one image = one token, the
  * body stays a flat markdown string. This module is the single home for the grammar: parse, serialize,
- * clamp, and the shipped size-word aliases all live here, so NoteImage, the inspector, and the tests
- * read one truth. It also owns the two pure body helpers - find every image token, rewrite ONE token's
- * hint/alt - that the inspector and resize handle splice against.
+ * clamp, and the shipped size-word aliases all live here, so NoteImage, the live editor, and the tests
+ * read one truth. It also owns the pure body helpers - find every image token, rewrite ONE token's
+ * hint/alt - that the live editor's align/resize controls splice against.
  *
  * Nothing here is persisted beyond the body string; a layout is always derived by parsing the title.
  */
@@ -29,8 +29,8 @@ const WIDTH_BAND: Record<NoteImageAlign, { min: number; max: number }> = {
 /** The default layout for an image with no (or a garbage) hint: a centered full-measure block, as shipped. */
 const DEFAULT_LAYOUT: NoteImageLayout = { align: 'center', widthPct: 100 };
 
-/** A sensible width for a float with an align but no width (the float band's rounded midpoint). */
-const FLOAT_DEFAULT_WIDTH = 40;
+/** A sensible width for a left/right-aligned image with no width (its band's rounded midpoint). */
+const SIDE_DEFAULT_WIDTH = 40;
 
 /**
  * The shipped Phase-2 size words, kept as PARSE-TIME aliases (they rendered as centered blocks): a word
@@ -89,8 +89,8 @@ export function parseImageHint(title: string | undefined): NoteImageLayout {
 
    if (align === null) align = DEFAULT_LAYOUT.align;
    if (align === 'full') return { align: 'full', widthPct: 100 };
-   // A float named without a width sits at its band's midpoint; center without a width stays full-measure.
-   if (widthPct === null) widthPct = align === 'center' ? 100 : FLOAT_DEFAULT_WIDTH;
+   // A left/right image without a width sits at its band's midpoint; center without a width stays full-measure.
+   if (widthPct === null) widthPct = align === 'center' ? 100 : SIDE_DEFAULT_WIDTH;
    return { align, widthPct: clampWidth(align, widthPct) };
 }
 
@@ -202,88 +202,4 @@ export function resizeWidthPct(startPct: number, deltaPx: number, columnPx: numb
    const safeColumn = columnPx > 0 ? columnPx : 1;
    const raw = startPct + (deltaPx / safeColumn) * 100;
    return Math.round(raw / 5) * 5;
-}
-
-// ==================
-//  Auto-glue: a floated image wraps only when it opens the paragraph it should wrap into
-// ==================
-
-/*
- * A floated image (CommonMark) wraps prose ONLY when it is the FIRST inline child of the paragraph the
- * prose belongs to - i.e. the token sits on the same line as the text, no blank line between. So setting
- * float-left/right also GLUES the token onto the start of the next paragraph (collapse the blank line to
- * a single space); switching back to center/full UN-GLUES (restore the blank line so the image is its own
- * block). These are pure body transforms, keyed on the token at `index`.
- */
-
-/** The length of the image token that starts at `index`, or `null` when none does. */
-function tokenLengthAt(body: string, index: number): number | null {
-   const match = /^!\[[^\]]*\]\(asset:[0-9a-f]{6,}(?:\s+"[^"]*")?\)/.exec(body.slice(index));
-   return match ? match[0].length : null;
-}
-
-/**
- * Whether the text `after` an image (the body slice starting just past the token) opens with a plain
- * PARAGRAPH block - i.e. auto-glue is safe. A heading (`#`), list (`-`/`*`/`+`/`1.`), blockquote (`>`),
- * fence (```` ``` ````), hr, or another image is NOT a paragraph, so we never glue into it.
- */
-function nextBlockIsParagraph(after: string): boolean {
-   const trimmedLead = after.replace(/^[ \t]*/, '');
-   if (trimmedLead.length === 0) return false;
-   // Block openers that are NOT a paragraph.
-   if (/^(#{1,6}\s|>|\d+[.)]\s|[-*+]\s|```|~~~|-{3,}\s*$|!\[)/.test(trimmedLead)) return false;
-   return true;
-}
-
-/**
- * Glues the image at `index` onto the start of the following paragraph so a float wraps at once: collapses
- * the single blank line (`\n\n`, tolerating trailing spaces) between the token and a paragraph block into
- * one space. Degrades gracefully - returns the body unchanged when the token is missing, the gap isn't a
- * lone blank line, or the next block isn't a paragraph (heading / list / another image / none).
- */
-export function glueImageToNextParagraph(body: string, index: number): string {
-   const length = tokenLengthAt(body, index);
-   if (length === null) return body;
-   const tokenEnd = index + length;
-   const after = body.slice(tokenEnd);
-   // Already glued (token then a space then text on the same line): nothing to do.
-   if (/^[ \t]+\S/.test(after) && !/^[ \t]*\n/.test(after)) return body;
-   // The gap must be exactly ONE blank line (a paragraph break), then a paragraph block.
-   const gap = /^[ \t]*\n[ \t]*\n[ \t]*/.exec(after);
-   if (!gap) return body;
-   const rest = after.slice(gap[0].length);
-   if (!nextBlockIsParagraph(rest)) return body;
-   return `${body.slice(0, tokenEnd)} ${rest}`;
-}
-
-/**
- * Un-glues the image at `index` back into its own block so center/full renders as a standalone figure:
- * restores a blank line between the token and any text that currently runs on from it (a single space or
- * a single newline). Returns the body unchanged when the token is missing or already stands alone (a blank
- * line already follows, or nothing follows).
- */
-export function unglueImageFromParagraph(body: string, index: number): string {
-   const length = tokenLengthAt(body, index);
-   if (length === null) return body;
-   const tokenEnd = index + length;
-   const after = body.slice(tokenEnd);
-   // Glued on the same line: `<token> text` -> `<token>\n\ntext`.
-   const sameLine = /^[ \t]+(\S)/.exec(after);
-   if (sameLine) return `${body.slice(0, tokenEnd)}\n\n${after.replace(/^[ \t]+/, '')}`;
-   // A single newline (not a blank line): promote to a paragraph break.
-   const singleNewline = /^\n(?!\n)[ \t]*(\S)/.exec(after);
-   if (singleNewline) return `${body.slice(0, tokenEnd)}\n\n${after.replace(/^\n[ \t]*/, '')}`;
-   return body; // already its own block (blank line follows, or end of body)
-}
-
-/**
- * Sets the align of the image at `index` and reconciles its glue so the render matches at once: rewrite
- * the hint, then glue for a float (wrap the next paragraph) or un-glue for center/full (stand alone).
- * The token START offset is stable across the hint rewrite, so the glue step re-reads the token there.
- * The single entry point the inspector's align control calls.
- */
-export function setImageAlignAt(body: string, index: number, align: NoteImageAlign, widthPct: number): string {
-   const rewritten = rewriteImageHintAt(body, index, { align, widthPct });
-   if (align === 'left' || align === 'right') return glueImageToNextParagraph(rewritten, index);
-   return unglueImageFromParagraph(rewritten, index);
 }

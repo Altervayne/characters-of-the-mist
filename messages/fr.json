@@ -35,23 +35,13 @@
       "titlePlaceholder": "[TO COMPLETE]",
       "bodyPlaceholder": "[TO COMPLETE]",
       "emptyPreview": "[TO COMPLETE]",
-      "edit": "[TO COMPLETE]",
-      "preview": "[TO COMPLETE]",
+      "mode": {
+         "reading": "[TO COMPLETE]",
+         "live": "[TO COMPLETE]",
+         "source": "[TO COMPLETE]"
+      },
       "insertImage": "[TO COMPLETE]",
-      "imageInsertFailed": "[TO COMPLETE]",
-      "imageInspector": {
-         "align": "[TO COMPLETE]",
-         "align_left": "[TO COMPLETE]",
-         "align_center": "[TO COMPLETE]",
-         "align_right": "[TO COMPLETE]",
-         "align_full": "[TO COMPLETE]",
-         "size": "[TO COMPLETE]",
-         "size_small": "[TO COMPLETE]",
-         "size_medium": "[TO COMPLETE]",
-         "size_large": "[TO COMPLETE]",
-         "resize": "[TO COMPLETE]",
-         "captionPlaceholder": "[TO COMPLETE]"
-      }
+      "imageInsertFailed": "[TO COMPLETE]"
    },
    "BoardView": {
       "otherElements": "[TO COMPLETE]",

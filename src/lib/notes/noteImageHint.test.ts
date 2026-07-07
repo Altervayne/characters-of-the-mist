@@ -5,13 +5,10 @@ import { describe, expect, it } from 'vitest';
 import {
    activeImageTokenAt,
    findImageTokens,
-   glueImageToNextParagraph,
    parseImageHint,
    resizeWidthPct,
    rewriteImageHintAt,
    serializeImageHint,
-   setImageAlignAt,
-   unglueImageFromParagraph,
 } from './noteImageHint';
 
 const HASH = 'a1b2c3d4e5f6';
@@ -45,7 +42,7 @@ describe('parseImageHint', () => {
       expect(parseImageHint('medium')).toEqual({ align: 'center', widthPct: 50 });
    });
 
-   it('defaults a widthless float to its band midpoint and a widthless center to 100', () => {
+   it('defaults a widthless side align to its band midpoint and a widthless center to 100', () => {
       expect(parseImageHint('left')).toEqual({ align: 'left', widthPct: 40 });
       expect(parseImageHint('center')).toEqual({ align: 'center', widthPct: 100 });
    });
@@ -55,8 +52,8 @@ describe('parseImageHint', () => {
    });
 
    it('clamps width into the align band', () => {
-      expect(parseImageHint('left 5')).toEqual({ align: 'left', widthPct: 25 }); // float floor 25
-      expect(parseImageHint('left 250')).toEqual({ align: 'left', widthPct: 55 }); // float ceil 55
+      expect(parseImageHint('left 5')).toEqual({ align: 'left', widthPct: 25 }); // side floor 25
+      expect(parseImageHint('left 250')).toEqual({ align: 'left', widthPct: 55 }); // side ceil 55
       expect(parseImageHint('center 5')).toEqual({ align: 'center', widthPct: 30 }); // center floor 30
    });
 
@@ -74,7 +71,7 @@ describe('serializeImageHint', () => {
       expect(serializeImageHint({ align: 'full', widthPct: 100 })).toBe('full');
    });
 
-   it('emits bare "align width" (no %) for floats and non-default center', () => {
+   it('emits bare "align width" (no %) for side aligns and non-default center', () => {
       expect(serializeImageHint({ align: 'left', widthPct: 40 })).toBe('left 40');
       expect(serializeImageHint({ align: 'center', widthPct: 50 })).toBe('center 50');
    });
@@ -177,55 +174,16 @@ describe('resizeWidthPct', () => {
    });
 });
 
-describe('auto-glue', () => {
-   it('glues a float onto the next paragraph (collapses the blank line to a space)', () => {
-      const body = `![](asset:${HASH})\n\nLore wraps beside it.`;
-      expect(glueImageToNextParagraph(body, 0)).toBe(`![](asset:${HASH}) Lore wraps beside it.`);
+describe('align is a block, never a wrap', () => {
+   it('rewriting to a left align only swaps the hint - the blank line stays (no gluing)', () => {
+      const body = `![](asset:${HASH})\n\nLore below it.`;
+      const left = rewriteImageHintAt(body, 0, { align: 'left', widthPct: 40 });
+      expect(left).toBe(`![](asset:${HASH} "left 40")\n\nLore below it.`);
    });
 
-   it('does NOT glue into a heading', () => {
-      const body = `![](asset:${HASH})\n\n## A heading`;
-      expect(glueImageToNextParagraph(body, 0)).toBe(body);
-   });
-
-   it('does NOT glue into a list', () => {
-      const body = `![](asset:${HASH})\n\n- item one`;
-      expect(glueImageToNextParagraph(body, 0)).toBe(body);
-   });
-
-   it('does NOT glue into another image', () => {
-      const body = `![](asset:${HASH})\n\n![](asset:${HASH2})`;
-      expect(glueImageToNextParagraph(body, 0)).toBe(body);
-   });
-
-   it('does NOT glue when nothing follows', () => {
-      const body = `![](asset:${HASH})`;
-      expect(glueImageToNextParagraph(body, 0)).toBe(body);
-      expect(glueImageToNextParagraph(`![](asset:${HASH})\n\n`, 0)).toBe(`![](asset:${HASH})\n\n`);
-   });
-
-   it('is idempotent once glued', () => {
-      const glued = `![](asset:${HASH}) Lore.`;
-      expect(glueImageToNextParagraph(glued, 0)).toBe(glued);
-   });
-
-   it('un-glues a same-line float back into its own block', () => {
-      const body = `![](asset:${HASH}) Lore wraps beside it.`;
-      expect(unglueImageFromParagraph(body, 0)).toBe(`![](asset:${HASH})\n\nLore wraps beside it.`);
-   });
-
-   it('un-glue is a no-op when the image already stands alone', () => {
-      const body = `![](asset:${HASH})\n\nSeparate paragraph.`;
-      expect(unglueImageFromParagraph(body, 0)).toBe(body);
-   });
-
-   it('setImageAlignAt glues on float and un-glues on center', () => {
-      const block = `![](asset:${HASH})\n\nLore wraps beside it.`;
-      const floated = setImageAlignAt(block, 0, 'left', 40);
-      expect(floated).toBe(`![](asset:${HASH} "left 40") Lore wraps beside it.`);
-
-      // Switching the floated one back to center un-glues AND drops to the default title.
-      const centered = setImageAlignAt(floated, 0, 'center', 100);
-      expect(centered).toBe(`![](asset:${HASH})\n\nLore wraps beside it.`);
+   it('switching a left align back to center leaves the surrounding text untouched', () => {
+      const body = `![](asset:${HASH} "left 40")\n\nLore below it.`;
+      const centered = rewriteImageHintAt(body, 0, { align: 'center', widthPct: 100 });
+      expect(centered).toBe(`![](asset:${HASH})\n\nLore below it.`);
    });
 });

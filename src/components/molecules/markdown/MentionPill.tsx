@@ -11,8 +11,10 @@ import type { MentionSegment } from '@/lib/challenge/parseMentions';
  * it, a plain span. The pointerdown guard keeps a tap on a draggable surface (board) from starting a drag.
  */
 
-const STATUS_PILL = 'rounded bg-green-700 px-1 py-0.5 font-medium text-green-50';
-const TAG_PILL = 'rounded bg-yellow-500 px-1 py-0.5 font-medium italic text-yellow-950';
+// The pill class-strings are EXPORTED so the CM6 live-editor mention widget renders byte-identical pills to
+// this react-markdown path (Live == Reading). Fixed game-content colors, not chrome tokens.
+export const STATUS_PILL = 'rounded bg-green-700 px-1 py-0.5 font-medium text-green-50';
+export const TAG_PILL = 'rounded bg-yellow-500 px-1 py-0.5 font-medium italic text-yellow-950';
 const INTERACTIVE = 'cursor-pointer hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 type PillSegment = Extract<MentionSegment, { type: 'status' | 'tag' }>;
