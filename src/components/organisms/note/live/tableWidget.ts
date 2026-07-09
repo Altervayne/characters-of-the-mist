@@ -260,18 +260,53 @@ export class NoteTableWidget extends WidgetType {
     *  - Enter (no modifier): a line break INSIDE the cell (stored as `<br>` on commit).
     *  - Shift+Enter: new row (create/move to the next row; appends at the last row, Obsidian-style).
     *  - Shift+Ctrl/Cmd+Enter: new column.
-    *  - ArrowDown in the LAST body row: exit onto a fresh line below the table (created if needed).
+    *  - Arrow keys (Excel/Obsidian model): Up/Down cross to the cell above/below (header <-> body included);
+    *    Left/Right cross to the previous/next cell only at the caret's start/end edge (else the caret moves
+    *    within the text). Up from the header exits above the table; Down in the LAST body row exits below;
+    *    both edges create a fresh line if the table sits at the document edge. In a multi-line cell (`<br>`),
+    *    Up/Down first move between the cell's own lines and only cross from its top/bottom line.
     *  - Escape: exit onto a usable line below the table (created if needed) - never trapped.
     */
    private onCellKey(view: EditorView, event: KeyboardEvent, cell: HTMLElement, row: number, col: number, model: TableModel): void {
       const cols = model.header.length;
       const bodyRows = model.rows.length;
+      const visualRow = row + 1; // header (-1) -> 0, body r -> r+1
+      const total = (bodyRows + 1) * cols; // cell count including the header row
 
-      // ArrowDown in the last body row escapes the table downward (the "stuck forever" trap fix).
-      if (event.key === 'ArrowDown' && row === bodyRows - 1) {
+      // Arrow navigation (no modifiers - Ctrl/Alt keep their native word/line semantics inside the cell).
+      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !event.ctrlKey && !event.metaKey && !event.altKey) {
+         if (event.key === 'ArrowUp') {
+            if (!this.caretAtEdgeLine(cell, 'first')) return; // multi-line cell: move up within it first
+            event.preventDefault();
+            this.commitCell(view, cell, row, col);
+            if (row < 0) this.exitAbove(view); // header: escape above the table
+            else this.focusCell(view, row - 1, col); // body -> row above (row 0 -> header)
+            return;
+         }
+         if (event.key === 'ArrowDown') {
+            if (!this.caretAtEdgeLine(cell, 'last')) return; // multi-line cell: move down within it first
+            event.preventDefault();
+            this.commitCell(view, cell, row, col);
+            if (row === bodyRows - 1) this.exitBelow(view); // last body row (or header-only): escape below
+            else this.focusCell(view, row < 0 ? 0 : row + 1, col);
+            return;
+         }
+         if (event.key === 'ArrowRight') {
+            if (!this.caretAtTextEnd(cell)) return; // not at the end: move the caret within the text
+            if (visualRow * cols + col + 1 >= total) return; // last cell: stop
+            event.preventDefault();
+            this.commitCell(view, cell, row, col);
+            const next = visualRow * cols + col + 1;
+            this.focusCell(view, Math.floor(next / cols) - 1, next % cols, true); // caret at the start
+            return;
+         }
+         // ArrowLeft
+         if (!this.caretAtTextStart(cell)) return; // not at the start: move the caret within the text
+         if (visualRow * cols + col - 1 < 0) return; // first cell: stop
          event.preventDefault();
          this.commitCell(view, cell, row, col);
-         this.exitBelow(view);
+         const prev = visualRow * cols + col - 1;
+         this.focusCell(view, Math.floor(prev / cols) - 1, prev % cols); // caret at the end
          return;
       }
 
@@ -338,18 +373,86 @@ export class NoteTableWidget extends WidgetType {
       });
    }
 
-   /** Focuses a cell by (row, col) after the DOM has been rebuilt from a dispatch. -1 row == header. */
-   private focusCell(view: EditorView, row: number, col: number): void {
+   /**
+    * Moves the CM6 caret onto a usable line immediately ABOVE the table block (mirror of `exitBelow`), creating a
+    * fresh leading line first if the table is the first block - so ArrowUp out of the header is never trapped.
+    */
+   private exitAbove(view: EditorView): void {
+      requestAnimationFrame(() => {
+         const range = this.liveRange(view);
+         if (!range) return;
+         const doc = view.state.doc;
+         if (range.from <= 0) {
+            // Table is the first block: prepend a fresh line + a BLANK line, land the caret at the top - so typed
+            // text becomes its OWN paragraph above the table (the blank keeps GFM from absorbing it).
+            view.dispatch({ changes: { from: 0, insert: '\n\n' }, selection: { anchor: 0 } });
+         } else {
+            // There is a line before the table: land the caret at the end of the last line before it.
+            const prevLine = doc.lineAt(range.from - 1);
+            view.dispatch({ selection: { anchor: prevLine.to } });
+         }
+         view.focus();
+      });
+   }
+
+   /** True when the collapsed caret sits at the very START of the cell's text (no text before it). */
+   private caretAtTextStart(cell: HTMLElement): boolean {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false;
+      const caret = sel.getRangeAt(0);
+      if (!cell.contains(caret.startContainer)) return false;
+      const r = document.createRange();
+      r.selectNodeContents(cell);
+      r.setEnd(caret.startContainer, caret.startOffset);
+      return r.toString().length === 0;
+   }
+
+   /** True when the collapsed caret sits at the very END of the cell's text (no text after it). */
+   private caretAtTextEnd(cell: HTMLElement): boolean {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false;
+      const caret = sel.getRangeAt(0);
+      if (!cell.contains(caret.startContainer)) return false;
+      const r = document.createRange();
+      r.selectNodeContents(cell);
+      r.setStart(caret.startContainer, caret.startOffset);
+      return r.toString().length === 0;
+   }
+
+   /**
+    * For a multi-line cell (`<br>` line breaks), reports whether the caret is on the cell's FIRST or LAST visual
+    * line - so Up/Down move between the cell's own lines before crossing the table edge. A single-line cell (no
+    * `<br>`) is always at both edges. Detected by whether any `<br>` lies before / after the caret.
+    */
+   private caretAtEdgeLine(cell: HTMLElement, which: 'first' | 'last'): boolean {
+      const breaks = cell.querySelectorAll('br');
+      if (breaks.length === 0) return true;
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.isCollapsed || !cell.contains(sel.getRangeAt(0).startContainer)) return true;
+      const caret = sel.getRangeAt(0);
+      const span = document.createRange();
+      if (which === 'first') {
+         span.setStart(cell, 0);
+         span.setEnd(caret.startContainer, caret.startOffset);
+      } else {
+         span.setStart(caret.startContainer, caret.startOffset);
+         span.setEnd(cell, cell.childNodes.length);
+      }
+      return ![...breaks].some((br) => span.intersectsNode(br));
+   }
+
+   /** Focuses a cell by (row, col) after the DOM has been rebuilt from a dispatch. -1 row == header. The caret
+    * lands at the END of the cell's text by default, or at the START when `caretAtStart` is set (right-cross). */
+   private focusCell(view: EditorView, row: number, col: number, caretAtStart = false): void {
       // The dispatch rebuilds the widget async; wait a frame, then find the cell in the live DOM.
       requestAnimationFrame(() => {
          const wrap = this.findWrap(view);
          const cell = wrap?.querySelector<HTMLElement>(`.cm-note-table-cell[data-row="${row}"][data-col="${col}"]`);
          if (cell) {
             cell.focus();
-            // Put the caret at the end of the cell's text.
             const range = document.createRange();
             range.selectNodeContents(cell);
-            range.collapse(false);
+            range.collapse(caretAtStart); // true -> start, false -> end
             const sel = window.getSelection();
             sel?.removeAllRanges();
             sel?.addRange(range);

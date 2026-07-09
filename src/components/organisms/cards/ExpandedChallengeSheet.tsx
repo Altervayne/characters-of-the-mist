@@ -134,7 +134,7 @@ function SheetImageBand({ url, name, isEditing, commitImage }: {
    const { fileInputRef, open, isProcessing, handleFileSelected } = useImageUpload(commitImage);
 
    // Shared matte look (fixed height, contain-fit); each caller supplies its own width. The band's
-   // height sets the top block's height - the right column is capped to it and scrolls (see below).
+   // height sets the top block's height. The right column is capped to it and scrolls (see below).
    const matte = 'flex h-52 items-center justify-center overflow-hidden rounded-lg bg-card-popover-bg/60';
 
    if (!isEditing) {

@@ -3,6 +3,7 @@ import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view
 import { syntaxTree } from '@codemirror/language';
 import type { DecorationSet, ViewUpdate } from '@codemirror/view';
 import type { Range } from '@codemirror/state';
+import type { SyntaxNodeRef } from '@lezer/common';
 
 // -- Local Imports --
 import { parseMentions } from '@/lib/challenge/parseMentions';
@@ -54,16 +55,46 @@ class HorizontalRuleWidget extends WidgetType {
 }
 const hrWidget = Decoration.replace({ widget: new HorizontalRuleWidget() });
 
-/** Lezer node names whose whole span is a syntax marker we collapse off-line / reveal on-line. */
-const MARKER_NODES = new Set(['HeaderMark', 'EmphasisMark', 'StrongEmphasisMark', 'CodeMark', 'QuoteMark', 'StrikethroughMark', 'LinkMark', 'URL', 'ListMark']);
+/** A rendered list marker (bullet/number), replacing the raw marker off the cursor line. Both this widget and
+ * the raw marker (on the cursor line) carry the `cm-md-li-marker` class, a FIXED-WIDTH inline-block slot, so the
+ * content's x is identical whether or not the caret is on the line - only the glyph (`-`/`•`, `1.`) differs. */
+class ListMarkerWidget extends WidgetType {
+   readonly label: string;
+   constructor(label: string) {
+      super();
+      this.label = label;
+   }
+   eq(other: ListMarkerWidget): boolean {
+      return other.label === this.label;
+   }
+   toDOM(): HTMLElement {
+      const el = document.createElement('span');
+      el.className = 'cm-md-li-marker';
+      el.textContent = this.label;
+      el.setAttribute('aria-hidden', 'true');
+      return el;
+   }
+   ignoreEvent(): boolean {
+      return true;
+   }
+}
+/** The raw marker on the caret's line: same fixed-width slot as the rendered widget, so content never shifts. */
+const listMarkerRawMark = Decoration.mark({ class: 'cm-md-li-marker' });
+
+/** Lezer node names whose whole span is a syntax marker we collapse off-line / reveal on-line. `ListMark` is
+ * NOT here - the depth-aware ListItem handler owns the list-prefix collapse (leading indent + marker + space). */
+const MARKER_NODES = new Set(['HeaderMark', 'EmphasisMark', 'StrongEmphasisMark', 'CodeMark', 'QuoteMark', 'StrikethroughMark', 'LinkMark', 'URL']);
 
 /**
- * BLOCK-PREFIX markers (`# `, `> `, `- `, `1. `) sit at line start and are followed by a delimiter SPACE
- * that Lezer tokenizes SEPATELY from the mark. Hiding only the mark leaves that space as a visible left
- * indent, so for these we collapse the mark AND its trailing whitespace, and content sits truly flush.
- * Inline marks (`**`/`*`/`` ` ``) carry no trailing space and collapse to their own span only.
+ * BLOCK-PREFIX markers (`# `, `> `) sit at line start and are followed by a delimiter SPACE that Lezer
+ * tokenizes SEPATELY from the mark. Hiding only the mark leaves that space as a visible left indent, so for
+ * these we collapse the mark AND its trailing whitespace, and content sits truly flush. Inline marks
+ * (`**`/`*`/`` ` ``) carry no trailing space and collapse to their own span only.
  */
-const BLOCK_PREFIX_MARKS = new Set(['HeaderMark', 'QuoteMark', 'ListMark']);
+const BLOCK_PREFIX_MARKS = new Set(['HeaderMark', 'QuoteMark']);
+
+/** Per nesting-level list indent (rem), matching Reading's per-level `pl-6` (1.5rem) on each nested list. */
+const LIST_INDENT_PER_LEVEL_REM = 1.5;
 
 /** Content nodes -> the mark styling their text always carries. */
 const CONTENT_MARK: Record<string, Decoration> = {
@@ -83,6 +114,17 @@ function prefixEnd(line: { from: number; text: string }, markEnd: number): numbe
    const lineEnd = line.from + line.text.length;
    while (end < lineEnd && (line.text[end - line.from] === ' ' || line.text[end - line.from] === '\t')) end++;
    return end;
+}
+
+/** The nesting depth of a `ListItem` node = its count of `BulletList`/`OrderedList` ancestors (1 = top level). */
+function listDepth(node: SyntaxNodeRef): number {
+   let depth = 0;
+   let p = node.node.parent;
+   while (p) {
+      if (p.name === 'BulletList' || p.name === 'OrderedList') depth++;
+      p = p.parent;
+   }
+   return depth || 1;
 }
 
 /** The set of line numbers any selection range touches - those lines stay RAW (markers revealed). */
@@ -172,21 +214,43 @@ function buildDecorations(view: EditorView): { all: DecorationSet; atomic: Decor
                return;
             }
 
-            // A LIST ITEM: the marker line gets an indent + a rendered bullet/number (matching the Reading
-            // `ul`/`ol`/`li`). Off the caret's line the raw `- `/`1. ` collapses (marker logic below) and a
-            // `::before` bullet/number shows; on the caret's line the raw marker stays for editing (no double
-            // marker, so the `::before` class is withheld there). Children are still entered (ListMark collapses).
+            // A LIST ITEM. Its indent has two disjoint parts, so the content lands at the same x whether or not the
+            // caret is on the line: (1) a DEPTH indent (`--li-indent` inline var, read from the Lezer nesting depth
+            // so it matches the parser and manual indentation) as the line's padding; (2) a FIXED-WIDTH marker slot
+            // (`cm-md-li-marker`) holding the glyph. The leading indentation whitespace ALWAYS collapses - on the
+            // caret's line too - or the literal spaces + the depth padding would STACK and the active line would sit
+            // one level too deep. Off-cursor the marker is a rendered bullet/number widget; on-cursor it's the raw
+            // marker (editable) wrapped in the SAME fixed slot, so content never shifts - only the glyph changes.
+            // This owns the list-prefix collapse - `ListMark` is deliberately NOT in MARKER_NODES.
             if (name === 'ListItem') {
                const line = doc.lineAt(node.from);
-               const m = /^(\s*)([-*+]|\d+\.)\s/.exec(line.text);
+               const m = /^(\s*)([-*+]|\d+\.)(\s+)/.exec(line.text);
                if (m) {
                   const active = activeLines.has(line.number);
                   const ordered = /\d/.test(m[2]);
-                  const attributes: Record<string, string> = {
-                     class: 'cm-md-li' + (active ? '' : ordered ? ' cm-md-li-ol' : ' cm-md-li-ul'),
-                  };
-                  if (ordered && !active) attributes['data-num'] = m[2].slice(0, -1);
-                  ranges.push(Decoration.line({ attributes }).range(line.from));
+                  const depth = listDepth(node); // 1 = top level, 2 = first nesting, ...
+                  const indentRem = ((depth - 1) * LIST_INDENT_PER_LEVEL_REM).toFixed(3);
+                  ranges.push(
+                     Decoration.line({ attributes: { class: 'cm-md-li', style: `--li-indent:${indentRem}rem` } }).range(line.from),
+                  );
+                  const markerStart = line.from + m[1].length; // after the leading indentation whitespace
+                  const contentStart = line.from + m[0].length; // after the marker + delimiter space
+                  // Collapse the leading indentation whitespace ALWAYS (the depth padding represents it).
+                  if (markerStart > line.from) {
+                     const collapsed = hiddenMark.range(line.from, markerStart);
+                     ranges.push(collapsed);
+                     atomicRanges.push(collapsed);
+                  }
+                  if (active) {
+                     // Raw marker, editable, in the fixed slot.
+                     ranges.push(listMarkerRawMark.range(markerStart, contentStart));
+                  } else {
+                     // Rendered bullet/number, same fixed slot; atomic so the caret hops it.
+                     const label = ordered ? m[2] : '•';
+                     const w = Decoration.replace({ widget: new ListMarkerWidget(label) }).range(markerStart, contentStart);
+                     ranges.push(w);
+                     atomicRanges.push(w);
+                  }
                }
                return;
             }

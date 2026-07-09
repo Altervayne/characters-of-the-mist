@@ -16,6 +16,7 @@ import { imageWidgetField } from './live/imageWidgetField';
 import { tableWidgetField } from './live/tableWidgetField';
 import { coverGutter, setCoverEffect, coverInsetLineCount } from './live/coverGutter';
 import { tableRegionAt } from './live/tableRegions';
+import { listIndentKeymap } from './live/listKeymap';
 import { formatToolbar } from './live/formatToolbar';
 import { findImageTokens } from '@/lib/notes/noteImageHint';
 
@@ -148,12 +149,12 @@ const paperTheme = EditorView.theme({
    '.cm-md-quote-line': { borderLeft: '4px solid color-mix(in srgb, currentColor 40%, transparent)', backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)', paddingLeft: '1rem', paddingRight: '0.75rem', fontStyle: 'italic', opacity: '0.9' },
    // A rendered horizontal rule (replaces `---` off the cursor line), matching the Reading `<hr>`.
    '.cm-md-hr': { display: 'inline-block', width: '100%', height: '0', verticalAlign: 'middle', borderTop: '2px solid color-mix(in srgb, currentColor 25%, transparent)' },
-   // List items: an indent (matching the Reading `pl-6`) + a rendered bullet / number via `::before`. Off the
-   // caret's line the raw `- `/`1. ` collapses and the `::before` marker shows; on the caret's line the raw
-   // marker stays (the `-ul`/`-ol` class is withheld there, so no double marker).
-   '.cm-md-li': { paddingLeft: '1.5rem', position: 'relative' },
-   '.cm-md-li-ul::before': { content: '"\\2022"', position: 'absolute', left: '0.4rem', color: 'currentColor' },
-   '.cm-md-li-ol::before': { content: 'attr(data-num) "."', position: 'absolute', left: '0.1rem', color: 'currentColor', fontSize: '0.95em' },
+   // List items: a DEPTH-AWARE indent (`--li-indent` per nesting level, matching Reading's nested `pl-6`) as the
+   // line padding, then a FIXED-WIDTH marker slot holding the glyph. Both the rendered bullet/number widget (off
+   // the caret's line) and the raw marker (on it) carry `cm-md-li-marker`, so content sits at the same x either
+   // way (depth padding + one slot) and only the glyph differs.
+   '.cm-md-li': { paddingLeft: 'var(--li-indent, 0rem)' },
+   '.cm-md-li-marker': { display: 'inline-block', width: '1.5rem' },
    // Syntax markers are COLLAPSED off-line via a zero-width replace (no class - no space, no cursor slot);
    // on the caret's line they render raw. So there is no marker opacity/reveal CSS here anymore.
 
@@ -208,11 +209,15 @@ const paperTheme = EditorView.theme({
    // Full-edge add bars (theme tokens), subtle until hover - TRUE OVERLAYS on the table's own edges (reserve no
    // width). Bottom bar overlays the table's bottom edge, full table width (add row); right bar overlays the
    // right edge, full table height (add column). Sit within the top/bottom padding band so nothing overflows.
-   '.cm-note-table-add-row-bar': { position: 'absolute', left: '0', right: '0', bottom: '0.125rem', height: '0.625rem', display: 'grid', placeItems: 'center', border: 'none', borderRadius: '0.25rem', background: 'transparent', color: 'var(--muted-foreground)', cursor: 'pointer', opacity: '0', transition: 'opacity 120ms ease' },
-   '.cm-note-table-add-col-bar': { position: 'absolute', top: '0.75rem', bottom: '0.75rem', right: '0', width: '0.625rem', display: 'grid', placeItems: 'center', border: 'none', borderRadius: '0.25rem', background: 'transparent', color: 'var(--muted-foreground)', cursor: 'pointer', opacity: '0', transition: 'opacity 120ms ease' },
-   '.cm-note-table:hover .cm-note-table-add-row-bar, .cm-note-table:hover .cm-note-table-add-col-bar': { opacity: '0.55' },
-   '.cm-note-table-add-row-bar:hover, .cm-note-table-add-col-bar:hover': { opacity: '1', backgroundColor: 'color-mix(in srgb, var(--primary) 18%, transparent)', color: 'var(--foreground)' },
-   '.cm-note-table-add-plus': { fontSize: '1rem', fontWeight: '700', lineHeight: '1' },
+   // Full-edge add bars sit just OUTSIDE the table's own edges (they reserve no width, so the table stays full
+   // column width). Bottom bar (add row) hugs the table's bottom border and extends down into the padding band;
+   // right bar (add column) hugs the right border and overflows just past it. Their outer corners are rounded and
+   // they carry a soft paper-derived fill so they read as tabs attached to the table, not part of the parchment.
+   '.cm-note-table-add-row-bar': { position: 'absolute', left: '0', right: '0', bottom: '-0.125rem', height: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: '0 0 0.3125rem 0.3125rem', backgroundColor: 'color-mix(in srgb, var(--paper-border) 28%, var(--paper-background))', color: 'var(--paper-foreground)', cursor: 'pointer', opacity: '0', transition: 'opacity 120ms ease, background-color 120ms ease' },
+   '.cm-note-table-add-col-bar': { position: 'absolute', top: '0.75rem', bottom: '0.75rem', right: '-0.875rem', width: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: '0 0.3125rem 0.3125rem 0', backgroundColor: 'color-mix(in srgb, var(--paper-border) 28%, var(--paper-background))', color: 'var(--paper-foreground)', cursor: 'pointer', opacity: '0', transition: 'opacity 120ms ease, background-color 120ms ease' },
+   '.cm-note-table:hover .cm-note-table-add-row-bar, .cm-note-table:hover .cm-note-table-add-col-bar': { opacity: '0.9' },
+   '.cm-note-table-add-row-bar:hover, .cm-note-table-add-col-bar:hover': { opacity: '1', backgroundColor: 'color-mix(in srgb, var(--paper-border) 44%, var(--paper-background))', color: 'var(--paper-foreground)' },
+   '.cm-note-table-add-plus': { display: 'block', fontSize: '0.8rem', fontWeight: '700', lineHeight: '1', textAlign: 'center' },
 }, { dark: false });
 
 export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEditor(
@@ -271,6 +276,9 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
             doc: valueRef.current,
             extensions: [
                history(),
+               // List Tab/Shift+Tab indent BEFORE the default keymap so it intercepts Tab on list lines only
+               // (it falls through elsewhere, leaving Tab's normal behaviour intact).
+               listIndentKeymap,
                keymap.of([...defaultKeymap, ...historyKeymap]),
                // GFM Strikethrough + Table so the Lezer tree yields their nodes - the base CommonMark parser
                // doesn't, so `~~text~~` never styles and a table block never renders as a grid in Live.
