@@ -16,68 +16,82 @@ const HASH2 = 'f6e5d4c3b2a1';
 
 describe('parseImageHint', () => {
    it('defaults a missing/empty/garbage hint to center 100', () => {
-      expect(parseImageHint(undefined)).toEqual({ align: 'center', widthPct: 100 });
-      expect(parseImageHint('')).toEqual({ align: 'center', widthPct: 100 });
-      expect(parseImageHint('   ')).toEqual({ align: 'center', widthPct: 100 });
-      expect(parseImageHint('banana')).toEqual({ align: 'center', widthPct: 100 });
+      expect(parseImageHint(undefined)).toEqual({ align: 'center', widthPct: 100, aspect: null });
+      expect(parseImageHint('')).toEqual({ align: 'center', widthPct: 100, aspect: null });
+      expect(parseImageHint('   ')).toEqual({ align: 'center', widthPct: 100, aspect: null });
+      expect(parseImageHint('banana')).toEqual({ align: 'center', widthPct: 100, aspect: null });
    });
 
    it('parses canonical align + width', () => {
-      expect(parseImageHint('left 40')).toEqual({ align: 'left', widthPct: 40 });
-      expect(parseImageHint('right 45')).toEqual({ align: 'right', widthPct: 45 });
-      expect(parseImageHint('center 50')).toEqual({ align: 'center', widthPct: 50 });
+      expect(parseImageHint('left 40')).toEqual({ align: 'left', widthPct: 40, aspect: null });
+      expect(parseImageHint('right 45')).toEqual({ align: 'right', widthPct: 45, aspect: null });
+      expect(parseImageHint('center 50')).toEqual({ align: 'center', widthPct: 50, aspect: null });
+   });
+
+   it('parses an optional aspect after the width (a fixed box)', () => {
+      expect(parseImageHint('left 40 0.75')).toEqual({ align: 'left', widthPct: 40, aspect: 0.75 });
+      expect(parseImageHint('center 60 1.5')).toEqual({ align: 'center', widthPct: 60, aspect: 1.5 });
+      // Aspect is clamped into the box band.
+      expect(parseImageHint('center 60 9').aspect).toBe(3.0);
+      expect(parseImageHint('center 60 0.01').aspect).toBe(0.2);
    });
 
    it('pins full to 100 and ignores any stored width', () => {
-      expect(parseImageHint('full')).toEqual({ align: 'full', widthPct: 100 });
-      expect(parseImageHint('full 40')).toEqual({ align: 'full', widthPct: 100 });
+      expect(parseImageHint('full')).toEqual({ align: 'full', widthPct: 100, aspect: null });
+      expect(parseImageHint('full 40')).toEqual({ align: 'full', widthPct: 100, aspect: null });
    });
 
    it('accepts a trailing % on parse (never emitted)', () => {
-      expect(parseImageHint('left 40%')).toEqual({ align: 'left', widthPct: 40 });
+      expect(parseImageHint('left 40%')).toEqual({ align: 'left', widthPct: 40, aspect: null });
    });
 
    it('expands the shipped size-word aliases to center + bucket', () => {
-      expect(parseImageHint('small')).toEqual({ align: 'center', widthPct: 30 });
-      expect(parseImageHint('medium')).toEqual({ align: 'center', widthPct: 50 });
+      expect(parseImageHint('small')).toEqual({ align: 'center', widthPct: 30, aspect: null });
+      expect(parseImageHint('medium')).toEqual({ align: 'center', widthPct: 50, aspect: null });
    });
 
    it('defaults a widthless side align to its band midpoint and a widthless center to 100', () => {
-      expect(parseImageHint('left')).toEqual({ align: 'left', widthPct: 40 });
-      expect(parseImageHint('center')).toEqual({ align: 'center', widthPct: 100 });
+      expect(parseImageHint('left')).toEqual({ align: 'left', widthPct: 40, aspect: null });
+      expect(parseImageHint('center')).toEqual({ align: 'center', widthPct: 100, aspect: null });
    });
 
    it('parses a bare width as a centered block', () => {
-      expect(parseImageHint('50')).toEqual({ align: 'center', widthPct: 50 });
+      expect(parseImageHint('50')).toEqual({ align: 'center', widthPct: 50, aspect: null });
    });
 
    it('clamps width into the align band', () => {
-      expect(parseImageHint('left 5')).toEqual({ align: 'left', widthPct: 25 }); // side floor 25
-      expect(parseImageHint('left 250')).toEqual({ align: 'left', widthPct: 55 }); // side ceil 55
-      expect(parseImageHint('center 5')).toEqual({ align: 'center', widthPct: 30 }); // center floor 30
+      expect(parseImageHint('left 5')).toEqual({ align: 'left', widthPct: 25, aspect: null }); // side floor 25
+      expect(parseImageHint('left 250')).toEqual({ align: 'left', widthPct: 55, aspect: null }); // side ceil 55
+      expect(parseImageHint('center 5')).toEqual({ align: 'center', widthPct: 30, aspect: null }); // center floor 30
    });
 
    it('ignores extra/unknown tokens (forward-compat)', () => {
-      expect(parseImageHint('left 40 xyz')).toEqual({ align: 'left', widthPct: 40 });
+      expect(parseImageHint('left 40 xyz')).toEqual({ align: 'left', widthPct: 40, aspect: null });
    });
 });
 
 describe('serializeImageHint', () => {
    it('omits the title at the default (center 100)', () => {
-      expect(serializeImageHint({ align: 'center', widthPct: 100 })).toBeUndefined();
+      expect(serializeImageHint({ align: 'center', widthPct: 100, aspect: null })).toBeUndefined();
    });
 
    it('emits full without a width', () => {
-      expect(serializeImageHint({ align: 'full', widthPct: 100 })).toBe('full');
+      expect(serializeImageHint({ align: 'full', widthPct: 100, aspect: null })).toBe('full');
    });
 
    it('emits bare "align width" (no %) for side aligns and non-default center', () => {
-      expect(serializeImageHint({ align: 'left', widthPct: 40 })).toBe('left 40');
-      expect(serializeImageHint({ align: 'center', widthPct: 50 })).toBe('center 50');
+      expect(serializeImageHint({ align: 'left', widthPct: 40, aspect: null })).toBe('left 40');
+      expect(serializeImageHint({ align: 'center', widthPct: 50, aspect: null })).toBe('center 50');
+   });
+
+   it('emits the aspect as a third token when a fixed box is set', () => {
+      expect(serializeImageHint({ align: 'left', widthPct: 40, aspect: 0.75 })).toBe('left 40 0.75');
+      expect(serializeImageHint({ align: 'center', widthPct: 100, aspect: 1.5 })).toBe('center 100 1.5');
+      expect(serializeImageHint({ align: 'full', widthPct: 100, aspect: 0.5 })).toBe('full 100 0.5');
    });
 
    it('round-trips idempotently: parse -> serialize -> parse', () => {
-      for (const title of ['left 40', 'right 55', 'center 30', 'full', undefined]) {
+      for (const title of ['left 40', 'right 55', 'center 30', 'left 40 0.75', 'center 60 1.5', 'full', undefined]) {
          const once = parseImageHint(title);
          const serialized = serializeImageHint(once);
          expect(parseImageHint(serialized)).toEqual(once);
@@ -126,30 +140,30 @@ describe('rewriteImageHintAt', () => {
    it('rewrites ONE token, leaving the rest byte-identical', () => {
       const body = `A ![c](asset:${HASH}) B ![d](asset:${HASH2}) C`;
       const target = findImageTokens(body)[0];
-      const next = rewriteImageHintAt(body, target.index, { align: 'left', widthPct: 40 });
+      const next = rewriteImageHintAt(body, target.index, { align: 'left', widthPct: 40, aspect: null });
       expect(next).toBe(`A ![c](asset:${HASH} "left 40") B ![d](asset:${HASH2}) C`);
    });
 
    it('drops the title when the layout serializes to the default', () => {
       const body = `![c](asset:${HASH} "left 40")`;
       const target = findImageTokens(body)[0];
-      expect(rewriteImageHintAt(body, target.index, { align: 'center', widthPct: 100 })).toBe(`![c](asset:${HASH})`);
+      expect(rewriteImageHintAt(body, target.index, { align: 'center', widthPct: 100, aspect: null })).toBe(`![c](asset:${HASH})`);
    });
 
    it('can also rewrite the alt (caption)', () => {
       const body = `![](asset:${HASH})`;
-      expect(rewriteImageHintAt(body, 0, { align: 'center', widthPct: 100 }, 'a caption')).toBe(`![a caption](asset:${HASH})`);
+      expect(rewriteImageHintAt(body, 0, { align: 'center', widthPct: 100, aspect: null }, 'a caption')).toBe(`![a caption](asset:${HASH})`);
    });
 
    it('never touches the asset:HASH src (the anti-data-loss guarantee)', () => {
       const body = `![](asset:${HASH} "center 50")`;
-      const out = rewriteImageHintAt(body, 0, { align: 'left', widthPct: 55 });
+      const out = rewriteImageHintAt(body, 0, { align: 'left', widthPct: 55, aspect: null });
       expect(out).toContain(`asset:${HASH}`);
    });
 
    it('is a no-op when the offset does not start a token', () => {
       const body = 'no image here';
-      expect(rewriteImageHintAt(body, 3, { align: 'left', widthPct: 40 })).toBe(body);
+      expect(rewriteImageHintAt(body, 3, { align: 'left', widthPct: 40, aspect: null })).toBe(body);
    });
 });
 
@@ -177,13 +191,13 @@ describe('resizeWidthPct', () => {
 describe('align is a block, never a wrap', () => {
    it('rewriting to a left align only swaps the hint - the blank line stays (no gluing)', () => {
       const body = `![](asset:${HASH})\n\nLore below it.`;
-      const left = rewriteImageHintAt(body, 0, { align: 'left', widthPct: 40 });
+      const left = rewriteImageHintAt(body, 0, { align: 'left', widthPct: 40, aspect: null });
       expect(left).toBe(`![](asset:${HASH} "left 40")\n\nLore below it.`);
    });
 
    it('switching a left align back to center leaves the surrounding text untouched', () => {
       const body = `![](asset:${HASH} "left 40")\n\nLore below it.`;
-      const centered = rewriteImageHintAt(body, 0, { align: 'center', widthPct: 100 });
+      const centered = rewriteImageHintAt(body, 0, { align: 'center', widthPct: 100, aspect: null });
       expect(centered).toBe(`![](asset:${HASH})\n\nLore below it.`);
    });
 });

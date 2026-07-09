@@ -12,10 +12,26 @@
 /** The four preset positions an inline image can take. */
 export type NoteImageAlign = 'left' | 'right' | 'center' | 'full';
 
-/** A resolved image layout. `widthPct` is clamped to the align's band; ignored (rendered 100%) when `full`. */
+/**
+ * A resolved image layout. `widthPct` is clamped to the align's band; ignored (rendered 100%) when `full`.
+ * `aspect` (= height / width) is OPTIONAL: `null` means "no fixed box" - the image renders at its natural
+ * ratio (object-contain), the shipped behaviour. A number means a FIXED BOX (`width%` by `aspect`) the image
+ * fills via `object-fit: cover`, like the note cover - set once the user drags the resize handle.
+ */
 export interface NoteImageLayout {
    align: NoteImageAlign;
    widthPct: number;
+   aspect: number | null;
+}
+
+/** Aspect (= height / width) clamp band for a fixed-box image (mirrors the cover's band). */
+export const IMAGE_MIN_ASPECT = 0.2;
+export const IMAGE_MAX_ASPECT = 3.0;
+
+/** Clamps an aspect into the box band (for a positive/finite value). */
+export function clampImageAspect(aspect: number): number {
+   if (!Number.isFinite(aspect) || aspect <= 0) return 1;
+   return Math.min(IMAGE_MAX_ASPECT, Math.max(IMAGE_MIN_ASPECT, aspect));
 }
 
 /** Per-align width clamp bands (percent of the prose measure). `full` is pinned to 100%. */
@@ -27,7 +43,7 @@ const WIDTH_BAND: Record<NoteImageAlign, { min: number; max: number }> = {
 };
 
 /** The default layout for an image with no (or a garbage) hint: a centered full-measure block, as shipped. */
-const DEFAULT_LAYOUT: NoteImageLayout = { align: 'center', widthPct: 100 };
+const DEFAULT_LAYOUT: NoteImageLayout = { align: 'center', widthPct: 100, aspect: null };
 
 /** A sensible width for a left/right-aligned image with no width (its band's rounded midpoint). */
 const SIDE_DEFAULT_WIDTH = 40;
@@ -67,6 +83,7 @@ export function parseImageHint(title: string | undefined): NoteImageLayout {
 
    let align: NoteImageAlign | null = null;
    let widthPct: number | null = null;
+   let aspect: number | null = null;
 
    for (const token of tokens) {
       // A shipped size word expands to its aliased align+width, then the loop continues.
@@ -81,17 +98,23 @@ export function parseImageHint(title: string | undefined): NoteImageLayout {
          align = maybeAlign;
          continue;
       }
+      // The first bare integer(%) is the WIDTH; the next numeric token (integer or decimal) is the ASPECT.
       if (widthPct === null && /^\d+%?$/.test(token)) {
          widthPct = parseInt(token, 10);
+         continue;
+      }
+      if (aspect === null && /^\d+(?:\.\d+)?$/.test(token)) {
+         aspect = clampImageAspect(parseFloat(token));
+         continue;
       }
       // Anything else is ignored (forward-compat).
    }
 
    if (align === null) align = DEFAULT_LAYOUT.align;
-   if (align === 'full') return { align: 'full', widthPct: 100 };
+   if (align === 'full') return { align: 'full', widthPct: 100, aspect };
    // A left/right image without a width sits at its band's midpoint; center without a width stays full-measure.
    if (widthPct === null) widthPct = align === 'center' ? 100 : SIDE_DEFAULT_WIDTH;
-   return { align, widthPct: clampWidth(align, widthPct) };
+   return { align, widthPct: clampWidth(align, widthPct), aspect };
 }
 
 /**
@@ -101,11 +124,18 @@ export function parseImageHint(title: string | undefined): NoteImageLayout {
  * the width for `full`.
  */
 export function serializeImageHint(layout: NoteImageLayout): string | undefined {
-   const { align } = layout;
-   if (align === 'full') return 'full';
+   const { align, aspect } = layout;
+   // Aspect (a fixed box) can accompany any align, including `full` (a full-width banner of a fixed ratio).
+   const aspectPart = aspect != null ? ` ${round2(clampImageAspect(aspect))}` : '';
+   if (align === 'full') return aspect != null ? `full 100${aspectPart}` : 'full';
    const widthPct = clampWidth(align, layout.widthPct);
-   if (align === 'center' && widthPct === 100) return undefined; // the default: no title
-   return `${align} ${widthPct}`;
+   if (align === 'center' && widthPct === 100 && aspect == null) return undefined; // the default: no title
+   return `${align} ${widthPct}${aspectPart}`;
+}
+
+/** Rounds an aspect to 2 decimals so the serialized title stays short + stable (idempotent round-trip). */
+function round2(n: number): number {
+   return Math.round(n * 100) / 100;
 }
 
 // ==================

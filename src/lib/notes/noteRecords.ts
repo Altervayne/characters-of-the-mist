@@ -1,5 +1,5 @@
 // -- Type Imports --
-import type { Note } from '@/lib/types/board';
+import type { Note, NoteCover } from '@/lib/types/board';
 
 /**
  * The per-record schema version for note rows, written to `NoteRecord.schemaVersion`.
@@ -21,6 +21,8 @@ export interface NoteRecord {
    title: string;
    /** The one continuous markdown flow. */
    body: string;
+   /** The note-level cover image (a fixed box the image fills), or absent when the note has no cover (mirrors the aggregate). */
+   cover?: NoteCover;
    /** Epoch milliseconds of the last save; drives recents ordering and last-write-wins. */
    updatedAt: number;
    /** The drawer `NOTE` item this note is linked to, or null when unsaved (mirrors `CharacterRecord.drawerItemId`). */
@@ -31,5 +33,5 @@ export interface NoteRecord {
 
 /** Projects a stored record onto the {@link Note} aggregate (drops persistence-only fields). */
 export function recordToNote(record: NoteRecord): Note {
-   return { id: record.id, title: record.title, body: record.body };
+   return { id: record.id, title: record.title, body: record.body, cover: record.cover };
 }

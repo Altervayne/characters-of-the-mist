@@ -55,3 +55,23 @@ describe('collectNoteAssetHashes', () => {
       expect(into).toEqual(new Set(['pre-existing', HASH_A]));
    });
 });
+
+describe('collectFromNote: the cover image (a note property, not a body token)', () => {
+   it('collects the cover hash alongside the body image hashes', () => {
+      const into = new Set<string>();
+      collectFromNote({ id: 'n', title: 'T', body: `![](asset:${HASH_A})`, cover: { hash: HASH_B, width: 38, aspect: 1 } }, into);
+      expect(into).toEqual(new Set([HASH_A, HASH_B]));
+   });
+
+   it('collects the cover of a body-image-free note (so the sweep never reclaims it)', () => {
+      const into = new Set<string>();
+      collectFromNote({ id: 'n', title: 'T', body: 'just prose', cover: { hash: HASH_A, width: 38, aspect: 1 } }, into);
+      expect(into).toEqual(new Set([HASH_A]));
+   });
+
+   it('adds nothing extra when there is no cover', () => {
+      const into = new Set<string>();
+      collectFromNote(note('just prose'), into);
+      expect(into.size).toBe(0);
+   });
+});

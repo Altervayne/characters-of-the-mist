@@ -27,7 +27,13 @@ export function collectNoteAssetHashes(body: string): Set<string> {
    return hashes;
 }
 
-/** Adds a note's referenced asset hashes to `into` (the accumulating-set variant, for walk callers). */
+/**
+ * Adds a note's referenced asset hashes to `into` (the accumulating-set variant, for walk callers): its
+ * inline body images AND its note-level cover image. The cover is a note property, not a body token, so it
+ * must be folded in HERE - the one place export and the GC both walk a note - or the sweep reclaims a saved
+ * note's cover while export still bundles it (or vice versa), the exact silent data loss this helper prevents.
+ */
 export function collectFromNote(note: Note, into: Set<string>): void {
    for (const hash of collectNoteAssetHashes(note.body)) into.add(hash);
+   if (note.cover) into.add(note.cover.hash);
 }

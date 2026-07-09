@@ -31,8 +31,15 @@ export const IMAGE_ALIGN_MAX_HEIGHT: Record<NoteImageAlign, string> = {
    full: 'max-h-[36rem]',
 };
 
-/** The inner `<img>` classes (max-height appended per align). */
+/** The inner `<img>` classes for NATURAL mode (no fixed box): renders at its own ratio. Max-height per align. */
 export const IMAGE_INNER = 'block h-auto w-full rounded-md object-contain';
+
+/**
+ * BOX mode (a resized image with a fixed `aspect`): the `<img>` fills a fixed-ratio box via `object-fit:cover`
+ * (fills + crops, keeps its own ratio) - exactly like the note cover. The `aspect-ratio` (`1 / aspect`) is set
+ * inline since it's dynamic; the max-height cap still applies. No wrapper box needed - it's on the img itself.
+ */
+export const IMAGE_INNER_COVER = 'block w-full rounded-md object-cover';
 
 /** The placeholder frame classes for a loading / missing blob. */
 export const IMAGE_PLACEHOLDER =

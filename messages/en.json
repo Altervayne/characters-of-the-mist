@@ -41,7 +41,44 @@
          "source": "Source"
       },
       "insertImage": "Insert image",
-      "imageInsertFailed": "Couldn't add that image. Try another file."
+      "imageInsertFailed": "Couldn't add that image. Try another file.",
+      "format": {
+         "bold": "Bold",
+         "italic": "Italic",
+         "strikethrough": "Strikethrough"
+      },
+      "toolbar": {
+         "insertTable": "Insert table",
+         "tableSize": "Pick a table size",
+         "bulletList": "Bullet list",
+         "numberedList": "Numbered list",
+         "heading": "Heading",
+         "quote": "Quote",
+         "horizontalRule": "Horizontal rule"
+      },
+      "tableMenu": {
+         "insertRowAbove": "Insert row above",
+         "insertRowBelow": "Insert row below",
+         "insertColumnLeft": "Insert column left",
+         "insertColumnRight": "Insert column right",
+         "alignLeft": "Align column left",
+         "alignCenter": "Align column center",
+         "alignRight": "Align column right",
+         "deleteRow": "Delete row",
+         "deleteColumn": "Delete column",
+         "deleteTable": "Delete table"
+      },
+      "table": {
+         "addRow": "Add row",
+         "addColumn": "Add column"
+      },
+      "cover": {
+         "add": "Add cover",
+         "label": "Cover",
+         "change": "Change cover",
+         "remove": "Remove cover",
+         "aspect": "Aspect ratio"
+      }
    },
    "BoardView": {
       "otherElements": "Other Elements…",

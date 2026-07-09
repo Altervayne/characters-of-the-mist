@@ -41,7 +41,44 @@
          "source": "[TO COMPLETE]"
       },
       "insertImage": "[TO COMPLETE]",
-      "imageInsertFailed": "[TO COMPLETE]"
+      "imageInsertFailed": "[TO COMPLETE]",
+      "format": {
+         "bold": "[TO COMPLETE]",
+         "italic": "[TO COMPLETE]",
+         "strikethrough": "[TO COMPLETE]"
+      },
+      "toolbar": {
+         "insertTable": "[TO COMPLETE]",
+         "tableSize": "[TO COMPLETE]",
+         "bulletList": "[TO COMPLETE]",
+         "numberedList": "[TO COMPLETE]",
+         "heading": "[TO COMPLETE]",
+         "quote": "[TO COMPLETE]",
+         "horizontalRule": "[TO COMPLETE]"
+      },
+      "tableMenu": {
+         "insertRowAbove": "[TO COMPLETE]",
+         "insertRowBelow": "[TO COMPLETE]",
+         "insertColumnLeft": "[TO COMPLETE]",
+         "insertColumnRight": "[TO COMPLETE]",
+         "alignLeft": "[TO COMPLETE]",
+         "alignCenter": "[TO COMPLETE]",
+         "alignRight": "[TO COMPLETE]",
+         "deleteRow": "[TO COMPLETE]",
+         "deleteColumn": "[TO COMPLETE]",
+         "deleteTable": "[TO COMPLETE]"
+      },
+      "table": {
+         "addRow": "[TO COMPLETE]",
+         "addColumn": "[TO COMPLETE]"
+      },
+      "cover": {
+         "add": "[TO COMPLETE]",
+         "label": "[TO COMPLETE]",
+         "change": "[TO COMPLETE]",
+         "remove": "[TO COMPLETE]",
+         "aspect": "[TO COMPLETE]"
+      }
    },
    "BoardView": {
       "otherElements": "[TO COMPLETE]",

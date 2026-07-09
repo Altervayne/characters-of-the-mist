@@ -61,7 +61,7 @@ export async function saveNoteRecord(record: NoteRecord): Promise<NoteRecord> {
  * Patches a working note's title/body, refreshing `updatedAt`. A no-op when the row is
  * absent (idempotent), so a debounced save that races a close never throws.
  */
-export async function patchNote(id: string, patch: Partial<Pick<NoteRecord, 'title' | 'body'>>): Promise<void> {
+export async function patchNote(id: string, patch: Partial<Pick<NoteRecord, 'title' | 'body' | 'cover'>>): Promise<void> {
    await db.notes.update(id, { ...patch, updatedAt: Date.now() });
 }
 
@@ -86,7 +86,7 @@ export function saveNoteToLinkedDrawerItem(note: Note): Promise<SaveNoteToDrawer
    return db.transaction('rw', [db.notes, db.items], async () => {
       const record = await db.notes.get(note.id);
       if (!record) return { linkedItemUpdated: false };
-      const merged: NoteRecord = { ...record, title: note.title, body: note.body, updatedAt: Date.now() };
+      const merged: NoteRecord = { ...record, title: note.title, body: note.body, cover: note.cover, updatedAt: Date.now() };
       await db.notes.put(merged);
 
       const drawerItemId = merged.drawerItemId ?? null;
@@ -112,6 +112,7 @@ export function linkNoteToDrawerItem(note: Note, drawerItemId: string): Promise<
          id: note.id,
          title: note.title,
          body: note.body,
+         cover: note.cover,
          updatedAt: Date.now(),
          drawerItemId,
          schemaVersion: record?.schemaVersion ?? NOTE_SCHEMA_VERSION,
@@ -134,6 +135,7 @@ export async function importNote(note: Note, drawerItemId: string | null): Promi
       id: note.id,
       title: note.title,
       body: note.body,
+      cover: note.cover,
       updatedAt: Date.now(),
       drawerItemId: drawerItemId || null,
       schemaVersion: NOTE_SCHEMA_VERSION,

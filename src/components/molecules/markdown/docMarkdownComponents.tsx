@@ -20,8 +20,10 @@ import type { Components } from 'react-markdown';
  */
 
 export const docMarkdownComponents: Components = {
-   h1: ({ ...props }) => <h1 className="clear-both mb-3 mt-6 text-3xl font-bold first:mt-0" {...props} />,
-   h2: ({ ...props }) => <h2 className="clear-both mb-2 mt-6 text-2xl font-bold first:mt-0" {...props} />,
+   // H1 & H2 carry an UNDERLINE rule on the paper-border token (matching the Live `.cm-md-h1`/`.cm-md-h2`) - a
+   // setext heading's identity; Reading can't tell setext from ATX (same mdast), so both underline, GitHub-style.
+   h1: ({ ...props }) => <h1 className="clear-both mb-3 mt-6 border-b border-paper-border pb-1 text-3xl font-bold first:mt-0" {...props} />,
+   h2: ({ ...props }) => <h2 className="clear-both mb-2 mt-6 border-b border-paper-border pb-1 text-2xl font-bold first:mt-0" {...props} />,
    h3: ({ ...props }) => <h3 className="clear-both mb-2 mt-5 text-xl font-semibold first:mt-0" {...props} />,
    h4: ({ ...props }) => <h4 className="clear-both mb-1.5 mt-4 text-lg font-semibold first:mt-0" {...props} />,
    p: ({ ...props }) => <p className="my-3 leading-relaxed first:mt-0 last:mb-0" {...props} />,
@@ -35,10 +37,14 @@ export const docMarkdownComponents: Components = {
    input: ({ ...props }) => <input {...props} disabled className="mr-1.5 align-middle" style={{ accentColor: 'currentColor' }} />,
    code: ({ ...props }) => <code className="rounded bg-current/10 px-1.5 py-0.5 font-mono text-[0.9em]" {...props} />,
    pre: ({ ...props }) => <pre className="my-4 overflow-x-auto rounded-md bg-current/10 p-3 font-mono text-[0.9em] [&>code]:bg-transparent [&>code]:p-0" {...props} />,
-   blockquote: ({ ...props }) => <blockquote className="my-4 border-l-4 border-current/30 pl-4 italic opacity-90" {...props} />,
-   hr: ({ ...props }) => <hr className="clear-both my-6 border-current/20" {...props} />,
+   // A proper quote BLOCK (callout-like): left accent bar + subtle tint + padding. Matches the Live `.cm-md-quote-line`.
+   blockquote: ({ ...props }) => (
+      <blockquote className="clear-both my-4 rounded-r border-l-4 border-current/40 bg-current/5 py-2 pl-4 pr-3 italic opacity-90 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" {...props} />
+   ),
+   hr: ({ ...props }) => <hr className="clear-both my-6 border-t-2 border-current/25" {...props} />,
+   // A table always clears the cover float and renders full-width below it (never squished beside the cover).
    table: ({ ...props }) => (
-      <div className="my-4 overflow-x-auto">
+      <div className="clear-both my-4 overflow-x-auto">
          <table className="w-full border-collapse text-[0.95em]" {...props} />
       </div>
    ),

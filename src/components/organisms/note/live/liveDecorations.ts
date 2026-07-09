@@ -1,11 +1,12 @@
 // -- CodeMirror Imports --
-import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
+import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import type { DecorationSet, ViewUpdate } from '@codemirror/view';
 import type { Range } from '@codemirror/state';
 
 // -- Local Imports --
 import { parseMentions } from '@/lib/challenge/parseMentions';
+import { findTableBlocks } from '@/lib/notes/noteFormat';
 import { STATUS_PILL, TAG_PILL } from '@/components/molecules/markdown/MentionPill';
 import { MentionPillWidget } from './mentionPillWidget';
 
@@ -33,11 +34,25 @@ const strongMark = Decoration.mark({ class: 'cm-md-strong' });
 const emphasisMark = Decoration.mark({ class: 'cm-md-em' });
 const strikeMark = Decoration.mark({ class: 'cm-md-strike' });
 const codeMark = Decoration.mark({ class: 'cm-md-code' });
-const quoteMark = Decoration.mark({ class: 'cm-md-quote' });
+// A blockquote LINE class: a proper callout block (left bar + tint + padding), matching the Reading blockquote.
+const quoteLine = Decoration.line({ class: 'cm-md-quote-line' });
 // Heading line classes by level (font size + weight, matching the doc map's h1..h4).
 const HEADING_LINE = ['cm-md-h1', 'cm-md-h2', 'cm-md-h3', 'cm-md-h4', 'cm-md-h4', 'cm-md-h4'];
 // A hidden syntax marker: a ZERO-WIDTH replace (no layout width, no cursor slot, atomic on caret motion).
 const hiddenMark = Decoration.replace({});
+
+/** A rendered horizontal rule, replacing the `---`/`***`/`___` source off the cursor line (matches `<hr>`). */
+class HorizontalRuleWidget extends WidgetType {
+   eq(): boolean { return true; }
+   toDOM(): HTMLElement {
+      const el = document.createElement('span');
+      el.className = 'cm-md-hr';
+      el.setAttribute('aria-hidden', 'true');
+      return el;
+   }
+   ignoreEvent(): boolean { return true; }
+}
+const hrWidget = Decoration.replace({ widget: new HorizontalRuleWidget() });
 
 /** Lezer node names whose whole span is a syntax marker we collapse off-line / reveal on-line. */
 const MARKER_NODES = new Set(['HeaderMark', 'EmphasisMark', 'StrongEmphasisMark', 'CodeMark', 'QuoteMark', 'StrikethroughMark', 'LinkMark', 'URL', 'ListMark']);
@@ -93,6 +108,10 @@ function buildDecorations(view: EditorView): { all: DecorationSet; atomic: Decor
    const tree = syntaxTree(view.state);
    const { doc } = view.state;
    const activeLines = cursorLines(view);
+   // Line-scanned table blocks - so setext styling never bolds a table caught in a mis-parsed setext block (a
+   // `---` under text below a table setext-ifies the whole block); those lines are gridded by the table field.
+   const tableBlocks = findTableBlocks(doc.toString());
+   const inTableBlock = (pos: number) => tableBlocks.some((b) => pos >= b.from && pos <= b.to);
 
    // Only decorate the visible viewport (cheap on a long note).
    for (const { from: vFrom, to: vTo } of view.visibleRanges) {
@@ -110,6 +129,22 @@ function buildDecorations(view: EditorView): { all: DecorationSet; atomic: Decor
                return;
             }
 
+            // A SETEXT heading (`text\n===` = H1, `text\n---` = H2): style the TEXT line(s) like an ATX h1/h2.
+            // A `---` under text one `\n` below a table setext-ifies the WHOLE block (table rows + text); skip
+            // any line inside a table block (it's gridded by the table field), so only the real heading text is
+            // styled and the table is never bolded. The underline `===`/`---` collapses off-cursor below.
+            const setextMatch = /^SetextHeading(\d)$/.exec(name);
+            if (setextMatch) {
+               const cls = HEADING_LINE[Number(setextMatch[1]) - 1];
+               const first = doc.lineAt(node.from).number;
+               const underline = doc.lineAt(Math.max(node.from, node.to - 1)).number; // last line = the `===`/`---`
+               for (let n = first; n < underline; n++) {
+                  const lineFrom = doc.line(n).from;
+                  if (!inTableBlock(lineFrom)) ranges.push(Decoration.line({ class: cls }).range(lineFrom));
+               }
+               return;
+            }
+
             // Content text always carries its mark styling (bold/italic/strike/code). NOT atomic - the caret
             // must move through formatted text normally.
             const contentDeco = CONTENT_MARK[name];
@@ -118,9 +153,41 @@ function buildDecorations(view: EditorView): { all: DecorationSet; atomic: Decor
                return;
             }
 
-            // A blockquote's text is italic-dim (parity with the doc map's blockquote).
+            // A blockquote renders as a callout BLOCK: each of its lines takes the quote-line class (a left bar +
+            // tint + padding), so it reads as a block, matching the Reading blockquote (parity).
             if (name === 'Blockquote') {
-               ranges.push(quoteMark.range(node.from, node.to));
+               const first = doc.lineAt(node.from).number;
+               const last = doc.lineAt(Math.max(node.from, node.to - 1)).number;
+               for (let n = first; n <= last; n++) ranges.push(quoteLine.range(doc.line(n).from));
+               return;
+            }
+
+            // A thematic break (`---`/`***`/`___`) renders as a real horizontal rule OFF the cursor line (the
+            // source is replaced by the rule widget, ATOMIC); on the caret's line it stays raw so it's editable.
+            if (name === 'HorizontalRule') {
+               if (activeLines.has(doc.lineAt(node.from).number)) return;
+               const rule = hrWidget.range(node.from, node.to);
+               ranges.push(rule);
+               atomicRanges.push(rule);
+               return;
+            }
+
+            // A LIST ITEM: the marker line gets an indent + a rendered bullet/number (matching the Reading
+            // `ul`/`ol`/`li`). Off the caret's line the raw `- `/`1. ` collapses (marker logic below) and a
+            // `::before` bullet/number shows; on the caret's line the raw marker stays for editing (no double
+            // marker, so the `::before` class is withheld there). Children are still entered (ListMark collapses).
+            if (name === 'ListItem') {
+               const line = doc.lineAt(node.from);
+               const m = /^(\s*)([-*+]|\d+\.)\s/.exec(line.text);
+               if (m) {
+                  const active = activeLines.has(line.number);
+                  const ordered = /\d/.test(m[2]);
+                  const attributes: Record<string, string> = {
+                     class: 'cm-md-li' + (active ? '' : ordered ? ' cm-md-li-ol' : ' cm-md-li-ul'),
+                  };
+                  if (ordered && !active) attributes['data-num'] = m[2].slice(0, -1);
+                  ranges.push(Decoration.line({ attributes }).range(line.from));
+               }
                return;
             }
 

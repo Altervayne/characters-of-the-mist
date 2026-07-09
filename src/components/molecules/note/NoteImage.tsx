@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 
 // -- Local Imports --
-import { parseImageHint } from '@/lib/notes/noteImageHint';
-import { IMAGE_ALIGN_MAX_HEIGHT, IMAGE_ALIGN_WRAPPER, IMAGE_INNER, IMAGE_PLACEHOLDER, imageCaptionClass } from './noteImageClasses';
+import { parseImageHint, clampImageAspect } from '@/lib/notes/noteImageHint';
+import { IMAGE_ALIGN_MAX_HEIGHT, IMAGE_ALIGN_WRAPPER, IMAGE_INNER, IMAGE_INNER_COVER, IMAGE_PLACEHOLDER, imageCaptionClass } from './noteImageClasses';
 
 // -- Type Imports --
 import type { NoteImageAlign } from '@/lib/notes/noteImageHint';
@@ -41,7 +41,7 @@ function assetHashFromSrc(src: string | undefined): string | null {
  * `break-inside-avoid` keeps the image + caption from splitting a page (print-ready, harmless on screen).
  * The class-strings are the shared `noteImageClasses`, so the CM6 live-editor widget renders an identical figure.
  */
-function AssetFigure({ hash, alt, align, widthPct }: { hash: string; alt: string; align: NoteImageAlign; widthPct: number }) {
+function AssetFigure({ hash, alt, align, widthPct, aspect }: { hash: string; alt: string; align: NoteImageAlign; widthPct: number; aspect: number | null }) {
    const { url } = useAssetObjectUrl(hash);
    // Width resolves against the prose measure; full ignores it. Left/right/center get an inline % width.
    const widthStyle = align === 'full' ? undefined : { width: `${widthPct}%` };
@@ -49,7 +49,13 @@ function AssetFigure({ hash, alt, align, widthPct }: { hash: string; alt: string
    return (
       <span className={cn('break-inside-avoid', IMAGE_ALIGN_WRAPPER[align])} style={widthStyle}>
          {url ? (
-            <img src={url} alt={alt} className={cn(IMAGE_INNER, IMAGE_ALIGN_MAX_HEIGHT[align])} />
+            aspect != null ? (
+               // BOX mode (resized): the image fills a fixed-ratio box via object-fit:cover, like the cover.
+               <img src={url} alt={alt} className={cn(IMAGE_INNER_COVER, IMAGE_ALIGN_MAX_HEIGHT[align])} style={{ aspectRatio: `1 / ${clampImageAspect(aspect)}` }} />
+            ) : (
+               // NATURAL mode: the image at its own ratio (object-contain).
+               <img src={url} alt={alt} className={cn(IMAGE_INNER, IMAGE_ALIGN_MAX_HEIGHT[align])} />
+            )
          ) : (
             // Loading, or a missing/reclaimed blob: a quiet placeholder frame, never a broken-image glyph.
             <span className={IMAGE_PLACEHOLDER}>{alt || '…'}</span>
@@ -72,6 +78,6 @@ export function NoteImage({ src, alt, title }: { src?: string; alt?: string; tit
       return altText ? <span className="opacity-70">{altText}</span> : null;
    }
 
-   const { align, widthPct } = parseImageHint(title);
-   return <AssetFigure hash={hash} alt={altText} align={align} widthPct={widthPct} />;
+   const { align, widthPct, aspect } = parseImageHint(title);
+   return <AssetFigure hash={hash} alt={altText} align={align} widthPct={widthPct} aspect={aspect} />;
 }

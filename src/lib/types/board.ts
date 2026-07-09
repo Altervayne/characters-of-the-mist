@@ -111,10 +111,28 @@ export interface Journal {
  * item `content`, the board copy's `data`, and the tab-backed Note store alike (one aggregate, three
  * homes), the way one `Journal`/`Card` is shared across surfaces.
  */
+/**
+ * A note-level COVER image, rendered top-left with the opening text wrapping beside it (Reading) / inset
+ * beside it (Live). Distinct from the body's inline `asset:` images - it is a note property, NOT a body
+ * token - but its `hash` is collected by the SAME shared asset walker (see `collectFromNote`) so export
+ * bundles it and the GC never reclaims it. The cover is a fixed box the image fills via `object-fit: cover`
+ * (fills + crops, keeps its own ratio), so `width`/`aspect` describe the BOX, not the image.
+ */
+export interface NoteCover {
+   /** The sha-256 hash of the stored cover asset. */
+   hash: string;
+   /** Box width as a percent of the prose measure (the 68ch column). */
+   width: number;
+   /** Box aspect ratio = height / width; the image fills the box and crops. Defaults to the image's natural ratio. */
+   aspect: number;
+}
+
 export interface Note {
    id: string;
    title: string;
    body: string;
+   /** The optional note-level cover image (a fixed box the image fills). Absent when the note has no cover. */
+   cover?: NoteCover;
 }
 
 /**

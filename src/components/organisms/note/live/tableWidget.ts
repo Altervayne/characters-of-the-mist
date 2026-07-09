@@ -1,0 +1,472 @@
+// -- CodeMirror Imports --
+import { EditorView, WidgetType } from '@codemirror/view';
+
+// -- Markdown Helpers --
+import {
+   parseTable,
+   rebuildTable,
+   addTableRow,
+   removeTableRow,
+   addTableColumn,
+   removeTableColumn,
+   setTableColumnAlign,
+   setTableCell,
+} from '@/lib/notes/noteFormat';
+
+// -- Type Imports --
+import type { TableModel, ColumnAlign } from '@/lib/notes/noteFormat';
+
+/*
+ * The Live-editor TABLE widget: a GFM table block renders as a CLEAN editable grid - just the cells, nothing
+ * else. It mirrors the image widget's bridge decision - IMPERATIVE DOM, no React root, sourced from a
+ * StateField (block + atomic). The markdown table in the buffer is the source of truth: every cell/structure/
+ * alignment edit rebuilds the block via the PURE `noteFormat` table helpers and dispatches it at the block's
+ * LIVE offsets (found via `posAtDOM`), so undo stays granular and the buffer stays literal markdown. Reading
+ * keeps its react-markdown `<table>` - same data, two render paths.
+ *
+ * All structural/alignment actions live in a RIGHT-CLICK context menu (no hover-button clutter). Right-click
+ * on a cell fires the injected controller with the cell's (row, col) + screen position + a bag of pre-bound
+ * actions (each closes over this widget's `view` + live offsets); the React host renders the actual menu at
+ * that point (see `NoteView`). Cell text is edited inline; Tab/Enter navigate.
+ */
+
+const CSS_ALIGN: Record<ColumnAlign, string> = { none: 'left', left: 'left', center: 'center', right: 'right' };
+
+/** The bag of table actions the right-click menu invokes; each is pre-bound to the right-clicked cell. */
+export interface TableActions {
+   insertRowAbove: () => void;
+   insertRowBelow: () => void;
+   insertColumnLeft: () => void;
+   insertColumnRight: () => void;
+   deleteRow: () => void;
+   deleteColumn: () => void;
+   alignColumn: (align: ColumnAlign) => void;
+   deleteTable: () => void;
+   /** Whether delete-row / delete-column are allowed (false when it's the last row/column). */
+   canDeleteRow: boolean;
+   canDeleteColumn: boolean;
+}
+
+/** A right-click request: the screen point to anchor the menu + the actions for the clicked cell. */
+export interface TableContextRequest {
+   x: number;
+   y: number;
+   actions: TableActions;
+}
+
+/** Injected once from the React host: opens the context menu + supplies i18n labels for the edge "+" bars. */
+export interface TableController {
+   openContextMenu: (request: TableContextRequest) => void;
+   labels: { addRow: string; addColumn: string };
+}
+
+export class NoteTableWidget extends WidgetType {
+   /** The raw markdown of this table block (the widget's identity) + its block offsets at build time. */
+   readonly markdown: string;
+   readonly from: number;
+   readonly to: number;
+   private readonly controller: TableController;
+
+   constructor(markdown: string, from: number, to: number, controller: TableController) {
+      super();
+      this.markdown = markdown;
+      this.from = from;
+      this.to = to;
+      this.controller = controller;
+   }
+
+   /** Shorthand for the injected edge-bar labels. */
+   private get labels() {
+      return this.controller.labels;
+   }
+
+   // Rebuild the DOM only when the table markdown changed (offsets shift freely; the DOM tracks live via posAtDOM).
+   eq(other: NoteTableWidget): boolean {
+      return other.markdown === this.markdown;
+   }
+
+   // A definite estimated height keeps CM6's line-map honest before the grid lays out (like the image widget).
+   get estimatedHeight(): number {
+      const rows = this.markdown.split('\n').filter((l) => l.trim() !== '').length; // header + separator + body
+      return Math.max(60, (rows - 1) * 34 + 16);
+   }
+
+   toDOM(view: EditorView): HTMLElement {
+      const wrap = document.createElement('div');
+      wrap.className = 'cm-note-table';
+      wrap.dataset.noteTable = 'true';
+      wrap.contentEditable = 'false'; // the wrapper isn't editable; individual cells opt in
+
+      const model = parseTable(this.markdown);
+      if (!model) {
+         // Not a well-formed table (shouldn't happen - the field only wraps Table nodes) - show the raw text.
+         wrap.textContent = this.markdown;
+         return wrap;
+      }
+      this.renderGrid(view, wrap, model);
+      // The grid's real height isn't known until the browser lays out the <table>; force CM6 to re-read it into
+      // its height-map so lines BELOW the table map to the right Y (else clicks below land a line high).
+      requestAnimationFrame(() => view.requestMeasure());
+      return wrap;
+   }
+
+   /**
+    * Builds the clean editable `<table>` (cells only, alignment applied) plus two subtle-until-hover EDGE BARS
+    * that add a row (bottom, full table width) / a column (right, full table height). Insert-at-position,
+    * delete, and align stay in the right-click menu.
+    */
+   private renderGrid(view: EditorView, wrap: HTMLElement, model: TableModel): void {
+      wrap.replaceChildren();
+      const table = document.createElement('table');
+      table.className = 'cm-note-table-grid';
+
+      const thead = document.createElement('thead');
+      const headTr = document.createElement('tr');
+      model.header.forEach((cell, col) => {
+         const th = document.createElement('th');
+         th.style.textAlign = CSS_ALIGN[model.aligns[col] ?? 'none'];
+         th.appendChild(this.buildCell(view, cell, -1, col, model));
+         headTr.appendChild(th);
+      });
+      thead.appendChild(headTr);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      model.rows.forEach((row, r) => {
+         const tr = document.createElement('tr');
+         row.forEach((cell, col) => {
+            const td = document.createElement('td');
+            td.style.textAlign = CSS_ALIGN[model.aligns[col] ?? 'none'];
+            td.appendChild(this.buildCell(view, cell, r, col, model));
+            tr.appendChild(td);
+         });
+         tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+
+      // Full-edge add affordances: bottom bar (add a row), right bar (add a column). Subtle until hover.
+      wrap.appendChild(this.buildEdgeBar(view, 'row'));
+      wrap.appendChild(this.buildEdgeBar(view, 'col'));
+   }
+
+   /** A full-edge "+" bar that adds a row (bottom, table-width) or a column (right, table-height) on click. */
+   private buildEdgeBar(view: EditorView, kind: 'row' | 'col'): HTMLElement {
+      const bar = document.createElement('button');
+      bar.type = 'button';
+      bar.className = kind === 'row' ? 'cm-note-table-add-row-bar' : 'cm-note-table-add-col-bar';
+      bar.setAttribute('aria-label', kind === 'row' ? this.labels.addRow : this.labels.addColumn);
+      bar.title = kind === 'row' ? this.labels.addRow : this.labels.addColumn;
+      const plus = document.createElement('span');
+      plus.className = 'cm-note-table-add-plus';
+      plus.textContent = '+';
+      bar.appendChild(plus);
+      bar.onmousedown = (e) => { e.preventDefault(); e.stopPropagation(); };
+      bar.onclick = (e) => {
+         e.preventDefault();
+         e.stopPropagation();
+         const live = this.liveModel(view);
+         if (live) this.commit(view, kind === 'row' ? addTableRow(live) : addTableColumn(live));
+      };
+      return bar;
+   }
+
+   /** An editable cell (contentEditable span). Commits on blur; Tab/Enter navigate; right-click opens the menu. */
+   private buildCell(view: EditorView, value: string, row: number, col: number, model: TableModel): HTMLElement {
+      const cell = document.createElement('span');
+      cell.className = 'cm-note-table-cell';
+      cell.contentEditable = 'true';
+      // Render the cell's markdown into DOM, turning `<br>` tokens into real line breaks (GFM's in-cell break).
+      renderCellValue(cell, value);
+      cell.dataset.row = String(row);
+      cell.dataset.col = String(col);
+      // Stop CM6 from treating clicks/keys in the cell as editor input; the widget owns them.
+      cell.onmousedown = (e) => e.stopPropagation();
+      cell.onblur = () => this.commitCell(view, cell, row, col);
+      cell.onkeydown = (e) => this.onCellKey(view, e, cell, row, col, model);
+      cell.oncontextmenu = (e) => this.onContextMenu(view, e, row, col);
+      return cell;
+   }
+
+   /** Right-click on a cell: commit any pending edit, then open the context menu bound to this (row, col). */
+   private onContextMenu(view: EditorView, event: MouseEvent, row: number, col: number): void {
+      event.preventDefault();
+      event.stopPropagation();
+      const live = this.liveModel(view);
+      if (!live) return;
+      this.controller.openContextMenu({
+         x: event.clientX,
+         y: event.clientY,
+         actions: this.buildActions(view, live, row, col),
+      });
+   }
+
+   /** Builds the action bag for the right-clicked cell (each re-reads the LIVE model at call time). */
+   private buildActions(view: EditorView, model: TableModel, row: number, col: number): TableActions {
+      const run = (transform: (m: TableModel) => TableModel) => () => {
+         const live = this.liveModel(view);
+         if (live) this.commit(view, transform(live));
+      };
+      // Body-row index for row ops: the header (row -1) shares the topmost body row's neighbourhood.
+      const bodyRow = Math.max(0, row);
+      return {
+         insertRowAbove: run((m) => addTableRow(m, bodyRow - 1)),
+         insertRowBelow: run((m) => addTableRow(m, row < 0 ? -1 : row)),
+         insertColumnLeft: run((m) => addTableColumn(m, col - 1)),
+         insertColumnRight: run((m) => addTableColumn(m, col)),
+         deleteRow: run((m) => removeTableRow(m, bodyRow)),
+         deleteColumn: run((m) => removeTableColumn(m, col)),
+         alignColumn: (align) => run((m) => setTableColumnAlign(m, col, align))(),
+         deleteTable: () => {
+            const range = this.liveRange(view);
+            if (range) view.dispatch({ changes: { from: range.from, to: range.to, insert: '' } });
+         },
+         canDeleteRow: row >= 0 && model.rows.length > 1,
+         canDeleteColumn: model.header.length > 1,
+      };
+   }
+
+   /** Commits a cell's text back into the markdown block (no-op if unchanged). */
+   private commitCell(view: EditorView, cell: HTMLElement, row: number, col: number): void {
+      const model = this.liveModel(view);
+      if (!model) return;
+      // Serialize the cell DOM back to markdown: real line breaks -> `<br>` tokens (a stray `\n` would shatter
+      // the row, so it also maps to `<br>`).
+      const value = serializeCellValue(cell);
+      const current = row < 0 ? model.header[col] : model.rows[row]?.[col];
+      if (value === current) return;
+      this.commit(view, setTableCell(model, row, col, value));
+   }
+
+   /** Inserts a line break at the caret inside a cell (renders now; committed as `<br>` on blur/nav). */
+   private insertLineBreak(cell: HTMLElement): void {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) { cell.appendChild(document.createElement('br')); return; }
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const br = document.createElement('br');
+      range.insertNode(br);
+      // A trailing <br> needs a following node for the caret to land after it; add a zero-width guard once.
+      if (!br.nextSibling) br.after(document.createTextNode('​'));
+      range.setStartAfter(br);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+   }
+
+   /**
+    * Cell keymap:
+    *  - Tab / Shift-Tab: next / previous cell.
+    *  - Enter (no modifier): a line break INSIDE the cell (stored as `<br>` on commit).
+    *  - Shift+Enter: new row (create/move to the next row; appends at the last row, Obsidian-style).
+    *  - Shift+Ctrl/Cmd+Enter: new column.
+    *  - ArrowDown in the LAST body row: exit onto a fresh line below the table (created if needed).
+    *  - Escape: exit onto a usable line below the table (created if needed) - never trapped.
+    */
+   private onCellKey(view: EditorView, event: KeyboardEvent, cell: HTMLElement, row: number, col: number, model: TableModel): void {
+      const cols = model.header.length;
+      const bodyRows = model.rows.length;
+
+      // ArrowDown in the last body row escapes the table downward (the "stuck forever" trap fix).
+      if (event.key === 'ArrowDown' && row === bodyRows - 1) {
+         event.preventDefault();
+         this.commitCell(view, cell, row, col);
+         this.exitBelow(view);
+         return;
+      }
+
+      if (event.key === 'Tab') {
+         event.preventDefault();
+         this.commitCell(view, cell, row, col);
+         const flat = (row < 0 ? 0 : row + 1) * cols + col + (event.shiftKey ? -1 : 1);
+         const total = (bodyRows + 1) * cols;
+         const clamped = Math.max(0, Math.min(flat, total - 1));
+         const targetRow = Math.floor(clamped / cols) - 1; // -1 == header
+         const targetCol = clamped % cols;
+         this.focusCell(view, targetRow, targetCol);
+         return;
+      }
+      if (event.key === 'Enter') {
+         event.preventDefault();
+         if (event.shiftKey && (event.ctrlKey || event.metaKey)) {
+            // Shift+Ctrl+Enter: add a column after this one, focus the new header cell.
+            this.commitCell(view, cell, row, col);
+            this.commit(view, addTableColumn(this.liveModel(view) ?? model, col));
+            this.focusCell(view, row, col + 1);
+         } else if (event.shiftKey) {
+            // Shift+Enter: new row (append at the last body row, else move to the next row's same column).
+            this.commitCell(view, cell, row, col);
+            if (row >= 0 && row === bodyRows - 1) {
+               this.commit(view, addTableRow(this.liveModel(view) ?? model));
+               this.focusCell(view, bodyRows, col);
+            } else {
+               this.focusCell(view, row < 0 ? 0 : row + 1, col);
+            }
+         } else {
+            // Enter: a line break inside the cell (rendered now; serialized as `<br>` on the next commit).
+            this.insertLineBreak(cell);
+         }
+         return;
+      }
+      if (event.key === 'Escape') {
+         event.preventDefault();
+         this.commitCell(view, cell, row, col);
+         this.exitBelow(view);
+      }
+   }
+
+   /**
+    * Moves the CM6 caret onto a usable line immediately BELOW the table block, creating a fresh trailing line
+    * first if the table is the last block (so from inside a table there is ALWAYS a reachable caret below it).
+    * Dispatch-then-select is deferred a frame so any pending cell commit's rebuild settles first.
+    */
+   private exitBelow(view: EditorView): void {
+      requestAnimationFrame(() => {
+         const range = this.liveRange(view);
+         if (!range) return;
+         const doc = view.state.doc;
+         if (range.to >= doc.length) {
+            // Table is the last block: append a BLANK line + a fresh line, land the caret there - so typed text
+            // becomes its OWN paragraph (a single `\n` lets GFM absorb the following text into the table).
+            view.dispatch({ changes: { from: doc.length, insert: '\n\n' }, selection: { anchor: doc.length + 2 } });
+         } else {
+            // There is a line after the table: land the caret at the start of the first line past it.
+            const nextLine = doc.lineAt(range.to + 1);
+            view.dispatch({ selection: { anchor: nextLine.from } });
+         }
+         view.focus();
+      });
+   }
+
+   /** Focuses a cell by (row, col) after the DOM has been rebuilt from a dispatch. -1 row == header. */
+   private focusCell(view: EditorView, row: number, col: number): void {
+      // The dispatch rebuilds the widget async; wait a frame, then find the cell in the live DOM.
+      requestAnimationFrame(() => {
+         const wrap = this.findWrap(view);
+         const cell = wrap?.querySelector<HTMLElement>(`.cm-note-table-cell[data-row="${row}"][data-col="${col}"]`);
+         if (cell) {
+            cell.focus();
+            // Put the caret at the end of the cell's text.
+            const range = document.createRange();
+            range.selectNodeContents(cell);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+         }
+      });
+   }
+
+   // ---- Buffer sync ----
+
+   /** Parses the CURRENT table markdown from the live buffer at this block's offset (post-any-shift). */
+   private liveModel(view: EditorView): TableModel | null {
+      const range = this.liveRange(view);
+      if (!range) return null;
+      return parseTable(view.state.doc.sliceString(range.from, range.to));
+   }
+
+   /** The contiguous table block `[from, to)` around `pos` (walks over table-ish lines both directions). */
+   private blockRangeAt(view: EditorView, pos: number): { from: number; to: number } {
+      const doc = view.state.doc;
+      const startLine = doc.lineAt(pos);
+      let from = startLine.from;
+      let to = startLine.to;
+      let n = startLine.number;
+      while (n <= doc.lines) {
+         const line = doc.line(n);
+         if (line.text.trim() === '' || !line.text.includes('|')) break;
+         to = line.to;
+         n++;
+      }
+      let m = startLine.number - 1;
+      while (m >= 1) {
+         const line = doc.line(m);
+         if (line.text.trim() === '' || !line.text.includes('|')) break;
+         from = line.from;
+         m--;
+      }
+      return { from, to };
+   }
+
+   /** This block's live `[from, to)` in the current doc, found from the widget's DOM position. */
+   private liveRange(view: EditorView): { from: number; to: number } | null {
+      const wrap = this.findWrap(view);
+      if (!wrap) {
+         // Fall back to the build-time offsets if the DOM isn't found (rare; e.g. off-screen).
+         return { from: Math.min(this.from, view.state.doc.length), to: Math.min(this.to, view.state.doc.length) };
+      }
+      return this.blockRangeAt(view, view.posAtDOM(wrap));
+   }
+
+   /** The live wrapper DOM whose block markdown equals this widget's (robust across multi-table notes). */
+   private findWrap(view: EditorView): HTMLElement | null {
+      const wraps = view.dom.querySelectorAll<HTMLElement>('[data-note-table]');
+      let fallback: HTMLElement | null = null;
+      for (const w of wraps) {
+         const pos = view.posAtDOM(w);
+         if (pos < 0) continue;
+         fallback ??= w;
+         const range = this.blockRangeAt(view, pos);
+         if (view.state.doc.sliceString(range.from, range.to) === this.markdown) return w;
+      }
+      return fallback;
+   }
+
+   /** Rebuilds the table markdown from `next` and dispatches it at the block's live offsets. */
+   private commit(view: EditorView, next: TableModel): void {
+      const range = this.liveRange(view);
+      if (!range) return;
+      const markdown = rebuildTable(next);
+      if (markdown === view.state.doc.sliceString(range.from, range.to)) return;
+      view.dispatch({ changes: { from: range.from, to: range.to, insert: markdown } });
+   }
+
+   // The widget owns all events inside it; the caret never enters (atomic). Let focus/keys through to cells.
+   ignoreEvent(): boolean {
+      return true;
+   }
+}
+
+/** A `<br>` token in cell markdown, split-safe (case-insensitive, optional slash/space). */
+const CELL_BR_RE = /<br\s*\/?>/gi;
+/** The zero-width guard placed after a trailing `<br>` so the caret can land past it; stripped on serialize. */
+const ZWSP = '​';
+
+/**
+ * Renders a cell's markdown into a contentEditable span, turning `<br>` tokens into real line breaks. Other
+ * markdown (bold/etc.) stays literal in the raw cell text - the grid edits the source, like Source mode.
+ */
+function renderCellValue(cell: HTMLElement, value: string): void {
+   cell.replaceChildren();
+   const parts = value.split(CELL_BR_RE);
+   parts.forEach((part, i) => {
+      if (i > 0) cell.appendChild(document.createElement('br'));
+      if (part) cell.appendChild(document.createTextNode(part));
+   });
+}
+
+/**
+ * Serializes a contentEditable cell back to markdown: `<br>` / `<div>` / `\n` boundaries become `<br>` tokens
+ * (a stray newline would shatter the table row), the zero-width caret guard is stripped. `|` escaping is left
+ * to `noteFormat`'s `setTableCell` -> `rebuildTable`.
+ */
+function serializeCellValue(cell: HTMLElement): string {
+   let out = '';
+   const visit = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+         out += (node.textContent ?? '').replace(new RegExp(ZWSP, 'g'), '');
+         return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      const el = node as HTMLElement;
+      const tag = el.tagName;
+      if (tag === 'BR') { out += '<br>'; return; }
+      // A contentEditable may wrap lines in <div>/<p> - treat each such block boundary as a break.
+      if ((tag === 'DIV' || tag === 'P') && out !== '' && !out.endsWith('<br>')) out += '<br>';
+      el.childNodes.forEach(visit);
+   };
+   cell.childNodes.forEach(visit);
+   // Collapse any literal newlines that slipped in (paste), and trim edge breaks.
+   return out.replace(/\n/g, '<br>').replace(/^(?:<br>)+|(?:<br>)+$/g, '').trim();
+}

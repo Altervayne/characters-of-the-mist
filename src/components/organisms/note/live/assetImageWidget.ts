@@ -10,11 +10,13 @@ import {
    parseImageHint,
    rewriteImageHintAt,
    resizeWidthPct,
+   clampImageAspect,
 } from '@/lib/notes/noteImageHint';
 import {
    IMAGE_ALIGN_MAX_HEIGHT,
    IMAGE_ALIGN_WRAPPER,
    IMAGE_INNER,
+   IMAGE_INNER_COVER,
    IMAGE_PLACEHOLDER,
    imageCaptionClass,
 } from '@/components/molecules/note/noteImageClasses';
@@ -76,7 +78,7 @@ export class AssetImageWidget extends WidgetType {
    }
 
    toDOM(view: EditorView): HTMLElement {
-      const { align, widthPct } = parseImageHint(this.title);
+      const { align, widthPct, aspect } = parseImageHint(this.title);
 
       // The figure wrapper reuses NoteImage's shared classes (single-sourced parity): an aligned block, never a
       // float, with vertical spacing as padding so CM6's block-widget height-map counts the full footprint and
@@ -88,7 +90,14 @@ export class AssetImageWidget extends WidgetType {
       if (align !== 'full') wrap.style.width = `${widthPct}%`;
 
       const img = document.createElement('img');
-      img.className = `${IMAGE_INNER} ${IMAGE_ALIGN_MAX_HEIGHT[align]}`;
+      // BOX mode (a resized image with a fixed aspect): object-cover into a fixed-ratio box, like the cover;
+      // NATURAL mode: object-contain at the image's own ratio. Parity with NoteImage's two branches.
+      if (aspect != null) {
+         img.className = `${IMAGE_INNER_COVER} ${IMAGE_ALIGN_MAX_HEIGHT[align]}`;
+         img.style.aspectRatio = `1 / ${clampImageAspect(aspect)}`;
+      } else {
+         img.className = `${IMAGE_INNER} ${IMAGE_ALIGN_MAX_HEIGHT[align]}`;
+      }
       img.alt = this.alt;
       // THE CORE FIX for the vertical-cursor bug: the <img> loads ASYNC, so CM6 measures the widget's height
       // (into its Y->line map) before the blob has painted - recording ~0 and never re-reading. Force CM6 to
@@ -164,38 +173,58 @@ export class AssetImageWidget extends WidgetType {
       readout.style.display = 'none';
       wrap.appendChild(readout);
 
-      // A single bottom-right resize handle (mirrors the Board's; the other corners felt unintuitive and
-      // went unused). `full` has no width axis, so no handle.
+      // A single bottom-right resize handle (mirrors the Board's + the cover's). `full` has no width axis, so
+      // no handle. Drag = width (aspect preserved); Shift = free aspect - like the cover.
       if (align !== 'full') {
          const handle = document.createElement('span');
          handle.className = 'cm-note-image-handle cm-note-image-handle-br';
-         this.bindHandle(handle, view, wrap, readout, 'br');
+         this.bindHandle(handle, view, wrap, readout);
          wrap.appendChild(handle);
       }
    }
 
-   /** Binds a pointer-drag on `handle` to a live resize of the widget, committing the width% on release. */
-   private bindHandle(handle: HTMLElement, view: EditorView, wrap: HTMLElement, readout: HTMLElement, corner: 'tl' | 'tr' | 'bl' | 'br'): void {
+   /**
+    * Binds a pointer-drag on the bottom-right handle to a LIVE resize (reusing the cover's pure-DOM pattern):
+    * ONLY direct DOM style writes during the drag (no store write, no CM6 dispatch beyond `requestMeasure`),
+    * the wrap dims to 0.6 as an "I'm resizing" state, and width+aspect commit ONCE on release. Without Shift the
+    * aspect is preserved (drag adjusts width); WITH Shift width and height move INDEPENDENTLY (free aspect).
+    */
+   private bindHandle(handle: HTMLElement, view: EditorView, wrap: HTMLElement, readout: HTMLElement): void {
       handle.onpointerdown = (event) => {
          event.preventDefault();
          event.stopPropagation();
          handle.setPointerCapture(event.pointerId);
+         const img = wrap.querySelector('img');
          const colW = columnWidth(view, wrap);
-         const startPct = parseImageHint(this.title).widthPct;
+         const { align: startAlign, widthPct: startPct } = parseImageHint(this.title);
+         const startRect = (img ?? wrap).getBoundingClientRect();
+         const startAspect = clampImageAspect(startRect.width > 0 ? startRect.height / startRect.width : 1);
          const startX = event.clientX;
-         // Dragging a LEFT-side corner inverts the delta (drag left = wider).
-         const sign = corner === 'tl' || corner === 'bl' ? -1 : 1;
+         const startY = event.clientY;
          let livePct = startPct;
+         let liveAspect = startAspect;
          readout.style.display = 'block';
+         wrap.style.opacity = '0.6';
 
          const onMove = (moveEvent: PointerEvent) => {
-            livePct = resizeWidthPct(startPct, sign * (moveEvent.clientX - startX), colW);
-            // Clamp to the align's band for the live paint (the buffer rewrite clamps again on commit).
-            const clamped = clampForAlign(parseImageHint(this.title).align, livePct);
+            livePct = resizeWidthPct(startPct, moveEvent.clientX - startX, colW);
+            const clamped = clampForAlign(startAlign, livePct);
+            const newWidthPx = colW * (clamped / 100);
+            if (moveEvent.shiftKey) {
+               // Free aspect: height follows the cursor's Y independently of width.
+               const newHeightPx = startRect.height + (moveEvent.clientY - startY);
+               liveAspect = clampImageAspect(newWidthPx > 0 ? newHeightPx / newWidthPx : startAspect);
+            } else {
+               liveAspect = startAspect;
+            }
             wrap.style.width = `${clamped}%`;
+            // Convert the img to box mode live (object-cover + aspect-ratio) so the size/shape is seen at once.
+            if (img) {
+               img.className = `${IMAGE_INNER_COVER} ${IMAGE_ALIGN_MAX_HEIGHT[startAlign]}`;
+               img.style.aspectRatio = `1 / ${liveAspect}`;
+            }
             readout.textContent = `${clamped}%`;
-            // Width % change alters the rendered HEIGHT (aspect-locked), so keep CM6's height-map in step live -
-            // otherwise the cursor mapping below the image drifts as you drag.
+            // The height change alters CM6's line-map; keep it in step so the cursor below stays honest.
             view.requestMeasure();
          };
          const onUp = (upEvent: PointerEvent) => {
@@ -203,26 +232,28 @@ export class AssetImageWidget extends WidgetType {
             handle.removeEventListener('pointermove', onMove);
             handle.removeEventListener('pointerup', onUp);
             readout.style.display = 'none';
-            this.setWidth(view, wrap, livePct);
+            wrap.style.opacity = '';
+            this.setBox(view, wrap, livePct, liveAspect);
          };
          handle.addEventListener('pointermove', onMove);
          handle.addEventListener('pointerup', onUp);
       };
    }
 
-   /** Rewrites this image's width% in the buffer (keeping align), at the token's LIVE offset. */
-   private setWidth(view: EditorView, wrap: HTMLElement, widthPct: number): void {
+   /** Rewrites this image's width% + aspect (a fixed box) in the buffer, keeping align, at the token's LIVE offset. */
+   private setBox(view: EditorView, wrap: HTMLElement, widthPct: number, aspect: number): void {
       this.rewrite(view, wrap, (body, index) => {
          const { align } = parseImageHint(this.title);
-         return rewriteImageHintAt(body, index, { align, widthPct });
+         return rewriteImageHintAt(body, index, { align, widthPct, aspect: clampImageAspect(aspect) });
       });
    }
 
-   /** Sets this image's align (block alignment; no wrapping), at the token's LIVE offset. */
+   /** Sets this image's align (block alignment; no wrapping), preserving width + aspect, at the token's LIVE offset. */
    private setAlign(view: EditorView, wrap: HTMLElement, align: NoteImageAlign): void {
       this.rewrite(view, wrap, (body, index) => {
-         const width = align === 'full' ? 100 : parseImageHint(this.title).widthPct;
-         return rewriteImageHintAt(body, index, { align, widthPct: width });
+         const prev = parseImageHint(this.title);
+         const width = align === 'full' ? 100 : prev.widthPct;
+         return rewriteImageHintAt(body, index, { align, widthPct: width, aspect: prev.aspect });
       });
    }
 

@@ -9,7 +9,7 @@ import { recordToNote } from '@/lib/notes/noteRecords';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 
 // -- Type Imports --
-import type { Note } from '@/lib/types/board';
+import type { Note, NoteCover } from '@/lib/types/board';
 import type { SaveNoteToDrawerResult } from '@/lib/notes/noteRepository';
 
 /*
@@ -43,6 +43,12 @@ export interface NoteState {
       updateTitle: (title: string) => void;
       /** Updates the body in memory and debounce-persists it; marks the note dirty. */
       updateBody: (body: string) => void;
+      /** Sets a fresh note-level cover (hash + box width/aspect) in memory and debounce-persists it; marks the note dirty. */
+      setCover: (cover: NoteCover) => void;
+      /** Patches the current cover's box (width and/or aspect) in memory and debounce-persists it; marks the note dirty. No-op with no cover. */
+      updateCover: (patch: Partial<Pick<NoteCover, 'width' | 'aspect'>>) => void;
+      /** Clears the note-level cover in memory and debounce-persists it; marks the note dirty. */
+      clearCover: () => void;
       /** Sets the unsaved-changes flag directly (e.g. a save site marks the note clean). */
       setHasUnsavedChanges: (value: boolean) => void;
       /**
@@ -107,7 +113,7 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
    const useStore = create<NoteState>()((set, get) => {
       /** Persists the current document onto its row. Best-effort; a missing row is a no-op. */
       const debouncedSave = createDebouncer<Note>(saveDebounceMs, (note) => {
-         void patchNote(note.id, { title: note.title, body: note.body }).catch((error) => {
+         void patchNote(note.id, { title: note.title, body: note.body, cover: note.cover }).catch((error) => {
             console.error('Note save failed:', error);
          });
       });
@@ -160,6 +166,33 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
                debouncedSave(next);
             },
 
+            setCover: (cover) => {
+               const note = get().note;
+               if (!note) return;
+               const next = { ...note, cover };
+               markDirty();
+               set({ note: next });
+               debouncedSave(next);
+            },
+
+            updateCover: (patch) => {
+               const note = get().note;
+               if (!note || !note.cover) return;
+               const next = { ...note, cover: { ...note.cover, ...patch } };
+               markDirty();
+               set({ note: next });
+               debouncedSave(next);
+            },
+
+            clearCover: () => {
+               const note = get().note;
+               if (!note || !note.cover) return;
+               const next = { ...note, cover: undefined };
+               markDirty();
+               set({ note: next });
+               debouncedSave(next);
+            },
+
             setHasUnsavedChanges: (value) => {
                set({ hasUnsavedChanges: value });
             },
@@ -167,7 +200,7 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
             flush: () => {
                const note = get().note;
                if (!note) return;
-               void patchNote(note.id, { title: note.title, body: note.body }).catch((error) => {
+               void patchNote(note.id, { title: note.title, body: note.body, cover: note.cover }).catch((error) => {
                   console.error('Note flush failed:', error);
                });
             },
