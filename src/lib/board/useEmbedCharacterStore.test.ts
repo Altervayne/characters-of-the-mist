@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { createCharacterStore } from '@/lib/stores/characterStore';
-import { createEmbedSync, seedCharacter, readEmbedItem } from './useEmbedCharacterStore';
+import { createEmbedSync, seedCharacter, readEmbedItem, embedGame, getReadonlyEmbedStore } from './useEmbedCharacterStore';
 
 import type { StatusTracker, Card } from '@/lib/types/character';
 
@@ -19,6 +19,26 @@ function makeHost() {
    store.temporal.getState().pause();
    return store;
 }
+
+describe('embedGame', () => {
+   it('reads a card\'s own game and defaults a game-agnostic tracker to NEUTRAL', () => {
+      expect(embedGame({ details: { game: 'LEGENDS' } })).toBe('LEGENDS');
+      expect(embedGame({ details: { game: 'CITY_OF_MIST' } })).toBe('CITY_OF_MIST');
+      expect(embedGame({ trackerType: 'STATUS' })).toBe('NEUTRAL'); // no details -> NEUTRAL
+   });
+});
+
+describe('getReadonlyEmbedStore', () => {
+   it('returns ONE shared read-only store per game (so N unselected embeds create ~games, not N stores)', () => {
+      const a = getReadonlyEmbedStore('NEUTRAL');
+      const b = getReadonlyEmbedStore('NEUTRAL');
+      const legends = getReadonlyEmbedStore('LEGENDS');
+      expect(a).toBe(b);              // cached: same game -> same instance
+      expect(a).not.toBe(legends);    // distinct per game
+      expect(a.getState().character?.game).toBe('NEUTRAL'); // seeded with the game for theming
+      expect(legends.getState().character?.game).toBe('LEGENDS');
+   });
+});
 
 describe('seedCharacter / readEmbedItem', () => {
    it('places a tracker into its matching slot and reads it back', () => {

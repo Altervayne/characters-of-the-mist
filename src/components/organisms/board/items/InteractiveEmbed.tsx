@@ -13,16 +13,17 @@ import { Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Board / Character Imports --
-import { useEmbedCharacterStore, readEmbedItem, type EmbedSlot } from '@/lib/board/useEmbedCharacterStore';
+import { useEmbedCharacterStore, getReadonlyEmbedStore, embedGame, readEmbedItem, type EmbedSlot } from '@/lib/board/useEmbedCharacterStore';
 import { ActiveCharacterStoreContext } from '@/lib/character/ActiveCharacterStoreContext';
 
 /*
- * The interactive body of a board embed COPY: it hosts a per-embed character store (see
- * {@link useEmbedCharacterStore}), provides it via ActiveCharacterStoreContext, and renders the
- * real card/tracker beneath it so its normal edit logic runs. Edits commit back to the board copy's
- * `content.data`. The body is select-gated like the post-it textarea: inert when unselected (a click
- * selects, the wheel zooms the board), fully interactive when selected (clicks edit, internal scroll
- * works and never reaches the canvas zoom). The board's Edit toggle drives an ephemeral edit mode.
+ * The interactive body of a board embed COPY. A SELECTED embed hosts its own per-embed character store
+ * (see {@link useEmbedCharacterStore}) so its normal edit logic runs, committing edits back to the board
+ * copy's `content.data`. An UNSELECTED embed renders the SAME card/tracker READ-ONLY - identical look (data
+ * from the prop) - under a shared, game-keyed read-only store, so NO per-embed store is spun up until it is
+ * selected. Board single-selection => at most ~1 live embed store instead of one per copy. The body is
+ * select-gated like the post-it textarea: inert when unselected (a click selects, the wheel zooms the
+ * board), fully interactive when selected (clicks edit, internal scroll never reaches the canvas zoom).
  */
 
 interface InteractiveEmbedProps {
@@ -44,7 +45,24 @@ interface InteractiveEmbedProps {
    renderToolbarExtras?: (liveData: unknown) => ReactNode;
 }
 
-export function InteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit, render, renderToolbarExtras }: InteractiveEmbedProps) {
+export function InteractiveEmbed(props: InteractiveEmbedProps) {
+   // Unselected: render read-only with NO per-embed store - the same board-embed component under a shared,
+   // game-keyed read-only host (data rides the prop). Selecting mounts the live store below.
+   if (!props.isSelected) {
+      return (
+         <ActiveCharacterStoreContext.Provider value={getReadonlyEmbedStore(embedGame(props.data))}>
+            {/* Matches the live body's unselected wrapper: inert, so a click selects and the wheel zooms. */}
+            <div className="pointer-events-none flex h-full w-full items-center justify-center overflow-auto">
+               {props.data != null ? props.render(props.data, false) : null}
+            </div>
+         </ActiveCharacterStoreContext.Provider>
+      );
+   }
+   return <LiveInteractiveEmbed {...props} />;
+}
+
+/** The live, editable body: a SELECTED embed's own per-embed store + the Edit toggle. Mounts only while selected. */
+function LiveInteractiveEmbed({ slot, data, isSelected, toolbarSlot, onCommit, render, renderToolbarExtras }: InteractiveEmbedProps) {
    const { t } = useTranslation();
    const store = useEmbedCharacterStore({ slot, data, onCommit });
    // The live item from the host store, so the component re-renders on every edit.

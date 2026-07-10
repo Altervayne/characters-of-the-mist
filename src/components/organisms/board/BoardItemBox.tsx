@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 // -- Utils Imports --
@@ -108,7 +108,16 @@ interface DragRect {
    height: number;
 }
 
-export function BoardItemBox({
+/*
+ * Memoized: BoardView re-renders on every viewport change (it subscribes to `viewport`), so without this
+ * a pan would re-render EVERY box (and re-run each embed's store selector). On a pan the props are all
+ * shallow-stable - `zoom` is the same number (only a ZOOM changes it, and then every box SHOULD re-render
+ * to rescale its grip), the callbacks are `useCallback`/store-stable, and `item`/`isSelected`/`zIndex` are
+ * unchanged - so the default shallow compare skips the whole set. A move/resize/select/zoom still flows
+ * through (those props do change). Zones alone re-render on pan (their `resizeMin` is a fresh object), but
+ * they are few.
+ */
+export const BoardItemBox = memo(function BoardItemBox({
    item,
    isSelected,
    soleSelected,
@@ -429,4 +438,4 @@ export function BoardItemBox({
          )}
       </div>
    );
-}
+});

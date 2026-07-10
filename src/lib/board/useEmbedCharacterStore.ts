@@ -35,9 +35,34 @@ function serialize(value: unknown): string {
  * but a tracker is game-agnostic, so it seeds NEUTRAL - which themes a board tracker by the app
  * tokens, not a game accent.
  */
-function embedGame(data: unknown): GameSystem {
+export function embedGame(data: unknown): GameSystem {
    const d = data as { details?: { game?: GameSystem } };
    return d.details?.game ?? 'NEUTRAL';
+}
+
+/** An empty synthetic character of `game` - the read-only host below needs only the game (theming) + actions. */
+function emptyEmbedCharacter(game: GameSystem): Character {
+   return { id: 'readonly-embed', name: 'Embed', game, cards: [], journals: [], sheetLayout: [], trackers: { statuses: [], storyTags: [], storyThemes: [] } };
+}
+
+/*
+ * A SHARED read-only host store per game, for UNSELECTED embed copies: they render their real card/tracker
+ * read-only (data from the prop, so an empty character is fine), needing the context only for the game
+ * (tracker theme) and a valid `actions` object (destructured but never invoked while read-only). One store
+ * per game - a handful total - instead of a full per-embed zundo store + sync for every unselected copy;
+ * the live per-embed store is spun up only when the embed is selected (see InteractiveEmbed).
+ */
+const readonlyStoresByGame = new Map<GameSystem, CharacterStore>();
+
+/** The shared read-only host store for `game`, created (and paused) once and reused by every unselected embed. */
+export function getReadonlyEmbedStore(game: GameSystem): CharacterStore {
+   const existing = readonlyStoresByGame.get(game);
+   if (existing) return existing;
+   const created = createCharacterStore();
+   created.temporal.getState().pause();
+   created.setState({ character: emptyEmbedCharacter(game) });
+   readonlyStoresByGame.set(game, created);
+   return created;
 }
 
 /** A synthetic character holding only this embed's item in the right slot (everything else empty). */
