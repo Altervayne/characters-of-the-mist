@@ -5,6 +5,11 @@
       "dismiss": "Dismiss",
       "offlineReady": "Ready to work offline."
    },
+   "Loading": {
+      "boot": "Loading your workspace…",
+      "note": "Loading note…",
+      "board": "Loading board…"
+   },
    "Tabs": {
       "untitled": "Untitled character",
       "untitledBoard": "Untitled board",

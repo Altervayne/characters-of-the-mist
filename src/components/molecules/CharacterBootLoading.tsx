@@ -1,3 +1,6 @@
+// -- React Imports --
+import { useTranslation } from 'react-i18next';
+
 // -- Icon Imports --
 import { LoaderCircle } from 'lucide-react';
 
@@ -9,12 +12,15 @@ import { LoaderCircle } from 'lucide-react';
  * seamless.
  */
 export function CharacterBootLoading() {
+   const { t } = useTranslation();
+
    return (
       <div
-         className="flex items-center justify-center bg-background text-muted-foreground"
+         className="flex flex-col items-center justify-center gap-4 bg-background text-muted-foreground"
          style={{ height: '100dvh', width: '100dvw' }}
       >
          <LoaderCircle className="h-8 w-8 animate-spin" />
+         <span className="text-sm">{t('Loading.boot')}</span>
       </div>
    );
 }

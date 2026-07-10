@@ -221,10 +221,15 @@ const paperTheme = EditorView.theme({
    // lines below the table map a line high and the cursor is dishonest (the same fix the block image needed).
    // NO horizontal padding: the grid is FULL content width. The edge "+" bars are true overlays on the table's
    // own edges (they reserve no width), so the table equals the content column width.
-   '.cm-note-table': { position: 'relative', padding: '0.75rem 0' },
+   // `min-width: 0` lets the wrap shrink below the grid's intrinsic width so a wide table can't force the whole
+   // block (and `.cm-content` with it) past the reading column; the scroller inside does the actual scrolling.
+   '.cm-note-table': { position: 'relative', padding: '0.75rem 0', minWidth: '0', maxWidth: '100%' },
    // A too-wide table (more columns than the paper column fits) scrolls sideways WITHIN this container instead of
    // clipping out of the sheet. Wraps only the grid; the edge "+" bars sit outside it (siblings on .cm-note-table).
-   '.cm-note-table-scroll': { overflowX: 'auto', maxWidth: '100%' },
+   // `contain: inline-size` is load-bearing: it makes the scroller's WIDTH independent of the grid inside, so the
+   // 1000px+ grid can't propagate its intrinsic width up through `.cm-content` (which would snap to its 68ch max
+   // and spill past the sheet). The column stays at the sheet's inner width and the grid scrolls inside it.
+   '.cm-note-table-scroll': { width: '100%', maxWidth: '100%', minWidth: '0', overflowX: 'auto', contain: 'inline-size' },
    '.cm-note-table-grid': { width: '100%', borderCollapse: 'collapse', fontSize: '0.95em' },
    '.cm-note-table-grid th, .cm-note-table-grid td': { border: '1px solid color-mix(in srgb, currentColor 30%, transparent)', padding: '0.375rem 0.625rem', verticalAlign: 'top' },
    '.cm-note-table-grid th': { fontWeight: '600' },

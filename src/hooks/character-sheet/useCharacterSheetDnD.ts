@@ -25,7 +25,8 @@ import { useDrawerStore, useDrawerActions } from '@/lib/stores/drawerStore';
 import { getChildFolders, getParentFolderId, whenFolderTreeSettled } from '@/lib/drawer/drawerFolderTree';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
-import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+import { getActiveBoardStore, getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
+import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
 
 // -- Board Imports --
 import { screenToWorld } from '@/lib/board/boardCoordinates';
@@ -33,6 +34,7 @@ import { zoneContaining } from '@/lib/board/zoneMembership';
 import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec } from '@/lib/board/embedDrawerItem';
 import { importBoard } from '@/lib/board/boardRepository';
 import { importNote } from '@/lib/notes/noteRepository';
+import { stampNoteReferencesDrawerSource } from '@/lib/board/refreezeNoteReferences';
 
 // -- Type Imports --
 import type { Board, Journal, Note } from '@/lib/types/board';
@@ -94,6 +96,21 @@ function boardDropPlacement(boardStore: BoardStore, dropPointer: { x: number; y:
    const placement = { id: cuid(), x: world.x - size.width / 2, y: world.y - size.height / 2, width: size.width, height: size.height };
    const zoneId = zoneContaining(placement, Object.values(items).filter((item) => item.kind === 'zone')) ?? undefined;
    return { ...placement, z, zoneId };
+}
+
+/**
+ * The destination folder id for a drop onto a drawer target: an explicit folder row, a folder's items
+ * drop-zone (root → undefined), or a Back button's parent. Undefined when the target is none of these.
+ * Shared by every tab→drawer save so the character/board/note paths route identically.
+ */
+export function drawerDropFolderId(overIdStr: string, overType: string, over: NonNullable<DragOverEvent['over']>): string | undefined {
+   if (overType === 'drawer-folder') return overIdStr;
+   if (overIdStr.startsWith('drawer-drop-zone-')) {
+      const parsedId = overIdStr.replace('drawer-drop-zone-', '');
+      return parsedId === 'root' ? undefined : parsedId;
+   }
+   if (overType === 'drawer-back-button') return over.data.current?.destinationId ?? undefined;
+   return undefined;
 }
 
 
@@ -562,7 +579,11 @@ export function useCharacterSheetDnD() {
       const untitledLabel = tNotifications('Tabs.untitled');
 
       if (active.data.current?.type === DRAG_TYPES.TAB) {
-         setActiveTabDrag({ id: String(active.id), type: 'character' });
+         // Preview the tab by its real kind (board/note/character), so the overlay renders the
+         // board/note preview rather than the character default. The strip carries only the tab id,
+         // so the kind is read from the tab manager.
+         const draggedTab = useTabManagerStore.getState().openTabs.find((openTab) => openTab.id === String(active.id));
+         setActiveTabDrag(draggedTab ?? { id: String(active.id), type: 'character' });
          setDrawerOpen(true);
          setIdentity(buildDragIdentity({ kind: dragKindRef.current, active, untitledLabel }));
          return;
@@ -797,16 +818,6 @@ export function useCharacterSheetDnD() {
       const tabCharacter = instance.getState().character;
       if (!tabCharacter) return;
 
-      let destinationFolderId: string | undefined = undefined;
-      if (overType === 'drawer-folder') {
-         destinationFolderId = overIdStr;
-      } else if (overIdStr.startsWith('drawer-drop-zone-')) {
-         const parsedId = overIdStr.replace('drawer-drop-zone-', '');
-         destinationFolderId = parsedId === 'root' ? undefined : parsedId;
-      } else if (overType === 'drawer-back-button') {
-         destinationFolderId = over.data.current?.destinationId ?? undefined;
-      }
-
       const newItemId = cuid();
       instance.getState().actions.linkToDrawerItem(newItemId);
       // The tab now has a saved drawer copy. linkToDrawerItem swaps in a new character
@@ -816,9 +827,71 @@ export function useCharacterSheetDnD() {
          game: tabCharacter.game,
          type: 'FULL_CHARACTER_SHEET',
          content: { ...tabCharacter, drawerItemId: newItemId },
-         parentFolderId: destinationFolderId,
+         parentFolderId: drawerDropFolderId(overIdStr, overType, over),
          presetId: newItemId,
          defaultName: tabCharacter.name,
+      });
+   }, [initiateItemDrop]);
+
+   /**
+    * Board counterpart of {@link saveTabToDrawer}: saves a dragged BOARD tab's board to the drawer as a
+    * NEW linked copy. The board is resolved from its OWN instance by id (so a background board tab saves
+    * the right board), `linkToDrawerItem` flushes the live viewport + marks it clean + returns the
+    * aggregate, and the item lands NEUTRAL/`FULL_BOARD` in the drop target's folder.
+    */
+   const saveBoardTabToDrawer = useCallback(async (
+      tabId: string,
+      overIdStr: string,
+      overType: string,
+      over: NonNullable<DragOverEvent['over']>,
+   ) => {
+      const instance = getOrCreateBoardInstance(tabId);
+      const { boardId, name } = instance.getState();
+      if (!boardId) return;
+
+      const newItemId = cuid();
+      const aggregate = await instance.getState().actions.linkToDrawerItem(newItemId);
+      if (!aggregate) return;
+
+      initiateItemDrop({
+         game: 'NEUTRAL',
+         type: 'FULL_BOARD',
+         content: aggregate,
+         parentFolderId: drawerDropFolderId(overIdStr, overType, over),
+         presetId: newItemId,
+         defaultName: name,
+      });
+   }, [initiateItemDrop]);
+
+   /**
+    * Note counterpart of {@link saveTabToDrawer}: saves a dragged NOTE tab's note to the drawer as a NEW
+    * linked copy. Resolved by id from its OWN instance; `linkToDrawerItem` flushes the live document,
+    * marks it clean, and returns the aggregate. Any board tile referencing this once-tab-only note is
+    * stamped with the new drawer source so the reference survives the save as a live drawer-backed one.
+    */
+   const saveNoteTabToDrawer = useCallback(async (
+      tabId: string,
+      overIdStr: string,
+      overType: string,
+      over: NonNullable<DragOverEvent['over']>,
+   ) => {
+      const instance = getOrCreateNoteInstance(tabId);
+      const { noteId, note } = instance.getState();
+      if (!noteId || !note) return;
+
+      const newItemId = cuid();
+      const aggregate = await instance.getState().actions.linkToDrawerItem(newItemId);
+      if (!aggregate) return;
+
+      await stampNoteReferencesDrawerSource(noteId, newItemId);
+
+      initiateItemDrop({
+         game: 'NEUTRAL',
+         type: 'NOTE',
+         content: aggregate,
+         parentFolderId: drawerDropFolderId(overIdStr, overType, over),
+         presetId: newItemId,
+         defaultName: note.title,
       });
    }, [initiateItemDrop]);
 
@@ -1012,7 +1085,12 @@ export function useCharacterSheetDnD() {
          if (overType === DRAG_TYPES.TAB) {
             reorderTabs(String(active.id), String(over.id));
          } else if (overIdStr.startsWith('drawer-drop-zone-') || overType?.startsWith('drawer-')) {
-            saveTabToDrawer(tabId, overIdStr, overType, over);
+            // Route the save by the tab's kind: a board/note tab saves its own aggregate, a character
+            // tab its character. All three land a NEW linked drawer copy in the drop target's folder.
+            const draggedTab = useTabManagerStore.getState().openTabs.find((openTab) => openTab.id === tabId);
+            if (draggedTab?.type === 'board') void saveBoardTabToDrawer(tabId, overIdStr, overType, over);
+            else if (draggedTab?.type === 'note') void saveNoteTabToDrawer(tabId, overIdStr, overType, over);
+            else saveTabToDrawer(tabId, overIdStr, overType, over);
          } else if (overIdStr === 'board-drop-zone') {
             // A tab dropped on the board adds a character element - saved or unsaved. The element keys
             // on the character id and reads live while the tab is open; a saved one also links its
@@ -1291,6 +1369,8 @@ export function useCharacterSheetDnD() {
       handleSheetTrackerReorder,
       handleSheetToDrawerDrop,
       saveTabToDrawer,
+      saveBoardTabToDrawer,
+      saveNoteTabToDrawer,
       openCharacterTab,
       openBoardTab,
       openNoteTab,

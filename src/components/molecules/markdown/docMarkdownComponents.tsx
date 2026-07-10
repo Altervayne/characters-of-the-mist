@@ -42,14 +42,17 @@ export const docMarkdownComponents: Components = {
       <blockquote className="clear-both my-4 rounded-r border-l-4 border-current/40 bg-current/5 py-2 pl-4 pr-3 italic opacity-90 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" {...props} />
    ),
    hr: ({ ...props }) => <hr className="clear-both my-6 border-t-2 border-current/25" {...props} />,
-   // A table always clears the cover float and renders full-width below it (never squished beside the cover).
+   // A table always clears the cover float and renders full-width below it (never squished beside the cover). A
+   // too-wide table (more columns than fit) scrolls sideways WITHIN this wrapper instead of clipping out of the
+   // paper. The per-cell `min-w` mirrors the Live grid's cell min-width so columns keep a legible floor and the
+   // table overflows into the scroll (a normal, fitting table stays full-width - the min never binds there).
    table: ({ ...props }) => (
       <div className="clear-both my-4 overflow-x-auto">
          <table className="w-full border-collapse text-[0.95em]" {...props} />
       </div>
    ),
-   th: ({ ...props }) => <th className="border border-current/30 px-2.5 py-1.5 text-left font-semibold" {...props} />,
-   td: ({ ...props }) => <td className="border border-current/30 px-2.5 py-1.5" {...props} />,
+   th: ({ ...props }) => <th className="min-w-[3.25rem] border border-current/30 px-2.5 py-1.5 text-left font-semibold" {...props} />,
+   td: ({ ...props }) => <td className="min-w-[3.25rem] border border-current/30 px-2.5 py-1.5" {...props} />,
    // Never auto-load a remote image (untrusted content); show its alt text instead. The Note-specific
    // `asset:` renderer (inline images) lands in a later phase.
    img: ({ alt }) => (alt ? <span className="opacity-70">{alt}</span> : null),

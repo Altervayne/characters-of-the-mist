@@ -5,6 +5,11 @@
       "dismiss": "Passer",
       "offlineReady": "Le mode hors-ligne est prêt."
    },
+   "Loading": {
+      "boot": "[TO COMPLETE]",
+      "note": "[TO COMPLETE]",
+      "board": "[TO COMPLETE]"
+   },
    "Tabs": {
       "untitled": "[TO COMPLETE]",
       "untitledBoard": "[TO COMPLETE]",

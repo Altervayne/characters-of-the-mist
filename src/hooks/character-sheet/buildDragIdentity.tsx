@@ -3,13 +3,16 @@ import type { ReactNode } from 'react';
 
 // -- Other Library Imports --
 import type { DragStartEvent } from '@dnd-kit/core';
-import { Folder as FolderIcon } from 'lucide-react';
+import { Folder as FolderIcon, LayoutGrid, NotebookPen } from 'lucide-react';
 
 // -- Component Imports --
 import { DragIdentityPill } from '@/components/molecules/DragIdentityPill';
 
 // -- Store Imports --
 import { getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
+import { getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
+import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
+import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 
 // -- Utils Imports --
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
@@ -47,8 +50,18 @@ interface BuildDragIdentityParams {
  */
 export function buildDragIdentity({ kind, active, sheetItem, untitledLabel }: BuildDragIdentityParams): ReactNode {
    if (kind === 'tab') {
+      // A tab's kind (board/note/character) is read from the tab manager; the strip carries only the id.
+      const tab = useTabManagerStore.getState().openTabs.find((openTab) => openTab.id === String(active.id));
+      if (tab?.type === 'board') {
+         const name = getOrCreateBoardInstance(tab.id).getState().name;
+         return <DragIdentityPill icon={LayoutGrid} label={name?.trim() || untitledLabel} />;
+      }
+      if (tab?.type === 'note') {
+         const title = getOrCreateNoteInstance(tab.id).getState().note?.title;
+         return <DragIdentityPill icon={NotebookPen} label={title?.trim() || untitledLabel} />;
+      }
       const character = getOrCreateInstance(String(active.id)).getState().character;
-      // A tab is a character: crest from its resolved game.
+      // A character tab: crest from its resolved game.
       return <DragIdentityPill game={character?.game ?? null} label={character?.name?.trim() || untitledLabel} />;
    }
 

@@ -41,6 +41,7 @@ import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
 import MobileCharacterSheetPage from '@/components/mobile/character-sheet/MobileCharacterSheetPage';
 import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
+import { TabViewLoading } from '@/components/molecules/TabViewLoading';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -250,11 +251,11 @@ function DesktopCharacterSheetPage() {
                    sheet/menu so they sit below the strip rather than over it. */}
                <div className="relative flex-1 min-h-0">
                   { activeNote ? (
-                     <Suspense fallback={<CharacterBootLoading />}>
+                     <Suspense fallback={<TabViewLoading kind="note" />}>
                         <NoteView />
                      </Suspense>
                   ) : activeBoard ? (
-                     <Suspense fallback={<CharacterBootLoading />}>
+                     <Suspense fallback={<TabViewLoading kind="board" />}>
                         <BoardView />
                      </Suspense>
                   ) : character ? (
