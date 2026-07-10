@@ -10,6 +10,7 @@ import { getDrawerItemDisplayPath } from '@/lib/drawer/drawerItemPath';
 import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
+import { stampNoteReferencesDrawerSource } from '@/lib/board/refreezeNoteReferences';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
@@ -150,6 +151,9 @@ export function useSaveToDrawer() {
             // Atomic cross-store save of the linked drawer copy, mirroring the board.
             const result = await store.getState().actions.saveToDrawer();
             if (result?.linkedItemUpdated) {
+               // Keep any board tile referencing this note pointed at its drawer item (self-healing; a
+               // first save stamps it, a re-save is a no-op).
+               await stampNoteReferencesDrawerSource(noteId, drawerItemId);
                await reloadCurrentFolder();
                const itemPath = await getDrawerItemDisplayPath(drawerItemId);
                toast.success(`${tNotifications('Notifications.note.saved')} ${itemPath}`);
@@ -177,6 +181,12 @@ export function useSaveToDrawer() {
       const newItemId = cuid();
       const aggregate = await store.getState().actions.linkToDrawerItem(newItemId);
       if (!aggregate) return;
+
+      // Point any board tile referencing this (once tab-only) note at the new drawer item, so the reference
+      // survives the save as a live drawer-backed reference (the note id is preserved, so no re-key needed).
+      // Runs regardless of which tab is active - the Save is fired from the note tab, so the board tile's own
+      // render effect can't do this.
+      await stampNoteReferencesDrawerSource(noteId, newItemId);
 
       if (!isDrawerOpen) {
          setDrawerOpen(true);

@@ -105,7 +105,7 @@ export function BoardNoteItem({ item, content, isSelected, toolbarSlot, onConten
       return <CopyNoteSource content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
    }
    if (isOpen) {
-      return <LiveNoteSource item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} />;
+      return <LiveNoteSource content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
    }
    return <ClosedNoteSource item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
 }
@@ -139,21 +139,13 @@ interface ReferenceSourceProps {
 
 /**
  * The live source: subscribes to the open note's store instance, so an edit in its tab updates the tile
- * immediately. Also picks up the note's drawer link once it is Saved (Save-As mints one), recording it on the
- * reference so a later tab-close - which reaps a saved note's working row - still resolves via the drawer.
+ * immediately. The note's drawer link (once it is Saved) is stamped onto the reference by the Save path
+ * itself ({@link stampNoteReferencesDrawerSource}), not here - the Save is fired from the note tab, where
+ * the board (and this component) is unmounted, so it can't ride a render effect.
  */
-function LiveNoteSource({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown }: Omit<ReferenceSourceProps, 'onDelete'>) {
+function LiveNoteSource({ content, isSelected, toolbarSlot, onContentChange }: Pick<ReferenceSourceProps, 'content' | 'isSelected' | 'toolbarSlot' | 'onContentChange'>) {
    const actions = useTabManagerActions();
-   const instance = getOrCreateNoteInstance(content.noteId);
-   const note = useStore(instance, (state) => state.note);
-   const drawerItemId = useStore(instance, (state) => state.drawerItemId);
-
-   // Save pickup: once the note gains a drawer parent, stamp it onto the reference (change-gated, direct
-   // write - a passive link, not an undoable edit) so the closed tile can fall back to the drawer read.
-   useEffect(() => {
-      if (!drawerItemId || drawerItemId === content.sourceDrawerItemId) return;
-      onCacheLastKnown(item.id, { ...content, sourceDrawerItemId: drawerItemId });
-   }, [drawerItemId, content, item.id, onCacheLastKnown]);
+   const note = useStore(getOrCreateNoteInstance(content.noteId), (state) => state.note);
 
    // An open note never dangles. A momentary null (device-flip hydration) shows the quiet panel.
    if (!note) return <LoadingPanel />;

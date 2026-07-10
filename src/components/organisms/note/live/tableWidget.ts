@@ -117,6 +117,11 @@ export class NoteTableWidget extends WidgetType {
     */
    private renderGrid(view: EditorView, wrap: HTMLElement, model: TableModel): void {
       wrap.replaceChildren();
+      // A too-wide table (many columns) scrolls sideways INSIDE its own container instead of clipping out of the
+      // paper column. The scroller wraps only the `<table>`; the edge "+" bars stay siblings on `.cm-note-table`
+      // so they keep positioning against the table wrapper, not the scroll viewport.
+      const scroller = document.createElement('div');
+      scroller.className = 'cm-note-table-scroll';
       const table = document.createElement('table');
       table.className = 'cm-note-table-grid';
 
@@ -143,7 +148,8 @@ export class NoteTableWidget extends WidgetType {
          tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      wrap.appendChild(table);
+      scroller.appendChild(table);
+      wrap.appendChild(scroller);
 
       // Full-edge add affordances: bottom bar (add a row), right bar (add a column). Subtle until hover.
       wrap.appendChild(this.buildEdgeBar(view, 'row'));

@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 // -- Icon Imports --
 import {
    Bold, BookOpen, ChevronDown, Code, Heading, Image, ImagePlus, Italic, List, ListOrdered, Loader2,
-   Minus, PenLine, Quote, Strikethrough, Table, Trash2,
+   Minus, PenLine, Quote, Redo2, Strikethrough, Table, Trash2, Undo2,
 } from 'lucide-react';
 
 // -- Utils Imports --
@@ -55,6 +55,11 @@ interface NoteToolbarProps {
    onAddCover: () => void;
    onChangeCover: () => void;
    onRemoveCover: () => void;
+   /** Unified undo/redo over the ONE note timeline (body + title + cover); disabled at the stack ends. */
+   canUndo: boolean;
+   canRedo: boolean;
+   onUndo: () => void;
+   onRedo: () => void;
 }
 
 export function NoteToolbar({
@@ -69,6 +74,10 @@ export function NoteToolbar({
    onAddCover,
    onChangeCover,
    onRemoveCover,
+   canUndo,
+   canRedo,
+   onUndo,
+   onRedo,
 }: NoteToolbarProps) {
    const { t } = useTranslation();
 
@@ -154,6 +163,14 @@ export function NoteToolbar({
          {/* Editing chrome: only in Live/Source. In Reading just the mode toggle remains (right). */}
          {isEditing && (
             <>
+               {/* Unified undo/redo over the ONE note timeline (body + title + cover). */}
+               <ToolbarButton label={t('Actions.undo')} onClick={onUndo} disabled={!canUndo}>
+                  <Undo2 className="h-4 w-4" />
+               </ToolbarButton>
+               <ToolbarButton label={t('Actions.redo')} onClick={onRedo} disabled={!canRedo}>
+                  <Redo2 className="h-4 w-4" />
+               </ToolbarButton>
+               <ToolbarDivider />
                <CoverButton
                   hasCover={hasCover}
                   isProcessing={isCoverProcessing}

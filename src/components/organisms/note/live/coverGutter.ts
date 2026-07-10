@@ -1,6 +1,7 @@
 // -- CodeMirror Imports --
 import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
-import { StateEffect, StateField } from '@codemirror/state';
+import { Facet, StateEffect, StateField, Transaction } from '@codemirror/state';
+import { invertedEffects } from '@codemirror/commands';
 import type { DecorationSet, ViewUpdate, PluginValue } from '@codemirror/view';
 import type { EditorState, Extension, Range } from '@codemirror/state';
 
@@ -60,7 +61,13 @@ export interface CoverController {
    labels: { change: string; remove: string; aspect: string };
 }
 
-/** Sets the current cover (or `null` to clear). Dispatched when the note's cover changes. */
+/** Seeds {@link coverState}'s initial cover at state creation (no dispatch, so it makes no history entry). */
+export const initialCover = Facet.define<NoteCover | null, NoteCover | null>({ combine: (values) => (values.length ? values[0] : null) });
+
+/**
+ * Sets the current cover (or `null` to clear). Dispatched (history-captured) when the note's cover changes -
+ * add / change image / remove / resize / aspect - so a cover edit is an undoable step in the shared timeline.
+ */
 export const setCoverEffect = StateEffect.define<NoteCover | null>();
 
 /** Sets the computed inset geometry (N + the table-clear pad), dispatched by the overlay plugin after a measure. */
@@ -80,7 +87,7 @@ interface CoverGutterState {
 
 /** Holds the cover + inset geometry. The overlay plugin reads these to build the inset + clear-pad + place the box. */
 const coverState = StateField.define<CoverGutterState>({
-   create: () => ({ cover: null, lines: 0, clearPad: 0 }),
+   create: (state) => ({ cover: state.facet(initialCover), lines: 0, clearPad: 0 }),
    update(value, transaction) {
       let next = value;
       for (const effect of transaction.effects) {
@@ -95,6 +102,18 @@ const coverState = StateField.define<CoverGutterState>({
       }
       return next;
    },
+});
+
+/**
+ * Tells `history()` how to undo a cover edit: restore the cover as it was before this transaction. Only the
+ * cover VALUE (`setCoverEffect`) is inverted - the derived inset geometry (`setCoverLinesEffect`) is not
+ * history-relevant (and its transactions are marked out of history at the dispatch site).
+ */
+const coverHistory = invertedEffects.of((transaction) => {
+   for (const effect of transaction.effects) {
+      if (effect.is(setCoverEffect)) return [setCoverEffect.of(transaction.startState.field(coverState).cover)];
+   }
+   return [];
 });
 
 /** The reserved left-gutter width for a given box width: the box width (% of the column) plus the gap. */
@@ -460,7 +479,8 @@ function coverOverlay(controller: CoverController) {
                if (this.destroyed || this.dragging || !this.heldHash) return;
                const now = this.view.state.field(coverState);
                if (lines !== now.lines || Math.abs(clearPad - now.clearPad) > 3) {
-                  this.view.dispatch({ effects: setCoverLinesEffect.of({ lines, clearPad }) });
+                  // A derived-geometry measure, never a user edit: keep it out of the undo timeline.
+                  this.view.dispatch({ effects: setCoverLinesEffect.of({ lines, clearPad }), annotations: Transaction.addToHistory.of(false) });
                }
             });
          }
@@ -532,9 +552,17 @@ const ASPECT_GLYPH: Record<string, string> = {
    square: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>',
 };
 
-/** The Live-editor cover extension: the cover state field + the clear-spacer field + the overlay/inset plugin. */
-export function coverGutter(controller: CoverController): Extension {
-   return [coverState, coverClearField, coverOverlay(controller)];
+/**
+ * The cover SOURCE-OF-TRUTH extension: the cover state field + its history inversion. Loaded in BOTH Live and
+ * Source (the cover is editable from the toolbar in either), so a cover edit is captured in the undo timeline
+ * regardless of mode. Seed the initial cover via the {@link initialCover} facet. The VISUAL gutter (overlay +
+ * inset + clear-spacer) is Live-only - see {@link coverGutterVisual}.
+ */
+export const coverStateExtension: Extension = [coverState, coverHistory];
+
+/** The Live-only cover VISUALS: the clear-spacer field + the overlay/inset plugin. Pairs with {@link coverStateExtension}. */
+export function coverGutterVisual(controller: CoverController): Extension {
+   return [coverClearField, coverOverlay(controller)];
 }
 
 /**
@@ -543,4 +571,9 @@ export function coverGutter(controller: CoverController): Extension {
  */
 export function coverInsetLineCount(state: EditorState): number {
    return state.field(coverState, false)?.lines ?? 0;
+}
+
+/** The current cover held in CM6 state (or `null`). The editor handle reads it to patch width/aspect on resize. */
+export function getNoteCover(state: EditorState): NoteCover | null {
+   return state.field(coverState, false)?.cover ?? null;
 }

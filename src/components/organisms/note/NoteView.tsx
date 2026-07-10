@@ -1,5 +1,5 @@
 ﻿// -- React Imports --
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -33,6 +33,7 @@ import type { FormatController } from '@/components/organisms/note/live/formatTo
 import type { TableController } from '@/components/organisms/note/live/tableWidget';
 import type { NoteMode } from '@/components/organisms/note/NoteToolbar';
 import type { NoteTableContextMenuHandle } from '@/components/organisms/note/NoteTableContextMenu';
+import type { NoteCover } from '@/lib/types/board';
 
 /*
  * The Note tab surface: the document editor on the paper sheet. It reads the ACTIVE NOTE instance (never the
@@ -67,22 +68,75 @@ function NoteSurface() {
 
    const note = useStore(store, (state) => state.note);
    const cover = useStore(store, (state) => state.note?.cover);
-   const { updateTitle, updateBody, setCover, updateCover, clearCover, flush } = store.getState().actions;
+   const { updateTitle, updateBody, setCover, clearCover, flush } = store.getState().actions;
 
    // A note opens in LIVE - the home mode where you both see AND touch the document (Overseer-locked).
    const [mode, setMode] = useState<NoteMode>('live');
    const isEditing = mode === 'live' || mode === 'source';
 
-   // Buffer title + body locally; the debouncer flushes each on unmount. The store `flush` is the belt.
+   // Buffer title + body locally; the debouncer flushes each (PERSISTENCE) on unmount. The store `flush` is the
+   // belt. UNDO capture is separate: title/cover edits are mirrored into CM6 state (the one timeline) below.
    const [localTitle, setLocalTitle] = useInputDebouncer(note?.title ?? '', updateTitle);
    const [localBody, setLocalBody] = useInputDebouncer(note?.body ?? '', updateBody);
    useCommitOnUnmount(flush);
 
-   // The CM6 editor handle (splice at real offsets), for image insertion.
+   // The CM6 editor handle (splice at real offsets + the shared undo timeline), for image insertion + undo/redo.
    const editorRef = useRef<NoteEditorHandle>(null);
+
+   // Undo/redo availability, pushed up from CM6 so the toolbar buttons enable/disable.
+   const [undoState, setUndoState] = useState({ canUndo: false, canRedo: false });
+
+   // Title UNDO mirror: the title input stays a snappy local field; a short debounce commits each typing burst
+   // into CM6 as ONE history step (so title undo coalesces like body typing, not per-keystroke). Flushed before
+   // an undo/redo and on blur so an in-flight burst is on the stack. Persistence stays on `useInputDebouncer`.
+   const titleMirrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+   const titleMirrorPending = useRef<string | null>(null);
+   const flushTitleMirror = useCallback(() => {
+      if (titleMirrorTimer.current) { clearTimeout(titleMirrorTimer.current); titleMirrorTimer.current = null; }
+      if (titleMirrorPending.current !== null) {
+         editorRef.current?.setTitle(titleMirrorPending.current);
+         titleMirrorPending.current = null;
+      }
+   }, []);
+   const scheduleTitleMirror = useCallback((next: string) => {
+      titleMirrorPending.current = next;
+      if (titleMirrorTimer.current) clearTimeout(titleMirrorTimer.current);
+      titleMirrorTimer.current = setTimeout(flushTitleMirror, 300);
+   }, [flushTitleMirror]);
+   const handleTitleInput = useCallback((next: string) => {
+      setLocalTitle(next);
+      scheduleTitleMirror(next);
+   }, [setLocalTitle, scheduleTitleMirror]);
+
+   // CM6 -> store, for PERSISTENCE. A CM6 title/cover change is either a mirror echo or an undo/redo revert;
+   // either way it becomes the store's source of persisted truth (and `useInputDebouncer` re-syncs the input).
+   const handleCmTitleChange = useCallback((title: string) => updateTitle(title), [updateTitle]);
+   const handleCmCoverChange = useCallback((next: NoteCover | null) => {
+      if (next) setCover(next); else clearCover();
+   }, [setCover, clearCover]);
+
+   // Window-level Ctrl/Cmd+Z / +Shift+Z / +Y so undo works with the TITLE input or the toolbar focused - not
+   // only inside the editor. When the editor itself holds focus, CM6's own keymap handles it (don't double).
+   useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+         if (!(event.ctrlKey || event.metaKey)) return;
+         const key = event.key.toLowerCase();
+         const isUndo = key === 'z' && !event.shiftKey;
+         const isRedo = key === 'y' || (key === 'z' && event.shiftKey);
+         if (!isUndo && !isRedo) return;
+         const editor = editorRef.current;
+         if (!editor || editor.hasFocus()) return; // no editor (Reading) or editor focused (CM6 owns it)
+         event.preventDefault();
+         flushTitleMirror(); // land any in-flight title burst on the stack before moving through it
+         if (isUndo) editor.undo(); else editor.redo();
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [flushTitleMirror]);
 
    // Cover add/change: the shared upload pipeline (process -> store -> hash), then a NoteCover built with the
    // image's NATURAL ratio on ADD (so it starts uncropped) and the current box kept on CHANGE (swap hash only).
+   // All cover edits go through the editor handle (CM6 state = the undo timeline); CM6 then persists to the store.
    const coverInputRef = useRef<HTMLInputElement>(null);
    const [isCoverProcessing, setIsCoverProcessing] = useState(false);
    const openCoverPicker = useCallback(() => coverInputRef.current?.click(), []);
@@ -96,7 +150,7 @@ function NoteSurface() {
          await storeAsset(processed);
          const current = store.getState().note?.cover;
          const naturalAspect = processed.width > 0 ? processed.height / processed.width : 1;
-         setCover({
+         editorRef.current?.setCover({
             hash: processed.hash,
             width: current?.width ?? COVER_DEFAULT_WIDTH_PCT,
             aspect: current?.aspect ?? clampCoverAspect(naturalAspect),
@@ -106,17 +160,18 @@ function NoteSurface() {
       } finally {
          setIsCoverProcessing(false);
       }
-   }, [store, setCover]);
+   }, [store]);
 
-   // The Live cover controls: Change/Remove + box width resize + aspect presets, committed to the store.
+   // The Live cover controls: Change/Remove + box width resize + aspect presets. Each dispatches a history-
+   // captured CM6 effect via the handle (so a cover edit is undoable alongside body/title); CM6 syncs the store.
    const coverController = useMemo<CoverController>(() => ({
       editable: mode === 'live',
       onChange: openCoverPicker,
-      onRemove: clearCover,
-      onResizeBox: (widthPct, aspect) => updateCover({ width: clampCoverWidth(widthPct), aspect: clampCoverAspect(aspect) }),
-      onSetAspect: (aspect) => updateCover({ aspect: clampCoverAspect(aspect) }),
+      onRemove: () => editorRef.current?.clearCover(),
+      onResizeBox: (widthPct, aspect) => editorRef.current?.updateCover({ width: clampCoverWidth(widthPct), aspect: clampCoverAspect(aspect) }),
+      onSetAspect: (aspect) => editorRef.current?.updateCover({ aspect: clampCoverAspect(aspect) }),
       labels: { change: t('NoteView.cover.change'), remove: t('NoteView.cover.remove'), aspect: t('NoteView.cover.aspect') },
-   }), [mode, openCoverPicker, clearCover, updateCover, t]);
+   }), [mode, openCoverPicker, t]);
 
    /**
     * Splices a snippet into the CM6 doc, landing the caret INSIDE the new token (after `![`). The target is
@@ -186,7 +241,11 @@ function NoteSurface() {
             isCoverProcessing={isCoverProcessing}
             onAddCover={openCoverPicker}
             onChangeCover={openCoverPicker}
-            onRemoveCover={clearCover}
+            onRemoveCover={() => editorRef.current?.clearCover()}
+            canUndo={undoState.canUndo}
+            canRedo={undoState.canRedo}
+            onUndo={() => { flushTitleMirror(); editorRef.current?.undo(); }}
+            onRedo={() => { flushTitleMirror(); editorRef.current?.redo(); }}
          />
          {/* Hidden picker for the toolbar's insert-image action; the paste/drop paths never touch it. */}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
@@ -207,7 +266,8 @@ function NoteSurface() {
                         <input
                            type="text"
                            value={localTitle}
-                           onChange={(event) => setLocalTitle(event.target.value)}
+                           onChange={(event) => handleTitleInput(event.target.value)}
+                           onBlur={flushTitleMirror}
                            className="mb-4 w-full bg-transparent text-4xl font-bold text-paper-foreground placeholder:text-paper-foreground/40 focus:outline-none"
                            placeholder={t('NoteView.titlePlaceholder')}
                         />
@@ -218,9 +278,13 @@ function NoteSurface() {
                         ref={editorRef}
                         value={localBody}
                         onChange={setLocalBody}
+                        title={localTitle}
+                        onTitleChange={handleCmTitleChange}
+                        onCoverChange={handleCmCoverChange}
+                        onHistoryChange={setUndoState}
                         onImageEvent={handleImageEvent}
                         live={mode === 'live'}
-                        cover={mode === 'live' ? cover : undefined}
+                        cover={cover}
                         coverController={coverController}
                         formatController={formatController}
                         tableController={tableController}

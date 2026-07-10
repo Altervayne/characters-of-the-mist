@@ -2,16 +2,17 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { planNoteRefreeze } from './refreezeNoteReferences';
+import { planNoteRefreeze, planNoteSourceStamp } from './refreezeNoteReferences';
 
 // -- Type Imports --
 import type { BoardItemRecord } from './boardRecords';
-import type { BoardItemContent, Note } from '@/lib/types/board';
+import type { BoardItemContent, Note, NoteBoardContent } from '@/lib/types/board';
 
 /*
- * Tests for the pure re-freeze plan: on closing a drawer-less note's tab, which board items (its live
- * references) become frozen copies, and with what content. The apply step (open-board in-memory write vs
- * closed-board persist) is store/db integration, verified live.
+ * Tests for the pure reference-sync plans: on closing a drawer-less note's tab, which references become
+ * frozen copies (re-freeze); and on Saving a note to the drawer, which references get their `sourceDrawerItemId`
+ * stamped (source-stamp). The apply step (open-board in-memory write vs closed-board persist) is store/db
+ * integration, verified live.
  */
 
 function record(id: string, boardId: string, content: BoardItemContent): BoardItemRecord {
@@ -49,5 +50,39 @@ describe('planNoteRefreeze', () => {
       const plan = planNoteRefreeze(items, 'n1', latest);
       latest.title = 'mutated';
       expect((plan[0].content as { data: Note }).data.title).toBe('Edited');
+   });
+});
+
+describe('planNoteSourceStamp', () => {
+   it('stamps sourceDrawerItemId onto every unstamped live reference to the note, keeping noteId + lastKnown', () => {
+      const items = [
+         record('i1', 'b1', { kind: 'note', mode: 'reference', noteId: 'n1', lastKnown: { id: 'n1', title: 'k', body: 'k' } }),
+         record('i2', 'b2', { kind: 'note', mode: 'reference', noteId: 'n1' }),
+         record('i3', 'b1', { kind: 'note', mode: 'reference', noteId: 'OTHER' }),      // different note
+         record('i4', 'b1', { kind: 'note', mode: 'copy', data: { id: 'x', title: '', body: '' } }), // a copy
+      ];
+
+      const plan = planNoteSourceStamp(items, 'n1', 'drawer-9');
+
+      expect(plan.map((entry) => entry.id)).toEqual(['i1', 'i2']);
+      // Stays a reference, gains the drawer source, keeps its id + lastKnown.
+      expect(plan[0].content).toEqual({ kind: 'note', mode: 'reference', noteId: 'n1', sourceDrawerItemId: 'drawer-9', lastKnown: { id: 'n1', title: 'k', body: 'k' } });
+      expect(plan[1].content).toEqual({ kind: 'note', mode: 'reference', noteId: 'n1', sourceDrawerItemId: 'drawer-9' });
+   });
+
+   it('skips a reference already pointing at that drawer item (a re-save writes nothing)', () => {
+      const items = [record('i1', 'b1', { kind: 'note', mode: 'reference', noteId: 'n1', sourceDrawerItemId: 'drawer-9' })];
+      expect(planNoteSourceStamp(items, 'n1', 'drawer-9')).toEqual([]);
+   });
+
+   it('re-stamps a reference that points at a DIFFERENT drawer item', () => {
+      const items = [record('i1', 'b1', { kind: 'note', mode: 'reference', noteId: 'n1', sourceDrawerItemId: 'old' })];
+      const plan = planNoteSourceStamp(items, 'n1', 'new');
+      expect((plan[0].content as Extract<NoteBoardContent, { mode: 'reference' }>).sourceDrawerItemId).toBe('new');
+   });
+
+   it('is a no-op when no board item references the note', () => {
+      const items = [record('i3', 'b1', { kind: 'note', mode: 'reference', noteId: 'OTHER' })];
+      expect(planNoteSourceStamp(items, 'n1', 'drawer-9')).toEqual([]);
    });
 });

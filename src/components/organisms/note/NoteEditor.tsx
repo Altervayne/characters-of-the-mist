@@ -2,9 +2,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 // -- CodeMirror Imports --
-import { EditorState } from '@codemirror/state';
+import { EditorState, Transaction } from '@codemirror/state';
 import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, undo, redo, undoDepth, redoDepth } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { Strikethrough, Table } from '@lezer/markdown';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
@@ -14,7 +14,8 @@ import { tags } from '@lezer/highlight';
 import { liveInlineDecorations } from './live/liveDecorations';
 import { imageWidgetField } from './live/imageWidgetField';
 import { tableWidgetField } from './live/tableWidgetField';
-import { coverGutter, setCoverEffect, coverInsetLineCount } from './live/coverGutter';
+import { coverStateExtension, coverGutterVisual, initialCover, setCoverEffect, getNoteCover, coverInsetLineCount } from './live/coverGutter';
+import { titleStateExtension, initialTitle, setTitleEffect, getNoteTitle } from './live/titleField';
 import { tableRegionAt } from './live/tableRegions';
 import { listIndentKeymap } from './live/listKeymap';
 import { formatToolbar } from './live/formatToolbar';
@@ -57,15 +58,37 @@ export interface NoteEditorHandle {
    getValue: () => string;
    /** Replaces `[from, to)` with `insert`, optionally placing the caret at `selectAt`. Focuses the editor. */
    splice: (from: number, to: number, insert: string, selectAt?: number) => void;
+   /** Sets the note title in CM6 state (history-captured), WITHOUT stealing focus from the title input. */
+   setTitle: (title: string) => void;
+   /** Sets a fresh cover (history-captured). */
+   setCover: (cover: NoteCover) => void;
+   /** Patches the current cover's box width/aspect (history-captured). No-op with no cover. */
+   updateCover: (patch: Partial<Pick<NoteCover, 'width' | 'aspect'>>) => void;
+   /** Clears the cover (history-captured). */
+   clearCover: () => void;
+   /** Undoes the latest change in the shared timeline (body OR title OR cover). Returns whether it fired. */
+   undo: () => boolean;
+   /** Redoes the latest reverted change in the shared timeline. Returns whether it fired. */
+   redo: () => boolean;
+   /** Whether the CM6 editor currently holds DOM focus (so a window shortcut doesn't double-handle its keymap). */
+   hasFocus: () => boolean;
 }
 
 interface NoteEditorProps {
    value: string;
    onChange: (next: string) => void;
+   /** The note title, seeded into CM6 state so it shares the undo timeline. Seed-only (read once per view build). */
+   title: string;
+   /** Fires when the CM6 title changes (a mirror commit or an undo/redo), so the store + input can follow it. */
+   onTitleChange: (title: string) => void;
+   /** Fires when the CM6 cover changes (a cover edit or an undo/redo), so the store can persist it. */
+   onCoverChange: (cover: NoteCover | null) => void;
+   /** Fires when the undo/redo availability changes, so the toolbar buttons enable/disable. */
+   onHistoryChange: (state: { canUndo: boolean; canRedo: boolean }) => void;
    placeholder?: string;
    /** LIVE preview (inline syntax hide/reveal + mention pills + inline image widgets) vs SOURCE (plain markdown). */
    live: boolean;
-   /** The note-level cover (Live only); rendered top-left with the opening lines inset beside it. */
+   /** The note-level cover; seeded into CM6 state. Rendered top-left (Live) with the opening lines inset beside it. */
    cover?: NoteCover;
    /** The cover controls' callbacks (Change/Remove + box commits). Bound into the Live cover gutter. */
    coverController: CoverController;
@@ -199,6 +222,9 @@ const paperTheme = EditorView.theme({
    // NO horizontal padding: the grid is FULL content width. The edge "+" bars are true overlays on the table's
    // own edges (they reserve no width), so the table equals the content column width.
    '.cm-note-table': { position: 'relative', padding: '0.75rem 0' },
+   // A too-wide table (more columns than the paper column fits) scrolls sideways WITHIN this container instead of
+   // clipping out of the sheet. Wraps only the grid; the edge "+" bars sit outside it (siblings on .cm-note-table).
+   '.cm-note-table-scroll': { overflowX: 'auto', maxWidth: '100%' },
    '.cm-note-table-grid': { width: '100%', borderCollapse: 'collapse', fontSize: '0.95em' },
    '.cm-note-table-grid th, .cm-note-table-grid td': { border: '1px solid color-mix(in srgb, currentColor 30%, transparent)', padding: '0.375rem 0.625rem', verticalAlign: 'top' },
    '.cm-note-table-grid th': { fontWeight: '600' },
@@ -221,7 +247,7 @@ const paperTheme = EditorView.theme({
 }, { dark: false });
 
 export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEditor(
-   { value, onChange, placeholder, live, cover, coverController, formatController, tableController, onImageEvent },
+   { value, onChange, title, onTitleChange, onCoverChange, onHistoryChange, placeholder, live, cover, coverController, formatController, tableController, onImageEvent },
    ref,
 ) {
    const hostRef = useRef<HTMLDivElement>(null);
@@ -229,12 +255,21 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
    // Latest-refs so the CM6 handlers (created once) always call the current closures.
    const onChangeRef = useRef(onChange);
    onChangeRef.current = onChange;
+   const onTitleChangeRef = useRef(onTitleChange);
+   onTitleChangeRef.current = onTitleChange;
+   const onCoverChangeRef = useRef(onCoverChange);
+   onCoverChangeRef.current = onCoverChange;
+   const onHistoryChangeRef = useRef(onHistoryChange);
+   onHistoryChangeRef.current = onHistoryChange;
    const onImageEventRef = useRef(onImageEvent);
    onImageEventRef.current = onImageEvent;
    // The current doc, so a `live` flip can re-seed the rebuilt view with the latest buffer (not the stale prop).
    const valueRef = useRef(value);
    valueRef.current = value;
-   // The current cover, to seed a rebuilt view and reconcile external changes (set/change/clear cover).
+   // The current title, to seed a rebuilt view's title field (Live flip / mount) from the latest value.
+   const titleRef = useRef(title);
+   titleRef.current = title;
+   // The current cover, to seed a rebuilt view's cover field (Live flip / mount) from the latest value.
    const coverRef = useRef(cover);
    coverRef.current = cover;
    // A latest-ref for the controller, wrapped in a STABLE controller so the gutter (built once) always calls
@@ -276,6 +311,13 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
             doc: valueRef.current,
             extensions: [
                history(),
+               // Title + cover live in CM6 state so they share the ONE undo timeline with the body. Both are
+               // seeded via facets (no dispatch = no history entry on load); the cover STATE (not its Live
+               // visuals) is loaded in both modes so a toolbar cover edit is undoable in Source too.
+               initialTitle.of(titleRef.current),
+               titleStateExtension,
+               initialCover.of(coverRef.current ?? null),
+               coverStateExtension,
                // List Tab/Shift+Tab indent BEFORE the default keymap so it intercepts Tab on list lines only
                // (it falls through elsewhere, leaving Tab's normal behaviour intact).
                listIndentKeymap,
@@ -290,10 +332,20 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
                // The floating format bar (Bold/Italic/Strike over a selection + Insert image at the caret) - in
                // both Live and Source, since both are editing surfaces.
                formatToolbar(stableFormatController),
-               // LIVE mode: the Lezer inline decoration engine + the StateField image/table widgets + the cover gutter.
-               ...(live ? [liveInlineDecorations, imageWidgetField, tableWidgetField(stableTableController), coverGutter(stableController)] : []),
+               // LIVE mode: the Lezer inline decoration engine + the StateField image/table widgets + the cover VISUALS.
+               ...(live ? [liveInlineDecorations, imageWidgetField, tableWidgetField(stableTableController), coverGutterVisual(stableController)] : []),
                EditorView.updateListener.of((update) => {
-                  if (update.docChanged) onChangeRef.current(update.state.doc.toString());
+                  const { state, startState } = update;
+                  if (update.docChanged) onChangeRef.current(state.doc.toString());
+                  // Mirror title/cover field changes (a real edit OR an undo/redo) up to the store + inputs.
+                  const title = getNoteTitle(state);
+                  if (title !== getNoteTitle(startState)) onTitleChangeRef.current(title);
+                  const coverNow = getNoteCover(state);
+                  if (coverNow !== getNoteCover(startState)) onCoverChangeRef.current(coverNow);
+                  // Notify undo/redo availability so the toolbar buttons enable/disable.
+                  if (undoDepth(state) !== undoDepth(startState) || redoDepth(state) !== redoDepth(startState)) {
+                     onHistoryChangeRef.current({ canUndo: undoDepth(state) > 0, canRedo: redoDepth(state) > 0 });
+                  }
                }),
                // Route image paste/drop to the shared insertion pipeline; a non-image event falls through
                // to CM6's own paste/drop (plain text). `return true` means we consumed it.
@@ -309,8 +361,8 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
       });
       viewRef.current = view;
 
-      // Seed the cover gutter with the current cover (Live only; the field ignores it in Source).
-      if (live && coverRef.current) view.dispatch({ effects: setCoverEffect.of(coverRef.current) });
+      // Push the initial undo/redo availability (a rebuild resets the stack) so the toolbar buttons start correct.
+      onHistoryChangeRef.current({ canUndo: undoDepth(view.state) > 0, canRedo: redoDepth(view.state) > 0 });
 
       return () => {
          // Commit-on-unmount: a tab switch unmounts with no blur, so flush the final buffer before destroy
@@ -334,14 +386,9 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
       view.dispatch({ changes: { from: 0, to: current.length, insert: value } });
    }, [value]);
 
-   // Reconcile an external cover change (Add / Change / Remove / box resize / aspect) into the Live gutter
-   // without a rebuild. The store hands a fresh `cover` object on every change, so identity tracks it. In
-   // Source the cover field is absent, so the effect is a harmless no-op.
-   useEffect(() => {
-      const view = viewRef.current;
-      if (!view || !live) return;
-      view.dispatch({ effects: setCoverEffect.of(cover ?? null) });
-   }, [cover, live]);
+   // Cover is CM6 state now (seeded via the `initialCover` facet at view build, then owned by the field): a
+   // cover edit originates in CM6 and flows OUT to the store via `onCoverChange`, so there is no store->CM6
+   // cover reconcile (that would loop and, worse, log a redundant history entry). `cover` stays a seed-only prop.
 
    useImperativeHandle(ref, (): NoteEditorHandle => ({
       getCaret: () => viewRef.current?.state.selection.main.head ?? 0,
@@ -382,6 +429,30 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
          });
          view.focus();
       },
+      setTitle: (nextTitle) => {
+         const view = viewRef.current;
+         if (!view || getNoteTitle(view.state) === nextTitle) return;
+         // No `view.focus()`: the title input owns focus while the caret is in it.
+         view.dispatch({ effects: setTitleEffect.of(nextTitle), annotations: Transaction.userEvent.of('note.title') });
+      },
+      setCover: (nextCover) => {
+         viewRef.current?.dispatch({ effects: setCoverEffect.of(nextCover), annotations: Transaction.userEvent.of('note.cover') });
+      },
+      updateCover: (patch) => {
+         const view = viewRef.current;
+         if (!view) return;
+         const current = getNoteCover(view.state);
+         if (!current) return;
+         view.dispatch({ effects: setCoverEffect.of({ ...current, ...patch }), annotations: Transaction.userEvent.of('note.cover') });
+      },
+      clearCover: () => {
+         const view = viewRef.current;
+         if (!view || !getNoteCover(view.state)) return;
+         view.dispatch({ effects: setCoverEffect.of(null), annotations: Transaction.userEvent.of('note.cover') });
+      },
+      undo: () => (viewRef.current ? undo(viewRef.current) : false),
+      redo: () => (viewRef.current ? redo(viewRef.current) : false),
+      hasFocus: () => viewRef.current?.hasFocus ?? false,
    }), []);
 
    return <div ref={hostRef} className="note-editor text-base" />;
