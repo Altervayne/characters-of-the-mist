@@ -391,6 +391,38 @@ export async function exportToFile(item: ExportableContent, type: ExportableItem
    URL.revokeObjectURL(url);
 };
 
+/** Triggers a browser download of a raw text file (Blob + click), for non-envelope formats like `.md`. */
+export function downloadTextFile(fileName: string, text: string, mimeType = 'text/markdown'): void {
+   const blob = new Blob([text], { type: mimeType });
+   const url = URL.createObjectURL(blob);
+
+   const a = document.createElement('a');
+   a.href = url;
+   a.download = fileName;
+   document.body.appendChild(a);
+   a.click();
+
+   document.body.removeChild(a);
+   URL.revokeObjectURL(url);
+};
+
+/** Reads a picked file's contents as plain text (no parsing), for raw formats like `.md`. */
+export function readFileAsText(file: File): Promise<string> {
+   return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+         const result = event.target?.result;
+         if (typeof result !== 'string') {
+            reject(new Error('File could not be read as text.'));
+            return;
+         }
+         resolve(result);
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+   });
+};
+
 /**
  * Quick helper to export a full character sheet.
  * Generates the filename automatically from the character's name and game.

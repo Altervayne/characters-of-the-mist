@@ -252,7 +252,9 @@
          "saved": "[TO COMPLETE]",
          "linkedItemMissing": "[TO COMPLETE]",
          "exported": "[TO COMPLETE]",
-         "imported": "[TO COMPLETE]"
+         "imported": "[TO COMPLETE]",
+         "exportedMarkdown": "[TO COMPLETE]",
+         "importedMarkdown": "[TO COMPLETE]"
       },
       "theme": {
          "exported": "[TO COMPLETE]",
@@ -363,6 +365,12 @@
          "saveNoteToDrawerAs": "[TO COMPLETE]",
          "exportNote": "[TO COMPLETE]",
          "importNote": "[TO COMPLETE]",
+         "exportNoteMarkdown": "[TO COMPLETE]",
+         "importNoteMarkdown": "[TO COMPLETE]",
+         "exportMarkdownWarningTitle": "[TO COMPLETE]",
+         "exportMarkdownWarningDescription": "[TO COMPLETE]",
+         "exportMarkdownWarningCancel": "[TO COMPLETE]",
+         "exportMarkdownWarningConfirm": "[TO COMPLETE]",
          "exportCharacter": "Exporter le Perso.",
          "importCharacter": "Importer le Perso.",
          "importComponent": "Importer un Composant",
@@ -1137,6 +1145,8 @@
          "saveItemToDrawer": "[TO COMPLETE]",
          "saveItemToDrawerAs": "[TO COMPLETE]",
          "exportDrawer": "Exporter : Tiroir",
+         "exportNoteMarkdown": "[TO COMPLETE]",
+         "importNoteMarkdown": "[TO COMPLETE]",
          "renameCharacter": "Renommer : Personnage",
          "resetCharacter": "Réinitialiser : Personnage",
          "createCard": "Créer : Carte de Thème",

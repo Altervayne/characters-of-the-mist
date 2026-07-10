@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw, FileUp, FileDown } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -49,6 +49,8 @@ interface SidebarMenuProps {
    isDrawerOpen: boolean;
    isCollapsed: boolean;
    activeWindow: WindowTypes;
+   onExportNoteMarkdown: () => void;
+   onImportNoteMarkdown: () => void;
    onToggleEditing: () => void;
    onToggleDrawer: () => void;
    onToggleCollapse: () => void;
@@ -57,7 +59,7 @@ interface SidebarMenuProps {
    onOpenPatchNotes: () => void;
 }
 
-export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
+export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onExportNoteMarkdown, onImportNoteMarkdown, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
    const { t } = useTranslation();
    const { t: tNotifications } = useTranslation();
 
@@ -492,6 +494,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      </SidebarButton>
                      <SidebarButton isCollapsed={isCollapsed} onClick={() => noteImportInputRef.current?.click()} Icon={Download}>
                         {t('CharacterSheetPage.SidebarMenu.importNote')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={onExportNoteMarkdown} Icon={FileUp}>
+                        {t('CharacterSheetPage.SidebarMenu.exportNoteMarkdown')}
+                     </SidebarButton>
+                     <SidebarButton isCollapsed={isCollapsed} onClick={onImportNoteMarkdown} Icon={FileDown}>
+                        {t('CharacterSheetPage.SidebarMenu.importNoteMarkdown')}
                      </SidebarButton>
                   </motion.section>
                }

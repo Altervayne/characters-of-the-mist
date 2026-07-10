@@ -50,6 +50,7 @@ import { useIsBootHydrating } from '@/lib/character/characterPersistence';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
+import { useNoteMarkdownIO } from '@/hooks/useNoteMarkdownIO';
 import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 
 // The note and board surfaces are deferred: each pulls in a heavy stack (the
@@ -160,6 +161,10 @@ function DesktopCharacterSheetPage() {
 
    const { getRootProps, isDragActive: isFileDragActive, handleFileSelected, triggerImport, formRef, fileInputRef } = useCharacterSheetFileImport();
 
+   // Plain-`.md` note export/import (portable text), alongside the full-fidelity `.cotm` note path.
+   // Shared by the sidebar and the palette; its warning dialog + picker render once below.
+   const { exportActiveNoteAsMarkdown, triggerMarkdownImport, dialogs: noteMarkdownDialogs } = useNoteMarkdownIO();
+
 
    // ##############################
    // ###   UNDO/REDO SHORTCUT   ###
@@ -177,6 +182,8 @@ function DesktopCharacterSheetPage() {
       onToggleDrawer: () => setDrawerOpen(!isDrawerOpen),
       onOpenSettings: () => setSettingsOpen(true),
       onImportFile: triggerImport,
+      onExportNoteMarkdown: exportActiveNoteAsMarkdown,
+      onImportNoteMarkdown: triggerMarkdownImport,
       onCreateChallenge: handleCreateChallenge,
       onCreateJournal: addJournal,
    });
@@ -216,6 +223,8 @@ function DesktopCharacterSheetPage() {
                   isDrawerOpen={isDrawerOpen}
                   isCollapsed={isSidebarCollapsed}
                   activeWindow={ activeNote ? 'NOTE' : (activeBoard ? 'BOARD' : (character ? 'PLAY_AREA' : 'MAIN_MENU')) }
+                  onExportNoteMarkdown={exportActiveNoteAsMarkdown}
+                  onImportNoteMarkdown={triggerMarkdownImport}
                   onToggleEditing={() => setIsEditing(!isEditing)}
                   onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
                   onToggleCollapse={toggleSidebarCollapsed}
@@ -348,6 +357,9 @@ function DesktopCharacterSheetPage() {
          <form ref={formRef} className="hidden">
             <input ref={fileInputRef} type="file" accept=".cotm,.json" onChange={handleFileSelected} />
          </form>
+
+         {/* Warning dialog + `.md` picker for the note Markdown export/import (sidebar + palette share these). */}
+         {noteMarkdownDialogs}
 
          {/* DIALOGS START */}
          <CommandPalette

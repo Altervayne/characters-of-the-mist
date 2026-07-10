@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
+import { FileUp, FileDown, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -38,6 +38,8 @@ interface CommandActionArgs {
    onToggleDrawer: () => void;
    onOpenSettings: () => void;
    onImportFile: () => void;
+   onExportNoteMarkdown: () => void;
+   onImportNoteMarkdown: () => void;
    onCreateChallenge: () => void;
    onCreateJournal: () => void;
 }
@@ -53,8 +55,8 @@ export interface CommandAction {
    pageId?: string;
 }
 
-/** The workspace a command applies to. `global` shows everywhere; `character`/`board` only on that tab kind. */
-type CommandScope = 'global' | 'character' | 'board';
+/** The workspace a command applies to. `global` shows everywhere; `character`/`board`/`note` only on that tab kind. */
+type CommandScope = 'global' | 'character' | 'board' | 'note';
 
 type ScopedCommand = CommandAction & { scope: CommandScope };
 
@@ -65,7 +67,7 @@ function boardCommandId(kind: string): string {
 
 
 
-export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onOpenSettings, onImportFile, onCreateChallenge, onCreateJournal }: CommandActionArgs): CommandAction[] {
+export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onOpenSettings, onImportFile, onExportNoteMarkdown, onImportNoteMarkdown, onCreateChallenge, onCreateJournal }: CommandActionArgs): CommandAction[] {
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
@@ -195,6 +197,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'saveItemToDrawer', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'item', 'card', 'tracker'], icon: Save, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawer') },
       { id: 'saveItemToDrawerAs', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawerAs'), keywords: ['save', 'as', 'drawer', 'store', 'fork', 'copy', 'item', 'card', 'tracker'], icon: SaveAll, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawerAs') },
       { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
+      // Plain-`.md` note export/import, alongside the full-fidelity `.cotm` note path. Export needs an
+      // active note (note scope); import creates a new note tab, so it shows everywhere (global).
+      { id: 'exportNoteMarkdown', scope: 'note', label: t('CommandPalette.commands.exportNoteMarkdown'), keywords: ['export', 'note', 'markdown', 'md', 'text'], icon: FileUp, group: t('CommandPalette.groups.export'), action: onExportNoteMarkdown },
+      { id: 'importNoteMarkdown', scope: 'global', label: t('CommandPalette.commands.importNoteMarkdown'), keywords: ['import', 'note', 'markdown', 'md', 'text', 'file'], icon: FileDown, group: t('CommandPalette.groups.export'), action: onImportNoteMarkdown },
 
       // #################################
       // ###   CHARACTER SHEET GROUP   ###
@@ -230,6 +236,6 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       })),
    ];
 
-   // A character tab gets everything; a board tab and the menu get only the global commands.
+   // Each tab kind gets the global commands plus its own scope (character/board/note); the menu gets globals only.
    return allCommands.filter((command) => command.scope === 'global' || command.scope === activeWorkspace);
 };
