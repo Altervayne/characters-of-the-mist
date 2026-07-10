@@ -22,6 +22,7 @@ import { readWorkspace, writeWorkspace } from './workspaceSession';
 import { getEffectiveDeviceType } from '@/hooks/useDeviceType';
 import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
 import { createBoard, deleteBoard, loadBoard } from '@/lib/board/boardRepository';
+import { refreezeDrawerlessNoteReferences } from '@/lib/board/refreezeNoteReferences';
 import { disposeNoteInstance, getOrCreateNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { createNote, deleteNote, getNote } from '@/lib/notes/noteRepository';
 
@@ -314,10 +315,25 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
                console.error('Failed to delete closed board record:', error);
             });
          } else if (closing.type === 'note') {
+            // A DRAWER-BACKED note's drawer item is the durable source, so its working row just reaps and any
+            // board tile keeps resolving via the drawer item (a linked reference). A DRAWER-LESS (never-saved)
+            // note has no such fallback, so before reaping we RE-FREEZE every board tile referencing it into a
+            // self-contained copy carrying the note's latest content (the editor flushes on unmount, so the
+            // in-memory `note` holds it) - the tile becomes a static copy (re-adoptable), nothing drawer-less
+            // survives close, and the "linked" badge stays honest (shown only for a reachable source).
+            const state = getOrCreateNoteInstance(id).getState();
+            const drawerItemId = state.drawerItemId;
+            const latestNote = state.note;
             disposeNoteInstance(id);
-            void deleteNote(id).catch((error) => {
-               console.error('Failed to delete closed note record:', error);
-            });
+            if (drawerItemId) {
+               void deleteNote(id).catch((error) => {
+                  console.error('Failed to delete closed note record:', error);
+               });
+            } else {
+               void (latestNote ? refreezeDrawerlessNoteReferences(id, latestNote) : Promise.resolve())
+                  .then(() => deleteNote(id))
+                  .catch((error) => { console.error('Failed to re-freeze/reap closed note record:', error); });
+            }
          } else {
             // Discard the handle WITHOUT flushing (no point saving what we delete).
             discardPersistenceHandle(id);

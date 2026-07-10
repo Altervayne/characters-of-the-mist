@@ -66,7 +66,7 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
       case 'character':
          return <CharacterBoardItem item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'note':
-         return <BoardNoteItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+         return <BoardNoteItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       default:
          return <GenericItemBody item={item} />;
    }

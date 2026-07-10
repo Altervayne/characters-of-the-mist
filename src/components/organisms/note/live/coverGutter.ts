@@ -15,6 +15,7 @@ import {
    clampCoverAspect,
 } from '@/components/molecules/note/noteCoverClasses';
 import { isTableLine } from './tableRegions';
+import { hasImageTokenInRange } from '@/lib/notes/noteImageHint';
 
 // -- Type Imports --
 import type { NoteCover } from '@/lib/types/board';
@@ -70,9 +71,9 @@ interface CoverGutterState {
    /** How many leading lines are inset beside the cover (0 when no cover / not yet measured). */
    lines: number;
    /**
-    * Extra `padding-top` (px) on the FIRST line past the inset region when that line is a TABLE the cover would
-    * otherwise overlap - it pushes the full-width table down so it starts BELOW the cover (never under it). 0
-    * when the next line clears the cover on its own or isn't a table.
+    * Extra `padding-top` (px) on the FIRST line past the inset region when that line is a TABLE or block IMAGE
+    * the cover would otherwise overlap - it pushes the full-width block down so it starts BELOW the cover (never
+    * under it). 0 when the next line clears the cover on its own or isn't a blocking block.
     */
    clearPad: number;
 }
@@ -101,11 +102,26 @@ function insetStyle(widthPct: number): string {
    return `padding-left: calc(${clampCoverWidth(widthPct)}% + ${COVER_GAP_REM}rem)`;
 }
 
+/** True if the line starting at `lineStart` renders a block image (mirrors {@link isTableLine} for the image widget). */
+function isImageLine(state: EditorState, lineStart: number): boolean {
+   const line = state.doc.lineAt(lineStart);
+   return hasImageTokenInRange(state.doc.toString(), line.from, line.to);
+}
+
+/**
+ * True if the line starting at `lineStart` is a full-width block the cover must NOT overlap - a GFM table or a
+ * block image. Both are crushed if inset into the narrow gutter and render UNDER the absolute cover if left in
+ * flow, so both hard-stop the inset and get cleared below the box.
+ */
+function isCoverBlockingLine(state: EditorState, lineStart: number): boolean {
+   return isTableLine(state, lineStart) || isImageLine(state, lineStart);
+}
+
 /**
  * The block clear-spacer decorations. A BLOCK widget can't come from the overlay ViewPlugin (CM6 forbids it),
  * so it lives in its own StateField reading `coverState.clearPad`: when a cover would vertically overlap the
- * first table past its inset region, a spacer of `clearPad` px is inserted BEFORE that table so the full-width
- * table starts below the cover box. Recomputed whenever the doc or the cover state changes.
+ * first table or block image past its inset region, a spacer of `clearPad` px is inserted BEFORE that block so
+ * the full-width block starts below the cover box. Recomputed whenever the doc or the cover state changes.
  */
 const coverClearField = StateField.define<DecorationSet>({
    create: (state) => buildClearDeco(state),
@@ -118,26 +134,26 @@ const coverClearField = StateField.define<DecorationSet>({
    provide: (f) => EditorView.decorations.from(f),
 });
 
-/** Builds the single block spacer before the cover-overlapped table (or none). */
+/** Builds the single block spacer before the cover-overlapped block - a table or an image (or none). */
 function buildClearDeco(state: EditorState): DecorationSet {
    const { cover, lines, clearPad } = state.field(coverState);
    if (!cover || clearPad <= 0) return Decoration.none;
    const { doc } = state;
-   // The first table line at/after the inset region is where the spacer goes.
+   // The first blocking line (table or block image) at/after the inset region is where the spacer goes.
    for (let n = Math.max(1, lines + 1); n <= doc.lines; n++) {
       const start = doc.line(n).from;
-      if (isTableLine(state, start)) {
+      if (isCoverBlockingLine(state, start)) {
          return Decoration.set(Decoration.widget({ widget: new CoverClearWidget(clearPad), block: true, side: -1 }).range(start));
       }
-      // Only look at the boundary line; a non-table line there means no clearance is needed.
+      // Only look at the boundary line; a non-blocking line there means no clearance is needed.
       if (n > lines + 1) break;
    }
    return Decoration.none;
 }
 
 /**
- * A zero-content block spacer of a fixed pixel height, placed BEFORE a table the cover would overlap so the
- * full-width table starts below the cover box. A block-replaced table line can't take a `padding-top` line
+ * A zero-content block spacer of a fixed pixel height, placed BEFORE a table or image the cover would overlap
+ * so the full-width block starts below the cover box. A block-replaced line can't take a `padding-top` line
  * decoration (the widget consumes the line), so vertical clearance rides a real block widget instead.
  */
 class CoverClearWidget extends WidgetType {
@@ -206,10 +222,10 @@ function coverOverlay(controller: CoverController) {
          }
 
          /**
-          * Builds the line-inset decorations anchored to the first N real line starts. A GFM table must NEVER be
-          * inset (it would be crushed into the narrow gutter and overflow), so the inset HARD-STOPS at the first
-          * table line: only the leading NON-table lines get the gutter; the table and everything after render
-          * full-width below the cover.
+          * Builds the line-inset decorations anchored to the first N real line starts. A GFM table or a block
+          * image must NEVER be inset (it would be crushed into the narrow gutter and overflow), so the inset
+          * HARD-STOPS at the first such line: only the leading plain-text lines get the gutter; the block and
+          * everything after render full-width below the cover.
           */
          private insetDeco(view: EditorView): DecorationSet {
             const { cover, lines } = view.state.field(coverState);
@@ -221,7 +237,7 @@ function coverOverlay(controller: CoverController) {
             const last = Math.min(lines, doc.lines);
             for (let n = 1; n <= last; n++) {
                const start = doc.line(n).from;
-               if (isTableLine(state, start)) break; // a table hard-stops the inset - never inset a table
+               if (isCoverBlockingLine(state, start)) break; // a table/image hard-stops the inset - never inset one
                ranges.push(line.range(start));
             }
             // The block SPACER that pushes a cover-overlapped table below the box is a BLOCK widget (CM6 forbids
@@ -450,10 +466,10 @@ function coverOverlay(controller: CoverController) {
          }
 
          /**
-          * Counts the leading NON-table lines whose top clears the cover box's bottom - the tight visual
-          * footprint. If the inset stops at a TABLE the cover still overlaps vertically, computes `clearPad`: the
-          * top padding to push that full-width table BELOW the cover (so it never renders under the box). Both
-          * measured relative to the content top so a scrolled/offset viewport doesn't skew the count.
+          * Counts the leading plain-text lines whose top clears the cover box's bottom - the tight visual
+          * footprint. If the inset stops at a TABLE or block IMAGE the cover still overlaps vertically, computes
+          * `clearPad`: the top padding to push that full-width block BELOW the cover (so it never renders under
+          * the box). Both measured relative to the content top so a scrolled/offset viewport doesn't skew the count.
           */
          private countInsetLines(): { lines: number; clearPad: number } {
             if (!this.box) return { lines: 0, clearPad: 0 };
@@ -467,10 +483,10 @@ function coverOverlay(controller: CoverController) {
             let clearPad = 0;
             for (let n = 1; n <= doc.lines; n++) {
                const start = doc.line(n).from;
-               if (isTableLine(state, start)) {
-                  // A table hard-stops the inset. If the cover still overlaps here, pad the table down to clear it.
-                  // The pad is measured from the BOTTOM of the last inset line (a non-table line the spacer never
-                  // moves), NOT the table's own top - so the spacer can't feed back into its own measurement.
+               if (isCoverBlockingLine(state, start)) {
+                  // A table/image hard-stops the inset. If the cover still overlaps here, pad the block down to clear
+                  // it. The pad is measured from the BOTTOM of the last inset line (a plain line the spacer never
+                  // moves), NOT the block's own top - so the spacer can't feed back into its own measurement.
                   const prevBottom = count > 0 ? this.view.lineBlockAt(doc.line(count).from).bottom : 0;
                   if (prevBottom < coverBottom - 1) clearPad = Math.ceil(coverBottom - prevBottom);
                   break;

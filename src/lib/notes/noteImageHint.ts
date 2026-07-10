@@ -192,6 +192,15 @@ export function activeImageTokenAt(body: string, caret: number): ImageToken | nu
 }
 
 /**
+ * True if any image token in `body` starts within the byte range `[from, to]` - i.e. a block image occupies
+ * that line. Reads the same token grammar as the image widget, so the cover gutter and the widget can never
+ * disagree about which lines are images.
+ */
+export function hasImageTokenInRange(body: string, from: number, to: number): boolean {
+   return findImageTokens(body).some((token) => token.index >= from && token.index <= to);
+}
+
+/**
  * Rebuilds one image token from its parts. Emits `![alt](asset:HASH)` at the default (no title), else
  * `![alt](asset:HASH "title")`. A blank `title` drops the title entirely, keeping the body minimal.
  */

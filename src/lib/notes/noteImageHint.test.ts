@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
    activeImageTokenAt,
    findImageTokens,
+   hasImageTokenInRange,
    parseImageHint,
    resizeWidthPct,
    rewriteImageHintAt,
@@ -199,5 +200,35 @@ describe('align is a block, never a wrap', () => {
       const body = `![](asset:${HASH} "left 40")\n\nLore below it.`;
       const centered = rewriteImageHintAt(body, 0, { align: 'center', widthPct: 100, aspect: null });
       expect(centered).toBe(`![](asset:${HASH})\n\nLore below it.`);
+   });
+});
+
+describe('hasImageTokenInRange', () => {
+   // The cover gutter feeds a line's [from, to] here to decide whether that line is a block image (so it clears
+   // the cover exactly like a table). Detection reuses `findImageTokens`, so it can't drift from the widget.
+   const IMG = `![](asset:${HASH})`;
+
+   it('is true when an image token starts inside the range', () => {
+      const body = `Intro\n${IMG}\nMore`;
+      const lineStart = body.indexOf(IMG);
+      expect(hasImageTokenInRange(body, lineStart, lineStart + IMG.length)).toBe(true);
+   });
+
+   it('is true for an image on the FIRST line', () => {
+      const body = `${IMG}\n\nLore below.`;
+      expect(hasImageTokenInRange(body, 0, IMG.length)).toBe(true);
+   });
+
+   it('is false for a plain-text line', () => {
+      const body = `Intro\n${IMG}`;
+      // The first line ("Intro") holds no image token.
+      expect(hasImageTokenInRange(body, 0, 5)).toBe(false);
+   });
+
+   it('does not match a token that merely overlaps the range end from outside', () => {
+      const body = `Intro\n${IMG}`;
+      const imgStart = body.indexOf(IMG);
+      // A range ending one byte before the token start must not claim it.
+      expect(hasImageTokenInRange(body, 0, imgStart - 1)).toBe(false);
    });
 });
