@@ -426,7 +426,7 @@ export default function MobileDrawer({ onAddToCharacter, onLoadCharacter }: Mobi
 						<input
 							ref={fileInputRef}
 							type="file"
-							accept=".cotm,.json"
+							accept=".cotm,.json,.md,.markdown,text/markdown"
 							onChange={handleFileSelected}
 						/>
 					</form>

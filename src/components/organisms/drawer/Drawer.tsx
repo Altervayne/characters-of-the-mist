@@ -362,7 +362,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = fals
                               type="file"
                               ref={fileInputRef}
                               onChange={handleFileSelected}
-                              accept=".cotm,application/json"
+                              accept=".cotm,application/json,.md,.markdown,text/markdown"
                            />
                         </form>
                         <Button

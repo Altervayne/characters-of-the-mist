@@ -254,7 +254,8 @@
          "exported": "Note exported to downloads.",
          "imported": "Note file imported successfully.",
          "exportedMarkdown": "Note exported as Markdown to downloads.",
-         "importedMarkdown": "Markdown file imported successfully."
+         "importedMarkdown": "Markdown file imported successfully.",
+         "updated": "Note updated from file."
       },
       "theme": {
          "exported": "Theme exported to downloads.",
@@ -376,7 +377,6 @@
          "exportNote": "Export Note",
          "importNote": "Import Note",
          "exportNoteMarkdown": "Export as Markdown",
-         "importNoteMarkdown": "Import Markdown",
          "exportMarkdownWarningTitle": "Export without images?",
          "exportMarkdownWarningDescription": "Images are stored locally and won't appear when this file is opened on another device. Export anyway?",
          "exportMarkdownWarningCancel": "Cancel",
@@ -386,11 +386,14 @@
          "importComponent": "Import Component",
          "updateCharacter": "Update Character from File",
          "updateBoard": "Update Board from File",
+         "updateNote": "Update Note from File",
 
          "updateCharacterConfirmTitle": "Replace this character's contents?",
          "updateCharacterConfirmDescription": "This character's contents will be replaced by the file's, keeping its place in your drawer and any board links pointing at it. The drawer copy updates only when you Save. This can't be undone.",
          "updateBoardConfirmTitle": "Replace this board's contents?",
          "updateBoardConfirmDescription": "This board's contents will be replaced by the file's, keeping its place in your drawer. The drawer copy updates only when you Save. This can't be undone.",
+         "updateNoteConfirmTitle": "Replace this note's contents?",
+         "updateNoteConfirmDescription": "This note's contents will be replaced by the file's, keeping its place in your drawer and any links pointing at it. The drawer copy updates only when you Save. This can't be undone.",
          "updateConfirmCancelButton": "Cancel",
          "updateConfirmButton": "Replace contents",
 
@@ -1235,7 +1238,6 @@
          "saveItemToDrawerAs": "Save: Selected Item to Drawer As…",
          "exportDrawer": "Export: Full Drawer",
          "exportNoteMarkdown": "Export: Note as Markdown",
-         "importNoteMarkdown": "Import: Markdown File",
 
          "renameCharacter": "Rename: Character",
          "resetCharacter": "Reset: Character",

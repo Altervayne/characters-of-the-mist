@@ -10,11 +10,12 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw, FileUp, FileDown } from 'lucide-react';
+import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw, FileUp } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { exportCharacterSheet, exportToFile, generateExportFilename, importFromFile } from '@/lib/utils/export-import';
+import { exportCharacterSheet, exportToFile, generateExportFilename, importFromFile, readFileAsText } from '@/lib/utils/export-import';
+import { noteFromMarkdown } from '@/lib/notes/noteMarkdownFile';
 import { harmonizeData } from '@/lib/harmonization';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { importBoard, loadBoard } from '@/lib/board/boardRepository';
@@ -50,7 +51,7 @@ interface SidebarMenuProps {
    isCollapsed: boolean;
    activeWindow: WindowTypes;
    onExportNoteMarkdown: () => void;
-   onImportNoteMarkdown: () => void;
+   onImportNoteMarkdownFile: (file: File) => Promise<void>;
    onToggleEditing: () => void;
    onToggleDrawer: () => void;
    onToggleCollapse: () => void;
@@ -59,7 +60,7 @@ interface SidebarMenuProps {
    onOpenPatchNotes: () => void;
 }
 
-export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onExportNoteMarkdown, onImportNoteMarkdown, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
+export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onExportNoteMarkdown, onImportNoteMarkdownFile, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
    const { t } = useTranslation();
    const { t: tNotifications } = useTranslation();
 
@@ -87,6 +88,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const boardUpdateFormRef = useRef<HTMLFormElement>(null);
    const noteImportInputRef = useRef<HTMLInputElement>(null);
    const noteFormRef = useRef<HTMLFormElement>(null);
+   const noteUpdateInputRef = useRef<HTMLInputElement>(null);
+   const noteUpdateFormRef = useRef<HTMLFormElement>(null);
 
 
 
@@ -201,6 +204,15 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       const file = event.target.files?.[0];
       if (!file) return;
 
+      // Route by extension: a plain markdown file imports as portable text, everything else as the
+      // full-fidelity `.cotm` envelope. The markdown branch owns its own toasts.
+      const name = file.name.toLowerCase();
+      if (name.endsWith('.md') || name.endsWith('.markdown')) {
+         await onImportNoteMarkdownFile(file);
+         noteFormRef.current?.reset();
+         return;
+      }
+
       try {
          const importedData = await importFromFile(file);
          if (importedData.fileType === 'NOTE') {
@@ -262,6 +274,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // before the destructive replace. No re-ID here (that's the new-board path) - the id is preserved.
    const [pendingCharacterUpdate, setPendingCharacterUpdate] = useState<Character | null>(null);
    const [pendingBoardUpdate, setPendingBoardUpdate] = useState<Board | null>(null);
+   // A note update stashes the incoming content plus whether it replaces the cover: a `.cotm` update
+   // replaces everything (cover included); a `.md` update carries no cover, so it keeps the existing one.
+   const [pendingNoteUpdate, setPendingNoteUpdate] = useState<{ note: Note; replaceCover: boolean } | null>(null);
 
    const handleCharacterUpdateFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -298,6 +313,36 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       boardUpdateFormRef.current?.reset();
    };
 
+   const handleNoteUpdateFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const hasActiveNote = !!getActiveNoteStore()?.getState().note;
+      try {
+         const name = file.name.toLowerCase();
+         if (name.endsWith('.md') || name.endsWith('.markdown')) {
+            // Markdown replaces title + body only; the existing cover is kept.
+            if (!hasActiveNote) {
+               toast.error(tNotifications('Notifications.general.importFailed'));
+            } else {
+               const note = noteFromMarkdown(await readFileAsText(file), file.name);
+               setPendingNoteUpdate({ note, replaceCover: false });
+            }
+         } else {
+            // A `.cotm` note replaces everything, cover included. Notes are 2.0-native (no harmonize).
+            const importedData = await importFromFile(file);
+            if (importedData.fileType !== 'NOTE' || !hasActiveNote) {
+               toast.error(tNotifications('Notifications.general.importFailed'));
+            } else {
+               setPendingNoteUpdate({ note: importedData.content as Note, replaceCover: true });
+            }
+         }
+      } catch (error) {
+         console.error("Failed to read note file:", error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+      noteUpdateFormRef.current?.reset();
+   };
+
    const confirmCharacterUpdate = () => {
       if (!pendingCharacterUpdate || !character) { setPendingCharacterUpdate(null); return; }
       // Keep this character's identity + drawer link; take everything else from the file. The same id
@@ -327,6 +372,22 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          toast.error(tNotifications('Notifications.general.importFailed'));
       }
       setPendingBoardUpdate(null);
+   };
+
+   const confirmNoteUpdate = () => {
+      const store = getActiveNoteStore();
+      const current = store?.getState().note;
+      if (!pendingNoteUpdate || !store || !current) { setPendingNoteUpdate(null); return; }
+      // Keep this note's id + drawer link; take title/body from the file. A `.cotm` replaces the cover
+      // too; a `.md` keeps the current one. loadNote re-seeds the open editor in place; mark dirty until Save.
+      const { note, replaceCover } = pendingNoteUpdate;
+      const updated: Note = { id: current.id, title: note.title, body: note.body, cover: replaceCover ? note.cover : current.cover };
+      const { loadNote: loadNoteIntoStore, setHasUnsavedChanges: setNoteDirty, flush } = store.getState().actions;
+      loadNoteIntoStore(updated, store.getState().drawerItemId);
+      setNoteDirty(true);
+      flush();
+      setPendingNoteUpdate(null);
+      toast.success(tNotifications('Notifications.note.updated'));
    };
 
 
@@ -498,8 +559,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <SidebarButton isCollapsed={isCollapsed} onClick={onExportNoteMarkdown} Icon={FileUp}>
                         {t('CharacterSheetPage.SidebarMenu.exportNoteMarkdown')}
                      </SidebarButton>
-                     <SidebarButton isCollapsed={isCollapsed} onClick={onImportNoteMarkdown} Icon={FileDown}>
-                        {t('CharacterSheetPage.SidebarMenu.importNoteMarkdown')}
+                     <SidebarButton isCollapsed={isCollapsed} onClick={() => noteUpdateInputRef.current?.click()} Icon={RefreshCw}>
+                        {t('CharacterSheetPage.SidebarMenu.updateNote')}
                      </SidebarButton>
                   </motion.section>
                }
@@ -600,7 +661,15 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   type="file"
                   ref={noteImportInputRef}
                   onChange={handleNoteFileSelected}
-                  accept=".cotm,application/json"
+                  accept=".cotm,application/json,.md,.markdown,text/markdown"
+               />
+            </form>
+            <form ref={noteUpdateFormRef} className="hidden">
+               <input
+                  type="file"
+                  ref={noteUpdateInputRef}
+                  onChange={handleNoteUpdateFileSelected}
+                  accept=".cotm,application/json,.md,.markdown,text/markdown"
                />
             </form>
          </div>
@@ -644,6 +713,19 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                <AlertDialogFooter>
                   <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.updateConfirmCancelButton')}</AlertDialogCancel>
                   <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={confirmBoardUpdate}>{t('CharacterSheetPage.SidebarMenu.updateConfirmButton')}</AlertDialogAction>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
+
+         <AlertDialog open={pendingNoteUpdate !== null} onOpenChange={(open) => { if (!open) setPendingNoteUpdate(null); }}>
+            <AlertDialogContent>
+               <AlertDialogHeader>
+                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.updateNoteConfirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.updateNoteConfirmDescription')}</AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.updateConfirmCancelButton')}</AlertDialogCancel>
+                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer" onClick={confirmNoteUpdate}>{t('CharacterSheetPage.SidebarMenu.updateConfirmButton')}</AlertDialogAction>
                </AlertDialogFooter>
             </AlertDialogContent>
          </AlertDialog>

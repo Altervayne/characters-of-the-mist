@@ -161,9 +161,9 @@ function DesktopCharacterSheetPage() {
 
    const { getRootProps, isDragActive: isFileDragActive, handleFileSelected, triggerImport, formRef, fileInputRef } = useCharacterSheetFileImport();
 
-   // Plain-`.md` note export/import (portable text), alongside the full-fidelity `.cotm` note path.
-   // Shared by the sidebar and the palette; its warning dialog + picker render once below.
-   const { exportActiveNoteAsMarkdown, triggerMarkdownImport, dialogs: noteMarkdownDialogs } = useNoteMarkdownIO();
+   // Plain-`.md` note export (portable text), alongside the full-fidelity `.cotm` note path. Its
+   // warning dialog renders once below; markdown IMPORT rides the sidebar's "Import Note" picker.
+   const { exportActiveNoteAsMarkdown, importMarkdownFile, dialogs: noteMarkdownDialogs } = useNoteMarkdownIO();
 
 
    // ##############################
@@ -183,7 +183,6 @@ function DesktopCharacterSheetPage() {
       onOpenSettings: () => setSettingsOpen(true),
       onImportFile: triggerImport,
       onExportNoteMarkdown: exportActiveNoteAsMarkdown,
-      onImportNoteMarkdown: triggerMarkdownImport,
       onCreateChallenge: handleCreateChallenge,
       onCreateJournal: addJournal,
    });
@@ -224,7 +223,7 @@ function DesktopCharacterSheetPage() {
                   isCollapsed={isSidebarCollapsed}
                   activeWindow={ activeNote ? 'NOTE' : (activeBoard ? 'BOARD' : (character ? 'PLAY_AREA' : 'MAIN_MENU')) }
                   onExportNoteMarkdown={exportActiveNoteAsMarkdown}
-                  onImportNoteMarkdown={triggerMarkdownImport}
+                  onImportNoteMarkdownFile={importMarkdownFile}
                   onToggleEditing={() => setIsEditing(!isEditing)}
                   onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
                   onToggleCollapse={toggleSidebarCollapsed}
@@ -358,7 +357,7 @@ function DesktopCharacterSheetPage() {
             <input ref={fileInputRef} type="file" accept=".cotm,.json" onChange={handleFileSelected} />
          </form>
 
-         {/* Warning dialog + `.md` picker for the note Markdown export/import (sidebar + palette share these). */}
+         {/* The images-won't-travel warning for note Markdown export (sidebar + palette share it). */}
          {noteMarkdownDialogs}
 
          {/* DIALOGS START */}

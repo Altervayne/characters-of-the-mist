@@ -7,8 +7,9 @@ import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 
 // -- Utils Imports --
-import { deriveDrawerFolderName, exportDrawer, importFromFile } from '@/lib/utils/export-import';
+import { deriveDrawerFolderName, exportDrawer, importFromFile, readFileAsText } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
+import { noteFromMarkdown } from '@/lib/notes/noteMarkdownFile';
 
 // -- Store Imports --
 import { useDrawerActions } from '@/lib/stores/drawerStore';
@@ -47,6 +48,16 @@ export function useDrawerFileImport(currentFolderId: string | null) {
       if (!file) return;
 
       try {
+         // Markdown imports as a note item. Checked FIRST: `importFromFile` parses JSON and would throw
+         // on a `.md`. Notes are game-agnostic (NEUTRAL), so it drops into the open folder like any item.
+         const name = file.name.toLowerCase();
+         if (name.endsWith('.md') || name.endsWith('.markdown')) {
+            const note = noteFromMarkdown(await readFileAsText(file), file.name);
+            await addImportedItem(note, 'NOTE', 'NEUTRAL', currentFolderId ?? undefined);
+            toast.success(tNotifications('Notifications.drawer.importSuccess'));
+            return;
+         }
+
          const importedData = await importFromFile(file);
          // Harmonize the parsed payload BEFORE persisting - file import is the only path 1.x data
          // takes into 2.0, so a drawer / folder / loose item must be migrated the same way the
@@ -97,6 +108,7 @@ export function useDrawerFileImport(currentFolderId: string | null) {
       noKeyboard: true,
       accept: {
          'application/json': ['.cotm', '.json'],
+         'text/markdown': ['.md', '.markdown'],
       },
    });
 

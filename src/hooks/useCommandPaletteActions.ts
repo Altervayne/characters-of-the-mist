@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, FileDown, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -39,7 +39,6 @@ interface CommandActionArgs {
    onOpenSettings: () => void;
    onImportFile: () => void;
    onExportNoteMarkdown: () => void;
-   onImportNoteMarkdown: () => void;
    onCreateChallenge: () => void;
    onCreateJournal: () => void;
 }
@@ -67,7 +66,7 @@ function boardCommandId(kind: string): string {
 
 
 
-export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onOpenSettings, onImportFile, onExportNoteMarkdown, onImportNoteMarkdown, onCreateChallenge, onCreateJournal }: CommandActionArgs): CommandAction[] {
+export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onOpenSettings, onImportFile, onExportNoteMarkdown, onCreateChallenge, onCreateJournal }: CommandActionArgs): CommandAction[] {
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
@@ -197,10 +196,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'saveItemToDrawer', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'item', 'card', 'tracker'], icon: Save, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawer') },
       { id: 'saveItemToDrawerAs', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawerAs'), keywords: ['save', 'as', 'drawer', 'store', 'fork', 'copy', 'item', 'card', 'tracker'], icon: SaveAll, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawerAs') },
       { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
-      // Plain-`.md` note export/import, alongside the full-fidelity `.cotm` note path. Export needs an
-      // active note (note scope); import creates a new note tab, so it shows everywhere (global).
+      // Plain-`.md` note export, alongside the full-fidelity `.cotm` note path. Needs an active note
+      // (note scope). Markdown IMPORT rides the existing "Import Note" picker (routed by extension), so
+      // it has no separate command.
       { id: 'exportNoteMarkdown', scope: 'note', label: t('CommandPalette.commands.exportNoteMarkdown'), keywords: ['export', 'note', 'markdown', 'md', 'text'], icon: FileUp, group: t('CommandPalette.groups.export'), action: onExportNoteMarkdown },
-      { id: 'importNoteMarkdown', scope: 'global', label: t('CommandPalette.commands.importNoteMarkdown'), keywords: ['import', 'note', 'markdown', 'md', 'text', 'file'], icon: FileDown, group: t('CommandPalette.groups.export'), action: onImportNoteMarkdown },
 
       // #################################
       // ###   CHARACTER SHEET GROUP   ###

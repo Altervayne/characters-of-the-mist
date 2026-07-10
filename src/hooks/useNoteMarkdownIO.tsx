@@ -1,5 +1,5 @@
 // -- React Imports --
-import React, { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -22,18 +22,15 @@ import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import type { Note } from '@/lib/types/board';
 
 /**
- * The plain-`.md` export/import flow for the active note, shared by the sidebar and the command
- * palette so both drive one implementation (and one warning dialog + one picker). Export serializes
- * the note through {@link noteToMarkdown}; when the note has images - which are refs, not bytes, so
- * they can't travel in a `.md` - it warns first. Import reads the text, builds a fresh note, and
- * opens it as a tab. `dialogs` must be rendered once by the host.
+ * The plain-`.md` note flow. EXPORT is its own explicit format choice: serialize the active note
+ * through {@link noteToMarkdown} and download it, warning first when the note has images (they are
+ * refs, not bytes, so they can't travel in a `.md`). `dialogs` (the warning) must be rendered once
+ * by the host. IMPORT has no separate entry point - {@link importMarkdownFile} is the `.md` step the
+ * unified "Import Note" picker calls when the picked file is markdown; it toasts and never throws.
  */
 export function useNoteMarkdownIO() {
    const { t } = useTranslation();
    const { openNoteTab } = useTabManagerActions();
-
-   const inputRef = useRef<HTMLInputElement>(null);
-   const formRef = useRef<HTMLFormElement>(null);
 
    // A note staged for export while the "images won't travel" warning is up; null when nothing pends.
    const [pendingExport, setPendingExport] = useState<Note | null>(null);
@@ -64,13 +61,11 @@ export function useNoteMarkdownIO() {
       setPendingExport(null);
    };
 
-   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
+   // The `.md` branch of the unified "Import Note" picker: parse the text into a new working note
+   // (unlinked, so a first save routes to Save-As) and open its tab. Self-contained toasts, no throw.
+   const importMarkdownFile = async (file: File) => {
       try {
          const text = await readFileAsText(file);
-         // Materialize the parsed markdown as a new working note (unlinked, so a first save routes to
-         // Save-As), then open its tab by id.
          const note = noteFromMarkdown(text, file.name);
          await importNote(note, null);
          await openNoteTab(note.id);
@@ -79,36 +74,22 @@ export function useNoteMarkdownIO() {
          console.error('Failed to import markdown file:', error);
          toast.error(t('Notifications.general.importFailed'));
       }
-      formRef.current?.reset();
    };
 
-   const triggerMarkdownImport = () => inputRef.current?.click();
-
    const dialogs = (
-      <>
-         <form ref={formRef} className="hidden">
-            <input
-               type="file"
-               ref={inputRef}
-               onChange={handleFileSelected}
-               accept=".md,.markdown,text/markdown,text/plain"
-            />
-         </form>
-
-         <AlertDialog open={pendingExport !== null} onOpenChange={(open) => { if (!open) setPendingExport(null); }}>
-            <AlertDialogContent>
-               <AlertDialogHeader>
-                  <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningTitle')}</AlertDialogTitle>
-                  <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningDescription')}</AlertDialogDescription>
-               </AlertDialogHeader>
-               <AlertDialogFooter>
-                  <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningCancel')}</AlertDialogCancel>
-                  <AlertDialogAction className="cursor-pointer" onClick={confirmExport}>{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningConfirm')}</AlertDialogAction>
-               </AlertDialogFooter>
-            </AlertDialogContent>
-         </AlertDialog>
-      </>
+      <AlertDialog open={pendingExport !== null} onOpenChange={(open) => { if (!open) setPendingExport(null); }}>
+         <AlertDialogContent>
+            <AlertDialogHeader>
+               <AlertDialogTitle>{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningTitle')}</AlertDialogTitle>
+               <AlertDialogDescription>{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningDescription')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+               <AlertDialogCancel className="cursor-pointer">{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningCancel')}</AlertDialogCancel>
+               <AlertDialogAction className="cursor-pointer" onClick={confirmExport}>{t('CharacterSheetPage.SidebarMenu.exportMarkdownWarningConfirm')}</AlertDialogAction>
+            </AlertDialogFooter>
+         </AlertDialogContent>
+      </AlertDialog>
    );
 
-   return { exportActiveNoteAsMarkdown, triggerMarkdownImport, dialogs };
+   return { exportActiveNoteAsMarkdown, importMarkdownFile, dialogs };
 }
