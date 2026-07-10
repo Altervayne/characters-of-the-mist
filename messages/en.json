@@ -138,6 +138,7 @@
       "sendToBack": "Send to back",
       "deleteItem": "Delete",
       "editEmbed": "Edit",
+      "editNote": "Edit note",
       "flipEmbed": "Flip",
       "expandEmbed": "Expand",
       "collapseEmbed": "Collapse",
@@ -1246,6 +1247,7 @@
          "createTracker": "Create: Tracker",
          "createChallengeCard": "Create: Challenge Card",
          "createJournal": "Create: Journal",
+         "embedNote": "Embed: Note",
 
          "cardTypeCharacter": "Type: Character Theme",
          "cardTypeFellowship": "Type: Fellowship Theme",

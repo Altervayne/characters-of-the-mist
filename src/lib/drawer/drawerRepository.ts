@@ -14,6 +14,7 @@ import { DrawerInvalidOperationError, DrawerNotFoundError, DrawerTransactionErro
 import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
 import type { Drawer, DrawerItem, DrawerItemContent, Folder, GameSystem, GeneralItemType } from '@/lib/types/drawer';
 import type { Character } from '@/lib/types/character';
+import type { Note } from '@/lib/types/board';
 
 /*
  * Framework-agnostic data-access layer for the normalized drawer. Pure persistence:
@@ -335,6 +336,28 @@ export async function getCharacterItemIdMap(): Promise<Map<string, string>> {
       if (characterId) map.set(characterId, item.id);
    }
    return map;
+}
+
+/** A saved note the palette can embed on a board: the drawer item id, the note id it references, and its title. */
+export interface SavedNoteRef {
+   /** The drawer `NOTE` item id - the reference's `sourceDrawerItemId`. */
+   drawerItemId: string;
+   /** The note's own id - the reference's `noteId` (the open-tab lookup key). */
+   noteId: string;
+   /** The note's title, for the picker label (may be empty for an untitled note). */
+   title: string;
+}
+
+/**
+ * Every saved note (drawer `NOTE` items), as the picker refs the palette's "Embed note" command lists. Mirrors
+ * {@link getCharacterItemIdMap}'s type-scoped scan. The board builds the reference from `drawerItemId` at embed.
+ */
+export async function listSavedNotes(): Promise<SavedNoteRef[]> {
+   const items = await db.items.where('type').equals('NOTE').toArray();
+   return items.map((item) => {
+      const note = item.content as Note;
+      return { drawerItemId: item.id, noteId: note.id, title: note.title };
+   });
 }
 
 /**

@@ -18,7 +18,8 @@ import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToW
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
-import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE } from '@/lib/board/embedDrawerItem';
+import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
+import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
@@ -568,6 +569,26 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setSelectedIds(new Set([id]));
    };
 
+   /**
+    * Embeds a saved note at `worldCenter` as a live reference tile: loads the drawer NOTE item and builds
+    * the SAME reference spec the drag-drop path uses ({@link embeddedSpecForDrawerItem}), then drops + selects
+    * it. Async (a drawer read); a deleted source no-ops. Keyed on the note's drawer item id (from the picker).
+    */
+   const embedNoteAt = (drawerItemId: string, worldCenter: Point) => {
+      void getItem(drawerItemId).then((item) => {
+         if (!item) return;
+         const spec = embeddedSpecForDrawerItem(item);
+         if (!spec) return;
+         const zValues = sortedItems.map((existing) => existing.z);
+         const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+         const id = cuid();
+         const placement = { id, x: worldCenter.x - spec.width / 2, y: worldCenter.y - spec.height / 2, width: spec.width, height: spec.height };
+         const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+         void actions.addItem({ ...placement, kind: spec.kind, z, zoneId, content: spec.content });
+         setSelectedIds(new Set([id]));
+      });
+   };
+
    const { clearBoardAction, setDrawerOpen } = useAppGeneralStateActions();
 
    /*
@@ -625,6 +646,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
       else if (pendingBoardAction.startsWith('create:')) createItemAt(pendingBoardAction.slice('create:'.length) as CreatableKind, viewCenter);
+      else if (pendingBoardAction.startsWith('embedNote:')) embedNoteAt(pendingBoardAction.slice('embedNote:'.length), viewCenter);
       clearBoardAction();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
    }, [pendingBoardAction, clearBoardAction]);

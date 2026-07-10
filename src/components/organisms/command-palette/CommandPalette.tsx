@@ -20,7 +20,7 @@ import { useCommandPaletteWizard } from '@/hooks/command-palette/useCommandPalet
 // -- Local Imports --
 import { commandVariants } from './constants';
 import { RootPage } from './pages/RootPage';
-import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage } from './pages/SimplePages';
+import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage, EmbedNote_PickPage } from './pages/SimplePages';
 import {
    CreateCard_TypePage,
    CreateCard_LegendsThemeTypePage,
@@ -75,7 +75,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    const character = useCharacterStore((state) => state.character);
    const currentGame = character?.game;
    const isOpen = useAppGeneralStateStore((state) => state.isCommandPaletteOpen);
-   const { setCommandPaletteOpen, toggleCommandPalette } = useAppGeneralStateActions();
+   const { setCommandPaletteOpen, toggleCommandPalette, requestBoardAction } = useAppGeneralStateActions();
 
    const { activePage, pushPage, popPage } = useCommandPaletteNavigation(isOpen);
    const {
@@ -228,6 +228,13 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         }} />
                      )}
                      {activePage === 'rollDice' && (<RollDicePage inputValue={inputValue} />)}
+                     {activePage === 'embedNote' && (
+                        <EmbedNote_PickPage onSelect={(note) => {
+                           // The canvas owns the drop point; it builds the reference from the note's drawer id.
+                           requestBoardAction(`embedNote:${note.drawerItemId}`);
+                           setCommandPaletteOpen(false);
+                        }} />
+                     )}
 
 
 

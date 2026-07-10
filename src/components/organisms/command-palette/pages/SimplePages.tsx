@@ -1,4 +1,5 @@
 // -- React Imports --
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -6,12 +7,15 @@ import { Command } from 'cmdk';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { CornerDownLeft, Palette, Dices } from 'lucide-react';
+import { CornerDownLeft, Palette, Dices, NotebookText } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+
+// -- Data Imports --
+import { listSavedNotes } from '@/lib/drawer/drawerRepository';
 
 // -- Theme Imports --
 import { customThemeClass } from '@/lib/theme/themeTokens';
@@ -26,6 +30,7 @@ import { commonItemClass } from '../constants';
 // -- Type Imports --
 import type { ThemeName } from '@/lib/stores/appSettingsStore';
 import type { GameSystem } from '@/lib/types/drawer';
+import type { SavedNoteRef } from '@/lib/drawer/drawerRepository';
 
 
 
@@ -140,6 +145,50 @@ export const NewCharacter_GamePage = ({ onSelect }: NewCharacter_GamePageProps) 
                >
                   <Icon className="mr-2 h-4 w-4" />
                   <span>{t(titleKey)}</span>
+               </Command.Item>
+            );
+         })}
+      </Command.Group>
+   );
+};
+
+
+
+// ####################
+// ###   EMBED NOTE  ###
+// ####################
+interface EmbedNote_PickPageProps {
+   onSelect: (note: SavedNoteRef) => void;
+};
+
+/**
+ * Lists every saved note (drawer `NOTE` items) so a GM can embed one on the board as a live reference tile.
+ * The list loads async from the drawer; the palette's own filter narrows it by title as the GM types (the
+ * note id rides the value so untitled notes never collide). Selecting a note hands its ref to the board.
+ */
+export const EmbedNote_PickPage = ({ onSelect }: EmbedNote_PickPageProps) => {
+   const { t } = useTranslation();
+   const [notes, setNotes] = useState<SavedNoteRef[]>([]);
+
+   useEffect(() => {
+      let alive = true;
+      void listSavedNotes().then((list) => { if (alive) setNotes(list); });
+      return () => { alive = false; };
+   }, []);
+
+   return (
+      <Command.Group heading={t('CommandPalette.commands.embedNote')}>
+         {notes.map((note) => {
+            const label = note.title.trim() || t('Tabs.untitled');
+            return (
+               <Command.Item
+                  key={note.drawerItemId}
+                  value={`${label} ${note.noteId}`}
+                  onSelect={() => onSelect(note)}
+                  className={commonItemClass}
+               >
+                  <NotebookText className="mr-2 h-4 w-4" />
+                  <span>{label}</span>
                </Command.Item>
             );
          })}

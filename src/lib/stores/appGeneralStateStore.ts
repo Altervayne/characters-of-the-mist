@@ -12,16 +12,18 @@ export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 
 /*
  * A one-shot request the palette hands the active board (which owns the drop point and the selection):
- * mint a challenge or a board-native element at the view center, or save the selected copy card/tracker
- * back to the drawer / as a new drawer item. The canvas consumes it against its own state and clears it.
- * The `create:<kind>` members mirror the toolbar/radial's `CreatableKind` set (explicit per-kind, not a
- * free-form parameter), so a palette create can't drift from the registry.
+ * mint a challenge or a board-native element at the view center, save the selected copy card/tracker back
+ * to the drawer / as a new drawer item, or embed a saved note as a live reference tile. The canvas consumes
+ * it against its own state and clears it. The `create:<kind>` members mirror the toolbar/radial's
+ * `CreatableKind` set (explicit per-kind, not a free-form parameter), so a palette create can't drift from
+ * the registry; `embedNote:<drawerItemId>` carries the picked note's drawer item id.
  */
 export type BoardAction =
    | 'createChallenge'
    | 'saveItemToDrawer'
    | 'saveItemToDrawerAs'
-   | `create:${CreatableKind}`;
+   | `create:${CreatableKind}`
+   | `embedNote:${string}`;
 
 interface AppGeneralState {
    // Undo/Redo Context

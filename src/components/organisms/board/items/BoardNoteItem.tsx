@@ -1,7 +1,11 @@
 // -- React Imports --
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
+
+// -- Icon Imports --
+import { Pencil } from 'lucide-react';
 
 // -- Store and Hook Imports --
 import { useReferencedDrawerItem } from '@/lib/board/useReferencedDrawerItem';
@@ -51,12 +55,16 @@ function openNoteReference(
 interface BoardNoteItemProps {
    item: BoardItem;
    content: NoteBoardContent;
+   /** In the selection set: gates the toolbar Edit-pencil portal. */
+   isSelected: boolean;
+   /** The selection toolbar's per-kind action slot; the Edit-pencil portals here. Null when unselected. */
+   toolbarSlot: HTMLElement | null;
    /** Caches the reference's last-known read via a direct (non-undoable) write. */
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
    onDelete: (id: string) => void;
 }
 
-export function BoardNoteItem({ item, content, onCacheLastKnown, onDelete }: BoardNoteItemProps) {
+export function BoardNoteItem({ item, content, isSelected, toolbarSlot, onCacheLastKnown, onDelete }: BoardNoteItemProps) {
    const { t } = useTranslation();
    // Open in a tab? Show the live instance. Tabs are keyed by the note id, so this needs no drawer read.
    // A copy never resolves live: it carries no `noteId` and reads its own frozen snapshot.
@@ -64,13 +72,13 @@ export function BoardNoteItem({ item, content, onCacheLastKnown, onDelete }: Boa
 
    if (content.mode === 'copy') {
       // A frozen snapshot (convert-to-copy, a later phase): render `data` directly, no live source.
-      return <NoteTile note={content.data} />;
+      return <NoteTile note={content.data} isSelected={isSelected} toolbarSlot={toolbarSlot} />;
    }
    if (isOpen) {
-      return <LiveNoteSource noteId={content.noteId} sourceDrawerItemId={content.sourceDrawerItemId} />;
+      return <LiveNoteSource noteId={content.noteId} sourceDrawerItemId={content.sourceDrawerItemId} isSelected={isSelected} toolbarSlot={toolbarSlot} />;
    }
    if (content.sourceDrawerItemId) {
-      return <DrawerNoteSource item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+      return <DrawerNoteSource item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
    }
    // Closed AND no source: a note that was never persisted anywhere.
    return <MissingNotePanel message={t('BoardView.referenceUnsavedRemoved')} onDelete={() => onDelete(item.id)} />;
@@ -80,21 +88,21 @@ export function BoardNoteItem({ item, content, onCacheLastKnown, onDelete }: Boa
  * The live source: subscribes to the open note's store instance, so an edit in its tab updates the tile
  * immediately. Only mounted when the note is open, so the instance already exists.
  */
-function LiveNoteSource({ noteId, sourceDrawerItemId }: { noteId: string; sourceDrawerItemId?: string }) {
+function LiveNoteSource({ noteId, sourceDrawerItemId, isSelected, toolbarSlot }: { noteId: string; sourceDrawerItemId?: string; isSelected: boolean; toolbarSlot: HTMLElement | null }) {
    const actions = useTabManagerActions();
    const note = useStore(getOrCreateNoteInstance(noteId), (state) => state.note);
 
    // An open note never dangles. A momentary null (device-flip hydration) shows the quiet panel.
    if (!note) return <LoadingPanel />;
 
-   return <NoteTile note={note} onOpen={() => openNoteReference(noteId, note, sourceDrawerItemId, actions)} />;
+   return <NoteTile note={note} isSelected={isSelected} toolbarSlot={toolbarSlot} onOpen={() => openNoteReference(noteId, note, sourceDrawerItemId, actions)} />;
 }
 
 /**
  * The saved source: the live read-only mirror of the drawer item, used when the note is not open but
  * has a saved source. Caches each read as `lastKnown` so a deleted source degrades to a placeholder.
  */
-function DrawerNoteSource({ item, content, onCacheLastKnown, onDelete }: BoardNoteItemProps) {
+function DrawerNoteSource({ item, content, isSelected, toolbarSlot, onCacheLastKnown, onDelete }: BoardNoteItemProps) {
    const { t } = useTranslation();
    const actions = useTabManagerActions();
    const reference = content.mode === 'reference' ? content : null;
@@ -121,24 +129,40 @@ function DrawerNoteSource({ item, content, onCacheLastKnown, onDelete }: BoardNo
    // Not yet loaded (first read in flight, no cache): a quiet parchment placeholder.
    if (!note || !reference) return <LoadingPanel />;
 
-   return <NoteTile note={note} onOpen={() => openNoteReference(reference.noteId, note, reference.sourceDrawerItemId, actions)} />;
+   return <NoteTile note={note} isSelected={isSelected} toolbarSlot={toolbarSlot} onOpen={() => openNoteReference(reference.noteId, note, reference.sourceDrawerItemId, actions)} />;
 }
 
 /**
- * The parchment tile: the note's Reading render ({@link NoteDocument}) on the `--paper-*` surface,
- * windowed - a bordered sheet with internal vertical scroll. The scroll container is tagged
- * `data-board-wheel-scroll` so the wheel scrolls the tile instead of zooming the canvas. Double-click
- * opens the note's tab (no editor mounts on the canvas). The box supplies the selection ring + grip.
+ * The parchment tile: the note's Reading render ({@link NoteDocument}, `compact` so its title + cover size
+ * with the tile) on the `--paper-*` surface, windowed - a bordered sheet with internal vertical scroll. The
+ * scroll container is tagged `data-board-wheel-scroll` so the wheel scrolls the tile instead of zooming the
+ * canvas. Double-click - or the selection toolbar's Edit-pencil - opens the note's tab (no editor mounts on
+ * the canvas). The box supplies the selection ring + grip.
  */
-function NoteTile({ note, onOpen }: { note: Note; onOpen?: () => void }) {
+function NoteTile({ note, onOpen, isSelected, toolbarSlot }: { note: Note; onOpen?: () => void; isSelected: boolean; toolbarSlot: HTMLElement | null }) {
+   const { t } = useTranslation();
    return (
       <div
          onDoubleClick={onOpen}
          className="h-full w-full overflow-hidden rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-sm"
       >
          <div data-board-wheel-scroll className="h-full w-full overflow-y-auto overflow-x-hidden px-4 py-3">
-            <NoteDocument title={note.title} body={note.body} cover={note.cover} />
+            <NoteDocument compact title={note.title} body={note.body} cover={note.cover} />
          </div>
+         {/* Edit-pencil in the selection toolbar: the discoverable twin of double-click, opens the note tab. */}
+         {isSelected && toolbarSlot && onOpen && createPortal(
+            <button
+               type="button"
+               title={t('BoardView.editNote')}
+               aria-label={t('BoardView.editNote')}
+               onPointerDown={(event) => event.stopPropagation()}
+               onClick={onOpen}
+               className="flex cursor-pointer items-center justify-center rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+               <Pencil className="h-4 w-4" />
+            </button>,
+            toolbarSlot,
+         )}
       </div>
    );
 }

@@ -58,29 +58,43 @@ interface NoteDocumentProps {
    /** The note-level cover image; floated top-left so the opening text wraps beside it. */
    cover?: NoteCoverData;
    onMentionClick?: (segment: MentionSegment) => void;
+   /**
+    * Board-tile variant: sizes the title + cover with the CONTAINER (the tile), not the viewport, so a note
+    * reads cleanly at ~260px and scales up on resize. Opt-in only - the full-page Reading render omits it and
+    * keeps its fixed `text-4xl` title + natural cover (unchanged).
+    */
+   compact?: boolean;
    className?: string;
 }
 
-export function NoteDocument({ title, body, cover, onMentionClick, className }: NoteDocumentProps) {
+export function NoteDocument({ title, body, cover, onMentionClick, compact, className }: NoteDocumentProps) {
    const components = useMemo(() => ({ ...docMarkdownComponents, ...noteImageComponent, ...mentionComponents(onMentionClick) }), [onMentionClick]);
    const heading = title?.trim();
    // Display-only: break a table off a text line one `\n` below it (GFM would else absorb the text as a cell).
    const renderedBody = useMemo(() => separateTablesFromText(body), [body]);
    // `[display:flow-root]` under a cover makes this a BFC so the floated cover is CONTAINED - the parchment
-   // grows past a tall cover instead of the cover overflowing the sheet's bottom.
+   // grows past a tall cover instead of the cover overflowing the sheet's bottom. `compact` also makes the
+   // wrapper a container-query context (`@container`) so the title + cover below size against the tile width.
    return (
-      <div className={cn('mx-auto w-full max-w-[68ch] text-base break-words', cover && 'note-cover-host [display:flow-root]', className)}>
+      <div className={cn('mx-auto w-full max-w-[68ch] text-base break-words', compact && '@container', cover && 'note-cover-host [display:flow-root]', className)}>
          {/* The document title is the leading H1, ABOVE the cover (the cover floats after it, so the opening
-             body wraps beside the cover, not the title). Matches `noteToMarkdown`'s `# {title}`. */}
-         {heading ? <h1 className="mb-4 text-4xl font-bold text-paper-foreground">{heading}</h1> : null}
+             body wraps beside the cover, not the title). Matches `noteToMarkdown`'s `# {title}`. Compact steps
+             the title with the tile width - small by default, up to the full `text-4xl` on a wide tile. */}
+         {heading ? (
+            <h1 className={compact
+               ? 'mb-2 text-lg font-bold leading-tight text-paper-foreground @[18rem]:mb-3 @[18rem]:text-2xl @[28rem]:text-3xl @[40rem]:text-4xl'
+               : 'mb-4 text-4xl font-bold text-paper-foreground'}>{heading}</h1>
+         ) : null}
          {/* Cover floats before the body so the opening markdown flows beside it (magazine drop-cap). A leading
              heading in the body would normally `clear-both` below the float (that rule shields section breaks
              from inline images); under a cover host we neutralise it so the opening body heading wraps beside
-             the cover, matching Live's gutter. In-text images are blocks now, so nothing else relies on it. */}
+             the cover, matching Live's gutter. In-text images are blocks now, so nothing else relies on it.
+             Compact hides the cover on a very narrow tile and caps its height (growing with width) so it never
+             crowds out the title + body-start. */}
          {cover ? (
             <>
                <style>{'.note-cover-host > :is(h1,h2,h3,h4,h5,h6,hr){clear:none}'}</style>
-               <NoteCover cover={cover} />
+               <NoteCover cover={cover} className={compact ? '@max-[13rem]:hidden @[13rem]:max-h-28 @[26rem]:max-h-44 @[38rem]:max-h-64' : undefined} />
             </>
          ) : null}
          <ReactMarkdown remarkPlugins={[remarkGfm, remarkLineBreaks, remarkSoftBreaks, remarkMentions]} components={components} urlTransform={noteUrlTransform}>

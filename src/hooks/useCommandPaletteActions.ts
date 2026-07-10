@@ -233,6 +233,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
          group: t('CommandPalette.groups.creation'),
          action: () => requestBoardAction(`create:${entry.kind}`),
       })),
+      // Embed an EXISTING saved note as a live reference tile: pick a note on the next page, then the canvas
+      // drops it at view center (it owns the drop point, like the create commands).
+      { id: 'embedNote', scope: 'board', label: t('CommandPalette.commands.embedNote'), keywords: ['embed', 'note', 'handout', 'document', 'reference', 'board'], icon: NotebookText, group: t('CommandPalette.groups.creation'), pageId: 'embedNote' },
    ];
 
    // Each tab kind gets the global commands plus its own scope (character/board/note); the menu gets globals only.

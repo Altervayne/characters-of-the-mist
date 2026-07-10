@@ -1,6 +1,9 @@
 // -- Custom Hooks --
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
 // -- Local Imports --
 import { COVER_GAP_REM, clampCoverWidth, clampCoverAspect } from './noteCoverClasses';
 
@@ -18,13 +21,13 @@ import type { NoteCover as NoteCoverData } from '@/lib/types/board';
  * On the paper palette (the image is document content, not chrome). A missing/reclaimed blob renders nothing
  * so a cover-less document reads clean.
  */
-export function NoteCover({ cover }: { cover: NoteCoverData }) {
+export function NoteCover({ cover, className }: { cover: NoteCoverData; className?: string }) {
    const { url } = useAssetObjectUrl(cover.hash);
    if (!url) return null;
    const width = clampCoverWidth(cover.width);
    return (
       <span
-         className="float-left block overflow-hidden rounded-md shadow-sm"
+         className={cn('float-left block overflow-hidden rounded-md shadow-sm', className)}
          style={{
             width: `${width}%`,
             aspectRatio: `1 / ${clampCoverAspect(cover.aspect)}`,
