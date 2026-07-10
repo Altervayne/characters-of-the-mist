@@ -265,10 +265,13 @@ export function BoardItemBox({
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
-   // A card/tracker embed, and a character reference, ARE their own panels: each carries its own
-   // border, background, and shape, so the box adds no chrome (no second border/shadow, no grip) -
-   // just a selection ring. Fixed at the size set on drop; the panel owns any internal overflow.
-   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character';
+   // A card/tracker embed, a character reference, and a note tile ARE their own panels: each carries its
+   // own border, background, and shape, so the box adds no chrome (no second border/shadow) - just a
+   // selection ring, and it never clips (the panel owns its own rounding + overflow).
+   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note';
+   // A note tile is a WINDOWED embed: unlike the fixed card/tracker/character panels it is freely
+   // 2D-resizable (internal scroll), so it keeps the resize grip the other embeds drop.
+   const isResizableEmbed = item.kind === 'note';
    // A zone is a background frame: its tinted rectangle portals BEHIND the items (into `backLayer`),
    // and the box here renders only the on-top header + chrome - click-through everywhere else so the
    // items sitting inside it stay interactive. Selecting the empty interior is the background's job.
@@ -372,7 +375,8 @@ export function BoardItemBox({
                      : isPin
                         ? cn('rounded-full', isSelected && 'ring-2 ring-primary')
                         : isEmbed
-                           // Match the ring radius to the embed's own corners: a card is rounded-xl, a tracker rounded-lg.
+                           // Match the ring radius to the embed's own corners: a card is rounded-xl; a tracker,
+                           // character, or note tile is rounded-lg.
                            ? cn(item.kind === 'card' ? 'rounded-xl' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
                            : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary/50'),
             )}
@@ -411,8 +415,8 @@ export function BoardItemBox({
 
                {/* Single bottom-right resize grip, counter-scaled to a constant on-screen size.
                    A pin is a fixed-size dot, a collapsed zone is bar-sized (expand to resize), and a
-                   card/tracker embed is fixed at its native size, so none of them has a grip. */}
-               {!isPin && !isCollapsedZone && !isEmbed && (
+                   fixed card/tracker/character embed has no grip; a windowed note tile keeps it. */}
+               {!isPin && !isCollapsedZone && (!isEmbed || isResizableEmbed) && (
                   <div
                      onPointerDown={handleResizePointerDown}
                      onPointerMove={handleResizePointerMove}

@@ -136,18 +136,17 @@ export interface Note {
 }
 
 /**
- * A Note on the board, in the copy model: a self-contained snapshot of a {@link Note} in `data`,
- * carrying the originating `sourceDrawerItemId` when it came from (or was Save-As'd to) the drawer.
- * Copy-ONLY - a Note is its own content, so there is no live-mirror reference variant. Mirrors
- * {@link JournalBoardContent}. Board-embed WIRING lands in a later phase; the type exists now so the
- * kind is representable end to end.
+ * A Note on the board, in the reference-vs-copy model (mirrors {@link CharacterBoardContent} and
+ * {@link EmbeddedBoardContent}). A `reference` is a LIVE, read-only mirror of a saved note, keyed by
+ * `noteId` (the open-tab lookup): the open-tab instance when the note is open, so unsaved edits show,
+ * else the saved drawer entry (`sourceDrawerItemId`) - editing is the note tab's job. A drop always
+ * produces a reference. A `copy` is a frozen, self-contained snapshot in `data` - the convert-to-copy
+ * result (a later phase). `lastKnown` caches a reference's last successful read so a dangling tile
+ * (source deleted) can still show its title.
  */
-export interface NoteBoardContent {
-   kind: 'note';
-   mode: 'copy';
-   sourceDrawerItemId?: string;
-   data: Note;
-}
+export type NoteBoardContent =
+   | { kind: 'note'; mode: 'reference'; noteId: string; sourceDrawerItemId?: string; lastKnown?: Note }
+   | { kind: 'note'; mode: 'copy'; sourceDrawerItemId?: string; data: Note };
 
 /**
  * An embedded character card or tracker, in the reference-vs-copy model. A `copy` is a

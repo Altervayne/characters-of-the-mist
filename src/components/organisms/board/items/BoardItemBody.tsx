@@ -8,6 +8,7 @@ import { DiceTrayItem } from './DiceTrayItem';
 import { BoardCardItem } from './BoardCardItem';
 import { BoardTrackerItem } from './BoardTrackerItem';
 import { CharacterBoardItem } from './CharacterBoardItem';
+import { BoardNoteItem } from './BoardNoteItem';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent } from '@/lib/types/board';
@@ -16,7 +17,8 @@ import type { BoardItem, BoardItemContent } from '@/lib/types/board';
  * Picks the per-kind body for a board item. The note copies (post-it, journal) render their real,
  * editable body wrapped in the shared embed chrome (copy/source + Save-back); the native image kind
  * renders its editable body directly; embedded card/tracker copies render the real card/tracker
- * component read-only; every other kind (threat, connection) falls back to a generic labelled box.
+ * component read-only; a note reference tile live-mirrors a saved note (read-only, opens to its tab);
+ * every other kind (threat, connection) falls back to a generic labelled box.
  * Content edits are dispatched through `onContentChange`, already bound to this item's id by the box.
  */
 
@@ -63,6 +65,8 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
          return <BoardTrackerItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onAdoptSource={onAdoptSource} onDelete={onDelete} />;
       case 'character':
          return <CharacterBoardItem item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+      case 'note':
+         return <BoardNoteItem item={item} content={content} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       default:
          return <GenericItemBody item={item} />;
    }

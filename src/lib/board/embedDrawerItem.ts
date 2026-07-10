@@ -6,7 +6,7 @@ import cuid from 'cuid';
 
 // -- Type Imports --
 import type { DrawerItem, GeneralItemType } from '@/lib/types/drawer';
-import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent, PostItBoardContent, PostItNote, JournalBoardContent, Journal } from '@/lib/types/board';
+import type { CardBoardContent, TrackerBoardContent, ImageBoardContent, CharacterBoardContent, PostItBoardContent, PostItNote, JournalBoardContent, Journal, NoteBoardContent, Note } from '@/lib/types/board';
 import type { Card, Character, ImageCardDetails, Tracker } from '@/lib/types/character';
 
 /*
@@ -49,6 +49,9 @@ export const EMBEDDED_POSTIT_SIZE = { width: 180, height: 180 } as const;
 /** Native footprint of a re-embedded journal, matching a fresh board journal. */
 export const EMBEDDED_JOURNAL_SIZE = { width: 260, height: 320 } as const;
 
+/** Default footprint of a note reference tile: a flat handout wants a touch more height than a post-it. */
+export const NOTE_ELEMENT_SIZE = { width: 260, height: 320 } as const;
+
 // An IMAGE_CARD is NOT here: it drops as a native image item, not an embedded card.
 const CARD_TYPES = new Set<GeneralItemType>(['CHARACTER_CARD', 'CHARACTER_THEME', 'GROUP_THEME', 'LOADOUT_THEME', 'CHALLENGE_CARD']);
 
@@ -59,10 +62,10 @@ function trackerEmbedSize(trackerType: string | undefined): { width: number; hei
 
 /** The spec for a board item built from a drawer item: its kind, default size, and content. */
 export interface EmbeddedBoardSpec {
-   kind: 'card' | 'tracker' | 'image' | 'character' | 'post-it' | 'journal';
+   kind: 'card' | 'tracker' | 'image' | 'character' | 'post-it' | 'journal' | 'note';
    width: number;
    height: number;
-   content: CardBoardContent | TrackerBoardContent | ImageBoardContent | CharacterBoardContent | PostItBoardContent | JournalBoardContent;
+   content: CardBoardContent | TrackerBoardContent | ImageBoardContent | CharacterBoardContent | PostItBoardContent | JournalBoardContent | NoteBoardContent;
 }
 
 /**
@@ -176,6 +179,17 @@ export function embeddedSpecForDrawerItem(item: DrawerItem): EmbeddedBoardSpec |
          width: EMBEDDED_JOURNAL_SIZE.width,
          height: EMBEDDED_JOURNAL_SIZE.height,
          content: { kind: 'journal', mode: 'copy', sourceDrawerItemId: item.id, data },
+      };
+   }
+   if (item.type === 'NOTE') {
+      // A saved note drops as a LIVE read-only REFERENCE (editing is the note tab's job), keyed by the
+      // note's id (the open-tab lookup) with the drawer item as its saved source - mirrors the character.
+      const noteId = (item.content as Note).id;
+      return {
+         kind: 'note',
+         width: NOTE_ELEMENT_SIZE.width,
+         height: NOTE_ELEMENT_SIZE.height,
+         content: { kind: 'note', mode: 'reference', noteId, sourceDrawerItemId: item.id },
       };
    }
    // A drawer card/tracker wraps the same aggregate a sheet component is, so the shared mapping does

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES, EMBEDDED_POSTIT_SIZE, EMBEDDED_JOURNAL_SIZE } from './embedDrawerItem';
+import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec, EMBEDDED_CARD_SIZE, EMBEDDED_TRACKER_SIZES, EMBEDDED_POSTIT_SIZE, EMBEDDED_JOURNAL_SIZE, NOTE_ELEMENT_SIZE } from './embedDrawerItem';
 import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Type Imports --
@@ -127,6 +127,15 @@ describe('embeddedSpecForDrawerItem', () => {
       // Reference-only: no copy `data`, no `mode`.
       expect(spec!.content).not.toHaveProperty('data');
       expect(spec!.content).not.toHaveProperty('mode');
+   });
+
+   it('drops a saved NOTE as a live read-only REFERENCE tile (no copy, keyed by note + drawer ids)', () => {
+      // The content is the Note; its id keys the open-tab lookup, the drawer id is the saved source.
+      const spec = embeddedSpecForDrawerItem(makeDrawerItem('NOTE', { id: 'note-1', title: 'The Baron', body: 'Lore' } as unknown as DrawerItemContent));
+      expect(spec).toMatchObject({ kind: 'note', width: NOTE_ELEMENT_SIZE.width, height: NOTE_ELEMENT_SIZE.height });
+      expect(spec!.content).toMatchObject({ kind: 'note', mode: 'reference', noteId: 'note-1', sourceDrawerItemId: 'item-1' });
+      // Reference-only: no frozen copy `data`.
+      expect(spec!.content).not.toHaveProperty('data');
    });
 
    it('builds a character element for a SAVED tab character (links the drawer source)', () => {
