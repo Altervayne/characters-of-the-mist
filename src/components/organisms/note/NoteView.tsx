@@ -68,7 +68,7 @@ function NoteSurface() {
 
    const note = useStore(store, (state) => state.note);
    const cover = useStore(store, (state) => state.note?.cover);
-   const { updateTitle, updateBody, setCover, clearCover, flush } = store.getState().actions;
+   const { updateTitle, updateBody, setCover, clearCover, flush, setUndoController, setUndoAvailability } = store.getState().actions;
 
    // A note opens in LIVE - the home mode where you both see AND touch the document (Overseer-locked).
    const [mode, setMode] = useState<NoteMode>('live');
@@ -82,9 +82,6 @@ function NoteSurface() {
 
    // The CM6 editor handle (splice at real offsets + the shared undo timeline), for image insertion + undo/redo.
    const editorRef = useRef<NoteEditorHandle>(null);
-
-   // Undo/redo availability, pushed up from CM6 so the toolbar buttons enable/disable.
-   const [undoState, setUndoState] = useState({ canUndo: false, canRedo: false });
 
    // Title UNDO mirror: the title input stays a snappy local field; a short debounce commits each typing burst
    // into CM6 as ONE history step (so title undo coalesces like body typing, not per-keystroke). Flushed before
@@ -133,6 +130,21 @@ function NoteSurface() {
       window.addEventListener('keydown', onKeyDown);
       return () => window.removeEventListener('keydown', onKeyDown);
    }, [flushTitleMirror]);
+
+   // Bridge the CM6 undo/redo into the note store so the SIDEBAR control drives it (like board/character). The
+   // registered controller flushes any in-flight title burst first, exactly like the keyboard shortcut above.
+   const handleHistoryChange = useCallback((state: { canUndo: boolean; canRedo: boolean }) => setUndoAvailability(state.canUndo, state.canRedo), [setUndoAvailability]);
+   useEffect(() => {
+      setUndoController({
+         undo: () => { flushTitleMirror(); editorRef.current?.undo(); },
+         redo: () => { flushTitleMirror(); editorRef.current?.redo(); },
+      });
+      return () => setUndoController(null);
+   }, [setUndoController, flushTitleMirror]);
+   // Reading mode has no CM6 editor: the sidebar undo/redo must read disabled (and not act on a torn-down view).
+   useEffect(() => {
+      if (!isEditing) setUndoAvailability(false, false);
+   }, [isEditing, setUndoAvailability]);
 
    // Cover add/change: the shared upload pipeline (process -> store -> hash), then a NoteCover built with the
    // image's NATURAL ratio on ADD (so it starts uncropped) and the current box kept on CHANGE (swap hash only).
@@ -242,10 +254,6 @@ function NoteSurface() {
             onAddCover={openCoverPicker}
             onChangeCover={openCoverPicker}
             onRemoveCover={() => editorRef.current?.clearCover()}
-            canUndo={undoState.canUndo}
-            canRedo={undoState.canRedo}
-            onUndo={() => { flushTitleMirror(); editorRef.current?.undo(); }}
-            onRedo={() => { flushTitleMirror(); editorRef.current?.redo(); }}
          />
          {/* Hidden picker for the toolbar's insert-image action; the paste/drop paths never touch it. */}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
@@ -281,7 +289,7 @@ function NoteSurface() {
                         title={localTitle}
                         onTitleChange={handleCmTitleChange}
                         onCoverChange={handleCmCoverChange}
-                        onHistoryChange={setUndoState}
+                        onHistoryChange={handleHistoryChange}
                         onImageEvent={handleImageEvent}
                         live={mode === 'live'}
                         cover={cover}

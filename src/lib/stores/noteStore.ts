@@ -32,6 +32,14 @@ export interface NoteState {
    drawerItemId: string | null;
    /** True when the note differs from its saved drawer copy, or was never saved. */
    hasUnsavedChanges: boolean;
+   /**
+    * Whether the note editor's shared undo/redo timeline has a step available. Transient, editor-derived (the
+    * timeline lives in CM6, not the store): the mounted editor pushes these via {@link NoteState.actions.setUndoAvailability};
+    * both are `false` in Reading mode / when no editor is mounted. The sidebar undo/redo control reads them,
+    * mirroring the board's `canUndo`/`canRedo` (see `NoteUndoRedoControls`).
+    */
+   canUndo: boolean;
+   canRedo: boolean;
    isLoading: boolean;
    error: string | null;
    actions: {
@@ -52,6 +60,17 @@ export interface NoteState {
       /** Sets the unsaved-changes flag directly (e.g. a save site marks the note clean). */
       setHasUnsavedChanges: (value: boolean) => void;
       /**
+       * Registers (or clears with `null`) the mounted editor's undo/redo, so the sidebar control can drive the
+       * CM6 timeline through the store. Clearing also resets availability to `false` (Reading mode / no editor).
+       */
+      setUndoController: (controller: { undo: () => void; redo: () => void } | null) => void;
+      /** Pushes the editor's current undo/redo availability into the store (fires on every history change). */
+      setUndoAvailability: (canUndo: boolean, canRedo: boolean) => void;
+      /** Undoes the latest step in the note's shared timeline (body/title/cover), via the registered editor. No-op with none. */
+      undo: () => void;
+      /** Redoes the latest reverted step, via the registered editor. No-op with none. */
+      redo: () => void;
+      /**
        * Immediately persists the current document onto its row, bypassing the debounce.
        * The Note tab surface calls this on unmount (a tab switch fires no blur), so the
        * last keystroke is never lost to a cancelled debounce timer.
@@ -71,11 +90,13 @@ export interface NoteState {
    };
 }
 
-const initialState: Pick<NoteState, 'noteId' | 'note' | 'drawerItemId' | 'hasUnsavedChanges' | 'isLoading' | 'error'> = {
+const initialState: Pick<NoteState, 'noteId' | 'note' | 'drawerItemId' | 'hasUnsavedChanges' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'> = {
    noteId: null,
    note: null,
    drawerItemId: null,
    hasUnsavedChanges: false,
+   canUndo: false,
+   canRedo: false,
    isLoading: false,
    error: null,
 };
@@ -111,6 +132,10 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
    const saveDebounceMs = options.saveDebounceMs ?? NOTE_SAVE_DEBOUNCE_MS;
 
    const useStore = create<NoteState>()((set, get) => {
+      // The mounted editor's undo/redo, registered while a CM6 editor is up (editable modes). A function ref,
+      // not reactive state - only the derived `canUndo`/`canRedo` are in state, for the sidebar to subscribe to.
+      let undoController: { undo: () => void; redo: () => void } | null = null;
+
       /** Persists the current document onto its row. Best-effort; a missing row is a no-op. */
       const debouncedSave = createDebouncer<Note>(saveDebounceMs, (note) => {
          void patchNote(note.id, { title: note.title, body: note.body, cover: note.cover }).catch((error) => {
@@ -196,6 +221,18 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
             setHasUnsavedChanges: (value) => {
                set({ hasUnsavedChanges: value });
             },
+
+            setUndoController: (controller) => {
+               undoController = controller;
+               if (!controller) set({ canUndo: false, canRedo: false });
+            },
+
+            setUndoAvailability: (canUndo, canRedo) => {
+               set({ canUndo, canRedo });
+            },
+
+            undo: () => undoController?.undo(),
+            redo: () => undoController?.redo(),
 
             flush: () => {
                const note = get().note;

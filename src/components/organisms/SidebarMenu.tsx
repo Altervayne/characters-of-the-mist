@@ -27,6 +27,7 @@ import { importNote, loadNote } from '@/lib/notes/noteRepository';
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
 import { BoardUndoRedoControls } from '../molecules/BoardUndoRedoControls';
+import { NoteUndoRedoControls } from '../molecules/NoteUndoRedoControls';
 import { SidebarButton } from '../molecules/SidebarButton';
 import { ClearBoardControl } from '../molecules/ClearBoardControl';
 
@@ -445,6 +446,12 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                { activeWindow === 'BOARD' &&
                   <div className="py-2 border-b-2 border-border">
                      <BoardUndoRedoControls isCollapsed={isCollapsed} />
+                  </div>
+               }
+
+               { activeWindow === 'NOTE' &&
+                  <div className="py-2 border-b-2 border-border">
+                     <NoteUndoRedoControls isCollapsed={isCollapsed} />
                   </div>
                }
             </motion.section>
