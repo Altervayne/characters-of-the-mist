@@ -338,6 +338,21 @@ export async function getCharacterItemIdMap(): Promise<Map<string, string>> {
    return map;
 }
 
+/**
+ * Maps every saved note's id to the drawer item id that holds it (NOTE items only). Backs the board-import
+ * dedup for referenced notes: a note already in the drawer is linked to its existing item rather than
+ * recreated. Mirrors {@link getCharacterItemIdMap}; on the vanishingly unlikely id collision the last wins.
+ */
+export async function getNoteItemIdMap(): Promise<Map<string, string>> {
+   const items = await db.items.where('type').equals('NOTE').toArray();
+   const map = new Map<string, string>();
+   for (const item of items) {
+      const noteId = (item.content as Note).id;
+      if (noteId) map.set(noteId, item.id);
+   }
+   return map;
+}
+
 /** A saved note the palette can embed on a board: the drawer item id, the note id it references, and its title. */
 export interface SavedNoteRef {
    /** The drawer `NOTE` item id - the reference's `sourceDrawerItemId`. */

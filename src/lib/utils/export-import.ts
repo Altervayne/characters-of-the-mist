@@ -31,6 +31,8 @@ export interface EmbeddedAsset {
  */
 export interface EmbeddedEntities {
    characters?: Record<string, Character>;
+   /** Full data of the notes a board's reference tiles point at, keyed by note id, so those live references survive on another machine. */
+   notes?: Record<string, Note>;
 }
 
 export interface ExportFile {
@@ -231,7 +233,11 @@ function collectFromFolder(folder: Folder, into: Set<string>): void {
    for (const sub of folder.folders) collectFromFolder(sub, into);
 }
 
-/** Walks a board aggregate's items: a native image's `assetId` and any embedded card COPY's art. */
+/**
+ * Walks a board aggregate's items: a native image's `assetId`, an embedded card COPY's art, and a note
+ * COPY's cover + inline body images (self-contained in `content.data`, so they travel with the board file).
+ * A note REFERENCE holds no data here; its content is embedded separately and its assets folded in there.
+ */
 function collectFromBoard(board: Board, into: Set<string>): void {
    for (const item of board.items) {
       const content: BoardItemContent = item.content;
@@ -239,6 +245,8 @@ function collectFromBoard(board: Board, into: Set<string>): void {
          if (content.assetId) into.add(content.assetId);
       } else if (content.kind === 'card' && content.mode === 'copy' && content.data && typeof content.data === 'object' && 'details' in content.data) {
          collectFromCard(content.data as Card, into);
+      } else if (content.kind === 'note' && content.mode === 'copy') {
+         collectFromNote(content.data, into);
       }
    }
 }
@@ -370,9 +378,13 @@ export async function exportToFile(item: ExportableContent, type: ExportableItem
    if (embedded) exportData.embedded = embedded;
 
    const ids = collectAssetIdsFromContent(item);
-   // Fold in the embedded characters' own assets (portraits) so they ride the same `assets` map.
+   // Fold in the embedded entities' own assets (character portraits, note covers + inline images) so they
+   // ride the same `assets` map and resolve on import.
    if (embedded?.characters) {
       for (const character of Object.values(embedded.characters)) collectFromCharacter(character, ids);
+   }
+   if (embedded?.notes) {
+      for (const note of Object.values(embedded.notes)) collectFromNote(note, ids);
    }
    const assets = await buildEmbeddedAssets(ids);
    if (assets) exportData.assets = assets;

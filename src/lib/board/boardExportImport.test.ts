@@ -116,6 +116,29 @@ describe('board export -> import round-trip', () => {
       // The GC mark walks the imported board items and still references the edited image's asset.
       expect((await collectReferencedAssetHashes()).has('edited-hash')).toBe(true);
    });
+
+   it('walks a COPY note’s cover + inline image assets for export AND the GC mark', async () => {
+      const board = await repo.createBoard('Notes');
+      await repo.saveBoard(board);
+
+      // A copy note is self-contained in `content.data` and is NOT in `db.notes`, so its art is reachable
+      // only via the board item. Its cover hash + an inline `asset:` body image must both be collected.
+      const copyNote = { id: 'inner-note', title: 'Handout', body: 'Lore ![art](asset:deadbeef) here.', cover: { hash: 'aabbccdd', width: 40, aspect: 1.5 } };
+      await repo.bulkPutItems([
+         rec('note-embed', board.id, 0, { kind: 'note', content: { kind: 'note', mode: 'copy', data: copyNote } }),
+      ]);
+
+      // Export walk (collectFromBoard): both the cover and the inline body image ride the file.
+      const fileContent = JSON.parse(JSON.stringify((await repo.loadBoard(board.id))!)) as Board;
+      const exported = collectAssetIdsFromContent(fileContent);
+      expect(exported.has('aabbccdd')).toBe(true);
+      expect(exported.has('deadbeef')).toBe(true);
+
+      // GC mark (collectFromBoardItemContent): the sweep sees both, so it won't reclaim a copy note's art.
+      const marked = await collectReferencedAssetHashes();
+      expect(marked.has('aabbccdd')).toBe(true);
+      expect(marked.has('deadbeef')).toBe(true);
+   });
 });
 
 describe('embedded asset dedup on import', () => {

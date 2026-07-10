@@ -19,7 +19,7 @@ import { noteFromMarkdown } from '@/lib/notes/noteMarkdownFile';
 import { harmonizeData } from '@/lib/harmonization';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { importBoard, loadBoard } from '@/lib/board/boardRepository';
-import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
+import { collectBoardEmbeddedEntities } from '@/lib/board/collectBoardEmbeddedEntities';
 import { prepareImportedBoard } from '@/lib/board/importBoardReferencedCharacters';
 import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
 import { importNote, loadNote } from '@/lib/notes/noteRepository';
@@ -140,10 +140,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          // embeds any board image / card-copy art via collectFromBoard.
          const aggregate = await loadBoard(boardId);
          if (!aggregate) return;
-         // Embed the full data of every character the board's elements reference, so those live
-         // references survive on another machine (their portraits ride the assets map).
-         const characters = await collectBoardReferencedCharacters(aggregate);
-         const embedded = Object.keys(characters).length > 0 ? { characters } : undefined;
+         // Embed the full data of every character AND note the board's tiles reference, so those live
+         // references survive on another machine (their portraits / covers / inline images ride the assets map).
+         const embedded = await collectBoardEmbeddedEntities(aggregate);
          await exportToFile(aggregate, 'FULL_BOARD', 'NEUTRAL', generateExportFilename('NEUTRAL', 'FULL_BOARD', aggregate.name), embedded);
          toast.success(tNotifications('Notifications.board.exported'));
       } catch {

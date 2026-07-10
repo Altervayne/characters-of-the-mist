@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 // -- Local Imports --
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
-import { createItem, getCharacterItemIdMap } from '@/lib/drawer/drawerRepository';
+import { createFolder, createItem, getCharacterItemIdMap } from '@/lib/drawer/drawerRepository';
 import {
    prepareImportedBoard,
    rehydrateBoardReferencedCharacters,
@@ -21,6 +21,15 @@ import type { Character } from '@/lib/types/character';
  */
 
 const FOLDER = 'Imported from My Board';
+
+/** A memoized lazy folder-ensurer, mirroring the one `prepareImportedBoard` passes the rehydrators. */
+function makeEnsureFolder(name = FOLDER): () => Promise<string> {
+   let id: string | null = null;
+   return async () => {
+      if (id === null) id = (await createFolder({ name, parentFolderId: null })).id;
+      return id;
+   };
+}
 
 function character(id: string, name = `Hero ${id}`): Character {
    return { id, name, game: 'LEGENDS', cards: [], trackers: { statuses: [], storyTags: [], storyThemes: [] } } as unknown as Character;
@@ -51,7 +60,7 @@ describe('rehydrateBoardReferencedCharacters', () => {
    it('recreates an absent character keeping its id, under an Imported-from folder', async () => {
       const char = character('cid-new');
 
-      const map = await rehydrateBoardReferencedCharacters({ 'cid-new': char }, FOLDER);
+      const map = await rehydrateBoardReferencedCharacters({ 'cid-new': char }, makeEnsureFolder());
 
       const drawerItemId = map.get('cid-new')!;
       expect(drawerItemId).toBeDefined();
@@ -70,7 +79,7 @@ describe('rehydrateBoardReferencedCharacters', () => {
    it('links to an existing local character (no duplicate, folder untouched)', async () => {
       const existingItemId = await seedLocalCharacter(character('cid-have'));
 
-      const map = await rehydrateBoardReferencedCharacters({ 'cid-have': character('cid-have', 'Edited Name') }, FOLDER);
+      const map = await rehydrateBoardReferencedCharacters({ 'cid-have': character('cid-have', 'Edited Name') }, makeEnsureFolder());
 
       // Linked to the character already here...
       expect(map.get('cid-have')).toBe(existingItemId);
@@ -84,16 +93,17 @@ describe('rehydrateBoardReferencedCharacters', () => {
 
    it('creates the folder only when at least one character is new (pure links create none)', async () => {
       await seedLocalCharacter(character('cid-a'));
+      const ensureFolder = makeEnsureFolder();
 
-      await rehydrateBoardReferencedCharacters({ 'cid-a': character('cid-a') }, FOLDER);
+      await rehydrateBoardReferencedCharacters({ 'cid-a': character('cid-a') }, ensureFolder);
       expect(await drawerDatabase.folders.count()).toBe(0);
 
-      await rehydrateBoardReferencedCharacters({ 'cid-a': character('cid-a'), 'cid-b': character('cid-b') }, FOLDER);
+      await rehydrateBoardReferencedCharacters({ 'cid-a': character('cid-a'), 'cid-b': character('cid-b') }, ensureFolder);
       expect(await drawerDatabase.folders.count()).toBe(1);
    });
 
    it('returns an empty map when there is nothing embedded', async () => {
-      expect((await rehydrateBoardReferencedCharacters(undefined, FOLDER)).size).toBe(0);
+      expect((await rehydrateBoardReferencedCharacters(undefined, makeEnsureFolder())).size).toBe(0);
    });
 
    it('getCharacterItemIdMap maps saved character ids to their drawer item ids', async () => {

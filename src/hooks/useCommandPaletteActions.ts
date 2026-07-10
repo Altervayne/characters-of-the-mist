@@ -23,7 +23,7 @@ import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
-import { collectBoardReferencedCharacters } from '@/lib/board/collectBoardReferencedCharacters';
+import { collectBoardEmbeddedEntities } from '@/lib/board/collectBoardEmbeddedEntities';
 import { undoActiveContext, redoActiveContext } from '@/lib/history/undoRouting';
 import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 import { CREATABLE_REGISTRY } from '@/lib/creation/creatableRegistry';
@@ -122,8 +122,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       try {
          const s = store.getState();
          const board: Board = { id: s.boardId!, name: s.name, viewport: s.viewport, grid: s.grid, items: Object.values(s.items) };
-         const characters = await collectBoardReferencedCharacters(board);
-         const embedded = Object.keys(characters).length ? { characters } : undefined;
+         const embedded = await collectBoardEmbeddedEntities(board);
          const fileName = generateExportFilename('NEUTRAL', 'FULL_BOARD', board.name);
          await exportToFile(board, 'FULL_BOARD', 'NEUTRAL', fileName, embedded);
          toast.success(tNotifications('Notifications.board.exported'));

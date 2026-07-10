@@ -7,6 +7,9 @@ import { reIdBoardAggregate } from './reIdBoardAggregate';
 // -- Drawer Imports --
 import { createFolder, createItem, getCharacterItemIdMap } from '@/lib/drawer/drawerRepository';
 
+// -- Board Imports --
+import { rehydrateBoardReferencedNotes, rewireBoardNoteReferences } from './importBoardReferencedNotes';
+
 // -- Type Imports --
 import type { Board, CharacterBoardContent } from '@/lib/types/board';
 import type { Character } from '@/lib/types/character';
@@ -24,29 +27,23 @@ import type { EmbeddedEntities } from '@/lib/utils/export-import';
  * Links or recreates the characters an imported board references, returning a map from each source
  * `characterId` to the LOCAL drawer item id backing it (for the element rewire). A character already in
  * the drawer is linked to its existing item; an absent one is created as a FULL_CHARACTER_SHEET drawer
- * item with its id kept, under an "Imported from {board}" folder made once - only when at least one
- * character is actually created (pure links create no folder).
+ * item with its id kept. `ensureFolder` lazily makes (and memoizes) the shared "Imported from {board}"
+ * landing folder - called only when a character is actually recreated, so pure links create no folder.
  */
 export async function rehydrateBoardReferencedCharacters(
    characters: Record<string, Character> | undefined,
-   importedFolderName: string,
+   ensureFolder: () => Promise<string>,
 ): Promise<Map<string, string>> {
    const drawerItemIdByCharacterId = new Map<string, string>();
    if (!characters) return drawerItemIdByCharacterId;
 
    const existing = await getCharacterItemIdMap();
-   let importedFolderId: string | null = null;
 
    for (const [characterId, character] of Object.entries(characters)) {
       const existingItemId = existing.get(characterId);
       if (existingItemId) {
          drawerItemIdByCharacterId.set(characterId, existingItemId); // link, never overwrite
          continue;
-      }
-
-      // First character to recreate: make the landing folder so imports don't scatter in the drawer.
-      if (importedFolderId === null) {
-         importedFolderId = (await createFolder({ name: importedFolderName, parentFolderId: null })).id;
       }
 
       // The drawer item gets a fresh id; the character keeps its own (the dedup key). Pre-mint the
@@ -58,7 +55,7 @@ export async function rehydrateBoardReferencedCharacters(
          game: character.game,
          type: 'FULL_CHARACTER_SHEET',
          content: { ...character, drawerItemId },
-         parentFolderId: importedFolderId,
+         parentFolderId: await ensureFolder(),
       });
       drawerItemIdByCharacterId.set(characterId, drawerItemId);
    }
@@ -84,16 +81,29 @@ export function rewireBoardCharacterElements(board: Board, drawerItemIdByCharact
 }
 
 /**
- * The full board-import transform, shared by every import entry point: rehydrate the referenced
- * characters (link/create), re-id the aggregate for a fresh independent copy, then rewire the elements
- * to the local characters. Returns the board ready to persist.
+ * The full board-import transform, shared by every import entry point: rehydrate the referenced characters
+ * AND notes (link/create), re-id the aggregate for a fresh independent copy, then rewire the character
+ * elements + note reference tiles to the local drawer items. Characters and notes share ONE lazily-made
+ * "Imported from {board}" folder (created only if something is actually recreated). Returns the board ready
+ * to persist.
  */
 export async function prepareImportedBoard(
    board: Board,
    embedded: EmbeddedEntities | undefined,
    importedFolderName: string,
 ): Promise<Board> {
-   const drawerItemIdByCharacterId = await rehydrateBoardReferencedCharacters(embedded?.characters, importedFolderName);
+   // One shared, lazily-created landing folder for every recreated entity, so a mixed import doesn't scatter
+   // (or make two identically-named folders), and a pure-link import makes none.
+   let importedFolderId: string | null = null;
+   const ensureFolder = async (): Promise<string> => {
+      if (importedFolderId === null) importedFolderId = (await createFolder({ name: importedFolderName, parentFolderId: null })).id;
+      return importedFolderId;
+   };
+
+   const drawerItemIdByCharacterId = await rehydrateBoardReferencedCharacters(embedded?.characters, ensureFolder);
+   const drawerItemIdByNoteId = await rehydrateBoardReferencedNotes(embedded?.notes, ensureFolder);
+
    const reIded = reIdBoardAggregate(board);
-   return rewireBoardCharacterElements(reIded, drawerItemIdByCharacterId);
+   const rewiredCharacters = rewireBoardCharacterElements(reIded, drawerItemIdByCharacterId);
+   return rewireBoardNoteReferences(rewiredCharacters, drawerItemIdByNoteId);
 }

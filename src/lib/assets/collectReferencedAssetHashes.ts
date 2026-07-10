@@ -54,10 +54,11 @@ function collectFromItemContent(content: DrawerItemContent, into: Set<string>): 
 }
 
 /**
- * Adds a board item's asset references to `into`: a native `image` item's `assetId`, and
- * an embedded `card` COPY's card art (e.g. a dropped IMAGE_CARD). Trackers carry no
- * assets, and reference items hold no copy - their source drawer item is scanned
- * separately - so neither contributes here.
+ * Adds a board item's asset references to `into`: a native `image` item's `assetId`, an embedded `card`
+ * COPY's card art (e.g. a dropped IMAGE_CARD), and a `note` COPY's cover + inline body images. A copy note
+ * is self-contained in `content.data` and is NOT in `db.notes`, so its art is reachable ONLY here - without
+ * this branch the sweep would reclaim it. Trackers carry no assets, and a reference item holds no copy - its
+ * source (drawer item / working note) is scanned separately - so neither contributes here.
  */
 function collectFromBoardItemContent(content: BoardItemContent, into: Set<string>): void {
    if (content.kind === 'image') {
@@ -66,6 +67,9 @@ function collectFromBoardItemContent(content: BoardItemContent, into: Set<string
    }
    if (content.kind === 'card' && content.mode === 'copy' && content.data && typeof content.data === 'object' && 'details' in content.data) {
       collectFromCard(content.data as Card, into);
+   }
+   if (content.kind === 'note' && content.mode === 'copy') {
+      collectFromNote(content.data, into);
    }
 }
 
