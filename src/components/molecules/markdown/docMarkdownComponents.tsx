@@ -1,6 +1,9 @@
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 
+// -- Local Imports --
+import { DocHeading } from './DocHeading';
+
 // -- Type Imports --
 import type { Components } from 'react-markdown';
 
@@ -22,10 +25,13 @@ import type { Components } from 'react-markdown';
 export const docMarkdownComponents: Components = {
    // H1 & H2 carry an UNDERLINE rule on the paper-border token (matching the Live `.cm-md-h1`/`.cm-md-h2`) - a
    // setext heading's identity; Reading can't tell setext from ATX (same mdast), so both underline, GitHub-style.
-   h1: ({ ...props }) => <h1 className="clear-both mb-3 mt-6 border-b border-paper-border pb-1 text-3xl font-bold first:mt-0" {...props} />,
-   h2: ({ ...props }) => <h2 className="clear-both mb-2 mt-6 border-b border-paper-border pb-1 text-2xl font-bold first:mt-0" {...props} />,
-   h3: ({ ...props }) => <h3 className="clear-both mb-2 mt-5 text-xl font-semibold first:mt-0" {...props} />,
-   h4: ({ ...props }) => <h4 className="clear-both mb-1.5 mt-4 text-lg font-semibold first:mt-0" {...props} />,
+   // Each heading emits `id={slug}` in the note reading context (via HeadingSlugContext) for outline / #anchor nav.
+   h1: (props) => <DocHeading level={1} {...props} />,
+   h2: (props) => <DocHeading level={2} {...props} />,
+   h3: (props) => <DocHeading level={3} {...props} />,
+   h4: (props) => <DocHeading level={4} {...props} />,
+   h5: (props) => <DocHeading level={5} {...props} />,
+   h6: (props) => <DocHeading level={6} {...props} />,
    p: ({ ...props }) => <p className="my-3 leading-relaxed first:mt-0 last:mb-0" {...props} />,
    strong: ({ ...props }) => <strong className="font-bold" {...props} />,
    em: ({ ...props }) => <em className="italic" {...props} />,

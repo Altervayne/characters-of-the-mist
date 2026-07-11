@@ -19,15 +19,18 @@ import { NoteDocument } from '@/components/molecules/NoteDocument';
 import { NoteEditor } from '@/components/organisms/note/NoteEditor';
 import { NoteToolbar } from '@/components/organisms/note/NoteToolbar';
 import { NoteTableContextMenu } from '@/components/organisms/note/NoteTableContextMenu';
+import { NoteOutline } from '@/components/organisms/note/NoteOutline';
 
 // -- Cover Sizing --
 import { COVER_DEFAULT_WIDTH_PCT, clampCoverWidth, clampCoverAspect } from '@/components/molecules/note/noteCoverClasses';
 
 // -- Store Imports --
 import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
+import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
 import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
+import type { NoteHeading } from '@/lib/notes/noteOutline';
 import type { CoverController } from '@/components/organisms/note/live/coverGutter';
 import type { FormatController } from '@/components/organisms/note/live/formatToolbar';
 import type { TableController } from '@/components/organisms/note/live/tableWidget';
@@ -68,11 +71,20 @@ function NoteSurface() {
 
    const note = useStore(store, (state) => state.note);
    const cover = useStore(store, (state) => state.note?.cover);
-   const { updateTitle, updateBody, setCover, clearCover, flush, setUndoController, setUndoAvailability } = store.getState().actions;
+   const { updateTitle, updateBody, setCover, clearCover, flush, setUndoController, setUndoAvailability, setOutlineJump } = store.getState().actions;
 
    // A note opens in LIVE - the home mode where you both see AND touch the document (Overseer-locked).
    const [mode, setMode] = useState<NoteMode>('live');
    const isEditing = mode === 'live' || mode === 'source';
+
+   // The document-outline rail: open state persists in appSettings (stays where the user left it).
+   const isOutlineOpen = useAppSettingsStore((state) => state.isNoteOutlineOpen);
+   const { toggleNoteOutline } = useAppSettingsActions();
+   // The desk scroll container (for Reading heading scroll) + a mode latest-ref so the stable outline-jump reads
+   // the current mode without re-registering.
+   const deskRef = useRef<HTMLDivElement>(null);
+   const modeRef = useRef(mode);
+   modeRef.current = mode;
 
    // Buffer title + body locally; the debouncer flushes each (PERSISTENCE) on unmount. The store `flush` is the
    // belt. UNDO capture is separate: title/cover edits are mirrored into CM6 state (the one timeline) below.
@@ -145,6 +157,23 @@ function NoteSurface() {
    useEffect(() => {
       if (!isEditing) setUndoAvailability(false, false);
    }, [isEditing, setUndoAvailability]);
+
+   // Outline navigation (all modes). Live/Source: scroll the CM6 editor to the heading offset. Reading: scroll
+   // the rendered `#slug` element into view (its id === the outline's slug, both from `extractHeadings`). Stable
+   // (reads refs), so the rail and the palette-registered handler share ONE implementation.
+   const jumpToHeading = useCallback((heading: NoteHeading) => {
+      if (modeRef.current === 'reading') {
+         const target = deskRef.current?.querySelector<HTMLElement>(`[id="${CSS.escape(heading.slug)}"]`);
+         target?.scrollIntoView({ block: 'start' });
+      } else {
+         editorRef.current?.scrollToPos(heading.from);
+      }
+   }, []);
+   // Register the jump with the store so the command palette's "Jump to section" can reach it.
+   useEffect(() => {
+      setOutlineJump(jumpToHeading);
+      return () => setOutlineJump(null);
+   }, [setOutlineJump, jumpToHeading]);
 
    // Cover add/change: the shared upload pipeline (process -> store -> hash), then a NoteCover built with the
    // image's NATURAL ratio on ADD (so it starts uncropped) and the current box kept on CHANGE (swap hash only).
@@ -254,6 +283,8 @@ function NoteSurface() {
             onAddCover={openCoverPicker}
             onChangeCover={openCoverPicker}
             onRemoveCover={() => editorRef.current?.clearCover()}
+            isOutlineOpen={isOutlineOpen}
+            onToggleOutline={toggleNoteOutline}
          />
          {/* Hidden picker for the toolbar's insert-image action; the paste/drop paths never touch it. */}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
@@ -261,11 +292,16 @@ function NoteSurface() {
          {/* The live table's right-click context menu (portals to the click point; opened by the CM6 widget). */}
          <NoteTableContextMenu handleRef={tableMenuRef} />
 
-         {/* Document body: the desk - the app-chrome backdrop the paper sheet floats and scrolls on. */}
-         <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 py-8 md:px-8 md:py-12">
-            {/* The paper sheet: parchment by default, re-themed by a custom theme's --paper-* tokens. Both
-                modes share the sheet, so toggling reading/editing stays on the same page. */}
-            <div className="mx-auto w-full max-w-[46rem] rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-lg shadow-black/5">
+         {/* The content ROW: the outline rail is workspace CHROME - flush against the sidebar edge (main's left)
+             and the toolbar (the row's top), carrying no canvas padding - sitting BESIDE the padded desk. The
+             rail slides its width; the desk (the padded scroll area the paper floats on) is the rail's SIBLING
+             and reflows into the freed space, so the rail divides the tool panel from the canvas. */}
+         <div className="flex min-h-0 flex-1 flex-row">
+            <NoteOutline body={localBody} isOpen={isOutlineOpen} onJump={jumpToHeading} />
+            <div ref={deskRef} className="min-w-0 flex-1 overflow-y-auto bg-background px-4 py-8 md:px-8 md:py-12">
+               {/* The paper sheet: parchment by default, re-themed by a custom theme's --paper-* tokens. Both
+                   modes share the sheet, so toggling reading/editing stays on the same page. */}
+               <div className="mx-auto w-full max-w-[46rem] rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-lg shadow-black/5">
                <div className="px-6 py-10 sm:px-10 md:px-16 md:py-16">
                   {/* The document title: a large heading in the paper column, ABOVE the cover. Editable in the
                       editable modes; in Reading it renders as the document H1 (inside NoteDocument). */}
@@ -308,6 +344,7 @@ function NoteSurface() {
                </div>
                {/* Hidden picker for the cover Add/Change control. */}
                <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverSelected} />
+               </div>
             </div>
          </div>
       </main>

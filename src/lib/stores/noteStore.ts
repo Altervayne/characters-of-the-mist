@@ -11,6 +11,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 // -- Type Imports --
 import type { Note, NoteCover } from '@/lib/types/board';
 import type { SaveNoteToDrawerResult } from '@/lib/notes/noteRepository';
+import type { NoteHeading } from '@/lib/notes/noteOutline';
 
 /*
  * Note store - the React-facing, in-memory view of ONE open Note, backed by the note
@@ -70,6 +71,14 @@ export interface NoteState {
       undo: () => void;
       /** Redoes the latest reverted step, via the registered editor. No-op with none. */
       redo: () => void;
+      /**
+       * Registers (or clears with `null`) the mounted note surface's outline-jump handler, so the command palette
+       * can jump to a heading regardless of the editor/reading DOM. The surface routes it per mode (scroll the CM6
+       * editor in Live/Source, scroll to the `#slug` element in Reading).
+       */
+      setOutlineJump: (jump: ((heading: NoteHeading) => void) | null) => void;
+      /** Jumps the note surface to a heading (from the palette's Jump-to-section picker). No-op when no surface is mounted. */
+      jumpToHeading: (heading: NoteHeading) => void;
       /**
        * Immediately persists the current document onto its row, bypassing the debounce.
        * The Note tab surface calls this on unmount (a tab switch fires no blur), so the
@@ -135,6 +144,9 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
       // The mounted editor's undo/redo, registered while a CM6 editor is up (editable modes). A function ref,
       // not reactive state - only the derived `canUndo`/`canRedo` are in state, for the sidebar to subscribe to.
       let undoController: { undo: () => void; redo: () => void } | null = null;
+      // The mounted note surface's outline-jump handler (mode-aware), registered by `NoteView`. A function ref
+      // (not state) - the palette calls `jumpToHeading` through it; the rail calls the surface's own fn directly.
+      let outlineJump: ((heading: NoteHeading) => void) | null = null;
 
       /** Persists the current document onto its row. Best-effort; a missing row is a no-op. */
       const debouncedSave = createDebouncer<Note>(saveDebounceMs, (note) => {
@@ -233,6 +245,9 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
 
             undo: () => undoController?.undo(),
             redo: () => undoController?.redo(),
+
+            setOutlineJump: (jump) => { outlineJump = jump; },
+            jumpToHeading: (heading) => outlineJump?.(heading),
 
             flush: () => {
                const note = get().note;

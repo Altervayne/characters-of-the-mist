@@ -58,6 +58,8 @@ export interface NoteEditorHandle {
    getValue: () => string;
    /** Replaces `[from, to)` with `insert`, optionally placing the caret at `selectAt`. Focuses the editor. */
    splice: (from: number, to: number, insert: string, selectAt?: number) => void;
+   /** Scrolls a document offset to the top of the viewport and lands the caret there (outline navigation). */
+   scrollToPos: (pos: number) => void;
    /** Sets the note title in CM6 state (history-captured), WITHOUT stealing focus from the title input. */
    setTitle: (title: string) => void;
    /** Sets a fresh cover (history-captured). */
@@ -434,6 +436,22 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
          });
          view.focus();
       },
+      scrollToPos: (pos) => {
+         const view = viewRef.current;
+         if (!view) return;
+         const clamped = Math.max(0, Math.min(pos, view.state.doc.length));
+         view.dispatch({ selection: { anchor: clamped } });
+         // The CM6 `.cm-scroller` is `overflow: visible` (the DESK scrolls, not the editor), so CM6's own
+         // scrollIntoView is a no-op. Scroll the nearest real scroll ancestor to the line's top via the HEIGHT
+         // MAP (`lineBlockAt`) - valid even for an off-screen position, and synchronous (a selection-only
+         // dispatch changes no layout), so it doesn't depend on a rAF tick.
+         const scroller = findScrollableAncestor(view.contentDOM);
+         if (scroller) {
+            const lineTop = view.contentDOM.getBoundingClientRect().top + view.lineBlockAt(clamped).top;
+            scroller.scrollBy({ top: lineTop - scroller.getBoundingClientRect().top - 16 });
+         }
+         view.focus();
+      },
       setTitle: (nextTitle) => {
          const view = viewRef.current;
          if (!view || getNoteTitle(view.state) === nextTitle) return;
@@ -462,6 +480,15 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
 
    return <div ref={hostRef} className="note-editor text-base" />;
 });
+
+/** The nearest scrollable ancestor of `el` (the note DESK, since `.cm-scroller` is overflow:visible here). */
+function findScrollableAncestor(el: HTMLElement): HTMLElement | null {
+   for (let node = el.parentElement; node; node = node.parentElement) {
+      const overflowY = getComputedStyle(node).overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) return node;
+   }
+   return null;
+}
 
 /**
  * Clicking a rendered image widget selects it: place the caret inside that image token's span so the image

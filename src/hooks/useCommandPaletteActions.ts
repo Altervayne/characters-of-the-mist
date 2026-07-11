@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -71,7 +71,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
-   const { setSideBySideView, toggleDiceTray } = useAppSettingsActions();
+   const { setSideBySideView, toggleDiceTray, toggleNoteOutline } = useAppSettingsActions();
    const { setThemesOpen, requestBoardAction } = useAppGeneralStateActions();
    const { setTheme: setMode } = useTheme();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
@@ -199,6 +199,12 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // (note scope). Markdown IMPORT rides the existing "Import Note" picker (routed by extension), so
       // it has no separate command.
       { id: 'exportNoteMarkdown', scope: 'note', label: t('CommandPalette.commands.exportNoteMarkdown'), keywords: ['export', 'note', 'markdown', 'md', 'text'], icon: FileUp, group: t('CommandPalette.groups.export'), action: onExportNoteMarkdown },
+
+      // #######################
+      // ###   NOTE GROUP    ###
+      // #######################
+      { id: 'toggleNoteOutline', scope: 'note', label: t('CommandPalette.commands.toggleNoteOutline'), keywords: ['outline', 'toc', 'contents', 'headings', 'sections', 'sidebar', 'note'], icon: ListTree, group: t('CommandPalette.groups.note'), action: toggleNoteOutline },
+      { id: 'jumpToSection', scope: 'note', label: t('CommandPalette.commands.jumpToSection'), keywords: ['jump', 'goto', 'section', 'heading', 'outline', 'navigate', 'note'], icon: ListTree, group: t('CommandPalette.groups.note'), pageId: 'jumpToSection' },
 
       // #################################
       // ###   CHARACTER SHEET GROUP   ###

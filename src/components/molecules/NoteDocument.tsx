@@ -1,5 +1,5 @@
 // -- Library Imports --
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -9,9 +9,11 @@ import { remarkMentions } from '@/lib/challenge/remarkMentions';
 import { remarkLineBreaks } from '@/lib/notes/remarkLineBreaks';
 import { remarkSoftBreaks } from '@/lib/notes/remarkSoftBreaks';
 import { separateTablesFromText } from '@/lib/notes/noteFormat';
+import { extractHeadings, slugifyHeading } from '@/lib/notes/noteOutline';
 
 // -- Component Imports --
 import { docMarkdownComponents } from './markdown/docMarkdownComponents';
+import { HeadingSlugContext, type HeadingSlugResolver } from './markdown/headingSlugContext';
 import { mentionComponents } from './markdown/markdownComponents';
 import { NoteImage } from './note/NoteImage';
 import { NoteCover } from './note/NoteCover';
@@ -72,6 +74,17 @@ export function NoteDocument({ title, body, cover, onMentionClick, compact, clas
    const heading = title?.trim();
    // Display-only: break a table off a text line one `\n` below it (GFM would else absorb the text as a cell).
    const renderedBody = useMemo(() => separateTablesFromText(body), [body]);
+   // Heading anchors: emit `id={slug}` on each rendered heading, matched by SOURCE OFFSET (in the rendered body,
+   // which is what react-markdown parses) against `extractHeadings`, so the id === the outline rail's slug.
+   const slugByOffset = useMemo(() => {
+      const map = new Map<number, string>();
+      for (const h of extractHeadings(renderedBody)) map.set(h.from, h.slug);
+      return map;
+   }, [renderedBody]);
+   const resolveHeadingSlug = useCallback<HeadingSlugResolver>(
+      (offset, text) => (offset != null && slugByOffset.has(offset) ? slugByOffset.get(offset) : slugifyHeading(text)),
+      [slugByOffset],
+   );
    // `[display:flow-root]` under a cover makes this a BFC so the floated cover is CONTAINED - the parchment
    // grows past a tall cover instead of the cover overflowing the sheet's bottom. `compact` also makes the
    // wrapper a container-query context (`@container`) so the title + cover below size against the tile width.
@@ -97,9 +110,11 @@ export function NoteDocument({ title, body, cover, onMentionClick, compact, clas
                <NoteCover cover={cover} className={compact ? '@max-[13rem]:hidden @[13rem]:max-h-28 @[26rem]:max-h-44 @[38rem]:max-h-64' : undefined} />
             </>
          ) : null}
-         <ReactMarkdown remarkPlugins={[remarkGfm, remarkLineBreaks, remarkSoftBreaks, remarkMentions]} components={components} urlTransform={noteUrlTransform}>
-            {renderedBody}
-         </ReactMarkdown>
+         <HeadingSlugContext.Provider value={resolveHeadingSlug}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkLineBreaks, remarkSoftBreaks, remarkMentions]} components={components} urlTransform={noteUrlTransform}>
+               {renderedBody}
+            </ReactMarkdown>
+         </HeadingSlugContext.Provider>
       </div>
    );
 }

@@ -28,6 +28,8 @@ interface AppSettingsState {
    lastVisitedVersion: string;
    isTrackersAlwaysEditable: boolean;
    isSidebarCollapsed: boolean;
+   /** Whether the note editor's document-outline rail is shown. Persisted so it stays where the user left it. */
+   isNoteOutlineOpen: boolean;
    contextualGame: GameSystem;
    deviceTypeOverride?: DeviceType;
    isMobileFABMode: boolean;
@@ -58,6 +60,8 @@ interface AppSettingsState {
       setTrackersAlwaysEditable: (isEditable: boolean) => void;
       setSidebarCollapsed: (isCollapsed: boolean) => void;
       toggleSidebarCollapsed: () => void;
+      setNoteOutlineOpen: (isOpen: boolean) => void;
+      toggleNoteOutline: () => void;
       setContextualGame: (game: GameSystem) => void;
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
       setMobileFABMode: (enabled: boolean) => void;
@@ -86,6 +90,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          lastVisitedVersion: "0.0.0",
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
+         isNoteOutlineOpen: false,
          contextualGame: 'LEGENDS',
          deviceTypeOverride: undefined,
          isMobileFABMode: false,
@@ -136,6 +141,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setTrackersAlwaysEditable: (isEditable) => set({ isTrackersAlwaysEditable: isEditable }),
             setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+            setNoteOutlineOpen: (isOpen) => set({ isNoteOutlineOpen: isOpen }),
+            toggleNoteOutline: () => set((state) => ({ isNoteOutlineOpen: !state.isNoteOutlineOpen })),
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
             setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled }),
@@ -164,6 +171,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             lastVisitedVersion: state.lastVisitedVersion,
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
+            isNoteOutlineOpen: state.isNoteOutlineOpen,
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
             isMobileFABMode: state.isMobileFABMode,

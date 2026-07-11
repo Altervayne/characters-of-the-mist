@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -7,15 +7,17 @@ import { Command } from 'cmdk';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { CornerDownLeft, Palette, Dices, NotebookText } from 'lucide-react';
+import { CornerDownLeft, Palette, Dices, NotebookText, ListTree } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
 
 // -- Data Imports --
 import { listSavedNotes } from '@/lib/drawer/drawerRepository';
+import { extractHeadings } from '@/lib/notes/noteOutline';
 
 // -- Theme Imports --
 import { customThemeClass } from '@/lib/theme/themeTokens';
@@ -31,6 +33,7 @@ import { commonItemClass } from '../constants';
 import type { ThemeName } from '@/lib/stores/appSettingsStore';
 import type { GameSystem } from '@/lib/types/drawer';
 import type { SavedNoteRef } from '@/lib/drawer/drawerRepository';
+import type { NoteHeading } from '@/lib/notes/noteOutline';
 
 
 
@@ -192,6 +195,41 @@ export const EmbedNote_PickPage = ({ onSelect }: EmbedNote_PickPageProps) => {
                </Command.Item>
             );
          })}
+      </Command.Group>
+   );
+};
+
+interface JumpToSection_PickPageProps {
+   onSelect: (heading: NoteHeading) => void;
+}
+
+/**
+ * Lists the ACTIVE note's headings (via the shared `extractHeadings`) as jump targets, indented by level. The
+ * palette filter narrows by title; the slug rides the value so repeated titles never collide. Selecting one
+ * jumps the note surface to that section (the surface routes Live/Source scroll vs Reading `#slug`).
+ */
+export const JumpToSection_PickPage = ({ onSelect }: JumpToSection_PickPageProps) => {
+   const { t } = useTranslation();
+   const store = useActiveNoteInstance();
+   const headings = useMemo(() => extractHeadings(store?.getState().note?.body ?? ''), [store]);
+
+   if (headings.length === 0) {
+      return <div className="px-2 py-6 text-center text-sm text-muted-foreground">{t('CommandPalette.jumpToSection.empty')}</div>;
+   }
+
+   return (
+      <Command.Group heading={t('CommandPalette.commands.jumpToSection')}>
+         {headings.map((heading, index) => (
+            <Command.Item
+               key={`${heading.slug}-${index}`}
+               value={`${heading.text} ${heading.slug}`}
+               onSelect={() => onSelect(heading)}
+               className={commonItemClass}
+            >
+               <ListTree className="mr-2 h-4 w-4 shrink-0" />
+               <span style={{ paddingLeft: `${(heading.level - 1) * 0.75}rem` }} className="truncate">{heading.text}</span>
+            </Command.Item>
+         ))}
       </Command.Group>
    );
 };

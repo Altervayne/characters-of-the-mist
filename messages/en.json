@@ -46,6 +46,14 @@
          "source": "Source"
       },
       "insertImage": "Insert image",
+      "outline": {
+         "title": "Outline",
+         "empty": "No headings yet",
+         "toggle": "Toggle outline",
+         "hide": "Hide outline",
+         "expand": "Expand section",
+         "collapse": "Collapse section"
+      },
       "imageInsertFailed": "Couldn't add that image. Try another file.",
       "format": {
          "bold": "Bold",
@@ -1194,6 +1202,9 @@
 
       "empty": "No commands were found.",
       "label": "Command Palette",
+      "jumpToSection": {
+         "empty": "This note has no headings."
+      },
 
       "groups": {
          "general": "General",
@@ -1203,6 +1214,7 @@
          "export": "Exports",
          "character": "Character Sheet",
          "creation": "Creation",
+         "note": "Note",
 
 
          "themePalette": "Choose a new Theme Palette",
@@ -1223,6 +1235,8 @@
          "newCharacter": "New: Character",
          "newBoard": "New: Board",
          "newNote": "New: Note",
+         "toggleNoteOutline": "Toggle note outline",
+         "jumpToSection": "Jump to section…",
          "closeTab": "Close: Current Tab",
          "nextTab": "Switch: Next Tab",
          "prevTab": "Switch: Previous Tab",

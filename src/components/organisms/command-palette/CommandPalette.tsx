@@ -14,13 +14,14 @@ import { cn } from '@/lib/utils';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
 import { useCommandPaletteNavigation } from '@/hooks/command-palette/useCommandPaletteNavigation';
 import { useCommandPaletteWizard } from '@/hooks/command-palette/useCommandPaletteWizard';
 
 // -- Local Imports --
 import { commandVariants } from './constants';
 import { RootPage } from './pages/RootPage';
-import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage, EmbedNote_PickPage } from './pages/SimplePages';
+import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage, EmbedNote_PickPage, JumpToSection_PickPage } from './pages/SimplePages';
 import {
    CreateCard_TypePage,
    CreateCard_LegendsThemeTypePage,
@@ -76,6 +77,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    const currentGame = character?.game;
    const isOpen = useAppGeneralStateStore((state) => state.isCommandPaletteOpen);
    const { setCommandPaletteOpen, toggleCommandPalette, requestBoardAction } = useAppGeneralStateActions();
+   const activeNoteStore = useActiveNoteInstance();
 
    const { activePage, pushPage, popPage } = useCommandPaletteNavigation(isOpen);
    const {
@@ -232,6 +234,13 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         <EmbedNote_PickPage onSelect={(note) => {
                            // The canvas owns the drop point; it builds the reference from the note's drawer id.
                            requestBoardAction(`embedNote:${note.drawerItemId}`);
+                           setCommandPaletteOpen(false);
+                        }} />
+                     )}
+                     {activePage === 'jumpToSection' && (
+                        <JumpToSection_PickPage onSelect={(heading) => {
+                           // The active note surface routes the jump per mode (CM6 scroll vs Reading `#slug`).
+                           activeNoteStore?.getState().actions.jumpToHeading(heading);
                            setCommandPaletteOpen(false);
                         }} />
                      )}

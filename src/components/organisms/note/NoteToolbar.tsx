@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 // -- Icon Imports --
 import {
-   Bold, BookOpen, ChevronDown, Code, Heading, Image, ImagePlus, Italic, List, ListOrdered, Loader2,
+   Bold, BookOpen, ChevronDown, Code, Heading, Image, ImagePlus, Italic, List, ListOrdered, ListTree, Loader2,
    Minus, PenLine, Quote, Strikethrough, Table, Trash2,
 } from 'lucide-react';
 
@@ -55,6 +55,9 @@ interface NoteToolbarProps {
    onAddCover: () => void;
    onChangeCover: () => void;
    onRemoveCover: () => void;
+   /** The document-outline rail: its open state + toggle. Shown in ALL modes (the outline works in Reading too). */
+   isOutlineOpen: boolean;
+   onToggleOutline: () => void;
 }
 
 export function NoteToolbar({
@@ -69,6 +72,8 @@ export function NoteToolbar({
    onAddCover,
    onChangeCover,
    onRemoveCover,
+   isOutlineOpen,
+   onToggleOutline,
 }: NoteToolbarProps) {
    const { t } = useTranslation();
 
@@ -151,6 +156,23 @@ export function NoteToolbar({
 
    return (
       <div ref={rowRef} className="flex items-center gap-0.5 border-b border-border bg-popover px-2 py-1.5">
+         {/* Outline toggle: shown in ALL modes (the document outline works in Reading too), leftmost. */}
+         <button
+            type="button"
+            title={t('NoteView.outline.toggle')}
+            aria-label={t('NoteView.outline.toggle')}
+            aria-pressed={isOutlineOpen}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onToggleOutline}
+            className={cn(
+               'grid h-7 w-7 place-items-center rounded cursor-pointer',
+               isOutlineOpen ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+            )}
+         >
+            <ListTree className="h-4 w-4" />
+         </button>
+         {isEditing && <ToolbarDivider />}
+
          {/* Editing chrome: only in Live/Source. In Reading just the mode toggle remains (right). */}
          {isEditing && (
             <>

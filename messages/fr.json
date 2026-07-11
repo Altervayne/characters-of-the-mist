@@ -46,6 +46,14 @@
          "source": "[TO COMPLETE]"
       },
       "insertImage": "[TO COMPLETE]",
+      "outline": {
+         "title": "[TO COMPLETE]",
+         "empty": "[TO COMPLETE]",
+         "toggle": "[TO COMPLETE]",
+         "hide": "[TO COMPLETE]",
+         "expand": "[TO COMPLETE]",
+         "collapse": "[TO COMPLETE]"
+      },
       "imageInsertFailed": "[TO COMPLETE]",
       "format": {
          "bold": "[TO COMPLETE]",
@@ -1113,6 +1121,9 @@
       },
       "empty": "Aucune commande trouvée.",
       "label": "Palette de Commandes",
+      "jumpToSection": {
+         "empty": "[TO COMPLETE]"
+      },
       "groups": {
          "general": "Général",
          "tabs": "[TO COMPLETE]",
@@ -1121,6 +1132,7 @@
          "export": "Exports",
          "character": "Fiche de Personnage",
          "creation": "Création",
+         "note": "[TO COMPLETE]",
          "themePalette": "Choisissez une nouvelle Palette",
          "chooseThemeType": "Choisissez un Type",
          "chooseThemebook": "Choisissez un Thème"
@@ -1137,6 +1149,8 @@
          "newCharacter": "[TO COMPLETE]",
          "newBoard": "[TO COMPLETE]",
          "newNote": "[TO COMPLETE]",
+         "toggleNoteOutline": "[TO COMPLETE]",
+         "jumpToSection": "[TO COMPLETE]",
          "closeTab": "[TO COMPLETE]",
          "nextTab": "[TO COMPLETE]",
          "prevTab": "[TO COMPLETE]",
