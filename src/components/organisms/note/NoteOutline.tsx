@@ -90,7 +90,7 @@ export function NoteOutline({ body, isOpen, onJump }: { body: string; isOpen: bo
             {headings.length === 0 ? (
                <p className="px-3 py-6 text-center text-sm italic text-muted-foreground">{t('NoteView.outline.empty')}</p>
             ) : (
-               <ul className="min-h-0 flex-1 overflow-y-auto py-1">
+               <ul className="min-h-0 flex-1 overflow-y-auto p-1.5">
                   {tree.map((node) => (
                      <OutlineRows key={node.slug} node={node} depth={0} collapsed={collapsed} onToggle={toggle} onJump={onJump} />
                   ))}
@@ -121,7 +121,7 @@ function OutlineRows({
 
    return (
       <li>
-         <div className="relative flex items-center gap-1.5 pr-2 hover:bg-foreground/5" style={{ paddingLeft: `${depth * INDENT_REM}rem` }}>
+         <div className="relative flex items-center gap-1.5 pr-2 py-0.5 hover:bg-foreground/5" style={{ paddingLeft: `${depth * INDENT_REM}rem` }}>
             {/* One muted vertical guide per ANCESTOR level, at that level's TWISTY centre. Contiguous descendant
                 rows draw the same x, so the guides read as continuous lines running down each nesting level. */}
             {Array.from({ length: depth }).map((_, level) => (
