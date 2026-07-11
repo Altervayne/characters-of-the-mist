@@ -11,7 +11,7 @@ import { Link2, Pencil, Unlink, X } from 'lucide-react';
 import { useReferencedDrawerItem } from '@/lib/board/useReferencedDrawerItem';
 import { detachNoteToCopy, materializeCopyAsReference } from '@/lib/board/referenceContent';
 import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
-import { importNote } from '@/lib/notes/noteRepository';
+import { openNoteReference } from '@/lib/notes/openNoteReference';
 import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabManagerStore';
 
 // -- Component Imports --
@@ -41,24 +41,6 @@ type NoteCopyContent = Extract<NoteBoardContent, { mode: 'copy' }>;
 /** Stable serialization for the cache change-check (undefined stays undefined). */
 function serialize(value: unknown): string | undefined {
    return value === undefined ? undefined : JSON.stringify(value);
-}
-
-/**
- * Opens the referenced note in its tab: focuses it when already open, else materializes the note into the
- * working table (linked to its drawer source when it has one) and opens it by id. `note` is the aggregate in
- * hand (the live instance, the working row, or the drawer read) seeding the import.
- */
-function openNoteReference(
-   noteId: string,
-   note: Note,
-   sourceDrawerItemId: string | undefined,
-   actions: ReturnType<typeof useTabManagerActions>,
-): void {
-   if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === noteId)) {
-      actions.setActiveTab(noteId);
-      return;
-   }
-   void importNote(note, sourceDrawerItemId ?? null).then(() => actions.openNoteTab(noteId));
 }
 
 /**

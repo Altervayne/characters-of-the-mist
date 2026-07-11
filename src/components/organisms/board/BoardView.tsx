@@ -35,7 +35,6 @@ import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
 import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -224,8 +223,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // point (where a create action drops the new item). Null when closed.
    const [radial, setRadial] = useState<{ screen: { x: number; y: number }; world: Point } | null>(null);
 
-   // A pending board card creation: the chosen game, the world point to drop at, and the cursor screen
-   // point the creation popover anchors to. Null when closed.
+   // A pending board card creation: the chosen game, the world point to drop at, and the screen point
+   // the creation window opens at (near the toolbar when menu-triggered, the cursor from the radial).
+   // Null when closed.
    const [pendingCard, setPendingCard] = useState<{ game: GameSystem; world: Point; screen: { x: number; y: number } } | null>(null);
 
    // ==================
@@ -665,16 +665,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    /**
-    * The "Add Game Element" menu's card row: open the card creation popover for `game`, anchored at the
-    * clip's center (the drop lands there on confirm) - mirroring the radial's per-game card flow, but
-    * centered since the menu isn't cursor-placed.
+    * The "Add Game Element" menu's card row: open the card creation window for `game`. The drop still
+    * lands at the view center on confirm, but the window opens near the toolbar (upper-left) rather than
+    * mid-canvas - the menu isn't cursor-placed, so a mid-canvas panel would cover the drop point.
     */
    const handlePickCardGame = (game: GameSystem) => {
       const el = clipRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const screen = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      const world = screenToWorld(screen.x, screen.y, { left: rect.left, top: rect.top }, viewportRef.current);
+      const world = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
+      const screen = { x: rect.left + 12, y: rect.top + 56 }; // just below the top-left toolbar
       setPendingCard({ game, world, screen });
    };
 
@@ -1012,67 +1012,133 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
       </div>
 
-      {/* Card creation: a popover "window" anchored at the cursor. It lives OUTSIDE the clip div, so a
-          pointer-down on its controls does NOT bubble (in the React tree) to the canvas pan handler -
-          the actual fix for the click-through. `modal` consumes the dismissing outside-click; Escape /
-          the close button cancel; confirm drops the card at the pending world point. */}
-      {pendingCard && (() => {
-         // Clamp the anchor to the board's own rect so a panel grown downward (collision avoidance
-         // off, see below) stays over the board. Read the clip's live box, not window dims, so it's
-         // correct regardless of the host's viewport reporting.
-         const MARGIN = 16;
-         const PANEL_WIDTH = 384; // w-96
-         // The clip's box from state (never the ref during render); falls back to the raw point.
-         const hasBounds = clipRect.width > 0 && clipRect.height > 0;
-         const left = clipRect.left;
-         const right = hasBounds ? clipRect.left + clipRect.width : pendingCard.screen.x + PANEL_WIDTH;
-         const top = clipRect.top;
-         const bottom = hasBounds ? clipRect.top + clipRect.height : pendingCard.screen.y + 320;
-         const anchorX = Math.min(Math.max(pendingCard.screen.x, left + MARGIN), Math.max(left + MARGIN, right - PANEL_WIDTH - MARGIN));
-         const anchorY = Math.min(Math.max(pendingCard.screen.y, top + MARGIN), Math.max(top + MARGIN, bottom - 160));
-         return (
-            <Popover open modal onOpenChange={(open) => { if (!open) setPendingCard(null); }}>
-               <PopoverAnchor asChild>
-                  <div className="pointer-events-none fixed" style={{ left: anchorX, top: anchorY, width: 0, height: 0 }} />
-               </PopoverAnchor>
-               <PopoverContent
-                  align="start"
-                  side="bottom"
-                  sideOffset={8}
-                  // Anchor once and grow DOWNWARD: collision avoidance would re-solve the position on
-                  // every height change (picking a card type adds rows) and make the panel jump.
-                  avoidCollisions={false}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  className="flex max-h-(--radix-popover-content-available-height) w-96 flex-col overflow-hidden rounded-lg border border-border bg-popover/95 p-0 shadow-lg backdrop-blur-sm"
-               >
-                  {/* Header styled from app tokens only, so it follows the chosen theme palette (the card
-                      you make keeps its game look; this creation chrome does not). */}
-                  <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5">
-                     <span className="text-sm font-semibold text-foreground">{t('CreateCardDialog.title')}</span>
-                     <button
-                        type="button"
-                        title={t('Common.close')}
-                        aria-label={t('Common.close')}
-                        onClick={() => setPendingCard(null)}
-                        className="flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-                     >
-                        <X className="h-4 w-4" />
-                     </button>
-                  </div>
-                  {/* A tall form scrolls inside the panel (height capped to the space below the anchor). */}
-                  <div className="min-h-0 overflow-y-auto px-4 pb-3">
-                     <CardCreationForm
-                        game={pendingCard.game}
-                        mode="create"
-                        allowCharacterCard
-                        onConfirm={(options) => { createCardAt(pendingCard.game, options, pendingCard.world); setPendingCard(null); }}
-                     />
-                  </div>
-               </PopoverContent>
-            </Popover>
-         );
-      })()}
+      {/* Card creation: a draggable, non-modal window. It lives OUTSIDE the clip div, so a pointer-down
+          on it never reaches the canvas pan handler (the click-through fix); the canvas stays visible and
+          interactive behind it. Close via the X button or Escape; confirm drops the card at the pending
+          world point. */}
+      {pendingCard && (
+         <BoardCardCreationWindow
+            game={pendingCard.game}
+            initialScreen={pendingCard.screen}
+            clipRect={clipRect}
+            onConfirm={(options) => { createCardAt(pendingCard.game, options, pendingCard.world); setPendingCard(null); }}
+            onClose={() => setPendingCard(null)}
+         />
+      )}
       </>
+   );
+}
+
+/** Panel width for the card-creation window; mirrors the `w-96` class so the drag clamp knows its footprint. */
+const CARD_WINDOW_WIDTH = 384;
+/** Screen-px margin the window keeps from the board edges (drag clamp + max-height). */
+const CARD_WINDOW_MARGIN = 16;
+
+/**
+ * The board's card-creation panel as a draggable, non-modal window. It floats over the canvas (fixed,
+ * clip-relative coords) and owns a `{x,y}` position seeded from `initialScreen`; the header is the drag
+ * handle. The whole panel stops pointer-down propagation so dragging or using it never pans the canvas,
+ * and the position is clamped to the board rect so it can't be dragged off-screen. A tall form scrolls
+ * inside (max-height capped to the space below the panel). No backdrop and no outside-click dismiss - it
+ * closes on the X button or Escape only. The card it makes keeps its game look; this chrome is app-token.
+ */
+function BoardCardCreationWindow({
+   game,
+   initialScreen,
+   clipRect,
+   onConfirm,
+   onClose,
+}: {
+   game: GameSystem;
+   initialScreen: { x: number; y: number };
+   clipRect: { left: number; top: number; width: number; height: number };
+   onConfirm: (options: CreateCardOptions) => void;
+   onClose: () => void;
+}) {
+   const { t } = useTranslation();
+   const panelRef = useRef<HTMLDivElement | null>(null);
+
+   /** Clamps a desired top-left so the panel stays fully within the board rect (its live height read from the DOM). */
+   const clamp = useCallback(
+      (x: number, y: number) => {
+         const height = panelRef.current?.offsetHeight ?? 0;
+         const minX = clipRect.left + CARD_WINDOW_MARGIN;
+         const minY = clipRect.top + CARD_WINDOW_MARGIN;
+         const maxX = Math.max(minX, clipRect.left + clipRect.width - CARD_WINDOW_WIDTH - CARD_WINDOW_MARGIN);
+         const maxY = Math.max(minY, clipRect.top + clipRect.height - height - CARD_WINDOW_MARGIN);
+         return { x: Math.min(Math.max(x, minX), maxX), y: Math.min(Math.max(y, minY), maxY) };
+      },
+      [clipRect],
+   );
+
+   // Seed the position from the initial anchor, clamped horizontally + off the top edge. Height is
+   // unknown on the first render, so the vertical clamp settles once the panel measures (below).
+   const [position, setPosition] = useState(() => {
+      const minX = clipRect.left + CARD_WINDOW_MARGIN;
+      const maxX = Math.max(minX, clipRect.left + clipRect.width - CARD_WINDOW_WIDTH - CARD_WINDOW_MARGIN);
+      return { x: Math.min(Math.max(initialScreen.x, minX), maxX), y: Math.max(initialScreen.y, clipRect.top + CARD_WINDOW_MARGIN) };
+   });
+
+   // Escape closes the window (it's non-modal, so no outside-click dismiss to lean on).
+   useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+         if (event.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [onClose]);
+
+   /** Header drag: pointer on the header background repositions the whole panel (clamped). The X button
+    *  and any header controls opt out via `closest('button')`, so pressing them never starts a drag. */
+   const handleHeaderPointerDown = (event: ReactPointerEvent) => {
+      if (event.button !== 0) return;
+      if (event.target instanceof Element && event.target.closest('button')) return;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const origin = position;
+      const onMove = (moveEvent: PointerEvent) => {
+         setPosition(clamp(origin.x + (moveEvent.clientX - startX), origin.y + (moveEvent.clientY - startY)));
+      };
+      const onUp = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   };
+
+   // Grow downward from the panel's top; a tall form scrolls inside rather than spilling past the board.
+   const maxHeight = clipRect.height > 0 ? clipRect.top + clipRect.height - position.y - CARD_WINDOW_MARGIN : undefined;
+
+   return (
+      <div
+         ref={panelRef}
+         onPointerDown={(event) => event.stopPropagation()}
+         style={{ left: position.x, top: position.y, maxHeight }}
+         className="fixed z-50 flex w-96 flex-col overflow-hidden rounded-lg border border-border bg-popover/95 shadow-lg backdrop-blur-sm"
+      >
+         {/* Header doubles as the drag handle. Styled from app tokens only, so it follows the chosen
+             theme palette (the card you make keeps its game look; this creation chrome does not). */}
+         <div
+            onPointerDown={handleHeaderPointerDown}
+            className="flex shrink-0 cursor-move select-none items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5"
+         >
+            <span className="text-sm font-semibold text-foreground">{t('CreateCardDialog.title')}</span>
+            <button
+               type="button"
+               title={t('Common.close')}
+               aria-label={t('Common.close')}
+               onClick={onClose}
+               className="flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+            >
+               <X className="h-4 w-4" />
+            </button>
+         </div>
+         {/* A tall form scrolls inside the panel (height capped to the space below it). */}
+         <div className="min-h-0 overflow-y-auto px-4 pb-3">
+            <CardCreationForm game={game} mode="create" allowCharacterCard onConfirm={onConfirm} />
+         </div>
+      </div>
    );
 }
 
