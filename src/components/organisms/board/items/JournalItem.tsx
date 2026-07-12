@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -323,6 +323,16 @@ function BookmarkTab({
 
    // A tab switch unmounts the tab without a blur; flush the label buffer so it isn't lost.
    useCommitOnUnmount(commit);
+   // Deselecting the journal drops `editable` and swaps the <input> for the <button> in place, WITHOUT
+   // unmounting the tab - so neither onBlur nor useCommitOnUnmount fires and a label typed right before
+   // deselecting is stranded in the buffer. Flush on that falling edge; the commit re-renders the tab
+   // with the new label immediately (dirty-guarded, so a normal blur-then-deselect no-ops).
+   const wasEditable = useRef(editable);
+   useEffect(() => {
+      const was = wasEditable.current;
+      wasEditable.current = editable;
+      if (was && !editable) commit();
+   });
 
    return (
       <div
@@ -409,6 +419,14 @@ function BookmarkListRow({
    };
    // A remount (tab switch / popover close) flushes the label buffer so an edit isn't lost.
    useCommitOnUnmount(commit);
+   // Deselecting while the popover stays open drops `editable` and removes the <input> in place without
+   // unmounting the row - the same stranded-buffer gap the side tab has; flush on that falling edge.
+   const wasEditable = useRef(editable);
+   useEffect(() => {
+      const was = wasEditable.current;
+      wasEditable.current = editable;
+      if (was && !editable) commit();
+   });
 
    return (
       <div className={cn(

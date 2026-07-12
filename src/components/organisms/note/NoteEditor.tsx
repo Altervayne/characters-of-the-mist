@@ -7,7 +7,7 @@ import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/vi
 import { defaultKeymap, history, historyKeymap, undo, redo, undoDepth, redoDepth } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { Strikethrough, Table } from '@lezer/markdown';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 
 // -- Live-Preview Imports --
@@ -22,6 +22,7 @@ import { formatToolbar } from './live/formatToolbar';
 import { findImageTokens } from '@/lib/notes/noteImageHint';
 
 // -- Type Imports --
+import type { SyntaxNode } from '@lezer/common';
 import type { CoverController } from './live/coverGutter';
 import type { FormatController } from './live/formatToolbar';
 import type { TableController } from './live/tableWidget';
@@ -100,6 +101,8 @@ interface NoteEditorProps {
    tableController: TableController;
    /** Native paste/drop handler for images (returns true when it consumed the event). Wired into CM6 dom events. */
    onImageEvent?: (event: ClipboardEvent | DragEvent) => boolean;
+   /** Resolves an internal/external link on Ctrl/Cmd-click (plain click still edits). Host-agnostic: the renderer closes over its host. */
+   onLinkActivate?: (href: string) => void;
 }
 
 /*
@@ -254,7 +257,7 @@ const paperTheme = EditorView.theme({
 }, { dark: false });
 
 export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEditor(
-   { value, onChange, title, onTitleChange, onCoverChange, onHistoryChange, placeholder, live, cover, coverController, formatController, tableController, onImageEvent },
+   { value, onChange, title, onTitleChange, onCoverChange, onHistoryChange, placeholder, live, cover, coverController, formatController, tableController, onImageEvent, onLinkActivate },
    ref,
 ) {
    const hostRef = useRef<HTMLDivElement>(null);
@@ -270,6 +273,8 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
    onHistoryChangeRef.current = onHistoryChange;
    const onImageEventRef = useRef(onImageEvent);
    onImageEventRef.current = onImageEvent;
+   const onLinkActivateRef = useRef(onLinkActivate);
+   onLinkActivateRef.current = onLinkActivate;
    // The current doc, so a `live` flip can re-seed the rebuilt view with the latest buffer (not the stale prop).
    const valueRef = useRef(value);
    valueRef.current = value;
@@ -359,8 +364,10 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
                EditorView.domEventHandlers({
                   paste: (event) => onImageEventRef.current?.(event) ?? false,
                   drop: (event) => onImageEventRef.current?.(event) ?? false,
-                  // Click on an image widget selects it: land the caret inside its token so the field marks it.
-                  mousedown: (event, view) => selectImageOnClick(event, view),
+                  // Ctrl/Cmd-click a link follows it (plain click edits); else a click on an image widget
+                  // selects it. Link mod-click runs first (only fires with the modifier), so it never steals a
+                  // plain image click.
+                  mousedown: (event, view) => activateLinkOnModClick(event, view, onLinkActivateRef.current) || selectImageOnClick(event, view),
                }),
             ],
          }),
@@ -508,4 +515,39 @@ function selectImageOnClick(event: MouseEvent, view: EditorView): boolean {
    view.dispatch({ selection: { anchor: token.index + 1 } });
    view.focus();
    return true;
+}
+
+/**
+ * Ctrl/Cmd-click follows the link under the pointer: hit-test the enclosing Lezer `Link` node, extract its
+ * destination, and hand it to `onLinkActivate` (the renderer resolves it against its host). Plain click is left
+ * alone so it edits (caret). Returns whether it handled the event.
+ */
+function activateLinkOnModClick(event: MouseEvent, view: EditorView, onLinkActivate?: (href: string) => void): boolean {
+   if (!onLinkActivate || !(event.ctrlKey || event.metaKey)) return false;
+   const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+   if (pos == null) return false;
+   const href = linkHrefAt(view.state, pos);
+   if (!href) return false;
+   event.preventDefault();
+   onLinkActivate(href);
+   return true;
+}
+
+/** The destination of the markdown `Link` enclosing `pos`, or null when the position isn't inside an inline link. */
+function linkHrefAt(state: EditorState, pos: number): string | null {
+   const tree = syntaxTree(state);
+   // Try both sides of the position: a chip widget replaces the raw text, so a click resolves to its edge.
+   const node = enclosingLink(tree.resolveInner(pos, -1)) ?? enclosingLink(tree.resolveInner(pos, 1));
+   if (!node) return null;
+   const raw = state.doc.sliceString(node.from, node.to);
+   const match = /^\[([^\]]*)\]\(([^)]*)\)$/.exec(raw);
+   return match ? match[2] : null;
+}
+
+/** Walks up from `node` to the enclosing `Link` node, or null when there is none. */
+function enclosingLink(node: SyntaxNode | null): SyntaxNode | null {
+   for (let current = node; current; current = current.parent) {
+      if (current.name === 'Link') return current;
+   }
+   return null;
 }

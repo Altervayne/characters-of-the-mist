@@ -14,6 +14,7 @@ import { extractHeadings, slugifyHeading } from '@/lib/notes/noteOutline';
 // -- Component Imports --
 import { docMarkdownComponents } from './markdown/docMarkdownComponents';
 import { HeadingSlugContext, type HeadingSlugResolver } from './markdown/headingSlugContext';
+import { linkComponents } from './markdown/linkComponents';
 import { mentionComponents } from './markdown/markdownComponents';
 import { NoteImage } from './note/NoteImage';
 import { NoteCover } from './note/NoteCover';
@@ -45,12 +46,13 @@ const noteImageComponent: Partial<Components> = { img: NoteImage };
 
 /*
  * react-markdown's default url sanitizer strips any non-http(s) scheme to empty, which would eat our
- * `asset:` image src before NoteImage ever sees it. Let ONLY `asset:` through untouched; everything else
- * still runs the default sanitizer (so http(s)/other schemes stay sanitized). NoteImage remains the real
- * safety gate - it renders an <img> for `asset:` alone and degrades any other src to alt text.
+ * `asset:` image src (before NoteImage sees it) and our `cotm://` internal-link href (before the link `a`
+ * classifies it). Let those two schemes through untouched; everything else still runs the default sanitizer
+ * (so http(s)/other schemes stay sanitized). NoteImage / the link `a` remain the real gates - NoteImage
+ * renders an <img> for `asset:` alone, and the link `a` only acts on the known `cotm://` grammar.
  */
 function noteUrlTransform(url: string): string {
-   return url.startsWith('asset:') ? url : defaultUrlTransform(url);
+   return url.startsWith('asset:') || url.startsWith('cotm:') ? url : defaultUrlTransform(url);
 }
 
 interface NoteDocumentProps {
@@ -60,6 +62,8 @@ interface NoteDocumentProps {
    /** The note-level cover image; floated top-left so the opening text wraps beside it. */
    cover?: NoteCoverData;
    onMentionClick?: (segment: MentionSegment) => void;
+   /** Resolves an internal link (`#section` / `cotm://…`) on click; omit for a display-only render (chips stay inert). */
+   onLinkActivate?: (href: string) => void;
    /**
     * Board-tile variant: sizes the title + cover with the CONTAINER (the tile), not the viewport, so a note
     * reads cleanly at ~260px and scales up on resize. Opt-in only - the full-page Reading render omits it and
@@ -69,8 +73,11 @@ interface NoteDocumentProps {
    className?: string;
 }
 
-export function NoteDocument({ title, body, cover, onMentionClick, compact, className }: NoteDocumentProps) {
-   const components = useMemo(() => ({ ...docMarkdownComponents, ...noteImageComponent, ...mentionComponents(onMentionClick) }), [onMentionClick]);
+export function NoteDocument({ title, body, cover, onMentionClick, onLinkActivate, compact, className }: NoteDocumentProps) {
+   const components = useMemo(
+      () => ({ ...docMarkdownComponents, ...noteImageComponent, ...linkComponents(onLinkActivate), ...mentionComponents(onMentionClick) }),
+      [onLinkActivate, onMentionClick],
+   );
    const heading = title?.trim();
    // Display-only: break a table off a text line one `\n` below it (GFM would else absorb the text as a cell).
    const renderedBody = useMemo(() => separateTablesFromText(body), [body]);

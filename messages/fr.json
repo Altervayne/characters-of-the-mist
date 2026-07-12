@@ -271,6 +271,11 @@
          "importedMarkdown": "[TO COMPLETE]",
          "updated": "[TO COMPLETE]"
       },
+      "link": {
+         "targetNotFound": "[TO COMPLETE]",
+         "spawnOnBoardSoon": "[TO COMPLETE]",
+         "revealInDrawerSoon": "[TO COMPLETE]"
+      },
       "theme": {
          "exported": "[TO COMPLETE]",
          "imported": "[TO COMPLETE]"

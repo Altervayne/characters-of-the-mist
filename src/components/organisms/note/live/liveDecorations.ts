@@ -8,8 +8,11 @@ import type { SyntaxNodeRef } from '@lezer/common';
 // -- Local Imports --
 import { parseMentions } from '@/lib/challenge/parseMentions';
 import { findTableBlocks } from '@/lib/notes/noteFormat';
+import { parseLinkHref } from '@/lib/portals/linkTarget';
 import { STATUS_PILL, TAG_PILL } from '@/components/molecules/markdown/MentionPill';
+import { linkChipFallbackLabel } from '@/components/molecules/markdown/InternalLinkChip';
 import { MentionPillWidget } from './mentionPillWidget';
+import { InternalLinkWidget } from './internalLinkWidget';
 
 /*
  * The Live-Preview INLINE decoration engine (a ViewPlugin). It drives decorations off the Lezer markdown
@@ -202,6 +205,26 @@ function buildDecorations(view: EditorView): { all: DecorationSet; atomic: Decor
                const last = doc.lineAt(Math.max(node.from, node.to - 1)).number;
                for (let n = first; n <= last; n++) ranges.push(quoteLine.range(doc.line(n).from));
                return;
+            }
+
+            // A markdown link. Off the caret's line an INTERNAL link (`#section` / `cotm://…`) renders as a
+            // chip widget (atomic) that reveals the raw `[text](href)` when the caret enters the line; an
+            // EXTERNAL link keeps its default underlined-text rendering (its brackets/URL collapse via
+            // MARKER_NODES below). On the caret's line the whole link stays raw and editable.
+            if (name === 'Link') {
+               if (activeLines.has(doc.lineAt(node.from).number)) return; // caret on the line: raw, editable
+               const rawLink = doc.sliceString(node.from, node.to);
+               const linkMatch = /^\[([^\]]*)\]\(([^)]*)\)$/.exec(rawLink);
+               if (!linkMatch) return; // reference-style / malformed: leave the default rendering
+               const target = parseLinkHref(linkMatch[2]);
+               if (target.kind === 'section' || target.kind === 'entity' || target.kind === 'element') {
+                  const label = linkMatch[1].trim() || linkChipFallbackLabel(target);
+                  const chip = Decoration.replace({ widget: new InternalLinkWidget(target, label) }).range(node.from, node.to);
+                  ranges.push(chip);
+                  atomicRanges.push(chip);
+                  return false; // the chip owns the whole span; don't collapse its LinkMark/URL children
+               }
+               return; // external / unknown: default underlined-text rendering
             }
 
             // A thematic break (`---`/`***`/`___`) renders as a real horizontal rule OFF the cursor line (the

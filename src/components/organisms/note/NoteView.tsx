@@ -9,6 +9,10 @@ import { useStore } from 'zustand';
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import { useNoteImageInsertion } from '@/hooks/useNoteImageInsertion';
+import { useNoteLinkActivation } from '@/hooks/useNoteLinkActivation';
+
+// -- Note Outline --
+import { extractHeadings } from '@/lib/notes/noteOutline';
 
 // -- Pipeline / Asset Store --
 import { processImage } from '@/lib/assets/processImage';
@@ -37,6 +41,7 @@ import type { TableController } from '@/components/organisms/note/live/tableWidg
 import type { NoteMode } from '@/components/organisms/note/NoteToolbar';
 import type { NoteTableContextMenuHandle } from '@/components/organisms/note/NoteTableContextMenu';
 import type { NoteCover } from '@/lib/types/board';
+import type { NoteHostContext } from '@/lib/portals/linkTarget';
 
 /*
  * The Note tab surface: the document editor on the paper sheet. It reads the ACTIVE NOTE instance (never the
@@ -174,6 +179,19 @@ function NoteSurface() {
       setOutlineJump(jumpToHeading);
       return () => setOutlineJump(null);
    }, [setOutlineJump, jumpToHeading]);
+
+   // Note links: this surface is the TAB host. A same-note `#slug` maps to the outline jump (Live scrolls the
+   // offset, Reading scrolls the `#slug` element); the buffer ref keeps the offset honest while editing. A dead
+   // slug finds no heading and no-ops. The activation handler is shared with the board tile (only the host and
+   // section-scroll differ), so entity/external/element behaviour can't drift between the two surfaces.
+   const bodyRef = useRef(localBody);
+   bodyRef.current = localBody;
+   const host = useMemo<NoteHostContext>(() => ({ kind: 'tab', noteId: note?.id ?? '' }), [note?.id]);
+   const scrollToSection = useCallback((slug: string) => {
+      const heading = extractHeadings(bodyRef.current).find((entry) => entry.slug === slug);
+      if (heading) jumpToHeading(heading);
+   }, [jumpToHeading]);
+   const onLinkActivate = useNoteLinkActivation(host, scrollToSection);
 
    // Cover add/change: the shared upload pipeline (process -> store -> hash), then a NoteCover built with the
    // image's NATURAL ratio on ADD (so it starts uncropped) and the current box kept on CHANGE (swap hash only).
@@ -327,6 +345,7 @@ function NoteSurface() {
                         onCoverChange={handleCmCoverChange}
                         onHistoryChange={handleHistoryChange}
                         onImageEvent={handleImageEvent}
+                        onLinkActivate={onLinkActivate}
                         live={mode === 'live'}
                         cover={cover}
                         coverController={coverController}
@@ -335,7 +354,7 @@ function NoteSurface() {
                         placeholder={t('NoteView.bodyPlaceholder')}
                      />
                   ) : note.title.trim() || note.body.trim() || cover ? (
-                     <NoteDocument title={note.title} body={note.body} cover={cover} />
+                     <NoteDocument title={note.title} body={note.body} cover={cover} onLinkActivate={onLinkActivate} />
                   ) : (
                      <p className="text-base text-paper-foreground/50">
                         {t('NoteView.emptyPreview')}

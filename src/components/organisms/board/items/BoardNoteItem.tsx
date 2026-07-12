@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
@@ -11,14 +11,18 @@ import { Link2, Pencil, Unlink, X } from 'lucide-react';
 import { useReferencedDrawerItem } from '@/lib/board/useReferencedDrawerItem';
 import { detachNoteToCopy, materializeCopyAsReference } from '@/lib/board/referenceContent';
 import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
+import { importNote } from '@/lib/notes/noteRepository';
 import { openNoteReference } from '@/lib/notes/openNoteReference';
+import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabManagerStore';
+import { useNoteLinkActivation } from '@/hooks/useNoteLinkActivation';
 
 // -- Component Imports --
 import { NoteDocument } from '@/components/molecules/NoteDocument';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent, NoteBoardContent, Note } from '@/lib/types/board';
+import type { NoteHostContext } from '@/lib/portals/linkTarget';
 
 /** The live-mirror (reference) half of {@link NoteBoardContent}; the resolving sources hold only this variant. */
 type NoteReferenceContent = Extract<NoteBoardContent, { mode: 'reference' }>;
@@ -82,22 +86,35 @@ export function BoardNoteItem({ item, content, isSelected, toolbarSlot, onConten
    // A copy never resolves live: it carries no `noteId` and reads its own frozen snapshot.
    const isOpen = useTabManagerStore((state) => content.mode === 'reference' && state.openTabs.some((tab) => tab.id === content.noteId));
 
+   // This tile is the BOARD-EMBED host for its note's links: an element link spawns beside (deferred to a later
+   // phase), an entity link opens its tab, an external link opens a new tab. Section-scroll inside the small
+   // tile is deferred - the note's own tab is the section surface - so it passes a no-op scroll.
+   const noteId = content.mode === 'reference' ? content.noteId : content.data.id;
+   const host = useMemo<NoteHostContext>(
+      () => ({ kind: 'board-embed', boardId: getActiveBoardStore()?.getState().boardId ?? '', itemId: item.id, noteId }),
+      [item.id, noteId],
+   );
+   const onLinkActivate = useNoteLinkActivation(host, noScroll);
+
    if (content.mode === 'copy') {
       // A frozen snapshot: renders `data` statically, but opening ADOPTS it into an editable, mirrored note.
-      return <CopyNoteSource content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
+      return <CopyNoteSource content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onLinkActivate={onLinkActivate} />;
    }
    if (isOpen) {
-      return <LiveNoteSource content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
+      return <LiveNoteSource content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onLinkActivate={onLinkActivate} />;
    }
-   return <ClosedNoteSource item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
+   return <ClosedNoteSource item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} onLinkActivate={onLinkActivate} />;
 }
+
+/** A stable no-op section-scroll: the board tile defers same-note section jumps to the note's own tab. */
+const noScroll = (): void => {};
 
 /**
  * A frozen copy: renders its snapshot statically (no live source, no convert), but the Edit-pencil /
  * double-click ADOPT it - materializing the snapshot into a real editable note and re-homing this tile onto
  * it as a live reference. So a copy is a resting view, not a dead end.
  */
-function CopyNoteSource({ content, isSelected, toolbarSlot, onContentChange }: { content: NoteCopyContent; isSelected: boolean; toolbarSlot: HTMLElement | null; onContentChange: (content: BoardItemContent) => void }) {
+function CopyNoteSource({ content, isSelected, toolbarSlot, onContentChange, onLinkActivate }: { content: NoteCopyContent; isSelected: boolean; toolbarSlot: HTMLElement | null; onContentChange: (content: BoardItemContent) => void; onLinkActivate: (href: string) => void }) {
    const actions = useTabManagerActions();
    return (
       <NoteTile
@@ -105,6 +122,7 @@ function CopyNoteSource({ content, isSelected, toolbarSlot, onContentChange }: {
          isSelected={isSelected}
          toolbarSlot={toolbarSlot}
          onOpen={() => adoptCopyOnOpen(content, onContentChange, actions)}
+         onLinkActivate={onLinkActivate}
       />
    );
 }
@@ -117,6 +135,8 @@ interface ReferenceSourceProps {
    onContentChange: (content: BoardItemContent) => void;
    onCacheLastKnown: (id: string, content: BoardItemContent) => void;
    onDelete: (id: string) => void;
+   /** Resolves a note-body link against this tile's board-embed host. */
+   onLinkActivate: (href: string) => void;
 }
 
 /**
@@ -125,7 +145,7 @@ interface ReferenceSourceProps {
  * itself ({@link stampNoteReferencesDrawerSource}), not here - the Save is fired from the note tab, where
  * the board (and this component) is unmounted, so it can't ride a render effect.
  */
-function LiveNoteSource({ content, isSelected, toolbarSlot, onContentChange }: Pick<ReferenceSourceProps, 'content' | 'isSelected' | 'toolbarSlot' | 'onContentChange'>) {
+function LiveNoteSource({ content, isSelected, toolbarSlot, onContentChange, onLinkActivate }: Pick<ReferenceSourceProps, 'content' | 'isSelected' | 'toolbarSlot' | 'onContentChange' | 'onLinkActivate'>) {
    const actions = useTabManagerActions();
    const note = useStore(getOrCreateNoteInstance(content.noteId), (state) => state.note);
 
@@ -139,6 +159,7 @@ function LiveNoteSource({ content, isSelected, toolbarSlot, onContentChange }: P
          toolbarSlot={toolbarSlot}
          onOpen={() => openNoteReference(content.noteId, note, content.sourceDrawerItemId, actions)}
          onConvertToCopy={() => onContentChange(detachNoteToCopy(content, note))}
+         onLinkActivate={onLinkActivate}
       />
    );
 }
@@ -150,7 +171,7 @@ function LiveNoteSource({ content, isSelected, toolbarSlot, onContentChange }: P
  * drawer-LESS reference never reaches here closed - closing its tab re-freezes it to a copy - so there is no
  * working-row read. When the drawer source is gone, degrade to the rich dangling tile (last-known + salvage).
  */
-function ClosedNoteSource({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete }: ReferenceSourceProps) {
+function ClosedNoteSource({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onDelete, onLinkActivate }: ReferenceSourceProps) {
    const { t } = useTranslation();
    const actions = useTabManagerActions();
 
@@ -169,7 +190,7 @@ function ClosedNoteSource({ item, content, isSelected, toolbarSlot, onContentCha
    // removed panel. Never a crash.
    if (status === 'dangling' || !note) {
       if (content.lastKnown) {
-         return <DanglingNoteTile note={content.lastKnown} onConvertToCopy={() => onContentChange(detachNoteToCopy(content, null))} onDelete={() => onDelete(item.id)} />;
+         return <DanglingNoteTile note={content.lastKnown} onConvertToCopy={() => onContentChange(detachNoteToCopy(content, null))} onDelete={() => onDelete(item.id)} onLinkActivate={onLinkActivate} />;
       }
       return <MissingNotePanel message={t('BoardView.referenceSourceRemoved')} onDelete={() => onDelete(item.id)} />;
    }
@@ -181,6 +202,7 @@ function ClosedNoteSource({ item, content, isSelected, toolbarSlot, onContentCha
          toolbarSlot={toolbarSlot}
          onOpen={() => openNoteReference(content.noteId, note, content.sourceDrawerItemId, actions)}
          onConvertToCopy={() => onContentChange(detachNoteToCopy(content, note))}
+         onLinkActivate={onLinkActivate}
       />
    );
 }
@@ -194,7 +216,7 @@ function ClosedNoteSource({ item, content, isSelected, toolbarSlot, onContentCha
  * (no convert) shows none, so a frozen copy still reads distinct from a live handout. The box supplies the
  * selection ring + grip.
  */
-function NoteTile({ note, onOpen, onConvertToCopy, isSelected, toolbarSlot }: { note: Note; onOpen?: () => void; onConvertToCopy?: () => void; isSelected: boolean; toolbarSlot: HTMLElement | null }) {
+function NoteTile({ note, onOpen, onConvertToCopy, isSelected, toolbarSlot, onLinkActivate }: { note: Note; onOpen?: () => void; onConvertToCopy?: () => void; isSelected: boolean; toolbarSlot: HTMLElement | null; onLinkActivate?: (href: string) => void }) {
    const { t } = useTranslation();
    // A live reference exposes convert-to-copy; a frozen copy does not - so the same flag drives the badge.
    const isReference = !!onConvertToCopy;
@@ -204,7 +226,7 @@ function NoteTile({ note, onOpen, onConvertToCopy, isSelected, toolbarSlot }: { 
          className="relative h-full w-full overflow-hidden rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-sm"
       >
          <div data-board-wheel-scroll className="h-full w-full overflow-y-auto overflow-x-hidden px-4 py-3">
-            <NoteDocument compact title={note.title} body={note.body} cover={note.cover} />
+            <NoteDocument compact title={note.title} body={note.body} cover={note.cover} onLinkActivate={onLinkActivate} />
          </div>
          {/* Linked badge (app-theme chrome): marks a live reference so it reads distinct from a frozen copy. */}
          {isReference && (
@@ -257,12 +279,12 @@ function NoteTile({ note, onOpen, onConvertToCopy, isSelected, toolbarSlot }: { 
  * banner is always visible (not selection-gated) so a dangling reference can be rescued directly. Chrome is
  * app-theme (the deleted-source state), the content stays paper. Mirrors the character/card dangling flow.
  */
-function DanglingNoteTile({ note, onConvertToCopy, onDelete }: { note: Note; onConvertToCopy: () => void; onDelete: () => void }) {
+function DanglingNoteTile({ note, onConvertToCopy, onDelete, onLinkActivate }: { note: Note; onConvertToCopy: () => void; onDelete: () => void; onLinkActivate?: (href: string) => void }) {
    const { t } = useTranslation();
    return (
       <div className="relative h-full w-full overflow-hidden rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-sm">
          <div data-board-wheel-scroll className="h-full w-full overflow-y-auto overflow-x-hidden px-4 pb-3 pt-9 opacity-50">
-            <NoteDocument compact title={note.title} body={note.body} cover={note.cover} />
+            <NoteDocument compact title={note.title} body={note.body} cover={note.cover} onLinkActivate={onLinkActivate} />
          </div>
          <div className="absolute inset-x-0 top-0 flex items-center gap-1.5 bg-destructive/90 px-2 py-1 text-destructive-foreground shadow-sm">
             <span className="min-w-0 flex-1 truncate text-xs font-medium">{t('BoardView.referenceSourceRemoved')}</span>

@@ -1,0 +1,75 @@
+// -- Repository Imports --
+import { getNote } from '@/lib/notes/noteRepository';
+import { recordToNote } from '@/lib/notes/noteRecords';
+import { getNoteItemIdMap, getItem } from '@/lib/drawer/drawerRepository';
+import { loadBoard } from '@/lib/board/boardRepository';
+import { getCharacter } from '@/lib/character/characterRepository';
+import { openNoteReference } from '@/lib/notes/openNoteReference';
+import { useTabManagerStore } from '@/lib/character/tabManagerStore';
+
+// -- Type Imports --
+import type { useTabManagerActions } from '@/lib/character/tabManagerStore';
+import type { Note } from '@/lib/types/board';
+
+/*
+ * The Portals entity open-or-create-tab service: resolves an entity link's id to its aggregate and opens (or
+ * focuses) its tab, composing the EXISTING tab-manager + repository services. It is the ONE place the id ->
+ * aggregate resolve + the uniform dead-target handling lives, so every entity branch no-ops with a toast
+ * rather than crashing on a deleted target. Store-coupled by design (it IS the wiring layer); the pure
+ * classify/resolve is `linkTarget.ts` and the thin dispatch is `runLinkAction.ts`.
+ */
+
+/** Dependencies the entity open needs: the tab actions, and a dead-target notifier (a toast). */
+export interface OpenEntityDeps {
+   actions: ReturnType<typeof useTabManagerActions>;
+   /** Called when the target id resolves to nothing (deleted / never saved) - the caller shows a toast. */
+   onMissing: () => void;
+}
+
+/**
+ * Resolves a note id to its aggregate + drawer source. Prefers the working row (an open or recently-open
+ * note), else consults the drawer (a saved-then-closed note lives only as its `NOTE` drawer item). Returns
+ * `null` when neither exists (a deleted target).
+ */
+async function resolveNoteAggregate(noteId: string): Promise<{ note: Note; sourceDrawerItemId?: string } | null> {
+   const record = await getNote(noteId);
+   if (record) return { note: recordToNote(record), sourceDrawerItemId: record.drawerItemId ?? undefined };
+
+   const drawerItemId = (await getNoteItemIdMap()).get(noteId);
+   if (drawerItemId) {
+      const item = await getItem(drawerItemId);
+      if (item) return { note: item.content as Note, sourceDrawerItemId: drawerItemId };
+   }
+   return null;
+}
+
+/**
+ * Opens (or focuses) the tab for entity `id`. A note reuses the note tile's focus-or-import path; a board
+ * hydrates itself once its record is confirmed; a character resolves its aggregate then opens with its drawer
+ * link. A dead target on any branch calls `onMissing` and no-ops.
+ */
+export async function openEntityTab(entity: 'note' | 'board' | 'character', id: string, deps: OpenEntityDeps): Promise<void> {
+   if (entity === 'note') {
+      // Already open: focus it (skips the resolve entirely).
+      if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === id)) {
+         deps.actions.setActiveTab(id);
+         return;
+      }
+      const resolved = await resolveNoteAggregate(id);
+      if (!resolved) return deps.onMissing();
+      openNoteReference(id, resolved.note, resolved.sourceDrawerItemId, deps.actions);
+      return;
+   }
+
+   if (entity === 'board') {
+      // `openBoardTab` focuses-or-hydrates by id, but only after we confirm the record still exists.
+      if (!(await loadBoard(id))) return deps.onMissing();
+      await deps.actions.openBoardTab(id);
+      return;
+   }
+
+   // character
+   const record = await getCharacter(id);
+   if (!record) return deps.onMissing();
+   deps.actions.openCharacterTab(record.character, record.drawerItemId ?? undefined);
+}
