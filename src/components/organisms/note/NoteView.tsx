@@ -278,7 +278,10 @@ function NoteSurface() {
          bold: t('NoteView.format.bold'),
          italic: t('NoteView.format.italic'),
          strikethrough: t('NoteView.format.strikethrough'),
+         link: t('NoteView.format.link'),
       },
+      // The bar only shows while editing, so the picker can open directly (no mode flip needed).
+      onInsertLink: () => setLinkPickerOpen(true),
    }), [isEditing, t]);
 
    // A stable accessor to the live editor handle for the permanent toolbar (the ref may be unset on first paint).

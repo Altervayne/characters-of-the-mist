@@ -58,7 +58,8 @@
       "format": {
          "bold": "[TO COMPLETE]",
          "italic": "[TO COMPLETE]",
-         "strikethrough": "[TO COMPLETE]"
+         "strikethrough": "[TO COMPLETE]",
+         "link": "[TO COMPLETE]"
       },
       "toolbar": {
          "insertTable": "[TO COMPLETE]",

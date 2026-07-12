@@ -58,7 +58,8 @@
       "format": {
          "bold": "Bold",
          "italic": "Italic",
-         "strikethrough": "Strikethrough"
+         "strikethrough": "Strikethrough",
+         "link": "Link"
       },
       "toolbar": {
          "insertTable": "Insert table",

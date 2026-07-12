@@ -22,7 +22,9 @@ export interface FormatController {
    /** Whether the surface shows the selection bar (Live/Source editing; never Reading). */
    editable: boolean;
    /** Localized tooltips/aria-labels for the icon-only controls (the plugin has no i18n of its own). */
-   labels: { bold: string; italic: string; strikethrough: string };
+   labels: { bold: string; italic: string; strikethrough: string; link: string };
+   /** Opens the link picker for the current selection (the selected text becomes the link label). */
+   onInsertLink: () => void;
 }
 
 /**
@@ -47,6 +49,17 @@ const ITALIC_GLYPH =
    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 4h-9M14 20H5M15 4L9 20"/></svg>';
 const STRIKE_GLYPH =
    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M16 6a4 4 0 0 0-4-2H9a3 3 0 0 0 0 6M8 18a4 4 0 0 0 4 2h3a3 3 0 0 0 1-5.8"/></svg>';
+// lucide Link — matches the top toolbar's insert-link button; the selection becomes the new link's label.
+const LINK_GLYPH =
+   '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+
+/** A thin vertical rule grouping the text-style toggles apart from the link action. */
+function buildSeparator(): HTMLElement {
+   const sep = document.createElement('span');
+   sep.className = 'cm-note-format-sep';
+   sep.setAttribute('aria-hidden', 'true');
+   return sep;
+}
 
 /** Builds one icon control button. mousedown is swallowed so the editor keeps its selection/caret. */
 function buildButton(glyph: string, label: string, onClick: () => void): HTMLButtonElement {
@@ -75,6 +88,10 @@ function formatOverlay(controller: FormatController) {
             this.bar.appendChild(buildButton(BOLD_GLYPH, controller.labels.bold, () => toggleWrap(view, 'bold')));
             this.bar.appendChild(buildButton(ITALIC_GLYPH, controller.labels.italic, () => toggleWrap(view, 'italic')));
             this.bar.appendChild(buildButton(STRIKE_GLYPH, controller.labels.strikethrough, () => toggleWrap(view, 'strikethrough')));
+            // Link the selection: opens the picker with the selected text as the label (a selection action, but
+            // distinct from the text-style toggles, so it sits behind a separator).
+            this.bar.appendChild(buildSeparator());
+            this.bar.appendChild(buildButton(LINK_GLYPH, controller.labels.link, () => controller.onInsertLink()));
 
             // Lives in the scroller (stable DOM; CM6 owns and reconciles `.cm-content`).
             view.scrollDOM.appendChild(this.bar);

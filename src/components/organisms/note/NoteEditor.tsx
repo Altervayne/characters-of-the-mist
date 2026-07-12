@@ -220,6 +220,7 @@ const paperTheme = EditorView.theme({
    '.cm-note-format-bar': { position: 'absolute', zIndex: '7', display: 'flex', alignItems: 'center', gap: '0.125rem', padding: '0.25rem', borderRadius: '0.375rem', backgroundColor: 'var(--popover)', color: 'var(--popover-foreground)', border: '1px solid var(--border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' },
    '.cm-note-format-btn': { display: 'grid', placeItems: 'center', height: '1.75rem', width: '1.75rem', borderRadius: '0.25rem', cursor: 'pointer', color: 'inherit', background: 'transparent', border: 'none' },
    '.cm-note-format-btn:hover': { backgroundColor: 'var(--muted)' },
+   '.cm-note-format-sep': { alignSelf: 'stretch', width: '1px', margin: '0.125rem 0.125rem', backgroundColor: 'var(--border)' },
 
    // ==================
    //  Editable table grid - CLEAN cells (paper palette, parity with docMarkdownComponents). Insert-at-position,
@@ -305,6 +306,7 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
    const stableFormatController = useRef<FormatController>({
       get editable() { return formatControllerRef.current.editable; },
       get labels() { return formatControllerRef.current.labels; },
+      onInsertLink: () => formatControllerRef.current.onInsertLink(),
    }).current;
    // The table controller, captured stably so the field (built once) always calls the current opener - a
    // re-render swaps the closure without rebuilding the view.
