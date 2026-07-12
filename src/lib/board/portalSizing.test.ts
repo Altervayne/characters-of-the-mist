@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PORTAL_BASE_SIZE, PORTAL_MIN_SIZE, portalFontPx, portalIconPx, portalIconOnlyPx } from './portalSizing';
+import { PORTAL_BASE_SIZE, PORTAL_MIN_SIZE, PORTAL_IMAGE_SIZE_DEFAULT, portalAlignFlexDirection, portalFontPx, portalIconPx, portalIconOnlyPx, portalImageThumbPx, portalLabelMaxLines } from './portalSizing';
 
 describe('portalSizing', () => {
    it('reproduces the 1a look at the base height', () => {
@@ -35,5 +35,39 @@ describe('portalSizing', () => {
    it('clamps the icon-only glyph at both ends', () => {
       expect(portalIconOnlyPx(0, 0)).toBe(16);
       expect(portalIconOnlyPx(1000, 1000)).toBe(88);
+   });
+
+   it('maps the label alignment to the composed layout flex direction', () => {
+      // The label sits after the visual for `right`/`bottom` and before it for `left`/`top`.
+      expect(portalAlignFlexDirection('right')).toBe('row');
+      expect(portalAlignFlexDirection('left')).toBe('row-reverse');
+      expect(portalAlignFlexDirection('bottom')).toBe('column');
+      expect(portalAlignFlexDirection('top')).toBe('column-reverse');
+   });
+
+   it('scales the composed image thumbnail with both the box and the size fraction', () => {
+      // A bigger fraction and a taller box both grow the thumbnail.
+      expect(portalImageThumbPx(100, 0.8)).toBeGreaterThan(portalImageThumbPx(100, 0.4));
+      expect(portalImageThumbPx(200, PORTAL_IMAGE_SIZE_DEFAULT)).toBeGreaterThan(portalImageThumbPx(100, PORTAL_IMAGE_SIZE_DEFAULT));
+   });
+
+   it('clamps the composed image thumbnail at both ends', () => {
+      expect(portalImageThumbPx(0, 1)).toBe(12); // floor even at full fraction on a zero box
+      expect(portalImageThumbPx(10000, 1)).toBe(600); // ceiling on a runaway box
+      // A sub-floor fraction is clamped up before scaling (never a zero-size thumbnail).
+      expect(portalImageThumbPx(100, 0)).toBe(portalImageThumbPx(100, 0.1));
+   });
+
+   it('derives the label line budget from the box height, always at least one line', () => {
+      const font = portalFontPx(PORTAL_BASE_SIZE.height);
+      // A short base box fits a line or two; a tall box fits more; the count is monotonic.
+      expect(portalLabelMaxLines(PORTAL_BASE_SIZE.height, font)).toBeGreaterThanOrEqual(1);
+      expect(portalLabelMaxLines(400, font)).toBeGreaterThan(portalLabelMaxLines(PORTAL_BASE_SIZE.height, font));
+      // Reserving vertical space for a stacked visual shrinks the budget but never below one.
+      expect(portalLabelMaxLines(120, font, 100)).toBeGreaterThanOrEqual(1);
+      expect(portalLabelMaxLines(120, font, 100)).toBeLessThanOrEqual(portalLabelMaxLines(120, font, 0));
+      // A degenerate box still yields one line, and the budget is capped.
+      expect(portalLabelMaxLines(0, font)).toBe(1);
+      expect(portalLabelMaxLines(100000, font)).toBe(6);
    });
 });

@@ -94,6 +94,10 @@ interface BoardItemBoxProps {
    onConnectStart: (id: string, event: ReactPointerEvent) => void;
    /** Opens the portal restyle editor window, anchored at the click point (a portal's Edit affordance). */
    onRequestEditPortal: (itemId: string, screen: { x: number; y: number }) => void;
+   /** Opens the target picker in retarget mode (a dead portal's Relink), anchored at the click point. */
+   onRequestRelinkPortal: (itemId: string, screen: { x: number; y: number }) => void;
+   /** Caches a portal's live-resolved target name into `lastKnownName` (a direct, non-undoable write). */
+   onCachePortalName: (itemId: string, name: string) => void;
    /** The behind-items layer a zone portals its tinted background rectangle into (null for non-zones). */
    backLayer?: HTMLElement | null;
    /** Lower bound for the resize (a zone passes its member extent); each axis defaults to MIN_ITEM_SIZE. */
@@ -139,6 +143,8 @@ export const BoardItemBox = memo(function BoardItemBox({
    onDelete,
    onConnectStart,
    onRequestEditPortal,
+   onRequestRelinkPortal,
+   onCachePortalName,
    backLayer,
    resizeMin,
    zIndex,
@@ -321,6 +327,8 @@ export const BoardItemBox = memo(function BoardItemBox({
          onDelete={onDelete}
          onRequestSelect={() => onSelect(item.id, false)}
          onRequestEditPortal={onRequestEditPortal}
+         onRequestRelinkPortal={onRequestRelinkPortal}
+         onCachePortalName={onCachePortalName}
       />
    );
 

@@ -1,5 +1,4 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
 import { Hash, Link2, Link2Off } from 'lucide-react';
 
 // -- Utils Imports --
@@ -7,19 +6,16 @@ import { cn } from '@/lib/utils';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 
 // -- Portals Imports --
-import {
-   chooseLinkIcon,
-   getCachedLinkMetadata,
-   loadLinkMetadata,
-   resolveLocalLinkMetadata,
-   subscribeLinkMetadata,
-} from '@/lib/portals/linkMetadata';
+import { chooseLinkIcon } from '@/lib/portals/linkMetadata';
+
+// -- Hook Imports --
+import { useLinkMetadata } from '@/hooks/useLinkMetadata';
 
 // -- Type Imports --
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { LinkTarget } from '@/lib/portals/linkTarget';
-import type { LinkIconChoice, LinkMetadata } from '@/lib/portals/linkMetadata';
+import type { LinkIconChoice } from '@/lib/portals/linkMetadata';
 import type { NoteHeading } from '@/lib/notes/noteOutline';
 
 /*
@@ -65,31 +61,6 @@ export function linkChipFallbackLabel(target: LinkTarget): string {
    if (target.kind === 'entity') return target.id;
    if (target.kind === 'element') return target.drawerItemId;
    return target.href;
-}
-
-/**
- * Resolves a link target's metadata for the chip: a section/external is known synchronously (from the note's
- * `headings`); an entity/element loads from the drawer cache and re-reads on cache changes (a load settling, a
- * rename/delete). Returns `undefined` while a drawer lookup is UNKNOWN, so the chip renders live, never dead.
- */
-function useLinkMetadata(target: LinkTarget, headings: NoteHeading[]): LinkMetadata | undefined {
-   const local = resolveLocalLinkMetadata(target, headings);
-   const key = target.kind === 'entity' ? `entity:${target.entity}:${target.id}` : target.kind === 'element' ? `element:${target.drawerItemId}` : '';
-   const [cached, setCached] = useState<LinkMetadata | undefined>(() => getCachedLinkMetadata(target));
-
-   useEffect(() => {
-      if (local || !key) return; // section/external: resolved locally, no drawer read
-      let cancelled = false;
-      const sync = () => { if (!cancelled) setCached(getCachedLinkMetadata(target)); };
-      sync();
-      void loadLinkMetadata(target).then(sync);
-      const unsubscribe = subscribeLinkMetadata(sync);
-      return () => { cancelled = true; unsubscribe(); };
-      // `target` is reconstructed each render from the same href; `key` is its stable identity.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [key, !local]);
-
-   return local ?? cached;
 }
 
 /**

@@ -161,6 +161,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setPortalEditor({ itemId, screen });
    }, []);
 
+   /** Relinks a dead portal: reopens the shared picker in retarget mode (swaps the target, keeps the style).
+    *  `world` is unused on a retarget; stable for the same box-memoization reason as the Edit handler. */
+   const handleRequestRelinkPortal = useCallback((itemId: string, screen: { x: number; y: number }) => {
+      setPortalPicker({ world: { x: 0, y: 0 }, screen, retargetItemId: itemId });
+   }, []);
+
    /** Selects an item: `additive` (Shift/Ctrl) toggles it in/out of the set, else it replaces the set. */
    const handleSelect = useCallback((id: string, additive: boolean) => {
       setSelectedIds((prev) => {
@@ -844,6 +850,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onDelete={handleDelete}
             onConnectStart={handleConnectStart}
             onRequestEditPortal={handleRequestEditPortal}
+            onRequestRelinkPortal={handleRequestRelinkPortal}
+            onCachePortalName={actions.cachePortalLastKnown}
             backLayer={backLayer}
          />
       );

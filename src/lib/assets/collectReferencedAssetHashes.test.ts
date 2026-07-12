@@ -85,6 +85,21 @@ function seedBoardCardCopy(id: string, assetId: string) {
    });
 }
 
+/** Adds a board PORTAL item with the given image visual (poster or composed), or an icon visual (no asset). */
+function seedBoardPortal(id: string, visual: { kind: 'image'; assetId: string; mode: 'poster' | 'composed'; size: number; background: boolean } | { kind: 'icon'; icon: string }) {
+   return drawerDatabase.boardItems.add({
+      id,
+      boardId: 'board-1',
+      kind: 'portal',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      z: 0,
+      content: { kind: 'portal', target: { kind: 'external', href: 'https://x.y' }, style: { visual, label: '', align: 'right', background: true } },
+   });
+}
+
 /** Adds a working note row directly, whose `body` carries inline `asset:` image references. */
 function seedNote(id: string, body: string) {
    return drawerDatabase.notes.add({
@@ -207,6 +222,18 @@ describe('collectReferencedAssetHashes', () => {
       const referenced = await collectReferencedAssetHashes();
 
       expect(referenced.has('asset-stale')).toBe(false);
+   });
+
+   it('finds the assetId on a board portal with an image visual (so the GC keeps portal art)', async () => {
+      await seedBoardPortal('portal-poster', { kind: 'image', assetId: 'asset-poster', mode: 'poster', size: 0.55, background: true });
+      await seedBoardPortal('portal-composed', { kind: 'image', assetId: 'asset-composed', mode: 'composed', size: 0.55, background: true });
+      await seedBoardPortal('portal-icon', { kind: 'icon', icon: 'globe' }); // an icon portal holds no asset
+
+      const referenced = await collectReferencedAssetHashes();
+
+      expect(referenced.has('asset-poster')).toBe(true);
+      expect(referenced.has('asset-composed')).toBe(true);
+      expect(referenced.size).toBe(2);
    });
 
    it('finds the inline-image hash in a WORKING note body (so the sweep keeps an open note\'s images)', async () => {

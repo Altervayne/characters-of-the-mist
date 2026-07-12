@@ -34,6 +34,6 @@ export function makePortalContent(target: PortalTarget, defaultName: string): Po
    return {
       kind: 'portal',
       target,
-      style: { visual: { kind: 'icon', icon: smartPortalIconName(target) }, label: defaultName },
+      style: { visual: { kind: 'icon', icon: smartPortalIconName(target) }, label: defaultName, align: 'right', background: true },
    };
 }

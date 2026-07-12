@@ -259,19 +259,34 @@ export type PortalTarget =
    | { kind: 'board-element'; boardItemId: string }
    | { kind: 'external'; href: string };
 
-/** A portal's leading visual: a lucide icon NAME, or a content-hash into the shared asset store. */
+/**
+ * A portal's leading visual: a lucide icon NAME, or a content-hash into the shared asset store. An image
+ * carries a layout `mode`: `poster` (full-bleed, the label on a bottom scrim) or `composed` (a thumbnail
+ * laid out beside the label, like icon+text). The mode makes poster-vs-composed unrepresentable-when-wrong.
+ * `size` (0-1) is the composed thumbnail's fill fraction of the box (poster ignores it - it always fills);
+ * `background` (composed only) toggles the plate behind the thumbnail (off = the bare image, its transparency
+ * showing the portal/board through).
+ */
 export type PortalVisual =
    | { kind: 'icon'; icon: string }
-   | { kind: 'image'; assetId: string };
+   | { kind: 'image'; assetId: string; mode: 'poster' | 'composed'; size: number; background: boolean };
+
+/** Where the LABEL sits relative to the visual, for the composed visual+text styles (icon+text, image+text). */
+export type PortalAlign = 'top' | 'bottom' | 'left' | 'right';
 
 /**
- * A portal's presentation. `visual` is required-but-nullable (null = text-only; the discriminant is
- * always present) and `label` is a required string ('' = no caption, e.g. icon-only) - so the four
- * styles are the only representable combos, never both-set or neither-set.
+ * A portal's presentation. `visual` is required-but-nullable (null = text-only; the discriminant is always
+ * present) and `label` is a required string ('' = no caption, e.g. icon-only) - so the five styles are the
+ * only representable combos, never both-set or neither-set. `align` positions the label for the two composed
+ * visual+text styles (icon+text, image+text composed); the poster and the text-only / icon-only faces ignore it.
+ * `background` toggles the whole element's card face: true = the button-like card fill + border + hover-lift;
+ * false = fully transparent (the bare visual/label float on the board, selection ring only).
  */
 export interface PortalStyle {
    visual: PortalVisual | null;
    label: string;
+   align: PortalAlign;
+   background: boolean;
 }
 
 /**

@@ -44,9 +44,13 @@ interface BoardItemBodyProps {
    onRequestSelect: () => void;
    /** Opens the portal restyle editor window, anchored at the click point (a portal's Edit affordance). */
    onRequestEditPortal: (itemId: string, screen: { x: number; y: number }) => void;
+   /** Opens the target picker in retarget mode (a dead portal's Relink), anchored at the click point. */
+   onRequestRelinkPortal: (itemId: string, screen: { x: number; y: number }) => void;
+   /** Caches a portal's live-resolved target name into `lastKnownName` (a direct, non-undoable write). */
+   onCachePortalName: (itemId: string, name: string) => void;
 }
 
-export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect, onRequestEditPortal }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect, onRequestEditPortal, onRequestRelinkPortal, onCachePortalName }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
@@ -71,7 +75,7 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
       case 'note':
          return <BoardNoteItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'portal':
-         return <BoardPortalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onRequestEdit={onRequestEditPortal} />;
+         return <BoardPortalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onRequestEdit={onRequestEditPortal} onRequestRelink={onRequestRelinkPortal} onDelete={onDelete} onCacheName={onCachePortalName} />;
       default:
          return <GenericItemBody item={item} />;
    }

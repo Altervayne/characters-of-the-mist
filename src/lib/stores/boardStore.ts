@@ -111,6 +111,12 @@ export interface BoardState {
        * must never land on the undo stack (Ctrl+Z would silently unlink the twin it just created).
        */
       adoptItemDrawerSource: (id: string, sourceDrawerItemId: string) => Promise<void>;
+      /**
+       * Caches a portal's `lastKnownName` via a live-read DIRECT repo write, never a command - a
+       * passive liveness cache must not land on the undo stack, and reading live then patching ONLY
+       * the name keeps it from clobbering a concurrent style/target edit. No-op off a portal item.
+       */
+      cachePortalLastKnown: (id: string, name: string) => Promise<void>;
       deleteItem: (id: string) => Promise<void>;
       /** Sets the camera and debounce-persists it. The viewport is never undoable. */
       setViewport: (viewport: Viewport) => void;
@@ -486,6 +492,22 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (!existing) return;
                const content = { ...existing.content, sourceDrawerItemId } as BoardItemContent;
+               set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
+               try {
+                  await updateItem(id, { content });
+               } catch (error) {
+                  set({ error: toErrorMessage(error) });
+               }
+            },
+
+            cachePortalLastKnown: async (id, name) => {
+               // NOT a command and NOT markBoardModified: a passive liveness cache must never touch the
+               // undo stack. Read live and patch ONLY `lastKnownName`, so a concurrent style/target edit
+               // (spread over the live content) survives.
+               const existing = get().items[id];
+               if (!existing || existing.content.kind !== 'portal') return;
+               if (existing.content.lastKnownName === name) return;
+               const content = { ...existing.content, lastKnownName: name };
                set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                try {
                   await updateItem(id, { content });

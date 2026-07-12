@@ -234,9 +234,10 @@ function collectFromFolder(folder: Folder, into: Set<string>): void {
 }
 
 /**
- * Walks a board aggregate's items: a native image's `assetId`, an embedded card COPY's art, and a note
- * COPY's cover + inline body images (self-contained in `content.data`, so they travel with the board file).
- * A note REFERENCE holds no data here; its content is embedded separately and its assets folded in there.
+ * Walks a board aggregate's items: a native image's `assetId`, an embedded card COPY's art, a note COPY's
+ * cover + inline body images (self-contained in `content.data`, so they travel with the board file), and a
+ * portal's image visual (poster or composed). A note REFERENCE holds no data here; its content is embedded
+ * separately and its assets folded in there.
  */
 function collectFromBoard(board: Board, into: Set<string>): void {
    for (const item of board.items) {
@@ -247,6 +248,8 @@ function collectFromBoard(board: Board, into: Set<string>): void {
          collectFromCard(content.data as Card, into);
       } else if (content.kind === 'note' && content.mode === 'copy') {
          collectFromNote(content.data, into);
+      } else if (content.kind === 'portal' && content.style.visual?.kind === 'image') {
+         into.add(content.style.visual.assetId);
       }
    }
 }

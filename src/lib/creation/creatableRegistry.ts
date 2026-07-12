@@ -101,7 +101,7 @@ export const CREATABLE_REGISTRY: CreatableEntry[] = [
       requiresPicker: true,
       // A portal always carries a target chosen in the picker (`makePortalContent`); this factory is only the
       // type-total fallback and is never the real create path (the picker supplies the target + smart style).
-      makeContent: () => ({ kind: 'portal', target: { kind: 'external', href: '' }, style: { visual: null, label: '' } }),
+      makeContent: () => ({ kind: 'portal', target: { kind: 'external', href: '' }, style: { visual: null, label: '', align: 'right', background: true } }),
    },
 ];
 

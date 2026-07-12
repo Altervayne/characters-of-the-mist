@@ -28,7 +28,7 @@ describe('makePortalContent', () => {
       expect(content).toEqual({
          kind: 'portal',
          target: { kind: 'entity', entity: 'board', id: 'b1' },
-         style: { visual: { kind: 'icon', icon: 'layout-grid' }, label: 'The Keep' },
+         style: { visual: { kind: 'icon', icon: 'layout-grid' }, label: 'The Keep', align: 'right', background: true },
       });
    });
 
