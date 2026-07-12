@@ -353,6 +353,21 @@ export async function getNoteItemIdMap(): Promise<Map<string, string>> {
    return map;
 }
 
+/**
+ * Maps every saved board's id to the drawer item id that holds it (FULL_BOARD items only). Mirrors
+ * {@link getNoteItemIdMap}; backs the Portals resolver's drawer fallback for a `cotm://board/<id>` link whose
+ * working row is gone (the durable copy lives as the drawer item). On an id collision the last item wins.
+ */
+export async function getBoardItemIdMap(): Promise<Map<string, string>> {
+   const items = await db.items.where('type').equals('FULL_BOARD').toArray();
+   const map = new Map<string, string>();
+   for (const item of items) {
+      const boardId = (item.content as { id?: string }).id;
+      if (boardId) map.set(boardId, item.id);
+   }
+   return map;
+}
+
 /** A saved note the palette can embed on a board: the drawer item id, the note id it references, and its title. */
 export interface SavedNoteRef {
    /** The drawer `NOTE` item id - the reference's `sourceDrawerItemId`. */

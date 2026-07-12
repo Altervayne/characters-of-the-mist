@@ -133,9 +133,9 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
    const isDwellingStrip = workspaceDwellKey === 'see-workspace';
    const isDwellingEdge = workspaceDwellKey === 'reexpand';
 
-   // The right-anchored grow animates width to the parent's measured PIXEL width: framer can't tween
-   // width between mixed units (25rem -> 100%), so it snaps; a px target tweens cleanly. Tracked live so
-   // a sidebar collapse / viewport resize keeps the full extent correct.
+   // The grow-in tweens width to the parent's measured PIXEL width: framer can't tween between mixed
+   // units (22rem -> 100%), so it snaps; a px target tweens cleanly. Once that entrance finishes the
+   // width settles to layout `100%` (see isSettled), so at rest the parent owns the extent.
    const overlayRef = useRef<HTMLDivElement>(null);
    const [fullWidth, setFullWidth] = useState<number | null>(null);
    useLayoutEffect(() => {
@@ -148,6 +148,11 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
       return () => observer.disconnect();
    }, []);
 
+   // After the entrance tween the resting width becomes layout-driven (`100%`), not the chasing px tween.
+   // A sidebar collapse/expand changes the parent width, and CSS reflows the `100%` fill instantly, so the
+   // left edge stays flush with the sidebar's right edge - no tween lag, no gap or overlap.
+   const [isSettled, setIsSettled] = useState(false);
+
    return (
       // The Library overlay sits over the whole top row (the workspace stays mounted behind it; the
       // sidebar is raised above it, so only the sidebar stays exposed). It GROWS IN from the right -
@@ -156,16 +161,23 @@ export function ExpandedDrawer({ isItemDragActive, isFolderDragActive, workspace
       // everything; this adds none. overflow-hidden clips the recede off-screen (no page scroll).
       <motion.div
          ref={overlayRef}
-         className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
+         // Enter tweens to the measured px width, then settles to layout `100%` so the resting fill tracks
+         // the sidebar with no lag. The settle is a no-op tween (px equals `100%` at that instant); making
+         // it instant keeps the fill out of any in-flight animation when the sidebar toggles.
          initial={{ width: '22rem' }}
-         animate={{ width: fullWidth ?? '100%' }}
+         animate={{ width: isSettled ? '100%' : (fullWidth ?? '100%') }}
+         onAnimationComplete={() => { if (!isSettled) setIsSettled(true); }}
+         className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
          // Exit depends on WHY it left (AnimatePresence's custom = isDrawerOpen at exit): CONTRACT (still
          // open) shrinks back toward the side-panel width, handing off to the entering side panel; CLOSE
          // (no longer open) slides fully off the right edge, revealing the workspace as it goes. Both are
          // right-anchored, matching the open/expand/contract motions - one drawer growing/shrinking/sliding.
-         variants={{ exit: (open: boolean) => (open ? { width: '22rem' } : { x: '100%' }) }}
+         // Each carries its own tween so the instant settle transition below never bleeds into the exit.
+         variants={{ exit: (open: boolean) => (open
+            ? { width: '22rem', transition: { duration: 0.3, ease: 'easeInOut' } }
+            : { x: '100%', transition: { duration: 0.3, ease: 'easeInOut' } }) }}
          exit="exit"
-         transition={{ duration: 0.3, ease: 'easeInOut' }}
+         transition={isSettled ? { duration: 0 } : { duration: 0.3, ease: 'easeInOut' }}
       >
          {/* The Library surface. When receded it slides DOWN (clipped by the overlay above, so off-screen
              with no page scroll) and goes pointer-transparent, but STAYS MOUNTED so the live drag is never
