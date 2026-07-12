@@ -37,6 +37,8 @@ import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
 import type { NoteHeading } from '@/lib/notes/noteOutline';
 import type { CoverController } from '@/components/organisms/note/live/coverGutter';
 import type { FormatController } from '@/components/organisms/note/live/formatToolbar';
+import type { LinkEditController } from '@/components/organisms/note/live/linkEditToolbar';
+import type { LinkEditSeed } from '@/components/organisms/note/live/linkNode';
 import type { TableController } from '@/components/organisms/note/live/tableWidget';
 import type { NoteMode } from '@/components/organisms/note/NoteToolbar';
 import type { NoteTableContextMenuHandle } from '@/components/organisms/note/NoteTableContextMenu';
@@ -194,9 +196,16 @@ function NoteSurface() {
    const onLinkActivate = useNoteLinkActivation(host, scrollToSection);
 
    // The insert-link picker (owned here so the toolbar button AND the palette open the SAME popover). The
-   // palette opener flips to Live first (you can't insert into read-only Reading), then opens it.
+   // palette opener flips to Live first (you can't insert into read-only Reading), then opens it. A non-null
+   // `linkEditSeed` switches the picker to REPLACE an existing link's target (the caret bar's Change-target);
+   // it's cleared whenever the picker closes, so a plain toolbar/palette open is always an insert.
    const [linkPickerOpen, setLinkPickerOpen] = useState(false);
-   const openLinkPicker = useCallback(() => { setMode('live'); setLinkPickerOpen(true); }, []);
+   const [linkEditSeed, setLinkEditSeed] = useState<LinkEditSeed | null>(null);
+   const openLinkPicker = useCallback(() => { setLinkEditSeed(null); setMode('live'); setLinkPickerOpen(true); }, []);
+   const handleLinkPickerOpenChange = useCallback((open: boolean) => {
+      setLinkPickerOpen(open);
+      if (!open) setLinkEditSeed(null);
+   }, []);
    useEffect(() => {
       setLinkPickerOpener(openLinkPicker);
       return () => setLinkPickerOpener(null);
@@ -281,8 +290,23 @@ function NoteSurface() {
          link: t('NoteView.format.link'),
       },
       // The bar only shows while editing, so the picker can open directly (no mode flip needed).
-      onInsertLink: () => setLinkPickerOpen(true),
+      onInsertLink: () => { setLinkEditSeed(null); setLinkPickerOpen(true); },
    }), [isEditing, t]);
+
+   // The caret link-edit bar: Open runs the link (the same activation bridge as click-follow); Change target
+   // opens the picker seeded to REPLACE this link while keeping its label. Edit-label + Remove are pure editor
+   // transactions the bar dispatches itself, so they need no callback here.
+   const linkEditController = useMemo<LinkEditController>(() => ({
+      editable: isEditing,
+      labels: {
+         open: t('NoteView.linkEdit.open'),
+         changeTarget: t('NoteView.linkEdit.changeTarget'),
+         editLabel: t('NoteView.linkEdit.editLabel'),
+         remove: t('NoteView.linkEdit.remove'),
+      },
+      onOpen: (href) => onLinkActivate(href),
+      onChangeTarget: (seed) => { setLinkEditSeed(seed); setLinkPickerOpen(true); },
+   }), [isEditing, onLinkActivate, t]);
 
    // A stable accessor to the live editor handle for the permanent toolbar (the ref may be unset on first paint).
    const getEditor = useCallback(() => editorRef.current, []);
@@ -316,7 +340,8 @@ function NoteSurface() {
             isOutlineOpen={isOutlineOpen}
             onToggleOutline={toggleNoteOutline}
             isLinkPickerOpen={linkPickerOpen}
-            onLinkPickerOpenChange={setLinkPickerOpen}
+            onLinkPickerOpenChange={handleLinkPickerOpenChange}
+            linkEditSeed={linkEditSeed}
          />
          {/* Hidden picker for the toolbar's insert-image action; the paste/drop paths never touch it. */}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
@@ -360,10 +385,12 @@ function NoteSurface() {
                         onHistoryChange={handleHistoryChange}
                         onImageEvent={handleImageEvent}
                         onLinkActivate={onLinkActivate}
+                        deadLinkTooltip={t('NoteView.linkDead')}
                         live={mode === 'live'}
                         cover={cover}
                         coverController={coverController}
                         formatController={formatController}
+                        linkEditController={linkEditController}
                         tableController={tableController}
                         placeholder={t('NoteView.bodyPlaceholder')}
                      />

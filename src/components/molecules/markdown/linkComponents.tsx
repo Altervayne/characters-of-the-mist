@@ -5,11 +5,12 @@ import { isValidElement } from 'react';
 import { parseLinkHref } from '@/lib/portals/linkTarget';
 
 // -- Local Imports --
-import { InternalLinkChip, linkChipFallbackLabel } from './InternalLinkChip';
+import { InternalLinkChip } from './InternalLinkChip';
 
 // -- Type Imports --
 import type { ReactNode } from 'react';
 import type { Components } from 'react-markdown';
+import type { NoteHeading } from '@/lib/notes/noteOutline';
 
 /*
  * The note-reading `a` override. It sniffs the href scheme: an INTERNAL link (a same-note section, an entity
@@ -31,8 +32,12 @@ function childrenToText(children: ReactNode): string {
    return '';
 }
 
-/** The `a` override for the note reading renderer. `onLinkActivate` runs an internal link; omit it for display-only. */
-export function linkComponents(onLinkActivate?: (href: string) => void): Components {
+/**
+ * The `a` override for the note reading renderer. `onLinkActivate` runs an internal link; omit it for
+ * display-only. `headings` (this note's outline) resolves a `#section` chip's liveness + name; `deadTooltip`
+ * labels a confirmed-missing target.
+ */
+export function linkComponents(onLinkActivate: ((href: string) => void) | undefined, headings: NoteHeading[], deadTooltip: string): Components {
    return {
       a: ({ href, children }) => {
          const raw = href ?? '';
@@ -44,10 +49,9 @@ export function linkComponents(onLinkActivate?: (href: string) => void): Compone
                </a>
             );
          }
-         const label = childrenToText(children).trim() || linkChipFallbackLabel(target);
          return (
-            <InternalLinkChip target={target} href={raw} onActivate={onLinkActivate}>
-               {label}
+            <InternalLinkChip target={target} href={raw} headings={headings} authorLabel={childrenToText(children).trim()} deadTooltip={deadTooltip} onActivate={onLinkActivate}>
+               {children}
             </InternalLinkChip>
          );
       },

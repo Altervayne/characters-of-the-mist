@@ -21,6 +21,7 @@ import { buildLinkMarkdown, detectExternalUrl, entityForItemType } from '@/lib/p
 import type { DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 import type { GeneralItemType } from '@/lib/types/drawer';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
+import type { LinkEditSeed } from '@/components/organisms/note/live/linkNode';
 import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
 
 /*
@@ -32,6 +33,10 @@ import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
  *
  * Chrome, not paper: it floats above the sheet on app-theme tokens (`getItemTypeIconComponent` for the row
  * glyphs, `Hash` for a section). SAVED elements only, because that's what `queryItems` returns.
+ *
+ * With an `editSeed` (the caret bar's Change-target) it REPLACES an existing link instead of inserting at the
+ * caret: the splice covers the whole `[label](href)` node range and the label is FIXED to the seed's, so only
+ * the target changes.
  */
 
 /** The coarse group a drawer item falls into (order = display order below the same-note sections). */
@@ -61,9 +66,11 @@ interface NoteLinkPickerProps {
    getEditor: () => NoteEditorHandle | null;
    /** Closes the picker after an insert (or a dismiss). */
    onClose: () => void;
+   /** When set, REPLACE this link's target (keep its label) instead of inserting at the caret. */
+   editSeed?: LinkEditSeed;
 }
 
-export function NoteLinkPicker({ getEditor, onClose }: NoteLinkPickerProps) {
+export function NoteLinkPicker({ getEditor, onClose, editSeed }: NoteLinkPickerProps) {
    const { t } = useTranslation();
    // Snapshot the editor's selection + buffer ONCE at open (the picker remounts per open, so a lazy initializer
    // captures the live state without a render-time effect). The selection is the label source; the buffer is the
@@ -113,14 +120,21 @@ export function NoteLinkPicker({ getEditor, onClose }: NoteLinkPickerProps) {
       return CATEGORY_ORDER.map((category) => ({ category, items: buckets.get(category) ?? [] })).filter((group) => group.items.length > 0);
    }, [results]);
 
-   /** Resolves the label for a pick: the selection when present, else the override, else the target's own name. */
-   const labelFor = (defaultName: string): string =>
-      (hasSelection ? selectedText : labelOverride.trim() || defaultName).trim() || defaultName;
+   /**
+    * Resolves the label for a pick. In EDIT mode the seed's label is kept (only the target changes); otherwise
+    * the selection when present, else the override, else the target's own name.
+    */
+   const labelFor = (defaultName: string): string => {
+      if (editSeed) return editSeed.label.trim() || defaultName;
+      return (hasSelection ? selectedText : labelOverride.trim() || defaultName).trim() || defaultName;
+   };
 
    const insert = (target: LinkInsertTarget, defaultName: string): void => {
       const markdown = buildLinkMarkdown(labelFor(defaultName), target);
       const editor = getEditor();
-      editor?.splice(snapshot.from, snapshot.to, markdown, snapshot.from + markdown.length);
+      // EDIT mode splices over the whole link node range; INSERT mode over the snapshot selection (caret).
+      const [from, to] = editSeed ? [editSeed.from, editSeed.to] : [snapshot.from, snapshot.to];
+      editor?.splice(from, to, markdown, from + markdown.length);
       onClose();
    };
 
@@ -144,8 +158,13 @@ export function NoteLinkPicker({ getEditor, onClose }: NoteLinkPickerProps) {
 
    return (
       <div className="w-80">
-         {/* Label control: a live selection IS the label (fixed); a collapsed caret gets an optional override. */}
-         {hasSelection ? (
+         {/* Label control: an edit keeps the existing label (fixed); a live selection IS the label (fixed); a
+             collapsed caret gets an optional override. */}
+         {editSeed ? (
+            <div className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
+               {t('NoteView.linkPicker.keepingLabel', { text: editSeed.label })}
+            </div>
+         ) : hasSelection ? (
             <div className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
                {t('NoteView.linkPicker.usingSelection', { text: selectedText })}
             </div>

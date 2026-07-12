@@ -24,6 +24,7 @@ import { NoteLinkPicker } from '@/components/organisms/note/NoteLinkPicker';
 // -- Type Imports --
 import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
 import type { LinePrefixKind, FormatKind } from '@/lib/notes/noteFormat';
+import type { LinkEditSeed } from '@/components/organisms/note/live/linkNode';
 
 /*
  * The single permanent editor toolbar (theme tokens, NOT paper - it's chrome). ONE row, replacing the old
@@ -64,6 +65,8 @@ interface NoteToolbarProps {
    /** The link picker's open state (controlled so the command palette can open it too) + its change handler. */
    isLinkPickerOpen: boolean;
    onLinkPickerOpenChange: (open: boolean) => void;
+   /** When set, the picker REPLACES an existing link's target (the caret bar's Change-target), keeping its label. */
+   linkEditSeed: LinkEditSeed | null;
 }
 
 export function NoteToolbar({
@@ -82,6 +85,7 @@ export function NoteToolbar({
    onToggleOutline,
    isLinkPickerOpen,
    onLinkPickerOpenChange,
+   linkEditSeed,
 }: NoteToolbarProps) {
    const { t } = useTranslation();
 
@@ -227,7 +231,7 @@ export function NoteToolbar({
                   {isImageProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                </ToolbarButton>
                <TableButton onInsert={insertTable} />
-               <LinkButton getEditor={getEditor} open={isLinkPickerOpen} onOpenChange={onLinkPickerOpenChange} />
+               <LinkButton getEditor={getEditor} open={isLinkPickerOpen} onOpenChange={onLinkPickerOpenChange} editSeed={linkEditSeed} />
             </>
          )}
 
@@ -400,10 +404,12 @@ function LinkButton({
    getEditor,
    open,
    onOpenChange,
+   editSeed,
 }: {
    getEditor: () => NoteEditorHandle | null;
    open: boolean;
    onOpenChange: (open: boolean) => void;
+   editSeed: LinkEditSeed | null;
 }) {
    const { t } = useTranslation();
    return (
@@ -420,7 +426,7 @@ function LinkButton({
             </button>
          </PopoverTrigger>
          <PopoverContent align="start" sideOffset={6} className="w-auto rounded-lg border border-border bg-popover p-0 shadow-md">
-            {open && <NoteLinkPicker getEditor={getEditor} onClose={() => onOpenChange(false)} />}
+            {open && <NoteLinkPicker getEditor={getEditor} onClose={() => onOpenChange(false)} editSeed={editSeed ?? undefined} />}
          </PopoverContent>
       </Popover>
    );

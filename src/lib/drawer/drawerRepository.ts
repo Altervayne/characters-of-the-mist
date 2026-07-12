@@ -368,6 +368,20 @@ export async function getBoardItemIdMap(): Promise<Map<string, string>> {
    return map;
 }
 
+/** The drawer item TYPE that holds each linkable entity, so an entity id can be resolved to its drawer save. */
+const ENTITY_ITEM_TYPE = { note: 'NOTE', board: 'FULL_BOARD', character: 'FULL_CHARACTER_SHEET' } as const;
+
+/**
+ * Finds the drawer item that holds entity `id` of kind `entity` (a saved note/board/character), or `undefined`
+ * when none does. Backs the Portals link-metadata resolver's naming of an ENTITY link (whose href carries the
+ * entity id, not a drawer item id). Scans the entity's type table and matches on `content.id`, mirroring the
+ * `get*ItemIdMap` helpers; on the vanishingly unlikely id collision the first match wins.
+ */
+export async function findEntityDrawerItem(entity: 'note' | 'board' | 'character', id: string): Promise<DrawerItemRecord | undefined> {
+   const items = await db.items.where('type').equals(ENTITY_ITEM_TYPE[entity]).toArray();
+   return items.find((item) => (item.content as { id?: string }).id === id);
+}
+
 /** A saved note the palette can embed on a board: the drawer item id, the note id it references, and its title. */
 export interface SavedNoteRef {
    /** The drawer `NOTE` item id - the reference's `sourceDrawerItemId`. */

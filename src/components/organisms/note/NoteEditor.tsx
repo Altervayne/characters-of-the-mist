@@ -7,7 +7,7 @@ import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/vi
 import { defaultKeymap, history, historyKeymap, undo, redo, undoDepth, redoDepth } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { Strikethrough, Table } from '@lezer/markdown';
-import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 
 // -- Live-Preview Imports --
@@ -19,12 +19,14 @@ import { titleStateExtension, initialTitle, setTitleEffect, getNoteTitle } from 
 import { tableRegionAt } from './live/tableRegions';
 import { listIndentKeymap } from './live/listKeymap';
 import { formatToolbar } from './live/formatToolbar';
+import { linkEditToolbar } from './live/linkEditToolbar';
+import { linkNodeAt } from './live/linkNode';
 import { findImageTokens } from '@/lib/notes/noteImageHint';
 
 // -- Type Imports --
-import type { SyntaxNode } from '@lezer/common';
 import type { CoverController } from './live/coverGutter';
 import type { FormatController } from './live/formatToolbar';
+import type { LinkEditController } from './live/linkEditToolbar';
 import type { TableController } from './live/tableWidget';
 import type { NoteCover } from '@/lib/types/board';
 
@@ -97,12 +99,16 @@ interface NoteEditorProps {
    coverController: CoverController;
    /** The floating format bar's callbacks (Insert image + labels). Bound into Live and Source. */
    formatController: FormatController;
+   /** The caret link-edit bar's callbacks (Open / Change target + labels). Bound into Live and Source. */
+   linkEditController: LinkEditController;
    /** The live table controller (opens the right-click context menu at a screen point with the cell's actions). */
    tableController: TableController;
    /** Native paste/drop handler for images (returns true when it consumed the event). Wired into CM6 dom events. */
    onImageEvent?: (event: ClipboardEvent | DragEvent) => boolean;
    /** Resolves an internal/external link on Ctrl/Cmd-click (plain click still edits). Host-agnostic: the renderer closes over its host. */
    onLinkActivate?: (href: string) => void;
+   /** The localized "target not found" tooltip for a dead Live chip (the imperative widget has no i18n of its own). */
+   deadLinkTooltip: string;
 }
 
 /*
@@ -261,7 +267,7 @@ const paperTheme = EditorView.theme({
 }, { dark: false });
 
 export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEditor(
-   { value, onChange, title, onTitleChange, onCoverChange, onHistoryChange, placeholder, live, cover, coverController, formatController, tableController, onImageEvent, onLinkActivate },
+   { value, onChange, title, onTitleChange, onCoverChange, onHistoryChange, placeholder, live, cover, coverController, formatController, linkEditController, tableController, onImageEvent, onLinkActivate, deadLinkTooltip },
    ref,
 ) {
    const hostRef = useRef<HTMLDivElement>(null);
@@ -279,6 +285,10 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
    onImageEventRef.current = onImageEvent;
    const onLinkActivateRef = useRef(onLinkActivate);
    onLinkActivateRef.current = onLinkActivate;
+   // The dead-chip tooltip, read at view build (seed-only, like `placeholder`); a rebuild on the next Live flip
+   // picks up a language change.
+   const deadLinkTooltipRef = useRef(deadLinkTooltip);
+   deadLinkTooltipRef.current = deadLinkTooltip;
    // The current doc, so a `live` flip can re-seed the rebuilt view with the latest buffer (not the stale prop).
    const valueRef = useRef(value);
    valueRef.current = value;
@@ -307,6 +317,15 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
       get editable() { return formatControllerRef.current.editable; },
       get labels() { return formatControllerRef.current.labels; },
       onInsertLink: () => formatControllerRef.current.onInsertLink(),
+   }).current;
+   // Same stable-ref pattern for the caret link-edit bar controller (the view is built once; a re-render swaps closures).
+   const linkEditControllerRef = useRef(linkEditController);
+   linkEditControllerRef.current = linkEditController;
+   const stableLinkEditController = useRef<LinkEditController>({
+      get editable() { return linkEditControllerRef.current.editable; },
+      get labels() { return linkEditControllerRef.current.labels; },
+      onOpen: (href) => linkEditControllerRef.current.onOpen(href),
+      onChangeTarget: (seed) => linkEditControllerRef.current.onChangeTarget(seed),
    }).current;
    // The table controller, captured stably so the field (built once) always calls the current opener - a
    // re-render swaps the closure without rebuilding the view.
@@ -349,8 +368,11 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
                // The floating format bar (Bold/Italic/Strike over a selection + Insert image at the caret) - in
                // both Live and Source, since both are editing surfaces.
                formatToolbar(stableFormatController),
+               // The caret link-edit bar (Open / Change target / Edit label / Remove) - shown when the caret sits
+               // inside a link with a collapsed selection; mutually exclusive with the format bar by selection state.
+               linkEditToolbar(stableLinkEditController),
                // LIVE mode: the Lezer inline decoration engine + the StateField image/table widgets + the cover VISUALS.
-               ...(live ? [liveInlineDecorations, imageWidgetField, tableWidgetField(stableTableController), coverGutterVisual(stableController)] : []),
+               ...(live ? [liveInlineDecorations(deadLinkTooltipRef.current), imageWidgetField, tableWidgetField(stableTableController), coverGutterVisual(stableController)] : []),
                EditorView.updateListener.of((update) => {
                   const { state, startState } = update;
                   if (update.docChanged) onChangeRef.current(state.doc.toString());
@@ -531,28 +553,9 @@ function activateLinkOnModClick(event: MouseEvent, view: EditorView, onLinkActiv
    if (!onLinkActivate || !(event.ctrlKey || event.metaKey)) return false;
    const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
    if (pos == null) return false;
-   const href = linkHrefAt(view.state, pos);
+   const href = linkNodeAt(view.state, pos)?.href;
    if (!href) return false;
    event.preventDefault();
    onLinkActivate(href);
    return true;
-}
-
-/** The destination of the markdown `Link` enclosing `pos`, or null when the position isn't inside an inline link. */
-function linkHrefAt(state: EditorState, pos: number): string | null {
-   const tree = syntaxTree(state);
-   // Try both sides of the position: a chip widget replaces the raw text, so a click resolves to its edge.
-   const node = enclosingLink(tree.resolveInner(pos, -1)) ?? enclosingLink(tree.resolveInner(pos, 1));
-   if (!node) return null;
-   const raw = state.doc.sliceString(node.from, node.to);
-   const match = /^\[([^\]]*)\]\(([^)]*)\)$/.exec(raw);
-   return match ? match[2] : null;
-}
-
-/** Walks up from `node` to the enclosing `Link` node, or null when there is none. */
-function enclosingLink(node: SyntaxNode | null): SyntaxNode | null {
-   for (let current = node; current; current = current.parent) {
-      if (current.name === 'Link') return current;
-   }
-   return null;
 }

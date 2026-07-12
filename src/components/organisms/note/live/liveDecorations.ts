@@ -2,17 +2,21 @@
 import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import type { DecorationSet, ViewUpdate } from '@codemirror/view';
-import type { Range } from '@codemirror/state';
+import type { Range, Extension } from '@codemirror/state';
 import type { SyntaxNodeRef } from '@lezer/common';
 
 // -- Local Imports --
 import { parseMentions } from '@/lib/challenge/parseMentions';
 import { findTableBlocks } from '@/lib/notes/noteFormat';
 import { parseLinkHref } from '@/lib/portals/linkTarget';
+import { resolveLocalLinkMetadata, getCachedLinkMetadata } from '@/lib/portals/linkMetadata';
+import { extractHeadings } from '@/lib/notes/noteOutline';
 import { STATUS_PILL, TAG_PILL } from '@/components/molecules/markdown/MentionPill';
-import { linkChipFallbackLabel } from '@/components/molecules/markdown/InternalLinkChip';
 import { MentionPillWidget } from './mentionPillWidget';
 import { InternalLinkWidget } from './internalLinkWidget';
+
+// -- Type Imports --
+import type { NoteHeading } from '@/lib/notes/noteOutline';
 
 /*
  * The Live-Preview INLINE decoration engine (a ViewPlugin). It drives decorations off the Lezer markdown
@@ -147,12 +151,15 @@ function cursorLines(view: EditorView): Set<number> {
  * (only the zero-width markers + pill widgets). Only the atomic set is fed to `EditorView.atomicRanges` -
  * making the STYLING marks (bold/italic text) atomic would trap the caret out of formatted words.
  */
-function buildDecorations(view: EditorView): { all: DecorationSet; atomic: DecorationSet } {
+function buildDecorations(view: EditorView, deadTooltip: string): { all: DecorationSet; atomic: DecorationSet } {
    const ranges: Range<Decoration>[] = [];
    const atomicRanges: Range<Decoration>[] = [];
    const tree = syntaxTree(view.state);
    const { doc } = view.state;
    const activeLines = cursorLines(view);
+   // A same-note `#section` chip resolves against the doc's headings; scanned lazily (only if a section link exists).
+   let headings: NoteHeading[] | null = null;
+   const getHeadings = (): NoteHeading[] => (headings ??= extractHeadings(doc.toString()));
    // Line-scanned table blocks - so setext styling never bolds a table caught in a mis-parsed setext block (a
    // `---` under text below a table setext-ifies the whole block); those lines are gridded by the table field.
    const tableBlocks = findTableBlocks(doc.toString());
@@ -218,8 +225,13 @@ function buildDecorations(view: EditorView): { all: DecorationSet; atomic: Decor
                if (!linkMatch) return; // reference-style / malformed: leave the default rendering
                const target = parseLinkHref(linkMatch[2]);
                if (target.kind === 'section' || target.kind === 'entity' || target.kind === 'element') {
-                  const label = linkMatch[1].trim() || linkChipFallbackLabel(target);
-                  const chip = Decoration.replace({ widget: new InternalLinkWidget(target, label) }).range(node.from, node.to);
+                  // Section liveness/naming is local + synchronous (the doc's headings); an entity/element reads
+                  // the drawer cache (undefined = UNKNOWN, so the chip renders live and loads-then-patches itself).
+                  const metadata = target.kind === 'section'
+                     ? resolveLocalLinkMetadata(target, getHeadings()) ?? undefined
+                     : getCachedLinkMetadata(target);
+                  const widget = new InternalLinkWidget(target, linkMatch[1].trim(), metadata, deadTooltip);
+                  const chip = Decoration.replace({ widget }).range(node.from, node.to);
                   ranges.push(chip);
                   atomicRanges.push(chip);
                   return false; // the chip owns the whole span; don't collapse its LinkMark/URL children
@@ -325,27 +337,31 @@ function collectMentionRanges(view: EditorView, ranges: Range<Decoration>[], ato
 /*
  * The inline Live-Preview decorations, rebuilt on doc/selection/viewport change. It holds both the rendered
  * set and an ATOMIC set (only the collapsed markers + pills), so the caret hops over a collapsed marker /
- * mention pill rather than landing inside it, while still moving normally through bold/italic text.
+ * mention pill rather than landing inside it, while still moving normally through bold/italic text. A factory
+ * so the localized "target not found" tooltip (the imperative widget has no i18n of its own) is injected once,
+ * matching how the format/link-edit bars receive their labels.
  */
-export const liveInlineDecorations = ViewPlugin.fromClass(
-   class {
-      decorations: DecorationSet;
-      atomic: DecorationSet;
-      constructor(view: EditorView) {
-         const built = buildDecorations(view);
-         this.decorations = built.all;
-         this.atomic = built.atomic;
-      }
-      update(update: ViewUpdate) {
-         if (update.docChanged || update.selectionSet || update.viewportChanged) {
-            const built = buildDecorations(update.view);
+export function liveInlineDecorations(deadTooltip: string): Extension {
+   return ViewPlugin.fromClass(
+      class {
+         decorations: DecorationSet;
+         atomic: DecorationSet;
+         constructor(view: EditorView) {
+            const built = buildDecorations(view, deadTooltip);
             this.decorations = built.all;
             this.atomic = built.atomic;
          }
-      }
-   },
-   {
-      decorations: (plugin) => plugin.decorations,
-      provide: (plugin) => EditorView.atomicRanges.of((view) => view.plugin(plugin)?.atomic ?? Decoration.none),
-   },
-);
+         update(update: ViewUpdate) {
+            if (update.docChanged || update.selectionSet || update.viewportChanged) {
+               const built = buildDecorations(update.view, deadTooltip);
+               this.decorations = built.all;
+               this.atomic = built.atomic;
+            }
+         }
+      },
+      {
+         decorations: (plugin) => plugin.decorations,
+         provide: (plugin) => EditorView.atomicRanges.of((view) => view.plugin(plugin)?.atomic ?? Decoration.none),
+      },
+   );
+}

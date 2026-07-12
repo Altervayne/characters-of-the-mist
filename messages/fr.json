@@ -61,6 +61,13 @@
          "strikethrough": "[TO COMPLETE]",
          "link": "[TO COMPLETE]"
       },
+      "linkEdit": {
+         "open": "[TO COMPLETE]",
+         "changeTarget": "[TO COMPLETE]",
+         "editLabel": "[TO COMPLETE]",
+         "remove": "[TO COMPLETE]"
+      },
+      "linkDead": "[TO COMPLETE]",
       "toolbar": {
          "insertTable": "[TO COMPLETE]",
          "tableSize": "[TO COMPLETE]",
@@ -76,6 +83,7 @@
          "label": "[TO COMPLETE]",
          "labelPlaceholder": "[TO COMPLETE]",
          "usingSelection": "[TO COMPLETE]",
+         "keepingLabel": "[TO COMPLETE]",
          "linkToUrl": "[TO COMPLETE]",
          "empty": "[TO COMPLETE]",
          "groups": {

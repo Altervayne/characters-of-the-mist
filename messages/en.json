@@ -61,6 +61,13 @@
          "strikethrough": "Strikethrough",
          "link": "Link"
       },
+      "linkEdit": {
+         "open": "Open link",
+         "changeTarget": "Change target",
+         "editLabel": "Edit label",
+         "remove": "Remove link"
+      },
+      "linkDead": "Target not found",
       "toolbar": {
          "insertTable": "Insert table",
          "tableSize": "Pick a table size",
@@ -76,6 +83,7 @@
          "label": "Label",
          "labelPlaceholder": "Link text (defaults to the target's name)",
          "usingSelection": "Label: “{{text}}”",
+         "keepingLabel": "Keeping label: “{{text}}”",
          "linkToUrl": "Link to {{url}}",
          "empty": "No matches. Type a URL to link out.",
          "groups": {

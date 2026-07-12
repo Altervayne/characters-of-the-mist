@@ -1,5 +1,6 @@
 // -- Library Imports --
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -74,20 +75,24 @@ interface NoteDocumentProps {
 }
 
 export function NoteDocument({ title, body, cover, onMentionClick, onLinkActivate, compact, className }: NoteDocumentProps) {
-   const components = useMemo(
-      () => ({ ...docMarkdownComponents, ...noteImageComponent, ...linkComponents(onLinkActivate), ...mentionComponents(onMentionClick) }),
-      [onLinkActivate, onMentionClick],
-   );
+   const { t } = useTranslation();
    const heading = title?.trim();
    // Display-only: break a table off a text line one `\n` below it (GFM would else absorb the text as a cell).
    const renderedBody = useMemo(() => separateTablesFromText(body), [body]);
+   // This note's headings: the outline anchors AND the source of a `#section` chip's liveness + name (so a link
+   // chip resolves against the same headings the outline does).
+   const headings = useMemo(() => extractHeadings(renderedBody), [renderedBody]);
+   const components = useMemo(
+      () => ({ ...docMarkdownComponents, ...noteImageComponent, ...linkComponents(onLinkActivate, headings, t('NoteView.linkDead')), ...mentionComponents(onMentionClick) }),
+      [onLinkActivate, onMentionClick, headings, t],
+   );
    // Heading anchors: emit `id={slug}` on each rendered heading, matched by SOURCE OFFSET (in the rendered body,
    // which is what react-markdown parses) against `extractHeadings`, so the id === the outline rail's slug.
    const slugByOffset = useMemo(() => {
       const map = new Map<number, string>();
-      for (const h of extractHeadings(renderedBody)) map.set(h.from, h.slug);
+      for (const h of headings) map.set(h.from, h.slug);
       return map;
-   }, [renderedBody]);
+   }, [headings]);
    const resolveHeadingSlug = useCallback<HeadingSlugResolver>(
       (offset, text) => (offset != null && slugByOffset.has(offset) ? slugByOffset.get(offset) : slugifyHeading(text)),
       [slugByOffset],
