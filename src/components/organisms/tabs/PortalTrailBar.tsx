@@ -7,7 +7,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { ArrowLeft, ChevronRight, LayoutGrid, NotebookPen, User, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ChevronRight, LayoutGrid, NotebookPen, User, X, type LucideIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -146,6 +146,17 @@ export function PortalTrailBar() {
                );
             })}
          </ol>
+
+         {/* Dismiss: the trail is only worth its row while you're in the dive - this clears it and reclaims the space. */}
+         <button
+            type="button"
+            onClick={actions.clearJourney}
+            aria-label={t('Tabs.portalTrailDismiss')}
+            title={t('Tabs.portalTrailDismiss')}
+            className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+         >
+            <X className="h-4 w-4" />
+         </button>
       </motion.nav>
    );
 }

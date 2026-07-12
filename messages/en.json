@@ -20,6 +20,7 @@
       "scrollRight": "Scroll tabs right",
       "portalTrail": "Portal trail",
       "portalTrailBack": "Back",
+      "portalTrailDismiss": "Dismiss trail",
       "newTabDialog": {
          "title": "New tab",
          "description": "Choose what kind of tab to open.",

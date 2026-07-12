@@ -1035,7 +1035,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                      onClick={() => scrollBarBy(-1)}
                      aria-label={t('BoardView.scrollLeft')}
                      title={t('BoardView.scrollLeft')}
-                     className={cn(BAR_ARROW_CLASS, 'left-0.5')}
+                     className={cn(BAR_ARROW_CLASS, 'left-1.5')}
                      initial={{ opacity: 0, x: -12 }}
                      animate={{ opacity: 1, x: 0 }}
                      exit={{ opacity: 0, x: -12 }}
@@ -1052,7 +1052,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
                   <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  {/* Immediate one-click creates; a picker-first kind (a portal) is added via the radial in 1a. */}
                   {CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => (
                      <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
                         <Icon className="h-4 w-4" />
@@ -1085,7 +1084,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                      onClick={() => scrollBarBy(1)}
                      aria-label={t('BoardView.scrollRight')}
                      title={t('BoardView.scrollRight')}
-                     className={cn(BAR_ARROW_CLASS, 'right-0.5')}
+                     className={cn(BAR_ARROW_CLASS, 'right-1.5')}
                      initial={{ opacity: 0, x: 12 }}
                      animate={{ opacity: 1, x: 0 }}
                      exit={{ opacity: 0, x: 12 }}

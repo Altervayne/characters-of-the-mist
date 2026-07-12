@@ -143,6 +143,8 @@ interface TabManagerState {
       journeyForward: () => JourneyEntry | null;
       /** Drops a dead trail entry (closed + never-saved), detected at pop. */
       dropJourneyEntry: (entityId: string) => void;
+      /** Dismisses the whole trail (the bar's close button) - the user is done with this dive. */
+      clearJourney: () => void;
 
       // -- Mobile (single live character instance) --
       /** Mobile open: disposes the current live character, loads `character`, adds it to `openTabs` if missing, activates. */
@@ -535,6 +537,9 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
       },
       dropJourneyEntry: (entityId) => {
          useTabManagerStore.setState((state) => ({ journey: dropJourneyEntry(state.journey, entityId) }));
+      },
+      clearJourney: () => {
+         useTabManagerStore.setState({ journey: EMPTY_JOURNEY });
       },
 
       // ==================
