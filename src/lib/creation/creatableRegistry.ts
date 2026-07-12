@@ -57,7 +57,7 @@ export const CREATABLE_REGISTRY: CreatableEntry[] = [
       labelKey: 'addJournal',
       defaultSize: { width: 260, height: 320 },
       // Board-born copy: source-less (Save-As only), a fresh standalone journal in `data`.
-      makeContent: () => ({ kind: 'journal', mode: 'copy', data: { id: cuid(), pages: [{ id: cuid(), text: '' }], bookmarks: [] } }),
+      makeContent: () => ({ kind: 'journal', mode: 'copy', data: { id: cuid(), title: '', pages: [{ id: cuid(), text: '' }], bookmarks: [] } }),
    },
    {
       kind: 'image',

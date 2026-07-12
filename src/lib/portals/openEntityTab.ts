@@ -1,15 +1,16 @@
 // -- Repository Imports --
 import { getNote } from '@/lib/notes/noteRepository';
 import { recordToNote } from '@/lib/notes/noteRecords';
-import { getNoteItemIdMap, getItem } from '@/lib/drawer/drawerRepository';
-import { loadBoard } from '@/lib/board/boardRepository';
+import { getNoteItemIdMap, getBoardItemIdMap, getCharacterItemIdMap, getItem } from '@/lib/drawer/drawerRepository';
+import { loadBoard, importBoard } from '@/lib/board/boardRepository';
 import { getCharacter } from '@/lib/character/characterRepository';
 import { openNoteReference } from '@/lib/notes/openNoteReference';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 
 // -- Type Imports --
 import type { useTabManagerActions } from '@/lib/character/tabManagerStore';
-import type { Note } from '@/lib/types/board';
+import type { Note, Board } from '@/lib/types/board';
+import type { Character } from '@/lib/types/character';
 
 /*
  * The Portals entity open-or-create-tab service: resolves an entity link's id to its aggregate and opens (or
@@ -62,14 +63,29 @@ export async function openEntityTab(entity: 'note' | 'board' | 'character', id: 
    }
 
    if (entity === 'board') {
-      // `openBoardTab` focuses-or-hydrates by id, but only after we confirm the record still exists.
-      if (!(await loadBoard(id))) return deps.onMissing();
+      // Working row present (open, or previously opened): `openBoardTab` focuses-or-hydrates by id.
+      if (await loadBoard(id)) {
+         await deps.actions.openBoardTab(id);
+         return;
+      }
+      // Saved-but-closed: the durable copy lives as the FULL_BOARD drawer item; import it into the working
+      // table (like the drawer's own open path), then open it.
+      const drawerItemId = (await getBoardItemIdMap()).get(id);
+      const item = drawerItemId ? await getItem(drawerItemId) : undefined;
+      if (!item) return deps.onMissing();
+      await importBoard(item.content as Board);
       await deps.actions.openBoardTab(id);
       return;
    }
 
-   // character
+   // character: working row first (open/recently-open), else the drawer copy (saved-but-closed).
    const record = await getCharacter(id);
-   if (!record) return deps.onMissing();
-   deps.actions.openCharacterTab(record.character, record.drawerItemId ?? undefined);
+   if (record) {
+      deps.actions.openCharacterTab(record.character, record.drawerItemId ?? undefined);
+      return;
+   }
+   const drawerItemId = (await getCharacterItemIdMap()).get(id);
+   const item = drawerItemId ? await getItem(drawerItemId) : undefined;
+   if (!item) return deps.onMissing();
+   deps.actions.openCharacterTab(item.content as Character, drawerItemId);
 }

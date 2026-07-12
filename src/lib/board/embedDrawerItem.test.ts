@@ -222,6 +222,7 @@ describe('embeddedSpecForComponent', () => {
    it('embeds a sheet JOURNAL as a copy with a FRESH top-level id and NO drawer source, pages + bookmarks intact', () => {
       const journal: Journal = {
          id: 'journal-src',
+         title: '',
          pages: [{ id: 'page-a', text: 'Session one' }, { id: 'page-b', text: 'Session two' }],
          bookmarks: [{ id: 'bm-1', pageId: 'page-a', label: 'Start' }],
       };

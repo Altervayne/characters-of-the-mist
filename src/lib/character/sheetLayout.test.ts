@@ -14,7 +14,7 @@ import type { Journal } from '@/lib/types/board';
  */
 
 const card = (id: string): Card => ({ id, title: '', isFlipped: false, cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } } as unknown as Card);
-const journal = (id: string): Journal => ({ id, pages: [], bookmarks: [] });
+const journal = (id: string): Journal => ({ id, title: '', pages: [], bookmarks: [] });
 
 const character = (cards: Card[], journals: Journal[], sheetLayout: Character['sheetLayout']): Pick<Character, 'cards' | 'journals' | 'sheetLayout'> =>
    ({ cards, journals, sheetLayout });

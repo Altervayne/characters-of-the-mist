@@ -776,11 +776,12 @@ export function useCharacterSheetDnD() {
       const itemContentCopy = JSON.parse(JSON.stringify(activeDragItem));
       if ('isFlipped' in itemContentCopy) itemContentCopy.isFlipped = false;
 
-      // A card names by `title`, a tracker by `name`, a journal by the first line of its first page -
-      // each aggregate names off its own content (mirrors the board save-back).
-      const rawName = 'title' in activeDragItem ? activeDragItem.title :
-                     'name' in activeDragItem ? activeDragItem.name :
-                     'pages' in activeDragItem ? (activeDragItem.pages[0]?.text ?? '').split('\n')[0] : '';
+      // A journal names by its `title` (else the first line of its first page), a card by `title`, a tracker
+      // by `name` - each aggregate names off its own content (mirrors the board save-back). The journal is
+      // discriminated first (by `pages`) because it also carries a `title`.
+      const rawName = 'pages' in activeDragItem ? (activeDragItem.title.trim() ? activeDragItem.title : (activeDragItem.pages[0]?.text ?? '').split('\n')[0]) :
+                     'title' in activeDragItem ? activeDragItem.title :
+                     'name' in activeDragItem ? activeDragItem.name : '';
       // Keep the drawer item from landing blank when the content has no name (a portrait can be cleared
       // to an empty title; a fresh journal has no page text).
       const fallbackName = generalType === 'IMAGE_CARD' ? 'Portrait' : 'New Item';

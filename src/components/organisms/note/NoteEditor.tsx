@@ -208,6 +208,9 @@ const paperTheme = EditorView.theme({
    '.cm-note-cover-bar': { position: 'absolute', top: '0.5rem', left: '0.5rem', display: 'flex', gap: '0.125rem', padding: '0.25rem', borderRadius: '0.375rem', backgroundColor: 'var(--popover)', color: 'var(--popover-foreground)', border: '1px solid var(--border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' },
    '.cm-note-cover-btn': { display: 'grid', placeItems: 'center', height: '1.75rem', width: '1.75rem', borderRadius: '0.25rem', cursor: 'pointer', color: 'inherit', background: 'transparent', border: 'none' },
    '.cm-note-cover-btn:hover': { backgroundColor: 'var(--muted)' },
+   // The cover "remove" reads as the destructive action it is (matching the app's delete convention).
+   '.cm-note-cover-remove': { color: 'var(--destructive)' },
+   '.cm-note-cover-remove:hover': { backgroundColor: 'color-mix(in srgb, var(--destructive) 20%, transparent)' },
    // The bottom-right box-width resize handle.
    '.cm-note-cover-handle': { position: 'absolute', bottom: '-0.375rem', right: '-0.375rem', height: '0.75rem', width: '0.75rem', borderRadius: '0.125rem', backgroundColor: 'var(--primary)', border: '2px solid var(--primary-foreground)', boxShadow: '0 1px 2px rgb(0 0 0 / 0.2)', cursor: 'nwse-resize' },
 

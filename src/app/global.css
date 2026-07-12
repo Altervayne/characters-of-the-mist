@@ -46,6 +46,11 @@
    --color-paper-background:        var(--paper-background);
    --color-paper-foreground:        var(--paper-foreground);
    --color-paper-border:            var(--paper-border);
+   /* The header band + accent of a paper document (a journal's title/pages bars, an active edge): the
+      same parchment palette, exposed as utilities so a layered document reads as header + sheet + accent. */
+   --color-paper-primary:           var(--paper-primary);
+   --color-paper-primary-foreground: var(--paper-primary-foreground);
+   --color-paper-accent:            var(--paper-accent);
 }
 
 [class*="card-type-"] input::placeholder,

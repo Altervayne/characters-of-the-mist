@@ -189,7 +189,7 @@ describe('updateJournal', () => {
       store.getState().actions.addJournal();
       const id = store.getState().character!.journals[0].id;
 
-      const edited = { id, pages: [{ id: 'p1', text: 'hello' }], bookmarks: [{ id: 'b1', pageId: 'p1', label: '' }] };
+      const edited = { id, title: '', pages: [{ id: 'p1', text: 'hello' }], bookmarks: [{ id: 'b1', pageId: 'p1', label: '' }] };
       store.getState().actions.updateJournal(id, edited);
 
       const journals = store.getState().character!.journals;
@@ -229,6 +229,7 @@ describe('removeJournal', () => {
 describe('addImportedJournal', () => {
    const imported = {
       id: 'src-journal',
+      title: '',
       pages: [{ id: 'p-a', text: 'One' }, { id: 'p-b', text: 'Two' }],
       bookmarks: [{ id: 'bm', pageId: 'p-b', label: 'Second' }],
    };

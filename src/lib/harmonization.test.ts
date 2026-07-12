@@ -95,7 +95,7 @@ describe('harmonization: sheet journals backfill', () => {
    });
 
    it('is idempotent: a sheet that already has journals passes through unchanged', () => {
-      const journals = [{ id: 'j1', pages: [{ id: 'p1', text: 'note' }], bookmarks: [] }];
+      const journals = [{ id: 'j1', title: '', pages: [{ id: 'p1', text: 'note' }], bookmarks: [] }];
       const sheet = { ...legacySheetWithoutJournals(), journals } as Character;
 
       const harmonized = harmonizeData(sheet, 'FULL_CHARACTER_SHEET');
@@ -113,7 +113,7 @@ describe('harmonization: sheet layout manifest', () => {
          name: 'Hero',
          game: 'LEGENDS',
          version: '2.0.0',
-         journals: [{ id: 'j1', pages: [], bookmarks: [] }],
+         journals: [{ id: 'j1', title: '', pages: [], bookmarks: [] }],
          cards: [
             { id: 'c1', title: 'A', order: 0, isFlipped: false, cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } },
             { id: 'c2', title: 'B', order: 1, isFlipped: false, cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } },

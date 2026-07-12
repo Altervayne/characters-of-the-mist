@@ -51,6 +51,7 @@ import type { Journal } from '@/lib/types/board';
 /** A journal with two pages whose bookmarks reference those pages by id. */
 const makeJournal = (): Journal => ({
    id: 'journal-1',
+   title: '',
    pages: [
       { id: 'page-a', text: 'Session one' },
       { id: 'page-b', text: 'Session two' },

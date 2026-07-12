@@ -11,7 +11,7 @@ import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -21,6 +21,7 @@ import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterSt
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { collectBoardEmbeddedEntities } from '@/lib/board/collectBoardEmbeddedEntities';
@@ -76,6 +77,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { setTheme: setMode } = useTheme();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
    const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab } = useTabManagerActions();
+   const activeNote = useActiveNoteInstance();
 
    const openTabs = useTabManagerStore((state) => state.openTabs);
    const activeTabId = useTabManagerStore((state) => state.activeTabId);
@@ -205,6 +207,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // #######################
       { id: 'toggleNoteOutline', scope: 'note', label: t('CommandPalette.commands.toggleNoteOutline'), keywords: ['outline', 'toc', 'contents', 'headings', 'sections', 'sidebar', 'note'], icon: ListTree, group: t('CommandPalette.groups.note'), action: toggleNoteOutline },
       { id: 'jumpToSection', scope: 'note', label: t('CommandPalette.commands.jumpToSection'), keywords: ['jump', 'goto', 'section', 'heading', 'outline', 'navigate', 'note'], icon: ListTree, group: t('CommandPalette.groups.note'), pageId: 'jumpToSection' },
+      // Opens the toolbar's search-first link picker at the caret (flips to Live first). Note-scoped.
+      { id: 'insertLink', scope: 'note', label: t('CommandPalette.commands.insertLink'), keywords: ['link', 'insert', 'url', 'portal', 'anchor', 'reference', 'section', 'note'], icon: Link, group: t('CommandPalette.groups.note'), action: () => activeNote?.getState().actions.openLinkPicker() },
 
       // #################################
       // ###   CHARACTER SHEET GROUP   ###

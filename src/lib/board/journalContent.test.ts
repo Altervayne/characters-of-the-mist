@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { migrateJournalContent, withPageRemoved } from './journalContent';
+import { migrateJournalContent, withPageInserted, withPagesReordered, withPageRemoved } from './journalContent';
 
 // -- Type Imports --
 import type { Journal } from '@/lib/types/board';
@@ -23,14 +23,75 @@ describe('migrateJournalContent', () => {
    });
 
    it('is idempotent for a journal already on the object shape', () => {
-      const objectShape: Journal = { id: 'j1', pages: [{ id: 'p1', text: 'a' }], bookmarks: [] };
+      const objectShape: Journal = { id: 'j1', title: '', pages: [{ id: 'p1', text: 'a' }], bookmarks: [] };
       expect(migrateJournalContent(objectShape)).toBe(objectShape);
+   });
+
+   it('preserves the title through both the idempotent and legacy-normalize paths (export round-trip)', () => {
+      const titled: Journal = { id: 'j1', title: '**Session** 5', pages: [{ id: 'p1', text: 'a' }], bookmarks: [] };
+      expect(migrateJournalContent(titled).title).toBe('**Session** 5');
+      // Legacy string-pages journal: the title rides the aggregate spread through the reconstruct path.
+      const legacy = { id: 'j2', title: 'Legacy', pages: ['one'] } as unknown as Journal;
+      expect(migrateJournalContent(legacy).title).toBe('Legacy');
+   });
+});
+
+describe('withPageInserted', () => {
+   const base: Journal = {
+      id: 'j1',
+      title: '',
+      pages: [{ id: 'p1', text: 'a' }, { id: 'p2', text: 'b' }],
+      bookmarks: [{ id: 'bm', pageId: 'p2', label: 'Two' }],
+   };
+
+   it('inserts a blank page at the index and returns its fresh id; existing ids + bookmarks untouched', () => {
+      const { journal, pageId } = withPageInserted(base, 1);
+      expect(journal.pages.map((p) => p.id)).toEqual(['p1', pageId, 'p2']);
+      expect(journal.pages[1].text).toBe('');
+      expect(pageId === 'p1' || pageId === 'p2').toBe(false);
+      // The p2 bookmark still resolves - inserting never re-points a pageId.
+      expect(journal.bookmarks).toEqual(base.bookmarks);
+   });
+
+   it('inserts before the first page at index 0', () => {
+      const { journal, pageId } = withPageInserted(base, 0);
+      expect(journal.pages.map((p) => p.id)).toEqual([pageId, 'p1', 'p2']);
+   });
+
+   it('appends at index === length and clamps a past-the-end index (the add-page behaviour)', () => {
+      const end = withPageInserted(base, base.pages.length);
+      expect(end.journal.pages.map((p) => p.id)).toEqual(['p1', 'p2', end.pageId]);
+      const past = withPageInserted(base, 99);
+      expect(past.journal.pages.at(-1)?.id).toBe(past.pageId);
+   });
+});
+
+describe('withPagesReordered', () => {
+   const base: Journal = {
+      id: 'j1',
+      title: '',
+      pages: [{ id: 'p1', text: 'a' }, { id: 'p2', text: 'b' }, { id: 'p3', text: 'c' }],
+      bookmarks: [{ id: 'bm', pageId: 'p3', label: 'Third' }],
+   };
+
+   it('moves a page into another page\'s slot, keeping ids stable so bookmarks never strand', () => {
+      const next = withPagesReordered(base, 'p1', 'p3');
+      expect(next.pages.map((p) => p.id)).toEqual(['p2', 'p3', 'p1']);
+      // The pageId a bookmark references is untouched - it still resolves to the moved page.
+      expect(next.bookmarks).toEqual(base.bookmarks);
+      expect(next.pages.find((p) => p.id === 'p3')?.text).toBe('c');
+   });
+
+   it('is a no-op (same reference) when an id is missing or the ids match', () => {
+      expect(withPagesReordered(base, 'p1', 'p1')).toBe(base);
+      expect(withPagesReordered(base, 'nope', 'p2')).toBe(base);
    });
 });
 
 describe('withPageRemoved', () => {
    const content: Journal = {
       id: 'j1',
+      title: '',
       pages: [{ id: 'p1', text: 'a' }, { id: 'p2', text: 'b' }, { id: 'p3', text: 'c' }],
       bookmarks: [{ id: 'b1', pageId: 'p1', label: 'First' }, { id: 'b2', pageId: 'p3', label: 'Third' }],
    };
@@ -47,7 +108,7 @@ describe('withPageRemoved', () => {
    });
 
    it('removing the last page leaves one fresh empty page and no bookmarks', () => {
-      const single: Journal = { id: 'j1', pages: [{ id: 'only', text: 'x' }], bookmarks: [{ id: 'b', pageId: 'only' }] };
+      const single: Journal = { id: 'j1', title: '', pages: [{ id: 'only', text: 'x' }], bookmarks: [{ id: 'b', pageId: 'only' }] };
       const result = withPageRemoved(single, 'only');
       expect(result.pages).toHaveLength(1);
       expect(result.pages[0].text).toBe('');

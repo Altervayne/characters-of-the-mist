@@ -20,6 +20,7 @@ export const DRAG_TYPES = {
    DRAWER_BACK_BUTTON: 'drawer-back-button',
    TAB: 'tab',
    THEME: 'theme',
+   JOURNAL_PAGE: 'journal-page',
 } as const;
 
 export type DropZone = typeof DROP_ZONES[keyof typeof DROP_ZONES];

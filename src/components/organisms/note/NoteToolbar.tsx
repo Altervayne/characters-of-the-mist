@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 // -- Icon Imports --
 import {
-   Bold, BookOpen, ChevronDown, Code, Heading, Image, ImagePlus, Italic, List, ListOrdered, ListTree, Loader2,
+   Bold, BookOpen, ChevronDown, Code, Heading, Image, ImagePlus, Italic, Link, List, ListOrdered, ListTree, Loader2,
    Minus, PenLine, Quote, Strikethrough, Table, Trash2,
 } from 'lucide-react';
 
@@ -17,6 +17,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 // -- Markdown Helpers --
 import { computeWrapToggle, computePrefixToggle, computeHeadingCycle, buildTable, FORMAT_MARKERS } from '@/lib/notes/noteFormat';
+
+// -- Component Imports --
+import { NoteLinkPicker } from '@/components/organisms/note/NoteLinkPicker';
 
 // -- Type Imports --
 import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
@@ -58,6 +61,9 @@ interface NoteToolbarProps {
    /** The document-outline rail: its open state + toggle. Shown in ALL modes (the outline works in Reading too). */
    isOutlineOpen: boolean;
    onToggleOutline: () => void;
+   /** The link picker's open state (controlled so the command palette can open it too) + its change handler. */
+   isLinkPickerOpen: boolean;
+   onLinkPickerOpenChange: (open: boolean) => void;
 }
 
 export function NoteToolbar({
@@ -74,6 +80,8 @@ export function NoteToolbar({
    onRemoveCover,
    isOutlineOpen,
    onToggleOutline,
+   isLinkPickerOpen,
+   onLinkPickerOpenChange,
 }: NoteToolbarProps) {
    const { t } = useTranslation();
 
@@ -219,6 +227,7 @@ export function NoteToolbar({
                   {isImageProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                </ToolbarButton>
                <TableButton onInsert={insertTable} />
+               <LinkButton getEditor={getEditor} open={isLinkPickerOpen} onOpenChange={onLinkPickerOpenChange} />
             </>
          )}
 
@@ -361,23 +370,59 @@ function CoverButton({
          </PopoverTrigger>
          <PopoverContent align="start" sideOffset={6} className="flex w-auto flex-col gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-md">
             <CoverMenuRow icon={<Image className="h-4 w-4" />} label={t('NoteView.cover.change')} onClick={() => run(onChange)} />
-            <CoverMenuRow icon={<Trash2 className="h-4 w-4" />} label={t('NoteView.cover.remove')} onClick={() => run(onRemove)} />
+            <CoverMenuRow icon={<Trash2 className="h-4 w-4" />} label={t('NoteView.cover.remove')} onClick={() => run(onRemove)} destructive />
          </PopoverContent>
       </Popover>
    );
 }
 
 /** A labelled action row in the cover menu (icon + text), on the popover's token vocabulary. */
-function CoverMenuRow({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
+function CoverMenuRow({ icon, label, onClick, destructive }: { icon: ReactNode; label: string; onClick: () => void; destructive?: boolean }) {
    return (
       <button
          type="button"
          onClick={onClick}
-         className="flex items-center gap-2 rounded p-1 text-left text-popover-foreground hover:bg-muted cursor-pointer"
+         className={`flex items-center gap-2 rounded p-1 text-left cursor-pointer ${destructive ? 'text-destructive hover:bg-destructive/10' : 'text-popover-foreground hover:bg-muted'}`}
       >
          {icon}
          <span className="whitespace-nowrap text-sm">{label}</span>
       </button>
+   );
+}
+
+/*
+ * The link inserter: a trigger button that opens the unified search-first picker (same-note sections + saved
+ * drawer elements + URL auto-detect). Controlled `open` so the command palette can open the SAME picker. The
+ * picker snapshots the editor's selection (the label source) + buffer (the section list) on open and splices
+ * the built `[label](href)` back through the granular editor-handle path, so undo stays clean.
+ */
+function LinkButton({
+   getEditor,
+   open,
+   onOpenChange,
+}: {
+   getEditor: () => NoteEditorHandle | null;
+   open: boolean;
+   onOpenChange: (open: boolean) => void;
+}) {
+   const { t } = useTranslation();
+   return (
+      <Popover open={open} onOpenChange={onOpenChange}>
+         <PopoverTrigger asChild>
+            <button
+               type="button"
+               title={t('NoteView.toolbar.insertLink')}
+               aria-label={t('NoteView.toolbar.insertLink')}
+               onMouseDown={(event) => event.preventDefault()}
+               className="grid h-7 w-7 place-items-center rounded text-foreground hover:bg-muted cursor-pointer"
+            >
+               <Link className="h-4 w-4" />
+            </button>
+         </PopoverTrigger>
+         <PopoverContent align="start" sideOffset={6} className="w-auto rounded-lg border border-border bg-popover p-0 shadow-md">
+            {open && <NoteLinkPicker getEditor={getEditor} onClose={() => onOpenChange(false)} />}
+         </PopoverContent>
+      </Popover>
    );
 }
 

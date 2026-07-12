@@ -99,6 +99,8 @@ export interface PostItNote {
  */
 export interface Journal {
    id: string;
+   /** A single-line markdown heading for the notebook; empty when unnamed. Rides the aggregate through clone/save-back/export. */
+   title: string;
    pages: JournalPage[];
    bookmarks: JournalBookmark[];
 }

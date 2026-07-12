@@ -67,7 +67,26 @@
          "numberedList": "[TO COMPLETE]",
          "heading": "[TO COMPLETE]",
          "quote": "[TO COMPLETE]",
-         "horizontalRule": "[TO COMPLETE]"
+         "horizontalRule": "[TO COMPLETE]",
+         "insertLink": "[TO COMPLETE]"
+      },
+      "linkPicker": {
+         "placeholder": "[TO COMPLETE]",
+         "label": "[TO COMPLETE]",
+         "labelPlaceholder": "[TO COMPLETE]",
+         "usingSelection": "[TO COMPLETE]",
+         "linkToUrl": "[TO COMPLETE]",
+         "empty": "[TO COMPLETE]",
+         "groups": {
+            "thisNote": "[TO COMPLETE]",
+            "external": "[TO COMPLETE]",
+            "notes": "[TO COMPLETE]",
+            "boards": "[TO COMPLETE]",
+            "characters": "[TO COMPLETE]",
+            "cards": "[TO COMPLETE]",
+            "trackers": "[TO COMPLETE]",
+            "other": "[TO COMPLETE]"
+         }
       },
       "tableMenu": {
          "insertRowAbove": "[TO COMPLETE]",
@@ -171,15 +190,22 @@
       "removeColor": "[TO COMPLETE]",
       "postItPlaceholder": "[TO COMPLETE]",
       "journalPlaceholder": "[TO COMPLETE]",
+      "journalTitlePlaceholder": "[TO COMPLETE]",
       "prevPage": "[TO COMPLETE]",
       "nextPage": "[TO COMPLETE]",
       "addPage": "[TO COMPLETE]",
       "removePage": "[TO COMPLETE]",
+      "journalInsertPageBefore": "[TO COMPLETE]",
+      "journalInsertPageAfter": "[TO COMPLETE]",
+      "journalGoToPage": "[TO COMPLETE]",
       "journalBookmark": "[TO COMPLETE]",
       "journalRemoveBookmark": "[TO COMPLETE]",
       "journalBookmarkPlaceholder": "[TO COMPLETE]",
       "journalBookmarks": "[TO COMPLETE]",
       "journalNoBookmarks": "[TO COMPLETE]",
+      "journalReorderPages": "[TO COMPLETE]",
+      "journalPageLabel": "[TO COMPLETE]",
+      "journalEmptyPage": "[TO COMPLETE]",
       "imageUpload": "[TO COMPLETE]",
       "imageChange": "[TO COMPLETE]",
       "imageRemove": "[TO COMPLETE]",
@@ -483,7 +509,9 @@
             "STORY_THEME_TRACKER": "[TO COMPLETE]",
             "IMAGE_CARD": "[TO COMPLETE]",
             "FULL_BOARD": "[TO COMPLETE]",
-            "NOTE": "[TO COMPLETE]"
+            "NOTE": "[TO COMPLETE]",
+            "POST_IT": "[TO COMPLETE]",
+            "JOURNAL": "[TO COMPLETE]"
          }
       },
       "toggleView": "Change la vue des Objets du tiroir entre prévisualisation riche et liste simple",
@@ -1156,6 +1184,7 @@
          "newNote": "[TO COMPLETE]",
          "toggleNoteOutline": "[TO COMPLETE]",
          "jumpToSection": "[TO COMPLETE]",
+         "insertLink": "[TO COMPLETE]",
          "closeTab": "[TO COMPLETE]",
          "nextTab": "[TO COMPLETE]",
          "prevTab": "[TO COMPLETE]",

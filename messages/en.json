@@ -67,7 +67,26 @@
          "numberedList": "Numbered list",
          "heading": "Heading",
          "quote": "Quote",
-         "horizontalRule": "Horizontal rule"
+         "horizontalRule": "Horizontal rule",
+         "insertLink": "Insert link"
+      },
+      "linkPicker": {
+         "placeholder": "Search sections and saved items, or paste a URL…",
+         "label": "Label",
+         "labelPlaceholder": "Link text (defaults to the target's name)",
+         "usingSelection": "Label: “{{text}}”",
+         "linkToUrl": "Link to {{url}}",
+         "empty": "No matches. Type a URL to link out.",
+         "groups": {
+            "thisNote": "In this note",
+            "external": "External link",
+            "notes": "Notes",
+            "boards": "Boards",
+            "characters": "Characters",
+            "cards": "Cards",
+            "trackers": "Trackers",
+            "other": "Other elements"
+         }
       },
       "tableMenu": {
          "insertRowAbove": "Insert row above",
@@ -171,15 +190,22 @@
       "removeColor": "Remove color",
       "postItPlaceholder": "Write a note…",
       "journalPlaceholder": "Write…",
+      "journalTitlePlaceholder": "Untitled journal",
       "prevPage": "Previous page",
       "nextPage": "Next page",
       "addPage": "Add page",
       "removePage": "Remove page",
+      "journalInsertPageBefore": "Insert page before",
+      "journalInsertPageAfter": "Insert page after",
+      "journalGoToPage": "Go to page",
       "journalBookmark": "Bookmark page",
       "journalRemoveBookmark": "Remove bookmark",
       "journalBookmarkPlaceholder": "Bookmark",
       "journalBookmarks": "Bookmarks",
       "journalNoBookmarks": "No bookmarks yet",
+      "journalReorderPages": "Reorder pages",
+      "journalPageLabel": "Page {{number}}",
+      "journalEmptyPage": "Empty page",
       "imageUpload": "Upload image",
       "imageChange": "Change image",
       "imageRemove": "Remove image",
@@ -497,7 +523,9 @@
             "STORY_THEME_TRACKER": "Story theme",
             "IMAGE_CARD": "Image",
             "FULL_BOARD": "Board",
-            "NOTE": "Note"
+            "NOTE": "Note",
+            "POST_IT": "Post-it",
+            "JOURNAL": "Journal"
          }
       },
       "toggleView": "Toggle view mode between rich preview and list entry for Drawer Items",
@@ -1242,6 +1270,7 @@
          "newNote": "New: Note",
          "toggleNoteOutline": "Toggle note outline",
          "jumpToSection": "Jump to section…",
+         "insertLink": "Insert link…",
          "closeTab": "Close: Current Tab",
          "nextTab": "Switch: Next Tab",
          "prevTab": "Switch: Previous Tab",

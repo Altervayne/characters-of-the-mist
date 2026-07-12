@@ -18,6 +18,7 @@ import type { Card, Tracker } from '@/lib/types/character';
 
 const journal = (firstPageText: string): Journal => ({
    id: 'j1',
+   title: '',
    pages: [{ id: 'p1', text: firstPageText }, { id: 'p2', text: 'Second page' }],
    bookmarks: [],
 });
@@ -29,7 +30,7 @@ describe('exportHandleFor', () => {
 
    it('falls back to the generic label when the journal has no page text', () => {
       expect(exportHandleFor(journal('   '), 'Untitled Journal')).toBe('Untitled Journal');
-      expect(exportHandleFor({ id: 'j2', pages: [], bookmarks: [] }, 'Untitled Journal')).toBe('Untitled Journal');
+      expect(exportHandleFor({ id: 'j2', title: '', pages: [], bookmarks: [] }, 'Untitled Journal')).toBe('Untitled Journal');
    });
 
    it('leaves the card handle (title) untouched', () => {

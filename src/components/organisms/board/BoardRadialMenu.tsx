@@ -204,7 +204,7 @@ function RadialButton({
          className={cn(
             'absolute flex items-center justify-center rounded-full border shadow-md backdrop-blur-sm cursor-pointer',
             destructive
-               ? 'border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/25'
+               ? 'border-destructive/50 bg-popover/90 text-destructive hover:bg-destructive/20'
                : 'border-border bg-popover/90 text-popover-foreground hover:bg-muted',
          )}
       >

@@ -51,7 +51,7 @@ interface SheetJournalCardProps {
 
 // The body reads geometry only to place a minted mention tracker on the board; the sheet has no board,
 // so a zero rect is inert.
-const SHEET_HOST_RECT: BoardItem = { id: '', kind: 'journal', z: 0, x: 0, y: 0, width: 250, height: 600, content: { kind: 'journal', mode: 'copy', data: { id: '', pages: [], bookmarks: [] } } };
+const SHEET_HOST_RECT: BoardItem = { id: '', kind: 'journal', z: 0, x: 0, y: 0, width: 250, height: 600, content: { kind: 'journal', mode: 'copy', data: { id: '', title: '', pages: [], bookmarks: [] } } };
 
 export function SheetJournalCard({ journal, isEditing, onExport, dragAttributes, dragListeners }: SheetJournalCardProps) {
    const { updateJournal, removeJournal } = useCharacterActions();
@@ -86,7 +86,7 @@ export function SheetJournalCard({ journal, isEditing, onExport, dragAttributes,
          />
          {/* Bookmarks use a body-portaled popover (not protruding tabs), so the card body simply clips its
              page content to the card shape - no side slot to keep un-clipped. */}
-         <div className="relative min-w-62.5 w-62.5 h-150 overflow-hidden rounded-lg border-2 border-border bg-card text-card-foreground z-0">
+         <div className="relative min-w-62.5 w-62.5 h-150 overflow-hidden rounded-lg border-2 border-border bg-paper-background text-paper-foreground z-0">
             <JournalItem
                item={SHEET_HOST_RECT}
                content={content}

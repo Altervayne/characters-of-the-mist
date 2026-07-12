@@ -106,16 +106,19 @@ export function saveBoardItemAsToDrawer(innerData: unknown, folderId?: string): 
    if (!normalized) return null;
 
    const id = cuid();
-   // A card names by `title`, a tracker by `name`, a post-it by its first line of text, a journal by the
-   // first line of its first page - each aggregate names off its own content.
+   // A journal names by its `title` (else the first line of its first page), a card by `title`, a tracker
+   // by `name`, a post-it by its first line of text - each aggregate names off its own content. The journal
+   // is discriminated first (by `pages`) because it also carries a `title`.
    const inner = normalized.content;
-   const defaultName = 'title' in inner
-      ? inner.title
-      : 'name' in inner
-         ? inner.name
-         : 'text' in inner
-            ? inner.text.split('\n')[0]
-            : (inner.pages[0]?.text ?? '').split('\n')[0];
+   const defaultName = 'pages' in inner
+      ? (inner.title.trim() ? inner.title : (inner.pages[0]?.text ?? '').split('\n')[0])
+      : 'title' in inner
+         ? inner.title
+         : 'name' in inner
+            ? inner.name
+            : 'text' in inner
+               ? inner.text.split('\n')[0]
+               : '';
 
    useDrawerStore.getState().actions.initiateItemDrop({
       game: normalized.game,

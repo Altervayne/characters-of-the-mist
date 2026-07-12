@@ -192,6 +192,7 @@ describe('mapItemToStorableInfo - post-it & journal notes (game-agnostic)', () =
    it('maps a journal to JOURNAL, NEUTRAL', () => {
       const journal: Journal = {
          id: 'j1',
+         title: '',
          pages: [{ id: 'pg1', text: 'Session one' }],
          bookmarks: [{ id: 'bm1', pageId: 'pg1', label: 'Start' }],
       };

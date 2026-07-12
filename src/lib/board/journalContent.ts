@@ -1,5 +1,6 @@
 // -- Library Imports --
 import cuid from 'cuid';
+import { arrayMove } from '@dnd-kit/sortable';
 
 // -- Type Imports --
 import type { Journal, JournalBookmark, JournalPage } from '@/lib/types/board';
@@ -28,6 +29,30 @@ export function migrateJournalContent(journal: Journal): Journal {
       : [{ id: cuid(), text: '' }];
    const bookmarks: JournalBookmark[] = hasBookmarks ? (raw.bookmarks as JournalBookmark[]) : [];
    return { ...journal, pages, bookmarks };
+}
+
+/**
+ * Inserts a fresh blank page at `index` (clamped to 0..length) and returns the new aggregate plus the new
+ * page's id, so the caller can navigate to it. Existing page ids are untouched, so bookmarks never strand;
+ * `index === length` appends (the old add-page behaviour).
+ */
+export function withPageInserted(journal: Journal, index: number): { journal: Journal; pageId: string } {
+   const pageId = cuid();
+   const at = Math.max(0, Math.min(index, journal.pages.length));
+   const pages = [...journal.pages.slice(0, at), { id: pageId, text: '' }, ...journal.pages.slice(at)];
+   return { journal: { ...journal, pages }, pageId };
+}
+
+/**
+ * Reorders pages by moving the page `activeId` into the slot of `overId` (a dnd-kit list reorder). Page
+ * ids are untouched, so every bookmark keeps pointing at its page; a no-op when either id is missing or
+ * they already match.
+ */
+export function withPagesReordered(journal: Journal, activeId: string, overId: string): Journal {
+   const from = journal.pages.findIndex((page) => page.id === activeId);
+   const to = journal.pages.findIndex((page) => page.id === overId);
+   if (from < 0 || to < 0 || from === to) return journal;
+   return { ...journal, pages: arrayMove(journal.pages, from, to) };
 }
 
 /**

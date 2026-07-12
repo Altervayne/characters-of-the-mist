@@ -628,7 +628,7 @@ export function createCharacterStore() {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
                      // A bare, game-agnostic aggregate: a fresh notebook with no pages or bookmarks.
-                     const newJournal: Journal = { id: cuid(), pages: [], bookmarks: [] };
+                     const newJournal: Journal = { id: cuid(), title: '', pages: [], bookmarks: [] };
                      return {
                         character: {
                            ...state.character,

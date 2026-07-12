@@ -76,7 +76,7 @@ function NoteSurface() {
 
    const note = useStore(store, (state) => state.note);
    const cover = useStore(store, (state) => state.note?.cover);
-   const { updateTitle, updateBody, setCover, clearCover, flush, setUndoController, setUndoAvailability, setOutlineJump } = store.getState().actions;
+   const { updateTitle, updateBody, setCover, clearCover, flush, setUndoController, setUndoAvailability, setOutlineJump, setLinkPickerOpener } = store.getState().actions;
 
    // A note opens in LIVE - the home mode where you both see AND touch the document (Overseer-locked).
    const [mode, setMode] = useState<NoteMode>('live');
@@ -193,6 +193,15 @@ function NoteSurface() {
    }, [jumpToHeading]);
    const onLinkActivate = useNoteLinkActivation(host, scrollToSection);
 
+   // The insert-link picker (owned here so the toolbar button AND the palette open the SAME popover). The
+   // palette opener flips to Live first (you can't insert into read-only Reading), then opens it.
+   const [linkPickerOpen, setLinkPickerOpen] = useState(false);
+   const openLinkPicker = useCallback(() => { setMode('live'); setLinkPickerOpen(true); }, []);
+   useEffect(() => {
+      setLinkPickerOpener(openLinkPicker);
+      return () => setLinkPickerOpener(null);
+   }, [setLinkPickerOpener, openLinkPicker]);
+
    // Cover add/change: the shared upload pipeline (process -> store -> hash), then a NoteCover built with the
    // image's NATURAL ratio on ADD (so it starts uncropped) and the current box kept on CHANGE (swap hash only).
    // All cover edits go through the editor handle (CM6 state = the undo timeline); CM6 then persists to the store.
@@ -303,6 +312,8 @@ function NoteSurface() {
             onRemoveCover={() => editorRef.current?.clearCover()}
             isOutlineOpen={isOutlineOpen}
             onToggleOutline={toggleNoteOutline}
+            isLinkPickerOpen={linkPickerOpen}
+            onLinkPickerOpenChange={setLinkPickerOpen}
          />
          {/* Hidden picker for the toolbar's insert-image action; the paste/drop paths never touch it. */}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />

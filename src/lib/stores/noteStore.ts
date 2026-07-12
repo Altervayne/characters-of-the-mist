@@ -80,6 +80,13 @@ export interface NoteState {
       /** Jumps the note surface to a heading (from the palette's Jump-to-section picker). No-op when no surface is mounted. */
       jumpToHeading: (heading: NoteHeading) => void;
       /**
+       * Registers (or clears with `null`) the mounted note surface's link-picker opener, so the command palette's
+       * "Insert link" can open the SAME toolbar picker. The surface's opener flips to an editable mode first.
+       */
+      setLinkPickerOpener: (open: (() => void) | null) => void;
+      /** Opens the note surface's link picker (from the palette's Insert-link command). No-op when no surface is mounted. */
+      openLinkPicker: () => void;
+      /**
        * Immediately persists the current document onto its row, bypassing the debounce.
        * The Note tab surface calls this on unmount (a tab switch fires no blur), so the
        * last keystroke is never lost to a cancelled debounce timer.
@@ -147,6 +154,9 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
       // The mounted note surface's outline-jump handler (mode-aware), registered by `NoteView`. A function ref
       // (not state) - the palette calls `jumpToHeading` through it; the rail calls the surface's own fn directly.
       let outlineJump: ((heading: NoteHeading) => void) | null = null;
+      // The mounted note surface's link-picker opener, registered by `NoteView` (flips to an editable mode, then
+      // opens the toolbar picker). A function ref - the palette's Insert-link command calls it.
+      let linkPickerOpener: (() => void) | null = null;
 
       /** Persists the current document onto its row. Best-effort; a missing row is a no-op. */
       const debouncedSave = createDebouncer<Note>(saveDebounceMs, (note) => {
@@ -248,6 +258,9 @@ export function createNoteStore(options: { saveDebounceMs?: number } = {}) {
 
             setOutlineJump: (jump) => { outlineJump = jump; },
             jumpToHeading: (heading) => outlineJump?.(heading),
+
+            setLinkPickerOpener: (open) => { linkPickerOpener = open; },
+            openLinkPicker: () => linkPickerOpener?.(),
 
             flush: () => {
                const note = get().note;
