@@ -23,11 +23,12 @@ import { deriveCurrentIndex } from '@/lib/character/journey';
 import type { TabType } from '@/lib/character/tabManagerStore';
 
 /*
- * The PORTAL TRAIL: a floating breadcrumb pill showing the back-stack of portal navigations, so a GM can see
- * where a dive took them and step back out. It is deliberately DISTINCT from the always-present tab strip: it
- * appears ONLY during a dive (>= 2 entries) - "shows up only on a journey" is the primary anti-conflation signal
- * - and it reads as directed HISTORY (a leading Back arrow, `>`-chevron crumbs, the current one highlighted, not
- * closeable), never as peer tabs.
+ * The PORTAL TRAIL: a docked breadcrumb BAR that sits in its own row UNDER the tab strip and OVER the work
+ * area, showing the back-stack of portal navigations so a GM can see where a dive took them and step back out.
+ * It lives in the layout flow (never floats over a surface's chrome - a floating pill fought the board toolbar),
+ * and it appears ONLY during a dive (>= 2 entries) - "shows up only on a journey" is the primary anti-conflation
+ * signal - reading as directed HISTORY (a leading Back arrow, `>`-chevron crumbs, the current one highlighted,
+ * not closeable), never as peer tabs. A long trail scrolls horizontally within the bar so it stays full.
  *
  * Navigation reactivates through `openEntityTab` (which reopens a closed-but-SAVED target by id - never a raw
  * `setActiveTab`, which no-ops off-strip), so its `openTabs`-first-then-drawer resolve is the liveness oracle.
@@ -45,7 +46,7 @@ const KIND_UNTITLED: Record<TabType, string> = {
    character: 'Tabs.untitled',
 };
 
-export function PortalTrailPill() {
+export function PortalTrailBar() {
    const { t } = useTranslation();
    const reduce = useReducedMotion() ?? false;
    const actions = useTabManagerActions();
@@ -101,10 +102,10 @@ export function PortalTrailPill() {
    return (
       <motion.nav
          aria-label={t('Tabs.portalTrail')}
-         initial={reduce ? false : { opacity: 0, y: -6 }}
+         initial={reduce ? false : { opacity: 0, y: -4 }}
          animate={{ opacity: 1, y: 0 }}
          transition={{ duration: reduce ? 0 : 0.18, ease: 'easeOut' }}
-         className="pointer-events-auto absolute left-1/2 top-2 z-30 flex max-w-[min(90%,44rem)] -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-card/95 px-2 py-1 text-sm shadow-md backdrop-blur-sm"
+         className="flex w-full shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-sm"
       >
          <button
             type="button"
@@ -112,18 +113,19 @@ export function PortalTrailPill() {
             disabled={effectiveIndex <= 0}
             aria-label={t('Tabs.portalTrailBack')}
             title={t('Tabs.portalTrailBack')}
-            className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+            className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
          >
             <ArrowLeft className="h-4 w-4" />
          </button>
 
-         <ol className="flex min-w-0 items-center gap-0.5">
+         {/* The full trail: crumbs never collapse away - the row scrolls horizontally if the dive runs long. */}
+         <ol className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
             {entries.map((entry, index) => {
                const Icon = KIND_ICON[entry.tabKind];
                const label = entry.name.trim().length > 0 ? entry.name : t(KIND_UNTITLED[entry.tabKind]);
                const isCurrent = index === activeIndex;
                return (
-                  <li key={index} className="flex min-w-0 items-center gap-0.5">
+                  <li key={index} className="flex shrink-0 items-center gap-0.5">
                      {index > 0 && <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />}
                      <button
                         type="button"
@@ -131,7 +133,7 @@ export function PortalTrailPill() {
                         title={label}
                         aria-current={isCurrent ? 'true' : undefined}
                         className={cn(
-                           'flex min-w-0 items-center gap-1 rounded-full px-2 py-0.5 cursor-pointer',
+                           'flex max-w-56 items-center gap-1 rounded px-2 py-0.5 cursor-pointer',
                            isCurrent
                               ? 'bg-primary text-primary-foreground font-medium'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
