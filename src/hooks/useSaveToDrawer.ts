@@ -11,6 +11,7 @@ import { saveCharacterToLinkedDrawerItem } from '@/lib/character/characterReposi
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
 import { stampNoteReferencesDrawerSource } from '@/lib/board/refreezeNoteReferences';
+import { forkBoardToDrawerItem, forkCharacterToDrawerItem, forkNoteToDrawerItem } from '@/lib/saveAs/forkToDrawer';
 
 // -- Store and Hook Imports --
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
@@ -18,10 +19,13 @@ import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 /*
- * Save-to-drawer for the active character or board, shared by the sidebar Save buttons and the command
- * palette so the two entry points can't drift. Each kind has a Save (linked atomic save, or Save-As when
- * unlinked) and a Save-As (link a fresh drawer item, open the drawer, and hand off to the naming window).
- * A linked item that was deleted falls back to Save-As. The drawer-open step is self-sourced here.
+ * Save-to-drawer for the active character / board / note, shared by the sidebar Save buttons and the command
+ * palette so the two entry points can't drift. Each kind has a Save (linked atomic save) and a Save-As. Save-As
+ * branches on link state: an ALREADY-LINKED entity FORKS (re-id to a fresh identity, the working tab adopts the
+ * new copy, the original drawer item + its references are left untouched); an UNLINKED first save keeps its id
+ * and links one fresh drawer item. A linked-but-deleted item (dangling link) is NOT a fork - it keeps its
+ * identity and links a fresh item (a fork there would strand references resolving via the working record). The
+ * drawer-open + naming-window hand-off is self-sourced here.
  */
 export function useSaveToDrawer() {
    const { t: tNotifications } = useTranslation();
@@ -49,22 +53,23 @@ export function useSaveToDrawer() {
                const itemPath = await getDrawerItemDisplayPath(savedItemId);
                toast.success(`${tNotifications('Notifications.character.saved')} ${itemPath}`);
             } else {
-               // The linked drawer item was deleted: fall back to Save As + notify.
-               saveCharacterAsToDrawer();
+               // The linked drawer item was DELETED (dangling link): there is no original to preserve, so
+               // keep this tab's identity and link a fresh drawer item - a fork here would strand any
+               // reference that resolves this character via its (about-to-be-reaped) working record.
+               firstSaveCharacterAs(cuid());
                toast(tNotifications('Notifications.character.linkedItemMissing'));
             }
          } catch {
             toast.error(tNotifications('Notifications.drawer.actionFailed'));
          }
       } else {
-         saveCharacterAsToDrawer();
+         firstSaveCharacterAs(cuid());
       }
    };
 
-   const saveCharacterAsToDrawer = () => {
+   /** First-save / dangling-link path: keep the character's id, link it to a fresh drawer item (existing behavior). */
+   const firstSaveCharacterAs = (newItemId: string) => {
       if (!character) return;
-
-      const newItemId = cuid();
       const characterWithDrawerId = { ...character, drawerItemId: newItemId };
 
       loadCharacter(character, newItemId);
@@ -86,6 +91,34 @@ export function useSaveToDrawer() {
       });
    };
 
+   const saveCharacterAsToDrawer = async () => {
+      if (!character) return;
+      const newItemId = cuid();
+
+      if (character.drawerItemId) {
+         // Linked -> FORK: re-id to a fresh identity, the working tab adopts the new copy, and the
+         // original drawer item is left untouched. The tab now carries the new id, so the next plain
+         // Save writes the fork (not the source), closing the re-stamp trap.
+         const forked = await forkCharacterToDrawerItem(newItemId);
+         if (!forked) return;
+         if (!isDrawerOpen) {
+            setDrawerOpen(true);
+         }
+         initiateItemDrop({
+            game: forked.game,
+            type: 'FULL_CHARACTER_SHEET',
+            content: forked,
+            defaultName: forked.name,
+            presetId: newItemId,
+            parentFolderId: drawerCurrentFolderId ?? undefined,
+         });
+         return;
+      }
+
+      // Unlinked first save: keep the id, link one drawer item (existing behavior).
+      firstSaveCharacterAs(newItemId);
+   };
+
    const saveBoardToDrawer = async () => {
       const store = getActiveBoardStore();
       if (!store) return;
@@ -101,8 +134,8 @@ export function useSaveToDrawer() {
                const itemPath = await getDrawerItemDisplayPath(drawerItemId);
                toast.success(`${tNotifications('Notifications.board.saved')} ${itemPath}`);
             } else {
-               // The linked drawer item was deleted: fall back to Save As + notify.
-               await saveBoardAsToDrawer();
+               // Dangling link: keep this board's identity + link a fresh drawer item (see the character note).
+               await firstSaveBoardAs(cuid());
                toast(tNotifications('Notifications.board.linkedItemMissing'));
             }
          } catch {
@@ -113,7 +146,8 @@ export function useSaveToDrawer() {
       }
    };
 
-   const saveBoardAsToDrawer = async () => {
+   /** First-save / dangling-link path: keep the board's id, link it to a fresh drawer item (existing behavior). */
+   const firstSaveBoardAs = async (newItemId: string) => {
       const store = getActiveBoardStore();
       if (!store) return;
       const { boardId, name } = store.getState();
@@ -121,7 +155,6 @@ export function useSaveToDrawer() {
 
       // Link the working board to a new drawer item id (also flushes the live viewport
       // and marks the board clean); the returned aggregate seeds the drawer item content.
-      const newItemId = cuid();
       const aggregate = await store.getState().actions.linkToDrawerItem(newItemId);
       if (!aggregate) return;
 
@@ -138,6 +171,36 @@ export function useSaveToDrawer() {
          presetId: newItemId,
          parentFolderId: drawerCurrentFolderId ?? undefined,
       });
+   };
+
+   const saveBoardAsToDrawer = async () => {
+      const store = getActiveBoardStore();
+      if (!store) return;
+      const { boardId, name, drawerItemId } = store.getState();
+      if (!boardId) return;
+      const newItemId = cuid();
+
+      if (drawerItemId) {
+         // Linked -> FORK: fresh board identity (new board id + item ids), the tab adopts it, the original
+         // drawer item is untouched.
+         const forked = await forkBoardToDrawerItem(newItemId);
+         if (!forked) return;
+         if (!isDrawerOpen) {
+            setDrawerOpen(true);
+         }
+         initiateItemDrop({
+            game: 'NEUTRAL',
+            type: 'FULL_BOARD',
+            content: forked,
+            defaultName: name,
+            presetId: newItemId,
+            parentFolderId: drawerCurrentFolderId ?? undefined,
+         });
+         return;
+      }
+
+      // Unlinked first save: keep the id, link one drawer item (existing behavior).
+      await firstSaveBoardAs(newItemId);
    };
 
    const saveNoteToDrawer = async () => {
@@ -158,8 +221,8 @@ export function useSaveToDrawer() {
                const itemPath = await getDrawerItemDisplayPath(drawerItemId);
                toast.success(`${tNotifications('Notifications.note.saved')} ${itemPath}`);
             } else {
-               // The linked drawer item was deleted: fall back to Save As + notify.
-               await saveNoteAsToDrawer();
+               // Dangling link: keep this note's identity + link a fresh drawer item (see the character note).
+               await firstSaveNoteAs(cuid());
                toast(tNotifications('Notifications.note.linkedItemMissing'));
             }
          } catch {
@@ -170,7 +233,8 @@ export function useSaveToDrawer() {
       }
    };
 
-   const saveNoteAsToDrawer = async () => {
+   /** First-save / dangling-link path: keep the note's id, link it to a fresh drawer item, and stamp references (existing behavior). */
+   const firstSaveNoteAs = async (newItemId: string) => {
       const store = getActiveNoteStore();
       if (!store) return;
       const { noteId, note } = store.getState();
@@ -178,7 +242,6 @@ export function useSaveToDrawer() {
 
       // Link the working note to a new drawer item id (also flushes the live document
       // and marks the note clean); the returned aggregate seeds the drawer item content.
-      const newItemId = cuid();
       const aggregate = await store.getState().actions.linkToDrawerItem(newItemId);
       if (!aggregate) return;
 
@@ -201,6 +264,36 @@ export function useSaveToDrawer() {
          presetId: newItemId,
          parentFolderId: drawerCurrentFolderId ?? undefined,
       });
+   };
+
+   const saveNoteAsToDrawer = async () => {
+      const store = getActiveNoteStore();
+      if (!store) return;
+      const { noteId, note, drawerItemId } = store.getState();
+      if (!noteId || !note) return;
+      const newItemId = cuid();
+
+      if (drawerItemId) {
+         // Linked -> FORK: fresh note identity, the tab adopts it. References STAY on the original (we do
+         // NOT stamp board tiles to the fork), so a tile pointing at the source keeps resolving the source.
+         const forked = await forkNoteToDrawerItem(newItemId);
+         if (!forked) return;
+         if (!isDrawerOpen) {
+            setDrawerOpen(true);
+         }
+         initiateItemDrop({
+            game: 'NEUTRAL',
+            type: 'NOTE',
+            content: forked,
+            defaultName: forked.title,
+            presetId: newItemId,
+            parentFolderId: drawerCurrentFolderId ?? undefined,
+         });
+         return;
+      }
+
+      // Unlinked first save: keep the id, link one drawer item, stamp references (existing behavior).
+      await firstSaveNoteAs(newItemId);
    };
 
    return { saveCharacterToDrawer, saveCharacterAsToDrawer, saveBoardToDrawer, saveBoardAsToDrawer, saveNoteToDrawer, saveNoteAsToDrawer };

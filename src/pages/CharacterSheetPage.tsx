@@ -32,6 +32,7 @@ import { ExpandedDrawer } from '@/components/organisms/drawer/ExpandedDrawer';
 import { DiceTrayPanel } from '@/components/organisms/dice/DiceTrayPanel';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
+import { PortalTrailPill } from '@/components/organisms/tabs/PortalTrailPill';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
@@ -278,6 +279,8 @@ function DesktopCharacterSheetPage() {
                {/* Content area: own positioning context for the absolutely-filled
                    sheet/menu so they sit below the strip rather than over it. */}
                <div className="relative flex-1 min-h-0">
+                  {/* Portal trail: a floating breadcrumb over the workspace, shown only during a portal dive. */}
+                  <PortalTrailPill />
                   { activeNote ? (
                      <Suspense fallback={<TabViewLoading kind="note" />}>
                         <NoteView />

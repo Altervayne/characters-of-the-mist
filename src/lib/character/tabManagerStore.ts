@@ -26,10 +26,22 @@ import { refreezeDrawerlessNoteReferences } from '@/lib/board/refreezeNoteRefere
 import { disposeNoteInstance, getOrCreateNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { createNote, deleteNote, getNote } from '@/lib/notes/noteRepository';
 
+// -- Journey (portal trail) Imports --
+import {
+   EMPTY_JOURNEY,
+   dropJourneyEntry,
+   goToJourneyIndex,
+   journeyBack,
+   journeyForward,
+   pushJourney,
+   rekeyJourneyEntity,
+} from './journey';
+
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
 import type { GameSystem } from '@/lib/types/drawer';
 import type { Workspace } from './workspaceSession';
+import type { JourneyEntry, JourneySlice } from './journey';
 
 /*
  * TabManager: owns the open/create/close lifecycle of character tabs: instance
@@ -53,6 +65,12 @@ import type { Workspace } from './workspaceSession';
  * (a board or note tab parks the character registry on the menu fallback, so no sheet
  * shows; and clears whichever of the board/note pointers it isn't). Boards and notes are
  * desktop-only; the `mobile*` actions and `bootMobile` never touch them.
+ *
+ * PORTAL TRAIL: the TabManager also owns the `journey` slice - an EPHEMERAL back-stack of portal navigations
+ * (see `journey.ts`). It lives here because the TabManager is the ONE place that knows the active pointer moved
+ * across all three kinds. It is grown ONLY from portal activation (never from `setActiveTab`, where a manual
+ * click and a portal-follow are indistinguishable), and is session-only: `persistWorkspace` writes just
+ * `{openTabs, activeId}`, so the trail is simply never serialized and dies on reload.
  */
 
 /** The kind of a tab. Boards and notes are desktop-only. */
@@ -74,6 +92,12 @@ interface TabManagerState {
    openTabs: OpenTab[];
    /** The active tab's id, or `null` when at the menu (the menu fallback instance is active). */
    activeTabId: string | null;
+   /**
+    * The portal trail: an EPHEMERAL, in-memory back-stack of portal navigations. Session-only - NEVER written to
+    * `workspaceSession` (which persists only `{openTabs, activeId}`), so it dies on reload with no migration
+    * friction (the `highlightItemId` transient precedent). Grown ONLY from portal activation.
+    */
+   journey: JourneySlice;
    actions: {
       // -- Desktop (keep-alive) --
       /** Creates a brand-new character of `game`, appends it as a tab, activates it, and persists it. */
@@ -98,6 +122,27 @@ interface TabManagerState {
       reorderTabs: (fromId: string, toId: string) => void;
       /** Desktop "Return to Menu": show the menu while KEEPING every open tab and its live instance. */
       deactivate: () => void;
+      /**
+       * Re-keys a live entity tab from `oldId` to `newId` across every id-keyed system (tab entry, active
+       * pointer, journey trail, store registry + persistence handle) and reaps the old working rows. The
+       * fork MUST have written `newId`'s working rows first; this hydrates the new instance from them,
+       * disposes the old instance WITHOUT flushing (the fork already captured the latest state, and the old
+       * rows are deleted so the original reverts to its saved drawer copy on reopen), and adopts the new id.
+       * Undo history does NOT survive the re-key (see the implementation note). Desktop-only.
+       */
+      rekeyEntityTab: (kind: TabType, oldId: string, newId: string) => Promise<void>;
+
+      // -- Portal trail (ephemeral journey) --
+      /** Records a portal edge `from -> to` (the ONLY growth path). Pushed explicitly from portal activation. */
+      pushJourney: (from: JourneyEntry, to: JourneyEntry) => void;
+      /** Moves the trail marker to `index` (clamped) and returns the entry to reactivate. */
+      goToJourneyIndex: (index: number) => JourneyEntry | null;
+      /** Steps the marker one back (clamped) and returns the entry to reactivate. */
+      journeyBack: () => JourneyEntry | null;
+      /** Steps the marker one forward (clamped) and returns the entry to reactivate (a clicked forward crumb). */
+      journeyForward: () => JourneyEntry | null;
+      /** Drops a dead trail entry (closed + never-saved), detected at pop. */
+      dropJourneyEntry: (entityId: string) => void;
 
       // -- Mobile (single live character instance) --
       /** Mobile open: disposes the current live character, loads `character`, adds it to `openTabs` if missing, activates. */
@@ -237,6 +282,7 @@ function disposeLiveCharacterInstances(): void {
 export const useTabManagerStore = create<TabManagerState>(() => ({
    openTabs: [],
    activeTabId: null,
+   journey: EMPTY_JOURNEY,
    actions: {
       // ==================
       //  Desktop (keep-alive)
@@ -426,6 +472,71 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          deactivateToMenu();
       },
 
+      rekeyEntityTab: async (kind, oldId, newId) => {
+         if (oldId === newId) return;
+
+         // Bring the NEW instance up from the working rows the fork just wrote (a character also gets
+         // its persistence handle attached here). Undo history is intentionally NOT carried over: a
+         // board's undo commands name the OLD item ids (re-minted by the fork, so they no longer exist),
+         // and a character's zundo snapshots hold the OLD identity (undoing past the fork would restore -
+         // and autosave - the old id, re-opening the very conflation the fork closes). A fresh hydrate
+         // starts both stacks empty, which is the safe branch point for a "save an independent copy".
+         await hydrateTabFromStorage({ id: newId, type: kind });
+
+         const wasActive = useTabManagerStore.getState().activeTabId === oldId;
+         useTabManagerStore.setState((state) => ({
+            openTabs: state.openTabs.map((tab) => (tab.id === oldId ? { id: newId, type: kind } : tab)),
+            activeTabId: wasActive ? newId : state.activeTabId,
+            journey: rekeyJourneyEntity(state.journey, oldId, newId),
+         }));
+         // Point the registries at the new instance before disposing the old, so the active pointer is
+         // never momentarily dangling (and disposing the old can't clear the freshly-set new pointer).
+         if (wasActive) activatePointersForTab({ id: newId, type: kind });
+
+         // Tear down the OLD instance WITHOUT flushing. A character's handle is discarded (drop the pending
+         // debounce, never write back to the old id / original drawer item); boards/notes just dispose.
+         if (kind === 'board') disposeBoardInstance(oldId);
+         else if (kind === 'note') disposeNoteInstance(oldId);
+         else {
+            discardPersistenceHandle(oldId);
+            disposeInstance(oldId);
+         }
+
+         // Reap the old working rows: the original is a durable drawer item, so a reopen re-materializes it
+         // from that saved copy (any pre-fork uncommitted edits stayed with the fork, by design).
+         if (kind === 'board') await deleteBoard(oldId);
+         else if (kind === 'note') await deleteNote(oldId);
+         else await deleteCharacter(oldId);
+
+         persistWorkspace();
+      },
+
+      // ==================
+      //  Portal trail (ephemeral journey)
+      // ==================
+      // Thin wrappers over the pure `journey.ts` reducers; the slice is never persisted (see the file header).
+      pushJourney: (from, to) => {
+         useTabManagerStore.setState((state) => ({ journey: pushJourney(state.journey, from, to) }));
+      },
+      goToJourneyIndex: (index) => {
+         const { slice, entry } = goToJourneyIndex(useTabManagerStore.getState().journey, index);
+         useTabManagerStore.setState({ journey: slice });
+         return entry;
+      },
+      journeyBack: () => {
+         const { slice, entry } = journeyBack(useTabManagerStore.getState().journey);
+         useTabManagerStore.setState({ journey: slice });
+         return entry;
+      },
+      journeyForward: () => {
+         const { slice, entry } = journeyForward(useTabManagerStore.getState().journey);
+         useTabManagerStore.setState({ journey: slice });
+         return entry;
+      },
+      dropJourneyEntry: (entityId) => {
+         useTabManagerStore.setState((state) => ({ journey: dropJourneyEntry(state.journey, entityId) }));
+      },
+
       // ==================
       //  Mobile (single live character instance)
       // ==================
@@ -458,6 +569,26 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
 
 /** Selector hook for the TabManager action bag (a stable reference). */
 export const useTabManagerActions = () => useTabManagerStore((state) => state.actions);
+
+/**
+ * Describes the currently-active tab as a {@link JourneyEntry} (kind, id, live name), or `null` at the menu.
+ * Read SYNCHRONOUSLY by portal activation to capture the trail's `from` origin BEFORE the async open flips the
+ * active pointer. The name resolves from the tab's own live registry instance.
+ */
+export function getActiveTabJourneyEntry(): JourneyEntry | null {
+   const { openTabs, activeTabId } = useTabManagerStore.getState();
+   if (activeTabId === null) return null;
+   const tab = openTabs.find((openTab) => openTab.id === activeTabId);
+   if (!tab) return null;
+   return { tabKind: tab.type, entityId: tab.id, name: resolveTabName(tab) };
+}
+
+/** The live display name for a tab, read from its own registry instance ('' when unresolved). */
+function resolveTabName(tab: OpenTab): string {
+   if (tab.type === 'board') return getOrCreateBoardInstance(tab.id).getState().name ?? '';
+   if (tab.type === 'note') return getOrCreateNoteInstance(tab.id).getState().note?.title ?? '';
+   return getOrCreateInstance(tab.id).getState().character?.name ?? '';
+}
 
 /**
  * Creates the instance for stored character `id`, attaches its handle, and hydrates

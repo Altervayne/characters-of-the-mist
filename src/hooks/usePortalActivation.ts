@@ -13,10 +13,11 @@ import { revealDrawerItem } from '@/lib/portals/revealDrawerItem';
 import { portalTargetToLinkTarget } from '@/lib/portals/portalTarget';
 import { spawnDrawerItemBeside } from '@/lib/board/spawnBesideItem';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
-import { useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { getActiveTabJourneyEntry, useTabManagerActions } from '@/lib/character/tabManagerStore';
 
 // -- Type Imports --
 import type { PortalBoardContent } from '@/lib/types/board';
+import type { JourneyEntry } from '@/lib/character/journey';
 
 /*
  * The board-portal activation bridge, the portal-side sibling of `useNoteLinkActivation`. A portal wraps no
@@ -48,18 +49,29 @@ export function usePortalActivation(itemId: string, content: PortalBoardContent)
       const action = resolveLinkAction(linkTarget, { kind: 'board-embed', boardId, itemId });
       const onMissing = () => toast.error(t('Notifications.link.targetNotFound'));
 
+      // Portal trail: capture the origin tab SYNCHRONOUSLY (before the async open flips the active pointer) and
+      // the target from the portal itself. Only an entity open is a navigation-away that records a trail edge;
+      // `onNavigated` fires on `openEntityTab`'s success path (never on a dead target), keyed to the guard so a
+      // double-activation is one edge. The `to` name prefers the resolved target name, else the author caption.
+      const from = getActiveTabJourneyEntry();
+      const to: JourneyEntry | null =
+         linkTarget.kind === 'entity'
+            ? { tabKind: linkTarget.entity, entityId: linkTarget.id, name: content.lastKnownName ?? content.style.label ?? '' }
+            : null;
+      const onNavigated = from && to && from.entityId !== to.entityId ? () => actions.pushJourney(from, to) : undefined;
+
       // An entity open is async (its guard releases when the promise settles); the other actions complete
       // synchronously, so they release the guard right after dispatch.
       let async = false;
       runLinkAction(action, {
          openEntityTab: (entity, id) => {
             async = true;
-            return openEntityTab(entity, id, { actions, onMissing }).finally(clear);
+            return openEntityTab(entity, id, { actions, onMissing, onNavigated }).finally(clear);
          },
          scrollToSection: () => {},
          spawnBeside: (drawerItemId) => void spawnDrawerItemBeside(drawerItemId, itemId, onMissing),
          revealInDrawer: (drawerItemId) => void revealDrawerItem(drawerItemId, { onMissing }),
       });
       if (!async) clear();
-   }, [itemId, content.target, actions, t]);
+   }, [itemId, content.target, content.lastKnownName, content.style.label, actions, t]);
 }

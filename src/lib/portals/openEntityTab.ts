@@ -25,6 +25,11 @@ export interface OpenEntityDeps {
    actions: ReturnType<typeof useTabManagerActions>;
    /** Called when the target id resolves to nothing (deleted / never saved) - the caller shows a toast. */
    onMissing: () => void;
+   /**
+    * Called ONCE on a SUCCESS path (a tab actually opened or was focused), NEVER on a dead target. The portal
+    * trail records an edge here; a note internal link can opt in the same way. Optional: existing callers omit it.
+    */
+   onNavigated?: () => void;
 }
 
 /**
@@ -54,11 +59,13 @@ export async function openEntityTab(entity: 'note' | 'board' | 'character', id: 
       // Already open: focus it (skips the resolve entirely).
       if (useTabManagerStore.getState().openTabs.some((tab) => tab.id === id)) {
          deps.actions.setActiveTab(id);
+         deps.onNavigated?.();
          return;
       }
       const resolved = await resolveNoteAggregate(id);
       if (!resolved) return deps.onMissing();
       openNoteReference(id, resolved.note, resolved.sourceDrawerItemId, deps.actions);
+      deps.onNavigated?.();
       return;
    }
 
@@ -66,6 +73,7 @@ export async function openEntityTab(entity: 'note' | 'board' | 'character', id: 
       // Working row present (open, or previously opened): `openBoardTab` focuses-or-hydrates by id.
       if (await loadBoard(id)) {
          await deps.actions.openBoardTab(id);
+         deps.onNavigated?.();
          return;
       }
       // Saved-but-closed: the durable copy lives as the FULL_BOARD drawer item; import it into the working
@@ -75,6 +83,7 @@ export async function openEntityTab(entity: 'note' | 'board' | 'character', id: 
       if (!item) return deps.onMissing();
       await importBoard(item.content as Board);
       await deps.actions.openBoardTab(id);
+      deps.onNavigated?.();
       return;
    }
 
@@ -82,10 +91,12 @@ export async function openEntityTab(entity: 'note' | 'board' | 'character', id: 
    const record = await getCharacter(id);
    if (record) {
       deps.actions.openCharacterTab(record.character, record.drawerItemId ?? undefined);
+      deps.onNavigated?.();
       return;
    }
    const drawerItemId = (await getCharacterItemIdMap()).get(id);
    const item = drawerItemId ? await getItem(drawerItemId) : undefined;
    if (!item) return deps.onMissing();
    deps.actions.openCharacterTab(item.content as Character, drawerItemId);
+   deps.onNavigated?.();
 }

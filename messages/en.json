@@ -18,6 +18,8 @@
       "newTab": "New tab",
       "scrollLeft": "Scroll tabs left",
       "scrollRight": "Scroll tabs right",
+      "portalTrail": "Portal trail",
+      "portalTrailBack": "Back",
       "newTabDialog": {
          "title": "New tab",
          "description": "Choose what kind of tab to open.",

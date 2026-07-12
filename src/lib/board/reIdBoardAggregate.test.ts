@@ -26,6 +26,12 @@ function makeBoard(): Board {
          { id: 'ref', kind: 'card', x: 20, y: 20, width: 100, height: 100, z: 3, content: { kind: 'card', mode: 'reference', sourceDrawerItemId: 'src-1' } },
          { id: 'char', kind: 'character', x: 30, y: 30, width: 280, height: 132, z: 5, content: { kind: 'character', sourceDrawerItemId: 'char-src', characterId: 'char-instance' } },
          { id: 'zone', kind: 'zone', x: -50, y: -50, width: 400, height: 400, z: 4, content: { kind: 'zone', collapsed: false } },
+         // A same-board portal targeting item 'a' by its BOARD item id: reId must follow it to a's new id.
+         { id: 'portal-local', kind: 'portal', x: 40, y: 40, width: 120, height: 60, z: 6, content: { kind: 'portal', target: { kind: 'board-element', boardItemId: 'a' }, style: { visual: null, label: 'Go', align: 'bottom', background: true } } },
+         // A portal targeting a board item OUTSIDE this set: the id has no mapping, so it is kept as-is.
+         { id: 'portal-ghost', kind: 'portal', x: 50, y: 50, width: 120, height: 60, z: 7, content: { kind: 'portal', target: { kind: 'board-element', boardItemId: 'not-in-set' }, style: { visual: null, label: 'Ghost', align: 'bottom', background: true } } },
+         // A portal targeting an ENTITY (a saved board, addressed by its own id) must NOT be remapped.
+         { id: 'portal-entity', kind: 'portal', x: 60, y: 60, width: 120, height: 60, z: 8, content: { kind: 'portal', target: { kind: 'entity', entity: 'board', id: 'board-entity' }, style: { visual: null, label: 'Away', align: 'bottom', background: true } } },
       ],
    };
 }
@@ -68,6 +74,32 @@ describe('reIdBoardAggregate', () => {
       expect(memberA.zoneId).toBe(zone.id);
       expect(memberA.zoneId).not.toBe('zone');
       expect(memberB.zoneId).toBeUndefined();
+   });
+
+   it('remaps a board-element portal target to the re-IDed board item (and keeps an out-of-set target as-is)', () => {
+      const board = makeBoard();
+      const result = reIdBoardAggregate(board);
+
+      const idMap = new Map(board.items.map((i, index) => [i.id, result.items[index].id]));
+      const local = result.items.find((i) => i.content.kind === 'portal' && i.content.style.label === 'Go')!;
+      const localTarget = (local.content as { target: { kind: string; boardItemId: string } }).target;
+      // 'Go' followed item 'a' to its new id - never the stale 'a'.
+      expect(localTarget.kind).toBe('board-element');
+      expect(localTarget.boardItemId).toBe(idMap.get('a'));
+      expect(localTarget.boardItemId).not.toBe('a');
+
+      const ghost = result.items.find((i) => i.content.kind === 'portal' && i.content.style.label === 'Ghost')!;
+      const ghostTarget = (ghost.content as { target: { boardItemId: string } }).target;
+      // No mapping for a target outside the set, so it is preserved rather than cleared.
+      expect(ghostTarget.boardItemId).toBe('not-in-set');
+   });
+
+   it('leaves an entity portal target untouched (it names an entity by its own id, not a board item)', () => {
+      const board = makeBoard();
+      const result = reIdBoardAggregate(board);
+
+      const entity = result.items.find((i) => i.content.kind === 'portal' && i.content.style.label === 'Away');
+      expect(entity!.content).toMatchObject({ target: { kind: 'entity', entity: 'board', id: 'board-entity' } });
    });
 
    it('leaves a reference\'s sourceDrawerItemId untouched (it names a drawer item)', () => {
