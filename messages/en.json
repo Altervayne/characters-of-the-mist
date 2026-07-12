@@ -299,9 +299,7 @@
          "updated": "Note updated from file."
       },
       "link": {
-         "targetNotFound": "That link's target no longer exists.",
-         "spawnOnBoardSoon": "Placing a linked element on the board is coming soon.",
-         "revealInDrawerSoon": "Revealing a linked element in the drawer is coming soon."
+         "targetNotFound": "That link's target no longer exists."
       },
       "theme": {
          "exported": "Theme exported to downloads.",

@@ -1,8 +1,11 @@
 // -- React Imports --
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
+
+// -- Library Imports --
+import toast from 'react-hot-toast';
 
 // -- Icon Imports --
 import { Link2, Pencil, Unlink, X } from 'lucide-react';
@@ -14,6 +17,7 @@ import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { importNote } from '@/lib/notes/noteRepository';
 import { openNoteReference } from '@/lib/notes/openNoteReference';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
+import { spawnDrawerItemBeside } from '@/lib/board/spawnBesideItem';
 import { useTabManagerActions, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { useNoteLinkActivation } from '@/hooks/useNoteLinkActivation';
 
@@ -86,15 +90,22 @@ export function BoardNoteItem({ item, content, isSelected, toolbarSlot, onConten
    // A copy never resolves live: it carries no `noteId` and reads its own frozen snapshot.
    const isOpen = useTabManagerStore((state) => content.mode === 'reference' && state.openTabs.some((tab) => tab.id === content.noteId));
 
-   // This tile is the BOARD-EMBED host for its note's links: an element link spawns beside (deferred to a later
-   // phase), an entity link opens its tab, an external link opens a new tab. Section-scroll inside the small
-   // tile is deferred - the note's own tab is the section surface - so it passes a no-op scroll.
+   const { t } = useTranslation();
+
+   // This tile is the BOARD-EMBED host for its note's links: an element link spawns the drawer element
+   // beside this tile, an entity link opens its tab, an external link opens a new tab. Section-scroll inside
+   // the small tile is deferred - the note's own tab is the section surface - so it passes a no-op scroll.
    const noteId = content.mode === 'reference' ? content.noteId : content.data.id;
    const host = useMemo<NoteHostContext>(
       () => ({ kind: 'board-embed', boardId: getActiveBoardStore()?.getState().boardId ?? '', itemId: item.id, noteId }),
       [item.id, noteId],
    );
-   const onLinkActivate = useNoteLinkActivation(host, noScroll);
+   // Spawn beside this tile: closes over the origin item id, so the bridge only threads the target's id.
+   const onSpawnBeside = useCallback(
+      (drawerItemId: string) => void spawnDrawerItemBeside(drawerItemId, item.id, () => toast.error(t('Notifications.link.targetNotFound'))),
+      [item.id, t],
+   );
+   const onLinkActivate = useNoteLinkActivation(host, noScroll, { onSpawnBeside });
 
    if (content.mode === 'copy') {
       // A frozen snapshot: renders `data` statically, but opening ADOPTS it into an editable, mirrored note.

@@ -299,9 +299,7 @@
          "updated": "[TO COMPLETE]"
       },
       "link": {
-         "targetNotFound": "[TO COMPLETE]",
-         "spawnOnBoardSoon": "[TO COMPLETE]",
-         "revealInDrawerSoon": "[TO COMPLETE]"
+         "targetNotFound": "[TO COMPLETE]"
       },
       "theme": {
          "exported": "[TO COMPLETE]",

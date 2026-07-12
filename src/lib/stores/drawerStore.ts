@@ -74,6 +74,9 @@ export interface DrawerStoreError {
    message: string;
 }
 
+/** How long a revealed row stays highlighted before the signal auto-clears (>= the pulse animation). */
+const DRAWER_HIGHLIGHT_MS = 1600;
+
 export interface DrawerState {
    currentFolderId: string | null;
    currentFolderView: DrawerCurrentFolderView | null;
@@ -82,6 +85,12 @@ export interface DrawerState {
    pendingItem: PendingDrawerItem | null;
    canUndo: boolean;
    canRedo: boolean;
+   /**
+    * TRANSIENT: the id of a row a Portal reveal just navigated to, so its entry can scroll into view and
+    * pulse ONCE. Set by {@link DrawerState.actions.highlightItem}, auto-cleared after {@link DRAWER_HIGHLIGHT_MS};
+    * never persisted.
+    */
+   highlightItemId: string | null;
    // Search runs parallel to the browse view (it's left untouched, so clearing search returns to the
    // same folder). `searchResults` are content-free summaries; a card lazy-loads content later.
    searchCriteria: DrawerItemQuery | null;
@@ -111,6 +120,8 @@ export interface DrawerState {
       // Navigation + view
       setDrawerCurrentFolderId: (id: string | null) => Promise<void>;
       reloadCurrentFolder: () => Promise<void>;
+      /** Flags a row as just-revealed (scroll + one-shot pulse); auto-clears after the pulse window. */
+      highlightItem: (itemId: string) => void;
       // Search (parallel to browse; runs the query layer)
       applySearch: (criteria: DrawerItemQuery) => Promise<void>;
       /** Merges `partial` into the active criteria (null = empty) and re-runs the search. */
@@ -124,7 +135,7 @@ export interface DrawerState {
 
 const initialState: Pick<
    DrawerState,
-   'currentFolderId' | 'currentFolderView' | 'isLoading' | 'error' | 'pendingItem' | 'canUndo' | 'canRedo' | 'searchCriteria' | 'searchResults' | 'isSearching'
+   'currentFolderId' | 'currentFolderView' | 'isLoading' | 'error' | 'pendingItem' | 'canUndo' | 'canRedo' | 'searchCriteria' | 'searchResults' | 'isSearching' | 'highlightItemId'
 > = {
    currentFolderId: null,
    currentFolderView: null,
@@ -136,6 +147,7 @@ const initialState: Pick<
    searchCriteria: null,
    searchResults: null,
    isSearching: false,
+   highlightItemId: null,
 };
 
 /** Normalizes a thrown value into the store's `{ code, message }` error shape. */
@@ -153,6 +165,9 @@ function markDrawerModified(): void {
 }
 
 export const useDrawerStore = create<DrawerState>()((set, get) => {
+   // The pending auto-clear for the transient reveal highlight; reset on each reveal so a re-reveal restarts it.
+   let highlightClearTimer: ReturnType<typeof setTimeout> | null = null;
+
    /**
     * Loads a folder's ITEMS (`null` = root) and the child-folder summary counts. The folder structure
     * (the folders themselves, breadcrumb, parent) comes from the cache, so this queries only items - no
@@ -353,6 +368,16 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          },
          reloadCurrentFolder: async () => {
             await loadView(get().currentFolderId);
+         },
+         highlightItem: (itemId) => {
+            // Set the transient signal (the target row reads it to scroll + pulse once), then schedule the
+            // auto-clear. A repeat reveal resets the timer so the row keeps its highlight for a full window.
+            if (highlightClearTimer) clearTimeout(highlightClearTimer);
+            set({ highlightItemId: itemId });
+            highlightClearTimer = setTimeout(() => {
+               highlightClearTimer = null;
+               set({ highlightItemId: null });
+            }, DRAWER_HIGHLIGHT_MS);
          },
 
          // ==================

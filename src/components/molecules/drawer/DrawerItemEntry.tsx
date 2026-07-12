@@ -13,8 +13,12 @@ import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Pencil, Trash2, Move, Upload } from 'lucide-react';
 
 // -- Utils Imports --
+import { cn } from '@/lib/utils';
 import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
+
+// -- Hook Imports --
+import { useDrawerRowReveal } from '@/hooks/drawer/useDrawerRowReveal';
 
 // -- Component Imports --
 import { DrawerItemPreview } from '@/components/organisms/drawer/DrawerItemPreview';
@@ -27,6 +31,7 @@ import type { DrawerItem } from '@/lib/types/drawer';
 
 export function DrawerItemEntry({ item, parentFolderId, onRename, onDelete, onMove }: { item: DrawerItem & { createdAt?: number; updatedAt?: number }, parentFolderId: string | null, onRename: () => void, onDelete: () => void, onMove: () => void }) {
    const { t } = useTranslation();
+   const { ref: revealRef, isRevealed } = useDrawerRowReveal(item.id);
 
    const handleExport = async (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -54,7 +59,7 @@ export function DrawerItemEntry({ item, parentFolderId, onRename, onDelete, onMo
       >
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
             <DragStaticWrapper isBeingDragged={isBeingDragged}>
-               <div className="relative group/item data-[state=open]:bg-muted">
+               <div ref={revealRef} className={cn('relative group/item rounded-lg data-[state=open]:bg-muted', isRevealed && 'motion-safe:animate-drawer-reveal')}>
                   <div {...dragAttributes} {...dragListeners} className="cursor-grab">
                      <DrawerItemPreview item={item} />
                   </div>

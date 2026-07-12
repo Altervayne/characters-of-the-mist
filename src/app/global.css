@@ -750,3 +750,15 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
    to { stroke-dashoffset: 0; }
 }
 @utility animate-spring-ring { animation: spring-ring 800ms linear forwards; }
+
+/* Drawer reveal pulse: a one-shot accent tint + inset ring that draws the eye to a row a Portal link
+   just revealed, then fades. The inset ring can't be clipped by the scroll container, and the accent is
+   the app theme's `--color-primary` so it re-themes. Gate its use with `motion-safe:` so reduced-motion
+   readers get the scroll + a static row, no flash. The duration MUST stay <= DRAWER_HIGHLIGHT_MS (the
+   store clears the signal after it) so the animation completes before the class is removed. */
+@keyframes drawer-reveal-pulse {
+   0% { background-color: transparent; box-shadow: inset 0 0 0 0 transparent; }
+   20% { background-color: color-mix(in oklab, var(--color-primary) 20%, transparent); box-shadow: inset 0 0 0 2px var(--color-primary); }
+   100% { background-color: transparent; box-shadow: inset 0 0 0 0 transparent; }
+}
+@utility animate-drawer-reveal { animation: drawer-reveal-pulse 1500ms ease-out; }

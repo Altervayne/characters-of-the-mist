@@ -3,9 +3,9 @@ import type { LinkAction } from './linkTarget';
 
 /*
  * The imperative Portals dispatch: runs a resolved {@link LinkAction} by delegating to injected services (no
- * baked store imports, so it stays a thin, swappable seam). Phase 1 executes the "easy" actions - section
- * scroll, external open, and entity open-or-create-tab; the context-dependent element actions
- * (`spawn-on-board`/`reveal-in-drawer`) are Phase 3, wired here only as a graceful deferred notice.
+ * baked store imports, so it stays a thin, swappable seam). It composes the "easy" actions - section scroll,
+ * external open, and entity open-or-create-tab - plus the two context-dependent ELEMENT actions: spawn the
+ * element beside the origin note tile on a board, or reveal it in the drawer from a standalone tab.
  */
 
 /** The services the dispatch composes. `openExternal` defaults to `window.open`; the rest are always injected. */
@@ -14,8 +14,13 @@ export interface RunLinkActionDeps {
    openEntityTab: (entity: 'note' | 'board' | 'character', id: string) => void | Promise<void>;
    /** Scrolls the calling surface to a same-note section slug (a dead slug is the surface's own no-op). */
    scrollToSection: (slug: string) => void;
-   /** Notifies that a context-dependent element action is deferred to a later phase (a toast). */
-   notifyDeferred: (action: 'spawn-on-board' | 'reveal-in-drawer') => void;
+   /**
+    * Spawns the drawer element beside the origin note tile on its board. Only the board-embed host supplies
+    * it (it owns the board context); a tab host omits it, and a `spawn-on-board` action never reaches a tab.
+    */
+   spawnBeside?: (drawerItemId: string) => void;
+   /** Reveals the drawer element in the drawer (open + navigate + pulse). App-global, so always injected. */
+   revealInDrawer: (drawerItemId: string) => void;
    /** Opens an external URL. Defaults to a `noopener,noreferrer` new tab. */
    openExternal?: (href: string) => void;
 }
@@ -33,10 +38,10 @@ export function runLinkAction(action: LinkAction, deps: RunLinkActionDeps): void
          (deps.openExternal ?? defaultOpenExternal)(action.href);
          return;
       case 'spawn-on-board':
-         deps.notifyDeferred('spawn-on-board');
+         deps.spawnBeside?.(action.drawerItemId);
          return;
       case 'reveal-in-drawer':
-         deps.notifyDeferred('reveal-in-drawer');
+         deps.revealInDrawer(action.drawerItemId);
          return;
       case 'noop':
          return;

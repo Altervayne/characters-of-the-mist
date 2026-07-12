@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils';
 import { deriveExportHandle, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
 import { DRAG_TYPES } from '@/lib/constants/dragDrop';
 
+// -- Hook Imports --
+import { useDrawerRowReveal } from '@/hooks/drawer/useDrawerRowReveal';
+
 // -- Component Imports --
 import { DrawerListRow, DrawerListRowFrame } from '@/components/molecules/drawer/DrawerListRow';
 import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
@@ -26,6 +29,7 @@ import type { DrawerItem } from '@/lib/types/drawer';
 
 export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelete, onMove, isPreview = false }: { item: DrawerItem & { createdAt?: number; updatedAt?: number }, parentFolderId?: string | null, onRename?: () => void, onDelete?: () => void, onMove?: () => void, isPreview?: boolean }) {
    const { t } = useTranslation();
+   const { ref: revealRef, isRevealed } = useDrawerRowReveal(item.id);
 
    const handleExport = async (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -50,7 +54,8 @@ export function DrawerCompactItemEntry({ item, parentFolderId, onRename, onDelet
          {({ dragAttributes, dragListeners, isBeingDragged }) => (
             <DragStaticWrapper isBeingDragged={isBeingDragged}>
                <DrawerListRowFrame
-                  className={cn(isPreview && 'border-2 border-border bg-muted/50')}
+                  containerRef={revealRef}
+                  className={cn(isPreview && 'border-2 border-border bg-muted/50', isRevealed && 'motion-safe:animate-drawer-reveal')}
                   menu={!isPreview &&
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()} className="cursor-pointer">
