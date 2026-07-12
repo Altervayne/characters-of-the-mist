@@ -82,6 +82,15 @@ export function selectBreadcrumb(index: DrawerFolderTreeIndex, folderId: string 
    return path;
 }
 
+/**
+ * The folder NAMES from the root down to (and including) `folderId`, root->leaf; `null` -> `[]`. For a
+ * drawer item this is called with the item's parent folder id, giving its containing-folder path. A
+ * missing/orphaned ancestor stops the walk (via {@link selectBreadcrumb}) and returns the resolved prefix.
+ */
+export function selectFolderPathNames(index: DrawerFolderTreeIndex, folderId: string | null): string[] {
+   return selectBreadcrumb(index, folderId).map((folder) => folder.name);
+}
+
 /** The parent of a folder as `string | null` (null = a top-level folder, or an unknown/root id). */
 export function selectParentFolderId(index: DrawerFolderTreeIndex, folderId: string | null): string | null {
    if (folderId === null) return null;
@@ -184,4 +193,9 @@ export function getBreadcrumb(folderId: string | null): DrawerFolderRecord[] {
 /** The parent of `folderId` as `string | null`, from the live cache. */
 export function getParentFolderId(folderId: string | null): string | null {
    return selectParentFolderId(index, folderId);
+}
+
+/** The folder path NAMES (root->leaf) down to `folderId`, from the live cache. `null` = a root item -> `[]`. */
+export function folderPathNames(folderId: string | null): string[] {
+   return selectFolderPathNames(index, folderId);
 }

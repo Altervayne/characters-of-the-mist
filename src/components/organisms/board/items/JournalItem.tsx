@@ -245,7 +245,7 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
          {/* Structural actions live in the selection toolbar. */}
          {isSelected && toolbarSlot && createPortal(
             <>
-               <ControlButton title={t('BoardView.addPage')} onPointerDown={stopDrag} onClick={addPage} toolbarClassName={toolbarControlClassName}>
+               <ControlButton title={t('BoardView.addPage')} onPointerDown={stopDrag} onClick={addPage} toolbarClassName={toolbarControlClassName} appChrome>
                   <Plus className="h-4 w-4" />
                </ControlButton>
                <ControlButton
@@ -254,10 +254,11 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
                   onPointerDown={stopDrag}
                   onClick={removePage}
                   toolbarClassName={toolbarControlClassName}
+                  appChrome
                >
                   <Minus className="h-4 w-4" />
                </ControlButton>
-               <ControlButton title={isBookmarked ? t('BoardView.journalRemoveBookmark') : t('BoardView.journalBookmark')} onPointerDown={stopDrag} onClick={toggleBookmark} toolbarClassName={toolbarControlClassName}>
+               <ControlButton title={isBookmarked ? t('BoardView.journalRemoveBookmark') : t('BoardView.journalBookmark')} onPointerDown={stopDrag} onClick={toggleBookmark} toolbarClassName={toolbarControlClassName} appChrome>
                   {isBookmarked ? <BookmarkMinus className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
                </ControlButton>
             </>,
@@ -790,6 +791,7 @@ function ControlButton({
    onClick,
    onPointerDown,
    toolbarClassName,
+   appChrome = false,
    children,
 }: {
    title: string;
@@ -797,6 +799,8 @@ function ControlButton({
    onClick: () => void;
    onPointerDown: (event: ReactPointerEvent) => void;
    toolbarClassName?: string;
+   /** Board-only fallback: color for the app-chrome selection toolbar (vs the default paper-band footer). */
+   appChrome?: boolean;
    children: React.ReactNode;
 }) {
    if (toolbarClassName) {
@@ -823,7 +827,13 @@ function ControlButton({
          disabled={disabled}
          onPointerDown={onPointerDown}
          onClick={onClick}
-         className="flex items-center justify-center rounded p-0.5 text-paper-primary-foreground/80 hover:bg-paper-primary-foreground/10 hover:text-paper-primary-foreground disabled:opacity-40 disabled:cursor-default cursor-pointer"
+         className={cn(
+            'flex items-center justify-center rounded p-0.5 disabled:opacity-40 disabled:cursor-default cursor-pointer',
+            // Toolbar-slot actions portal into the board's app-chrome bar; the footer nav/insert buttons sit on the paper band.
+            appChrome
+               ? 'text-popover-foreground hover:bg-muted'
+               : 'text-paper-primary-foreground/80 hover:bg-paper-primary-foreground/10 hover:text-paper-primary-foreground',
+         )}
       >
          {children}
       </button>

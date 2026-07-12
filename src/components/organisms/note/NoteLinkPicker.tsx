@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -12,6 +12,7 @@ import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 
 // -- Data Imports --
 import { queryItems, getItem } from '@/lib/drawer/drawerRepository';
+import { folderPathNames, getDrawerFolderTreeVersion, subscribeDrawerFolderTree } from '@/lib/drawer/drawerFolderTree';
 import { extractHeadings } from '@/lib/notes/noteOutline';
 
 // -- Portals Imports --
@@ -32,7 +33,10 @@ import type { NoteEditorHandle } from '@/components/organisms/note/NoteEditor';
  * caret - the label is the selected text when there was a selection, else the target's own name (overridable).
  *
  * Chrome, not paper: it floats above the sheet on app-theme tokens (`getItemTypeIconComponent` for the row
- * glyphs, `Hash` for a section). SAVED elements only, because that's what `queryItems` returns.
+ * glyphs, `Hash` for a section). SAVED elements only, because that's what `queryItems` returns. An entity/element
+ * row shows its containing-folder PATH as a muted breadcrumb (middle-ellipsised when deep) so same-named items
+ * are distinguishable; search matches the NAME and the folder path words (client-side, since the list owns its
+ * own filtering), so "combat gob" narrows to the Goblin under Combat.
  *
  * With an `editSeed` (the caret bar's Change-target) it REPLACES an existing link instead of inserting at the
  * caret: the splice covers the whole `[label](href)` node range and the label is FIXED to the seed's, so only
@@ -96,29 +100,46 @@ export function NoteLinkPicker({ getEditor, onClose, editSeed }: NoteLinkPickerP
       return term ? all.filter((heading) => heading.text.toLowerCase().includes(term)) : all;
    }, [noteBody, search]);
 
-   // Drawer results, debounced. An empty search lists the most-recent items so there's always something to pick.
+   // Drawer summaries, fetched ONCE when the picker opens (a link pick can't mutate the drawer mid-open, so
+   // there's nothing to re-fetch). Filtering is client-side below so it can span the NAME and the folder PATH -
+   // the server query only sorts by recency, so an empty search still shows the most-recent items first.
    useEffect(() => {
       let alive = true;
-      const term = search.trim();
-      const handle = setTimeout(() => {
-         void queryItems({ text: term || undefined, sort: { by: 'updatedAt', direction: 'desc' } }).then((list) => {
-            if (alive) setResults(list.slice(0, 40));
-         });
-      }, 180);
-      return () => { alive = false; clearTimeout(handle); };
-   }, [search]);
+      void queryItems({ sort: { by: 'updatedAt', direction: 'desc' } }).then((list) => {
+         if (alive) setResults(list);
+      });
+      return () => { alive = false; };
+   }, []);
 
    const externalUrl = useMemo(() => detectExternalUrl(search), [search]);
 
-   // Group the drawer results by category, preserving `queryItems`' relevance/recency order within each.
+   // The folder-tree cache version: recompute the path-aware search/display whenever it warms or changes.
+   const folderTreeVersion = useSyncExternalStore(subscribeDrawerFolderTree, getDrawerFolderTreeVersion);
+
+   // Client-side cross-field search: each whitespace token must appear in the item's NAME or its folder PATH,
+   // so "combat gob" narrows to the Goblin under Combat. Before the tree warms (version 0) the path is empty,
+   // so it degrades to a name-only match - never a wrong drop. Capped so a deep drawer stays a compact list.
+   const filteredResults = useMemo(() => {
+      void folderTreeVersion;
+      const warm = folderTreeVersion > 0;
+      const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const matches = tokens.length === 0 ? results : results.filter((item) => {
+         const path = warm ? folderPathNames(item.parentFolderId).join(' ') : '';
+         const haystack = `${item.name} ${path}`.toLowerCase();
+         return tokens.every((token) => haystack.includes(token));
+      });
+      return matches.slice(0, 40);
+   }, [results, search, folderTreeVersion]);
+
+   // Group the filtered results by category, preserving `queryItems`' recency order within each.
    const grouped = useMemo(() => {
       const buckets = new Map<PickerCategory, DrawerItemSummary[]>();
-      for (const item of results) {
+      for (const item of filteredResults) {
          const category = categoryForType(item.type);
          (buckets.get(category) ?? buckets.set(category, []).get(category)!).push(item);
       }
       return CATEGORY_ORDER.map((category) => ({ category, items: buckets.get(category) ?? [] })).filter((group) => group.items.length > 0);
-   }, [results]);
+   }, [filteredResults]);
 
    /**
     * Resolves the label for a pick. In EDIT mode the seed's label is kept (only the target changes); otherwise
@@ -157,7 +178,7 @@ export function NoteLinkPicker({ getEditor, onClose, editSeed }: NoteLinkPickerP
    const showEmpty = !externalUrl && sections.length === 0 && grouped.length === 0;
 
    return (
-      <div className="w-80">
+      <div className="w-[28rem] max-w-[calc(100vw-2rem)]">
          {/* Label control: an edit keeps the existing label (fixed); a live selection IS the label (fixed); a
              collapsed caret gets an optional override. */}
          {editSeed ? (
@@ -226,7 +247,12 @@ export function NoteLinkPicker({ getEditor, onClose, editSeed }: NoteLinkPickerP
                {grouped.map(({ category, items }) => (
                   <Command.Group key={category} heading={t(`NoteView.linkPicker.groups.${category}`)}>
                      {items.map((item) => (
-                        <DrawerRow key={item.id} item={item} onSelect={() => pickDrawerItem(item)} />
+                        <DrawerRow
+                           key={item.id}
+                           item={item}
+                           pathNames={folderTreeVersion > 0 ? folderPathNames(item.parentFolderId) : []}
+                           onSelect={() => pickDrawerItem(item)}
+                        />
                      ))}
                   </Command.Group>
                ))}
@@ -236,17 +262,35 @@ export function NoteLinkPicker({ getEditor, onClose, editSeed }: NoteLinkPickerP
    );
 }
 
-/** One drawer result row: the type glyph + the item name (untitled falls back to a label). */
-function DrawerRow({ item, onSelect }: { item: DrawerItemSummary; onSelect: () => void }) {
+/**
+ * Compact one-line breadcrumb for a folder path: `''` at root, the leaf alone for one level, `Root / Leaf`
+ * for two, `Root / … / Leaf` once deeper - so even a long path never blows out the row.
+ */
+function formatFolderPath(names: string[]): string {
+   if (names.length === 0) return '';
+   if (names.length === 1) return names[0];
+   if (names.length === 2) return `${names[0]} / ${names[1]}`;
+   return `${names[0]} / … / ${names[names.length - 1]}`;
+}
+
+/** One drawer result row: the type glyph, the item name (untitled falls back to a label), + its folder path. */
+function DrawerRow({ item, pathNames, onSelect }: { item: DrawerItemSummary; pathNames: string[]; onSelect: () => void }) {
    const { t } = useTranslation();
    // `getItemTypeIconComponent` returns a stable module-level lucide component; static-components is a false
    // positive here (same as `CardRenderer`/`InternalLinkChip`).
    const Icon = getItemTypeIconComponent(item.type);
+   const name = item.name.trim() || t('Tabs.untitled');
+   // The muted path breadcrumb sits on its OWN line UNDER the name, so name and path each get the row's full
+   // width (no side-by-side split). Empty (a root item, or the tree not yet warm) renders name-only, no line.
+   const pathLabel = formatFolderPath(pathNames);
    return (
       <Command.Item value={`item:${item.id}`} onSelect={onSelect} className={ITEM_CLASS}>
          {/* eslint-disable-next-line react-hooks/static-components */}
          <Icon />
-         <span className="truncate">{item.name.trim() || t('Tabs.untitled')}</span>
+         <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate">{name}</span>
+            {pathLabel && <span className="truncate text-xs text-muted-foreground">{pathLabel}</span>}
+         </span>
       </Command.Item>
    );
 }

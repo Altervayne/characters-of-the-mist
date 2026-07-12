@@ -28,6 +28,7 @@ import {
    buildFolderTreeIndex,
    selectChildFolders,
    selectBreadcrumb,
+   selectFolderPathNames,
    selectParentFolderId,
    getChildFolders,
    getChildFolderCount,
@@ -71,6 +72,15 @@ describe('folder-tree pure builder + selectors', () => {
       expect(selectBreadcrumb(index, 'A1a').map((folder) => folder.id)).toEqual(['A', 'A1', 'A1a']);
       expect(selectBreadcrumb(index, 'A').map((folder) => folder.id)).toEqual(['A']);
       expect(selectBreadcrumb(index, null)).toEqual([]);
+   });
+
+   it('selectFolderPathNames returns ordered names root->leaf (root item -> [], missing ancestor -> partial)', () => {
+      expect(selectFolderPathNames(index, 'A1a')).toEqual(['A', 'A1', 'A1a']); // nested -> ordered names
+      expect(selectFolderPathNames(index, 'A')).toEqual(['A']); // one level
+      expect(selectFolderPathNames(index, null)).toEqual([]); // root item -> empty
+      // Orphan: a folder whose chain references a missing ancestor stops gracefully, keeping the resolved prefix.
+      const orphanIndex = buildFolderTreeIndex([f('Child', 'ghost', 0)]);
+      expect(selectFolderPathNames(orphanIndex, 'Child')).toEqual(['Child']);
    });
 });
 
