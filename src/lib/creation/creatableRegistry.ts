@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Dices, Frame, Image as ImageIcon, MapPin, NotebookText, StickyNote } from 'lucide-react';
+import { Dices, Frame, Image as ImageIcon, MapPin, NotebookText, SquareArrowOutUpRight, StickyNote } from 'lucide-react';
 
 // -- Type Imports --
 import type { LucideIcon } from 'lucide-react';
@@ -20,7 +20,7 @@ import type { BoardItemContent } from '@/lib/types/board';
  */
 
 /** The board-native item kinds the creation surfaces can build. */
-export type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zone';
+export type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zone' | 'portal';
 
 /** A fresh pin's color (classic corkboard red). */
 const DEFAULT_PIN_COLOR = '#ef4444';
@@ -36,6 +36,11 @@ export interface CreatableEntry {
    labelKey: string;
    defaultSize: { width: number; height: number };
    makeContent: () => BoardItemContent;
+   /**
+    * The element picks its target BEFORE it drops (a portal), so it can't be an immediate one-click create:
+    * the surfaces skip it in their generic create lists and offer a dedicated picker leaf instead.
+    */
+   requiresPicker?: boolean;
 }
 
 /**
@@ -86,6 +91,17 @@ export const CREATABLE_REGISTRY: CreatableEntry[] = [
       labelKey: 'addZone',
       defaultSize: { width: 360, height: 280 },
       makeContent: () => ({ kind: 'zone', collapsed: false }),
+   },
+   {
+      kind: 'portal',
+      icon: SquareArrowOutUpRight,
+      labelKey: 'addPortal',
+      // The icon+text default footprint (the create flow's smart default); other styles resize freely.
+      defaultSize: { width: 168, height: 48 },
+      requiresPicker: true,
+      // A portal always carries a target chosen in the picker (`makePortalContent`); this factory is only the
+      // type-total fallback and is never the real create path (the picker supplies the target + smart style).
+      makeContent: () => ({ kind: 'portal', target: { kind: 'external', href: '' }, style: { visual: null, label: '' } }),
    },
 ];
 

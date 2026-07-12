@@ -14,10 +14,15 @@
  * decides, so the resolver never mis-opens one for the other.
  */
 
-/** The render host that owns the clicked link, stamped by the rendering component (never stored on the note). */
+/**
+ * The render host that owns the clicked link, stamped by the rendering component (never stored on the note).
+ * The board-embed host's `noteId` is OPTIONAL: a note tile stamps it, but a board PORTAL (which wraps no note)
+ * omits it - the only host-dependent branch (element -> spawn-on-board) needs `boardId`/`itemId`, not `noteId`,
+ * so one `resolveLinkAction` serves both surfaces.
+ */
 export type NoteHostContext =
    | { kind: 'tab'; noteId: string }
-   | { kind: 'board-embed'; boardId: string; itemId: string; noteId: string };
+   | { kind: 'board-embed'; boardId: string; itemId: string; noteId?: string };
 
 /** The classified destination of a note-body link. */
 export type LinkTarget =

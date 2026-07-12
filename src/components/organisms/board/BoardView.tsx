@@ -25,6 +25,8 @@ import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 import { CREATABLE_REGISTRY, CREATABLE_BY_KIND, type CreatableKind } from '@/lib/creation/creatableRegistry';
+import { makePortalContent, portalTargetFromInsert } from '@/lib/creation/portalContent';
+import { PORTAL_MIN_SIZE } from '@/lib/board/portalSizing';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import { runSaveImageToDrawerAs, runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
@@ -35,6 +37,8 @@ import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
 import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
+import { LinkTargetList } from '@/components/molecules/links/LinkTargetList';
+import { BoardPortalEditor } from './items/BoardPortalEditor';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -42,11 +46,12 @@ import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- React Imports --
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, ConnectionStyle, Viewport } from '@/lib/types/board';
+import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Viewport } from '@/lib/types/board';
+import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
 import type { CreateCardOptions } from '@/lib/types/creation';
@@ -69,6 +74,9 @@ const RADIAL_TRACKERS: { id: string; trackerType: TrackerType; itemType: General
    { id: 'story-tag', trackerType: 'STORY_TAG', itemType: 'STORY_TAG_TRACKER', labelKey: 'Trackers.addStoryTag' },
    { id: 'story-theme', trackerType: 'STORY_THEME', itemType: 'STORY_THEME_TRACKER', labelKey: 'Trackers.addStoryTheme' },
 ];
+
+/** The portal create leaf's glyph, from the shared registry so the radial matches the toolbar/menu later. */
+const PortalCreateIcon = CREATABLE_BY_KIND.portal.icon;
 
 /** Rebuilds a connection's content with a new style, preserving its endpoints. The style carries
  *  the full set (width + color + dash), so any single-facet edit keeps the others. */
@@ -146,6 +154,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number; clipLeft: number; clipTop: number } | null>(null);
    // The live group move: the moving id set + a shared world delta (null when idle).
    const [groupDrag, setGroupDrag] = useState<{ ids: Set<string>; delta: { x: number; y: number } } | null>(null);
+
+   /** Opens the portal restyle editor for `itemId`, anchored at the Edit click. Stable so it never breaks
+    *  the item box memoization (every box would otherwise re-render on each pan). */
+   const handleRequestEditPortal = useCallback((itemId: string, screen: { x: number; y: number }) => {
+      setPortalEditor({ itemId, screen });
+   }, []);
 
    /** Selects an item: `additive` (Shift/Ctrl) toggles it in/out of the set, else it replaces the set. */
    const handleSelect = useCallback((id: string, additive: boolean) => {
@@ -227,6 +241,15 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // the creation window opens at (near the toolbar when menu-triggered, the cursor from the radial).
    // Null when closed.
    const [pendingCard, setPendingCard] = useState<{ game: GameSystem; world: Point; screen: { x: number; y: number } } | null>(null);
+
+   // The target picker: anchored at `screen`. On CREATE it drops a new portal at `world`; on RETARGET
+   // (`retargetItemId` set, opened from the editor) it swaps that portal's target and keeps its style. Null
+   // when closed. A portal picks its target FIRST, then drops styled.
+   const [portalPicker, setPortalPicker] = useState<{ world: Point; screen: { x: number; y: number }; retargetItemId?: string } | null>(null);
+
+   // The open portal restyle editor: the item being edited + the screen point its window opens at (the Edit
+   // click). Null when closed. The window itself is a `BoardFloatingWindow` rendered below.
+   const [portalEditor, setPortalEditor] = useState<{ itemId: string; screen: { x: number; y: number } } | null>(null);
 
    // ==================
    //  Top bar overflow scroll UX (mirrors the tab strip: wheel scrolls, hidden scrollbar, edge arrows)
@@ -503,8 +526,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // ==================
    //  Toolbar actions
    // ==================
-   /** Creates a new item of `kind` centered on `worldCenter`, joining a zone it lands in, then selects it. */
-   const createItemAt = (kind: CreatableKind, worldCenter: Point) => {
+   /**
+    * Creates a new item of `kind` centered on `worldCenter`, joining a zone it lands in, then selects it.
+    * `contentOverride` lets a picker-first kind (a portal) supply its already-targeted content instead of the
+    * registry's empty factory; everything else about the placement/z/zone/select path is identical.
+    */
+   const createItemAt = (kind: CreatableKind, worldCenter: Point, contentOverride?: BoardItemContent) => {
       const zValues = sortedItems.map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = CREATABLE_BY_KIND[kind].defaultSize;
@@ -512,9 +539,53 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
       // A non-zone item created over a zone joins it (same center-in-rectangle rule as a drop).
       const zoneId = kind === 'zone' ? undefined : zoneContaining(placement, zoneItems) ?? undefined;
-      void actions.addItem({ ...placement, kind, z, zoneId, content: CREATABLE_BY_KIND[kind].makeContent() });
+      void actions.addItem({ ...placement, kind, z, zoneId, content: contentOverride ?? CREATABLE_BY_KIND[kind].makeContent() });
       setSelectedIds(new Set([id]));
    };
+
+   /** Drops a portal (target picked in the list) at `worldCenter` with the smart-default icon+text style. */
+   const createPortalAt = (target: PortalTarget, defaultName: string, worldCenter: Point) => {
+      createItemAt('portal', worldCenter, makePortalContent(target, defaultName));
+   };
+
+   /** The portal picker's pick handler: classifies the row to a portal target, then drops (create) or swaps
+    *  the target of an existing portal (retarget, keeping its style + label), then closes. */
+   const handlePortalPick = (target: LinkInsertTarget, defaultName: string) => {
+      if (!portalPicker) return;
+      const portalTarget = portalTargetFromInsert(target);
+      if (!portalTarget) return; // a section row (note-only) is never offered here.
+      if (portalPicker.retargetItemId) {
+         const existing = store.getState().items[portalPicker.retargetItemId];
+         if (existing && existing.content.kind === 'portal') {
+            void actions.updateItemContent(existing.id, { ...existing.content, target: portalTarget });
+         }
+      } else {
+         createPortalAt(portalTarget, defaultName, portalPicker.world);
+      }
+      setPortalPicker(null);
+   };
+
+   /** Opens the portal target picker for a menu/palette create (no cursor point): drop at the view center, window near the top-left. */
+   const openPortalPickerAtViewCenter = () => {
+      const rect = clipRef.current?.getBoundingClientRect();
+      if (!rect) { setPortalPicker({ world: viewCenter, screen: { x: 0, y: 0 } }); return; }
+      const world = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2, { left: rect.left, top: rect.top }, viewportRef.current);
+      setPortalPicker({ world, screen: { x: rect.left + BOARD_WINDOW_MARGIN, y: rect.top + BOARD_WINDOW_MARGIN } });
+   };
+
+   /**
+    * Commits a portal STYLE edit as one undoable command, reading the item LIVE at commit time and patching
+    * only its style - so a deferred label flush can't clobber a target/visual change made meanwhile (and vice
+    * versa). No-op if the item is gone or is no longer a portal.
+    */
+   const commitPortalStyle = useCallback(
+      (itemId: string, updater: (style: PortalStyle) => PortalStyle) => {
+         const live = store.getState().items[itemId];
+         if (!live || live.content.kind !== 'portal') return;
+         void actions.updateItemContent(itemId, { ...live.content, style: updater(live.content.style) });
+      },
+      [store, actions],
+   );
 
    /**
     * Creates a fresh, game-agnostic tracker at `worldCenter`: a board-native COPY (no drawer source),
@@ -645,7 +716,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
-      else if (pendingBoardAction.startsWith('create:')) createItemAt(pendingBoardAction.slice('create:'.length) as CreatableKind, viewCenter);
+      else if (pendingBoardAction.startsWith('create:')) {
+         const kind = pendingBoardAction.slice('create:'.length) as CreatableKind;
+         // A picker-first kind (a portal) opens its target picker instead of dropping a targetless item.
+         if (CREATABLE_BY_KIND[kind]?.requiresPicker) openPortalPickerAtViewCenter();
+         else createItemAt(kind, viewCenter);
+      }
       else if (pendingBoardAction.startsWith('embedNote:')) embedNoteAt(pendingBoardAction.slice('embedNote:'.length), viewCenter);
       clearBoardAction();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
@@ -752,7 +828,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             soleSelected={item.id === soleSelectedId}
             zIndex={itemZIndex(layerRank.get(item.id) ?? 0, selectedIds.has(item.id), layerCount)}
             memberCount={members?.length}
-            resizeMin={members ? zoneContentMinSize(item, members) : undefined}
+            resizeMin={members ? zoneContentMinSize(item, members) : item.kind === 'portal' ? PORTAL_MIN_SIZE : undefined}
             zoom={viewport.zoom}
             moveDelta={moveDeltaFor(item.id)}
             isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
@@ -767,6 +843,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onSendToBack={actions.sendToBack}
             onDelete={handleDelete}
             onConnectStart={handleConnectStart}
+            onRequestEditPortal={handleRequestEditPortal}
             backLayer={backLayer}
          />
       );
@@ -781,12 +858,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
               id: 'new-board',
               icon: <Plus className="h-5 w-5" />,
               label: t('BoardView.radialNewBoardElement'),
-              children: CREATABLE_REGISTRY.map(({ kind, icon: Icon, labelKey }) => ({
-                 id: kind,
-                 icon: <Icon className="h-5 w-5" />,
-                 label: t(`BoardView.${labelKey}`),
-                 onSelect: () => createItemAt(kind, radial.world),
-              })),
+              children: [
+                 // Immediate one-click creates; a picker-first kind (a portal) is offered as its own leaf below.
+                 ...CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => ({
+                    id: kind,
+                    icon: <Icon className="h-5 w-5" />,
+                    label: t(`BoardView.${labelKey}`),
+                    onSelect: () => createItemAt(kind, radial.world),
+                 })),
+                 {
+                    // Ellipsis label: picking a target follows before the portal drops.
+                    id: 'portal',
+                    icon: <PortalCreateIcon className="h-5 w-5" />,
+                    label: t('BoardView.addPortal'),
+                    onSelect: () => setPortalPicker({ world: radial.world, screen: radial.screen }),
+                 },
+              ],
            },
            {
               id: 'new-sheet',
@@ -957,7 +1044,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
                   <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  {CREATABLE_REGISTRY.map(({ kind, icon: Icon, labelKey }) => (
+                  {/* Immediate one-click creates; a picker-first kind (a portal) is added via the radial in 1a. */}
+                  {CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => (
                      <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
                         <Icon className="h-4 w-4" />
                      </ToolbarButton>
@@ -1025,35 +1113,78 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onClose={() => setPendingCard(null)}
          />
       )}
+
+      {/* Portal target picker: the shared headless target list in a draggable, non-modal window (same shell as
+          the card-creation dialog). It has no note, so it passes no `sections`; picking a row drops the portal
+          styled and closes. Closes on the X button or Escape only - no outside-click dismiss, matching the card
+          dialog; the search input autofocuses on open (from `LinkTargetList`). */}
+      {portalPicker && (
+         <BoardFloatingWindow
+            initialScreen={portalPicker.screen}
+            clipRect={clipRect}
+            width={PORTAL_WINDOW_WIDTH}
+            title={t('BoardView.portalPickerTitle')}
+            onClose={() => setPortalPicker(null)}
+         >
+            <LinkTargetList onPick={handlePortalPick} />
+         </BoardFloatingWindow>
+      )}
+
+      {/* Portal restyle editor: a movable window (same shell as the picker) driving the selected portal's
+          style. Change-target reopens the picker in retarget mode; every style edit is one undoable command,
+          read live-then-patched (via `commitPortalStyle`). Closes if its item is deleted or is no longer a
+          portal. */}
+      {portalEditor && items[portalEditor.itemId]?.content.kind === 'portal' && (
+         <BoardFloatingWindow
+            initialScreen={portalEditor.screen}
+            clipRect={clipRect}
+            width={PORTAL_EDITOR_WIDTH}
+            title={t('BoardView.portalEditorTitle')}
+            onClose={() => setPortalEditor(null)}
+         >
+            <BoardPortalEditor
+               content={items[portalEditor.itemId].content as PortalBoardContent}
+               onCommitStyle={(updater) => commitPortalStyle(portalEditor.itemId, updater)}
+               onChangeTarget={() => setPortalPicker({ world: { x: 0, y: 0 }, screen: portalEditor.screen, retargetItemId: portalEditor.itemId })}
+            />
+         </BoardFloatingWindow>
+      )}
       </>
    );
 }
 
-/** Panel width for the card-creation window; mirrors the `w-96` class so the drag clamp knows its footprint. */
+/** Panel width for the card-creation window; mirrors the `w-96` footprint so the drag clamp knows it. */
 const CARD_WINDOW_WIDTH = 384;
-/** Screen-px margin the window keeps from the board edges (drag clamp + max-height). */
-const CARD_WINDOW_MARGIN = 16;
+/** Panel width for the portal-picker window; mirrors the picker's `w-[28rem]` footprint. */
+const PORTAL_WINDOW_WIDTH = 448;
+/** Panel width for the portal restyle editor window. */
+const PORTAL_EDITOR_WIDTH = 340;
+/** Screen-px margin a floating window keeps from the board edges (drag clamp + max-height). */
+const BOARD_WINDOW_MARGIN = 16;
 
 /**
- * The board's card-creation panel as a draggable, non-modal window. It floats over the canvas (fixed,
+ * A draggable, non-modal window floating over the board canvas. It lives OUTSIDE the clip div (fixed,
  * clip-relative coords) and owns a `{x,y}` position seeded from `initialScreen`; the header is the drag
  * handle. The whole panel stops pointer-down propagation so dragging or using it never pans the canvas,
- * and the position is clamped to the board rect so it can't be dragged off-screen. A tall form scrolls
- * inside (max-height capped to the space below the panel). No backdrop and no outside-click dismiss - it
- * closes on the X button or Escape only. The card it makes keeps its game look; this chrome is app-token.
+ * and the position is clamped to the board rect (parameterized by `width`) so it can't be dragged off-screen.
+ * A tall body scrolls inside (max-height capped to the space below the panel). No backdrop and no
+ * outside-click dismiss - it closes on the X button or Escape only. Chrome is app-token only; the body is
+ * unpadded, so each consumer owns its own padding.
  */
-function BoardCardCreationWindow({
-   game,
+function BoardFloatingWindow({
    initialScreen,
    clipRect,
-   onConfirm,
+   width,
+   title,
    onClose,
+   children,
 }: {
-   game: GameSystem;
    initialScreen: { x: number; y: number };
    clipRect: { left: number; top: number; width: number; height: number };
-   onConfirm: (options: CreateCardOptions) => void;
+   width: number;
+   title: string;
    onClose: () => void;
+   children: ReactNode;
 }) {
    const { t } = useTranslation();
    const panelRef = useRef<HTMLDivElement | null>(null);
@@ -1062,21 +1193,21 @@ function BoardCardCreationWindow({
    const clamp = useCallback(
       (x: number, y: number) => {
          const height = panelRef.current?.offsetHeight ?? 0;
-         const minX = clipRect.left + CARD_WINDOW_MARGIN;
-         const minY = clipRect.top + CARD_WINDOW_MARGIN;
-         const maxX = Math.max(minX, clipRect.left + clipRect.width - CARD_WINDOW_WIDTH - CARD_WINDOW_MARGIN);
-         const maxY = Math.max(minY, clipRect.top + clipRect.height - height - CARD_WINDOW_MARGIN);
+         const minX = clipRect.left + BOARD_WINDOW_MARGIN;
+         const minY = clipRect.top + BOARD_WINDOW_MARGIN;
+         const maxX = Math.max(minX, clipRect.left + clipRect.width - width - BOARD_WINDOW_MARGIN);
+         const maxY = Math.max(minY, clipRect.top + clipRect.height - height - BOARD_WINDOW_MARGIN);
          return { x: Math.min(Math.max(x, minX), maxX), y: Math.min(Math.max(y, minY), maxY) };
       },
-      [clipRect],
+      [clipRect, width],
    );
 
    // Seed the position from the initial anchor, clamped horizontally + off the top edge. Height is
    // unknown on the first render, so the vertical clamp settles once the panel measures (below).
    const [position, setPosition] = useState(() => {
-      const minX = clipRect.left + CARD_WINDOW_MARGIN;
-      const maxX = Math.max(minX, clipRect.left + clipRect.width - CARD_WINDOW_WIDTH - CARD_WINDOW_MARGIN);
-      return { x: Math.min(Math.max(initialScreen.x, minX), maxX), y: Math.max(initialScreen.y, clipRect.top + CARD_WINDOW_MARGIN) };
+      const minX = clipRect.left + BOARD_WINDOW_MARGIN;
+      const maxX = Math.max(minX, clipRect.left + clipRect.width - width - BOARD_WINDOW_MARGIN);
+      return { x: Math.min(Math.max(initialScreen.x, minX), maxX), y: Math.max(initialScreen.y, clipRect.top + BOARD_WINDOW_MARGIN) };
    });
 
    // Escape closes the window (it's non-modal, so no outside-click dismiss to lean on).
@@ -1107,23 +1238,22 @@ function BoardCardCreationWindow({
       window.addEventListener('pointerup', onUp);
    };
 
-   // Grow downward from the panel's top; a tall form scrolls inside rather than spilling past the board.
-   const maxHeight = clipRect.height > 0 ? clipRect.top + clipRect.height - position.y - CARD_WINDOW_MARGIN : undefined;
+   // Grow downward from the panel's top; a tall body scrolls inside rather than spilling past the board.
+   const maxHeight = clipRect.height > 0 ? clipRect.top + clipRect.height - position.y - BOARD_WINDOW_MARGIN : undefined;
 
    return (
       <div
          ref={panelRef}
          onPointerDown={(event) => event.stopPropagation()}
-         style={{ left: position.x, top: position.y, maxHeight }}
-         className="fixed z-50 flex w-96 flex-col overflow-hidden rounded-lg border border-border bg-popover/95 shadow-lg backdrop-blur-sm"
+         style={{ left: position.x, top: position.y, width, maxHeight }}
+         className="fixed z-50 flex flex-col overflow-hidden rounded-lg border border-border bg-popover/95 shadow-lg backdrop-blur-sm"
       >
-         {/* Header doubles as the drag handle. Styled from app tokens only, so it follows the chosen
-             theme palette (the card you make keeps its game look; this creation chrome does not). */}
+         {/* Header doubles as the drag handle. Styled from app tokens only, so it follows the chosen theme palette. */}
          <div
             onPointerDown={handleHeaderPointerDown}
             className="flex shrink-0 cursor-move select-none items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5"
          >
-            <span className="text-sm font-semibold text-foreground">{t('CreateCardDialog.title')}</span>
+            <span className="text-sm font-semibold text-foreground">{title}</span>
             <button
                type="button"
                title={t('Common.close')}
@@ -1134,11 +1264,42 @@ function BoardCardCreationWindow({
                <X className="h-4 w-4" />
             </button>
          </div>
-         {/* A tall form scrolls inside the panel (height capped to the space below it). */}
-         <div className="min-h-0 overflow-y-auto px-4 pb-3">
+         {/* Body scrolls inside the panel (height capped to the space below it); padding is the consumer's. */}
+         <div className="min-h-0 overflow-y-auto">{children}</div>
+      </div>
+   );
+}
+
+/**
+ * The board's card-creation panel: a `BoardFloatingWindow` wrapping the card-creation form. The card it
+ * makes keeps its game look; this creation chrome is app-token (via the shared window shell).
+ */
+function BoardCardCreationWindow({
+   game,
+   initialScreen,
+   clipRect,
+   onConfirm,
+   onClose,
+}: {
+   game: GameSystem;
+   initialScreen: { x: number; y: number };
+   clipRect: { left: number; top: number; width: number; height: number };
+   onConfirm: (options: CreateCardOptions) => void;
+   onClose: () => void;
+}) {
+   const { t } = useTranslation();
+   return (
+      <BoardFloatingWindow
+         initialScreen={initialScreen}
+         clipRect={clipRect}
+         width={CARD_WINDOW_WIDTH}
+         title={t('CreateCardDialog.title')}
+         onClose={onClose}
+      >
+         <div className="px-4 pb-3">
             <CardCreationForm game={game} mode="create" allowCharacterCard onConfirm={onConfirm} />
          </div>
-      </div>
+      </BoardFloatingWindow>
    );
 }
 

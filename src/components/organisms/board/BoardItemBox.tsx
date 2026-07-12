@@ -92,6 +92,8 @@ interface BoardItemBoxProps {
    onDelete: (id: string) => void;
    /** Starts a connect drag from this item's connect handle (not a move). */
    onConnectStart: (id: string, event: ReactPointerEvent) => void;
+   /** Opens the portal restyle editor window, anchored at the click point (a portal's Edit affordance). */
+   onRequestEditPortal: (itemId: string, screen: { x: number; y: number }) => void;
    /** The behind-items layer a zone portals its tinted background rectangle into (null for non-zones). */
    backLayer?: HTMLElement | null;
    /** Lower bound for the resize (a zone passes its member extent); each axis defaults to MIN_ITEM_SIZE. */
@@ -136,6 +138,7 @@ export const BoardItemBox = memo(function BoardItemBox({
    onSendToBack,
    onDelete,
    onConnectStart,
+   onRequestEditPortal,
    backLayer,
    resizeMin,
    zIndex,
@@ -274,13 +277,15 @@ export const BoardItemBox = memo(function BoardItemBox({
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
-   // A card/tracker embed, a character reference, and a note tile ARE their own panels: each carries its
-   // own border, background, and shape, so the box adds no chrome (no second border/shadow) - just a
-   // selection ring, and it never clips (the panel owns its own rounding + overflow).
-   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note';
+   // A card/tracker embed, a character reference, a note tile, and a portal ARE their own panels: each
+   // carries its own border, background, and shape, so the box adds no chrome (no second border/shadow) -
+   // just a selection ring, and it never clips (the panel owns its own rounding + overflow). A portal owns
+   // its button surface + hover/dead states.
+   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note' || item.kind === 'portal';
    // A note tile is a WINDOWED embed: unlike the fixed card/tracker/character panels it is freely
-   // 2D-resizable (internal scroll), so it keeps the resize grip the other embeds drop.
-   const isResizableEmbed = item.kind === 'note';
+   // 2D-resizable (internal scroll), so it keeps the resize grip the other embeds drop. A portal is
+   // resizable in every style too (owner override of the auto-hug): its glyph + type scale with the box.
+   const isResizableEmbed = item.kind === 'note' || item.kind === 'portal';
    // A zone is a background frame: its tinted rectangle portals BEHIND the items (into `backLayer`),
    // and the box here renders only the on-top header + chrome - click-through everywhere else so the
    // items sitting inside it stay interactive. Selecting the empty interior is the background's job.
@@ -315,6 +320,7 @@ export const BoardItemBox = memo(function BoardItemBox({
          onAdoptSource={onAdoptSource}
          onDelete={onDelete}
          onRequestSelect={() => onSelect(item.id, false)}
+         onRequestEditPortal={onRequestEditPortal}
       />
    );
 
@@ -384,9 +390,9 @@ export const BoardItemBox = memo(function BoardItemBox({
                      : isPin
                         ? cn('rounded-full', isSelected && 'ring-2 ring-primary')
                         : isEmbed
-                           // Match the ring radius to the embed's own corners: a card is rounded-xl; a tracker,
-                           // character, or note tile is rounded-lg.
-                           ? cn(item.kind === 'card' ? 'rounded-xl' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
+                           // Match the ring radius to the embed's own corners: a card is rounded-xl; a portal
+                           // is rounded-md; a tracker, character, or note tile is rounded-lg.
+                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
                            : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary/50'),
             )}
          >

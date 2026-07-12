@@ -31,7 +31,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character' | 'portal';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -246,6 +246,46 @@ export interface ThreatBoardContent {
    // TODO: model the Threat's name / tags / might / consequences here.
 }
 
+/**
+ * A portal's destination, discriminated by the id kind it addresses. Three id spaces:
+ * `entity` carries the aggregate's OWN id (note/board/character - preserved across export/import);
+ * `element` carries a DRAWER ITEM id (rewired on import); `board-element` carries a BOARD ITEM id
+ * (intra-aggregate, reId-remapped, modeled now but only surfaced/activated in the same-board phase);
+ * `external` carries a URL. Structured, never a `cotm://` string - a portal is board data, not markdown.
+ */
+export type PortalTarget =
+   | { kind: 'entity'; entity: 'note' | 'board' | 'character'; id: string }
+   | { kind: 'element'; drawerItemId: string }
+   | { kind: 'board-element'; boardItemId: string }
+   | { kind: 'external'; href: string };
+
+/** A portal's leading visual: a lucide icon NAME, or a content-hash into the shared asset store. */
+export type PortalVisual =
+   | { kind: 'icon'; icon: string }
+   | { kind: 'image'; assetId: string };
+
+/**
+ * A portal's presentation. `visual` is required-but-nullable (null = text-only; the discriminant is
+ * always present) and `label` is a required string ('' = no caption, e.g. icon-only) - so the four
+ * styles are the only representable combos, never both-set or neither-set.
+ */
+export interface PortalStyle {
+   visual: PortalVisual | null;
+   label: string;
+}
+
+/**
+ * A portal on the board: a source-less NAVIGATOR that OPENS its target (never renders its live content
+ * inline - that is note-embed/character-on-board). Holds a structured target + a style, not a mirrored
+ * aggregate; `lastKnownName` caches the target's display name for an empty-label dead portal only.
+ */
+export interface PortalBoardContent {
+   kind: 'portal';
+   target: PortalTarget;
+   style: PortalStyle;
+   lastKnownName?: string;
+}
+
 /** A board item's payload, discriminated by `kind` (mirrors the item's own `kind`). */
 export type BoardItemContent =
    | ImageBoardContent
@@ -259,7 +299,8 @@ export type BoardItemContent =
    | PinBoardContent
    | DiceTrayBoardContent
    | ZoneBoardContent
-   | CharacterBoardContent;
+   | CharacterBoardContent
+   | PortalBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.
