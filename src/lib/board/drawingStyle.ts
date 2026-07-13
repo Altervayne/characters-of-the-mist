@@ -421,6 +421,12 @@ export function strokeHitsPoint(item: { x: number; y: number }, stroke: Stroke, 
    for (let i = 0; i < count - 1; i++) {
       if (pointSegmentDistanceSq(localX, localY, points[i * 2], points[i * 2 + 1], points[i * 2 + 2], points[i * 2 + 3]) <= reachSq) return true;
    }
+   // A polygon's closing edge (last vertex back to the first) is inked too, so the eraser bites it like
+   // any other segment; an open stroke stops at its last point.
+   if (stroke.shape === 'polygon' && count >= 3) {
+      const last = (count - 1) * 2;
+      if (pointSegmentDistanceSq(localX, localY, points[last], points[last + 1], points[0], points[1]) <= reachSq) return true;
+   }
    return false;
 }
 

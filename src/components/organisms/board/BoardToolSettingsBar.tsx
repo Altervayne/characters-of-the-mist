@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Brush, Eraser, Highlighter, Layers, Pen, Pencil, Slash, type LucideIcon } from 'lucide-react';
+import { Brush, Eraser, Highlighter, Layers, Pen, Pencil, Slash, Waypoints, type LucideIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -29,6 +29,7 @@ import type { ActiveTool, BrushKind } from '@/lib/types/board';
 const GESTURE_OPTIONS: { tool: Exclude<ActiveTool, 'select'>; icon: LucideIcon; labelKey: string }[] = [
    { tool: 'freehand', icon: Pencil, labelKey: 'gestureFreehand' },
    { tool: 'line', icon: Slash, labelKey: 'gestureLine' },
+   { tool: 'freeformPolygon', icon: Waypoints, labelKey: 'gestureFreeformPolygon' },
    { tool: 'eraser', icon: Eraser, labelKey: 'gestureEraser' },
 ];
 

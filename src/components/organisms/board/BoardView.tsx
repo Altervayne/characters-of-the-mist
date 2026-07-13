@@ -96,6 +96,9 @@ function buildConnectionContent(item: BoardItem | undefined, style: ConnectionSt
 /** Wheel-to-zoom sensitivity: a typical notch (~100 deltaY) is a gentle step. */
 const ZOOM_SENSITIVITY = 0.0015;
 
+/** Screen-px radius around a freeform polygon's first vertex where a click closes the shape (>= 3 vertices). */
+const POLYGON_CLOSE_THRESHOLD = 12;
+
 /** Screen-px margin fit-to-content leaves around the framed items. */
 const FIT_PADDING = 64;
 /**
@@ -260,6 +263,15 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const currentStrokeRef = useRef<{ points: number[] } | null>(null);
    const strokeCleanupRef = useRef<null | (() => void)>(null);
    const [penPreview, setPenPreview] = useState<number[] | null>(null);
+   // The in-progress freeform polygon: the WORLD vertices dropped so far (a persistent multi-click gesture,
+   // unlike the self-terminating pen/line) plus its live preview (the committed vertices + a rubber band to
+   // the cursor). Null when no polygon is being drawn. Cleared on close/cancel, on leaving the polygon tool,
+   // and on board switch. The ref is separate from the pan/select paths, so neither can touch it.
+   const polygonRef = useRef<number[] | null>(null);
+   const [polygonPreview, setPolygonPreview] = useState<number[] | null>(null);
+   // A right-click that just finished a polygon must not also open the radial; set on the finishing
+   // pointerdown, consumed by the matching context-menu.
+   const suppressRadialRef = useRef(false);
    // Stroke ids the in-progress eraser scrub has crossed, hidden on contact and cleared when the scrub
    // commits (or on board switch). The removal is only made real, as ONE undo step, on pointer-up.
    const [pendingErase, setPendingErase] = useState<ReadonlySet<string>>(EMPTY_STROKE_IDS);
@@ -270,6 +282,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setActiveTool('select');
       setActiveLayerId(null);
       setPendingErase(EMPTY_STROKE_IDS);
+      polygonRef.current = null;
+      setPolygonPreview(null);
    }, [boardId]);
 
    const sortedItems = Object.values(items).sort((a, b) => a.z - b.z);
@@ -515,6 +529,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const onKeyDown = (event: KeyboardEvent) => {
          const target = event.target;
          if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+         // A freeform polygon in progress owns Backspace (it pops a vertex); don't also delete the selection.
+         if (event.key === 'Backspace' && polygonRef.current) return;
          if (event.key === 'Delete' || event.key === 'Backspace') {
             event.preventDefault();
             handleDeleteSelection();
@@ -577,22 +593,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          window.removeEventListener('blur', clear);
       };
    }, []);
-
-   // Esc / V leave a Draw gesture (they're sticky, so they need an explicit exit besides the segment).
-   // Mounted only off the select tool, so V never shadows anything in the default mode.
-   useEffect(() => {
-      if (activeTool === 'select') return;
-      const onKeyDown = (event: KeyboardEvent) => {
-         const target = event.target;
-         if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
-         if (event.key === 'Escape' || event.key === 'v' || event.key === 'V') {
-            event.preventDefault();
-            setActiveTool('select');
-         }
-      };
-      window.addEventListener('keydown', onKeyDown);
-      return () => window.removeEventListener('keydown', onKeyDown);
-   }, [activeTool]);
 
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
       // Middle-button and Space+drag pan in ANY tool (the pen's escape hatch out of its viewport).
@@ -681,6 +681,122 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       },
       [actions, activeLayerId, store, penSettings],
    );
+
+   /**
+    * Closes the in-progress freeform polygon: commits its vertices as a closed geometric stroke (>= 3
+    * needed; a shorter run is dropped by `commitStroke`'s shape-aware guard) and clears the gesture,
+    * staying in the tool so the next click starts a new polygon.
+    */
+   const commitPolygon = useCallback(() => {
+      const verts = polygonRef.current;
+      polygonRef.current = null;
+      setPolygonPreview(null);
+      if (verts) commitStroke(verts, 'polygon');
+   }, [commitStroke]);
+
+   /**
+    * Freeform-polygon pointerdown: a PERSISTENT multi-click gesture - each primary click drops a vertex,
+    * unlike the self-terminating pen/line. The pan escape hatch runs first (middle / Space+drag). A
+    * right-click FINISHES a polygon in progress (mouse-only close) and suppresses the radial; with none in
+    * progress it falls through to the radial. A primary click starts a polygon, closes it (the click lands
+    * within the close threshold of the first vertex and there are >= 3 vertices), or appends a vertex.
+    */
+   const handlePolygonPointerDown = (event: ReactPointerEvent) => {
+      event.stopPropagation();
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 2) {
+         // Right-click closes a polygon in progress and swallows the radial (the context-menu reads the flag);
+         // with none in progress it opens the radial as elsewhere.
+         if (polygonRef.current) { commitPolygon(); suppressRadialRef.current = true; }
+         return;
+      }
+      if (event.button !== 0) return;
+      const world = cursorToWorld(event.clientX, event.clientY);
+      if (!world) return;
+      const verts = polygonRef.current;
+      if (!verts) {
+         // Start a fresh polygon; seed a zero-length rubber band (the next move extends it to the cursor).
+         polygonRef.current = [world.x, world.y];
+         setPolygonPreview([world.x, world.y, world.x, world.y]);
+         return;
+      }
+      // Close when the click lands within the screen-px threshold of the first vertex (compared in world, so
+      // it holds at any zoom) and there are >= 3 vertices; otherwise drop another vertex.
+      const reach = POLYGON_CLOSE_THRESHOLD / viewportRef.current.zoom;
+      if (verts.length >= 6 && Math.hypot(world.x - verts[0], world.y - verts[1]) <= reach) { commitPolygon(); return; }
+      verts.push(world.x, world.y);
+      setPolygonPreview([...verts, world.x, world.y]);
+   };
+
+   /** Freeform-polygon rubber band: redraws the committed vertices plus a live segment to the cursor. */
+   const handlePolygonPointerMove = (event: ReactPointerEvent) => {
+      const verts = polygonRef.current;
+      if (!verts) return;
+      const world = cursorToWorld(event.clientX, event.clientY);
+      if (world) setPolygonPreview([...verts, world.x, world.y]);
+   };
+
+   /**
+    * Double-click closes the freeform polygon. The two pointerdowns a dblclick fires already dropped a
+    * trailing vertex on (or near) the last one, so dedupe that coincident vertex before closing to avoid a
+    * zero-length edge.
+    */
+   const handlePolygonDoubleClick = () => {
+      const verts = polygonRef.current;
+      if (!verts) return;
+      if (verts.length >= 4) {
+         const dedupe = 2 / viewportRef.current.zoom; // a couple screen px: the dblclick's two points land together
+         const lastX = verts[verts.length - 2];
+         const lastY = verts[verts.length - 1];
+         if (Math.hypot(lastX - verts[verts.length - 4], lastY - verts[verts.length - 3]) <= dedupe) verts.splice(-2, 2);
+      }
+      commitPolygon();
+   };
+
+   // Leaving the freeform-polygon tool (to Select or any other gesture) discards a half-drawn polygon. Board
+   // switches route through here too (the boardId reset sets Select, and also clears the ref directly).
+   useEffect(() => {
+      if (activeTool === 'freeformPolygon') return;
+      polygonRef.current = null;
+      setPolygonPreview(null);
+   }, [activeTool]);
+
+   // One draw-mode keydown handler, branching on whether a freeform polygon is mid-draw. With a polygon in
+   // progress the keys edit it: Esc cancels, Backspace pops the last vertex (emptying it cancels), Enter
+   // closes (>= 3 vertices) - each swallowed so it never reaches the tool-exit path. With no polygon, Esc / V
+   // leave the Draw gesture (they're sticky, so they need an explicit exit besides the segment). Mounted only
+   // off Select, so V never shadows anything in the default mode.
+   useEffect(() => {
+      if (activeTool === 'select') return;
+      const onKeyDown = (event: KeyboardEvent) => {
+         const target = event.target;
+         if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+         const verts = polygonRef.current;
+         if (verts) {
+            if (event.key === 'Escape') {
+               event.preventDefault();
+               polygonRef.current = null;
+               setPolygonPreview(null);
+            } else if (event.key === 'Backspace') {
+               event.preventDefault();
+               verts.splice(-2, 2); // pop the last vertex
+               if (verts.length === 0) { polygonRef.current = null; setPolygonPreview(null); }
+               else setPolygonPreview([...verts, verts[verts.length - 2], verts[verts.length - 1]]);
+            } else if (event.key === 'Enter') {
+               event.preventDefault();
+               commitPolygon();
+            }
+            return;
+         }
+         if (event.key === 'Escape' || event.key === 'v' || event.key === 'V') {
+            event.preventDefault();
+            setActiveTool('select');
+         }
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [activeTool, commitPolygon]);
 
    /**
     * Freehand-overlay pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
@@ -1039,6 +1155,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       else if (pendingBoardAction === 'setTool:select') setActiveTool('select');
       else if (pendingBoardAction === 'setTool:pen') chooseDrawTool('freehand');
       else if (pendingBoardAction === 'setTool:line') chooseDrawTool('line');
+      else if (pendingBoardAction === 'setTool:freeformPolygon') chooseDrawTool('freeformPolygon');
       else if (pendingBoardAction === 'setTool:eraser') chooseDrawTool('eraser');
       // A brush pick is a style change; if a non-drawing gesture owns the pointer (select/eraser), enter freehand first.
       else if (pendingBoardAction.startsWith('setBrush:')) { if (activeTool === 'select' || activeTool === 'eraser') chooseDrawTool('freehand'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
@@ -1088,6 +1205,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * selects it first so the selection actions target it (empty canvas keeps the current selection).
     */
    const handleContextMenu = (event: ReactMouseEvent) => {
+      // A right-click that just finished a freeform polygon suppresses the radial (and stops here so the
+      // clip's own context-menu doesn't reopen it as the event bubbles).
+      if (suppressRadialRef.current) { suppressRadialRef.current = false; event.preventDefault(); event.stopPropagation(); return; }
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
       event.preventDefault();
@@ -1366,6 +1486,15 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                </svg>
             )}
 
+            {/* In-progress freeform polygon: the committed vertices plus a rubber band to the cursor, painted
+                OPEN and geometric in the active brush (it only closes once committed). Same inert world-layer
+                overlay as the pen preview. */}
+            {polygonPreview && (
+               <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
+                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: polygonPreview, shape: 'line' }} />
+               </svg>
+            )}
+
             {/* Active drawing-layer cue: a dashed accent outline around the layer the next stroke appends to,
                 shown only while a drawing gesture is armed. Dashed (not the solid selection ring), so it reads
                 as "the active layer" rather than a selected element. Inert; theme tokens only. */}
@@ -1389,7 +1518,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              radial. It renders nothing - strokes live in their drawing items. */}
          <div
             className={cn('absolute inset-0', activeTool === 'select' ? 'pointer-events-none' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
-            onPointerDown={activeTool === 'eraser' ? handleEraserPointerDown : activeTool === 'line' ? handleLinePointerDown : handleFreehandPointerDown}
+            onPointerDown={
+               activeTool === 'eraser'
+                  ? handleEraserPointerDown
+                  : activeTool === 'line'
+                    ? handleLinePointerDown
+                    : activeTool === 'freeformPolygon'
+                      ? handlePolygonPointerDown
+                      : handleFreehandPointerDown
+            }
+            onPointerMove={activeTool === 'freeformPolygon' ? handlePolygonPointerMove : undefined}
+            onDoubleClick={activeTool === 'freeformPolygon' ? handlePolygonDoubleClick : undefined}
             onContextMenu={handleContextMenu}
          />
 

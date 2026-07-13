@@ -339,6 +339,16 @@ describe('strokeHitsPoint', () => {
       expect(strokeHitsPoint(origin, thin, near.worldX, near.worldY, 8)).toBe(false);
       expect(strokeHitsPoint(origin, thick, near.worldX, near.worldY, 8)).toBe(true);
    });
+
+   it('hits a polygon on its closing edge (last vertex back to the first)', () => {
+      // A square's four vertices; local (0,20) sits on the closing edge (0,40)->(0,0) but is 20px from
+      // every open edge, so only the closing segment can catch it.
+      const square: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points: [0, 0, 40, 0, 40, 40, 0, 40], shape: 'polygon' };
+      expect(strokeHitsPoint(origin, square, 100, 120, 8)).toBe(true);
+      // The same vertices as an OPEN stroke never close, so that point misses.
+      const open: Stroke = { ...square, shape: undefined };
+      expect(strokeHitsPoint(origin, open, 100, 120, 8)).toBe(false);
+   });
 });
 
 describe('recomputeDrawingBoxWithoutMany', () => {

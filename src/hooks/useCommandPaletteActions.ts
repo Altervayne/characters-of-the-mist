@@ -11,7 +11,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Eraser, Brush, Highlighter } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Eraser, Brush, Highlighter } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -232,6 +232,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setToolSelect', scope: 'board', label: t('CommandPalette.commands.setToolSelect'), keywords: ['tool', 'select', 'pointer', 'move', 'board'], icon: MousePointer2, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:select') },
       { id: 'setToolPen', scope: 'board', label: t('CommandPalette.commands.setToolPen'), keywords: ['tool', 'pen', 'draw', 'pencil', 'sketch', 'ink', 'board'], icon: Pen, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:pen') },
       { id: 'setToolLine', scope: 'board', label: t('CommandPalette.commands.setToolLine'), keywords: ['tool', 'line', 'straight', 'segment', 'shape', 'draw', 'board'], icon: Slash, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:line') },
+      { id: 'setToolFreeformPolygon', scope: 'board', label: t('CommandPalette.commands.setToolFreeformPolygon'), keywords: ['tool', 'freeform', 'polygon', 'shape', 'vertices', 'draw', 'board'], icon: Waypoints, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:freeformPolygon') },
       { id: 'setToolEraser', scope: 'board', label: t('CommandPalette.commands.setToolEraser'), keywords: ['tool', 'eraser', 'erase', 'rub', 'delete', 'draw', 'board'], icon: Eraser, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:eraser') },
       // Brush picks double as the pen tool (the canvas switches to pen on a brush request).
       { id: 'setBrushPen', scope: 'board', label: t('CommandPalette.commands.setBrushPen'), keywords: ['brush', 'pen', 'draw', 'ink', 'thin', 'board'], icon: Pen, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setBrush:pen') },
