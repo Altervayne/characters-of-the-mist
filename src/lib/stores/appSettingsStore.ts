@@ -6,6 +6,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameSystem } from '../types/drawer';
 import type { DiceTrayContent } from '@/lib/dice/diceTrayTypes';
 import type { CustomTheme } from '@/lib/theme/themeTokens';
+import type { ThemeMode } from '@/lib/theme/themeMode';
 
 
 
@@ -17,6 +18,8 @@ export type MobileHandedness = 'left' | 'right';
 
 interface AppSettingsState {
    theme: ActiveTheme;
+   /** Light/dark mode, applied by ThemeModeManager (owns only the `dark`/`light` class). `system` follows the OS. */
+   themeMode: ThemeMode;
    /** User-defined themes (applied at runtime by the ThemeClassManager). Dormant until the editor ships. */
    customThemes: CustomTheme[];
    // The theme currently being edited, as a live but UNSAVED draft. The whole app previews it (see
@@ -46,6 +49,7 @@ interface AppSettingsState {
    pendingDiceRoll: boolean;
    actions: {
       setTheme: (theme: ActiveTheme) => void;
+      setThemeMode: (mode: ThemeMode) => void;
       addCustomTheme: (theme: CustomTheme) => void;
       updateCustomTheme: (id: string, patch: Partial<CustomTheme>) => void;
       deleteCustomTheme: (id: string) => void;
@@ -83,6 +87,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
    persist(
       (set, get) => ({
          theme: 'theme-neutral',
+         themeMode: 'system',
          customThemes: [],
          themeDraft: null,
          isCompactDrawer: false,
@@ -102,6 +107,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          pendingDiceRoll: false,
          actions: {
             setTheme: (theme) => set({ theme }),
+            setThemeMode: (mode) => set({ themeMode: mode }),
             addCustomTheme: (theme) => set((state) => ({ customThemes: [...state.customThemes, theme] })),
             updateCustomTheme: (id, patch) => set((state) => ({
                customThemes: state.customThemes.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
@@ -165,6 +171,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          storage: createJSONStorage(() => localStorage),
          partialize: (state) => ({
             theme: state.theme,
+            themeMode: state.themeMode,
             customThemes: state.customThemes,
             isCompactDrawer: state.isCompactDrawer,
             isSideBySideView: state.isSideBySideView,

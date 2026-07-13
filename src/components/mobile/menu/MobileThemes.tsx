@@ -1,7 +1,9 @@
 // -- React Imports --
 import { useRef, useState } from 'react';
-import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
+
+// -- Hook Imports --
+import { useThemeMode } from '@/hooks/useThemeMode';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -65,14 +67,14 @@ interface MobileThemesProps {
 
 export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps) {
    const { t } = useTranslation();
-   const { resolvedTheme } = useTheme();
+   const { resolvedMode } = useThemeMode();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
    const { setTheme, updateCustomTheme, deleteCustomTheme } = useAppSettingsActions();
    const createCustomFrom = useCreateCustomTheme();
 
    // Row previews follow the app's current appearance, so a theme reads as it actually renders right now.
-   const swatchMode = resolvedTheme === 'dark' ? 'dark' : 'light';
+   const swatchMode = resolvedMode === 'dark' ? 'dark' : 'light';
 
    const [renamingId, setRenamingId] = useState<string | null>(null);
    const [renameDraft, setRenameDraft] = useState('');

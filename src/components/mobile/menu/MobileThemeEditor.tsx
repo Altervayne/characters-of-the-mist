@@ -1,7 +1,9 @@
 // -- React Imports --
 import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
+
+// -- Hook Imports --
+import { useThemeMode } from '@/hooks/useThemeMode';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -49,7 +51,7 @@ interface MobileThemeEditorProps {
 
 export default function MobileThemeEditor({ onBack }: MobileThemeEditorProps) {
    const { t } = useTranslation();
-   const { resolvedTheme } = useTheme();
+   const { resolvedMode } = useThemeMode();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
    const themeDraft = useAppSettingsStore((state) => state.themeDraft);
@@ -60,7 +62,7 @@ export default function MobileThemeEditor({ onBack }: MobileThemeEditorProps) {
 
    // Which mode is being previewed and edited. Local to the editor - flipping it never changes the app's
    // real appearance (next-themes), only the single preview + which token column the manual rows write.
-   const [editorMode, setEditorMode] = useState<'light' | 'dark'>(resolvedTheme === 'dark' ? 'dark' : 'light');
+   const [editorMode, setEditorMode] = useState<'light' | 'dark'>(resolvedMode === 'dark' ? 'dark' : 'light');
    const [showAdvanced, setShowAdvanced] = useState(false);
    const [confirmLeave, setConfirmLeave] = useState(false);
 

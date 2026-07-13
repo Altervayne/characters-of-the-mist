@@ -1,6 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ThemeModeManager } from '@/components/providers/ThemeModeManager';
 import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
 import { ActiveCharacterStoreProvider } from '@/lib/character/ActiveCharacterStoreProvider';
@@ -47,12 +47,9 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
+    // Mode (dark/light class) and palette (theme-* class) managers own disjoint classes on <html>; the
+    // initial classes are set synchronously by the inline no-flash script in index.html.
+    <ThemeModeManager>
       <ThemeClassManager>
         {/* Resolution layer for the active character store. Hoisted above
             AppStartManagerProvider because that provider consumes the store (via
@@ -76,6 +73,6 @@ export default function App() {
           </ActiveBoardStoreProvider>
         </ActiveCharacterStoreProvider>
       </ThemeClassManager>
-    </ThemeProvider>
+    </ThemeModeManager>
   );
 }

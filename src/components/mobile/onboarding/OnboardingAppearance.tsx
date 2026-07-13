@@ -1,8 +1,8 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 
-// -- Other Library Imports --
-import { useTheme } from 'next-themes';
+// -- Hook Imports --
+import { useThemeMode } from '@/hooks/useThemeMode';
 
 // -- Component Imports --
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ const COLOR_PALETTES = [
 
 export default function OnboardingAppearance({ onNext, onBack, onSkip }: OnboardingAppearanceProps) {
 	const { t } = useTranslation();
-	const { resolvedTheme, setTheme: setMode } = useTheme();
+	const { resolvedMode, setMode } = useThemeMode();
 	const colorTheme = useAppSettingsStore((state) => state.theme);
 	const setColorTheme = useAppSettingsStore((state) => state.actions.setTheme);
 
@@ -60,7 +60,7 @@ export default function OnboardingAppearance({ onNext, onBack, onSkip }: Onboard
 							onClick={() => setMode('light')}
 							className={cn(
 								"p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center gap-2",
-								resolvedTheme === 'light'
+								resolvedMode === 'light'
 									? "border-primary bg-primary/5"
 									: "border-border bg-card hover:border-primary/50"
 							)}
@@ -72,7 +72,7 @@ export default function OnboardingAppearance({ onNext, onBack, onSkip }: Onboard
 							onClick={() => setMode('dark')}
 							className={cn(
 								"p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center gap-2",
-								resolvedTheme === 'dark'
+								resolvedMode === 'dark'
 									? "border-primary bg-primary/5"
 									: "border-border bg-card hover:border-primary/50"
 							)}

@@ -18,6 +18,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
     <title>Characters of the Mist</title>
+    <!-- No-flash theme: set the dark/light + palette classes on <html> synchronously, before the bundle paints,
+         so a hard reload never flashes the wrong mode or palette. Reads the persisted app-settings blob directly.
+         COUPLING: the key ('characters-of-the-mist_app-settings'), the zustand persist envelope ({ state: ... }),
+         and the field names (themeMode, theme) must stay in lockstep with appSettingsStore's persist config. -->
+    <script>
+      try {
+        var s = JSON.parse(localStorage.getItem('characters-of-the-mist_app-settings') || '{}').state || {};
+        var mode = s.themeMode || 'system';
+        var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var c = document.documentElement.classList;
+        c.add(dark ? 'dark' : 'light');
+        if (s.theme) c.add(s.theme);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

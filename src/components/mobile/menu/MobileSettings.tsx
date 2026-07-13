@@ -1,7 +1,9 @@
 // -- React Imports --
 import { useState } from 'react';
-import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
+
+// -- Hook Imports --
+import { useThemeMode } from '@/hooks/useThemeMode';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -77,7 +79,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onOpe
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.split('-')[0] || 'en';
 
-	const { resolvedTheme, setTheme: setMode } = useTheme();
+	const { resolvedMode, setMode } = useThemeMode();
 
 	const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
 	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
@@ -192,13 +194,13 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onOpe
 							{
 								icon: <Sun className="mr-2 h-5 w-5 shrink-0" />,
 								label: t('SettingsDialog.light'),
-								isActive: resolvedTheme === 'light',
+								isActive: resolvedMode === 'light',
 								onSelect: () => setMode('light'),
 							},
 							{
 								icon: <Moon className="mr-2 h-5 w-5 shrink-0" />,
 								label: t('SettingsDialog.dark'),
-								isActive: resolvedTheme === 'dark',
+								isActive: resolvedMode === 'dark',
 								onSelect: () => setMode('dark'),
 							},
 						]}

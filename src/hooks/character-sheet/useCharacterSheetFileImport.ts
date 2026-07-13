@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
-import { useDropzone } from 'react-dropzone';
+
+// -- Hook Imports --
+import { useFileDrop } from '@/hooks/useFileDrop';
 
 // -- Utils Imports --
 import { importFromFile } from '@/lib/utils/export-import';
@@ -132,16 +134,15 @@ export function useCharacterSheetFileImport() {
       }
    }, [character, openCharacterTab, openBoardTab, addImportedCard, addImportedTracker, setContextualGame, reloadCurrentFolder, importTheme, tNotifications]);
 
-   const onDrop = useCallback((acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (file) importFile(file);
+   const onFiles = useCallback((files: File[]) => {
+      importFile(files[0]);
    }, [importFile]);
 
-   const { getRootProps, isDragActive } = useDropzone({
-      onDrop,
+   // Drop-only: the picker path below (its own hidden input + `triggerImport`) handles clicks.
+   const { getRootProps, isDragActive } = useFileDrop({
+      onFiles,
+      accept: '.cotm,.json',
       noClick: true,
-      noKeyboard: true,
-      accept: { 'application/json': ['.cotm', '.json'] },
    });
 
    // Picker path: the change handler routes the pick through the same `importFile`, then

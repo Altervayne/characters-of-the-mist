@@ -3,9 +3,9 @@
 // -- React Imports --
 import React from 'react';
 
-// -- Next Imports --
+// -- Hook Imports --
 import { useTranslation } from 'react-i18next';
-import { useTheme } from 'next-themes';
+import { useThemeMode } from '@/hooks/useThemeMode';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -74,7 +74,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView, toggleDiceTray, toggleNoteOutline } = useAppSettingsActions();
    const { setThemesOpen, requestBoardAction } = useAppGeneralStateActions();
-   const { setTheme: setMode } = useTheme();
+   const { setMode } = useThemeMode();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
    const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab } = useTabManagerActions();
    const activeNote = useActiveNoteInstance();

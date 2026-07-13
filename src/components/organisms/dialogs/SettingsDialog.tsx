@@ -1,7 +1,9 @@
 // -- React Imports --
 import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
+
+// -- Hook Imports --
+import { useThemeMode } from '@/hooks/useThemeMode';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -132,7 +134,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
    const { t, i18n } = useTranslation();
    const locale = i18n.language?.split('-')[0] || 'en';
 
-   const { resolvedTheme, setTheme: setMode } = useTheme();
+   const { resolvedMode, setMode } = useThemeMode();
    const { isMobile } = useDeviceType();
 
    const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode } = useAppSettingsStore();
@@ -272,7 +274,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                      <Label className="text-left">{t('SettingsDialog.appearance')}</Label>
                      <div className="col-span-2 flex items-center gap-2">
                         <Button
-                           variant={resolvedTheme === 'light' ? 'default' : 'outline'}
+                           variant={resolvedMode === 'light' ? 'default' : 'outline'}
                            onClick={() => setMode('light')}
                            title={t('SettingsDialog.light')}
                            className="flex-1 min-w-0 cursor-pointer"
@@ -281,7 +283,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                            <span className="truncate">{t('SettingsDialog.light')}</span>
                         </Button>
                         <Button
-                           variant={resolvedTheme === 'dark' ? 'default' : 'outline'}
+                           variant={resolvedMode === 'dark' ? 'default' : 'outline'}
                            onClick={() => setMode('dark')}
                            title={t('SettingsDialog.dark')}
                            className="flex-1 min-w-0 cursor-pointer"

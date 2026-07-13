@@ -1,12 +1,12 @@
 // -- React Imports --
 import React, { useState, useCallback } from 'react';
-
-// -- Next Imports --
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
-import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
+
+// -- Hook Imports --
+import { useFileDrop } from '@/hooks/useFileDrop';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
 
    const { addFolder, addItem } = useDrawerActions();
 
-   const onDrop = useCallback((acceptedFiles: File[]) => {
+   const appendFiles = useCallback((acceptedFiles: File[]) => {
       setFiles(prevFiles => {
          const newFiles = acceptedFiles.filter(
             (newFile) => !prevFiles.some(
@@ -50,10 +50,12 @@ export const MigrationDialog: React.FC<MigrationDialogProps> = ({ isOpen, onOpen
       });
    }, []);
 
-   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-      onDrop,
-      accept: { 'application/json': ['.json'] },
+   // The one import site with click-to-open + multi-select: the dashed box opens the picker and takes drops.
+   const { getRootProps, getInputProps, isDragActive } = useFileDrop({
+      onFiles: appendFiles,
+      accept: '.json',
       multiple: true,
+      noClick: false,
    });
 
    const handleRemoveFile = (fileToRemove: File) => {

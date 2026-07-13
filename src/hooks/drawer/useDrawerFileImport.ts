@@ -3,8 +3,10 @@ import { useRef, useCallback, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
-import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
+
+// -- Hook Imports --
+import { useFileDrop } from '@/hooks/useFileDrop';
 
 // -- Utils Imports --
 import { deriveDrawerFolderName, exportDrawer, importFromFile, readFileAsText } from '@/lib/utils/export-import';
@@ -25,7 +27,7 @@ import type { Folder as FolderType, DrawerItemContent, Drawer as DrawerType } fr
  *
  * Handles dropped or picked .cotm/.json files: a full drawer replaces the
  * current drawer, while a folder or item is imported into the currently open
- * folder. Exposes react-dropzone root props for the drag-and-drop zone, a change
+ * folder. Exposes root props for the drag-and-drop zone, a change
  * handler for the hidden file input (which it resets via `formRef` after a pick),
  * and a full-drawer export handler. Owns `fileInputRef` (bound to the hidden file
  * input and triggered by the import button) so the file-picker ref is dedicated
@@ -96,20 +98,15 @@ export function useDrawerFileImport(currentFolderId: string | null) {
       }
    }, [currentFolderId, addImportedFolder, addImportedItem, importDrawerAsFolder, tNotifications]);
 
-   const onDrop = useCallback((acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-         processFile(acceptedFiles[0]);
-      }
+   const onFiles = useCallback((files: File[]) => {
+      processFile(files[0]);
    }, [processFile]);
 
-   const { getRootProps, isDragActive } = useDropzone({
-      onDrop,
+   // Drop-only: the import button owns its own hidden input + `handleFileSelected` below.
+   const { getRootProps, isDragActive } = useFileDrop({
+      onFiles,
+      accept: '.cotm,.json,.md,.markdown',
       noClick: true,
-      noKeyboard: true,
-      accept: {
-         'application/json': ['.cotm', '.json'],
-         'text/markdown': ['.md', '.markdown'],
-      },
    });
 
    const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {

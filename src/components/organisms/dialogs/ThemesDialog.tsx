@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { AnimatePresence, motion } from 'framer-motion';
-import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { Download, LifeBuoy } from 'lucide-react';
+
+// -- Hook Imports --
+import { useFileDrop } from '@/hooks/useFileDrop';
 
 // -- Basic UI Imports --
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -94,12 +96,11 @@ export function ThemesDialog({ isOpen, onOpenChange }: ThemesDialogProps) {
       }
    }, [guardedSwitch, importTheme, t]);
 
-   // Drop-only: the dialog's own clicks and keyboard must keep working, so no click/keyboard activation.
-   const { getRootProps, isDragActive } = useDropzone({
-      onDrop,
+   // Drop-only: the dialog's own clicks and keyboard must keep working, so no click activation.
+   const { getRootProps, isDragActive } = useFileDrop({
+      onFiles: onDrop,
+      accept: '.cotm,.json',
       noClick: true,
-      noKeyboard: true,
-      accept: { 'application/json': ['.cotm', '.json'] },
    });
 
    return (

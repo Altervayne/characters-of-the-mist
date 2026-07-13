@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Bind `dark:` to the in-app `.dark` toggle (next-themes puts it on <html>) instead of the OS, so the
+/* Bind `dark:` to the in-app `.dark` toggle (`ThemeModeManager` + the no-flash script put it on <html>) instead of the OS, so the
    shadcn refinements track the app theme like the color tokens do. The `.light` clause lets a subtree
    opt back into its light state under a dark app - used by the Themes-window light preview pane. */
 @custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
