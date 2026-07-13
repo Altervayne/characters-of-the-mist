@@ -13,6 +13,7 @@ import { Plus } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { getFloatingContentPadding } from '@/lib/utils/mobileFloating';
 
 // -- Constants --
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
@@ -27,7 +28,7 @@ import type { GameSystem } from '@/lib/types/drawer';
 
 export default function MobileMainMenu() {
 	const { t } = useTranslation();
-	const { contextualGame } = useAppSettingsStore();
+	const { contextualGame, isMobileFABMode } = useAppSettingsStore();
 	const { mobileCreateCharacter } = useTabManagerActions();
 	const { setContextualGame } = useAppSettingsActions();
 
@@ -116,7 +117,12 @@ export default function MobileMainMenu() {
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ delay: 0.5, duration: 0.3 }}
-				className="p-6 pt-4 border-t border-border bg-background space-y-3"
+				className="p-6 border-t border-border bg-background space-y-3"
+				// In FAB mode there is no bottom tab bar; pad the CTA clear of the
+				// floating FAB (its resting offset + full height, safe-area-aware) so
+				// the button and the FAB never overlap. The extra 0.75rem is breathing
+				// room between the CTA's bottom edge and the FAB's top.
+				style={isMobileFABMode ? { paddingBottom: getFloatingContentPadding({ extraRem: 0.75 }) } : undefined}
 			>
 				<Button
 					onClick={handleCreateCharacter}

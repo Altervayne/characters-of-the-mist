@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { Settings, Info, FileDown, FileUp, Save, FileText, LogOut, FolderDown, FolderUp, SaveAll } from 'lucide-react';
+import { Settings, Info, FileUp, Save, FileText, LogOut, FolderUp, SaveAll } from 'lucide-react';
 
 // -- Component Imports --
 import { MobileMenuItemButton } from '@/components/mobile/menu/MobileMenuItemButton';
@@ -15,9 +15,6 @@ import { useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-
-// -- Hook Imports --
-import { useMobileMenuFileImport } from '@/hooks/mobile/useMobileMenuFileImport';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -37,15 +34,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 	const character = useCharacterStore((state) => state.character);
 	const { mobileReturnToMenu } = useTabManagerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
-
-	const {
-		characterImportInputRef,
-		drawerImportInputRef,
-		handleCharacterImportFileSelected,
-		handleDrawerImportFileSelected,
-		triggerCharacterImport,
-		triggerDrawerImport,
-	} = useMobileMenuFileImport();
 
 
 
@@ -91,21 +79,9 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			destructive: false,
 		},
 		{
-			id: 'import',
-			label: t('MobileMenu.import'),
-			icon: FileDown,
-			destructive: false,
-		},
-		{
 			id: 'exportDrawer',
 			label: t('Drawer.Actions.exportFull'),
 			icon: FolderUp,
-			destructive: false,
-		},
-		{
-			id: 'importDrawer',
-			label: t('Drawer.Actions.import'),
-			icon: FolderDown,
 			destructive: false,
 		},
 		{
@@ -146,9 +122,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 					toast.success(t('Notifications.character.exported'));
 				}
 				break;
-			case 'import':
-				triggerCharacterImport();
-				break;
 			case 'exportDrawer':
 				void (async () => {
 					try {
@@ -160,9 +133,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 					}
 				})();
 				break;
-			case 'importDrawer':
-				triggerDrawerImport();
-				break;
 			case 'unload':
 				mobileReturnToMenu();
 				break;
@@ -173,24 +143,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 
 	return (
 		<div className="h-full w-full flex flex-col pt-safe" data-tutorial="menu-content">
-			{/* Hidden file input for drawer import */}
-			<input
-				ref={drawerImportInputRef}
-				type="file"
-				accept=".cotm"
-				onChange={handleDrawerImportFileSelected}
-				className="hidden"
-			/>
-
-			{/* Hidden file input for character import */}
-			<input
-				ref={characterImportInputRef}
-				type="file"
-				accept=".cotm"
-				onChange={handleCharacterImportFileSelected}
-				className="hidden"
-			/>
-
 			{/* Header - fixed at top */}
 			<div className="p-6 pb-2 shrink-0">
 				<h2 className="text-2xl font-bold mb-2">{t('MobileMenu.title')}</h2>
