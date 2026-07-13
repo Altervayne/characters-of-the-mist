@@ -325,6 +325,23 @@ export function snapAngle(ax: number, ay: number, bx: number, by: number, stepRa
    return { x: ax + Math.cos(snapped) * len, y: ay + Math.sin(snapped) * len };
 }
 
+/**
+ * The vertices of a regular N-gon, flat `[x0,y0,x1,y1,...]`. `radius` is the circumradius (center to a
+ * vertex) and `rotation` turns the whole polygon; at rotation 0 the first vertex points straight up. Vertex
+ * i sits at `rotation - PI/2 + i*(2PI/sides)`. A zero radius collapses every vertex onto the center. The
+ * shared source for the drag preview AND the committed stroke, so the two can never disagree.
+ */
+export function regularPolygonVertices(cx: number, cy: number, radius: number, sides: number, rotation: number): number[] {
+   const out = new Array<number>(sides * 2);
+   const step = (2 * Math.PI) / sides;
+   for (let i = 0; i < sides; i++) {
+      const angle = rotation - Math.PI / 2 + i * step;
+      out[i * 2] = cx + radius * Math.cos(angle);
+      out[i * 2 + 1] = cy + radius * Math.sin(angle);
+   }
+   return out;
+}
+
 /** The shortest a Line may be, in world px: a shorter one is a click with no real drag, dropped as a stray dot. */
 export const MIN_LINE_LENGTH = 3;
 

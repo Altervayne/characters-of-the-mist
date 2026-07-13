@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Brush, Eraser, Highlighter, Layers, Pen, Pencil, Slash, Waypoints, type LucideIcon } from 'lucide-react';
+import { Brush, Eraser, Highlighter, Layers, Minus, Pen, Pencil, Pentagon, Plus, Slash, Waypoints, type LucideIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -30,8 +30,13 @@ const GESTURE_OPTIONS: { tool: Exclude<ActiveTool, 'select'>; icon: LucideIcon; 
    { tool: 'freehand', icon: Pencil, labelKey: 'gestureFreehand' },
    { tool: 'line', icon: Slash, labelKey: 'gestureLine' },
    { tool: 'freeformPolygon', icon: Waypoints, labelKey: 'gestureFreeformPolygon' },
+   { tool: 'regularPolygon', icon: Pentagon, labelKey: 'gestureRegularPolygon' },
    { tool: 'eraser', icon: Eraser, labelKey: 'gestureEraser' },
 ];
+
+/** The regular polygon's side-count bounds (inclusive). */
+const MIN_POLYGON_SIDES = 3;
+const MAX_POLYGON_SIDES = 12;
 
 /** The brushes, in toolbar order, each with its glyph. */
 const BRUSH_OPTIONS: { brush: BrushKind; icon: LucideIcon; labelKey: string }[] = [
@@ -53,9 +58,12 @@ interface BoardToolSettingsBarProps {
    onNewLayer: () => void;
    /** Pressed state for the "new layer" button: a fresh layer is pending (the next stroke mints one). */
    newLayerArmed: boolean;
+   /** The regular polygon's side count (3..12); shown as a stepper for that tool only. */
+   sides: number;
+   onSetSides: (sides: number) => void;
 }
 
-export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush, onSetColor, onSetWidth, onNewLayer, newLayerArmed }: BoardToolSettingsBarProps) {
+export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush, onSetColor, onSetWidth, onNewLayer, newLayerArmed, sides, onSetSides }: BoardToolSettingsBarProps) {
    const { t } = useTranslation();
    const activeWidth = penSettings.width;
    const erasing = tool === 'eraser';
@@ -139,6 +147,35 @@ export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush,
          </div>
 
          <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+
+         {/* Side count: the one control specific to the regular polygon, so it shows for that tool alone. */}
+         {tool === 'regularPolygon' && (
+            <>
+               <div className="flex shrink-0 items-center gap-0.5" title={t('BoardView.polygonSides')}>
+                  <button
+                     type="button"
+                     aria-label={`${t('BoardView.polygonSides')} -`}
+                     disabled={sides <= MIN_POLYGON_SIDES}
+                     onClick={() => onSetSides(Math.max(MIN_POLYGON_SIDES, sides - 1))}
+                     className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+                  >
+                     <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-5 text-center text-sm tabular-nums text-foreground">{sides}</span>
+                  <button
+                     type="button"
+                     aria-label={`${t('BoardView.polygonSides')} +`}
+                     disabled={sides >= MAX_POLYGON_SIDES}
+                     onClick={() => onSetSides(Math.min(MAX_POLYGON_SIDES, sides + 1))}
+                     className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+                  >
+                     <Plus className="h-4 w-4" />
+                  </button>
+               </div>
+
+               <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+            </>
+         )}
 
          {/* Starts the next stroke on a fresh layer - inert while erasing (the eraser doesn't append). Reads
              armed (pressed) while a fresh layer is pending, so "the next stroke mints one" is legible. */}

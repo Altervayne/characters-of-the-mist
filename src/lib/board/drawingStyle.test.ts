@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, MIN_LINE_LENGTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildGeometricRibbonPath, buildPolylinePath, buildStrokePath, isAppendTool, isLineDegenerate, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
+import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, MIN_LINE_LENGTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildGeometricRibbonPath, buildPolylinePath, buildStrokePath, isAppendTool, isLineDegenerate, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, regularPolygonVertices, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
 
 // -- Type Imports --
 import type { BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
@@ -179,6 +179,49 @@ describe('snapAngle', () => {
 
    it('returns the end unchanged for a zero-length segment (no direction)', () => {
       expect(snapAngle(5, 5, 5, 5, step)).toEqual({ x: 5, y: 5 });
+   });
+});
+
+describe('regularPolygonVertices', () => {
+   it('yields one vertex pair per side', () => {
+      expect(regularPolygonVertices(0, 0, 10, 3, 0)).toHaveLength(6);
+      expect(regularPolygonVertices(0, 0, 10, 4, 0)).toHaveLength(8);
+      expect(regularPolygonVertices(0, 0, 10, 5, 0)).toHaveLength(10);
+   });
+
+   it('points its first vertex straight up at rotation 0 (unit circle)', () => {
+      const v = regularPolygonVertices(0, 0, 1, 4, 0);
+      // First vertex straight up: (0, -1).
+      expect(v[0]).toBeCloseTo(0);
+      expect(v[1]).toBeCloseTo(-1);
+      // A square's four vertices, going clockwise from the top: up, right, down, left.
+      expect(v[2]).toBeCloseTo(1); // right
+      expect(v[3]).toBeCloseTo(0);
+      expect(v[4]).toBeCloseTo(0); // down
+      expect(v[5]).toBeCloseTo(1);
+      expect(v[6]).toBeCloseTo(-1); // left
+      expect(v[7]).toBeCloseTo(0);
+   });
+
+   it('honors the center offset', () => {
+      const v = regularPolygonVertices(5, 7, 1, 4, 0);
+      expect(v[0]).toBeCloseTo(5);
+      expect(v[1]).toBeCloseTo(6); // 7 - 1, first vertex up
+   });
+
+   it('turns the whole polygon by the rotation offset', () => {
+      // A quarter turn takes the top vertex to the right.
+      const v = regularPolygonVertices(0, 0, 1, 4, Math.PI / 2);
+      expect(v[0]).toBeCloseTo(1);
+      expect(v[1]).toBeCloseTo(0);
+   });
+
+   it('collapses every vertex onto the center at radius 0', () => {
+      const v = regularPolygonVertices(3, 4, 0, 5, 1.2);
+      for (let i = 0; i < v.length; i += 2) {
+         expect(v[i]).toBeCloseTo(3);
+         expect(v[i + 1]).toBeCloseTo(4);
+      }
    });
 });
 

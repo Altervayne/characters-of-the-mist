@@ -18,7 +18,7 @@ import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToW
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
-import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
+import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, regularPolygonVertices, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
@@ -98,6 +98,9 @@ const ZOOM_SENSITIVITY = 0.0015;
 
 /** Screen-px radius around a freeform polygon's first vertex where a click closes the shape (>= 3 vertices). */
 const POLYGON_CLOSE_THRESHOLD = 12;
+
+/** The regular polygon's rotation snap step (radians) while Shift is held: 15deg detents. */
+const ROTATION_SNAP = Math.PI / 12;
 
 /** Screen-px margin fit-to-content leaves around the framed items. */
 const FIT_PADDING = 64;
@@ -250,6 +253,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setActiveTool(tool);
    }, []);
    const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+   // The regular polygon's side count, read at press time by its center-out drag. Ephemeral tool setting.
+   const [polygonSides, setPolygonSides] = useState(5);
    // The pen/highlighter settings (brush, ink, per-brush widths), persisted in app settings. Every new
    // stroke and the live preview read the CURRENT values, so the pickers actually drive the ink.
    const penSettings = useAppSettingsStore((state) => state.penSettings);
@@ -893,6 +898,56 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    /**
+    * Regular-polygon pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
+    * center-out drag - the press is the center, the drag vector sets both the circumradius and the rotation.
+    * The live preview is the closed N-gon in the active brush; Shift snaps the rotation to 15deg increments.
+    * On release it commits a geometric `polygon` stroke (when the radius clears the stray-click floor) and
+    * stays in the tool (sticky). Window listeners + the shared cleanup ref mirror the line gesture.
+    */
+   const handleRegularPolygonPointerDown = (event: ReactPointerEvent) => {
+      event.stopPropagation();
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button !== 0) return; // right-click falls through to the overlay's context menu (radial)
+      const center = cursorToWorld(event.clientX, event.clientY);
+      if (!center) return;
+      const cx = center.x;
+      const cy = center.y;
+      const sides = polygonSides;
+      setPenPreview(regularPolygonVertices(cx, cy, 0, sides, 0));
+
+      // The N-gon for the current cursor plus its radius: the drag vector is both circumradius and rotation
+      // (Shift snaps the rotation to 15deg). Preview and commit share this, so the committed shape matches.
+      const shapeAt = (clientX: number, clientY: number, shift: boolean) => {
+         const p = cursorToWorld(clientX, clientY);
+         if (!p) return null;
+         const radius = Math.hypot(p.x - cx, p.y - cy);
+         let rotation = Math.atan2(p.y - cy, p.x - cx);
+         if (shift) rotation = Math.round(rotation / ROTATION_SNAP) * ROTATION_SNAP;
+         return { verts: regularPolygonVertices(cx, cy, radius, sides, rotation), radius };
+      };
+      const onMove = (moveEvent: PointerEvent) => {
+         const shape = shapeAt(moveEvent.clientX, moveEvent.clientY, moveEvent.shiftKey);
+         if (shape) setPenPreview(shape.verts);
+      };
+      const cleanup = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+         strokeCleanupRef.current = null;
+      };
+      const onUp = (upEvent: PointerEvent) => {
+         cleanup();
+         setPenPreview(null);
+         const shape = shapeAt(upEvent.clientX, upEvent.clientY, upEvent.shiftKey);
+         // A press with no real drag (radius under the floor) makes nothing, mirroring the line's dot guard.
+         if (shape && shape.radius >= MIN_LINE_LENGTH) commitStroke(shape.verts, 'polygon'); // stays in the tool (sticky)
+      };
+      strokeCleanupRef.current = cleanup;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   };
+
+   /**
     * Commits a finished erase gesture: removes the collected strokes (per layer) as ONE undo step, then
     * clears the append target if the erase emptied the layer the pen was drawing on (so the next stroke
     * mints fresh instead of appending to a dead id).
@@ -1156,6 +1211,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       else if (pendingBoardAction === 'setTool:pen') chooseDrawTool('freehand');
       else if (pendingBoardAction === 'setTool:line') chooseDrawTool('line');
       else if (pendingBoardAction === 'setTool:freeformPolygon') chooseDrawTool('freeformPolygon');
+      else if (pendingBoardAction === 'setTool:regularPolygon') chooseDrawTool('regularPolygon');
       else if (pendingBoardAction === 'setTool:eraser') chooseDrawTool('eraser');
       // A brush pick is a style change; if a non-drawing gesture owns the pointer (select/eraser), enter freehand first.
       else if (pendingBoardAction.startsWith('setBrush:')) { if (activeTool === 'select' || activeTool === 'eraser') chooseDrawTool('freehand'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
@@ -1482,7 +1538,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             {penPreview && (
                <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
                   {/* Same paint path as the committed stroke: geometric for a shape gesture, freehand otherwise. */}
-                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : undefined }} />
+                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : activeTool === 'regularPolygon' ? 'polygon' : undefined }} />
                </svg>
             )}
 
@@ -1525,7 +1581,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                     ? handleLinePointerDown
                     : activeTool === 'freeformPolygon'
                       ? handlePolygonPointerDown
-                      : handleFreehandPointerDown
+                      : activeTool === 'regularPolygon'
+                        ? handleRegularPolygonPointerDown
+                        : handleFreehandPointerDown
             }
             onPointerMove={activeTool === 'freeformPolygon' ? handlePolygonPointerMove : undefined}
             onDoubleClick={activeTool === 'freeformPolygon' ? handlePolygonDoubleClick : undefined}
@@ -1619,6 +1677,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                         onSetWidth={setPenWidth}
                         onNewLayer={() => setActiveLayerId(null)}
                         newLayerArmed={newLayerArmed}
+                        sides={polygonSides}
+                        onSetSides={setPolygonSides}
                      />
                   )}
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
