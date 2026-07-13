@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, Plus, Skull, Square, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, MousePointer2, Pen, Plus, Skull, Square, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToW
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
+import { DEFAULT_STROKE_WIDTH, buildStrokePath, makePenStroke, pointsBounds, rebasePoints, strokeColorToCss } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
@@ -92,6 +93,12 @@ const ZOOM_SENSITIVITY = 0.0015;
 
 /** Screen-px margin fit-to-content leaves around the framed items. */
 const FIT_PADDING = 64;
+/**
+ * Screen-px the selected item's toolbar keeps below the clip's top edge. When the item's top runs above
+ * the canvas (a tall drawing/zone pushes the bar out of reach), the bar is clamped down to this line so it
+ * stays visible. Covers the bar's own height (it grows upward from the box top) plus a small margin.
+ */
+const TOOLBAR_TOP_CLEARANCE = 48;
 /** The grid styles the toolbar control cycles through, in order. */
 const GRID_CYCLE: BoardGridType[] = ['dots', 'lines', 'none'];
 
@@ -221,6 +228,28 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
    // The in-progress connect drag (preview line follows the cursor in world coords).
    const [connectPreview, setConnectPreview] = useState<{ fromId: string; cursor: Point } | null>(null);
+
+   // The active pointer TOOL and the current drawing LAYER strokes append to - both ephemeral (same
+   // family as the selection), never persisted or routed through commands. `'eraser'` is reserved (its
+   // gesture arrives later); only Select + Pen are wired. A first stroke with no active layer mints one.
+   const [activeTool, setActiveTool] = useState<'select' | 'pen' | 'eraser'>('select');
+   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+   // Space arms a mode-independent pan (mirrored to a ref for the pointer handlers, and to state for the
+   // cursor). The pen overlay + a Space/middle-drag can all start a pan, so the trigger is mode-agnostic.
+   const [spaceHeld, setSpaceHeld] = useState(false);
+   const spaceHeldRef = useRef(false);
+   // The in-flight pen stroke's WORLD points (captured in screen, painted in world) + its live preview.
+   // The cleanup ref tears the window listeners down on unmount so a mid-stroke tab switch can't leak them.
+   const currentStrokeRef = useRef<{ points: number[] } | null>(null);
+   const strokeCleanupRef = useRef<null | (() => void)>(null);
+   const [penPreview, setPenPreview] = useState<number[] | null>(null);
+   // Board switches keep this canvas mounted (a new `store` prop, no remount), so the tool/layer would
+   // leak across boards; reset them when the loaded board id changes.
+   const boardId = useStore(store, (state) => state.boardId);
+   useEffect(() => {
+      setActiveTool('select');
+      setActiveLayerId(null);
+   }, [boardId]);
 
    const sortedItems = Object.values(items).sort((a, b) => a.z - b.z);
    // Connections render in the SVG overlay; everything else renders as a positioned box.
@@ -474,11 +503,79 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    }, [selectedIds, handleDeleteSelection, handleDuplicateSelection]);
 
    // ==================
-   //  Pan (background drag) + background click clears selection
+   //  Pan + Space-to-pan (mode-independent: middle-drag / Space+drag pan in any tool)
    // ==================
+   /**
+    * Starts a pan from a screen point via WINDOW listeners (not element pointer-capture), so the pen
+    * overlay - or a Space/middle-drag anywhere - can begin one and the move/up still land off the clip.
+    * The pan math is raw screen px (the world translate applies before the scale).
+    */
+   const beginPan = useCallback(
+      (clientX: number, clientY: number) => {
+         const vp = viewportRef.current;
+         panStart.current = { x: clientX, y: clientY, origX: vp.x, origY: vp.y, zoom: vp.zoom };
+         setIsPanning(true);
+         const onMove = (moveEvent: PointerEvent) => {
+            const start = panStart.current;
+            if (!start) return;
+            actions.setViewport({ x: start.origX + (moveEvent.clientX - start.x), y: start.origY + (moveEvent.clientY - start.y), zoom: start.zoom });
+         };
+         const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            panStart.current = null;
+            setIsPanning(false);
+         };
+         window.addEventListener('pointermove', onMove);
+         window.addEventListener('pointerup', onUp);
+      },
+      [actions],
+   );
+
+   // Space arms a pan while held, cleared on keyup or a window blur (no stuck pan after an alt-tab).
+   // Ignored while editing text on the board (a post-it/journal/text field), so typing a space never arms it.
+   useEffect(() => {
+      const isEditable = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+      const onKeyDown = (event: KeyboardEvent) => {
+         if (event.code !== 'Space' || isEditable(event.target)) return;
+         if (!spaceHeldRef.current) { spaceHeldRef.current = true; setSpaceHeld(true); }
+         event.preventDefault(); // stop the page from scrolling on Space
+      };
+      const clear = () => { spaceHeldRef.current = false; setSpaceHeld(false); };
+      const onKeyUp = (event: KeyboardEvent) => { if (event.code === 'Space') clear(); };
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('keyup', onKeyUp);
+      window.addEventListener('blur', clear);
+      return () => {
+         window.removeEventListener('keydown', onKeyDown);
+         window.removeEventListener('keyup', onKeyUp);
+         window.removeEventListener('blur', clear);
+      };
+   }, []);
+
+   // Esc / V leave a non-select tool (the pen is sticky, so it needs an explicit exit besides the segment).
+   // Mounted only off the select tool, so V never shadows anything in the default mode.
+   useEffect(() => {
+      if (activeTool === 'select') return;
+      const onKeyDown = (event: KeyboardEvent) => {
+         const target = event.target;
+         if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+         if (event.key === 'Escape' || event.key === 'v' || event.key === 'V') {
+            event.preventDefault();
+            setActiveTool('select');
+         }
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [activeTool]);
+
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
-      // Only the primary button pans/marquees; a right-click is reserved for the radial menu.
-      if (event.button !== 0) return;
+      // Middle-button and Space+drag pan in ANY tool (the pen's escape hatch out of its viewport).
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      // Past here only the select tool acts on the background; the pen tool's background is owned by the
+      // capture overlay (a higher sibling), so a plain pen pointerdown never reaches here.
+      if (event.button !== 0 || activeTool !== 'select') return;
       if (event.shiftKey) {
          // Shift+drag is a marquee, not a pan; it keeps the current selection (additive).
          const clip = event.currentTarget.getBoundingClientRect();
@@ -488,46 +585,123 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       }
       // A plain background drag pans and clears the selection.
       setSelectedIds(new Set());
-      const vp = viewportRef.current;
-      panStart.current = { x: event.clientX, y: event.clientY, origX: vp.x, origY: vp.y, zoom: vp.zoom };
-      setIsPanning(true);
-      event.currentTarget.setPointerCapture(event.pointerId);
+      beginPan(event.clientX, event.clientY);
    };
 
+   // The marquee owns the clip's own pointer capture; the pan now rides window listeners (via beginPan).
    const handleBackgroundPointerMove = (event: ReactPointerEvent) => {
-      if (marquee) {
-         setMarquee((current) => (current ? { ...current, x1: event.clientX, y1: event.clientY } : null));
-         return;
-      }
-      const start = panStart.current;
-      if (!start) return;
-      // Pan is in raw screen px (the world translate is applied before the scale).
-      actions.setViewport({ x: start.origX + (event.clientX - start.x), y: start.origY + (event.clientY - start.y), zoom: start.zoom });
+      if (marquee) setMarquee((current) => (current ? { ...current, x1: event.clientX, y1: event.clientY } : null));
    };
 
    const handleBackgroundPointerUp = (event: ReactPointerEvent) => {
+      if (!marquee) return;
       event.currentTarget.releasePointerCapture(event.pointerId);
-      if (marquee) {
-         // Ignore a tiny shift-click (no real drag) so it never selects under the point.
-         const dragged = Math.abs(marquee.x1 - marquee.x0) >= 3 || Math.abs(marquee.y1 - marquee.y0) >= 3;
-         if (dragged) {
-            const origin = { left: marquee.clipLeft, top: marquee.clipTop };
-            const a = screenToWorld(marquee.x0, marquee.y0, origin, viewportRef.current);
-            const b = screenToWorld(marquee.x1, marquee.y1, origin, viewportRef.current);
-            const hits = itemsInMarquee(Object.values(store.getState().items), {
-               minX: Math.min(a.x, b.x),
-               minY: Math.min(a.y, b.y),
-               maxX: Math.max(a.x, b.x),
-               maxY: Math.max(a.y, b.y),
-            });
-            setSelectedIds((prev) => new Set([...prev, ...hits]));
-         }
-         setMarquee(null);
-         return;
+      // Ignore a tiny shift-click (no real drag) so it never selects under the point.
+      const dragged = Math.abs(marquee.x1 - marquee.x0) >= 3 || Math.abs(marquee.y1 - marquee.y0) >= 3;
+      if (dragged) {
+         const origin = { left: marquee.clipLeft, top: marquee.clipTop };
+         const a = screenToWorld(marquee.x0, marquee.y0, origin, viewportRef.current);
+         const b = screenToWorld(marquee.x1, marquee.y1, origin, viewportRef.current);
+         const hits = itemsInMarquee(Object.values(store.getState().items), {
+            minX: Math.min(a.x, b.x),
+            minY: Math.min(a.y, b.y),
+            maxX: Math.max(a.x, b.x),
+            maxY: Math.max(a.y, b.y),
+         });
+         setSelectedIds((prev) => new Set([...prev, ...hits]));
       }
-      panStart.current = null;
-      setIsPanning(false);
+      setMarquee(null);
    };
+
+   // ==================
+   //  Pen capture (screen-space overlay owns the gesture; the preview paints in the world layer)
+   // ==================
+   /**
+    * Commits a finished stroke (given its WORLD points): appends it to the active drawing layer, or mints
+    * a fresh layer when none is active (its origin = the stroke's world bbox min, so points store
+    * layer-local). One brush + one adaptive color this phase. Fewer than two points is a stray tap - dropped.
+    */
+   const commitStroke = useCallback(
+      (worldPoints: number[]) => {
+         if (worldPoints.length < 4) return;
+         const liveItems = store.getState().items;
+         const layer = activeLayerId ? liveItems[activeLayerId] : undefined;
+         if (layer && layer.content.kind === 'drawing') {
+            // World points: the store grows the box + re-bases to layer-local, so the box tracks every stroke.
+            void actions.appendStroke(layer.id, makePenStroke(cuid(), worldPoints));
+            return;
+         }
+         const bounds = pointsBounds(worldPoints);
+         if (!bounds) return;
+         const local = rebasePoints(worldPoints, bounds.minX, bounds.minY);
+         const zValues = Object.values(liveItems).map((item) => item.z);
+         const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+         const id = cuid();
+         void actions.addItem({
+            id,
+            kind: 'drawing',
+            x: bounds.minX,
+            y: bounds.minY,
+            width: bounds.maxX - bounds.minX,
+            height: bounds.maxY - bounds.minY,
+            z,
+            content: { kind: 'drawing', strokes: [makePenStroke(cuid(), local)] },
+         });
+         setActiveLayerId(id);
+      },
+      [actions, activeLayerId, store],
+   );
+
+   /**
+    * Pen-overlay pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
+    * press starts a stroke. Points are captured in screen and converted to world via `cursorToWorld`;
+    * `getCoalescedEvents` recovers the batched samples a fast stroke would otherwise skip. Window
+    * listeners (mirroring the connect drag) keep the move/up landing off the overlay; the teardown is
+    * stashed in a ref so an unmount mid-stroke can't leak them.
+    */
+   const handlePenPointerDown = (event: ReactPointerEvent) => {
+      // The overlay owns every pointerdown in pen mode; stop it reaching the clip's background handler
+      // (which would double-fire a middle/Space pan or clear the selection).
+      event.stopPropagation();
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button !== 0) return; // right-click falls through to the overlay's context menu (radial)
+      const start = cursorToWorld(event.clientX, event.clientY);
+      if (!start) return;
+      currentStrokeRef.current = { points: [start.x, start.y] };
+      setPenPreview([start.x, start.y]);
+
+      const onMove = (moveEvent: PointerEvent) => {
+         const stroke = currentStrokeRef.current;
+         if (!stroke) return;
+         const samples = moveEvent.getCoalescedEvents?.() ?? [];
+         const batch = samples.length > 0 ? samples : [moveEvent];
+         for (const sample of batch) {
+            const world = cursorToWorld(sample.clientX, sample.clientY);
+            if (world) stroke.points.push(world.x, world.y);
+         }
+         setPenPreview([...stroke.points]);
+      };
+      const cleanup = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+         strokeCleanupRef.current = null;
+      };
+      const onUp = () => {
+         const stroke = currentStrokeRef.current;
+         currentStrokeRef.current = null;
+         cleanup();
+         setPenPreview(null);
+         if (stroke) commitStroke(stroke.points); // stays in pen (sticky)
+      };
+      strokeCleanupRef.current = cleanup;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   };
+
+   // A mid-stroke unmount (tab switch) fires no pointerup; tear the in-flight listeners down so they
+   // never point at a dead store. The half-drawn stroke is simply discarded.
+   useEffect(() => () => strokeCleanupRef.current?.(), []);
 
    // ==================
    //  Toolbar actions
@@ -720,6 +894,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    useEffect(() => {
       if (!pendingBoardAction) return;
       if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
+      else if (pendingBoardAction === 'setTool:select') setActiveTool('select');
+      else if (pendingBoardAction === 'setTool:pen') setActiveTool('pen');
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
       else if (pendingBoardAction.startsWith('create:')) {
@@ -821,6 +997,18 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const layerRank = new Map(spatialItems.map((item, index) => [item.id, index]));
    const layerCount = spatialItems.length;
 
+   /**
+    * World-px to push the sole-selected item's toolbar down so it clears the clip's top edge; undefined
+    * when the item sits low enough to need no clamp (a stable prop, so an unclamped box still skips a pan
+    * re-render). Only the toolbar-bearing sole selection is measured. `item.y` includes any live move.
+    */
+   const toolbarClampFor = (item: BoardItem): number | undefined => {
+      if (item.id !== soleSelectedId) return undefined;
+      const topScreen = viewport.y + (item.y + (moveDeltaFor(item.id)?.y ?? 0)) * viewport.zoom;
+      const overshoot = TOOLBAR_TOP_CLEARANCE - topScreen;
+      return overshoot > 0 ? overshoot / viewport.zoom : undefined;
+   };
+
    /** Renders one item box. Shared by the non-zone and zone passes; zones use `backLayer` for their background. */
    const renderBox = (item: BoardItem) => {
       // A zone carries its member count (collapsed-bar badge) and a resize floor (the extent of its
@@ -832,6 +1020,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             item={item}
             isSelected={selectedIds.has(item.id)}
             soleSelected={item.id === soleSelectedId}
+            toolbarClamp={toolbarClampFor(item)}
             zIndex={itemZIndex(layerRank.get(item.id) ?? 0, selectedIds.has(item.id), layerCount)}
             memberCount={members?.length}
             resizeMin={members ? zoneContentMinSize(item, members) : item.kind === 'portal' ? PORTAL_MIN_SIZE : undefined}
@@ -940,7 +1129,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          onPointerMove={handleBackgroundPointerMove}
          onPointerUp={handleBackgroundPointerUp}
          onContextMenu={handleContextMenu}
-         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : 'cursor-grab')}
+         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld ? 'cursor-grab' : activeTool === 'pen' ? 'cursor-crosshair' : 'cursor-grab')}
       >
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
@@ -1002,7 +1191,33 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}
                onDelete={handleDelete}
             />
+
+            {/* In-flight pen stroke: painted in the WORLD layer (its points are world coords), so it tracks
+                the cursor under pan/zoom while the overlay captures in screen. Tops the layer so it draws
+                over the items; inert, and gone the instant the stroke commits. */}
+            {penPreview && (
+               <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
+                  <path
+                     d={buildStrokePath(penPreview)}
+                     fill="none"
+                     stroke={strokeColorToCss(null)}
+                     strokeWidth={DEFAULT_STROKE_WIDTH}
+                     strokeLinecap="round"
+                     strokeLinejoin="round"
+                  />
+               </svg>
+            )}
          </div>
+
+         {/* Pen capture overlay: a screen-space gesture surface above the world layer. Interactive ONLY in
+             pen mode (else fully click-through, so select mode is untouched and item boxes never see the
+             pen pointerdown). It routes the pan escape hatch first, then owns the stroke; right-click falls
+             through to the radial. It renders nothing - committed strokes live in their drawing items. */}
+         <div
+            className={cn('absolute inset-0', activeTool === 'pen' ? 'cursor-crosshair' : 'pointer-events-none')}
+            onPointerDown={handlePenPointerDown}
+            onContextMenu={handleContextMenu}
+         />
 
          {/* Marquee rectangle: a screen-space overlay (not the world layer), drawn while a
              Shift+background drag is in progress. Inert so it never interferes with the drag. */}
@@ -1051,6 +1266,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             <div ref={barScrollRef} className="min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide">
                <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
                   <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
+                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+                  {/* Sticky tool segment (Select / Pen): the mode, distinct from the one-shot spawn cluster
+                      that follows. Pen is sticky - exit via Select, Esc, or V. */}
+                  <div className="flex shrink-0 items-center gap-0.5">
+                     <ToolToggleButton active={activeTool === 'select'} title={t('BoardView.toolSelect')} onClick={() => setActiveTool('select')}>
+                        <MousePointer2 className="h-4 w-4" />
+                     </ToolToggleButton>
+                     <ToolToggleButton active={activeTool === 'pen'} title={t('BoardView.toolPen')} onClick={() => setActiveTool('pen')}>
+                        <Pen className="h-4 w-4" />
+                     </ToolToggleButton>
+                  </div>
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   {CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => (
                      <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
@@ -1372,6 +1598,25 @@ function ToolbarButton({ title, onClick, children }: { title: string; onClick: (
          title={title}
          aria-label={title}
          className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
+      >
+         {children}
+      </button>
+   );
+}
+
+/** A sticky, pressed-state toggle in the tool segment (Select / Pen). Chrome is app tokens only. */
+function ToolToggleButton({ title, active, onClick, children }: { title: string; active: boolean; onClick: () => void; children: React.ReactNode }) {
+   return (
+      <button
+         type="button"
+         onClick={onClick}
+         title={title}
+         aria-label={title}
+         aria-pressed={active}
+         className={cn(
+            'flex shrink-0 items-center justify-center rounded p-1.5 hover:bg-muted cursor-pointer',
+            active ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
+         )}
       >
          {children}
       </button>

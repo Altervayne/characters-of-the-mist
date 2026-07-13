@@ -17,6 +17,10 @@ import { cn } from '@/lib/utils';
  * The whole bar counter-scales by 1/zoom so it stays a constant on-screen size, and is
  * centered over the item (translateX(-50%) composed with the scale, origin center-bottom);
  * the gap above the item lives inside the scaled wrapper, so it stays constant too.
+ *
+ * When a tall item's top runs off the top of the canvas, the bar would float out of reach above it;
+ * `clampDown` (world px, from the canvas) lowers the bar's anchor so it stays visible - it sticks just
+ * below the clip's top edge and floats over the item's interior instead.
  */
 
 interface BoardItemToolbarProps {
@@ -33,15 +37,21 @@ interface BoardItemToolbarProps {
    slotRef: (node: HTMLDivElement | null) => void;
    /** Extra world-px lift above the item's top edge (a zone passes its title-bar height so the bar shows). */
    extraBottom?: number;
+   /** World-px to lower the bar so it clears the clip's top edge (a tall item off the top); 0 = no clamp. */
+   clampDown?: number;
 }
 
-export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef, extraBottom = 0 }: BoardItemToolbarProps) {
+export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef, extraBottom = 0, clampDown = 0 }: BoardItemToolbarProps) {
    const { t } = useTranslation();
+
+   // The bar anchors at the item's top edge (bottom:100%), lifted by any zone title-bar and lowered by the
+   // off-top clamp; both are world px, so a subtractive clamp can push the anchor past the box interior.
+   const bottom = clampDown || extraBottom ? `calc(100% + ${extraBottom - clampDown}px)` : '100%';
 
    return (
       <div
          className="absolute left-1/2"
-         style={{ bottom: extraBottom ? `calc(100% + ${extraBottom}px)` : '100%', transformOrigin: '50% 100%', transform: `translateX(-50%) scale(${1 / zoom})` }}
+         style={{ bottom, transformOrigin: '50% 100%', transform: `translateX(-50%) scale(${1 / zoom})` }}
       >
          {/* The padding is the screen-constant gap above the item (it scales with the bar). */}
          <div className="pb-2">

@@ -194,6 +194,51 @@ describe('mutating actions', () => {
       expect(store.getState().items['item-1'].content).toEqual({ kind: 'post-it', mode: 'copy', data: { id: 'n3', text: 'old' } });
    });
 
+   it('appendStroke adds one stroke as a delta, and undo peels exactly that stroke', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.addItem(makeRecord('layer', board.id, 0, { kind: 'drawing', width: 1, height: 1, content: { kind: 'drawing', strokes: [{ id: 's1', brush: 'pen', color: null, width: 3, points: [0, 0, 1, 1] }] } }));
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // World points inside the current extent: box holds, only the strokes grow.
+      await store.getState().actions.appendStroke('layer', { id: 's2', brush: 'pen', color: null, width: 3, points: [0, 0, 1, 1] });
+      const afterAppend = store.getState().items['layer'].content;
+      expect(afterAppend.kind === 'drawing' && afterAppend.strokes.map((s) => s.id)).toEqual(['s1', 's2']);
+      const persisted = (await repository.getItem('layer'))?.content;
+      expect(persisted?.kind === 'drawing' && persisted.strokes.map((s) => s.id)).toEqual(['s1', 's2']);
+
+      await store.getState().actions.undo();
+      const afterUndo = store.getState().items['layer'].content;
+      // Undo removes only the appended stroke (a pure delta), leaving the layer's prior strokes intact.
+      expect(afterUndo.kind === 'drawing' && afterUndo.strokes.map((s) => s.id)).toEqual(['s1']);
+   });
+
+   it('appendStroke grows the box to the ink extent, and undo/redo converge it (memory == repo)', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.addItem(makeRecord('layer', board.id, 0, { kind: 'drawing', x: 0, y: 0, width: 10, height: 10, content: { kind: 'drawing', strokes: [{ id: 's1', brush: 'pen', color: null, width: 3, points: [0, 0, 10, 10] }] } }));
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // A world stroke reaching up/left of the origin: the box must shift its origin and grow.
+      await store.getState().actions.appendStroke('layer', { id: 's2', brush: 'pen', color: null, width: 3, points: [-5, -5, 2, 2] });
+      const grown = store.getState().items['layer'];
+      expect({ x: grown.x, y: grown.y, width: grown.width, height: grown.height }).toEqual({ x: -5, y: -5, width: 15, height: 15 });
+      // The optimistic view and the persisted record agree (the additive fast path relies on this).
+      const grownRepo = await repository.getItem('layer');
+      expect({ x: grownRepo?.x, y: grownRepo?.y, width: grownRepo?.width, height: grownRepo?.height }).toEqual({ x: -5, y: -5, width: 15, height: 15 });
+
+      await store.getState().actions.undo();
+      const shrunk = store.getState().items['layer'];
+      expect({ x: shrunk.x, y: shrunk.y, width: shrunk.width, height: shrunk.height }).toEqual({ x: 0, y: 0, width: 10, height: 10 });
+      expect(shrunk.content.kind === 'drawing' && shrunk.content.strokes.map((s) => s.id)).toEqual(['s1']);
+
+      await store.getState().actions.redo();
+      const regrown = store.getState().items['layer'];
+      expect({ x: regrown.x, y: regrown.y, width: regrown.width, height: regrown.height }).toEqual({ x: -5, y: -5, width: 15, height: 15 });
+      const regrownRepo = await repository.getItem('layer');
+      expect({ x: regrownRepo?.x, y: regrownRepo?.y, width: regrownRepo?.width, height: regrownRepo?.height }).toEqual({ x: -5, y: -5, width: 15, height: 15 });
+   });
+
    it('deleteItem removes optimistically and persists, undo restores the record', async () => {
       const board = await repository.createBoard('Board');
       await repository.addItem(makeRecord('item-1', board.id, 0, { x: 7 }));

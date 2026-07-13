@@ -1,5 +1,6 @@
 // -- Local Imports --
 import { BoardNotFoundError } from './boardErrors';
+import { appendStrokeToDrawing, recomputeDrawingBoxWithout } from './drawingStyle';
 import {
    addItem,
    deleteItem,
@@ -11,7 +12,7 @@ import {
 
 // -- Type Imports --
 import type { BoardItemRecord } from './boardRecords';
-import type { BoardItemContent } from '@/lib/types/board';
+import type { BoardItemContent, Stroke } from '@/lib/types/board';
 
 /*
  * Operation/command-based undo for the board, mirroring the drawer's command engine.
@@ -234,6 +235,36 @@ export function createUpdateItemContentCommand(id: string, content: BoardItemCon
       },
       async undo() {
          if (previousContent !== null) await updateItem(id, { content: previousContent });
+      },
+   };
+}
+
+/**
+ * Append a stroke to a drawing layer, growing the layer's box to the full ink extent. A pure DELTA both
+ * ways (holds only the added stroke, O(1) memory): `do()` reads the layer live and folds the stroke into
+ * the box (origin/size + re-based strokes); `undo()` reads live and re-fits the box to the strokes that
+ * remain. The stroke's `points` are WORLD coords - its ink position is invariant under the box re-basing,
+ * so `do()` is idempotent for redo and stays id-stable via the stroke's own id. Unlike
+ * {@link createUpdateItemContentCommand} it never snapshots the whole strokes array, so a long sketch
+ * stays O(N) memory across N per-stroke undo entries. No-ops if the target is missing or no longer a
+ * drawing (a concurrent delete raced the append).
+ */
+export function createAppendStrokeCommand(id: string, stroke: Stroke): BoardCommand {
+   const makeStroke = (points: number[]): Stroke => ({ ...stroke, points });
+   return {
+      label: 'append-stroke',
+      async do() {
+         const item = await getItem(id);
+         if (!item) throw new BoardNotFoundError(`Board item not found: ${id}`);
+         if (item.content.kind !== 'drawing') return;
+         const next = appendStrokeToDrawing({ x: item.x, y: item.y, content: item.content }, stroke.points, makeStroke);
+         await updateItem(id, { x: next.x, y: next.y, width: next.width, height: next.height, content: { ...item.content, strokes: next.strokes } });
+      },
+      async undo() {
+         const item = await getItem(id);
+         if (!item || item.content.kind !== 'drawing') return;
+         const next = recomputeDrawingBoxWithout({ x: item.x, y: item.y, content: item.content }, stroke.id);
+         await updateItem(id, { x: next.x, y: next.y, width: next.width, height: next.height, content: { ...item.content, strokes: next.strokes } });
       },
    };
 }

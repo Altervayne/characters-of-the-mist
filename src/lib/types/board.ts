@@ -31,7 +31,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character' | 'portal' | 'text';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character' | 'portal' | 'text' | 'drawing';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -338,6 +338,34 @@ export interface TextBoardContent {
    style: TextStyle;
 }
 
+/**
+ * One freehand stroke on a drawing layer. `points` is a flat `[x0,y0,x1,y1,...]` list in LAYER-LOCAL
+ * coords (relative to the layer item's `x`/`y` origin), so a layer move stays a pure translate and a
+ * stroke append never touches the box. `color` is required-but-nullable: null is the adaptive default
+ * (the theme foreground, legible on any board), frozen to a user hex only once picked. `width` is world
+ * px, so ink scales with the board. `brush` is the stroke family; only `'pen'` exists so far. `pressure`
+ * is a reserved per-point channel, dormant while width is constant.
+ */
+export interface Stroke {
+   id: string;
+   brush: 'pen';
+   color: string | null;
+   width: number;
+   points: number[];
+   pressure?: number[];
+}
+
+/**
+ * A drawing LAYER: one board item holding all the strokes drawn on it, bbox-positioned + z'd like any
+ * item (so it moves/deletes/reorders verbatim and interleaves with other items by z). Board-only
+ * furniture - never a drawer entity - so its `content` is opaque inline (no record or schema change).
+ * The strokes' smoothed path is derived at paint, never stored.
+ */
+export interface DrawingBoardContent {
+   kind: 'drawing';
+   strokes: Stroke[];
+}
+
 /** A board item's payload, discriminated by `kind` (mirrors the item's own `kind`). */
 export type BoardItemContent =
    | ImageBoardContent
@@ -353,7 +381,8 @@ export type BoardItemContent =
    | ZoneBoardContent
    | CharacterBoardContent
    | PortalBoardContent
-   | TextBoardContent;
+   | TextBoardContent
+   | DrawingBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.

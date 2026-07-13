@@ -126,6 +126,8 @@
    },
    "BoardView": {
       "otherElements": "[TO COMPLETE]",
+      "toolSelect": "[TO COMPLETE]",
+      "toolPen": "[TO COMPLETE]",
       "addPostIt": "[TO COMPLETE]",
       "addText": "[TO COMPLETE]",
       "addJournal": "[TO COMPLETE]",
@@ -1218,6 +1220,7 @@
          "character": "Fiche de Personnage",
          "creation": "Création",
          "note": "[TO COMPLETE]",
+         "tools": "[TO COMPLETE]",
          "themePalette": "Choisissez une nouvelle Palette",
          "chooseThemeType": "Choisissez un Type",
          "chooseThemebook": "Choisissez un Thème"
@@ -1262,6 +1265,8 @@
          "createChallengeCard": "[TO COMPLETE]",
          "createJournal": "[TO COMPLETE]",
          "embedNote": "[TO COMPLETE]",
+         "setToolSelect": "[TO COMPLETE]",
+         "setToolPen": "[TO COMPLETE]",
          "cardTypeCharacter": "Type : Thème de Personnage",
          "cardTypeFellowship": "Type : Thème de Groupe",
          "cardTypeCrew": "Type : Thème d'Équipe",

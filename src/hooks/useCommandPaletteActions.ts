@@ -11,7 +11,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -227,6 +227,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'createChallenge', scope: 'character', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new'], icon: Skull, group: t('CommandPalette.groups.creation'), action: onCreateChallenge },
       // A journal is game-agnostic (the character's own notebook), so it's creatable on any character tab too.
       { id: 'createJournal', scope: 'character', label: t('CommandPalette.commands.createJournal'), keywords: ['journal', 'notebook', 'notes', 'pages', 'create', 'new'], icon: NotebookText, group: t('CommandPalette.groups.creation'), action: onCreateJournal },
+      // The board's sticky pointer tools, mirroring the top-left segment. Ephemeral (the canvas owns the
+      // active tool), so both route through the same one-shot request bridge the creates use.
+      { id: 'setToolSelect', scope: 'board', label: t('CommandPalette.commands.setToolSelect'), keywords: ['tool', 'select', 'pointer', 'move', 'board'], icon: MousePointer2, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:select') },
+      { id: 'setToolPen', scope: 'board', label: t('CommandPalette.commands.setToolPen'), keywords: ['tool', 'pen', 'draw', 'pencil', 'sketch', 'ink', 'board'], icon: Pen, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:pen') },
       // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
       // active canvas consumes this request since it owns the drop point + selection/expand state.
       { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },

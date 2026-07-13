@@ -126,6 +126,8 @@
    },
    "BoardView": {
       "otherElements": "Other Elements…",
+      "toolSelect": "Select tool",
+      "toolPen": "Pen tool",
       "addPostIt": "Add post-it",
       "addText": "Add text",
       "addJournal": "Add journal",
@@ -1300,6 +1302,7 @@
          "character": "Character Sheet",
          "creation": "Creation",
          "note": "Note",
+         "tools": "Tools",
 
 
          "themePalette": "Choose a new Theme Palette",
@@ -1353,6 +1356,8 @@
          "createChallengeCard": "Create: Challenge Card",
          "createJournal": "Create: Journal",
          "embedNote": "Embed: Note",
+         "setToolSelect": "Tool: Select",
+         "setToolPen": "Tool: Pen",
 
          "cardTypeCharacter": "Type: Character Theme",
          "cardTypeFellowship": "Type: Fellowship Theme",

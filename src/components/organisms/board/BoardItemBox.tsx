@@ -75,6 +75,8 @@ interface BoardItemBoxProps {
    isSelected: boolean;
    /** The ONLY selected item: shows the per-item toolbar + resize grip (suppressed in a multi-selection). */
    soleSelected: boolean;
+   /** World-px to push the toolbar down so it clears the clip's top edge (a tall item off the top); 0/undefined = no clamp. */
+   toolbarClamp?: number;
    /** A zone's member count, for its collapsed-bar badge (undefined for non-zones). */
    memberCount?: number;
    /** Current zoom, so screen deltas convert to world deltas and chrome stays screen-constant. */
@@ -135,6 +137,7 @@ export const BoardItemBox = memo(function BoardItemBox({
    item,
    isSelected,
    soleSelected,
+   toolbarClamp,
    memberCount,
    zoom,
    moveDelta,
@@ -299,8 +302,9 @@ export const BoardItemBox = memo(function BoardItemBox({
    // carries its own border, background, and shape, so the box adds no chrome (no second border/shadow) -
    // just a selection ring, and it never clips (the panel owns its own rounding + overflow). A portal owns
    // its button surface + hover/dead states. A bare text element joins this set as the extreme case: NO
-   // panel at all - just styled text on the canvas, the box contributing only a selection ring.
-   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note' || item.kind === 'portal' || item.kind === 'text';
+   // panel at all - just styled text on the canvas, the box contributing only a selection ring. A drawing
+   // layer is the same - only its strokes paint (which freely overflow the loose box), no chrome.
+   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note' || item.kind === 'portal' || item.kind === 'text' || item.kind === 'drawing';
    // A note tile is a WINDOWED embed: unlike the fixed card/tracker/character panels it is freely
    // 2D-resizable (internal scroll), so it keeps the resize grip the other embeds drop. A portal is
    // resizable in every style too (owner override of the auto-hug): its glyph + type scale with the box.
@@ -412,9 +416,9 @@ export const BoardItemBox = memo(function BoardItemBox({
                         ? cn('rounded-full', isSelected && 'ring-2 ring-primary')
                         : isEmbed
                            // Match the ring radius to the embed's own corners: a card is rounded-xl; a portal
-                           // is rounded-md; a bare text element hugs tight (rounded-sm); a tracker, character,
-                           // or note tile is rounded-lg.
-                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : item.kind === 'text' ? 'rounded-sm' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
+                           // is rounded-md; a bare text element or drawing layer hugs tight (rounded-sm); a
+                           // tracker, character, or note tile is rounded-lg.
+                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : item.kind === 'text' || item.kind === 'drawing' ? 'rounded-sm' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
                            : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary/50'),
             )}
          >
@@ -443,6 +447,7 @@ export const BoardItemBox = memo(function BoardItemBox({
                <BoardItemToolbar
                   zoom={zoom}
                   isMoving={isMoving}
+                  clampDown={toolbarClamp}
                   // An expanded zone's title bar sits above the frame too; lift the toolbar above it.
                   extraBottom={isZone && !isCollapsedZone ? ZONE_TITLE_BAR_HEIGHT + 4 : 0}
                   onMoveStart={(event) => onMoveStart(item.id, event)}

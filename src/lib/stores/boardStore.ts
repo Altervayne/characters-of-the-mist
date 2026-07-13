@@ -8,6 +8,7 @@ import { DEFAULT_BOARD_GRID } from '@/lib/board/boardRecords';
 import { createBoardCommandEngine } from '@/lib/board/boardCommandEngine';
 import {
    createAddItemCommand,
+   createAppendStrokeCommand,
    createCompoundCommand,
    createDeleteItemCommand,
    createMoveItemCommand,
@@ -17,6 +18,7 @@ import {
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
+import { appendStrokeToDrawing } from '@/lib/board/drawingStyle';
 import { zoneContaining } from '@/lib/board/zoneMembership';
 
 // -- Store Imports --
@@ -25,7 +27,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 // -- Type Imports --
 import type { BoardCommand, ResizePatch } from '@/lib/board/boardCommands';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
-import type { Board, BoardGrid, BoardItem, BoardItemContent, Viewport } from '@/lib/types/board';
+import type { Board, BoardGrid, BoardItem, BoardItemContent, Stroke, Viewport } from '@/lib/types/board';
 
 /*
  * Board store - the React-facing, in-memory view of one open board, backed by the
@@ -100,6 +102,13 @@ export interface BoardState {
       /** Drops an item below all others (`min(z) - 1` over the live items). */
       sendToBack: (id: string) => Promise<void>;
       updateItemContent: (id: string, content: BoardItemContent) => Promise<void>;
+      /**
+       * Appends a stroke (its `points` in WORLD coords) to a drawing layer as one undo step, via a pure
+       * delta command (not a full content snapshot). Grows the layer's box to the ink extent and re-bases
+       * points to layer-local, optimistically then on the additive fast path (no reload). The overlay mints
+       * a layer with {@link addItem} for the first stroke, then appends here.
+       */
+      appendStroke: (itemId: string, stroke: Stroke) => Promise<void>;
       /**
        * Caches a reference item's `lastKnown` snapshot via a DIRECT repo write, never a
        * command - so a passive source-driven re-read never lands on the board undo stack.
@@ -205,8 +214,9 @@ function createDebouncer<T>(delay: number, run: (value: T) => void): (value: T) 
 export function createBoardStore(options: { viewportSaveDebounceMs?: number } = {}) {
    const viewportSaveDebounceMs = options.viewportSaveDebounceMs ?? VIEWPORT_SAVE_DEBOUNCE_MS;
    // This instance's own engine, so its undo/redo stacks never cross-wire with another
-   // board's. The `subscribe` mirror below is wired to THIS engine only.
-   const engine = createBoardCommandEngine();
+   // board's. The `subscribe` mirror below is wired to THIS engine only. The deeper cap keeps a
+   // long pen sketch (one stroke = one undo step) from overflowing the stack mid-drawing.
+   const engine = createBoardCommandEngine({ undoLimit: 200 });
 
    const useStore = create<BoardState>()((set, get) => {
       /** Rebuilds the `items` map from persisted truth, leaving `name`/`viewport` (not item rows) alone. */
@@ -234,20 +244,33 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             });
       });
 
+      // A tail promise every item mutation chains onto, so commands run strictly one at a time. Each
+      // command's `do()` is a read-modify-write of the repo; serializing them stops a rapid burst (fast
+      // pen strokes) from interleaving - stroke 2 reading the array before stroke 1's write lands and
+      // clobbering it. `.catch` keeps a rejection from breaking the chain for the next mutation.
+      let mutationTail: Promise<void> = Promise.resolve();
+
       /**
-       * Executes a command through this instance's engine, then resyncs the in-memory
-       * map to persisted truth. On failure it records the error, resyncs (reverting the
-       * optimistic change the caller already applied), and rethrows.
+       * Executes a command through this instance's engine, serialized behind any in-flight mutation.
+       * On success it resyncs the in-memory map to persisted truth, EXCEPT on the `additive` fast path
+       * (a pure add / single-item content delta), where the caller's optimistic `set` is already
+       * authoritative and a full `listItems()` reload would be wasted - so a stroke append never triggers
+       * one. On failure it records the error, resyncs (reverting the optimistic change), and rethrows;
+       * an additive failure still resyncs to roll the optimistic change back.
        */
-      const runItemMutation = async (command: BoardCommand): Promise<void> => {
-         try {
-            await engine.execute(command);
-         } catch (error) {
-            set({ error: toErrorMessage(error) });
-            await syncItemsFromRepo();
-            throw error;
-         }
-         await syncItemsFromRepo();
+      const runItemMutation = (command: BoardCommand, { additive = false }: { additive?: boolean } = {}): Promise<void> => {
+         const run = mutationTail.then(async () => {
+            try {
+               await engine.execute(command);
+            } catch (error) {
+               set({ error: toErrorMessage(error) });
+               await syncItemsFromRepo();
+               throw error;
+            }
+            if (!additive) await syncItemsFromRepo();
+         });
+         mutationTail = run.catch(() => {});
+         return run;
       };
 
       /** Marks a real edit: routes Ctrl/Cmd+Z here AND flags the board dirty (so close warns). */
@@ -285,7 +308,8 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                markDirty();
                const record: BoardItemRecord = { ...item, boardId };
                set((state) => ({ items: { ...state.items, [item.id]: item } }));
-               await runItemMutation(createAddItemCommand(record));
+               // A pure add: the optimistic insert above IS the truth, so skip the post-command reload.
+               await runItemMutation(createAddItemCommand(record), { additive: true });
             },
 
             moveItem: async (id, position) => {
@@ -469,6 +493,21 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                await runItemMutation(createUpdateItemContentCommand(id, content));
+            },
+
+            appendStroke: async (itemId, stroke) => {
+               markDirty();
+               const existing = get().items[itemId];
+               if (existing && existing.content.kind === 'drawing') {
+                  // Grow the box with the SAME helper the command persists with, so the optimistic view is
+                  // byte-identical to the persisted one - the additive fast path (no reload) stays valid.
+                  const next = appendStrokeToDrawing({ x: existing.x, y: existing.y, content: existing.content }, stroke.points, (points) => ({ ...stroke, points }));
+                  const grown = { ...existing, x: next.x, y: next.y, width: next.width, height: next.height, content: { ...existing.content, strokes: next.strokes } };
+                  set((state) => ({ items: { ...state.items, [itemId]: grown } }));
+               }
+               // Additive: a single-item content delta, so the optimistic apply above is authoritative -
+               // no full reload per stroke.
+               await runItemMutation(createAppendStrokeCommand(itemId, stroke), { additive: true });
             },
 
             cacheReferenceLastKnown: async (id, content) => {
