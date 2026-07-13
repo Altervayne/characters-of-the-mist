@@ -1450,8 +1450,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              moves exactly like the CSS grids; the 1px stroke stays constant on screen. */}
          {grid.type === 'hex' && (() => {
             const tile = hexTile(gridSpacing(viewport.zoom));
+            // Full-strength ink + element opacity (not a translucent stroke): the tile double-draws shared
+            // edges, and element opacity flattens the overlaps to one uniform weight.
             return (
-               <svg className="pointer-events-none absolute inset-0 h-full w-full text-foreground/15">
+               <svg className="pointer-events-none absolute inset-0 h-full w-full text-foreground opacity-[0.15]">
                   <defs>
                      <pattern
                         id={hexPatternId}

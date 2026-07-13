@@ -29,12 +29,26 @@ describe('hexTile', () => {
       expect(tile.height).toBe(30);
    });
 
-   it('emits exactly two closed hexagons', () => {
+   it('emits the five hexes that touch the tile (four corners + centre)', () => {
       const tile = hexTile(10);
-      expect(tile.path.match(/Z/g)).toHaveLength(2);
-      expect(tile.path.match(/M/g)).toHaveLength(2);
+      // Every hex whose outline crosses the tile is drawn, so clipping can't strip an edge shared by two
+      // corner hexes: the four corners + the centre.
+      expect(tile.path.match(/Z/g)).toHaveLength(5);
+      expect(tile.path.match(/M/g)).toHaveLength(5);
       // Six vertices per hexagon.
-      expect(pathPoints(tile.path)).toHaveLength(12);
+      expect(pathPoints(tile.path)).toHaveLength(30);
+   });
+
+   it('draws a hex on every corner so boundary edges are covered', () => {
+      const size = 10;
+      const tile = hexTile(size);
+      const points = pathPoints(tile.path);
+      // Each corner hex's outermost vertex (its top/bottom point, off the tile) - unique to that hex, so it
+      // proves the hex is drawn rather than coinciding with the centre hex.
+      expect(hasPoint(points, 0, -size)).toBe(true);                        // (0,0) top
+      expect(hasPoint(points, tile.width, -size)).toBe(true);               // (width,0) top
+      expect(hasPoint(points, 0, tile.height + size)).toBe(true);           // (0,height) bottom
+      expect(hasPoint(points, tile.width, tile.height + size)).toBe(true);  // (width,height) bottom
    });
 
    it('places the centered hexagon at the tile center with the right vertices', () => {
