@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, Eraser, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, MousePointer2, Pen, Plus, Skull, Square, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, MousePointer2, PenTool, Plus, Skull, Square, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToW
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
-import { ERASER_RADIUS, NIB_ANGLE, brushOpacity, buildBrushRibbonPath, buildStrokePath, makeStroke, pointsBounds, rebasePoints, strokeColorToCss, strokeHitsPoint } from '@/lib/board/drawingStyle';
+import { ERASER_RADIUS, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
@@ -28,6 +28,7 @@ import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 import { CREATABLE_REGISTRY, CREATABLE_BY_KIND, type CreatableKind } from '@/lib/creation/creatableRegistry';
 import { makePortalContent, portalTargetFromInsert } from '@/lib/creation/portalContent';
 import { PORTAL_MIN_SIZE } from '@/lib/board/portalSizing';
+import { EMPTY_STROKE_IDS, PendingEraseContext } from '@/lib/board/PendingEraseContext';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import { runSaveImageToDrawerAs, runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
@@ -41,6 +42,7 @@ import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
 import { LinkTargetList } from '@/components/molecules/links/LinkTargetList';
 import { BoardPortalEditor } from './items/BoardPortalEditor';
+import { StrokeShape } from './items/BoardDrawingItem';
 
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
@@ -53,7 +55,7 @@ import type { CSSProperties, ReactNode } from 'react';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Viewport } from '@/lib/types/board';
+import type { ActiveTool, BoardGrid, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
@@ -232,9 +234,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const [connectPreview, setConnectPreview] = useState<{ fromId: string; cursor: Point } | null>(null);
 
    // The active pointer TOOL and the current drawing LAYER strokes append to - both ephemeral (same
-   // family as the selection), never persisted or routed through commands. `'eraser'` is reserved (its
-   // gesture arrives later); only Select + Pen are wired. A first stroke with no active layer mints one.
-   const [activeTool, setActiveTool] = useState<'select' | 'pen' | 'eraser'>('select');
+   // family as the selection), never persisted or routed through commands. `select` is the default
+   // (click-through overlay); every other value is a Draw gesture that owns the pointer. Only freehand +
+   // eraser are wired today. A first stroke with no active layer mints one.
+   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
+   // The last Draw gesture chosen, so re-entering Draw from Select restores it (default freehand). Ephemeral.
+   const lastDrawToolRef = useRef<Exclude<ActiveTool, 'select'>>('freehand');
+   /** Enters a Draw gesture and remembers it, so leaving to Select and clicking Draw returns to that gesture. */
+   const chooseDrawTool = useCallback((tool: Exclude<ActiveTool, 'select'>) => {
+      lastDrawToolRef.current = tool;
+      setActiveTool(tool);
+   }, []);
    const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
    // The pen/highlighter settings (brush, ink, per-brush widths), persisted in app settings. Every new
    // stroke and the live preview read the CURRENT values, so the pickers actually drive the ink.
@@ -249,12 +259,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const currentStrokeRef = useRef<{ points: number[] } | null>(null);
    const strokeCleanupRef = useRef<null | (() => void)>(null);
    const [penPreview, setPenPreview] = useState<number[] | null>(null);
+   // Stroke ids the in-progress eraser scrub has crossed, hidden on contact and cleared when the scrub
+   // commits (or on board switch). The removal is only made real, as ONE undo step, on pointer-up.
+   const [pendingErase, setPendingErase] = useState<ReadonlySet<string>>(EMPTY_STROKE_IDS);
    // Board switches keep this canvas mounted (a new `store` prop, no remount), so the tool/layer would
    // leak across boards; reset them when the loaded board id changes.
    const boardId = useStore(store, (state) => state.boardId);
    useEffect(() => {
       setActiveTool('select');
       setActiveLayerId(null);
+      setPendingErase(EMPTY_STROKE_IDS);
    }, [boardId]);
 
    const sortedItems = Object.values(items).sort((a, b) => a.z - b.z);
@@ -563,7 +577,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       };
    }, []);
 
-   // Esc / V leave a non-select tool (the pen is sticky, so it needs an explicit exit besides the segment).
+   // Esc / V leave a Draw gesture (they're sticky, so they need an explicit exit besides the segment).
    // Mounted only off the select tool, so V never shadows anything in the default mode.
    useEffect(() => {
       if (activeTool === 'select') return;
@@ -583,8 +597,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       // Middle-button and Space+drag pan in ANY tool (the pen's escape hatch out of its viewport).
       if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
       if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
-      // Past here only the select tool acts on the background; the pen tool's background is owned by the
-      // capture overlay (a higher sibling), so a plain pen pointerdown never reaches here.
+      // Past here only the select tool acts on the background; a Draw gesture's background is owned by the
+      // capture overlay (a higher sibling), so a plain draw pointerdown never reaches here.
       if (event.button !== 0 || activeTool !== 'select') return;
       if (event.shiftKey) {
          // Shift+drag is a marquee, not a pan; it keeps the current selection (additive).
@@ -624,7 +638,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    // ==================
-   //  Pen capture (screen-space overlay owns the gesture; the preview paints in the world layer)
+   //  Freehand capture (screen-space overlay owns the gesture; the preview paints in the world layer)
    // ==================
    /**
     * Commits a finished stroke (given its WORLD points): appends it to the active drawing layer, or mints
@@ -632,14 +646,18 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * layer-local). The stroke carries the CURRENT brush/ink/width. Fewer than two points is a stray tap - dropped.
     */
    const commitStroke = useCallback(
-      (worldPoints: number[]) => {
-         if (worldPoints.length < 4) return;
+      (worldPoints: number[], shape?: Stroke['shape']) => {
+         // Min points is shape-aware: a polygon needs 3 vertices (6 numbers); a line and freehand both need
+         // 2 (4 numbers), so a stray tap still drops but a valid line survives.
+         if (worldPoints.length < (shape === 'polygon' ? 6 : 4)) return;
+         // A Line from a pure click (endpoints all but coincident) is a zero-length dot; discard it.
+         if (shape === 'line' && isLineDegenerate(worldPoints, MIN_LINE_LENGTH)) return;
          const width = penSettings.width;
          const liveItems = store.getState().items;
          const layer = activeLayerId ? liveItems[activeLayerId] : undefined;
          if (layer && layer.content.kind === 'drawing') {
             // World points: the store grows the box + re-bases to layer-local, so the box tracks every stroke.
-            void actions.appendStroke(layer.id, makeStroke(cuid(), worldPoints, penSettings.brush, penSettings.color, width));
+            void actions.appendStroke(layer.id, makeStroke(cuid(), worldPoints, penSettings.brush, penSettings.color, width, shape));
             return;
          }
          const bounds = pointsBounds(worldPoints);
@@ -656,7 +674,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             width: bounds.maxX - bounds.minX,
             height: bounds.maxY - bounds.minY,
             z,
-            content: { kind: 'drawing', strokes: [makeStroke(cuid(), local, penSettings.brush, penSettings.color, width)] },
+            content: { kind: 'drawing', strokes: [makeStroke(cuid(), local, penSettings.brush, penSettings.color, width, shape)] },
          });
          setActiveLayerId(id);
       },
@@ -664,14 +682,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    );
 
    /**
-    * Pen-overlay pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
+    * Freehand-overlay pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
     * press starts a stroke. Points are captured in screen and converted to world via `cursorToWorld`;
     * `getCoalescedEvents` recovers the batched samples a fast stroke would otherwise skip. Window
     * listeners (mirroring the connect drag) keep the move/up landing off the overlay; the teardown is
     * stashed in a ref so an unmount mid-stroke can't leak them.
     */
-   const handlePenPointerDown = (event: ReactPointerEvent) => {
-      // The overlay owns every pointerdown in pen mode; stop it reaching the clip's background handler
+   const handleFreehandPointerDown = (event: ReactPointerEvent) => {
+      // The overlay owns every pointerdown in a draw gesture; stop it reaching the clip's background handler
       // (which would double-fire a middle/Space pan or clear the selection).
       event.stopPropagation();
       if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
@@ -703,7 +721,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          currentStrokeRef.current = null;
          cleanup();
          setPenPreview(null);
-         if (stroke) commitStroke(stroke.points); // stays in pen (sticky)
+         if (stroke) commitStroke(stroke.points); // stays in freehand (sticky)
       };
       strokeCleanupRef.current = cleanup;
       window.addEventListener('pointermove', onMove);
@@ -713,6 +731,49 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // A mid-stroke unmount (tab switch) fires no pointerup; tear the in-flight listeners down so they
    // never point at a dead store. The half-drawn stroke is simply discarded.
    useEffect(() => () => strokeCleanupRef.current?.(), []);
+
+   /**
+    * Line-overlay pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
+    * press-drag from A to B. The live preview is a 2-point stroke; Shift snaps the A->B angle to 45deg
+    * increments (length preserved). On release it commits a geometric `line` stroke and stays in Line
+    * (sticky). Window listeners + the shared cleanup ref mirror the freehand gesture.
+    */
+   const handleLinePointerDown = (event: ReactPointerEvent) => {
+      event.stopPropagation();
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button !== 0) return; // right-click falls through to the overlay's context menu (radial)
+      const start = cursorToWorld(event.clientX, event.clientY);
+      if (!start) return;
+      const sx = start.x;
+      const sy = start.y;
+      setPenPreview([sx, sy, sx, sy]);
+
+      // The end point in world, angle-snapped to 45deg while Shift is held.
+      const endPoint = (clientX: number, clientY: number, shift: boolean) => {
+         const end = cursorToWorld(clientX, clientY);
+         if (!end) return null;
+         return shift ? snapAngle(sx, sy, end.x, end.y, Math.PI / 4) : end;
+      };
+      const onMove = (moveEvent: PointerEvent) => {
+         const to = endPoint(moveEvent.clientX, moveEvent.clientY, moveEvent.shiftKey);
+         if (to) setPenPreview([sx, sy, to.x, to.y]);
+      };
+      const cleanup = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+         strokeCleanupRef.current = null;
+      };
+      const onUp = (upEvent: PointerEvent) => {
+         cleanup();
+         setPenPreview(null);
+         const to = endPoint(upEvent.clientX, upEvent.clientY, upEvent.shiftKey);
+         if (to) commitStroke([sx, sy, to.x, to.y], 'line'); // stays in line (sticky)
+      };
+      strokeCleanupRef.current = cleanup;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   };
 
    /**
     * Commits a finished erase gesture: removes the collected strokes (per layer) as ONE undo step, then
@@ -740,9 +801,13 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (event.button !== 0) return; // right-click falls through to the overlay's context menu (radial)
 
       const touched = new Map<string, Set<string>>();
+      // Ids crossed this scrub, hidden on contact via the pending-erase set while the store's strokes stay
+      // intact - so the commit below can still read them to decide survivors vs. emptied layers.
+      const pending = new Set<string>();
       const eraseAt = (clientX: number, clientY: number) => {
          const world = cursorToWorld(clientX, clientY);
          if (!world) return;
+         let grew = false;
          for (const item of Object.values(store.getState().items)) {
             if (item.content.kind !== 'drawing') continue;
             for (const stroke of item.content.strokes) {
@@ -750,8 +815,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                let set = touched.get(item.id);
                if (!set) { set = new Set(); touched.set(item.id, set); }
                set.add(stroke.id);
+               if (!pending.has(stroke.id)) { pending.add(stroke.id); grew = true; }
             }
          }
+         // Only when a new stroke is crossed: hand a fresh set so the drawing layers re-render it away now.
+         if (grew) setPendingErase(new Set(pending));
       };
       eraseAt(event.clientX, event.clientY);
 
@@ -766,7 +834,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const onUp = () => {
          cleanup();
          if (touched.size === 0) return;
+         // `commitErase` runs the store's optimistic removal synchronously, so the strokes are already gone
+         // from the layers by the time the pending set clears - no flash of the erased ink reappearing.
          void commitErase([...touched].map(([layerId, ids]) => ({ layerId, strokeIds: [...ids] })));
+         setPendingErase(EMPTY_STROKE_IDS);
       };
       strokeCleanupRef.current = cleanup;
       window.addEventListener('pointermove', onMove);
@@ -965,9 +1036,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (!pendingBoardAction) return;
       if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
       else if (pendingBoardAction === 'setTool:select') setActiveTool('select');
-      else if (pendingBoardAction === 'setTool:pen') setActiveTool('pen');
-      else if (pendingBoardAction === 'setTool:eraser') setActiveTool('eraser');
-      else if (pendingBoardAction.startsWith('setBrush:')) { setActiveTool('pen'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
+      else if (pendingBoardAction === 'setTool:pen') chooseDrawTool('freehand');
+      else if (pendingBoardAction === 'setTool:line') chooseDrawTool('line');
+      else if (pendingBoardAction === 'setTool:eraser') chooseDrawTool('eraser');
+      // A brush pick is a style change; if a non-drawing gesture owns the pointer (select/eraser), enter freehand first.
+      else if (pendingBoardAction.startsWith('setBrush:')) { if (activeTool === 'select' || activeTool === 'eraser') chooseDrawTool('freehand'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
       else if (pendingBoardAction.startsWith('create:')) {
@@ -1200,7 +1273,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       : [];
 
    return (
-      <>
+      <PendingEraseContext.Provider value={pendingErase}>
       <div
          ref={setClipRefs}
          data-board-clip
@@ -1208,7 +1281,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          onPointerMove={handleBackgroundPointerMove}
          onPointerUp={handleBackgroundPointerUp}
          onContextMenu={handleContextMenu}
-         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld ? 'cursor-grab' : activeTool === 'pen' ? 'cursor-crosshair' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-grab')}
+         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld ? 'cursor-grab' : activeTool === 'select' ? 'cursor-grab' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
       >
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
@@ -1276,30 +1349,19 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                 over the items; inert, and gone the instant the stroke commits. */}
             {penPreview && (
                <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
-                  {penSettings.brush === 'brush' ? (
-                     <path d={buildBrushRibbonPath(penPreview, penSettings.width, NIB_ANGLE)} fill={strokeColorToCss(penSettings.color)} stroke="none" />
-                  ) : (
-                     <path
-                        d={buildStrokePath(penPreview)}
-                        fill="none"
-                        stroke={strokeColorToCss(penSettings.color)}
-                        strokeWidth={penSettings.width}
-                        strokeOpacity={brushOpacity(penSettings.brush)}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                     />
-                  )}
+                  {/* Same paint path as the committed stroke: geometric for a shape gesture, freehand otherwise. */}
+                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : undefined }} />
                </svg>
             )}
          </div>
 
-         {/* Pen/eraser capture overlay: a screen-space gesture surface above the world layer. Interactive
-             ONLY in pen or eraser mode (else fully click-through, so select mode is untouched and item boxes
-             never see the pointerdown). It routes the pan escape hatch first, then owns the stroke/scrub;
-             right-click falls through to the radial. It renders nothing - strokes live in their drawing items. */}
+         {/* Draw capture overlay: a screen-space gesture surface above the world layer. Interactive ONLY in a
+             Draw gesture (select stays fully click-through, so item boxes never see the pointerdown). It routes
+             the pan escape hatch first, then dispatches by the active gesture; right-click falls through to the
+             radial. It renders nothing - strokes live in their drawing items. */}
          <div
-            className={cn('absolute inset-0', activeTool === 'pen' ? 'cursor-crosshair' : activeTool === 'eraser' ? 'cursor-cell' : 'pointer-events-none')}
-            onPointerDown={activeTool === 'eraser' ? handleEraserPointerDown : handlePenPointerDown}
+            className={cn('absolute inset-0', activeTool === 'select' ? 'pointer-events-none' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
+            onPointerDown={activeTool === 'eraser' ? handleEraserPointerDown : activeTool === 'line' ? handleLinePointerDown : handleFreehandPointerDown}
             onContextMenu={handleContextMenu}
          />
 
@@ -1351,22 +1413,21 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
                   <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  {/* Sticky tool segment (Select / Pen / Eraser): the mode, distinct from the one-shot spawn
-                      cluster that follows. Pen and Eraser are sticky - exit via Select, Esc, or V. */}
+                  {/* Sticky mode segment (Elements / Drawing): labeled toggles with a stable icon per mode, so
+                      the modes read as distinct from the icon-only clusters below. The Drawing glyph never
+                      tracks the active gesture; the specific gesture lives in the settings bar. Drawing is
+                      pressed for any drawing gesture and re-enters the last one - exit via Elements, Esc, or V. */}
                   <div className="flex shrink-0 items-center gap-0.5">
-                     <ToolToggleButton active={activeTool === 'select'} title={t('BoardView.toolSelect')} onClick={() => setActiveTool('select')}>
+                     <ToolToggleButton active={activeTool === 'select'} title={t('BoardView.toolSelect')} label={t('BoardView.toolSelect')} onClick={() => setActiveTool('select')}>
                         <MousePointer2 className="h-4 w-4" />
                      </ToolToggleButton>
-                     <ToolToggleButton active={activeTool === 'pen'} title={t('BoardView.toolPen')} onClick={() => setActiveTool('pen')}>
-                        <Pen className="h-4 w-4" />
-                     </ToolToggleButton>
-                     <ToolToggleButton active={activeTool === 'eraser'} title={t('BoardView.toolEraser')} onClick={() => setActiveTool('eraser')}>
-                        <Eraser className="h-4 w-4" />
+                     <ToolToggleButton active={activeTool !== 'select'} title={t('BoardView.toolDraw')} label={t('BoardView.toolDraw')} onClick={() => chooseDrawTool(lastDrawToolRef.current)}>
+                        <PenTool className="h-4 w-4" />
                      </ToolToggleButton>
                   </div>
                   {/* The contextual second section swaps by mode: Select shows the element-creation cluster;
-                      Pen/Eraser shows the drawing-tool settings (brush / size / ink / new layer). The tool
-                      segment above and the view controls below stay visible in both modes. */}
+                      Draw shows the drawing-tool settings (gesture axis / brush / size / ink / new layer). The
+                      mode segment above and the view controls below stay visible in both modes. */}
                   {activeTool === 'select' ? (
                      <>
                         <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
@@ -1384,6 +1445,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   ) : (
                      <BoardToolSettingsBar
                         tool={activeTool}
+                        onSetTool={chooseDrawTool}
                         penSettings={penSettings}
                         onSetBrush={setPenBrush}
                         onSetColor={setPenColor}
@@ -1485,7 +1547,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             />
          </BoardFloatingWindow>
       )}
-      </>
+      </PendingEraseContext.Provider>
    );
 }
 
@@ -1707,8 +1769,9 @@ function ToolbarButton({ title, onClick, children }: { title: string; onClick: (
    );
 }
 
-/** A sticky, pressed-state toggle in the tool segment (Select / Pen). Chrome is app tokens only. */
-function ToolToggleButton({ title, active, onClick, children }: { title: string; active: boolean; onClick: () => void; children: React.ReactNode }) {
+/** A sticky, pressed-state toggle in the mode segment (Elements / Drawing). Carries a text label beside its
+    stable icon so the modes read distinct from the icon-only clusters below. Chrome is app tokens only. */
+function ToolToggleButton({ title, label, active, onClick, children }: { title: string; label: string; active: boolean; onClick: () => void; children: React.ReactNode }) {
    return (
       <button
          type="button"
@@ -1717,11 +1780,12 @@ function ToolToggleButton({ title, active, onClick, children }: { title: string;
          aria-label={title}
          aria-pressed={active}
          className={cn(
-            'flex shrink-0 items-center justify-center rounded p-1.5 hover:bg-muted cursor-pointer',
+            'flex shrink-0 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-sm hover:bg-muted cursor-pointer',
             active ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
          )}
       >
          {children}
+         <span>{label}</span>
       </button>
    );
 }

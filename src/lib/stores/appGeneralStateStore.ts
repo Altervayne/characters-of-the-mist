@@ -24,6 +24,7 @@ export type BoardAction =
    | 'createChallenge'
    | 'setTool:select'
    | 'setTool:pen'
+   | 'setTool:line'
    | 'setTool:eraser'
    | `setBrush:${BrushKind}`
    | 'saveItemToDrawer'

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildStrokePath, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, strokeColorToCss, strokeHitsPoint } from './drawingStyle';
+import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, MIN_LINE_LENGTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildGeometricRibbonPath, buildPolylinePath, buildStrokePath, isLineDegenerate, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
 
 // -- Type Imports --
 import type { BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
@@ -77,6 +77,154 @@ describe('makePenStroke', () => {
 describe('makeStroke', () => {
    it('carries the given brush, ink, and width', () => {
       expect(makeStroke('s1', [0, 0, 2, 2], 'highlighter', '#ff0000', 16)).toEqual({ id: 's1', brush: 'highlighter', color: '#ff0000', width: 16, points: [0, 0, 2, 2] });
+   });
+
+   it('stamps a shape only when one is passed (freehand stays shape-less)', () => {
+      expect(makeStroke('s1', [0, 0, 2, 2], 'pen', null, 3)).not.toHaveProperty('shape');
+      expect(makeStroke('s2', [0, 0, 2, 2], 'pen', null, 3, 'line').shape).toBe('line');
+      expect(makeStroke('s3', [0, 0, 2, 2, 4, 0], 'pen', null, 3, 'polygon').shape).toBe('polygon');
+   });
+});
+
+describe('buildPolylinePath', () => {
+   it('is empty for no points', () => {
+      expect(buildPolylinePath([], false)).toBe('');
+   });
+
+   it('draws a round-capped dot for a single point', () => {
+      expect(buildPolylinePath([5, 7], false)).toBe('M 5 7 L 5 7');
+   });
+
+   it('emits straight line-tos with no smoothing', () => {
+      expect(buildPolylinePath([0, 0, 10, 10], false)).toBe('M 0 0 L 10 10');
+      expect(buildPolylinePath([0, 0, 10, 10, 20, 0], false)).toBe('M 0 0 L 10 10 L 20 0');
+   });
+
+   it('appends Z only when closed', () => {
+      expect(buildPolylinePath([0, 0, 10, 10, 20, 0], true)).toBe('M 0 0 L 10 10 L 20 0 Z');
+      expect(/Z/.test(buildPolylinePath([0, 0, 10, 10, 20, 0], false))).toBe(false);
+   });
+});
+
+describe('buildGeometricRibbonPath', () => {
+   // The bbox of the first edge quad only (up to its closing Z), so the vertex discs' relative arc deltas
+   // never pollute the thickness measurement.
+   const firstQuadBounds = (d: string) => {
+      const nums = (d.slice(0, d.indexOf('Z')).match(/-?\d+(?:\.\d+)?(?:e-?\d+)?/gi) ?? []).map(Number);
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < nums.length - 1; i += 2) {
+         minX = Math.min(minX, nums[i]); maxX = Math.max(maxX, nums[i]);
+         minY = Math.min(minY, nums[i + 1]); maxY = Math.max(maxY, nums[i + 1]);
+      }
+      return { minX, minY, maxX, maxY };
+   };
+
+   it('is empty for no points', () => {
+      expect(buildGeometricRibbonPath([], 10, NIB_ANGLE, false)).toBe('');
+   });
+
+   it('draws a full-width round dot for a single point', () => {
+      const d = buildGeometricRibbonPath([5, 5], 10, NIB_ANGLE, false);
+      expect(d.match(/a/g)?.length).toBe(2); // two arcs close the disc
+   });
+
+   it('emits one filled quad for a single straight edge (no smoothing)', () => {
+      const d = buildGeometricRibbonPath([0, 0, 20, 0], 10, NIB_ANGLE, false);
+      expect((d.match(/ L /g) ?? []).length).toBe(3); // a quad is three line-tos after the move
+      expect(d.includes('C')).toBe(false); // geometric: never a curve
+   });
+
+   it('varies width by edge direction (a horizontal and a vertical edge differ, within the nib range)', () => {
+      const width = 10;
+      const h = firstQuadBounds(buildGeometricRibbonPath([0, 0, 20, 0], width, NIB_ANGLE, false)); // thickness is vertical
+      const v = firstQuadBounds(buildGeometricRibbonPath([0, 0, 0, 20], width, NIB_ANGLE, false)); // thickness is horizontal
+      const hThick = h.maxY - h.minY;
+      const vThick = v.maxX - v.minX;
+      expect(hThick).not.toBeCloseTo(vThick);
+      for (const thick of [hThick, vThick]) {
+         expect(thick).toBeGreaterThanOrEqual(width * BRUSH_MIN_WIDTH_FACTOR - 1e-6);
+         expect(thick).toBeLessThanOrEqual(width + 1e-6);
+      }
+   });
+
+   it('closes a triangle: three edge quads plus bridging discs', () => {
+      const open = buildGeometricRibbonPath([0, 0, 20, 0, 10, 17], 10, NIB_ANGLE, false); // 2 edges
+      const closed = buildGeometricRibbonPath([0, 0, 20, 0, 10, 17], 10, NIB_ANGLE, true); // + the wrap edge
+      // Each quad is three line-tos; the closed form carries the extra closing edge.
+      expect((closed.match(/ L /g) ?? []).length).toBe((open.match(/ L /g) ?? []).length + 3);
+      expect(closed.includes('a')).toBe(true); // vertex discs bridge the corners
+   });
+
+   it('collapses to a lone dot when every point is coincident', () => {
+      const d = buildGeometricRibbonPath([4, 4, 4, 4, 4, 4], 10, NIB_ANGLE, false);
+      expect(d.match(/a/g)?.length).toBe(2); // no quad survives; a single disc remains
+      expect(d.includes('L')).toBe(false);
+   });
+});
+
+describe('snapAngle', () => {
+   const step = Math.PI / 4; // 45deg
+
+   it('snaps a near-diagonal to an exact 45deg, keeping the length', () => {
+      const p = snapAngle(0, 0, 10, 6, step); // ~31deg -> 45deg
+      expect(p.x).toBeCloseTo(p.y); // exactly on the 45deg diagonal
+      expect(Math.hypot(p.x, p.y)).toBeCloseTo(Math.hypot(10, 6)); // length preserved
+   });
+
+   it('leaves an already axis-aligned segment on its axis', () => {
+      const p = snapAngle(0, 0, 12, 0.3, step); // ~1.4deg -> 0deg
+      expect(p.x).toBeCloseTo(Math.hypot(12, 0.3));
+      expect(p.y).toBeCloseTo(0);
+   });
+
+   it('returns the end unchanged for a zero-length segment (no direction)', () => {
+      expect(snapAngle(5, 5, 5, 5, step)).toEqual({ x: 5, y: 5 });
+   });
+});
+
+describe('isLineDegenerate', () => {
+   it('flags a pure click (coincident endpoints)', () => {
+      expect(isLineDegenerate([10, 10, 10, 10], MIN_LINE_LENGTH)).toBe(true);
+   });
+
+   it('flags a sub-threshold drag', () => {
+      expect(isLineDegenerate([0, 0, MIN_LINE_LENGTH - 0.5, 0], MIN_LINE_LENGTH)).toBe(true);
+   });
+
+   it('passes a drag past the threshold', () => {
+      expect(isLineDegenerate([0, 0, MIN_LINE_LENGTH + 1, 0], MIN_LINE_LENGTH)).toBe(false);
+   });
+
+   it('flags a point list too short to be a line', () => {
+      expect(isLineDegenerate([0, 0], MIN_LINE_LENGTH)).toBe(true);
+   });
+});
+
+describe('strokePaint', () => {
+   it('paints a geometric brush stroke as a filled nib ribbon', () => {
+      const paint = strokePaint({ brush: 'brush', color: null, width: 10, points: [0, 0, 20, 0], shape: 'line' });
+      expect(paint.fill).toBe('var(--foreground)');
+      expect(paint.stroke).toBe('none');
+      expect(paint.d.includes('C')).toBe(false); // crisp, not smoothed
+   });
+
+   it('paints a geometric pen line as a crisp stroked polyline', () => {
+      const paint = strokePaint({ brush: 'pen', color: '#ff0000', width: 3, points: [0, 0, 20, 0], shape: 'line' });
+      expect(paint.fill).toBe('none');
+      expect(paint.stroke).toBe('#ff0000');
+      expect(paint.strokeWidth).toBe(3);
+      expect(paint.d).toBe('M 0 0 L 20 0');
+   });
+
+   it('keeps the highlighter translucent and closes a polygon', () => {
+      const paint = strokePaint({ brush: 'highlighter', color: null, width: 8, points: [0, 0, 10, 0, 5, 8], shape: 'polygon' });
+      expect(paint.strokeOpacity).toBeCloseTo(0.4);
+      expect(paint.d.trim().endsWith('Z')).toBe(true);
+   });
+
+   it('falls back to the freehand smoothed path when no shape is set', () => {
+      const paint = strokePaint({ brush: 'pen', color: null, width: 3, points: [0, 0, 10, 10, 20, 0] });
+      expect(paint.d.includes('C')).toBe(true); // smoothed bezier, not a crisp polyline
    });
 });
 

@@ -241,9 +241,129 @@ export function buildBrushRibbonPath(points: number[], baseWidth: number, nibAng
    return d;
 }
 
-/** A fresh stroke over a flat point list, carrying its brush, ink, and width. */
-export function makeStroke(id: string, points: number[], brush: BrushKind, color: string | null, width: number): Stroke {
-   return { id, brush, color, width, points };
+/**
+ * A crisp polyline path over a flat `[x0,y0,...]` point list - straight `M`/`L` segments, no smoothing (the
+ * geometric counterpart to {@link buildStrokePath}). An empty list yields no path; a single point yields a
+ * round-capped dot; `closed` appends a `Z` so the last vertex joins the first.
+ */
+export function buildPolylinePath(points: number[], closed: boolean): string {
+   const count = Math.floor(points.length / 2);
+   if (count === 0) return '';
+   if (count === 1) return `M ${points[0]} ${points[1]} L ${points[0]} ${points[1]}`;
+   let d = `M ${points[0]} ${points[1]}`;
+   for (let i = 1; i < count; i++) d += ` L ${points[i * 2]} ${points[i * 2 + 1]}`;
+   if (closed) d += ' Z';
+   return d;
+}
+
+/**
+ * The GEOMETRIC calligraphy-nib ribbon over a flat `[x0,y0,...]` vertex list - the crisp counterpart to
+ * {@link buildBrushRibbonPath} (no resample, no heading smoothing). Each EDGE keeps its own straight
+ * direction, and that direction alone sets its width: `hw = (baseWidth/2) * lerp(BRUSH_MIN_WIDTH_FACTOR, 1,
+ * |sin(edgeHeading - nibAngle)|)`. So a single straight line reads as one uniform nib-weight for its angle,
+ * while a polygon varies edge-to-edge. Every edge is a filled quad (its endpoints offset +/-hw along the
+ * edge normal); a filled disc at each vertex, sized to the max of its adjacent edges' half-widths, bridges
+ * the corner width mismatch (the nonzero fill hides the overlaps - the same trick the freehand ribbon uses).
+ * `closed` adds the wrap edge (last->first). A lone point is a full-width round dot. Painted with `fill`,
+ * no stroke. Render-only: the stored stroke keeps its raw vertices + width, so hit-test/bounds are unaffected.
+ */
+export function buildGeometricRibbonPath(points: number[], baseWidth: number, nibAngle: number, closed: boolean): string {
+   const count = Math.floor(points.length / 2);
+   if (count === 0) return '';
+   const half = baseWidth / 2;
+   const vx = (i: number) => points[i * 2];
+   const vy = (i: number) => points[i * 2 + 1];
+   const disc = (x: number, y: number, r: number) => {
+      const rr = Math.max(r, 0.01);
+      return `M ${x - rr} ${y} a ${rr} ${rr} 0 1 0 ${rr * 2} 0 a ${rr} ${rr} 0 1 0 ${-rr * 2} 0 Z`;
+   };
+   if (count === 1) return disc(vx(0), vy(0), half);
+
+   const range = 1 - BRUSH_MIN_WIDTH_FACTOR;
+   const edgeCount = closed ? count : count - 1;
+   const vertexHw = new Array<number>(count).fill(0); // widest edge incident to each vertex, sizing its disc
+   let d = '';
+   for (let e = 0; e < edgeCount; e++) {
+      const a = e;
+      const b = (e + 1) % count;
+      const ax = vx(a), ay = vy(a), bx = vx(b), by = vy(b);
+      const len = Math.hypot(bx - ax, by - ay);
+      if (len < 1e-9) continue; // coincident endpoints: no quad; the vertex disc still covers the point
+      const heading = Math.atan2(by - ay, bx - ax);
+      const hw = half * (BRUSH_MIN_WIDTH_FACTOR + range * Math.abs(Math.sin(heading - nibAngle)));
+      // The unit normal to the edge, scaled to the half-width: (-sin, cos).
+      const nx = -Math.sin(heading) * hw;
+      const ny = Math.cos(heading) * hw;
+      d += `M ${ax + nx} ${ay + ny} L ${bx + nx} ${by + ny} L ${bx - nx} ${by - ny} L ${ax - nx} ${ay - ny} Z`;
+      if (hw > vertexHw[a]) vertexHw[a] = hw;
+      if (hw > vertexHw[b]) vertexHw[b] = hw;
+   }
+   for (let i = 0; i < count; i++) if (vertexHw[i] > 0) d += disc(vx(i), vy(i), vertexHw[i]);
+   // Every edge degenerate (all points coincident): fall back to a lone dot.
+   return d || disc(vx(0), vy(0), half);
+}
+
+/**
+ * Snaps the A->B direction to the nearest multiple of `stepRad`, keeping the segment's length. Used for the
+ * shape tools' angle constraint (Shift). A zero-length segment has no direction, so B is returned unchanged.
+ */
+export function snapAngle(ax: number, ay: number, bx: number, by: number, stepRad: number): { x: number; y: number } {
+   const dx = bx - ax;
+   const dy = by - ay;
+   const len = Math.hypot(dx, dy);
+   if (len === 0) return { x: bx, y: by };
+   const snapped = Math.round(Math.atan2(dy, dx) / stepRad) * stepRad;
+   return { x: ax + Math.cos(snapped) * len, y: ay + Math.sin(snapped) * len };
+}
+
+/** The shortest a Line may be, in world px: a shorter one is a click with no real drag, dropped as a stray dot. */
+export const MIN_LINE_LENGTH = 3;
+
+/** True when a line's two endpoints sit within `min` world px - a near-zero drag to discard on commit. */
+export function isLineDegenerate(points: number[], min: number): boolean {
+   if (points.length < 4) return true;
+   return Math.hypot(points[2] - points[0], points[3] - points[1]) < min;
+}
+
+/** The paint a stroke resolves to: its path plus the fill/stroke attributes for one `<path>`. */
+export interface StrokePaint {
+   d: string;
+   fill: string;
+   stroke: string;
+   strokeWidth?: number;
+   strokeOpacity?: number;
+}
+
+/** The stroke fields the paint helper reads (so a live preview can pass a transient, id-less stroke). */
+export type StrokePaintInput = Pick<Stroke, 'brush' | 'color' | 'width' | 'points' | 'shape'>;
+
+/**
+ * Resolves a stroke to a single `<path>`'s paint, the ONE place the brush x shape matrix branches (so the
+ * drawing item and the live preview render identically). A geometric brush stroke is a filled nib ribbon; a
+ * geometric pen/highlighter is a crisp stroked polyline (the highlighter keeps its translucency); a freehand
+ * brush stroke is the smoothed nib ribbon; a freehand pen/highlighter is the smoothed stroked path. A polygon
+ * closes its path.
+ */
+export function strokePaint(stroke: StrokePaintInput): StrokePaint {
+   const closed = stroke.shape === 'polygon';
+   const ink = strokeColorToCss(stroke.color);
+   if (stroke.shape) {
+      if (stroke.brush === 'brush') {
+         return { d: buildGeometricRibbonPath(stroke.points, stroke.width, NIB_ANGLE, closed), fill: ink, stroke: 'none' };
+      }
+      return { d: buildPolylinePath(stroke.points, closed), fill: 'none', stroke: ink, strokeWidth: stroke.width, strokeOpacity: brushOpacity(stroke.brush) };
+   }
+   if (stroke.brush === 'brush') {
+      return { d: buildBrushRibbonPath(stroke.points, stroke.width, NIB_ANGLE), fill: ink, stroke: 'none' };
+   }
+   return { d: buildStrokePath(stroke.points), fill: 'none', stroke: ink, strokeWidth: stroke.width, strokeOpacity: brushOpacity(stroke.brush) };
+}
+
+/** A fresh stroke over a flat point list, carrying its brush, ink, width, and (for a geometric stroke) shape. */
+export function makeStroke(id: string, points: number[], brush: BrushKind, color: string | null, width: number, shape?: Stroke['shape']): Stroke {
+   const stroke: Stroke = { id, brush, color, width, points };
+   if (shape) stroke.shape = shape;
+   return stroke;
 }
 
 /** A fresh pen stroke with the default width and adaptive ink. */

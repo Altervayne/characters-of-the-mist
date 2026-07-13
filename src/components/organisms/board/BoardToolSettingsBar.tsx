@@ -3,11 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Brush, Highlighter, Layers, Pen, type LucideIcon } from 'lucide-react';
+import { Brush, Eraser, Highlighter, Layers, Pen, Pencil, Slash, type LucideIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { ERASER_RADIUS, strokeColorToCss } from '@/lib/board/drawingStyle';
+import { strokeColorToCss } from '@/lib/board/drawingStyle';
 import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 
 // -- Component Imports --
@@ -15,14 +15,22 @@ import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopo
 import { CONNECTION_PALETTE } from './BoardConnectionsLayer';
 
 // -- Type Imports --
-import type { BrushKind } from '@/lib/types/board';
+import type { ActiveTool, BrushKind } from '@/lib/types/board';
 
 /*
- * The contextual settings row for the active drawing tool, sitting beside the tool segment in the board's
- * top-left bar (only while Pen or Eraser is active). Pen mode exposes the brush set, the shared width dots,
- * the ink swatch, and a "new layer" reset; eraser mode shows its fixed radius. All chrome is app theme
- * tokens; the ink swatch is the one sanctioned adaptive user-hex (null = the theme foreground).
+ * The contextual settings row for the active Draw gesture, sitting beside the mode segment in the board's
+ * top-left bar (only in Draw mode). The gesture axis leads (which gesture owns the pointer); the brush set,
+ * shared width dots, ink swatch, and "new layer" reset follow for the drawing brushes, and grey out
+ * uniformly for the eraser. All chrome is app theme tokens; the ink swatch is the one sanctioned
+ * adaptive user-hex (null = the theme foreground).
  */
+
+/** The drawing gestures, in toolbar order, each with its glyph. Shape gestures join as their tools ship. */
+const GESTURE_OPTIONS: { tool: Exclude<ActiveTool, 'select'>; icon: LucideIcon; labelKey: string }[] = [
+   { tool: 'freehand', icon: Pencil, labelKey: 'gestureFreehand' },
+   { tool: 'line', icon: Slash, labelKey: 'gestureLine' },
+   { tool: 'eraser', icon: Eraser, labelKey: 'gestureEraser' },
+];
 
 /** The brushes, in toolbar order, each with its glyph. */
 const BRUSH_OPTIONS: { brush: BrushKind; icon: LucideIcon; labelKey: string }[] = [
@@ -35,7 +43,8 @@ const BRUSH_OPTIONS: { brush: BrushKind; icon: LucideIcon; labelKey: string }[] 
 const PEN_WIDTH_PRESETS = [2, 3, 5, 8, 12, 16];
 
 interface BoardToolSettingsBarProps {
-   tool: 'pen' | 'eraser';
+   tool: ActiveTool;
+   onSetTool: (tool: Exclude<ActiveTool, 'select'>) => void;
    penSettings: { brush: BrushKind; color: string | null; width: number };
    onSetBrush: (brush: BrushKind) => void;
    onSetColor: (color: string | null) => void;
@@ -43,25 +52,43 @@ interface BoardToolSettingsBarProps {
    onNewLayer: () => void;
 }
 
-export function BoardToolSettingsBar({ tool, penSettings, onSetBrush, onSetColor, onSetWidth, onNewLayer }: BoardToolSettingsBarProps) {
+export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush, onSetColor, onSetWidth, onNewLayer }: BoardToolSettingsBarProps) {
    const { t } = useTranslation();
-
-   if (tool === 'eraser') {
-      return (
-         <>
-            <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-            <span className="shrink-0 px-1.5 text-xs tabular-nums text-muted-foreground">{t('BoardView.eraserSize', { size: ERASER_RADIUS })}</span>
-         </>
-      );
-   }
-
    const activeWidth = penSettings.width;
+   const erasing = tool === 'eraser';
+   // The eraser carries no brush, so the brush cluster greys out - but it stays IN PLACE (inert, not hidden)
+   // so toggling the eraser never reflows the bar. The controls relight the instant a drawing gesture is set.
+   const inertCls = erasing ? 'pointer-events-none opacity-40' : undefined;
+
    return (
       <>
          <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
 
-         {/* Brush set */}
+         {/* Gesture axis: which drawing gesture owns the pointer. The eraser sits inline as a peer of the
+             drawing gestures - no isolating divider. */}
          <div className="flex shrink-0 items-center gap-0.5">
+            {GESTURE_OPTIONS.map(({ tool: gesture, icon: Icon, labelKey }) => (
+               <button
+                  key={gesture}
+                  type="button"
+                  title={t(`BoardView.${labelKey}`)}
+                  aria-label={t(`BoardView.${labelKey}`)}
+                  aria-pressed={tool === gesture}
+                  onClick={() => onSetTool(gesture)}
+                  className={cn(
+                     'flex shrink-0 items-center justify-center rounded p-1.5 hover:bg-muted cursor-pointer',
+                     tool === gesture ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
+                  )}
+               >
+                  <Icon className="h-4 w-4" />
+               </button>
+            ))}
+         </div>
+
+         <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+
+         {/* Brush set - inert while erasing, kept in place so the bar holds its shape. */}
+         <div className={cn('flex shrink-0 items-center gap-0.5', inertCls)} aria-disabled={erasing || undefined}>
             {BRUSH_OPTIONS.map(({ brush, icon: Icon, labelKey }) => (
                <button
                   key={brush}
@@ -82,8 +109,9 @@ export function BoardToolSettingsBar({ tool, penSettings, onSetBrush, onSetColor
 
          <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
 
-         {/* Shared width dots */}
-         <div className="flex shrink-0 items-center gap-1" title={t('BoardView.strokeWidth')}>
+         {/* Size slot: the shared width dots - inert while erasing (the eraser radius is a fixed constant,
+             so nothing swaps in; the cluster just greys out like the rest). */}
+         <div className={cn('flex shrink-0 items-center gap-1', inertCls)} aria-disabled={erasing || undefined} title={t('BoardView.strokeWidth')}>
             {PEN_WIDTH_PRESETS.map((width) => (
                <button
                   key={width}
@@ -102,17 +130,21 @@ export function BoardToolSettingsBar({ tool, penSettings, onSetBrush, onSetColor
 
          <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
 
-         <InkColorControl color={penSettings.color} onApply={onSetColor} />
+         {/* Ink swatch - inert while erasing. */}
+         <div className={inertCls} aria-disabled={erasing || undefined}>
+            <InkColorControl color={penSettings.color} onApply={onSetColor} />
+         </div>
 
          <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
 
-         {/* Starts the next stroke on a fresh layer. */}
+         {/* Starts the next stroke on a fresh layer - inert while erasing (the eraser doesn't append). */}
          <button
             type="button"
             title={t('BoardView.newDrawingLayer')}
             aria-label={t('BoardView.newDrawingLayer')}
+            aria-disabled={erasing || undefined}
             onClick={onNewLayer}
-            className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
+            className={cn('flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer', inertCls)}
          >
             <Layers className="h-4 w-4" />
          </button>
