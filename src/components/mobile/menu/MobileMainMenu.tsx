@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { MobileMainMenuGameCard } from '@/components/mobile/menu/MobileMainMenuGameCard';
 
 // -- Icon Imports --
-import { Plus, FolderOpen } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -25,11 +25,7 @@ import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 // -- Type Imports --
 import type { GameSystem } from '@/lib/types/drawer';
 
-interface MobileMainMenuProps {
-	onOpenDrawer: () => void;
-}
-
-export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
+export default function MobileMainMenu() {
 	const { t } = useTranslation();
 	const { contextualGame } = useAppSettingsStore();
 	const { mobileCreateCharacter } = useTabManagerActions();
@@ -58,6 +54,10 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden pt-safe bg-gradient-to-b from-background via-background to-muted/10">
+			{/* Scroll region: the hero header scrolls together with the game list so
+			    short viewports get more room. `min-h-0` lets this flex child shrink
+			    and scroll internally instead of pushing the footer off-screen. */}
+			<div className="flex-1 min-h-0 overflow-y-auto">
 			{/* Header */}
 			<div className="p-6 pb-4 text-center">
 				<motion.div
@@ -88,11 +88,9 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 				</motion.p>
 			</div>
 
-			{/* Game Selection - scrolls within the fixed header/footer column. `min-h-0`
-			    lets this flex child shrink so it scrolls internally instead of pushing
-			    the footer off-screen; `pt-2` gives the selected card's ring (`ring-4`)
+			{/* Game Selection - `pt-2` gives the selected card's ring (`ring-4`)
 			    room so its halo is not clipped at the top edge. */}
-			<div className="flex-1 min-h-0 px-6 pt-2 pb-6 overflow-y-auto">
+			<div className="px-6 pt-2 pb-6">
 				<div className="space-y-3">
 					{gameOptions.map((option, index) => (
 						<motion.div
@@ -110,8 +108,10 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 					))}
 				</div>
 			</div>
+			</div>
 
-			{/* Action Buttons */}
+			{/* Action Button - the primary CTA stays pinned below the scroll region so
+			    it is always reachable regardless of list length. */}
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -126,18 +126,6 @@ export default function MobileMainMenu({ onOpenDrawer }: MobileMainMenuProps) {
 					<Plus className="h-5 w-5" />
 					{t('MainMenu.createButton')}
 				</Button>
-				<Button
-					onClick={onOpenDrawer}
-					variant="outline"
-					size="lg"
-					className="w-full gap-2 h-12 text-base font-semibold border-2"
-				>
-					<FolderOpen className="h-5 w-5" />
-					{t('MainMenu.openDrawerButton')}
-				</Button>
-				<p className="text-xs text-muted-foreground/70 text-center pt-2">
-					{t('MainMenu.hint')}
-				</p>
 			</motion.div>
 		</div>
 	);

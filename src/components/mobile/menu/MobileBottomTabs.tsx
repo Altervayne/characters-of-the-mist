@@ -16,14 +16,17 @@ interface MobileBottomTabsProps {
 	isToolbeltOpen: boolean;
 	/** Toggles the toolbelt side-panel open/closed. */
 	onToggleToolbelt: () => void;
+	/** True when the sheet tab is showing the main menu (no character loaded). */
+	isMainMenu?: boolean;
 }
 
-export default function MobileBottomTabs({ activeTab, onTabChange, isToolbeltOpen, onToggleToolbelt }: MobileBottomTabsProps) {
+export default function MobileBottomTabs({ activeTab, onTabChange, isToolbeltOpen, onToggleToolbelt, isMainMenu = false }: MobileBottomTabsProps) {
 	const { t } = useTranslation();
 
 	// The toolbelt only operates on the character sheet, so its trigger is
-	// disabled (and visually grayed) on every other tab.
-	const isToolbeltAvailable = activeTab === 'sheet';
+	// disabled (and visually grayed) on every other tab - including the main
+	// menu the sheet tab shows when no character is loaded.
+	const isToolbeltAvailable = activeTab === 'sheet' && !isMainMenu;
 
 	const tabs = [
 		{

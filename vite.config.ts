@@ -28,7 +28,7 @@ export default defineConfig({
       // update banner (see `PWAUpdatePrompt`) lets the user apply it on their own
       // terms, or dismiss it and keep using the current version.
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'icons/**/*'],
+      includeAssets: ['favicon.ico', 'icons/**/*', 'fonts/**/*.woff2'],
       manifest: {
         name: 'Characters of the Mist',
         short_name: 'CotM',
@@ -78,7 +78,7 @@ export default defineConfig({
         // Precache the built app shell so it loads with no network. The bundle
         // is split into per-vendor chunks (see build.rollupOptions), each well
         // under the per-file cap, so all of them precache with room to spare.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
         // Headroom over Workbox's 2 MiB default per-file cap: a safety net so a
         // future heavy chunk is never silently dropped from the precache (which
         // would break offline). The real guard is keeping every chunk small.

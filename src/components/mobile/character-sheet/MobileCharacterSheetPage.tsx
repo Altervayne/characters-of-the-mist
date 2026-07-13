@@ -170,7 +170,6 @@ export default function MobileCharacterSheetPage() {
 
 	const handleOpenDrawer = () => {
 		navigateToTab('drawer');
-		// TODO: Implement drawer opening
 	};
 
 	const handleOpenMenu = () => {
@@ -247,32 +246,32 @@ export default function MobileCharacterSheetPage() {
 		return <CharacterBootLoading />;
 	}
 
-	// If no character is loaded, show the main menu
-	if (!character) {
-		return (
-			<div className="overflow-hidden" style={{ height: '100dvh', width: '100dvw' }}>
-				<MobileMainMenu onOpenDrawer={handleOpenDrawer} />
-			</div>
-		);
-	}
+	// The tab system is always active: with no character loaded, the sheet tab
+	// hosts the main menu so the Drawer (where a character is loaded) stays
+	// reachable through the bottom nav.
+	const isMainMenu = activeTab === 'sheet' && !character;
 
 	return (
 		<div className="overflow-hidden flex flex-col" style={{ height: '100dvh', width: '100dvw' }}>
 			{/* Main Content */}
 			<div className="flex-1 overflow-hidden">
 				{activeTab === 'sheet' && (
-					<MobileCharacterSheet
-						activeTab={sheetActiveTab}
-						onTabChange={navigateToSheetTab}
-						isToolbeltOpen={isToolbeltOpen}
-						onToolbeltOpenChange={setIsToolbeltOpen}
-						isMenuFABExpanded={isMenuFABExpanded}
-						isReorderingCards={isReorderingCards}
-						onReorderingCardsChange={setReorderingWithHistory}
-						onOpenAddCard={handleOpenAddCard}
-						onEditCard={handleEditCard}
-						initialCardId={newlyCreatedCardId}
-					/>
+					character ? (
+						<MobileCharacterSheet
+							activeTab={sheetActiveTab}
+							onTabChange={navigateToSheetTab}
+							isToolbeltOpen={isToolbeltOpen}
+							onToolbeltOpenChange={setIsToolbeltOpen}
+							isMenuFABExpanded={isMenuFABExpanded}
+							isReorderingCards={isReorderingCards}
+							onReorderingCardsChange={setReorderingWithHistory}
+							onOpenAddCard={handleOpenAddCard}
+							onEditCard={handleEditCard}
+							initialCardId={newlyCreatedCardId}
+						/>
+					) : (
+						<MobileMainMenu />
+					)
 				)}
 				{activeTab === 'drawer' && (
 					<MobileDrawer onAddToCharacter={handleAddDrawerItemToCharacter} onLoadCharacter={handleLoadCharacterFromDrawer} />
@@ -304,7 +303,7 @@ export default function MobileCharacterSheetPage() {
 				{activeTab === 'patchNotes' && (
 					<MobilePatchNotes onBack={() => navigateToTab('menu')} />
 				)}
-				{activeTab === 'addCard' && (
+				{activeTab === 'addCard' && character && (
 					<MobileAddCard
 						onBack={() => navigateToTab('sheet')}
 						onConfirm={handleConfirmCard}
@@ -323,6 +322,7 @@ export default function MobileCharacterSheetPage() {
 						onTabChange={navigateToTab}
 						isToolbeltOpen={isToolbeltOpen}
 						onToggleToolbelt={() => setIsToolbeltOpen((open) => !open)}
+						isMainMenu={isMainMenu}
 					/>
 				) : (
 					<MobileFAB

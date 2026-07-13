@@ -80,8 +80,14 @@ export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, 
                   <ArrowDownToLine className="h-4 w-4" />
                </ToolbarButton>
 
-               {/* Per-kind action slot: the selected item portals its own actions in here. */}
-               <div ref={slotRef} className="flex items-center gap-0.5" />
+               {/* Per-kind action slot: the selected item portals its own actions in here, bracketed by
+                   dividers that set it apart from the universal controls. The whole group hides when the
+                   slot is empty, so an item with no own actions shows no dangling rule. */}
+               <div className="flex items-center gap-0.5 [&:has([data-item-slot]:empty)]:hidden">
+                  <div className="w-px self-stretch bg-border mx-1" />
+                  <div ref={slotRef} data-item-slot className="flex items-center gap-0.5" />
+                  <div className="w-px self-stretch bg-border mx-1" />
+               </div>
 
                <ToolbarButton title={t('BoardView.deleteItem')} destructive onClick={onDelete}>
                   <Trash2 className="h-4 w-4" />

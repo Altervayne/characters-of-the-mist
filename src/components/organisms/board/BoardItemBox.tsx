@@ -58,8 +58,16 @@ const isFitContent = (kind: BoardItemKind): boolean => FIT_CONTENT_KINDS.has(kin
 const FIT_WIDTH_KINDS = new Set<BoardItemKind>(['card']);
 const isFitWidth = (kind: BoardItemKind): boolean => FIT_WIDTH_KINDS.has(kind);
 
+/**
+ * Kinds whose box fits its content on BOTH axes - it grows AND shrinks to hug the measured text (no
+ * manual resize). A bare text element auto-hugs as you type; scoped to text for now (drawing/portals may
+ * share it later - don't generalize prematurely).
+ */
+const FIT_BOTH_KINDS = new Set<BoardItemKind>(['text']);
+const isFitBoth = (kind: BoardItemKind): boolean => FIT_BOTH_KINDS.has(kind);
+
 /** Any of these behaviours measures content into the box; only the synced axis + rule differ. */
-const measuresContent = (kind: BoardItemKind): boolean => isMinHeight(kind) || isFitContent(kind) || isFitWidth(kind);
+const measuresContent = (kind: BoardItemKind): boolean => isMinHeight(kind) || isFitContent(kind) || isFitWidth(kind) || isFitBoth(kind);
 
 interface BoardItemBoxProps {
    item: BoardItem;
@@ -170,6 +178,7 @@ export const BoardItemBox = memo(function BoardItemBox({
    const minHeight = isMinHeight(item.kind);
    const fitContent = isFitContent(item.kind);
    const fitWidth = isFitWidth(item.kind) && !isExpandedCard;
+   const fitBoth = isFitBoth(item.kind);
    const measures = measuresContent(item.kind) && !isExpandedCard;
    // A measured kind drives one axis from its content. HEIGHT kinds: the wrapper fills the body and
    // grows with content (min-h-full); the natural height is its height MINUS any flexible fill spacer
@@ -190,21 +199,24 @@ export const BoardItemBox = memo(function BoardItemBox({
       // in the effect body. The spacer is observed too: when content grows inside an already-tall
       // box the wrapper's own size doesn't change, but the spacer shrinks - that must re-measure.
       const measure = () => {
-         // A card width-fits (the wrapper is w-fit, so offsetWidth reads the true 1- or 2-face width).
-         if (fitWidth) {
+         // A width-fitting kind measures off a w-fit wrapper, so offsetWidth reads the true content width
+         // (a card's 1-/2-face width, a text element's widest line). A fit-WIDTH card stops there (static
+         // height); a fit-BOTH text element measures its height too.
+         if (fitWidth || fitBoth) {
             const measuredWidth = Math.round(el.offsetWidth);
-            if (measuredWidth <= 0) return;
-            setContentWidth(measuredWidth);
-            if (shouldSyncMeasuredSize('fit', measuredWidth, item.width)) {
-               onSyncSize(item.id, { width: measuredWidth });
+            if (measuredWidth > 0) {
+               setContentWidth(measuredWidth);
+               if (shouldSyncMeasuredSize('fit', measuredWidth, item.width)) {
+                  onSyncSize(item.id, { width: measuredWidth });
+               }
             }
-            return;
+            if (fitWidth) return;
          }
          const spacer = el.querySelector<HTMLElement>('[data-board-fill-spacer]');
          const measured = Math.round(el.offsetHeight - (spacer?.offsetHeight ?? 0));
          if (measured <= 0) return;
          setContentHeight(measured);
-         if (shouldSyncMeasuredHeight(fitContent ? 'fit' : 'min', measured, item.height)) {
+         if (shouldSyncMeasuredHeight(fitContent || fitBoth ? 'fit' : 'min', measured, item.height)) {
             onSyncSize(item.id, { height: measured });
          }
       };
@@ -213,7 +225,7 @@ export const BoardItemBox = memo(function BoardItemBox({
       const spacer = el.querySelector('[data-board-fill-spacer]');
       if (spacer) observer.observe(spacer);
       return () => observer.disconnect();
-   }, [measures, fitContent, fitWidth, item.id, item.height, item.width, onSyncSize]);
+   }, [measures, fitContent, fitWidth, fitBoth, item.id, item.height, item.width, onSyncSize]);
 
    // The rect to render: a live resize wins, else the base rect plus any active group-move offset.
    const rect: DragRect = resizeRect ?? {
@@ -286,8 +298,9 @@ export const BoardItemBox = memo(function BoardItemBox({
    // A card/tracker embed, a character reference, a note tile, and a portal ARE their own panels: each
    // carries its own border, background, and shape, so the box adds no chrome (no second border/shadow) -
    // just a selection ring, and it never clips (the panel owns its own rounding + overflow). A portal owns
-   // its button surface + hover/dead states.
-   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note' || item.kind === 'portal';
+   // its button surface + hover/dead states. A bare text element joins this set as the extreme case: NO
+   // panel at all - just styled text on the canvas, the box contributing only a selection ring.
+   const isEmbed = item.kind === 'card' || item.kind === 'tracker' || item.kind === 'character' || item.kind === 'note' || item.kind === 'portal' || item.kind === 'text';
    // A note tile is a WINDOWED embed: unlike the fixed card/tracker/character panels it is freely
    // 2D-resizable (internal scroll), so it keeps the resize grip the other embeds drop. A portal is
    // resizable in every style too (owner override of the auto-hug): its glyph + type scale with the box.
@@ -302,7 +315,7 @@ export const BoardItemBox = memo(function BoardItemBox({
    const isCollapsedZone = isZone && item.content.kind === 'zone' && item.content.collapsed;
    // A fit-content item renders at its content height exactly; a min-height item never renders below
    // its content (the floor); other kinds use their rect.
-   const renderHeight = fitContent
+   const renderHeight = fitContent || fitBoth
       ? fitContentHeight(rect.height, contentHeight)
       : minHeight
          ? effectiveHeight(rect.height, contentHeight)
@@ -311,7 +324,7 @@ export const BoardItemBox = memo(function BoardItemBox({
    // every other kind keeps its rect width. The synced width feeds the rect-based board systems too.
    // An expanded challenge card renders at the fixed landscape footprint on BOTH axes (its stored
    // portrait width/height are preserved for when it collapses back to a card).
-   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : isExpandedCard ? EXPANDED_CARD_SIZE.width : fitWidth ? fitContentWidth(rect.width, contentWidth) : rect.width;
+   const boxWidth = isCollapsedZone ? COLLAPSED_BAR_WIDTH : isExpandedCard ? EXPANDED_CARD_SIZE.width : fitWidth || fitBoth ? fitContentWidth(rect.width, contentWidth) : rect.width;
    const boxHeight = isCollapsedZone ? COLLAPSED_BAR_HEIGHT : isExpandedCard ? EXPANDED_CARD_SIZE.height : renderHeight;
 
    const body = (
@@ -399,8 +412,9 @@ export const BoardItemBox = memo(function BoardItemBox({
                         ? cn('rounded-full', isSelected && 'ring-2 ring-primary')
                         : isEmbed
                            // Match the ring radius to the embed's own corners: a card is rounded-xl; a portal
-                           // is rounded-md; a tracker, character, or note tile is rounded-lg.
-                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
+                           // is rounded-md; a bare text element hugs tight (rounded-sm); a tracker, character,
+                           // or note tile is rounded-lg.
+                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : item.kind === 'text' ? 'rounded-sm' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
                            : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary/50'),
             )}
          >
@@ -414,7 +428,10 @@ export const BoardItemBox = memo(function BoardItemBox({
                 faces force min-content past the box) so the true 1-/2-face width is measurable. Others
                 render plain. */}
             {measures
-               ? <div ref={measureRef} className={fitWidth ? 'h-full w-fit' : minHeight ? 'flex min-h-full w-full flex-col' : 'w-full'}>{body}</div>
+               // A fit-BOTH text element measures off a w-max wrapper (max-content, NOT fit-content): a
+               // fit-content wrapper would clamp to the box width, so a newly-typed longer line would wrap
+               // instead of growing the box. w-max stays the widest line's width, so the box tracks it.
+               ? <div ref={measureRef} className={fitBoth ? 'w-max' : fitWidth ? 'h-full w-fit' : minHeight ? 'flex min-h-full w-full flex-col' : 'w-full'}>{body}</div>
                : body}
          </div>
 

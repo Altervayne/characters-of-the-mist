@@ -10,6 +10,7 @@ import { BoardTrackerItem } from './BoardTrackerItem';
 import { CharacterBoardItem } from './CharacterBoardItem';
 import { BoardNoteItem } from './BoardNoteItem';
 import { BoardPortalItem } from './BoardPortalItem';
+import { BoardTextItem } from './BoardTextItem';
 
 // -- Type Imports --
 import type { BoardItem, BoardItemContent } from '@/lib/types/board';
@@ -76,6 +77,8 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
          return <BoardNoteItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onDelete={onDelete} />;
       case 'portal':
          return <BoardPortalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onRequestEdit={onRequestEditPortal} onRequestRelink={onRequestRelinkPortal} onDelete={onDelete} onCacheName={onCachePortalName} />;
+      case 'text':
+         return <BoardTextItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
       default:
          return <GenericItemBody item={item} />;
    }

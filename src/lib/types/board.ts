@@ -31,7 +31,7 @@ export interface BoardGrid {
 }
 
 /** The kinds of item a board can hold. `connection` is a non-spatial line between two items. */
-export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character' | 'portal';
+export type BoardItemKind = 'image' | 'post-it' | 'journal' | 'note' | 'threat' | 'card' | 'tracker' | 'connection' | 'pin' | 'dice-tray' | 'zone' | 'character' | 'portal' | 'text';
 
 /** An image card on the board; reuses IMAGE_CARD semantics (references the shared asset store). */
 export interface ImageBoardContent {
@@ -301,6 +301,43 @@ export interface PortalBoardContent {
    lastKnownName?: string;
 }
 
+/**
+ * The font-family tokens a raw text element can carry. `sans`/`serif`/`mono` map to generic CSS STACKS
+ * (no bundled file, no precache cost); the display tokens (`handwriting`/`marker`/`rounded`) map to
+ * self-hosted woff2 faces (see `TEXT_FONT_STACKS` in `src/lib/board/textStyle.ts` and the `@font-face`
+ * block in `global.css`). A free family string is deliberately not representable: it would name a font
+ * the offline app may not have, breaking the render.
+ */
+export type TextFontFamily = 'sans' | 'serif' | 'mono' | 'handwriting' | 'marker' | 'rounded';
+
+/**
+ * A raw text element's typography. `color` is required-but-nullable: null means the adaptive default
+ * (`currentColor`, so the text stays legible on any theme), frozen to a user hex only once picked -
+ * a baked hex default would vanish against a matching theme. `size` is world px (the text lives inside
+ * the zoomed world layer, so it scales with the board).
+ */
+export interface TextStyle {
+   color: string | null;
+   fontFamily: TextFontFamily;
+   size: number;
+   weight: 'normal' | 'bold';
+   italic: boolean;
+   underline: boolean;
+   align: 'left' | 'center' | 'right';
+}
+
+/**
+ * A bare, directly-editable text element on the board - NOT a post-it (no card/paper chrome): plain text
+ * painted straight on the canvas with a per-element {@link TextStyle}, its box auto-hugging the rendered
+ * text. Board-only furniture: it is never a drawer entity, so its `content` is opaque inline (no record
+ * or schema change). PLAIN text - no markdown, no `{brace}` mentions.
+ */
+export interface TextBoardContent {
+   kind: 'text';
+   text: string;
+   style: TextStyle;
+}
+
 /** A board item's payload, discriminated by `kind` (mirrors the item's own `kind`). */
 export type BoardItemContent =
    | ImageBoardContent
@@ -315,7 +352,8 @@ export type BoardItemContent =
    | DiceTrayBoardContent
    | ZoneBoardContent
    | CharacterBoardContent
-   | PortalBoardContent;
+   | PortalBoardContent
+   | TextBoardContent;
 
 /**
  * An assembled board item: world-space placement plus its kind-discriminated content.

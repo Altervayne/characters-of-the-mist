@@ -2,7 +2,10 @@
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { Dices, Frame, Image as ImageIcon, MapPin, NotebookText, SquareArrowOutUpRight, StickyNote } from 'lucide-react';
+import { Dices, Frame, Image as ImageIcon, MapPin, NotebookText, SquareArrowOutUpRight, StickyNote, Type } from 'lucide-react';
+
+// -- Utils Imports --
+import { defaultTextStyle } from '@/lib/board/textStyle';
 
 // -- Type Imports --
 import type { LucideIcon } from 'lucide-react';
@@ -20,7 +23,7 @@ import type { BoardItemContent } from '@/lib/types/board';
  */
 
 /** The board-native item kinds the creation surfaces can build. */
-export type CreatableKind = 'post-it' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zone' | 'portal';
+export type CreatableKind = 'post-it' | 'text' | 'journal' | 'image' | 'pin' | 'dice-tray' | 'zone' | 'portal';
 
 /** A fresh pin's color (classic corkboard red). */
 const DEFAULT_PIN_COLOR = '#ef4444';
@@ -55,6 +58,16 @@ export const CREATABLE_REGISTRY: CreatableEntry[] = [
       defaultSize: { width: 180, height: 180 },
       // Board-born copy: source-less (Save-As only), a fresh standalone note in `data`.
       makeContent: () => ({ kind: 'post-it', mode: 'copy', data: { id: cuid(), text: '' } }),
+   },
+   {
+      kind: 'text',
+      icon: Type,
+      labelKey: 'addText',
+      // A transient footprint: the box auto-hugs its text from the first measure, so this only sizes the
+      // empty-placeholder drop before the observer takes over.
+      defaultSize: { width: 120, height: 40 },
+      // Bare board furniture: an empty string plus the default style; it drops selected and edits at once.
+      makeContent: () => ({ kind: 'text', text: '', style: defaultTextStyle() }),
    },
    {
       kind: 'journal',

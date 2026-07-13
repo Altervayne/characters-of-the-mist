@@ -5,6 +5,35 @@
    opt back into its light state under a dark app - used by the Themes-window light preview pane. */
 @custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
 
+/* Self-hosted display faces for the board TEXT element (Latin subset, woff2, in public/fonts). All three
+   are SIL Open Font License 1.1 - add them to THIRD_PARTY_LICENSES before the OSS release:
+     Caveat             https://fonts.google.com/specimen/Caveat
+     Permanent Marker   https://fonts.google.com/specimen/Permanent+Marker
+     Fredoka            https://fonts.google.com/specimen/Fredoka
+   `swap` renders the fallback until the face loads. The generic sans/serif/mono tokens stay pure CSS
+   stacks with no file, so only these three add any precache weight. */
+@font-face {
+   font-family: 'Caveat';
+   font-style: normal;
+   font-weight: 400 700;
+   font-display: swap;
+   src: url('/fonts/caveat.woff2') format('woff2');
+}
+@font-face {
+   font-family: 'Permanent Marker';
+   font-style: normal;
+   font-weight: 400;
+   font-display: swap;
+   src: url('/fonts/permanent-marker.woff2') format('woff2');
+}
+@font-face {
+   font-family: 'Fredoka';
+   font-style: normal;
+   font-weight: 400 600;
+   font-display: swap;
+   src: url('/fonts/fredoka.woff2') format('woff2');
+}
+
 @theme inline {
    --color-background:              var(--background);
    --color-foreground:              var(--foreground);
