@@ -18,7 +18,7 @@ import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToW
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
-import { ERASER_RADIUS, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
+import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
@@ -29,6 +29,7 @@ import { CREATABLE_REGISTRY, CREATABLE_BY_KIND, type CreatableKind } from '@/lib
 import { makePortalContent, portalTargetFromInsert } from '@/lib/creation/portalContent';
 import { PORTAL_MIN_SIZE } from '@/lib/board/portalSizing';
 import { EMPTY_STROKE_IDS, PendingEraseContext } from '@/lib/board/PendingEraseContext';
+import { DrawingFocusContext } from '@/lib/board/DrawingFocusContext';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import { runSaveImageToDrawerAs, runSaveItemToDrawer, runSaveItemToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
 
@@ -1149,6 +1150,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const layerRank = new Map(spatialItems.map((item, index) => [item.id, index]));
    const layerCount = spatialItems.length;
 
+   // Active drawing-layer focus cue. On only while a drawing (append) gesture is armed AND the append target
+   // is a live drawing layer - guards a stale `activeLayerId` (deleted / no longer a drawing) to null. When
+   // on: the target layer stays full, every other drawing layer dims (via context), and a dashed accent box
+   // wraps the target. Off in Select/eraser, or with no active layer (a fresh layer pending its first stroke).
+   const focusLayer = isAppendTool(activeTool) && activeLayerId && items[activeLayerId]?.content.kind === 'drawing' ? items[activeLayerId] : undefined;
+   const focusLayerId = focusLayer?.id ?? null;
+   // The "new layer" button reads armed while a drawing gesture is set but no layer is the target yet, so
+   // "fresh layer pending - the next stroke mints one" is legible. Un-arms the instant a layer becomes active.
+   const newLayerArmed = isAppendTool(activeTool) && activeLayerId === null;
+
    /**
     * World-px to push the sole-selected item's toolbar down so it clears the clip's top edge; undefined
     * when the item sits low enough to need no clamp (a stable prop, so an unclamped box still skips a pan
@@ -1274,6 +1285,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
    return (
       <PendingEraseContext.Provider value={pendingErase}>
+      <DrawingFocusContext.Provider value={focusLayerId}>
       <div
          ref={setClipRefs}
          data-board-clip
@@ -1352,6 +1364,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   {/* Same paint path as the committed stroke: geometric for a shape gesture, freehand otherwise. */}
                   <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : undefined }} />
                </svg>
+            )}
+
+            {/* Active drawing-layer cue: a dashed accent outline around the layer the next stroke appends to,
+                shown only while a drawing gesture is armed. Dashed (not the solid selection ring), so it reads
+                as "the active layer" rather than a selected element. Inert; theme tokens only. */}
+            {focusLayer && (
+               <div
+                  className="pointer-events-none absolute rounded-sm border-2 border-dashed border-primary/70"
+                  style={{
+                     left: focusLayer.x + (moveDeltaFor(focusLayer.id)?.x ?? 0),
+                     top: focusLayer.y + (moveDeltaFor(focusLayer.id)?.y ?? 0),
+                     width: focusLayer.width,
+                     height: focusLayer.height,
+                     zIndex: groupToolbarZIndex(layerCount),
+                  }}
+               />
             )}
          </div>
 
@@ -1451,6 +1479,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                         onSetColor={setPenColor}
                         onSetWidth={setPenWidth}
                         onNewLayer={() => setActiveLayerId(null)}
+                        newLayerArmed={newLayerArmed}
                      />
                   )}
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
@@ -1547,6 +1576,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             />
          </BoardFloatingWindow>
       )}
+      </DrawingFocusContext.Provider>
       </PendingEraseContext.Provider>
    );
 }

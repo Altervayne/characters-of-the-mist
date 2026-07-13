@@ -1,6 +1,7 @@
 // -- Utils Imports --
 import { strokePaint } from '@/lib/board/drawingStyle';
 import { usePendingErase } from '@/lib/board/PendingEraseContext';
+import { useDrawingFocus } from '@/lib/board/DrawingFocusContext';
 
 // -- Type Imports --
 import type { StrokePaintInput } from '@/lib/board/drawingStyle';
@@ -24,13 +25,17 @@ export function StrokeShape({ stroke }: { stroke: StrokePaintInput }) {
  * the adaptive foreground or their own picked hex. Inert: the layer is selected/moved via its box chrome,
  * never the strokes.
  */
-export function BoardDrawingItem({ content }: { content: DrawingBoardContent }) {
+export function BoardDrawingItem({ id, content }: { id: string; content: DrawingBoardContent }) {
    // Strokes the eraser has crossed mid-scrub vanish on contact; the removal only becomes real when the
    // scrub commits. An idle board sees an empty set and skips the filter.
    const hidden = usePendingErase();
    const strokes = hidden.size === 0 ? content.strokes : content.strokes.filter((stroke) => !hidden.has(stroke.id));
+   // While a drawing gesture is armed, every OTHER drawing layer dims so the active append target reads
+   // full-strength. Off (id null) whenever the cue is inactive, so nothing dims.
+   const focusId = useDrawingFocus();
+   const dimmed = focusId !== null && focusId !== id;
    return (
-      <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" aria-hidden>
+      <svg className="pointer-events-none absolute left-0 top-0 overflow-visible transition-opacity" width="1" height="1" style={{ opacity: dimmed ? 0.4 : 1 }} aria-hidden>
          {strokes.map((stroke) => (
             <StrokeShape key={stroke.id} stroke={stroke} />
          ))}

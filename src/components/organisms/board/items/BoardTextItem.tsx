@@ -42,13 +42,15 @@ interface BoardTextItemProps {
    item: BoardItem;
    content: TextBoardContent;
    isSelected: boolean;
+   /** The ONLY selected item: edit mode (the focused textarea) engages only when sole; among a multi-selection
+    *  the box is a plain selected element (text + ring, no keyboard grab), so a group Delete removes it. */
+   isSoleSelected: boolean;
    /** The selection toolbar's action slot; the style controls portal here. */
    toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
-   onRequestSelect: () => void;
 }
 
-export function BoardTextItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: BoardTextItemProps) {
+export function BoardTextItem({ content, isSelected, isSoleSelected, toolbarSlot, onContentChange }: BoardTextItemProps) {
    const { t } = useTranslation();
    const { style } = content;
    const [text, setText] = useState(content.text);
@@ -72,6 +74,7 @@ export function BoardTextItem({ content, isSelected, toolbarSlot, onContentChang
    const pendingRef = useRef<{ color: string | null } | null>(null);
    const contentRef = useRef(content);
    const textRef = useRef(text);
+   const textareaRef = useRef<HTMLTextAreaElement>(null);
    useEffect(() => { contentRef.current = content; textRef.current = text; });
 
    // Commit the buffered text on blur / unmount. An empty element is NEVER deleted - it PERSISTS showing its
@@ -111,6 +114,23 @@ export function BoardTextItem({ content, isSelected, toolbarSlot, onContentChang
       if (!isSelected) commitPendingColor();
    }, [isSelected, commitPendingColor]);
 
+   // Entering edit mode (becoming the sole selection) focuses the field on the next frame - deferred past the
+   // selecting click's own focus handling, which lands on the box body and would otherwise blur the freshly
+   // mounted textarea, forcing a second click. Fires on the sole-select transition and on a fresh drop (which
+   // mounts already sole-selected).
+   useEffect(() => {
+      if (!isSoleSelected) return;
+      const raf = requestAnimationFrame(() => {
+         const el = textareaRef.current;
+         if (!el) return;
+         el.focus();
+         // Caret to the END of the text, not the start - the natural place to keep typing.
+         const end = el.value.length;
+         el.setSelectionRange(end, end);
+      });
+      return () => cancelAnimationFrame(raf);
+   }, [isSoleSelected]);
+
    // A tab switch unmounts the board without a blur; flush the text (and any pending color) so nothing is lost.
    useCommitOnUnmount(commitText);
    useCommitOnUnmount(commitPendingColor);
@@ -123,21 +143,22 @@ export function BoardTextItem({ content, isSelected, toolbarSlot, onContentChang
       <div className="relative select-none" style={css}>
          {/* Sizer: the in-flow element that gives the box its auto-hug size (the box's w-max wrapper reads
              its widest line). Never wraps (`whitespace-pre`) so the box grows wide with the line rather than
-             wrapping. Editing hides it (the textarea overlays it exactly); at rest it shows the text, or a
-             muted placeholder for an empty element. */}
+             wrapping. Edit mode (sole selection) hides it (the textarea overlays it exactly); at rest - including
+             while selected among a group - it shows the text, or a muted placeholder for an empty element. */}
          <div
-            aria-hidden={isSelected}
-            className={cn('whitespace-pre', isSelected && 'invisible', !text && 'opacity-40')}
+            aria-hidden={isSoleSelected}
+            className={cn('whitespace-pre', isSoleSelected && 'invisible', !text && 'opacity-40')}
          >
             {sizerText}
          </div>
 
-         {isSelected && (
+         {/* Edit mode is engaged only when this is the SOLE selected item; among a multi-selection the box
+             stays a plain selected element (no textarea) so it can't grab the keyboard or clobber the set. */}
+         {isSoleSelected && (
             <textarea
+               ref={textareaRef}
                value={text}
-               autoFocus
                onChange={(event) => setText(event.target.value)}
-               onFocus={onRequestSelect}
                onBlur={commitText}
                onPointerDown={(event) => event.stopPropagation()}
                placeholder={placeholder}

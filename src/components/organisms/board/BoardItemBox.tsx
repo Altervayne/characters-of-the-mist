@@ -335,6 +335,7 @@ export const BoardItemBox = memo(function BoardItemBox({
       <BoardItemBody
          item={item}
          isSelected={isSelected}
+         soleSelected={soleSelected}
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
          memberCount={memberCount}

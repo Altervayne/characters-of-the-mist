@@ -28,6 +28,8 @@ import type { BoardItem, BoardItemContent } from '@/lib/types/board';
 interface BoardItemBodyProps {
    item: BoardItem;
    isSelected: boolean;
+   /** The ONLY selected item: a text element edits (mounts its textarea) only when sole, else it's a plain selected box. */
+   soleSelected: boolean;
    /** The selection toolbar's per-kind action slot; a kind portals its actions here. Null when unselected. */
    toolbarSlot: HTMLElement | null;
    /** A non-clipped slot at the box's right edge (outside overflow-hidden); the journal portals its tabs here. */
@@ -52,7 +54,7 @@ interface BoardItemBodyProps {
    onCachePortalName: (itemId: string, name: string) => void;
 }
 
-export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect, onRequestEditPortal, onRequestRelinkPortal, onCachePortalName }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, soleSelected, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect, onRequestEditPortal, onRequestRelinkPortal, onCachePortalName }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
@@ -79,9 +81,9 @@ export function BoardItemBody({ item, isSelected, toolbarSlot, sideSlot, memberC
       case 'portal':
          return <BoardPortalItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onRequestEdit={onRequestEditPortal} onRequestRelink={onRequestRelinkPortal} onDelete={onDelete} onCacheName={onCachePortalName} />;
       case 'text':
-         return <BoardTextItem item={item} content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <BoardTextItem item={item} content={content} isSelected={isSelected} isSoleSelected={soleSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
       case 'drawing':
-         return <BoardDrawingItem content={content} />;
+         return <BoardDrawingItem id={item.id} content={content} />;
       default:
          return <GenericItemBody item={item} />;
    }

@@ -1,5 +1,5 @@
 // -- Type Imports --
-import type { BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
+import type { ActiveTool, BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
 
 /*
  * Pure geometry + style helpers for freehand drawing layers. Kept free of React/store so the path
@@ -31,6 +31,15 @@ export const BRUSH_SMOOTH_WINDOW = 2;
 /** A brush's stroke opacity: highlighter is translucent, pen/brush opaque. */
 export function brushOpacity(brush: BrushKind): number {
    return brush === 'highlighter' ? HIGHLIGHTER_OPACITY : 1;
+}
+
+/**
+ * The Draw gestures that append a stroke to a layer - every drawing gesture except the eraser (which works
+ * across all layers) and Select. Drives the active-layer focus cue: while an append tool is armed, the
+ * active layer stays full and the others dim, so it must NOT fire for the eraser or in Select mode.
+ */
+export function isAppendTool(tool: ActiveTool): boolean {
+   return tool === 'freehand' || tool === 'line' || tool === 'freeformPolygon' || tool === 'regularPolygon';
 }
 
 /**

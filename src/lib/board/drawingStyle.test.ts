@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, MIN_LINE_LENGTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildGeometricRibbonPath, buildPolylinePath, buildStrokePath, isLineDegenerate, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
+import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, MIN_LINE_LENGTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildGeometricRibbonPath, buildPolylinePath, buildStrokePath, isAppendTool, isLineDegenerate, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
 
 // -- Type Imports --
 import type { BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
@@ -233,6 +233,20 @@ describe('brushOpacity', () => {
       expect(brushOpacity('highlighter')).toBeCloseTo(0.4);
       expect(brushOpacity('pen')).toBe(1);
       expect(brushOpacity('brush')).toBe(1);
+   });
+});
+
+describe('isAppendTool', () => {
+   it('is true for every drawing gesture that appends a stroke', () => {
+      expect(isAppendTool('freehand')).toBe(true);
+      expect(isAppendTool('line')).toBe(true);
+      expect(isAppendTool('freeformPolygon')).toBe(true);
+      expect(isAppendTool('regularPolygon')).toBe(true);
+   });
+
+   it('is false for select and the eraser (no active-layer focus cue)', () => {
+      expect(isAppendTool('select')).toBe(false);
+      expect(isAppendTool('eraser')).toBe(false);
    });
 });
 

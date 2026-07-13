@@ -50,9 +50,11 @@ interface BoardToolSettingsBarProps {
    onSetColor: (color: string | null) => void;
    onSetWidth: (width: number) => void;
    onNewLayer: () => void;
+   /** Pressed state for the "new layer" button: a fresh layer is pending (the next stroke mints one). */
+   newLayerArmed: boolean;
 }
 
-export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush, onSetColor, onSetWidth, onNewLayer }: BoardToolSettingsBarProps) {
+export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush, onSetColor, onSetWidth, onNewLayer, newLayerArmed }: BoardToolSettingsBarProps) {
    const { t } = useTranslation();
    const activeWidth = penSettings.width;
    const erasing = tool === 'eraser';
@@ -137,14 +139,20 @@ export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush,
 
          <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
 
-         {/* Starts the next stroke on a fresh layer - inert while erasing (the eraser doesn't append). */}
+         {/* Starts the next stroke on a fresh layer - inert while erasing (the eraser doesn't append). Reads
+             armed (pressed) while a fresh layer is pending, so "the next stroke mints one" is legible. */}
          <button
             type="button"
             title={t('BoardView.newDrawingLayer')}
             aria-label={t('BoardView.newDrawingLayer')}
+            aria-pressed={newLayerArmed || undefined}
             aria-disabled={erasing || undefined}
             onClick={onNewLayer}
-            className={cn('flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer', inertCls)}
+            className={cn(
+               'flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer',
+               newLayerArmed && 'bg-muted ring-1 ring-primary/40',
+               inertCls,
+            )}
          >
             <Layers className="h-4 w-4" />
          </button>
