@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -10,11 +10,13 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, MousePointer2, PenTool, Plus, Skull, Square, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, LayoutGrid, ListChecks, Maximize, MousePointer2, PenTool, Plus, Skull, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
+import { gridBackground } from '@/lib/board/gridStyle';
+import { hexTile } from '@/lib/board/hexGrid';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
@@ -40,6 +42,7 @@ import { BoardToolSettingsBar } from './BoardToolSettingsBar';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
 import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
+import { BoardGridMenu } from './BoardGridMenu';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
 import { LinkTargetList } from '@/components/molecules/links/LinkTargetList';
 import { BoardPortalEditor } from './items/BoardPortalEditor';
@@ -52,11 +55,11 @@ import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSett
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- React Imports --
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { ActiveTool, BoardGrid, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
+import type { ActiveTool, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
@@ -110,8 +113,6 @@ const FIT_PADDING = 64;
  * stays visible. Covers the bar's own height (it grows upward from the box top) plus a small margin.
  */
 const TOOLBAR_TOP_CLEARANCE = 48;
-/** The grid styles the toolbar control cycles through, in order. */
-const GRID_CYCLE: BoardGridType[] = ['dots', 'lines', 'none'];
 
 /**
  * The top-bar scroll arrow: a frosted square overlaid on a scroll edge so the bar's contents slide
@@ -120,33 +121,6 @@ const GRID_CYCLE: BoardGridType[] = ['dots', 'lines', 'none'];
  */
 const BAR_ARROW_CLASS =
    'absolute top-0 bottom-0 z-10 my-auto flex size-7 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
-
-/**
- * Builds the screen-space CSS background for the grid layer: position tracks the pan,
- * size is the adaptive spacing, and the color falls back to `currentColor` (set subtle
- * on the layer) so the grid reads on both themes. `none` draws nothing.
- */
-function gridBackground(grid: BoardGrid, spacing: number, viewport: Viewport): CSSProperties {
-   if (grid.type === 'none') return {};
-   const color = grid.color ?? 'currentColor';
-   const position = `${viewport.x}px ${viewport.y}px`;
-   const size = `${spacing}px ${spacing}px`;
-   if (grid.type === 'dots') {
-      return { backgroundImage: `radial-gradient(circle, ${color} 1px, transparent 1.5px)`, backgroundSize: size, backgroundPosition: position };
-   }
-   return {
-      backgroundImage: `linear-gradient(to right, ${color} 1px, transparent 1px), linear-gradient(to bottom, ${color} 1px, transparent 1px)`,
-      backgroundSize: size,
-      backgroundPosition: position,
-   };
-}
-
-/** The toolbar icon for the current grid style (the button cycles to the next). */
-function gridIcon(type: BoardGridType) {
-   if (type === 'dots') return <Grip className="h-4 w-4" />;
-   if (type === 'lines') return <Grid3x3 className="h-4 w-4" />;
-   return <Square className="h-4 w-4" />;
-}
 
 /** The canvas; renders nothing when no board tab is active. */
 export function BoardView() {
@@ -159,6 +133,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const { t } = useTranslation();
    const viewport = useStore(store, (state) => state.viewport);
    const grid = useStore(store, (state) => state.grid);
+   const hexPatternId = useId();
    const name = useStore(store, (state) => state.name);
    const items = useStore(store, (state) => state.items);
    const actions = useStore(store, (state) => state.actions);
@@ -1217,6 +1192,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       else if (pendingBoardAction.startsWith('setBrush:')) { if (activeTool === 'select' || activeTool === 'eraser') chooseDrawTool('freehand'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
+      else if (pendingBoardAction.startsWith('setGrid:')) void actions.setGrid({ ...grid, type: pendingBoardAction.slice('setGrid:'.length) as BoardGridType });
       else if (pendingBoardAction.startsWith('create:')) {
          const kind = pendingBoardAction.slice('create:'.length) as CreatableKind;
          // A picker-first kind (a portal) opens its target picker instead of dropping a targetless item.
@@ -1280,12 +1256,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (!el) return;
       const rect = el.getBoundingClientRect();
       actions.setViewport(fitViewport(Object.values(items), { width: rect.width, height: rect.height }, FIT_PADDING));
-   };
-
-   /** Cycles the background grid: dots -> lines -> none. */
-   const handleCycleGrid = () => {
-      const next = GRID_CYCLE[(GRID_CYCLE.indexOf(grid.type) + 1) % GRID_CYCLE.length];
-      void actions.setGrid({ ...grid, type: next });
    };
 
    // Derived selection chrome. One selected -> the per-item toolbar; the live group-move
@@ -1475,6 +1445,29 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
          <div className="pointer-events-none absolute inset-0 text-foreground/15" style={gridBackground(grid, gridSpacing(viewport.zoom), viewport)} />
 
+         {/* Hex hive: the honeycomb has no CSS form, so it rides a screen-space SVG pattern instead. The
+             tile size tracks zoom (via the adaptive spacing) and the pattern transform tracks pan, so it
+             moves exactly like the CSS grids; the 1px stroke stays constant on screen. */}
+         {grid.type === 'hex' && (() => {
+            const tile = hexTile(gridSpacing(viewport.zoom));
+            return (
+               <svg className="pointer-events-none absolute inset-0 h-full w-full text-foreground/15">
+                  <defs>
+                     <pattern
+                        id={hexPatternId}
+                        patternUnits="userSpaceOnUse"
+                        width={tile.width}
+                        height={tile.height}
+                        patternTransform={`translate(${viewport.x} ${viewport.y})`}
+                     >
+                        <path d={tile.path} fill="none" stroke="currentColor" strokeWidth={1} />
+                     </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill={`url(#${hexPatternId})`} />
+               </svg>
+            );
+         })()}
+
          {/* Empty-board cue: a quiet, screen-centered hint so a blank canvas reads as "ready",
              not "broken". Screen-space (not the world layer), so it stays put under pan/zoom, and
              inert so it never eats a pan, a background click, or a drawer drop. Gone at one item. */}
@@ -1556,12 +1549,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                 as "the active layer" rather than a selected element. Inert; theme tokens only. */}
             {focusLayer && (
                <div
-                  className="pointer-events-none absolute rounded-sm border-2 border-dashed border-primary/70"
+                  className="pointer-events-none absolute rounded-sm border-dashed border-primary/70"
                   style={{
                      left: focusLayer.x + (moveDeltaFor(focusLayer.id)?.x ?? 0),
                      top: focusLayer.y + (moveDeltaFor(focusLayer.id)?.y ?? 0),
                      width: focusLayer.width,
                      height: focusLayer.height,
+                     // Counter-scale the dashed stroke so it holds a constant on-screen weight at any zoom.
+                     borderWidth: 2 / viewport.zoom,
                      zIndex: groupToolbarZIndex(layerCount),
                   }}
                />
@@ -1682,9 +1677,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                      />
                   )}
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
-                     {gridIcon(grid.type)}
-                  </ToolbarButton>
+                  <BoardGridMenu grid={grid} onSelect={(type) => void actions.setGrid({ ...grid, type })} />
                   <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
                      <Maximize className="h-4 w-4" />
                   </ToolbarButton>
@@ -1930,10 +1923,6 @@ function BoardCardCreationWindow({
    );
 }
 
-/** Maps a grid type to its i18n key suffix (`gridDots` / `gridLines` / `gridNone`). */
-function gridTypeKey(type: BoardGridType): string {
-   return type === 'dots' ? 'Dots' : type === 'lines' ? 'Lines' : 'None';
-}
 
 /**
  * The board name, living as the leading element of the top-left bar: click to edit, commit on

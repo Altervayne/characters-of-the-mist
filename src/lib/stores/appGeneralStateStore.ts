@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 // -- Type Imports --
 import type { CreatableKind } from '@/lib/creation/creatableRegistry';
-import type { BrushKind } from '@/lib/types/board';
+import type { BoardGridType, BrushKind } from '@/lib/types/board';
 
 
 
@@ -18,7 +18,8 @@ export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
  * selected copy card/tracker back to the drawer / as a new drawer item, or embed a saved note as a live
  * reference tile. The canvas consumes it against its own state and clears it. The `create:<kind>` members
  * mirror the toolbar/radial's `CreatableKind` set (explicit per-kind, not a free-form parameter), so a
- * palette create can't drift from the registry; `embedNote:<drawerItemId>` carries the picked note's id.
+ * palette create can't drift from the registry; `setGrid:<type>` swaps the background grid;
+ * `embedNote:<drawerItemId>` carries the picked note's id.
  */
 export type BoardAction =
    | 'createChallenge'
@@ -32,6 +33,7 @@ export type BoardAction =
    | 'saveItemToDrawer'
    | 'saveItemToDrawerAs'
    | `create:${CreatableKind}`
+   | `setGrid:${BoardGridType}`
    | `embedNote:${string}`;
 
 interface AppGeneralState {

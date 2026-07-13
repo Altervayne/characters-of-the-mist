@@ -18,8 +18,11 @@ export interface Viewport {
    zoom: number;
 }
 
-/** The background grid styles a board can show behind its items. */
-export type BoardGridType = 'dots' | 'lines' | 'none';
+/**
+ * The background grid styles a board can show behind its items. `lines` is the both-axes crosshatch;
+ * `h-lines`/`v-lines` are the single-axis rules; `hex` is the honeycomb hive.
+ */
+export type BoardGridType = 'none' | 'dots' | 'lines' | 'h-lines' | 'v-lines' | 'hex';
 
 /**
  * A board's background grid. `color` is optional - absent means a subtle theme default;

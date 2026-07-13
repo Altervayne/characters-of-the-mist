@@ -11,7 +11,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Eraser, Brush, Highlighter } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -239,6 +239,14 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setBrushPen', scope: 'board', label: t('CommandPalette.commands.setBrushPen'), keywords: ['brush', 'pen', 'draw', 'ink', 'thin', 'board'], icon: Pen, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setBrush:pen') },
       { id: 'setBrushBrush', scope: 'board', label: t('CommandPalette.commands.setBrushBrush'), keywords: ['brush', 'calligraphy', 'nib', 'draw', 'ink', 'board'], icon: Brush, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setBrush:brush') },
       { id: 'setBrushHighlighter', scope: 'board', label: t('CommandPalette.commands.setBrushHighlighter'), keywords: ['brush', 'highlighter', 'highlight', 'draw', 'ink', 'board'], icon: Highlighter, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setBrush:highlighter') },
+      // The background grid styles, mirroring the toolbar grid selector. Each swaps the whole grid via the
+      // one-shot bridge (the canvas owns the board's grid state).
+      { id: 'setGridNone', scope: 'board', label: t('CommandPalette.commands.setGridNone'), keywords: ['grid', 'none', 'off', 'blank', 'board'], icon: Square, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:none') },
+      { id: 'setGridDots', scope: 'board', label: t('CommandPalette.commands.setGridDots'), keywords: ['grid', 'dots', 'board'], icon: Grip, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:dots') },
+      { id: 'setGridCrosshatch', scope: 'board', label: t('CommandPalette.commands.setGridCrosshatch'), keywords: ['grid', 'crosshatch', 'lines', 'both', 'graph', 'board'], icon: Grid3x3, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:lines') },
+      { id: 'setGridHorizontalLines', scope: 'board', label: t('CommandPalette.commands.setGridHorizontalLines'), keywords: ['grid', 'horizontal', 'lines', 'rows', 'rules', 'board'], icon: Rows3, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:h-lines') },
+      { id: 'setGridVerticalLines', scope: 'board', label: t('CommandPalette.commands.setGridVerticalLines'), keywords: ['grid', 'vertical', 'lines', 'columns', 'rules', 'board'], icon: Columns3, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:v-lines') },
+      { id: 'setGridHex', scope: 'board', label: t('CommandPalette.commands.setGridHex'), keywords: ['grid', 'hex', 'hexagon', 'honeycomb', 'hive', 'board'], icon: Hexagon, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:hex') },
       // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
       // active canvas consumes this request since it owns the drop point + selection/expand state.
       { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },

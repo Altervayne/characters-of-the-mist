@@ -34,6 +34,9 @@ import type { ResizePatch } from '@/lib/board/boardCommands';
 /** Resize-grip hit size in screen px (counter-scaled by zoom so it stays constant on screen). */
 const HANDLE_SCREEN_SIZE = 14;
 
+/** Selection-outline thickness in screen px (counter-scaled by zoom, like the grip, so it never thins out at low zoom). */
+const RING_SCREEN_PX = 2;
+
 /**
  * Kinds whose content height is the MINIMUM height (no internal scroll): the box measures its
  * content as a floor - it can be dragged taller (2D resize) but never shorter than the content,
@@ -296,6 +299,9 @@ export const BoardItemBox = memo(function BoardItemBox({
    // ==================
 
    const gripSize = HANDLE_SCREEN_SIZE / zoom;
+   // The selection outline lives inside the scaled world layer, so a fixed world width would thin to
+   // nothing at low zoom; counter-scale it to a constant on-screen weight, same as the grip.
+   const outlineWidth = RING_SCREEN_PX / zoom;
    // A pin is a round, fixed-size dot: borderless container, circular ring, no resize grip.
    const isPin = item.kind === 'pin';
    // A card/tracker embed, a character reference, a note tile, and a portal ARE their own panels: each
@@ -391,8 +397,12 @@ export const BoardItemBox = memo(function BoardItemBox({
          <div
             onPointerDown={handleBodyPointerDown}
             // A collapsed zone's bar carries the zone's tint (matching the expanded frame) so the
-            // color survives collapse; an uncolored zone keeps the neutral card bar.
-            style={isCollapsedZone && zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
+            // color survives collapse; an uncolored zone keeps the neutral card bar. The selection
+            // outline's width/offset are set here (dynamic, counter-scaled) so they hold on-screen weight.
+            style={{
+               ...(isCollapsedZone && zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : {}),
+               ...(isSelected ? { outlineWidth, outlineOffset: outlineWidth } : {}),
+            }}
             className={cn(
                // A plain arrow: the body selects on click but never moves (that's the toolbar handle) or
                // pans, so it must not inherit the canvas grab or show a misleading finger.
@@ -408,19 +418,19 @@ export const BoardItemBox = memo(function BoardItemBox({
                   ? cn(
                        'overflow-hidden rounded-md border shadow-sm',
                        !zoneColor && 'bg-card',
-                       isSelected ? 'ring-2 ring-primary' : 'hover:border-primary/50',
+                       isSelected ? 'outline outline-primary' : 'hover:border-primary/50',
                        !zoneColor && (isSelected ? 'border-primary' : 'border-border'),
                     )
                   : isZone
-                     ? cn('pointer-events-none rounded-lg', isSelected && 'ring-2 ring-primary')
+                     ? cn('pointer-events-none rounded-lg', isSelected && 'outline outline-primary')
                      : isPin
-                        ? cn('rounded-full', isSelected && 'ring-2 ring-primary')
+                        ? cn('rounded-full', isSelected && 'outline outline-primary')
                         : isEmbed
                            // Match the ring radius to the embed's own corners: a card is rounded-xl; a portal
                            // is rounded-md; a bare text element or drawing layer hugs tight (rounded-sm); a
                            // tracker, character, or note tile is rounded-lg.
-                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : item.kind === 'text' || item.kind === 'drawing' ? 'rounded-sm' : 'rounded-lg', isSelected && 'ring-2 ring-primary')
-                           : cn('rounded-md border shadow-sm', isSelected ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary/50'),
+                           ? cn(item.kind === 'card' ? 'rounded-xl' : item.kind === 'portal' ? 'rounded-md' : item.kind === 'text' || item.kind === 'drawing' ? 'rounded-sm' : 'rounded-lg', isSelected && 'outline outline-primary')
+                           : cn('rounded-md border shadow-sm', isSelected ? 'border-primary outline outline-primary' : 'border-border hover:border-primary/50'),
             )}
          >
             {/* A measured kind wraps the body so the box can measure it. A MIN-HEIGHT kind fills the
