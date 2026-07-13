@@ -12,13 +12,14 @@ import {
    createCompoundCommand,
    createDeleteItemCommand,
    createMoveItemCommand,
+   createRemoveStrokesCommand,
    createResizeItemCommand,
    createSetItemZCommand,
    createSetItemZoneCommand,
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
-import { appendStrokeToDrawing } from '@/lib/board/drawingStyle';
+import { appendStrokeToDrawing, recomputeDrawingBoxWithoutMany } from '@/lib/board/drawingStyle';
 import { zoneContaining } from '@/lib/board/zoneMembership';
 
 // -- Store Imports --
@@ -109,6 +110,12 @@ export interface BoardState {
        * a layer with {@link addItem} for the first stroke, then appends here.
        */
       appendStroke: (itemId: string, stroke: Stroke) => Promise<void>;
+      /**
+       * Removes strokes from one or more drawing layers as ONE undo step (a whole eraser scrub). A layer whose
+       * entire stroke set is erased is deleted; the rest re-fit to their survivors. Applied optimistically then
+       * persisted NON-additively (a multi-item removal keeps the full resync), so the map matches the repo.
+       */
+      eraseStrokes: (erasures: { layerId: string; strokeIds: string[] }[]) => Promise<void>;
       /**
        * Caches a reference item's `lastKnown` snapshot via a DIRECT repo write, never a
        * command - so a passive source-driven re-read never lands on the board undo stack.
@@ -508,6 +515,40 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                // Additive: a single-item content delta, so the optimistic apply above is authoritative -
                // no full reload per stroke.
                await runItemMutation(createAppendStrokeCommand(itemId, stroke), { additive: true });
+            },
+
+            eraseStrokes: async (erasures) => {
+               if (erasures.length === 0) return;
+               const items = get().items;
+               // Build the compound: a layer stripped of every stroke is deleted (id-stable undo); the rest
+               // drop the erased strokes and re-fit. Skip a layer that vanished or is no longer a drawing.
+               const commands: BoardCommand[] = [];
+               for (const { layerId, strokeIds } of erasures) {
+                  const item = items[layerId];
+                  if (!item || item.content.kind !== 'drawing') continue;
+                  const removeSet = new Set(strokeIds);
+                  const survivors = item.content.strokes.filter((stroke) => !removeSet.has(stroke.id));
+                  commands.push(survivors.length === 0 ? createDeleteItemCommand(layerId) : createRemoveStrokesCommand(layerId, strokeIds));
+               }
+               if (commands.length === 0) return;
+               markDirty();
+               // Optimistically mirror the removals: delete emptied layers, re-fit the rest with the SAME
+               // helper the command persists with, so the map is byte-identical to the repo.
+               set((state) => {
+                  const next = { ...state.items };
+                  for (const { layerId, strokeIds } of erasures) {
+                     const item = next[layerId];
+                     if (!item || item.content.kind !== 'drawing') continue;
+                     const removeSet = new Set(strokeIds);
+                     if (item.content.strokes.every((stroke) => removeSet.has(stroke.id))) { delete next[layerId]; continue; }
+                     const box = recomputeDrawingBoxWithoutMany({ x: item.x, y: item.y, content: item.content }, removeSet);
+                     next[layerId] = { ...item, x: box.x, y: box.y, width: box.width, height: box.height, content: { ...item.content, strokes: box.strokes } };
+                  }
+                  return { items: next };
+               });
+               // NON-additive: a multi-item removal (+ possible layer deletes), so keep the full resync (the
+               // additive fast path is only sound for a pure add / single-item content delta).
+               await runItemMutation(createCompoundCommand(commands));
             },
 
             cacheReferenceLastKnown: async (id, content) => {

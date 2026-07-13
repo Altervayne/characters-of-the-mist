@@ -2,14 +2,14 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { DEFAULT_STROKE_WIDTH, appendStrokeToDrawing, buildStrokePath, makePenStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, strokeColorToCss } from './drawingStyle';
+import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildStrokePath, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, strokeColorToCss, strokeHitsPoint } from './drawingStyle';
 
 // -- Type Imports --
-import type { DrawingBoardContent, Stroke } from '@/lib/types/board';
+import type { BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
 
-/** A layer-local stroke fixture (only the fields the box math reads matter). */
-function stroke(id: string, points: number[]): Stroke {
-   return { id, brush: 'pen', color: null, width: DEFAULT_STROKE_WIDTH, points };
+/** A layer-local stroke fixture (only the fields the box math reads matter). Defaults to a pen stroke. */
+function stroke(id: string, points: number[], brush: BrushKind = 'pen', width: number = DEFAULT_STROKE_WIDTH): Stroke {
+   return { id, brush, color: null, width, points };
 }
 
 /** A minimal drawing layer at an origin, holding the given layer-local strokes. */
@@ -71,6 +71,125 @@ describe('makePenStroke', () => {
    it('mints a pen stroke with the default width and the adaptive (null) color', () => {
       const pen = makePenStroke('s1', [0, 0, 1, 1]);
       expect(pen).toEqual({ id: 's1', brush: 'pen', color: null, width: DEFAULT_STROKE_WIDTH, points: [0, 0, 1, 1] });
+   });
+});
+
+describe('makeStroke', () => {
+   it('carries the given brush, ink, and width', () => {
+      expect(makeStroke('s1', [0, 0, 2, 2], 'highlighter', '#ff0000', 16)).toEqual({ id: 's1', brush: 'highlighter', color: '#ff0000', width: 16, points: [0, 0, 2, 2] });
+   });
+});
+
+describe('brushOpacity', () => {
+   it('is translucent for the highlighter and opaque for pen/brush', () => {
+      expect(brushOpacity('highlighter')).toBeCloseTo(0.4);
+      expect(brushOpacity('pen')).toBe(1);
+      expect(brushOpacity('brush')).toBe(1);
+   });
+});
+
+describe('buildBrushRibbonPath', () => {
+   // Every coordinate pair in a ribbon path (no arcs), so the perpendicular thickness can be measured.
+   const bounds = (d: string) => {
+      const nums = (d.match(/-?\d+(?:\.\d+)?(?:e-?\d+)?/gi) ?? []).map(Number);
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < nums.length - 1; i += 2) {
+         minX = Math.min(minX, nums[i]); maxX = Math.max(maxX, nums[i]);
+         minY = Math.min(minY, nums[i + 1]); maxY = Math.max(maxY, nums[i + 1]);
+      }
+      return { minX, minY, maxX, maxY };
+   };
+
+   it('is empty for no points', () => {
+      expect(buildBrushRibbonPath([], 10, NIB_ANGLE)).toBe('');
+   });
+
+   it('draws a full-width round dot (an arc pair) for a single point', () => {
+      const d = buildBrushRibbonPath([5, 5], 10, NIB_ANGLE);
+      expect(d.startsWith('M')).toBe(true);
+      expect(d.match(/a/g)?.length).toBe(2); // two arcs close the circle
+      expect(d.trim().endsWith('Z')).toBe(true);
+   });
+
+   it('closes a curved filled ribbon (both edges + caps are beziers, no straight line-tos)', () => {
+      const d = buildBrushRibbonPath([0, 0, 20, 0, 40, 0, 60, 0], 10, NIB_ANGLE);
+      expect(d.startsWith('M')).toBe(true);
+      expect(d.trim().endsWith('Z')).toBe(true);
+      expect(/ L /.test(d)).toBe(false); // outline + caps are curved, never a serrating straight join
+      expect((d.match(/C/g) ?? []).length).toBeGreaterThanOrEqual(4); // left edge, right edge, two caps
+   });
+
+   it('shrugs off a near-coincident (noise) sample - the resampled ribbon barely moves', () => {
+      const clean = bounds(buildBrushRibbonPath([0, 0, 20, 0, 40, 0, 60, 0], 10, NIB_ANGLE));
+      // The same stroke with a sub-pixel-jittered near-duplicate injected (the pointer noise that serrates).
+      const noisy = bounds(buildBrushRibbonPath([0, 0, 20, 0, 20.2, 0.1, 40, 0, 60, 0], 10, NIB_ANGLE));
+      expect(Math.abs((noisy.maxY - noisy.minY) - (clean.maxY - clean.minY))).toBeLessThan(0.5);
+      expect(Math.abs(noisy.maxX - clean.maxX)).toBeLessThan(1);
+   });
+
+   it('gives a horizontal and a vertical stroke different widths (the nib is off 45deg)', () => {
+      const width = 10;
+      const h = bounds(buildBrushRibbonPath([0, 0, 10, 0], width, NIB_ANGLE)); // thickness is vertical
+      const v = bounds(buildBrushRibbonPath([0, 0, 0, 10], width, NIB_ANGLE)); // thickness is horizontal
+      const hThick = h.maxY - h.minY;
+      const vThick = v.maxX - v.minX;
+      expect(hThick).not.toBeCloseTo(vThick);
+      // Both sit within the nib's range: never thinner than the floor, never wider than the base width.
+      for (const thick of [hThick, vThick]) {
+         expect(thick).toBeGreaterThanOrEqual(width * BRUSH_MIN_WIDTH_FACTOR - 1e-6);
+         expect(thick).toBeLessThanOrEqual(width + 1e-6);
+      }
+   });
+
+   it('is thinnest along the nib edge and fullest perpendicular to it', () => {
+      const width = 10;
+      const along = bounds(buildBrushRibbonPath([0, 0, Math.cos(NIB_ANGLE) * 10, Math.sin(NIB_ANGLE) * 10], width, NIB_ANGLE));
+      const across = bounds(buildBrushRibbonPath([0, 0, Math.cos(NIB_ANGLE + Math.PI / 2) * 10, Math.sin(NIB_ANGLE + Math.PI / 2) * 10], width, NIB_ANGLE));
+      const span = (b: { minX: number; minY: number; maxX: number; maxY: number }) => Math.max(b.maxX - b.minX, b.maxY - b.minY);
+      // The perpendicular stroke's bbox is wider than the along-nib one (thin edge vs full edge).
+      expect(span(across)).toBeGreaterThan(span(along));
+   });
+});
+
+describe('strokeHitsPoint', () => {
+   const origin = { x: 100, y: 100 }; // layer origin: local (0,0) == world (100,100)
+
+   it('never hits an empty stroke', () => {
+      expect(strokeHitsPoint(origin, stroke('s', []), 100, 100, 8)).toBe(false);
+   });
+
+   it('hits a single-point stroke within reach and misses beyond it', () => {
+      const dot = stroke('s', [0, 0], 'pen', 4); // reach = width/2 + tol = 2 + 8 = 10
+      expect(strokeHitsPoint(origin, dot, 108, 100, 8)).toBe(true); // 8px away, inside 10
+      expect(strokeHitsPoint(origin, dot, 120, 100, 8)).toBe(false); // 20px away, outside
+   });
+
+   it('hits along a segment (perpendicular distance) and misses a near-miss just past the band', () => {
+      const line = stroke('s', [0, 0, 40, 0], 'pen', 4); // horizontal, reach 10 with tol 8
+      expect(strokeHitsPoint(origin, line, 120, 108, 8)).toBe(true); // 8px off the line, inside
+      expect(strokeHitsPoint(origin, line, 120, 112, 8)).toBe(false); // 12px off, outside
+   });
+
+   it('widens the hit band for a thick stroke', () => {
+      const near = { worldX: 120, worldY: 118 }; // 18px off the line
+      const thin = stroke('s', [0, 0, 40, 0], 'pen', 4); // reach 10
+      const thick = stroke('s', [0, 0, 40, 0], 'highlighter', 20); // reach = 10 + 8 = 18
+      expect(strokeHitsPoint(origin, thin, near.worldX, near.worldY, 8)).toBe(false);
+      expect(strokeHitsPoint(origin, thick, near.worldX, near.worldY, 8)).toBe(true);
+   });
+});
+
+describe('recomputeDrawingBoxWithoutMany', () => {
+   it('drops several strokes, re-fits the box, and re-bases the survivors', () => {
+      // origin (-5,-8): survivor s1 at world (0,0)-(10,10); s2/s3 reach up/left and are erased.
+      const item = layer(-5, -8, [stroke('s1', [5, 8, 15, 18]), stroke('s2', [0, 0, 8, 11]), stroke('s3', [0, 0, 1, 1])]);
+      const next = recomputeDrawingBoxWithoutMany(item, new Set(['s2', 's3']));
+      expect(next).toEqual({ x: 0, y: 0, width: 10, height: 10, strokes: [stroke('s1', [0, 0, 10, 10])] });
+   });
+
+   it('returns a zero box holding no stroke when every stroke is removed', () => {
+      const item = layer(0, 0, [stroke('s1', [0, 0, 10, 10]), stroke('s2', [3, 3, 4, 4])]);
+      expect(recomputeDrawingBoxWithoutMany(item, new Set(['s1', 's2']))).toEqual({ x: 0, y: 0, width: 0, height: 0, strokes: [] });
    });
 });
 

@@ -1,6 +1,6 @@
 // -- Local Imports --
 import { BoardNotFoundError } from './boardErrors';
-import { appendStrokeToDrawing, recomputeDrawingBoxWithout } from './drawingStyle';
+import { appendStrokeToDrawing, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany } from './drawingStyle';
 import {
    addItem,
    deleteItem,
@@ -265,6 +265,54 @@ export function createAppendStrokeCommand(id: string, stroke: Stroke): BoardComm
          if (!item || item.content.kind !== 'drawing') return;
          const next = recomputeDrawingBoxWithout({ x: item.x, y: item.y, content: item.content }, stroke.id);
          await updateItem(id, { x: next.x, y: next.y, width: next.width, height: next.height, content: { ...item.content, strokes: next.strokes } });
+      },
+   };
+}
+
+/**
+ * Remove several strokes from a drawing layer as one step (an eraser gesture's forward action). A pure DELTA
+ * (holds only the erased strokes, O(erased) memory): `do()` reads the layer live, captures the removed strokes
+ * in WORLD coords, and re-fits the box to the survivors; `undo()` folds each captured world-stroke back via
+ * {@link appendStrokeToDrawing}, so the box re-grows and points re-base to whatever the current origin is.
+ * World capture makes re-insertion frame-independent - exactly like an append - so undo lands the ink at its
+ * original place regardless of how the box shifted meanwhile. No-ops if the target is missing or no longer a
+ * drawing. Used only for a PARTIAL removal; a layer whose last stroke is erased is deleted instead.
+ */
+export function createRemoveStrokesCommand(id: string, strokeIds: string[]): BoardCommand {
+   const idSet = new Set(strokeIds);
+   let removedWorld: Stroke[] | null = null;
+   return {
+      label: 'remove-strokes',
+      async do() {
+         const item = await getItem(id);
+         if (!item) throw new BoardNotFoundError(`Board item not found: ${id}`);
+         if (item.content.kind !== 'drawing') return;
+         if (!removedWorld) {
+            removedWorld = item.content.strokes
+               .filter((stroke) => idSet.has(stroke.id))
+               .map((stroke) => ({ ...stroke, points: rebasePoints(stroke.points, -item.x, -item.y) }));
+         }
+         const next = recomputeDrawingBoxWithoutMany({ x: item.x, y: item.y, content: item.content }, idSet);
+         await updateItem(id, { x: next.x, y: next.y, width: next.width, height: next.height, content: { ...item.content, strokes: next.strokes } });
+      },
+      async undo() {
+         if (!removedWorld) return;
+         const item = await getItem(id);
+         if (!item || item.content.kind !== 'drawing') return;
+         let x = item.x;
+         let y = item.y;
+         let width = item.width;
+         let height = item.height;
+         let content = item.content;
+         for (const stroke of removedWorld) {
+            const next = appendStrokeToDrawing({ x, y, content }, stroke.points, (points) => ({ ...stroke, points }));
+            x = next.x;
+            y = next.y;
+            width = next.width;
+            height = next.height;
+            content = { ...content, strokes: next.strokes };
+         }
+         await updateItem(id, { x, y, width, height, content });
       },
    };
 }

@@ -2,8 +2,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+// -- Utils Imports --
+import { DEFAULT_STROKE_WIDTH } from '@/lib/board/drawingStyle';
+
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
+import type { BrushKind } from '@/lib/types/board';
 import type { DiceTrayContent } from '@/lib/dice/diceTrayTypes';
 import type { CustomTheme } from '@/lib/theme/themeTokens';
 import type { ThemeMode } from '@/lib/theme/themeMode';
@@ -47,6 +51,10 @@ interface AppSettingsState {
    // A one-shot "roll the app tray now" request (armed by the palette's Roll command). Transient: excluded
    // from persistence so a reload never auto-rolls; the tray clears it once it has rolled.
    pendingDiceRoll: boolean;
+   // The board drawing tool's settings, persisted so the last brush/color/size survive a reload. `color` and
+   // `width` are BOTH shared across brushes (null color = the adaptive foreground, frozen to a hex only on
+   // pick), so switching brush keeps the current ink and size. Applied at stroke creation.
+   penSettings: { brush: BrushKind; color: string | null; width: number };
    actions: {
       setTheme: (theme: ActiveTheme) => void;
       setThemeMode: (mode: ThemeMode) => void;
@@ -78,6 +86,9 @@ interface AppSettingsState {
       setDiceTrayOpen: (isOpen: boolean) => void;
       startDiceTrayRoll: (content: DiceTrayContent) => void;
       clearPendingDiceRoll: () => void;
+      setPenBrush: (brush: BrushKind) => void;
+      setPenColor: (color: string | null) => void;
+      setPenWidth: (width: number) => void;
    };
 }
 
@@ -105,6 +116,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          hasSeenDrawerMenuHint: false,
          diceTray: { content: { dice: [], modifiers: [] }, isOpen: false },
          pendingDiceRoll: false,
+         penSettings: { brush: 'pen', color: null, width: DEFAULT_STROKE_WIDTH },
          actions: {
             setTheme: (theme) => set({ theme }),
             setThemeMode: (mode) => set({ themeMode: mode }),
@@ -164,6 +176,11 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             // new dice/modifiers (not stale ones). The tray runs its own animated roll, then clears the flag.
             startDiceTrayRoll: (content) => set((state) => ({ diceTray: { ...state.diceTray, content, isOpen: true }, pendingDiceRoll: true })),
             clearPendingDiceRoll: () => set({ pendingDiceRoll: false }),
+            // Tool settings, not board data: plain sets, no undo. The persist middleware saves them.
+            setPenBrush: (brush) => set((state) => ({ penSettings: { ...state.penSettings, brush } })),
+            setPenColor: (color) => set((state) => ({ penSettings: { ...state.penSettings, color } })),
+            // One shared size across brushes (carries when the brush changes, like the shared ink).
+            setPenWidth: (width) => set((state) => ({ penSettings: { ...state.penSettings, width } })),
          },
       }),
       {
@@ -186,7 +203,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             areGestureHintsEnabled: state.areGestureHintsEnabled,
             hasSeenTrackerSelectHint: state.hasSeenTrackerSelectHint,
             hasSeenDrawerMenuHint: state.hasSeenDrawerMenuHint,
-            diceTray: state.diceTray
+            diceTray: state.diceTray,
+            penSettings: state.penSettings
          }),
       }
    )

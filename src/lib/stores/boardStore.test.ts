@@ -239,6 +239,45 @@ describe('mutating actions', () => {
       expect({ x: regrownRepo?.x, y: regrownRepo?.y, width: regrownRepo?.width, height: regrownRepo?.height }).toEqual({ x: -5, y: -5, width: 15, height: 15 });
    });
 
+   it('eraseStrokes removes strokes and deletes an emptied layer as one step, undo/redo converge (box + layer)', async () => {
+      const board = await repository.createBoard('Board');
+      // Layer A keeps a survivor after the erase; layer B loses all its strokes (so it is deleted).
+      await repository.addItem(makeRecord('layerA', board.id, 0, { kind: 'drawing', x: 0, y: 0, width: 20, height: 20, content: { kind: 'drawing', strokes: [
+         { id: 'a1', brush: 'pen', color: null, width: 3, points: [0, 0, 10, 10] },
+         { id: 'a2', brush: 'pen', color: null, width: 3, points: [12, 12, 20, 20] },
+      ] } }));
+      await repository.addItem(makeRecord('layerB', board.id, 1, { kind: 'drawing', x: 100, y: 100, width: 10, height: 10, content: { kind: 'drawing', strokes: [
+         { id: 'b1', brush: 'pen', color: null, width: 3, points: [0, 0, 10, 10] },
+      ] } }));
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Erase a2 (partial, box re-fits) and all of layerB (deleted), one gesture.
+      await store.getState().actions.eraseStrokes([
+         { layerId: 'layerA', strokeIds: ['a2'] },
+         { layerId: 'layerB', strokeIds: ['b1'] },
+      ]);
+      const a = store.getState().items['layerA'];
+      expect({ x: a.x, y: a.y, width: a.width, height: a.height }).toEqual({ x: 0, y: 0, width: 10, height: 10 });
+      expect(a.content.kind === 'drawing' && a.content.strokes.map((s) => s.id)).toEqual(['a1']);
+      expect(store.getState().items['layerB']).toBeUndefined();
+      // The full resync (non-additive) keeps memory == repo.
+      const aRepo = await repository.getItem('layerA');
+      expect({ x: aRepo?.x, y: aRepo?.y, width: aRepo?.width, height: aRepo?.height }).toEqual({ x: 0, y: 0, width: 10, height: 10 });
+      expect(await repository.getItem('layerB')).toBeUndefined();
+
+      await store.getState().actions.undo();
+      const aBack = store.getState().items['layerA'];
+      expect({ x: aBack.x, y: aBack.y, width: aBack.width, height: aBack.height }).toEqual({ x: 0, y: 0, width: 20, height: 20 });
+      expect(aBack.content.kind === 'drawing' && aBack.content.strokes.map((s) => s.id).sort()).toEqual(['a1', 'a2']);
+      expect(store.getState().items['layerB']).toMatchObject({ x: 100, y: 100 });
+
+      await store.getState().actions.redo();
+      const aRedo = store.getState().items['layerA'];
+      expect({ x: aRedo.x, y: aRedo.y, width: aRedo.width, height: aRedo.height }).toEqual({ x: 0, y: 0, width: 10, height: 10 });
+      expect(store.getState().items['layerB']).toBeUndefined();
+   });
+
    it('deleteItem removes optimistically and persists, undo restores the record', async () => {
       const board = await repository.createBoard('Board');
       await repository.addItem(makeRecord('item-1', board.id, 0, { x: 7 }));

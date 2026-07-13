@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, MousePointer2, Pen, Plus, Skull, Square, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, Eraser, FilePlus2, Grid3x3, Grip, LayoutGrid, ListChecks, Maximize, MousePointer2, Pen, Plus, Skull, Square, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToW
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
-import { DEFAULT_STROKE_WIDTH, buildStrokePath, makePenStroke, pointsBounds, rebasePoints, strokeColorToCss } from '@/lib/board/drawingStyle';
+import { ERASER_RADIUS, NIB_ANGLE, brushOpacity, buildBrushRibbonPath, buildStrokePath, makeStroke, pointsBounds, rebasePoints, strokeColorToCss, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
@@ -34,6 +34,7 @@ import { runSaveImageToDrawerAs, runSaveItemToDrawer, runSaveItemToDrawerAs } fr
 // -- Component Imports --
 import { BoardItemBox } from './BoardItemBox';
 import { BoardConnectionsLayer } from './BoardConnectionsLayer';
+import { BoardToolSettingsBar } from './BoardToolSettingsBar';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
 import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
@@ -44,6 +45,7 @@ import { BoardPortalEditor } from './items/BoardPortalEditor';
 // -- Store Imports --
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
+import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 
 // -- React Imports --
@@ -51,7 +53,7 @@ import type { CSSProperties, ReactNode } from 'react';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Viewport } from '@/lib/types/board';
+import type { BoardGrid, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Viewport } from '@/lib/types/board';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
 import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
@@ -234,6 +236,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // gesture arrives later); only Select + Pen are wired. A first stroke with no active layer mints one.
    const [activeTool, setActiveTool] = useState<'select' | 'pen' | 'eraser'>('select');
    const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+   // The pen/highlighter settings (brush, ink, per-brush widths), persisted in app settings. Every new
+   // stroke and the live preview read the CURRENT values, so the pickers actually drive the ink.
+   const penSettings = useAppSettingsStore((state) => state.penSettings);
+   const { setPenBrush, setPenColor, setPenWidth } = useAppSettingsActions();
    // Space arms a mode-independent pan (mirrored to a ref for the pointer handlers, and to state for the
    // cursor). The pen overlay + a Space/middle-drag can all start a pan, so the trigger is mode-agnostic.
    const [spaceHeld, setSpaceHeld] = useState(false);
@@ -329,6 +335,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          observer.disconnect();
       };
    }, [updateBarScroll]);
+
+   // The bar's contextual section swaps with the tool (creation cluster vs. drawing settings), changing its
+   // width; recompute the overflow arrows once the swap has laid out.
+   useEffect(() => { updateBarScroll(); }, [activeTool, updateBarScroll]);
 
    /** Scrolls the bar toward one side by ~80% of its visible width. */
    const scrollBarBy = useCallback((direction: -1 | 1) => {
@@ -619,16 +629,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    /**
     * Commits a finished stroke (given its WORLD points): appends it to the active drawing layer, or mints
     * a fresh layer when none is active (its origin = the stroke's world bbox min, so points store
-    * layer-local). One brush + one adaptive color this phase. Fewer than two points is a stray tap - dropped.
+    * layer-local). The stroke carries the CURRENT brush/ink/width. Fewer than two points is a stray tap - dropped.
     */
    const commitStroke = useCallback(
       (worldPoints: number[]) => {
          if (worldPoints.length < 4) return;
+         const width = penSettings.width;
          const liveItems = store.getState().items;
          const layer = activeLayerId ? liveItems[activeLayerId] : undefined;
          if (layer && layer.content.kind === 'drawing') {
             // World points: the store grows the box + re-bases to layer-local, so the box tracks every stroke.
-            void actions.appendStroke(layer.id, makePenStroke(cuid(), worldPoints));
+            void actions.appendStroke(layer.id, makeStroke(cuid(), worldPoints, penSettings.brush, penSettings.color, width));
             return;
          }
          const bounds = pointsBounds(worldPoints);
@@ -645,11 +656,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             width: bounds.maxX - bounds.minX,
             height: bounds.maxY - bounds.minY,
             z,
-            content: { kind: 'drawing', strokes: [makePenStroke(cuid(), local)] },
+            content: { kind: 'drawing', strokes: [makeStroke(cuid(), local, penSettings.brush, penSettings.color, width)] },
          });
          setActiveLayerId(id);
       },
-      [actions, activeLayerId, store],
+      [actions, activeLayerId, store, penSettings],
    );
 
    /**
@@ -702,6 +713,65 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // A mid-stroke unmount (tab switch) fires no pointerup; tear the in-flight listeners down so they
    // never point at a dead store. The half-drawn stroke is simply discarded.
    useEffect(() => () => strokeCleanupRef.current?.(), []);
+
+   /**
+    * Commits a finished erase gesture: removes the collected strokes (per layer) as ONE undo step, then
+    * clears the append target if the erase emptied the layer the pen was drawing on (so the next stroke
+    * mints fresh instead of appending to a dead id).
+    */
+   const commitErase = useCallback(
+      async (erasures: { layerId: string; strokeIds: string[] }[]) => {
+         await actions.eraseStrokes(erasures);
+         if (activeLayerId && !store.getState().items[activeLayerId]) setActiveLayerId(null);
+      },
+      [actions, activeLayerId, store],
+   );
+
+   /**
+    * Eraser-overlay pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button
+    * scrub. Each sample whole-stroke hit-tests every drawing layer's strokes (any layer), collecting the
+    * touched ids per layer; the whole scrub commits as one erase on pointerup. Window listeners mirror the
+    * pen, and the teardown is stashed in the shared cleanup ref so an unmount mid-scrub can't leak them.
+    */
+   const handleEraserPointerDown = (event: ReactPointerEvent) => {
+      event.stopPropagation();
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button !== 0) return; // right-click falls through to the overlay's context menu (radial)
+
+      const touched = new Map<string, Set<string>>();
+      const eraseAt = (clientX: number, clientY: number) => {
+         const world = cursorToWorld(clientX, clientY);
+         if (!world) return;
+         for (const item of Object.values(store.getState().items)) {
+            if (item.content.kind !== 'drawing') continue;
+            for (const stroke of item.content.strokes) {
+               if (!strokeHitsPoint(item, stroke, world.x, world.y, ERASER_RADIUS)) continue;
+               let set = touched.get(item.id);
+               if (!set) { set = new Set(); touched.set(item.id, set); }
+               set.add(stroke.id);
+            }
+         }
+      };
+      eraseAt(event.clientX, event.clientY);
+
+      // Last sample only: a scrub needs coverage, not per-coalesced-sample fidelity, and hit-testing every
+      // stroke on every sample is O(strokes) - one test per move batch keeps it cheap on a dense board.
+      const onMove = (moveEvent: PointerEvent) => eraseAt(moveEvent.clientX, moveEvent.clientY);
+      const cleanup = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+         strokeCleanupRef.current = null;
+      };
+      const onUp = () => {
+         cleanup();
+         if (touched.size === 0) return;
+         void commitErase([...touched].map(([layerId, ids]) => ({ layerId, strokeIds: [...ids] })));
+      };
+      strokeCleanupRef.current = cleanup;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   };
 
    // ==================
    //  Toolbar actions
@@ -896,6 +966,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
       else if (pendingBoardAction === 'setTool:select') setActiveTool('select');
       else if (pendingBoardAction === 'setTool:pen') setActiveTool('pen');
+      else if (pendingBoardAction === 'setTool:eraser') setActiveTool('eraser');
+      else if (pendingBoardAction.startsWith('setBrush:')) { setActiveTool('pen'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
       else if (pendingBoardAction.startsWith('create:')) {
@@ -970,6 +1042,13 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // delta applies to every item in the active drag.
    const soleSelectedId = selectedIds.size === 1 ? [...selectedIds][0] : null;
    const moveDeltaFor = (id: string) => (groupDrag && groupDrag.ids.has(id) ? groupDrag.delta : null);
+
+   // Sole-selecting a drawing layer makes it the pen's append target, so the pen continues on it. Narrow to
+   // the sole selection so a marquee over mixed items never hijacks the target; minting already sets the id.
+   useEffect(() => {
+      if (!soleSelectedId) return;
+      if (store.getState().items[soleSelectedId]?.content.kind === 'drawing') setActiveLayerId(soleSelectedId);
+   }, [soleSelectedId, store]);
 
    // Two+ selected spatial items -> a group toolbar over their bounding box (shifted live
    // during a group move). Connections (zero-size) don't anchor it.
@@ -1129,7 +1208,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          onPointerMove={handleBackgroundPointerMove}
          onPointerUp={handleBackgroundPointerUp}
          onContextMenu={handleContextMenu}
-         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld ? 'cursor-grab' : activeTool === 'pen' ? 'cursor-crosshair' : 'cursor-grab')}
+         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld ? 'cursor-grab' : activeTool === 'pen' ? 'cursor-crosshair' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-grab')}
       >
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
@@ -1197,25 +1276,30 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                 over the items; inert, and gone the instant the stroke commits. */}
             {penPreview && (
                <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
-                  <path
-                     d={buildStrokePath(penPreview)}
-                     fill="none"
-                     stroke={strokeColorToCss(null)}
-                     strokeWidth={DEFAULT_STROKE_WIDTH}
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                  />
+                  {penSettings.brush === 'brush' ? (
+                     <path d={buildBrushRibbonPath(penPreview, penSettings.width, NIB_ANGLE)} fill={strokeColorToCss(penSettings.color)} stroke="none" />
+                  ) : (
+                     <path
+                        d={buildStrokePath(penPreview)}
+                        fill="none"
+                        stroke={strokeColorToCss(penSettings.color)}
+                        strokeWidth={penSettings.width}
+                        strokeOpacity={brushOpacity(penSettings.brush)}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                     />
+                  )}
                </svg>
             )}
          </div>
 
-         {/* Pen capture overlay: a screen-space gesture surface above the world layer. Interactive ONLY in
-             pen mode (else fully click-through, so select mode is untouched and item boxes never see the
-             pen pointerdown). It routes the pan escape hatch first, then owns the stroke; right-click falls
-             through to the radial. It renders nothing - committed strokes live in their drawing items. */}
+         {/* Pen/eraser capture overlay: a screen-space gesture surface above the world layer. Interactive
+             ONLY in pen or eraser mode (else fully click-through, so select mode is untouched and item boxes
+             never see the pointerdown). It routes the pan escape hatch first, then owns the stroke/scrub;
+             right-click falls through to the radial. It renders nothing - strokes live in their drawing items. */}
          <div
-            className={cn('absolute inset-0', activeTool === 'pen' ? 'cursor-crosshair' : 'pointer-events-none')}
-            onPointerDown={handlePenPointerDown}
+            className={cn('absolute inset-0', activeTool === 'pen' ? 'cursor-crosshair' : activeTool === 'eraser' ? 'cursor-cell' : 'pointer-events-none')}
+            onPointerDown={activeTool === 'eraser' ? handleEraserPointerDown : handlePenPointerDown}
             onContextMenu={handleContextMenu}
          />
 
@@ -1267,8 +1351,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
                   <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  {/* Sticky tool segment (Select / Pen): the mode, distinct from the one-shot spawn cluster
-                      that follows. Pen is sticky - exit via Select, Esc, or V. */}
+                  {/* Sticky tool segment (Select / Pen / Eraser): the mode, distinct from the one-shot spawn
+                      cluster that follows. Pen and Eraser are sticky - exit via Select, Esc, or V. */}
                   <div className="flex shrink-0 items-center gap-0.5">
                      <ToolToggleButton active={activeTool === 'select'} title={t('BoardView.toolSelect')} onClick={() => setActiveTool('select')}>
                         <MousePointer2 className="h-4 w-4" />
@@ -1276,18 +1360,37 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                      <ToolToggleButton active={activeTool === 'pen'} title={t('BoardView.toolPen')} onClick={() => setActiveTool('pen')}>
                         <Pen className="h-4 w-4" />
                      </ToolToggleButton>
+                     <ToolToggleButton active={activeTool === 'eraser'} title={t('BoardView.toolEraser')} onClick={() => setActiveTool('eraser')}>
+                        <Eraser className="h-4 w-4" />
+                     </ToolToggleButton>
                   </div>
-                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                  {CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => (
-                     <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
-                        <Icon className="h-4 w-4" />
-                     </ToolbarButton>
-                  ))}
-                  <BoardAddGameElementMenu
-                     onAddTracker={(trackerType) => createTrackerAt(trackerType, currentViewCenter())}
-                     onPickCardGame={handlePickCardGame}
-                     onAddChallenge={() => createChallengeAt(currentViewCenter())}
-                  />
+                  {/* The contextual second section swaps by mode: Select shows the element-creation cluster;
+                      Pen/Eraser shows the drawing-tool settings (brush / size / ink / new layer). The tool
+                      segment above and the view controls below stay visible in both modes. */}
+                  {activeTool === 'select' ? (
+                     <>
+                        <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+                        {CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => (
+                           <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
+                              <Icon className="h-4 w-4" />
+                           </ToolbarButton>
+                        ))}
+                        <BoardAddGameElementMenu
+                           onAddTracker={(trackerType) => createTrackerAt(trackerType, currentViewCenter())}
+                           onPickCardGame={handlePickCardGame}
+                           onAddChallenge={() => createChallengeAt(currentViewCenter())}
+                        />
+                     </>
+                  ) : (
+                     <BoardToolSettingsBar
+                        tool={activeTool}
+                        penSettings={penSettings}
+                        onSetBrush={setPenBrush}
+                        onSetColor={setPenColor}
+                        onSetWidth={setPenWidth}
+                        onNewLayer={() => setActiveLayerId(null)}
+                     />
+                  )}
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   <ToolbarButton title={t(`BoardView.grid${gridTypeKey(grid.type)}`)} onClick={handleCycleGrid}>
                      {gridIcon(grid.type)}

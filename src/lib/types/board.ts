@@ -338,17 +338,20 @@ export interface TextBoardContent {
    style: TextStyle;
 }
 
+/** A stroke's brush family: pen (thin, constant), brush (variable-width nib), highlighter (broad, translucent). */
+export type BrushKind = 'pen' | 'brush' | 'highlighter';
+
 /**
  * One freehand stroke on a drawing layer. `points` is a flat `[x0,y0,x1,y1,...]` list in LAYER-LOCAL
  * coords (relative to the layer item's `x`/`y` origin), so a layer move stays a pure translate and a
  * stroke append never touches the box. `color` is required-but-nullable: null is the adaptive default
  * (the theme foreground, legible on any board), frozen to a user hex only once picked. `width` is world
- * px, so ink scales with the board. `brush` is the stroke family; only `'pen'` exists so far. `pressure`
- * is a reserved per-point channel, dormant while width is constant.
+ * px, so ink scales with the board. `brush` is the stroke family (its width/opacity are baked in at
+ * creation). `pressure` is a reserved per-point channel, dormant while width is constant.
  */
 export interface Stroke {
    id: string;
-   brush: 'pen';
+   brush: BrushKind;
    color: string | null;
    width: number;
    points: number[];

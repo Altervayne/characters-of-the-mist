@@ -45,7 +45,7 @@ function dashArrayFor(dash: ConnectionDash | undefined, w: number): string | und
  * Deliberately distinct from the post-it pastels - the picker and recents are shared, the
  * palette is per-context. A pick from here is NOT a "custom" color, so it never joins recents.
  */
-const CONNECTION_PALETTE = ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#a855f7', '#f97316', '#64748b', '#0f172a', '#f8fafc'] as const;
+export const CONNECTION_PALETTE = ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#a855f7', '#f97316', '#64748b', '#0f172a', '#f8fafc'] as const;
 
 interface BoardConnectionsLayerProps {
    items: Record<string, BoardItem>;
