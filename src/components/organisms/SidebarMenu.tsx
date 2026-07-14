@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Waypoints, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw, FileUp } from 'lucide-react';
+import { Edit, Dices, BookUser, Waypoints, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, LifeBuoy, Sparkles, SaveAll, SquareMenu, RefreshCw, FileUp } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -37,6 +37,7 @@ import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useDrawerActions } from '@/lib/stores/drawerStore';
 import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
+import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
 
 // -- Type Imports --
 import type { Character, Card as CardData, Tracker } from '@/lib/types/character';
@@ -57,11 +58,11 @@ interface SidebarMenuProps {
    onToggleDrawer: () => void;
    onToggleCollapse: () => void;
    onOpenSettings: () => void;
-   onOpenInfo: () => void;
-   onOpenPatchNotes: () => void;
+   onOpenWhatsNew: () => void;
+   onOpenHelp: () => void;
 }
 
-export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onExportNoteMarkdown, onImportNoteMarkdownFile, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenInfo, onOpenPatchNotes }: SidebarMenuProps) {
+export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow, onExportNoteMarkdown, onImportNoteMarkdownFile, onToggleEditing, onToggleDrawer, onToggleCollapse, onOpenSettings, onOpenWhatsNew, onOpenHelp }: SidebarMenuProps) {
    const { t } = useTranslation();
    const { t: tNotifications } = useTranslation();
 
@@ -80,6 +81,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // The Navigator toggles a left slide-over that crawls the portal graph (reachable from any window).
    const navigatorOpen = useAppSettingsStore((state) => state.navigatorOpen);
    const { toggleNavigator } = useAppSettingsActions();
+
+   // The New! dot rides the What's-new door until the user opens that section.
+   const hasUnreadPatchNotes = useHasUnreadPatchNotes();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
    const characterFormRef = useRef<HTMLFormElement>(null);
@@ -669,11 +673,17 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
                      {t('CharacterSheetPage.SidebarMenu.settings')}
                   </SidebarButton>
-                  <SidebarButton data-tour="app-info-button" isCollapsed={isCollapsed} onClick={onOpenInfo} Icon={Info}>
-                     {t('CharacterSheetPage.SidebarMenu.info')}
-                  </SidebarButton>
-                  <SidebarButton data-tour="patch-notes-button" isCollapsed={isCollapsed} onClick={onOpenPatchNotes} Icon={Newspaper}>
-                     {t('CharacterSheetPage.SidebarMenu.patchNotes')}
+                  {/* What's new carries the New! dot in its corner until the section is opened. */}
+                  <div className="relative">
+                     <SidebarButton data-tour="whats-new-button" isCollapsed={isCollapsed} onClick={onOpenWhatsNew} Icon={Sparkles}>
+                        {t('CharacterSheetPage.SidebarMenu.whatsNew')}
+                     </SidebarButton>
+                     {hasUnreadPatchNotes && (
+                        <span className="pointer-events-none absolute right-2 top-2 size-2 rounded-full bg-primary" aria-hidden />
+                     )}
+                  </div>
+                  <SidebarButton data-tour="help-button" isCollapsed={isCollapsed} onClick={onOpenHelp} Icon={LifeBuoy}>
+                     {t('CharacterSheetPage.SidebarMenu.help')}
                   </SidebarButton>
                </motion.section>
             </div>

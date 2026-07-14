@@ -46,8 +46,8 @@ interface AppGeneralState {
    // Command Palette
    isCommandPaletteOpen: boolean;
 
-   // Patch Notes
-   isPatchNotesOpen: boolean;
+   // Patch Notes. The version the What's-new pane should land on when the hub next opens (boot auto-open +
+   // manual deep-link both set it), read and cleared by the pane.
    initialPatchNotesVersion: string | null;
 
    // Dialogs
@@ -56,7 +56,6 @@ interface AppGeneralState {
    // and cleared by the shell (mirrors `initialPatchNotesVersion`). Null lands on the default section.
    settingsInitialSection: string | null;
    isThemesOpen: boolean;
-   isInfoOpen: boolean;
    isCardDialogOpen: boolean;
    isDesktopOnboardingOpen: boolean;
    isLegacyDataDialogOpen: boolean;
@@ -94,14 +93,12 @@ interface AppGeneralState {
       setCommandPaletteOpen: (isOpen: boolean) => void;
 
       // Patch Notes
-      setPatchNotesOpen: (isOpen: boolean) => void;
       setInitialPatchNotesVersion: (version: string | null) => void;
 
       // Dialogs
       setSettingsOpen: (isOpen: boolean) => void;
       setSettingsInitialSection: (section: string | null) => void;
       setThemesOpen: (isOpen: boolean) => void;
-      setInfoOpen: (isOpen: boolean) => void;
       setCardDialogOpen: (isOpen: boolean) => void;
       setDesktopOnboardingOpen: (isOpen: boolean) => void;
       setLegacyDataDialogOpen: (isOpen: boolean) => void;
@@ -142,14 +139,12 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    isCommandPaletteOpen: false,
 
    // Patch Notes
-   isPatchNotesOpen: false,
    initialPatchNotesVersion: null,
 
    // Dialogs
    isSettingsOpen: false,
    settingsInitialSection: null,
    isThemesOpen: false,
-   isInfoOpen: false,
    isCardDialogOpen: false,
    isDesktopOnboardingOpen: false,
    isLegacyDataDialogOpen: false,
@@ -182,14 +177,12 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setCommandPaletteOpen: (isOpen) => set({ isCommandPaletteOpen: isOpen }),
 
       // Patch Notes
-      setPatchNotesOpen: (isOpen) => set({ isPatchNotesOpen: isOpen }),
       setInitialPatchNotesVersion: (version) => set({ initialPatchNotesVersion: version }),
 
       // Dialogs
       setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
       setSettingsInitialSection: (section) => set({ settingsInitialSection: section }),
       setThemesOpen: (isOpen) => set({ isThemesOpen: isOpen }),
-      setInfoOpen: (isOpen) => set({ isInfoOpen: isOpen }),
       setCardDialogOpen: (isOpen) => set({ isCardDialogOpen: isOpen }),
       setDesktopOnboardingOpen: (isOpen) => set({ isDesktopOnboardingOpen: isOpen }),
       setLegacyDataDialogOpen: (isOpen) => set({ isLegacyDataDialogOpen: isOpen }),

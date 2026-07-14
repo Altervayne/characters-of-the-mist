@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 // -- Utils Imports --
 import { DEFAULT_STROKE_WIDTH } from '@/lib/board/drawingStyle';
+import { latestPatchNotesVersion } from '@/lib/patch-notes';
 
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
@@ -33,6 +34,9 @@ interface AppSettingsState {
    isCompactDrawer: boolean;
    isSideBySideView: boolean;
    lastVisitedVersion: string;
+   /** The newest release the user has opened What's-new for. Drives the New! dot; distinct from `lastVisitedVersion`
+    * (which gates the boot auto-open) so the dot persists until the notes are actually opened. */
+   lastReadPatchNotesVersion: string;
    isTrackersAlwaysEditable: boolean;
    isSidebarCollapsed: boolean;
    /** Whether the note editor's document-outline rail is shown. Persisted so it stays where the user left it. */
@@ -76,6 +80,7 @@ interface AppSettingsState {
       toggleCompactDrawer: () => void;
       setSideBySideView: (isSideBySide: boolean) => void;
       setLastVisitedVersion: (version: string) => void;
+      setLastReadPatchNotesVersion: (version: string) => void;
       setTrackersAlwaysEditable: (isEditable: boolean) => void;
       setSidebarCollapsed: (isCollapsed: boolean) => void;
       toggleSidebarCollapsed: () => void;
@@ -118,6 +123,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          isCompactDrawer: false,
          isSideBySideView: false,
          lastVisitedVersion: "0.0.0",
+         // Seed to the newest release so a fresh install (or a store that predates this field) never nags with the
+         // dot; it appears only once a genuinely newer release lands that the user hasn't opened.
+         lastReadPatchNotesVersion: latestPatchNotesVersion,
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
          isNoteOutlineOpen: false,
@@ -173,6 +181,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             toggleCompactDrawer: () => set((state) => ({ isCompactDrawer: !state.isCompactDrawer })),
             setSideBySideView: (isSideBySide) => set({ isSideBySideView: isSideBySide }),
             setLastVisitedVersion: (version) => set({ lastVisitedVersion: version }),
+            setLastReadPatchNotesVersion: (version) => set({ lastReadPatchNotesVersion: version }),
             setTrackersAlwaysEditable: (isEditable) => set({ isTrackersAlwaysEditable: isEditable }),
             setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
@@ -217,6 +226,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isCompactDrawer: state.isCompactDrawer,
             isSideBySideView: state.isSideBySideView,
             lastVisitedVersion: state.lastVisitedVersion,
+            lastReadPatchNotesVersion: state.lastReadPatchNotesVersion,
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
             isNoteOutlineOpen: state.isNoteOutlineOpen,

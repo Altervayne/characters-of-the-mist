@@ -39,7 +39,6 @@ import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropz
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
 import { SettingsShell } from '@/components/organisms/dialogs/settings/SettingsShell';
 import { ThemesDialog } from '@/components/organisms/dialogs/ThemesDialog';
-import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
 import MobileCharacterSheetPage from '@/components/mobile/character-sheet/MobileCharacterSheetPage';
 import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
@@ -120,10 +119,15 @@ function DesktopCharacterSheetPage() {
    const isEditing = useAppGeneralStateStore((state) => state.isEditing);
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
    const isThemesOpen = useAppGeneralStateStore((state) => state.isThemesOpen);
-   const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const isTourOpen = useAppGeneralStateStore((state) => state.isTourOpen);
-   const { setDrawerOpen, setIsEditing, setSettingsOpen, setThemesOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
+   const { setDrawerOpen, setIsEditing, setSettingsOpen, setSettingsInitialSection, setThemesOpen } = useAppGeneralStateActions();
    const { toggleSidebarCollapsed, toggleNavigator } = useAppSettingsActions();
+
+   // The three sidebar doors all open the one hub, each deep-linked to its section (Settings lands on the default).
+   const openSettingsHub = (section: 'general' | 'whatsNew' | 'learn') => {
+      setSettingsInitialSection(section === 'general' ? null : section);
+      setSettingsOpen(true);
+   };
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
@@ -225,7 +229,7 @@ function DesktopCharacterSheetPage() {
    const commands = useCommandPaletteActions({
       onToggleEditMode: () => setIsEditing(!isEditing),
       onToggleDrawer: () => setDrawerOpen(!isDrawerOpen),
-      onOpenSettings: () => setSettingsOpen(true),
+      onOpenSettings: () => openSettingsHub('general'),
       onImportFile: triggerImport,
       onExportNoteMarkdown: exportActiveNoteAsMarkdown,
       onCreateChallenge: handleCreateChallenge,
@@ -262,9 +266,9 @@ function DesktopCharacterSheetPage() {
                   onToggleEditing={() => setIsEditing(!isEditing)}
                   onToggleDrawer={() => setDrawerOpen(!isDrawerOpen)}
                   onToggleCollapse={toggleSidebarCollapsed}
-                  onOpenSettings={() => setSettingsOpen(true)}
-                  onOpenInfo={() => setInfoOpen(true)}
-                  onOpenPatchNotes={() => setPatchNotesOpen(true)}
+                  onOpenSettings={() => openSettingsHub('general')}
+                  onOpenWhatsNew={() => openSettingsHub('whatsNew')}
+                  onOpenHelp={() => openSettingsHub('learn')}
                />
             </div>
 
@@ -433,10 +437,6 @@ function DesktopCharacterSheetPage() {
          <ThemesDialog
             isOpen={isThemesOpen}
             onOpenChange={setThemesOpen}
-         />
-         <InfoDialog
-            isOpen={isInfoOpen}
-            onOpenChange={setInfoOpen}
          />
          {/* DIALOGS END */}
 

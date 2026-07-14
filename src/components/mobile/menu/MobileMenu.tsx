@@ -15,6 +15,7 @@ import { useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -34,6 +35,8 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 	const character = useCharacterStore((state) => state.character);
 	const { mobileReturnToMenu } = useTabManagerActions();
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
+	// The New! dot rides the patch-notes entry until the notes screen is opened (mirrors the desktop What's-new door).
+	const hasUnreadPatchNotes = useHasUnreadPatchNotes();
 
 
 
@@ -56,6 +59,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			label: t('MobileMenu.patchNotes'),
 			icon: FileText,
 			destructive: false,
+			showDot: hasUnreadPatchNotes,
 		},
 		{
 			id: 'save',
@@ -163,6 +167,7 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 							label={item.label}
 							icon={item.icon}
 							destructive={item.destructive}
+							showDot={item.showDot}
 							onClick={() => handleMenuClick(item.id)}
 						/>
 					))}

@@ -1,3 +1,5 @@
+import { gt as isVersionGreaterThan } from 'semver';
+
 export interface PatchNote {
   version: string;
   content: string;
@@ -220,3 +222,14 @@ This is the official launch of the new **Characters of the Mist** application! T
 `
    }
 ];
+
+/** The newest release with patch notes. The array is authored newest-first, but resolve by semver so order can't betray us. */
+export const latestPatchNotesVersion: string = patchNotes.reduce(
+   (newest, note) => (isVersionGreaterThan(note.version, newest) ? note.version : newest),
+   patchNotes[0]?.version ?? '0.0.0',
+);
+
+/** Whether a genuinely newer release exists than the one the user last opened What's-new for (drives the New! dot). */
+export function hasUnreadPatchNotes(lastReadVersion: string): boolean {
+   return isVersionGreaterThan(latestPatchNotesVersion, lastReadVersion);
+}

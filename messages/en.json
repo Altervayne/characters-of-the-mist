@@ -596,6 +596,8 @@
          "settings": "Settings",
          "info": "App Info",
          "patchNotes": "Patch Notes",
+         "whatsNew": "What's new",
+         "help": "Help",
          "diceTray": "Dice Tray",
          "navigator": "Navigator"
       }
@@ -928,7 +930,9 @@
          "general": "General",
          "appearance": "Appearance",
          "data": "Data and storage",
-         "learn": "Learn"
+         "learn": "Learn",
+         "whatsNew": "What's new",
+         "about": "About"
       }
    },
    "SettingsDialog": {
@@ -1408,6 +1412,8 @@
          "toggleDrawer": "Toggle: Drawer",
          "toggleNavigator": "Toggle: Navigator",
          "openSettings": "Open: Settings",
+         "openWhatsNew": "Open: What's New",
+         "openAbout": "Open: About",
          "toggleDiceTray": "Toggle: Dice Tray",
          "toggleLayersPanel": "Toggle: Layers Panel",
          "mergeSelectedLayers": "Merge Selected Layers",

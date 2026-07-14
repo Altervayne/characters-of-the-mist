@@ -9,7 +9,7 @@ import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // -- Icon Imports --
-import { Database, GraduationCap, Palette, SlidersHorizontal } from 'lucide-react';
+import { Database, GraduationCap, Info, Palette, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -19,9 +19,12 @@ import { GeneralSettingsPane } from './GeneralSettingsPane';
 import { AppearanceSettingsPane } from './AppearanceSettingsPane';
 import { DataSettingsPane } from './DataSettingsPane';
 import { LearnSettingsPane } from './LearnSettingsPane';
+import { WhatsNewSettingsPane } from './WhatsNewSettingsPane';
+import { AboutSettingsPane } from './AboutSettingsPane';
 
-// -- Store Imports --
+// -- Store and Hook Imports --
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
 
 // -- Type Imports --
 import type { ComponentType } from 'react';
@@ -36,7 +39,7 @@ import type { LucideIcon } from 'lucide-react';
  */
 
 export type SettingsGroupId = 'configure' | 'help';
-export type SettingsSectionId = 'general' | 'appearance' | 'data' | 'learn';
+export type SettingsSectionId = 'general' | 'appearance' | 'data' | 'learn' | 'whatsNew' | 'about';
 
 interface SettingsSection {
    id: SettingsSectionId;
@@ -58,6 +61,8 @@ const SECTIONS: SettingsSection[] = [
    { id: 'appearance', group: 'configure', labelKey: 'SettingsShell.sections.appearance', icon: Palette, Pane: AppearanceSettingsPane },
    { id: 'data', group: 'configure', labelKey: 'SettingsShell.sections.data', icon: Database, Pane: DataSettingsPane },
    { id: 'learn', group: 'help', labelKey: 'SettingsShell.sections.learn', icon: GraduationCap, Pane: LearnSettingsPane },
+   { id: 'whatsNew', group: 'help', labelKey: 'SettingsShell.sections.whatsNew', icon: Sparkles, Pane: WhatsNewSettingsPane },
+   { id: 'about', group: 'help', labelKey: 'SettingsShell.sections.about', icon: Info, Pane: AboutSettingsPane },
 ];
 
 const DEFAULT_SECTION: SettingsSectionId = 'general';
@@ -76,6 +81,9 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
 
    const settingsInitialSection = useAppGeneralStateStore((state) => state.settingsInitialSection);
    const { setSettingsInitialSection } = useAppGeneralStateActions();
+
+   // The New! dot rides the What's-new rail row until the user opens that section (which marks the newest release read).
+   const hasUnreadPatchNotes = useHasUnreadPatchNotes();
 
    // On open, honor a one-shot deep-link target (then clear it); otherwise land on the default section so a
    // reopen never drops the user back into wherever they last wandered (e.g. the Danger Zone).
@@ -132,6 +140,9 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
                                  >
                                     <Icon className="size-4 shrink-0" aria-hidden />
                                     <span className="truncate">{t(section.labelKey)}</span>
+                                    {section.id === 'whatsNew' && hasUnreadPatchNotes && (
+                                       <span className="ml-auto size-2 shrink-0 rounded-full bg-primary" aria-hidden />
+                                    )}
                                  </TabsPrimitive.Trigger>
                               );
                            })}

@@ -13,7 +13,6 @@ import { patchNotes } from '@/lib/patch-notes';
 // -- Component Imports --
 import { LocalStorageError } from '../molecules/LocalStorageError';
 import { LegacyDataDialog } from '@/components/organisms/dialogs/LegacyDataDialog';
-import { PatchNotesDialog } from '@/components/organisms/dialogs/PatchNotesDialog';
 import MobileOnboarding from '@/components/mobile/onboarding/MobileOnboarding';
 import DesktopOnboarding from '@/components/organisms/onboarding/DesktopOnboarding';
 import { MigrationNoticeDialog } from '@/components/organisms/dialogs/MigrationNoticeDialog';
@@ -68,9 +67,8 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
    const isLegacyDataDialogOpen = useAppGeneralStateStore((state) => state.isLegacyDataDialogOpen);
    const isDesktopOnboardingOpen = useAppGeneralStateStore((state) => state.isDesktopOnboardingOpen);
-   const isPatchNotesOpen = useAppGeneralStateStore((state) => state.isPatchNotesOpen);
    const isMobileOnboardingOpen = useAppGeneralStateStore((state) => state.isMobileOnboardingOpen);
-   const { setLegacyDataDialogOpen, setDesktopOnboardingOpen, setPatchNotesOpen, setInitialPatchNotesVersion, setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
+   const { setLegacyDataDialogOpen, setDesktopOnboardingOpen, setSettingsOpen, setSettingsInitialSection, setInitialPatchNotesVersion, setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
    const { setHasCompletedOnboarding } = useAppSettingsActions();
 
    // Conditional periodic asset sweep, mounted once for the app's lifetime.
@@ -174,6 +172,8 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
 
             const firstUnreadVersion = patchNotes[firstUnreadIndex]?.version || patchNotes[0]?.version;
             setInitialPatchNotesVersion(firstUnreadVersion);
+            // Boot patch-notes now deep-links the hub, which owns its own close, so the startup flow ends here.
+            setIsStartupFlow(false);
             setCurrentDialog('patchNotes');
          } else {
             setIsStartupFlow(false)
@@ -202,8 +202,12 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
             setMobileOnboardingOpen(true);
             break;
          case 'patchNotes':
+            // Boot patch-notes now deep-links the hub to What's new rather than popping a standalone dialog. The
+            // version target rides `initialPatchNotesVersion` (set by the queue generator); the pane reads it. The
+            // startup flow is ended at the decision sites (queue generator + legacy chain), since the hub owns close.
             setLegacyDataDialogOpen(false);
-            setPatchNotesOpen(true);
+            setSettingsInitialSection('whatsNew');
+            setSettingsOpen(true);
             break;
          default:
             break;
@@ -220,7 +224,6 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
          if (isLegacyDataDialogOpen) setLegacyDataDialogOpen(false);
          if (isDesktopOnboardingOpen) setDesktopOnboardingOpen(false);
          if (isMobileOnboardingOpen) setMobileOnboardingOpen(false);
-         if (isPatchNotesOpen) setPatchNotesOpen(false);
          setCurrentDialog(null);
          return;
       }
@@ -231,15 +234,13 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
          return;
       }
 
+      // Boot patch-notes is the terminal step and now opens the hub (which owns its own close), so it needs no
+      // close-handling here; advancing to it ends the startup flow now.
       if (currentDialog === 'legacy' && shouldShowPatchNotes) {
+         setIsStartupFlow(false);
          setCurrentDialog('patchNotes');
          setShouldShowPatchNotes(false);
          return;
-      }
-
-      if (currentDialog === 'patchNotes') {
-         setPatchNotesOpen(false);
-         setIsStartupFlow(false);
       }
    };
 
@@ -291,12 +292,6 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
          <DesktopOnboarding
             isOpen={isDesktopOnboardingOpen}
             onComplete={handleDesktopOnboardingComplete}
-         />
-         <PatchNotesDialog
-            isOpen={isPatchNotesOpen}
-            onOpenChange={(open) => {
-               if (!open) handleDialogClose();
-            }}
          />
          <MobileOnboarding
             isOpen={isMobileOnboardingOpen}

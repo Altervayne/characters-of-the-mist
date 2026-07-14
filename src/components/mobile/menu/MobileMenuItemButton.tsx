@@ -13,6 +13,8 @@ interface MobileMenuItemButtonProps {
 	icon: LucideIcon;
 	/** When true, renders with the destructive styling (e.g. the "unload" action). */
 	destructive: boolean;
+	/** When true, shows a trailing New! dot (the What's-new / patch-notes entry, until it's opened). */
+	showDot?: boolean;
 	/** Invoked when the button is pressed. */
 	onClick: () => void;
 }
@@ -23,7 +25,7 @@ interface MobileMenuItemButtonProps {
  * holds no store state and resolves no action itself; the parent supplies the
  * `onClick`. Extracted from `MobileMenu`'s item map so the list body stays terse.
  */
-export function MobileMenuItemButton({ label, icon: Icon, destructive, onClick }: MobileMenuItemButtonProps) {
+export function MobileMenuItemButton({ label, icon: Icon, destructive, showDot, onClick }: MobileMenuItemButtonProps) {
 	return (
 		<button
 			onClick={onClick}
@@ -36,6 +38,7 @@ export function MobileMenuItemButton({ label, icon: Icon, destructive, onClick }
 		>
 			<Icon className="h-6 w-6 mr-4 shrink-0" />
 			<span className="text-md text-left">{label}</span>
+			{showDot && <span className="ml-auto size-2 shrink-0 rounded-full bg-primary-foreground" aria-hidden />}
 		</button>
 	);
 }

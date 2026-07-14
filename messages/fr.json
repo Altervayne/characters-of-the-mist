@@ -582,6 +582,8 @@
          "settings": "Paramètres",
          "info": "À Propos",
          "patchNotes": "Patch Notes",
+         "whatsNew": "[TO COMPLETE]",
+         "help": "[TO COMPLETE]",
          "diceTray": "[TO COMPLETE]",
          "navigator": "[TO COMPLETE]"
       }
@@ -887,7 +889,9 @@
          "general": "[TO COMPLETE]",
          "appearance": "[TO COMPLETE]",
          "data": "[TO COMPLETE]",
-         "learn": "[TO COMPLETE]"
+         "learn": "[TO COMPLETE]",
+         "whatsNew": "[TO COMPLETE]",
+         "about": "[TO COMPLETE]"
       }
    },
    "SettingsDialog": {
@@ -1322,6 +1326,8 @@
          "toggleDrawer": "Basculer : Tiroir",
          "toggleNavigator": "[TO COMPLETE]",
          "openSettings": "Ouvrir : Paramètres",
+         "openWhatsNew": "[TO COMPLETE]",
+         "openAbout": "[TO COMPLETE]",
          "toggleDiceTray": "[TO COMPLETE]",
          "toggleLayersPanel": "[TO COMPLETE]",
          "mergeSelectedLayers": "[TO COMPLETE]",

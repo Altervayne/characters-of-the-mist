@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
@@ -11,7 +11,10 @@ import MarkdownContent from '@/components/molecules/MarkdownContent';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // -- Utils Imports --
-import { patchNotes } from '@/lib/patch-notes';
+import { patchNotes, latestPatchNotesVersion } from '@/lib/patch-notes';
+
+// -- Store Imports --
+import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 
 interface MobilePatchNotesProps {
 	onBack?: () => void;
@@ -20,9 +23,15 @@ interface MobilePatchNotesProps {
 export default function MobilePatchNotes({ onBack }: MobilePatchNotesProps) {
 	const { t } = useTranslation();
 	const [currentIndex, setCurrentIndex] = useState(0);
+	const { setLastReadPatchNotesVersion } = useAppSettingsActions();
 
 	const selectedNote = patchNotes[currentIndex];
 	const totalNotes = patchNotes.length;
+
+	// Opening this screen IS reading the notes: clear the New! dot by marking the newest release read.
+	useEffect(() => {
+		setLastReadPatchNotesVersion(latestPatchNotesVersion);
+	}, [setLastReadPatchNotesVersion]);
 
 	const goToPrevious = () => {
 		setCurrentIndex(current => (current < totalNotes - 1 ? current + 1 : current));
