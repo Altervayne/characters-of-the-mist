@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { connectionEndpoints, connectionsReferencing } from './boardConnections';
+import { connectionArrowGeometry, connectionEndpoints, connectionsReferencing } from './boardConnections';
 import { createBoard } from './boardRepository';
 import { createBoardStore } from '@/lib/stores/boardStore';
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
@@ -82,6 +82,53 @@ describe('connectionEndpoints', () => {
       expect(Math.hypot(from.x - 14, from.y - 14)).toBeCloseTo(14); // exactly on the circle
       expect(from.x).toBeCloseTo(14 + 14 / Math.SQRT2);
       expect(from.y).toBeCloseTo(14 + 14 / Math.SQRT2);
+   });
+});
+
+describe('connectionArrowGeometry', () => {
+   // A horizontal line left->right; the midpoint is (100,0).
+   const from = { x: 0, y: 0 };
+   const to = { x: 200, y: 0 };
+
+   it('centres the marker on the endpoints midpoint', () => {
+      const { mid } = connectionArrowGeometry(from, to, { type: 'full', direction: 'forward' }, 3);
+      expect(mid).toEqual({ x: 100, y: 0 });
+   });
+
+   it('points a forward marker toward `to` (tip past the midpoint, wings behind, splayed symmetrically)', () => {
+      const { points } = connectionArrowGeometry(from, to, { type: 'full', direction: 'forward' }, 3);
+      const [wingA, tip, wingB] = points;
+      // Tip lies ahead of the midpoint on the +x side; wings trail behind on the -x side.
+      expect(tip.x).toBeGreaterThan(100);
+      expect(tip.y).toBeCloseTo(0);
+      expect(wingA.x).toBeLessThan(100);
+      expect(wingB.x).toBeLessThan(100);
+      // Wings splay symmetrically across the line (equal and opposite y).
+      expect(wingA.y).toBeCloseTo(-wingB.y);
+      expect(Math.abs(wingA.y)).toBeGreaterThan(0);
+   });
+
+   it('flips a backward marker 180° - the tip crosses to the `from` side', () => {
+      const fwd = connectionArrowGeometry(from, to, { type: 'full', direction: 'forward' }, 3);
+      const bwd = connectionArrowGeometry(from, to, { type: 'full', direction: 'backward' }, 3);
+      // Same midpoint; the tip mirrors across it.
+      expect(bwd.mid).toEqual(fwd.mid);
+      expect(bwd.points[1].x).toBeCloseTo(2 * fwd.mid.x - fwd.points[1].x);
+      expect(bwd.points[1].x).toBeLessThan(100); // now pointing toward `from`
+   });
+
+   it('scales with the connection width', () => {
+      const thin = connectionArrowGeometry(from, to, { type: 'full', direction: 'forward' }, 1);
+      const thick = connectionArrowGeometry(from, to, { type: 'full', direction: 'forward' }, 8);
+      // A thicker line yields a longer reach (tip further from the midpoint) and a wider splay.
+      expect(thick.points[1].x - thick.mid.x).toBeGreaterThan(thin.points[1].x - thin.mid.x);
+      expect(Math.abs(thick.points[0].y)).toBeGreaterThan(Math.abs(thin.points[0].y));
+   });
+
+   it('returns the same three points for full and chevron (fill vs stroke is the render choice)', () => {
+      const full = connectionArrowGeometry(from, to, { type: 'full', direction: 'forward' }, 3);
+      const chevron = connectionArrowGeometry(from, to, { type: 'chevron', direction: 'forward' }, 3);
+      expect(chevron.points).toEqual(full.points);
    });
 });
 

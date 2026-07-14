@@ -3,11 +3,11 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Trash2 } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { CONNECTION_CORNER_RADIUS, connectionEndpoints } from '@/lib/board/boardConnections';
+import { CONNECTION_CORNER_RADIUS, connectionArrowGeometry, connectionEndpoints } from '@/lib/board/boardConnections';
 import { collapsedBarRect, isConnectionCollapsedAway, resolveEndpointAnchor } from '@/lib/board/zoneCollapse';
 import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 
@@ -15,7 +15,7 @@ import { pushRecentColor, readRecentColors } from '@/lib/recentColors';
 import { ColorPickerPopover } from '@/components/molecules/color/ColorPickerPopover';
 
 // -- Type Imports --
-import type { BoardItem, ConnectionBoardContent, ConnectionDash, ConnectionStyle } from '@/lib/types/board';
+import type { BoardItem, ConnectionArrow, ConnectionBoardContent, ConnectionDash, ConnectionStyle } from '@/lib/types/board';
 import type { Point, RectLike } from '@/lib/board/boardConnections';
 
 /*
@@ -32,6 +32,8 @@ import type { Point, RectLike } from '@/lib/board/boardConnections';
 const WIDTH_PRESETS = [1, 2, 3, 5, 8];
 /** Line dash-style presets, in toolbar order. */
 const DASH_PRESETS: ConnectionDash[] = ['solid', 'dashed', 'dotted'];
+/** Center-marker presets, in toolbar order (`null` = no marker). */
+const ARROW_PRESETS: (ConnectionArrow['type'] | null)[] = [null, 'full', 'chevron'];
 
 /** The SVG `strokeDasharray` for a dash style at width `w` (world units); solid -> no array. */
 function dashArrayFor(dash: ConnectionDash | undefined, w: number): string | undefined {
@@ -140,6 +142,10 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
                         strokeLinecap="round"
                         strokeDasharray={dashArray}
                      />
+                     {/* The center marker (part of the line, always visible), in the line's own color. */}
+                     {content.style.arrow && (
+                        <ConnectionArrowMarker from={from} to={to} arrow={content.style.arrow} width={content.style.width} color={effectiveColor} />
+                     )}
                      {/* Wide transparent hit path (always SOLID, so a dotted/dashed line stays clickable). */}
                      <line
                         x1={from.x} y1={from.y} x2={to.x} y2={to.y}
@@ -167,7 +173,9 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
             )}
          </svg>
 
-         {/* Style control for the selected connection, at its midpoint, counter-scaled. */}
+         {/* Style control for the selected connection: counter-scaled and floated a fixed screen distance
+             ABOVE the midpoint (the trailing translateY rides after the scale, so it's zoom-independent) so
+             it never covers the center arrow marker it edits. */}
          {selectedConnection && (() => {
             const content = selectedConnection.content as ConnectionBoardContent;
             const fromItem = items[content.from];
@@ -182,7 +190,7 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
             return (
                <div
                   className="absolute"
-                  style={{ left: midX, top: midY, zIndex, transform: `translate(-50%, -50%) scale(${1 / zoom})` }}
+                  style={{ left: midX, top: midY, zIndex, transform: `translate(-50%, -50%) scale(${1 / zoom}) translateY(-44px)` }}
                   onPointerDown={(event) => event.stopPropagation()}
                >
                   <div className="flex items-center gap-2 rounded-md border border-border bg-card/95 p-1.5 shadow-md backdrop-blur-sm">
@@ -221,6 +229,48 @@ export function BoardConnectionsLayer({ items, connections, selectedId, zoom, mo
                               <DashPreview dash={dash} />
                            </button>
                         ))}
+                     </div>
+
+                     <div className="h-5 w-px bg-border" />
+
+                     {/* Center marker: none / full / chevron, then a direction flip (enabled only with a marker). */}
+                     <div className="flex items-center gap-1" title={t('BoardView.arrowMarker')}>
+                        {ARROW_PRESETS.map((type) => {
+                           const active = (content.style.arrow?.type ?? null) === type;
+                           return (
+                              <button
+                                 key={type ?? 'none'}
+                                 type="button"
+                                 aria-label={t(`BoardView.arrow${type === null ? 'None' : type === 'full' ? 'Full' : 'Chevron'}`)}
+                                 onClick={() => onUpdateStyle(selectedConnection.id, {
+                                    ...content.style,
+                                    arrow: type === null ? undefined : { type, direction: content.style.arrow?.direction ?? 'forward' },
+                                 })}
+                                 className={cn(
+                                    'flex h-6 w-6 items-center justify-center rounded text-foreground hover:bg-muted cursor-pointer',
+                                    active && 'bg-muted ring-1 ring-primary',
+                                 )}
+                              >
+                                 <ArrowPreview type={type} />
+                              </button>
+                           );
+                        })}
+                        <button
+                           type="button"
+                           aria-label={t('BoardView.arrowFlip')}
+                           title={t('BoardView.arrowFlip')}
+                           disabled={!content.style.arrow}
+                           onClick={() => content.style.arrow && onUpdateStyle(selectedConnection.id, {
+                              ...content.style,
+                              arrow: { ...content.style.arrow, direction: content.style.arrow.direction === 'forward' ? 'backward' : 'forward' },
+                           })}
+                           className={cn(
+                              'flex h-6 w-6 items-center justify-center rounded text-foreground hover:bg-muted cursor-pointer',
+                              'disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent',
+                           )}
+                        >
+                           <ArrowLeftRight className="h-3.5 w-3.5" />
+                        </button>
                      </div>
 
                      <div className="h-5 w-px bg-border" />
@@ -325,6 +375,29 @@ function ConnectionColorControl({
             />
          }
       />
+   );
+}
+
+/**
+ * The connection's center marker, drawn in the world SVG at the line's midpoint in the line's own color.
+ * `full` is a filled triangle; `chevron` an open stroked "V". Geometry is in world units (from the line
+ * width), so it scales with the board exactly like the line and stays crisp at any zoom.
+ */
+function ConnectionArrowMarker({ from, to, arrow, width, color }: { from: Point; to: Point; arrow: ConnectionArrow; width: number; color: string }) {
+   const { points } = connectionArrowGeometry(from, to, arrow, width);
+   const d = points.map((p) => `${p.x},${p.y}`).join(' ');
+   if (arrow.type === 'full') return <polygon points={d} fill={color} />;
+   return <polyline points={d} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" />;
+}
+
+/** A tiny preview of a center-marker choice, for the toolbar buttons (uses the button's color). */
+function ArrowPreview({ type }: { type: ConnectionArrow['type'] | null }) {
+   return (
+      <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden>
+         <line x1="1" y1="5" x2="17" y2="5" stroke="currentColor" strokeWidth="1.5" />
+         {type === 'full' && <polygon points="6,1 13,5 6,9" fill="currentColor" />}
+         {type === 'chevron' && <polyline points="6,1 13,5 6,9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
+      </svg>
    );
 }
 

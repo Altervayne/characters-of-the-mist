@@ -224,11 +224,22 @@ export interface ZoneBoardContent {
 /** A connection's line dash pattern. Optional on the style - absent reads as `solid` (back-compat). */
 export type ConnectionDash = 'solid' | 'dashed' | 'dotted';
 
-/** A connection's visual style: stroke width + color, plus an optional dash pattern. */
+/**
+ * A center marker drawn at the connection's midpoint: `full` is a filled triangle arrowhead, `chevron`
+ * an open "V". `direction` points the marker along the line - `forward` toward `to`, `backward` toward
+ * `from`. Optional on the style: absent means no marker (the picker's "none" clears the field).
+ */
+export interface ConnectionArrow {
+   type: 'full' | 'chevron';
+   direction: 'forward' | 'backward';
+}
+
+/** A connection's visual style: stroke width + color, plus an optional dash pattern and center marker. */
 export interface ConnectionStyle {
    width: number;
    color: string;
    dash?: ConnectionDash;
+   arrow?: ConnectionArrow;
 }
 
 /** A user-styled line between two board items (endpoints are board-item ids). */

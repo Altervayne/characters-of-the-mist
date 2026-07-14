@@ -1,5 +1,5 @@
 // -- Type Imports --
-import type { BoardItem } from '@/lib/types/board';
+import type { BoardItem, ConnectionArrow } from '@/lib/types/board';
 
 /*
  * Pure geometry + lookup for board connections. A connection is a straight line drawn
@@ -78,6 +78,54 @@ export function connectionEndpoints(fromItem: RectLike, toItem: RectLike): { fro
       from: edgePoint(aCx, aCy, fromItem.width / 2, fromItem.height / 2, dx, dy, fromItem.radius ?? 0, fromItem.circle ?? false),
       to: edgePoint(bCx, bCy, toItem.width / 2, toItem.height / 2, -dx, -dy, toItem.radius ?? 0, toItem.circle ?? false),
    };
+}
+
+/**
+ * The center marker's geometry: three points in the order `[wingA, tip, wingB]`. A `full` arrow fills
+ * this as a triangle (`wingA -> tip -> wingB` closed); a `chevron` strokes it as an open polyline (same
+ * three points, no close). `mid` is the marker's center (the connection midpoint), exposed for tests.
+ */
+export interface ArrowGeometry {
+   points: [Point, Point, Point];
+   mid: Point;
+}
+
+/**
+ * Marker sizing (world units) from the line `width`: the tip sits `TIP` ahead of the midpoint, the wings
+ * trail `TAIL` behind and splay `SPAN` to each side. Each is a width multiple plus a small floor so the
+ * marker still reads on a hairline line while it scales with a thick one.
+ */
+const ARROW_TIP = { mult: 2, base: 4 };
+const ARROW_TAIL = { mult: 1.4, base: 3 };
+const ARROW_SPAN = { mult: 2, base: 3 };
+
+/**
+ * The center marker's geometry for a connection between `from` and `to`. The marker centres on the
+ * endpoints' midpoint and points along the line: `forward` toward `to`, `backward` toward `from` (a 180°
+ * flip). Size scales with the connection `width`. Pure - the caller renders `full` as a filled triangle
+ * and `chevron` as a stroked open polyline from the returned points.
+ */
+export function connectionArrowGeometry(from: Point, to: Point, arrow: ConnectionArrow, width: number): ArrowGeometry {
+   const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+   let angle = Math.atan2(to.y - from.y, to.x - from.x);
+   if (arrow.direction === 'backward') angle += Math.PI;
+
+   const tipLen = width * ARROW_TIP.mult + ARROW_TIP.base;
+   const tailLen = width * ARROW_TAIL.mult + ARROW_TAIL.base;
+   const span = width * ARROW_SPAN.mult + ARROW_SPAN.base;
+
+   const ux = Math.cos(angle); // along the pointing direction
+   const uy = Math.sin(angle);
+   const px = -uy; // perpendicular (splay axis)
+   const py = ux;
+
+   const tip = { x: mid.x + ux * tipLen, y: mid.y + uy * tipLen };
+   const baseX = mid.x - ux * tailLen;
+   const baseY = mid.y - uy * tailLen;
+   const wingA = { x: baseX + px * span, y: baseY + py * span };
+   const wingB = { x: baseX - px * span, y: baseY - py * span };
+
+   return { points: [wingA, tip, wingB], mid };
 }
 
 /**
