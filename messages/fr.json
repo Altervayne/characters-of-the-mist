@@ -549,6 +549,7 @@
          "exportMarkdownWarningConfirm": "[TO COMPLETE]",
          "exportCharacter": "Exporter le Perso.",
          "importCharacter": "Importer le Perso.",
+         "importWorkspace": "[TO COMPLETE]",
          "importComponent": "Importer un Composant",
          "updateCharacter": "[TO COMPLETE]",
          "updateBoard": "[TO COMPLETE]",

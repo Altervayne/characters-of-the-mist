@@ -95,6 +95,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    const noteFormRef = useRef<HTMLFormElement>(null);
    const noteUpdateInputRef = useRef<HTMLInputElement>(null);
    const noteUpdateFormRef = useRef<HTMLFormElement>(null);
+   const workspaceImportInputRef = useRef<HTMLInputElement>(null);
+   const workspaceFormRef = useRef<HTMLFormElement>(null);
 
 
 
@@ -110,6 +112,60 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       } catch {
          toast.error(tNotifications('Notifications.general.exportError'));
       }
+   };
+
+   // One import for any workspace file: sniff the fileType (a plain .md becomes a note) and route it to the
+   // matching path. Folds the separate character / board / note imports into a single "from file" entry.
+   const handleWorkspaceFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // A plain markdown file imports as a portable-text note (which owns its own toasts).
+      const name = file.name.toLowerCase();
+      if (name.endsWith('.md') || name.endsWith('.markdown')) {
+         await onImportNoteMarkdownFile(file);
+         workspaceFormRef.current?.reset();
+         return;
+      }
+
+      try {
+         const importedData = await importFromFile(file);
+         switch (importedData.fileType) {
+            case 'FULL_CHARACTER_SHEET': {
+               const newCharacter = harmonizeData(importedData.content, importedData.fileType) as Character;
+               openCharacterTab(newCharacter);
+               toast.success(tNotifications('Notifications.character.imported'));
+               break;
+            }
+            case 'FULL_BOARD': {
+               const migratedContent = harmonizeData(importedData.content, importedData.fileType) as Board;
+               const prepared = await prepareImportedBoard(
+                  migratedContent,
+                  importedData.embedded,
+                  t('Drawer.importedFromBoardFolder', { board: migratedContent.name }),
+               );
+               await importBoard(prepared);
+               await reloadCurrentFolder();
+               await openBoardTab(prepared.id);
+               toast.success(tNotifications('Notifications.board.imported'));
+               break;
+            }
+            case 'NOTE': {
+               const note = importedData.content as Note;
+               await importNote(note, null);
+               await openNoteTab(note.id);
+               toast.success(tNotifications('Notifications.note.imported'));
+               break;
+            }
+            default:
+               toast.error(tNotifications('Notifications.general.importFailed'));
+         }
+      } catch (error) {
+         console.error('Failed to import workspace file:', error);
+         toast.error(tNotifications('Notifications.general.importFailed'));
+      }
+
+      workspaceFormRef.current?.reset();
    };
 
    const handleCharacterFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -583,14 +639,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
                      isCollapsed ? "px-0" : "px-2"
                   )}>
-                     <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
-                        {t('CharacterSheetPage.SidebarMenu.importCharacter')}
-                     </SidebarButton>
-                     <SidebarButton isCollapsed={isCollapsed} onClick={() => boardImportInputRef.current?.click()} Icon={Download}>
-                        {t('CharacterSheetPage.SidebarMenu.importBoard')}
-                     </SidebarButton>
-                     <SidebarButton isCollapsed={isCollapsed} onClick={() => noteImportInputRef.current?.click()} Icon={Download}>
-                        {t('CharacterSheetPage.SidebarMenu.importNote')}
+                     <SidebarButton isCollapsed={isCollapsed} onClick={() => workspaceImportInputRef.current?.click()} Icon={FileUp}>
+                        {t('CharacterSheetPage.SidebarMenu.importWorkspace')}
                      </SidebarButton>
                   </motion.section>
                }
@@ -682,6 +732,14 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   type="file"
                   ref={noteUpdateInputRef}
                   onChange={handleNoteUpdateFileSelected}
+                  accept=".cotm,application/json,.md,.markdown,text/markdown"
+               />
+            </form>
+            <form ref={workspaceFormRef} className="hidden">
+               <input
+                  type="file"
+                  ref={workspaceImportInputRef}
+                  onChange={handleWorkspaceFileSelected}
                   accept=".cotm,application/json,.md,.markdown,text/markdown"
                />
             </form>
