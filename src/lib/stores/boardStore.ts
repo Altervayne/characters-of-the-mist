@@ -20,6 +20,7 @@ import {
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
+import { repairBoardZ } from '@/lib/board/boardTree';
 import { appendStrokeToDrawing, recomputeDrawingBoxWithoutMany } from '@/lib/board/drawingStyle';
 import { zoneContaining } from '@/lib/board/zoneMembership';
 
@@ -116,9 +117,9 @@ export interface BoardState {
       setItemLabel: (id: string, label: string | undefined) => Promise<void>;
       /** Sets (or clears with `null`) an item's zone membership as one undo step. */
       setItemZone: (id: string, zoneId: string | null) => Promise<void>;
-      /** Raises an item above all others (`max(z) + 1` over the live items). */
+      /** Raises an item to the front of ITS scope (`max(z) + 1` among siblings sharing its `zoneId`). */
       bringToFront: (id: string) => Promise<void>;
-      /** Drops an item below all others (`min(z) - 1` over the live items). */
+      /** Drops an item to the back of ITS scope (`min(z) - 1` among siblings sharing its `zoneId`). */
       sendToBack: (id: string) => Promise<void>;
       updateItemContent: (id: string, content: BoardItemContent) => Promise<void>;
       /**
@@ -333,11 +334,20 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                      set({ ...initialState, error: `Board not found: ${boardId}` });
                      return;
                   }
-                  const items: Record<string, BoardItem> = {};
-                  for (const item of board.items) items[item.id] = item;
+                  const loaded: Record<string, BoardItem> = {};
+                  for (const item of board.items) loaded[item.id] = item;
+                  // One-time tidy: normalize stored z to dense scope-relative order for any board written
+                  // before the scope-relative model. The flatten derives a zone's band regardless, so this
+                  // only cleans stored z (idempotent - a repaired board re-opens with nothing to change).
+                  // Persisted directly (no command, no dirty), like the passive size/viewport caches, so
+                  // memory and repo agree and a later resync reads the same dense z.
+                  const { items, changed } = repairBoardZ(loaded);
                   // Opened from its records: it matches its saved copy (if any), so it
                   // starts clean. The first mutation dirties it.
                   set({ boardId, name: board.name, viewport: board.viewport, grid: board.grid ?? { ...DEFAULT_BOARD_GRID }, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, nextLayerSeq: board.nextLayerSeq, isLoading: false, error: null });
+                  if (changed.length > 0) {
+                     void Promise.all(changed.map((change) => updateItem(change.id, { z: change.z }))).catch((error) => console.error('Board z repair persist failed:', error));
+                  }
                } catch (error) {
                   set({ isLoading: false, error: toErrorMessage(error) });
                }
@@ -395,6 +405,28 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   if (newZone !== (item.zoneId ?? null)) zoneChanges.push({ id, zoneId: newZone });
                }
 
+               // A membership change reinterprets the item's z as an order within its NEW scope; land it at
+               // the front of that scope (a dragged-out member snaps to root-front, one dragged in to zone-
+               // front) so it never inherits a stale in-zone rank. Several into one scope stack front-to-back.
+               const scopeFront = new Map<string, number>();
+               const zoneChangeZ: { id: string; z: number }[] = [];
+               for (const change of zoneChanges) {
+                  const key = change.zoneId ?? '';
+                  let front = scopeFront.get(key);
+                  if (front === undefined) {
+                     let max = -Infinity;
+                     for (const other of Object.values(items)) {
+                        if (other.kind !== 'connection' && (other.zoneId ?? null) === change.zoneId) max = Math.max(max, other.z);
+                     }
+                     front = (max === -Infinity ? -1 : max) + 1;
+                  } else {
+                     front += 1;
+                  }
+                  scopeFront.set(key, front);
+                  zoneChangeZ.push({ id: change.id, z: front });
+               }
+               const frontZById = new Map(zoneChangeZ.map((change) => [change.id, change.z]));
+
                set((state) => {
                   const next = { ...state.items };
                   for (const move of moves) {
@@ -403,13 +435,14 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   }
                   for (const change of zoneChanges) {
                      const existing = next[change.id];
-                     if (existing) next[change.id] = { ...existing, zoneId: change.zoneId ?? undefined };
+                     if (existing) next[change.id] = { ...existing, zoneId: change.zoneId ?? undefined, z: frontZById.get(change.id) ?? existing.z };
                   }
                   return { items: next };
                });
                await runItemMutation(createCompoundCommand([
                   ...moves.map((move) => createMoveItemCommand(move.id, move.position)),
                   ...zoneChanges.map((change) => createSetItemZoneCommand(change.id, change.zoneId)),
+                  ...zoneChangeZ.map((change) => createSetItemZCommand(change.id, change.z)),
                ]));
             },
 
@@ -535,13 +568,21 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
             },
 
             bringToFront: async (id) => {
-               const zs = Object.values(get().items).map((item) => item.z);
+               // Scope-relative: "front" means front of the item's OWN scope (siblings sharing its zoneId),
+               // so a zone member goes to the top of its band, not ejected past its zone.
+               const target = get().items[id];
+               if (!target) return;
+               const scope = target.zoneId ?? null;
+               const zs = Object.values(get().items).filter((item) => (item.zoneId ?? null) === scope).map((item) => item.z);
                const z = zs.length > 0 ? Math.max(...zs) + 1 : 0;
                await get().actions.setItemZ(id, z);
             },
 
             sendToBack: async (id) => {
-               const zs = Object.values(get().items).map((item) => item.z);
+               const target = get().items[id];
+               if (!target) return;
+               const scope = target.zoneId ?? null;
+               const zs = Object.values(get().items).filter((item) => (item.zoneId ?? null) === scope).map((item) => item.z);
                const z = zs.length > 0 ? Math.min(...zs) - 1 : 0;
                await get().actions.setItemZ(id, z);
             },

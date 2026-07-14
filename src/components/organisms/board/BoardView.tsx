@@ -19,7 +19,8 @@ import { gridBackground } from '@/lib/board/gridStyle';
 import { hexTile } from '@/lib/board/hexGrid';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
-import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
+import { connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
+import { flattenBoardOrder } from '@/lib/board/boardTree';
 import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, regularPolygonVertices, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
@@ -280,22 +281,19 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       setPolygonPreview(null);
    }, [boardId]);
 
-   const sortedItems = Object.values(items).sort((a, b) => a.z - b.z);
-   // Connections render in the SVG overlay; everything else renders as a positioned box.
-   const spatialItems = sortedItems.filter((item) => item.kind !== 'connection');
-   const connectionItems = sortedItems.filter((item) => item.kind === 'connection');
-   // Zones are background frames: their tinted rectangles render in a back layer (behind every
-   // other item) while their header + chrome render in a front pass (on top). Non-zone items
-   // render in between, so they sit on top of a zone but under its chrome.
+   // Paint order is the scope-relative tree flatten (root items by z, each zone immediately followed by
+   // its members), NOT a global z-sort - so a zone's members band contiguously with it. Connections
+   // render in the SVG overlay and carry no paint rank, so the flatten excludes them; gather them apart.
+   const spatialItems = flattenBoardOrder(items);
+   const connectionItems = Object.values(items).filter((item) => item.kind === 'connection').sort((a, b) => a.z - b.z);
+   // Zones are background frames: their tinted rectangle now ranks at the zone's own band floor (its
+   // members band right above it), while their header + chrome paint over the tint. A non-zone item
+   // lower in the flatten than a zone renders beneath that zone's tint.
    const zoneItems = spatialItems.filter((item) => item.kind === 'zone');
    // Collapsed zones shrink to a bar and hide their members: members keep their store position but
    // aren't painted, and connections touching them re-anchor to the bar (handled in the layer).
    const collapsedZoneIds = new Set(zoneItems.filter((item) => item.content.kind === 'zone' && item.content.collapsed).map((item) => item.id));
    const nonZoneItems = spatialItems.filter((item) => item.kind !== 'zone' && !(item.zoneId && collapsedZoneIds.has(item.zoneId)));
-
-   // The behind-items DOM node zones portal their tinted backgrounds into (first child of the
-   // world layer, so it paints behind the item boxes). State-backed like the toolbar slots.
-   const [backLayer, setBackLayer] = useState<HTMLDivElement | null>(null);
 
    // The open right-click radial menu: the cursor's screen point (positions the ring) + its world
    // point (where a create action drops the new item). Null when closed.
@@ -1042,7 +1040,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * registry's empty factory; everything else about the placement/z/zone/select path is identical.
     */
    const createItemAt = (kind: CreatableKind, worldCenter: Point, contentOverride?: BoardItemContent) => {
-      const zValues = sortedItems.map((item) => item.z);
+      const zValues = Object.values(items).map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = CREATABLE_BY_KIND[kind].defaultSize;
       const id = cuid();
@@ -1103,7 +1101,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * embed host (a NEUTRAL synthetic character), so it's app-themed and editable with no extra wiring.
     */
    const createTrackerAt = (trackerType: TrackerType, worldCenter: Point) => {
-      const zValues = sortedItems.map((item) => item.z);
+      const zValues = Object.values(items).map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = EMBEDDED_TRACKER_SIZES[trackerType];
       const id = cuid();
@@ -1121,7 +1119,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const createCardAt = (game: GameSystem, options: CreateCardOptions, worldCenter: Point) => {
       const card = buildCard(game, options);
       if (!card) return;
-      const zValues = sortedItems.map((item) => item.z);
+      const zValues = Object.values(items).map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const { width, height } = EMBEDDED_CARD_SIZE;
       const id = cuid();
@@ -1140,7 +1138,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const createChallengeAt = (worldCenter: Point) => {
       const card = buildCard('LEGENDS', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 });
       if (!card) return;
-      const zValues = sortedItems.map((item) => item.z);
+      const zValues = Object.values(items).map((item) => item.z);
       const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const { width, height } = EMBEDDED_CARD_SIZE;
       const id = cuid();
@@ -1160,7 +1158,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          if (!item) return;
          const spec = embeddedSpecForDrawerItem(item);
          if (!spec) return;
-         const zValues = sortedItems.map((existing) => existing.z);
+         const zValues = Object.values(items).map((existing) => existing.z);
          const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
          const id = cuid();
          const placement = { id, x: worldCenter.x - spec.width / 2, y: worldCenter.y - spec.height / 2, width: spec.width, height: spec.height };
@@ -1370,7 +1368,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       return overshoot > 0 ? overshoot / viewport.zoom : undefined;
    };
 
-   /** Renders one item box. Shared by the non-zone and zone passes; zones use `backLayer` for their background. */
+   /** Renders one item box. Shared by the non-zone and zone passes; a zone paints its own tinted frame inline. */
    const renderBox = (item: BoardItem) => {
       // A zone carries its member count (collapsed-bar badge) and a resize floor (the extent of its
       // members), so it can't be dragged smaller than it encloses; other kinds floor at MIN_ITEM_SIZE.
@@ -1402,7 +1400,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             onRequestEditPortal={handleRequestEditPortal}
             onRequestRelinkPortal={handleRequestRelinkPortal}
             onCachePortalName={actions.cachePortalLastKnown}
-            backLayer={backLayer}
          />
       );
    };
@@ -1528,13 +1525,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
          {/* World layer: a single transform maps world coords to screen. */}
          <div className="absolute left-0 top-0" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`, transformOrigin: '0 0' }}>
-            {/* Behind-items layer: zones portal their tinted rectangles here. An explicit z-index 0
-                keeps it behind every item box (which sit at band 1+). Inert; the rects handle clicks. */}
-            <div ref={setBackLayer} className="absolute left-0 top-0" style={{ zIndex: BACK_LAYER_Z_INDEX }} />
-
             {/* All non-connection items in ONE pass (never split by selection - no remount). Each box
-                carries its z-index band: unselected below the connection layer, selected above it.
-                Zones share the same banding (their tinted rect stays behind in the back layer). */}
+                carries its z-index band: unselected below the connection layer, selected above it. A
+                zone's tinted frame paints inline at the zone's band, behind its own members. */}
             {nonZoneItems.map(renderBox)}
             {zoneItems.map(renderBox)}
 

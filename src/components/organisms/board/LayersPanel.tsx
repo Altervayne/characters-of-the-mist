@@ -13,6 +13,7 @@ import { LayersPanelRow } from './LayersPanelRow';
 
 // -- Utils Imports --
 import { boardItemMetadata } from '@/lib/board/boardItemDisplay';
+import { flattenBoardOrder } from '@/lib/board/boardTree';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
@@ -41,11 +42,9 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
    const items = useStore(store, (state) => state.items);
    const selectedIds = useStore(store, (state) => state.selectedIds);
 
-   // Flat stored-z order, top-of-stack first; connections aren't spatial, so they're excluded.
-   const rows = useMemo(
-      () => Object.values(items).filter((item) => item.kind !== 'connection').sort((a, b) => b.z - a.z),
-      [items],
-   );
+   // The scope-relative flatten (a zone's members band with it), top-of-stack first; the flatten runs
+   // bottom -> top and already drops connections, so reverse it for the panel's top-down reading.
+   const rows = useMemo(() => flattenBoardOrder(items).reverse(), [items]);
 
    // Members per zone, so a zone row can show its count without each row walking the whole map.
    const zoneMemberCounts = useMemo(() => {

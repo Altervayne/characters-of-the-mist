@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { BACK_LAYER_Z_INDEX, connectionsZIndex, groupToolbarZIndex, itemZIndex } from './boardLayering';
+import { connectionsZIndex, groupToolbarZIndex, itemZIndex } from './boardLayering';
 
 /*
  * The board's z-index bands. The point is that the bands are disjoint by construction, so a selected
@@ -39,12 +39,7 @@ describe('board layering bands', () => {
       }
    });
 
-   it('invariant 5: the zone back layer is behind every item (and the group toolbar tops all)', () => {
-      for (let rank = 0; rank < n; rank++) {
-         expect(itemZIndex(rank, false, n)).toBeGreaterThan(BACK_LAYER_Z_INDEX);
-         expect(itemZIndex(rank, true, n)).toBeGreaterThan(BACK_LAYER_Z_INDEX);
-      }
-      // The group toolbar sits above the whole selected band.
+   it('invariant 5: the group toolbar tops the whole selected band', () => {
       const group = groupToolbarZIndex(n);
       for (let rank = 0; rank < n; rank++) {
          expect(group).toBeGreaterThan(itemZIndex(rank, true, n));
@@ -58,7 +53,6 @@ describe('board layering bands', () => {
             expect(itemZIndex(rank, false, count)).toBeLessThan(conn);
             expect(itemZIndex(rank, true, count)).toBeGreaterThan(conn);
          }
-         expect(conn).toBeGreaterThan(BACK_LAYER_Z_INDEX);
       }
    });
 });

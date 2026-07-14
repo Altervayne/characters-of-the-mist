@@ -317,6 +317,75 @@ describe('bringToFront / sendToBack', () => {
       expect(store.getState().items['a'].z).toBe(0); // min(1,2,3) - 1
       expect((await repository.getItem('a'))?.z).toBe(0);
    });
+
+   it('brings a zone member to the front of ITS zone, not past the whole board', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         makeRecord('Z', board.id, 0, { kind: 'zone', content: { kind: 'zone', collapsed: false } }),
+         makeRecord('m1', board.id, 0, { zoneId: 'Z' }),
+         makeRecord('m2', board.id, 1, { zoneId: 'Z' }),
+         makeRecord('root', board.id, 50),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Front of the zone = max(m1, m2 within the zone) + 1 = 2 - NOT above the high-z root item.
+      await store.getState().actions.bringToFront('m1');
+      expect(store.getState().items['m1'].z).toBe(2);
+      expect(store.getState().items['m1'].zoneId).toBe('Z');
+   });
+});
+
+// ==================
+//  Scope-relative z: hydrate repair + drag-out membership
+// ==================
+
+describe('scope-relative z', () => {
+   it('repairs stored z into dense per-scope order on hydrate, persists it, and is idempotent', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         makeRecord('Z', board.id, 5, { kind: 'zone', content: { kind: 'zone', collapsed: false } }),
+         makeRecord('free', board.id, 2),
+         makeRecord('m1', board.id, 40, { zoneId: 'Z' }),
+         makeRecord('m2', board.id, 90, { zoneId: 'Z' }),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Root scope { free(2), Z(5) } -> free:0, Z:1 ; zone scope { m1(40), m2(90) } -> m1:0, m2:1.
+      expect(store.getState().items['free'].z).toBe(0);
+      expect(store.getState().items['Z'].z).toBe(1);
+      expect(store.getState().items['m1'].z).toBe(0);
+      expect(store.getState().items['m2'].z).toBe(1);
+      // The repair persists directly (fire-and-forget) without dirtying the board.
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+      await waitFor(async () => ((await repository.getItem('m2'))?.z === 1 ? true : undefined));
+
+      // Idempotent: a fresh hydrate of the now-dense board reads the same z, nothing re-shuffles.
+      const store2 = createBoardStore();
+      await store2.getState().actions.hydrate(board.id);
+      expect(store2.getState().items['m2'].z).toBe(1);
+      expect(store2.getState().items['free'].z).toBe(0);
+   });
+
+   it('snaps a member dragged out of its zone to root-front', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         makeRecord('Z', board.id, 0, { kind: 'zone', x: 0, y: 0, width: 200, height: 200, content: { kind: 'zone', collapsed: false } }),
+         makeRecord('root', board.id, 1, { x: 500, y: 500 }),
+         makeRecord('m', board.id, 0, { zoneId: 'Z', x: 50, y: 50, width: 20, height: 20 }),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Drag the member's center far outside the zone rectangle.
+      await store.getState().actions.moveItems(['m'], { x: 1000, y: 1000 });
+      const moved = store.getState().items['m'];
+      expect(moved.zoneId).toBeUndefined();
+      // Root scope after repair: Z(0), root(1); the dragged-out member lands at front = max + 1 = 2.
+      expect(moved.z).toBe(2);
+      expect((await repository.getItem('m'))?.z).toBe(2);
+   });
 });
 
 // ==================

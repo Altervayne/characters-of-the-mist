@@ -1,6 +1,5 @@
 // -- React Imports --
 import { memo, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { createPortal } from 'react-dom';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -111,8 +110,6 @@ interface BoardItemBoxProps {
    onRequestRelinkPortal: (itemId: string, screen: { x: number; y: number }) => void;
    /** Caches a portal's live-resolved target name into `lastKnownName` (a direct, non-undoable write). */
    onCachePortalName: (itemId: string, name: string) => void;
-   /** The behind-items layer a zone portals its tinted background rectangle into (null for non-zones). */
-   backLayer?: HTMLElement | null;
    /** Lower bound for the resize (a zone passes its member extent); each axis defaults to MIN_ITEM_SIZE. */
    resizeMin?: { width: number; height: number };
    /** Stacking band for this box: selection raises it via z-index, NOT a DOM re-order (no remount). */
@@ -159,7 +156,6 @@ export const BoardItemBox = memo(function BoardItemBox({
    onRequestEditPortal,
    onRequestRelinkPortal,
    onCachePortalName,
-   backLayer,
    resizeMin,
    zIndex,
 }: BoardItemBoxProps) {
@@ -315,9 +311,10 @@ export const BoardItemBox = memo(function BoardItemBox({
    // 2D-resizable (internal scroll), so it keeps the resize grip the other embeds drop. A portal is
    // resizable in every style too (owner override of the auto-hug): its glyph + type scale with the box.
    const isResizableEmbed = item.kind === 'note' || item.kind === 'portal';
-   // A zone is a background frame: its tinted rectangle portals BEHIND the items (into `backLayer`),
-   // and the box here renders only the on-top header + chrome - click-through everywhere else so the
-   // items sitting inside it stay interactive. Selecting the empty interior is the background's job.
+   // A zone is a background frame: its tinted rectangle paints inline at the box's band floor (behind its
+   // own members, which the flatten bands right above it), and the box here renders the on-top header +
+   // chrome - click-through everywhere else so the items sitting inside it stay interactive. Selecting the
+   // empty interior is the tinted frame's job.
    const isZone = item.kind === 'zone';
    const zoneColor = item.content.kind === 'zone' ? item.content.color : undefined;
    // A collapsed zone paints as a compact bar at its origin (frame hidden, members hidden, resize
@@ -369,23 +366,17 @@ export const BoardItemBox = memo(function BoardItemBox({
             transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
          }}
       >
-         {/* A zone's tinted rectangle, portaled into the behind-items back layer so members sit on
-             top. It tracks the live rect (move/resize), and a pointer-down on its empty interior or
-             border selects the zone - items on top capture their own clicks first (they paint above).
-             A collapsed zone hides its frame (it's the bar below instead). */}
-         {isZone && !isCollapsedZone && backLayer && createPortal(
+         {/* A zone's tinted rectangle, filling the box behind the header/chrome (a later sibling paints on
+             top). It sits at the zone's band, so its own members - banded above it - render over it, while
+             a lower-stacked item renders beneath it. A pointer-down on the interior or border selects the
+             zone (re-enabling clicks the click-through box suppresses); items on top capture their own
+             clicks first. A collapsed zone hides its frame (it's the bar below instead). */}
+         {isZone && !isCollapsedZone && (
             <div
                onPointerDown={(event) => { event.stopPropagation(); onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey); }}
-               className={cn('absolute cursor-pointer rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
-               style={{
-                  left: rect.x,
-                  top: rect.y,
-                  width: rect.width,
-                  height: renderHeight,
-                  ...(zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : {}),
-               }}
-            />,
-            backLayer,
+               className={cn('pointer-events-auto absolute inset-0 cursor-pointer rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
+               style={zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
+            />
          )}
 
          {/* Non-clipped anchor at the box's right edge, for the journal's bookmark tabs to
