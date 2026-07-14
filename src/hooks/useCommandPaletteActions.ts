@@ -11,7 +11,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -234,6 +234,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setToolLine', scope: 'board', label: t('CommandPalette.commands.setToolLine'), keywords: ['tool', 'line', 'straight', 'segment', 'shape', 'draw', 'board'], icon: Slash, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:line') },
       { id: 'setToolFreeformPolygon', scope: 'board', label: t('CommandPalette.commands.setToolFreeformPolygon'), keywords: ['tool', 'freeform', 'polygon', 'shape', 'vertices', 'draw', 'board'], icon: Waypoints, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:freeformPolygon') },
       { id: 'setToolRegularPolygon', scope: 'board', label: t('CommandPalette.commands.setToolRegularPolygon'), keywords: ['tool', 'regular', 'polygon', 'shape', 'pentagon', 'hexagon', 'draw', 'board'], icon: Pentagon, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:regularPolygon') },
+      { id: 'setToolShape', scope: 'board', label: t('CommandPalette.commands.setToolShape'), keywords: ['tool', 'shape', 'circle', 'square', 'ellipse', 'rectangle', 'fill', 'draw', 'board'], icon: Shapes, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:shape') },
       { id: 'setToolEraser', scope: 'board', label: t('CommandPalette.commands.setToolEraser'), keywords: ['tool', 'eraser', 'erase', 'rub', 'delete', 'draw', 'board'], icon: Eraser, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:eraser') },
       // Brush picks double as the pen tool (the canvas switches to pen on a brush request).
       { id: 'setBrushPen', scope: 'board', label: t('CommandPalette.commands.setBrushPen'), keywords: ['brush', 'pen', 'draw', 'ink', 'thin', 'board'], icon: Pen, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setBrush:pen') },
@@ -251,6 +252,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'jumpToCoordinate', scope: 'board', label: t('CommandPalette.commands.jumpToCoordinate'), keywords: ['jump', 'go', 'goto', 'coordinate', 'position', 'center', 'navigate', 'pan', 'board'], icon: LocateFixed, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('focusJumpToCoordinate') },
       // The layers panel is a plain appSettings toggle (no board instance needed), like the dice tray.
       { id: 'toggleLayersPanel', scope: 'board', label: t('CommandPalette.commands.toggleLayersPanel'), keywords: ['layers', 'panel', 'stack', 'z-order', 'order', 'elements', 'board'], icon: Layers, group: t('CommandPalette.groups.tools'), action: toggleLayersPanel },
+      // Merge needs the live selection, so it rides the request bridge and reuses the footer's mergeable
+      // reasoning (no-op + toast if the current selection isn't a contiguous drawing run).
+      { id: 'mergeSelectedLayers', scope: 'board', label: t('CommandPalette.commands.mergeSelectedLayers'), keywords: ['merge', 'combine', 'flatten', 'layers', 'drawings', 'board'], icon: Combine, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('mergeSelectedLayers') },
       // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
       // active canvas consumes this request since it owns the drop point + selection/expand state.
       { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },

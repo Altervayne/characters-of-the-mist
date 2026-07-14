@@ -8,13 +8,19 @@ import type { StrokePaintInput } from '@/lib/board/drawingStyle';
 import type { DrawingBoardContent } from '@/lib/types/board';
 
 /**
- * One stroke as a single `<path>`. All the brush x shape branching lives in {@link strokePaint}, so the
- * drawing item and the live preview paint through the exact same code. Round cap/join stay set for the
- * stroked (pen/highlighter) paths; they are inert on the filled (brush) ribbons.
+ * One stroke as its outline `<path>`, with an optional interior fill layer painted underneath (a filled
+ * shape needs a solid interior AND its brush outline, two paths). All the brush x shape branching lives in
+ * {@link strokePaint}, so the drawing item and the live preview paint through the exact same code. Round
+ * cap/join stay set for the stroked (pen/highlighter) paths; they are inert on the filled (brush) ribbons.
  */
 export function StrokeShape({ stroke }: { stroke: StrokePaintInput }) {
    const paint = strokePaint(stroke);
-   return <path d={paint.d} fill={paint.fill} stroke={paint.stroke} strokeWidth={paint.strokeWidth} strokeOpacity={paint.strokeOpacity} strokeLinecap="round" strokeLinejoin="round" />;
+   return (
+      <>
+         {paint.fillD && <path d={paint.fillD} fill={paint.fillColor} fillOpacity={paint.fillOpacity} stroke="none" />}
+         <path d={paint.d} fill={paint.fill} stroke={paint.stroke} strokeWidth={paint.strokeWidth} strokeOpacity={paint.strokeOpacity} strokeLinecap="round" strokeLinejoin="round" />
+      </>
+   );
 }
 
 /*

@@ -1,5 +1,5 @@
 // -- Local Imports --
-import { buildBoardTree, zoneParentId } from './boardTree';
+import { buildBoardTree, flattenBoardOrder, zoneParentId } from './boardTree';
 
 // -- Type Imports --
 import type { BoardItem } from '@/lib/types/board';
@@ -41,6 +41,28 @@ export function buildLayerRows(items: Record<string, BoardItem>, collapsedZoneId
       }
    }
    return rows;
+}
+
+/**
+ * True when `selectedIds` are >= 2 DRAWING layers forming a CONTIGUOUS run in the paint order (no other
+ * element between them) - the exact condition the merge folds into one layer. Adjacency is measured on
+ * {@link flattenBoardOrder}, the real stack, so it is independent of the panel's collapse state. A selection
+ * with any non-drawing, fewer than two drawings, a missing/connection id, or a gap is not mergeable. The
+ * shared source of truth for the merge footer's enablement and the palette command's guard.
+ */
+export function isMergeableSelection(items: Record<string, BoardItem>, selectedIds: ReadonlySet<string>): boolean {
+   if (selectedIds.size < 2) return false;
+   const order = flattenBoardOrder(items);
+   const positions: number[] = [];
+   for (let i = 0; i < order.length; i++) {
+      if (!selectedIds.has(order[i].id)) continue;
+      if (order[i].content.kind !== 'drawing') return false; // a non-drawing in the selection disqualifies it
+      positions.push(i);
+   }
+   // A selected id that never appeared (a connection, excluded from the flatten, or a stale id) fails the count.
+   if (positions.length !== selectedIds.size) return false;
+   // Contiguous: the first..last span holds exactly the selected rows, nothing unselected between them.
+   return positions[positions.length - 1] - positions[0] === positions.length - 1;
 }
 
 /** A resolved drop: the destination scope (null = root) and the ascending index within it. */

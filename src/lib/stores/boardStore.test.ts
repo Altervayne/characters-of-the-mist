@@ -92,6 +92,33 @@ describe('hydrate', () => {
       expect(store.getState().boardId).toBeNull();
       expect(store.getState().items).toEqual({});
    });
+
+   it('seeds nextLayerSeq when the record predates the counter, so minted drawings get 1, 2 - never NaN', async () => {
+      const board = await repository.createBoard('Board');
+      // An old dev board whose record was written before the layer counter existed.
+      await repository.saveBoard({ ...board, nextLayerSeq: undefined as unknown as number });
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      expect(store.getState().nextLayerSeq).toBe(1);
+
+      await store.getState().actions.addItem(makeItem('d1', 0, { kind: 'drawing', content: { kind: 'drawing', strokes: [] } }));
+      await store.getState().actions.addItem(makeItem('d2', 1, { kind: 'drawing', content: { kind: 'drawing', strokes: [] } }));
+      const seqOf = (id: string) => (store.getState().items[id].content as { seq?: number }).seq;
+      expect(seqOf('d1')).toBe(1);
+      expect(seqOf('d2')).toBe(2);
+   });
+
+   it('is not poisoned by a NaN seq / counter left by an earlier buggy build', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.saveBoard({ ...board, nextLayerSeq: NaN });
+      await repository.bulkPutItems([makeRecord('bad', board.id, 0, { kind: 'drawing', content: { kind: 'drawing', strokes: [], seq: NaN } })]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+      expect(store.getState().nextLayerSeq).toBe(1); // NaN screened out, not propagated
+
+      await store.getState().actions.addItem(makeItem('d1', 1, { kind: 'drawing', content: { kind: 'drawing', strokes: [] } }));
+      expect((store.getState().items['d1'].content as { seq?: number }).seq).toBe(1);
+   });
 });
 
 // ==================
@@ -495,6 +522,132 @@ describe('reorderItem', () => {
       await store.getState().actions.reorderItem('a', null, 0);
       expect(store.getState().canUndo).toBe(false);
       expect(store.getState().hasUnsavedChanges).toBe(false);
+   });
+});
+
+// ==================
+//  mergeDrawings (layers-panel merge): fold + cascade + one undo step
+// ==================
+
+describe('mergeDrawings', () => {
+   /** A drawing record with the given local strokes at an origin. */
+   function drawingRecord(id: string, boardId: string, z: number, x: number, y: number, strokes: { id: string; points: number[] }[]): BoardItemRecord {
+      return makeRecord(id, boardId, z, {
+         kind: 'drawing',
+         x,
+         y,
+         width: 10,
+         height: 10,
+         content: { kind: 'drawing', strokes: strokes.map((s) => ({ id: s.id, brush: 'pen', color: null, width: 3, points: s.points })) },
+      });
+   }
+
+   /** A connection record referencing two items. */
+   function connectionRecord(id: string, boardId: string, z: number, from: string, to: string): BoardItemRecord {
+      return { id, boardId, kind: 'connection', x: 0, y: 0, width: 0, height: 0, z, content: { kind: 'connection', from, to, style: { width: 2, color: '#000' } } };
+   }
+
+   /** The strokes of a drawing item, as ids (or undefined when the item is gone / not a drawing). */
+   function strokeIds(store: ReturnType<typeof createBoardStore>, id: string): string[] | undefined {
+      const content = store.getState().items[id]?.content;
+      return content?.kind === 'drawing' ? content.strokes.map((s) => s.id) : undefined;
+   }
+
+   it('merges two drawings into the bottom-most target: strokes in z-order, box unioned, sources gone', async () => {
+      const board = await repository.createBoard('Board');
+      // d1 (bottom, z0) at origin; d2 (top, z1) far to the SE so the union box grows.
+      await repository.bulkPutItems([
+         drawingRecord('d1', board.id, 0, 0, 0, [{ id: 'a', points: [0, 0, 10, 10] }]),
+         drawingRecord('d2', board.id, 1, 100, 100, [{ id: 'b', points: [0, 0, 10, 10] }]),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Pass ids top-first to prove the target is chosen by paint order (bottom-most), not argument order.
+      await store.getState().actions.mergeDrawings(['d2', 'd1']);
+
+      // One layer survives at the bottom-most target's id; the source is gone.
+      expect(store.getState().items['d2']).toBeUndefined();
+      expect(strokeIds(store, 'd1')).toEqual(['a', 'b']); // target strokes first, then the source's
+      const merged = store.getState().items['d1'];
+      expect({ x: merged.x, y: merged.y, width: merged.width, height: merged.height }).toEqual({ x: 0, y: 0, width: 110, height: 110 });
+      // Memory == repo (the non-additive resync).
+      const repoMerged = await repository.getItem('d1');
+      expect({ x: repoMerged?.x, y: repoMerged?.y, width: repoMerged?.width, height: repoMerged?.height }).toEqual({ x: 0, y: 0, width: 110, height: 110 });
+      // The merged layer is left selected.
+      expect([...store.getState().selectedIds]).toEqual(['d1']);
+
+      // One undo restores every merged-away layer exactly (id, z, strokes, box).
+      await store.getState().actions.undo();
+      expect(strokeIds(store, 'd1')).toEqual(['a']);
+      expect({ x: store.getState().items['d1'].x, y: store.getState().items['d1'].y, width: store.getState().items['d1'].width, height: store.getState().items['d1'].height }).toEqual({ x: 0, y: 0, width: 10, height: 10 });
+      const d2 = store.getState().items['d2'];
+      expect(d2).toMatchObject({ x: 100, y: 100, z: 1 });
+      expect(strokeIds(store, 'd2')).toEqual(['b']);
+   });
+
+   it('merges three drawings, folding bottom -> top (stroke stacking preserved) as ONE undo step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         drawingRecord('d1', board.id, 0, 0, 0, [{ id: 'a', points: [0, 0, 5, 5] }]),
+         drawingRecord('d2', board.id, 1, 0, 0, [{ id: 'b', points: [0, 0, 5, 5] }]),
+         drawingRecord('d3', board.id, 2, 0, 0, [{ id: 'c', points: [0, 0, 5, 5] }]),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.mergeDrawings(['d1', 'd2', 'd3']);
+      expect(strokeIds(store, 'd1')).toEqual(['a', 'b', 'c']); // bottom -> top
+      expect(store.getState().items['d2']).toBeUndefined();
+      expect(store.getState().items['d3']).toBeUndefined();
+
+      await store.getState().actions.undo(); // ONE step brings both merged-away layers back
+      expect(strokeIds(store, 'd1')).toEqual(['a']);
+      expect(store.getState().items['d2']).toBeDefined();
+      expect(store.getState().items['d3']).toBeDefined();
+      expect(store.getState().canUndo).toBe(false);
+   });
+
+   it('cascade-deletes a connection to a merged-away layer, and undo restores it', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         drawingRecord('d1', board.id, 0, 0, 0, [{ id: 'a', points: [0, 0, 5, 5] }]),
+         drawingRecord('d2', board.id, 1, 0, 0, [{ id: 'b', points: [0, 0, 5, 5] }]),
+         connectionRecord('conn', board.id, 2, 'd1', 'd2'), // references the source d2
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      await store.getState().actions.mergeDrawings(['d1', 'd2']);
+      expect(store.getState().items['d2']).toBeUndefined();
+      expect(store.getState().items['conn']).toBeUndefined(); // no dangling endpoint
+      expect(await repository.getItem('conn')).toBeUndefined();
+
+      await store.getState().actions.undo(); // ONE step restores the layer AND its connection
+      expect(store.getState().items['d2']).toBeDefined();
+      expect(store.getState().items['conn']).toBeDefined();
+      expect(await repository.getItem('conn')).toBeDefined();
+   });
+
+   it('is a defensive no-op for a non-drawing in the selection or fewer than two drawings', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         drawingRecord('d1', board.id, 0, 0, 0, [{ id: 'a', points: [0, 0, 5, 5] }]),
+         makeRecord('note', board.id, 1), // a post-it, not a drawing
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // A non-drawing in the set: nothing merges, nothing dirties, no undo entry.
+      await store.getState().actions.mergeDrawings(['d1', 'note']);
+      expect(store.getState().items['d1']).toBeDefined();
+      expect(store.getState().items['note']).toBeDefined();
+      expect(store.getState().canUndo).toBe(false);
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+
+      // A single drawing: below the count floor, also a no-op.
+      await store.getState().actions.mergeDrawings(['d1']);
+      expect(store.getState().canUndo).toBe(false);
    });
 });
 

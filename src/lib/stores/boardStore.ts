@@ -11,6 +11,7 @@ import {
    createAppendStrokeCommand,
    createCompoundCommand,
    createDeleteItemCommand,
+   createMergeDrawingsCommand,
    createMoveItemCommand,
    createRemoveStrokesCommand,
    createResizeItemCommand,
@@ -20,8 +21,8 @@ import {
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
-import { byZThenId, repairBoardZ } from '@/lib/board/boardTree';
-import { appendStrokeToDrawing, recomputeDrawingBoxWithoutMany } from '@/lib/board/drawingStyle';
+import { byZThenId, flattenBoardOrder, repairBoardZ } from '@/lib/board/boardTree';
+import { appendStrokeToDrawing, mergeDrawings, recomputeDrawingBoxWithoutMany } from '@/lib/board/drawingStyle';
 import { zoneContaining } from '@/lib/board/zoneMembership';
 
 // -- Store Imports --
@@ -30,7 +31,7 @@ import { useAppGeneralStateStore } from './appGeneralStateStore';
 // -- Type Imports --
 import type { BoardCommand, ResizePatch } from '@/lib/board/boardCommands';
 import type { BoardItemRecord } from '@/lib/board/boardRecords';
-import type { Board, BoardGrid, BoardItem, BoardItemContent, Stroke, Viewport } from '@/lib/types/board';
+import type { Board, BoardGrid, BoardItem, BoardItemContent, DrawingBoardContent, Stroke, Viewport } from '@/lib/types/board';
 
 /*
  * Board store - the React-facing, in-memory view of one open board, backed by the
@@ -124,6 +125,14 @@ export interface BoardState {
        * layers-panel drag-reorder; the panel resolves a drop to `(scope, index)` and calls this.
        */
       reorderItem: (id: string, newZoneId: string | null, dropIndex: number) => Promise<void>;
+      /**
+       * Merges >= 2 selected DRAWING layers into the bottom-most one (lowest paint order) as ONE undo step:
+       * folds every other layer's strokes into the target (box unioned, z-order preserved), deletes the
+       * merged-away layers plus any connection referencing them (cascade), and leaves the target selected.
+       * A defensive no-op unless every id is a live drawing and there are at least two - adjacency is the
+       * panel's enablement guard, not a store invariant.
+       */
+      mergeDrawings: (ids: string[]) => Promise<void>;
       /** Raises an item to the front of ITS scope (`max(z) + 1` among siblings sharing its `zoneId`). */
       bringToFront: (id: string) => Promise<void>;
       /** Drops an item to the back of ITS scope (`min(z) - 1` among siblings sharing its `zoneId`). */
@@ -194,6 +203,22 @@ export interface BoardState {
       /** Sets (or clears with `null`) the hovered item. Ephemeral view state. */
       setHovered: (id: string | null) => void;
    };
+}
+
+/**
+ * The next drawing-layer ordinal to hand out on hydrate: above the board's stored counter AND every live
+ * drawing's `seq`, so a number is never reused. A board whose record predates the counter (`undefined`)
+ * seeds to 1, and a stored counter that ever lags its drawings self-corrects. Never returns NaN.
+ */
+function seedNextLayerSeq(stored: number | undefined, items: Record<string, BoardItem>): number {
+   // Number.isFinite screens out BOTH an unset seq and a NaN one left by an earlier buggy build, so a
+   // corrupted drawing can't poison the counter - Math.max with NaN is NaN, and `?? 0` wouldn't catch NaN.
+   let maxSeq = 0;
+   for (const item of Object.values(items)) {
+      if (item.content.kind === 'drawing' && Number.isFinite(item.content.seq)) maxSeq = Math.max(maxSeq, item.content.seq as number);
+   }
+   const base = Number.isFinite(stored) ? (stored as number) : 0;
+   return Math.max(base, maxSeq + 1);
 }
 
 const initialState: Pick<
@@ -351,7 +376,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   const { items, changed } = repairBoardZ(loaded);
                   // Opened from its records: it matches its saved copy (if any), so it
                   // starts clean. The first mutation dirties it.
-                  set({ boardId, name: board.name, viewport: board.viewport, grid: board.grid ?? { ...DEFAULT_BOARD_GRID }, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, nextLayerSeq: board.nextLayerSeq, isLoading: false, error: null });
+                  set({ boardId, name: board.name, viewport: board.viewport, grid: board.grid ?? { ...DEFAULT_BOARD_GRID }, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, nextLayerSeq: seedNextLayerSeq(board.nextLayerSeq, items), isLoading: false, error: null });
                   if (changed.length > 0) {
                      void Promise.all(changed.map((change) => updateItem(change.id, { z: change.z }))).catch((error) => console.error('Board z repair persist failed:', error));
                   }
@@ -619,6 +644,54 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   ...(zoneChanged ? [createSetItemZoneCommand(id, newZone)] : []),
                   ...zChanges.map((change) => createSetItemZCommand(change.id, change.z)),
                ]));
+            },
+
+            mergeDrawings: async (ids) => {
+               const items = get().items;
+               // Every id must be a live drawing, and at least two (adjacency is the panel's guard). Any other
+               // kind or a count below two is a defensive no-op (mirrors the eraseStrokes / reorder guards).
+               const idSet = new Set(ids);
+               if (idSet.size < 2) return;
+               // Selected drawings in paint order (bottom -> top), so the fold keeps stacking and the bottom-most
+               // is the target. flattenBoardOrder excludes connections, so a stray connection id can't slip in.
+               const ordered = flattenBoardOrder(items).filter((item) => idSet.has(item.id));
+               if (ordered.length !== idSet.size || !ordered.every((item) => item.content.kind === 'drawing')) return;
+
+               const target = ordered[0];
+               const sources = ordered.slice(1);
+               const sourceIds = sources.map((source) => source.id);
+               // Cascade: any connection to a merged-away layer would dangle, so it is deleted in the same
+               // compound (deduped - a connection between two sources is referenced twice).
+               const connectionIds = new Set<string>();
+               for (const id of sourceIds) for (const connectionId of connectionsReferencing(items, id)) connectionIds.add(connectionId);
+
+               markDirty();
+               // Optimistic mirror, byte-identical to the command's write via the SAME fold helper: the merged
+               // target grows, the sources and their cascaded connections vanish. The non-additive resync below
+               // reconciles anyway, but matching it here avoids a flash.
+               const merged = mergeDrawings(
+                  { x: target.x, y: target.y, content: target.content as DrawingBoardContent },
+                  sources.map((source) => ({ x: source.x, y: source.y, content: source.content as DrawingBoardContent })),
+               );
+               set((state) => {
+                  const next = { ...state.items };
+                  const existing = next[target.id];
+                  if (existing && existing.content.kind === 'drawing') {
+                     next[target.id] = { ...existing, x: merged.x, y: merged.y, width: merged.width, height: merged.height, content: { ...existing.content, strokes: merged.strokes } };
+                  }
+                  for (const id of sourceIds) delete next[id];
+                  for (const id of connectionIds) delete next[id];
+                  return { items: next };
+               });
+               // NON-additive (multi-item + deletes): the mergeWrite runs FIRST so it reads the sources live,
+               // then the source + connection deletes; one compound, one undo step.
+               await runItemMutation(createCompoundCommand([
+                  createMergeDrawingsCommand(target.id, sourceIds),
+                  ...sourceIds.map((id) => createDeleteItemCommand(id)),
+                  ...[...connectionIds].map((id) => createDeleteItemCommand(id)),
+               ]));
+               // Leave the single merged layer selected.
+               set({ selectedIds: new Set([target.id]) });
             },
 
             bringToFront: async (id) => {

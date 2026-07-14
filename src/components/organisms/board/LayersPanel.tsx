@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useStore } from 'zustand';
-import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
 
 // -- Icon Imports --
-import { Layers, X } from 'lucide-react';
+import { Combine, Layers, X } from 'lucide-react';
 
 // -- Component Imports --
 import { LayersPanelRow } from './LayersPanelRow';
@@ -17,11 +17,11 @@ import { LayersPanelRow } from './LayersPanelRow';
 import { cn } from '@/lib/utils';
 import { boardItemDisplayName, boardItemKindIcon, boardItemMetadata } from '@/lib/board/boardItemDisplay';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
-import { buildLayerRows, resolveLayerDrop, LAYERS_ROOT_END } from '@/lib/board/layersReorder';
+import { buildLayerRows, isMergeableSelection, resolveLayerDrop, LAYERS_ROOT_END } from '@/lib/board/layersReorder';
 
 // -- Type Imports --
 import type { LayerRow } from '@/lib/board/layersReorder';
-import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import type { CollisionDetection, DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import type { BoardItem } from '@/lib/types/board';
 import type { BoardStore } from '@/lib/stores/boardStore';
 
@@ -35,8 +35,8 @@ import type { BoardStore } from '@/lib/stores/boardStore';
 interface LayersPanelProps {
    store: BoardStore;
    onClose: () => void;
-   /** Single-click a row: select that item only. */
-   onSelect: (id: string) => void;
+   /** Click a row: select it alone (plain), or toggle it in the multi-selection (additive = Shift/Ctrl). */
+   onSelect: (id: string, additive: boolean) => void;
    /** Double-click a row: select and center the canvas on it. */
    onActivate: (id: string) => void;
    /** Row hover -> highlight the element on the canvas. */
@@ -47,6 +47,8 @@ interface LayersPanelProps {
    onReorder: (id: string, zoneId: string | null, index: number) => void;
    /** Toggles a zone's collapse (shared with the canvas). */
    onToggleZoneCollapse: (id: string) => void;
+   /** Merges the current mergeable drawing selection into one layer (footer button + palette share this). */
+   onMerge: () => void;
 }
 
 /** Where the insertion line sits during a drag: on a row, on its `before` (top) or `after` (bottom) edge. */
@@ -55,10 +57,29 @@ interface DropIndicator {
    position: 'before' | 'after';
 }
 
-export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onCommitLabel, onReorder, onToggleZoneCollapse }: LayersPanelProps) {
+/*
+ * The pointer being inside the trailing root zone wins - that's how you pull an item OUT the bottom of a
+ * zone, and its large flex area sits too far from any row's center for center-based detection to catch it.
+ * Every other drop (row-to-row reorder) keeps the center-based rule, so that feel is unchanged.
+ */
+const layersCollision: CollisionDetection = (args) => {
+   const overRoot = pointerWithin(args).find((collision) => collision.id === LAYERS_ROOT_END);
+   return overRoot ? [overRoot] : closestCenter(args);
+};
+
+export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onCommitLabel, onReorder, onToggleZoneCollapse, onMerge }: LayersPanelProps) {
    const { t } = useTranslation();
    const items = useStore(store, (state) => state.items);
    const selectedIds = useStore(store, (state) => state.selectedIds);
+
+   // The merge footer shows for any multi-selection (a merge might be intended) and enables only for a
+   // contiguous drawing-only run; otherwise it greys the button and explains, never silently restacking.
+   const mergeable = useMemo(() => isMergeableSelection(items, selectedIds), [items, selectedIds]);
+   const selectedDrawingCount = useMemo(() => {
+      let count = 0;
+      for (const id of selectedIds) if (items[id]?.content.kind === 'drawing') count += 1;
+      return count;
+   }, [items, selectedIds]);
 
    // Collapse lives on each zone's content (the same field the canvas reads/writes), so the panel and the
    // canvas share ONE collapse state - no second panel-only flag.
@@ -195,7 +216,7 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
          ) : (
             <DndContext
                sensors={sensors}
-               collisionDetection={closestCenter}
+               collisionDetection={layersCollision}
                onDragStart={handleDragStart}
                onDragOver={handleDragOver}
                onDragEnd={handleDragEnd}
@@ -226,6 +247,28 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
                   {activeItem ? <LayerDragPreview item={activeItem} t={t} /> : null}
                </DragOverlay>
             </DndContext>
+         )}
+
+         {/* Contextual footer, horizontal so a future Mask button slots beside Merge. Shows for any multi-
+             selection; the Merge button enables only for a contiguous drawing run, else greys + explains. */}
+         {selectedIds.size >= 2 && (
+            <div className="flex items-center gap-2 border-t border-border bg-muted/40 px-3 py-2">
+               <button
+                  type="button"
+                  disabled={!mergeable}
+                  onClick={mergeable ? onMerge : undefined}
+                  className={cn(
+                     'flex shrink-0 items-center gap-1.5 rounded px-2 py-1 text-sm',
+                     mergeable
+                        ? 'cursor-pointer bg-primary/10 text-foreground ring-1 ring-primary/40 hover:bg-primary/20'
+                        : 'cursor-not-allowed text-muted-foreground/50',
+                  )}
+               >
+                  <Combine className="size-4 shrink-0" aria-hidden />
+                  <span>{t('LayersPanel.mergeCount', { count: selectedDrawingCount })}</span>
+               </button>
+               {!mergeable && <span className="min-w-0 flex-1 text-xs text-muted-foreground">{t('LayersPanel.mergeHint')}</span>}
+            </div>
          )}
       </div>
    );

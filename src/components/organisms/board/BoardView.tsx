@@ -21,7 +21,8 @@ import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
 import { flattenBoardOrder, nextScopeZ } from '@/lib/board/boardTree';
-import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, regularPolygonVertices, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
+import { isMergeableSelection } from '@/lib/board/layersReorder';
+import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, regularPolygonVertices, shapeBoxCorners, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
@@ -110,7 +111,7 @@ const TOOLBAR_TOP_CLEARANCE = 48;
  * the slide-in/out; the side (`left-0.5`/`right-0.5`) is appended per arrow.
  */
 const BAR_ARROW_CLASS =
-   'absolute top-0 bottom-0 z-10 my-auto flex size-8 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
+   'absolute top-0 bottom-0 z-10 my-auto flex size-6 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
 
 /** The layers panel's fixed width (matches its `w-64`), used to inset the bottom bar when it's open. */
 const LAYERS_PANEL_WIDTH = 256;
@@ -248,7 +249,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // The pen/highlighter settings (brush, ink, per-brush widths), persisted in app settings. Every new
    // stroke and the live preview read the CURRENT values, so the pickers actually drive the ink.
    const penSettings = useAppSettingsStore((state) => state.penSettings);
-   const { setPenBrush, setPenColor, setPenWidth, toggleLayersPanel, setLayersPanelOpen } = useAppSettingsActions();
+   const { setPenBrush, setPenColor, setPenWidth, setShapeBase, setShapeFilled, toggleLayersPanel, setLayersPanelOpen } = useAppSettingsActions();
    // Space arms a mode-independent pan (mirrored to a ref for the pointer handlers, and to state for the
    // cursor). The pen overlay + a Space/middle-drag can all start a pan, so the trigger is mode-agnostic.
    const [spaceHeld, setSpaceHeld] = useState(false);
@@ -398,8 +399,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       actions.setSelection(newIds);
    }, [actions, selectedIds]);
 
-   /** Layers panel: a row's single-click selects just that item (no pan). */
-   const handleLayerSelect = useCallback((id: string) => actions.setSelection([id]), [actions]);
+   /** Layers panel: a plain click selects just that row (no pan); Shift/Ctrl-click toggles it in the selection. */
+   const handleLayerSelect = useCallback((id: string, additive: boolean) => actions.selectItem(id, additive), [actions]);
 
    /** Layers panel: a row's double-click centers the view on the item (keeping zoom). Reads live refs so
     *  its identity stays stable (the panel subscribes to items/selection, not to it). */
@@ -417,6 +418,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
 
    /** Layers panel: a drag-reorder lands the item at `(zoneId, index)` within its destination scope. */
    const handleLayerReorder = useCallback((id: string, zoneId: string | null, index: number) => void actions.reorderItem(id, zoneId, index), [actions]);
+
+   /** Layers panel + palette: merge the selected drawing layers into one. Re-checks mergeability (the footer
+    *  button is pre-guarded, but the palette command reaches here on any selection) and toasts when it can't. */
+   const handleLayerMerge = useCallback(() => {
+      const state = store.getState();
+      if (!isMergeableSelection(state.items, state.selectedIds)) {
+         toast.error(t('Notifications.board.layersNotMergeable'));
+         return;
+      }
+      void actions.mergeDrawings([...state.selectedIds]);
+   }, [store, actions, t]);
 
    /** Layers panel: the group chevron toggles the zone's collapse - the SAME content field the canvas edits. */
    const handleZoneCollapseToggle = useCallback((id: string) => {
@@ -677,9 +689,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * layer-local). The stroke carries the CURRENT brush/ink/width. Fewer than two points is a stray tap - dropped.
     */
    const commitStroke = useCallback(
-      (worldPoints: number[], shape?: Stroke['shape']) => {
-         // Min points is shape-aware: a polygon needs 3 vertices (6 numbers); a line and freehand both need
-         // 2 (4 numbers), so a stray tap still drops but a valid line survives.
+      (worldPoints: number[], shape?: Stroke['shape'], filled?: boolean) => {
+         // Min points is shape-aware: a polygon needs 3 vertices (6 numbers); a line, a bounding-box shape, and
+         // freehand all need 2 (4 numbers), so a stray tap still drops but a valid stroke survives.
          if (worldPoints.length < (shape === 'polygon' ? 6 : 4)) return;
          // A Line from a pure click (endpoints all but coincident) is a zero-length dot; discard it.
          if (shape === 'line' && isLineDegenerate(worldPoints, MIN_LINE_LENGTH)) return;
@@ -688,7 +700,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          const layer = activeLayerId ? liveItems[activeLayerId] : undefined;
          if (layer && layer.content.kind === 'drawing') {
             // World points: the store grows the box + re-bases to layer-local, so the box tracks every stroke.
-            void actions.appendStroke(layer.id, makeStroke(cuid(), worldPoints, penSettings.brush, penSettings.color, width, shape));
+            void actions.appendStroke(layer.id, makeStroke(cuid(), worldPoints, penSettings.brush, penSettings.color, width, shape, filled));
             return;
          }
          const bounds = pointsBounds(worldPoints);
@@ -705,7 +717,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             width: bounds.maxX - bounds.minX,
             height: bounds.maxY - bounds.minY,
             z,
-            content: { kind: 'drawing', strokes: [makeStroke(cuid(), local, penSettings.brush, penSettings.color, width, shape)] },
+            content: { kind: 'drawing', strokes: [makeStroke(cuid(), local, penSettings.brush, penSettings.color, width, shape, filled)] },
          });
          setActiveLayerId(id);
       },
@@ -973,6 +985,57 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    /**
+    * Shape pointerdown: the pan escape hatch first (middle / Space+drag), then a primary-button corner-anchored
+    * bbox drag - the press is corner A, the drag sets the opposite corner B. The box is constrained to equal
+    * axes (a circle/square) by default; Shift frees the aspect (an ellipse/rectangle), read live so it flips
+    * mid-drag. The base toggle (not Shift) picks the stored ellipse/rect. On release it commits (when the box
+    * clears the stray-click floor) and stays in the tool (sticky). Window listeners + the shared cleanup ref
+    * mirror the line gesture.
+    */
+   const handleShapePointerDown = (event: ReactPointerEvent) => {
+      event.stopPropagation();
+      if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button !== 0) return; // right-click falls through to the overlay's context menu (radial)
+      const start = cursorToWorld(event.clientX, event.clientY);
+      if (!start) return;
+      const ax = start.x;
+      const ay = start.y;
+      const shape: Stroke['shape'] = penSettings.shapeBase === 'circle' ? 'ellipse' : 'rect';
+      const filled = penSettings.shapeFilled;
+      setPenPreview([ax, ay, ax, ay]);
+
+      // The two box corners for the current cursor: equal axes unless Shift frees the aspect (read live).
+      const cornersAt = (clientX: number, clientY: number, shift: boolean) => {
+         const b = cursorToWorld(clientX, clientY);
+         if (!b) return null;
+         return shapeBoxCorners(ax, ay, b.x, b.y, !shift);
+      };
+      const onMove = (moveEvent: PointerEvent) => {
+         const corners = cornersAt(moveEvent.clientX, moveEvent.clientY, moveEvent.shiftKey);
+         if (corners) setPenPreview(corners);
+      };
+      const cleanup = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+         strokeCleanupRef.current = null;
+      };
+      const onUp = (upEvent: PointerEvent) => {
+         cleanup();
+         setPenPreview(null);
+         const corners = cornersAt(upEvent.clientX, upEvent.clientY, upEvent.shiftKey);
+         if (!corners) return;
+         // A press with no real drag (both extents under the floor) makes nothing, mirroring the line's dot guard.
+         if (Math.max(Math.abs(corners[2] - corners[0]), Math.abs(corners[3] - corners[1])) >= MIN_LINE_LENGTH) {
+            commitStroke(corners, shape, filled); // stays in the tool (sticky)
+         }
+      };
+      strokeCleanupRef.current = cleanup;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   };
+
+   /**
     * Commits a finished erase gesture: removes the collected strokes (per layer) as ONE undo step, then
     * clears the append target if the erase emptied the layer the pen was drawing on (so the next stroke
     * mints fresh instead of appending to a dead id).
@@ -1232,6 +1295,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       else if (pendingBoardAction === 'setTool:line') chooseDrawTool('line');
       else if (pendingBoardAction === 'setTool:freeformPolygon') chooseDrawTool('freeformPolygon');
       else if (pendingBoardAction === 'setTool:regularPolygon') chooseDrawTool('regularPolygon');
+      else if (pendingBoardAction === 'setTool:shape') chooseDrawTool('shape');
       else if (pendingBoardAction === 'setTool:eraser') chooseDrawTool('eraser');
       // A brush pick is a style change; if a non-drawing gesture owns the pointer (select/eraser), enter freehand first.
       else if (pendingBoardAction.startsWith('setBrush:')) { if (activeTool === 'select' || activeTool === 'eraser') chooseDrawTool('freehand'); setPenBrush(pendingBoardAction.slice('setBrush:'.length) as BrushKind); }
@@ -1250,6 +1314,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          if (CREATABLE_BY_KIND[kind]?.requiresPicker) openPortalPickerAtViewCenter();
          else createItemAt(kind, viewCenter);
       }
+      else if (pendingBoardAction === 'mergeSelectedLayers') handleLayerMerge();
       else if (pendingBoardAction.startsWith('embedNote:')) embedNoteAt(pendingBoardAction.slice('embedNote:'.length), viewCenter);
       clearBoardAction();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
@@ -1576,7 +1641,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             {penPreview && (
                <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
                   {/* Same paint path as the committed stroke: geometric for a shape gesture, freehand otherwise. */}
-                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : activeTool === 'regularPolygon' ? 'polygon' : undefined }} />
+                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : activeTool === 'regularPolygon' ? 'polygon' : activeTool === 'shape' ? (penSettings.shapeBase === 'circle' ? 'ellipse' : 'rect') : undefined, filled: activeTool === 'shape' ? penSettings.shapeFilled : undefined }} />
                </svg>
             )}
 
@@ -1639,7 +1704,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                       ? handlePolygonPointerDown
                       : activeTool === 'regularPolygon'
                         ? handleRegularPolygonPointerDown
-                        : handleFreehandPointerDown
+                        : activeTool === 'shape'
+                          ? handleShapePointerDown
+                          : handleFreehandPointerDown
             }
             onPointerMove={activeTool === 'freeformPolygon' ? handlePolygonPointerMove : undefined}
             onDoubleClick={activeTool === 'freeformPolygon' ? handlePolygonDoubleClick : undefined}
@@ -1665,7 +1732,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              to fit the title (capped at the canvas width) via the field's own auto-size mirror. */}
          <div
             onPointerDown={(event) => event.stopPropagation()}
-            className="absolute left-1/2 top-3 z-40 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center overflow-hidden rounded-md border border-border bg-card/90 p-1.5 shadow-sm backdrop-blur-sm"
+            style={{ marginLeft: layersPanelOpen ? -(LAYERS_PANEL_WIDTH / 2) : 0 }}
+            className={cn(
+               'absolute left-1/2 top-3 z-40 flex -translate-x-1/2 items-center overflow-hidden rounded-md border border-border bg-card/90 p-1.5 shadow-sm backdrop-blur-sm transition-[margin-left] duration-300 ease-out',
+               // Slide out of the layers panel's column and cap the width to the free region, like the tool bar.
+               layersPanelOpen ? 'max-w-[calc(100%-1.5rem-16rem)]' : 'max-w-[calc(100%-1.5rem)]',
+            )}
          >
             <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
          </div>
@@ -1726,7 +1798,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                       mode segment above and the view controls below stay visible in both modes. */}
                   {activeTool === 'select' ? (
                      <>
-                        <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+                        <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                         <BoardAddMenu
                            onAddItem={handleAddItem}
                            onOpenPortalPicker={openPortalPickerAtViewCenter}
@@ -1747,14 +1819,18 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                         newLayerArmed={newLayerArmed}
                         sides={polygonSides}
                         onSetSides={setPolygonSides}
+                        shapeBase={penSettings.shapeBase}
+                        onSetShapeBase={setShapeBase}
+                        shapeFilled={penSettings.shapeFilled}
+                        onSetShapeFilled={setShapeFilled}
                      />
                   )}
-                  <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   <BoardGridMenu grid={grid} onSelect={(type) => void actions.setGrid({ ...grid, type })} />
                   <ToolbarButton title={t('LayersPanel.toggle')} active={layersPanelOpen} onClick={toggleLayersPanel}>
                      <Layers className="h-4 w-4" />
                   </ToolbarButton>
-                  <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   {/* Positioning cluster: the recenter button, the center on contents button, the live zoom %, then the world point
                   the view is CENTERED on as two editable fields - typing + Enter recenters on that point (keeping zoom). */}
                   <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
@@ -1804,6 +1880,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                onCommitLabel={handleLayerCommitLabel}
                onReorder={handleLayerReorder}
                onToggleZoneCollapse={handleZoneCollapseToggle}
+               onMerge={handleLayerMerge}
             />
          )}
 
@@ -2106,7 +2183,7 @@ const BoardCoordinateField = forwardRef<HTMLInputElement, { prefix: string; labe
                      event.currentTarget.blur();
                   }
                }}
-               className="w-12 rounded bg-transparent px-1 py-0.5 text-center font-mono text-xs tabular-nums text-foreground outline-none hover:bg-muted/60 focus:bg-muted/50"
+               className="h-6 w-12 rounded bg-transparent px-1 text-center font-mono text-xs tabular-nums text-foreground outline-none hover:bg-muted/60 focus:bg-muted/50"
             />
          </label>
       );
@@ -2123,7 +2200,7 @@ function ToolbarButton({ title, onClick, active, children }: { title: string; on
          aria-label={title}
          aria-pressed={active}
          className={cn(
-            'flex shrink-0 items-center justify-center rounded p-2 text-foreground hover:bg-muted cursor-pointer',
+            'flex size-6 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted cursor-pointer',
             active && 'bg-muted ring-1 ring-primary/40',
          )}
       >
@@ -2143,7 +2220,7 @@ function ToolToggleButton({ title, label, active, onClick, children }: { title: 
          aria-label={title}
          aria-pressed={active}
          className={cn(
-            'flex shrink-0 items-center justify-center gap-1.5 rounded px-2.5 py-2 text-sm hover:bg-muted cursor-pointer',
+            'flex h-6 shrink-0 items-center justify-center gap-1.5 rounded px-2.5 text-sm hover:bg-muted cursor-pointer',
             active ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
          )}
       >

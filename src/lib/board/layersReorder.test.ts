@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { buildLayerRows, resolveLayerDrop, LAYERS_ROOT_END } from './layersReorder';
+import { buildLayerRows, isMergeableSelection, resolveLayerDrop, LAYERS_ROOT_END } from './layersReorder';
 
 // -- Type Imports --
 import type { BoardItem } from '@/lib/types/board';
@@ -95,5 +95,56 @@ describe('resolveLayerDrop', () => {
 
    it('is a no-op on a self drop', () => {
       expect(resolveLayerDrop(roots, 'a', 'a', 'before')).toBeNull();
+   });
+});
+
+describe('isMergeableSelection', () => {
+   function drawing(id: string, z: number, overrides: Partial<BoardItem> = {}): BoardItem {
+      return { id, kind: 'drawing', x: 0, y: 0, width: 10, height: 10, z, content: { kind: 'drawing', strokes: [{ id: `s-${id}`, brush: 'pen', color: null, width: 3, points: [0, 0, 1, 1] }] }, ...overrides };
+   }
+   function connection(id: string, z: number, from: string, to: string): BoardItem {
+      return { id, kind: 'connection', x: 0, y: 0, width: 0, height: 0, z, content: { kind: 'connection', from, to, style: { width: 2, color: '#000' } } };
+   }
+
+   it('accepts two adjacent drawings', () => {
+      const map = toMap([drawing('d1', 0), drawing('d2', 1)]);
+      expect(isMergeableSelection(map, new Set(['d1', 'd2']))).toBe(true);
+   });
+
+   it('accepts three adjacent drawings in a taller stack', () => {
+      const map = toMap([leaf('bottom', 0), drawing('d1', 1), drawing('d2', 2), drawing('d3', 3), leaf('top', 4)]);
+      expect(isMergeableSelection(map, new Set(['d1', 'd2', 'd3']))).toBe(true);
+   });
+
+   it('rejects a selection under two', () => {
+      const map = toMap([drawing('d1', 0), drawing('d2', 1)]);
+      expect(isMergeableSelection(map, new Set(['d1']))).toBe(false);
+      expect(isMergeableSelection(map, new Set())).toBe(false);
+   });
+
+   it('rejects a non-contiguous drawing run (a non-drawing sits between them)', () => {
+      const map = toMap([drawing('d1', 0), leaf('mid', 1), drawing('d2', 2)]);
+      expect(isMergeableSelection(map, new Set(['d1', 'd2']))).toBe(false);
+   });
+
+   it('rejects a selection containing a non-drawing', () => {
+      const map = toMap([drawing('d1', 0), leaf('note', 1)]);
+      expect(isMergeableSelection(map, new Set(['d1', 'note']))).toBe(false);
+   });
+
+   it('rejects when a selected id is a connection (never in the flatten)', () => {
+      const map = toMap([drawing('d1', 0), drawing('d2', 1), connection('c', 2, 'd1', 'd2')]);
+      expect(isMergeableSelection(map, new Set(['d1', 'c']))).toBe(false);
+   });
+
+   it('accepts two adjacent drawings inside the same zone', () => {
+      const map = toMap([zone('Z', 0), drawing('d1', 0, { zoneId: 'Z' }), drawing('d2', 1, { zoneId: 'Z' })]);
+      expect(isMergeableSelection(map, new Set(['d1', 'd2']))).toBe(true);
+   });
+
+   it('rejects two drawings split across a zone boundary (the zone header breaks the run)', () => {
+      // Flatten: root d1(0), zone Z(1), member d2. The zone header sits between them -> not contiguous.
+      const map = toMap([drawing('d1', 0), zone('Z', 1), drawing('d2', 0, { zoneId: 'Z' })]);
+      expect(isMergeableSelection(map, new Set(['d1', 'd2']))).toBe(false);
    });
 });

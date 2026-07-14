@@ -39,7 +39,7 @@ export function brushOpacity(brush: BrushKind): number {
  * active layer stays full and the others dim, so it must NOT fire for the eraser or in Select mode.
  */
 export function isAppendTool(tool: ActiveTool): boolean {
-   return tool === 'freehand' || tool === 'line' || tool === 'freeformPolygon' || tool === 'regularPolygon';
+   return tool === 'freehand' || tool === 'line' || tool === 'freeformPolygon' || tool === 'regularPolygon' || tool === 'shape';
 }
 
 /**
@@ -342,6 +342,81 @@ export function regularPolygonVertices(cx: number, cy: number, radius: number, s
    return out;
 }
 
+/** Ring resolution for a brush-outlined / hit-tested ellipse: the vertex count sampled around the curve. */
+export const SHAPE_ELLIPSE_SEGMENTS = 48;
+
+/**
+ * The two box corners for a bounding-box shape drag, anchored at A. Freed = A->B verbatim (an
+ * ellipse/rectangle). Constrained = equal axes (a circle/square): the side is the larger drag extent, and
+ * B keeps the cursor's quadrant off A (sign defaults to +1 on a zero extent). Returns `[ax,ay,bx,by]`.
+ */
+export function shapeBoxCorners(ax: number, ay: number, bx: number, by: number, constrained: boolean): number[] {
+   if (!constrained) return [ax, ay, bx, by];
+   const dx = bx - ax;
+   const dy = by - ay;
+   const side = Math.max(Math.abs(dx), Math.abs(dy));
+   const sx = dx < 0 ? -1 : 1;
+   const sy = dy < 0 ? -1 : 1;
+   return [ax, ay, ax + sx * side, ay + sy * side];
+}
+
+/** The min/max box over a two-corner `[ax,ay,bx,by]` list, so a reversed or re-based corner pair normalizes. */
+function shapeBox(points: number[]): { x0: number; y0: number; x1: number; y1: number } {
+   const ax = points[0] ?? 0;
+   const ay = points[1] ?? 0;
+   const bx = points[2] ?? ax;
+   const by = points[3] ?? ay;
+   return { x0: Math.min(ax, bx), y0: Math.min(ay, by), x1: Math.max(ax, bx), y1: Math.max(ay, by) };
+}
+
+/** The four box corners (clockwise from top-left) of a two-corner shape, flat `[x0,y0,...]`. */
+function shapeRectCorners(points: number[]): number[] {
+   const { x0, y0, x1, y1 } = shapeBox(points);
+   return [x0, y0, x1, y0, x1, y1, x0, y1];
+}
+
+/**
+ * The vertices of an ellipse sampled to `segments` points, flat `[x0,y0,...]`. Vertex i sits at angle
+ * `i*(2PI/segments)` on the axes `rx`/`ry` about the center. A zero radius collapses every vertex onto the
+ * center. The shared ring for the brush outline AND the eraser hit-test, so the two can never disagree.
+ */
+export function ellipseVertices(cx: number, cy: number, rx: number, ry: number, segments: number): number[] {
+   const out = new Array<number>(segments * 2);
+   const step = (2 * Math.PI) / segments;
+   for (let i = 0; i < segments; i++) {
+      const angle = i * step;
+      out[i * 2] = cx + rx * Math.cos(angle);
+      out[i * 2 + 1] = cy + ry * Math.sin(angle);
+   }
+   return out;
+}
+
+/** The ellipse ring of a two-corner shape, sampled at {@link SHAPE_ELLIPSE_SEGMENTS}. */
+function shapeEllipseRing(points: number[]): number[] {
+   const { x0, y0, x1, y1 } = shapeBox(points);
+   return ellipseVertices((x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2, (y1 - y0) / 2, SHAPE_ELLIPSE_SEGMENTS);
+}
+
+/**
+ * A crisp ellipse region path (two arcs) from a two-corner `[ax,ay,bx,by]` box. Reversed corners normalize
+ * to the same path. A fully degenerate box (both radii zero) yields no path.
+ */
+export function buildEllipsePath(points: number[]): string {
+   const { x0, y0, x1, y1 } = shapeBox(points);
+   const rx = (x1 - x0) / 2;
+   const ry = (y1 - y0) / 2;
+   if (rx === 0 && ry === 0) return '';
+   const cx = (x0 + x1) / 2;
+   const cy = (y0 + y1) / 2;
+   return `M ${cx - rx} ${cy} a ${rx} ${ry} 0 1 0 ${rx * 2} 0 a ${rx} ${ry} 0 1 0 ${-rx * 2} 0 Z`;
+}
+
+/** A crisp closed rectangle region path from a two-corner `[ax,ay,bx,by]` box. Reversed corners normalize. */
+export function buildRectPath(points: number[]): string {
+   const { x0, y0, x1, y1 } = shapeBox(points);
+   return `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`;
+}
+
 /** The shortest a Line may be, in world px: a shorter one is a click with no real drag, dropped as a stray dot. */
 export const MIN_LINE_LENGTH = 3;
 
@@ -351,28 +426,48 @@ export function isLineDegenerate(points: number[], min: number): boolean {
    return Math.hypot(points[2] - points[0], points[3] - points[1]) < min;
 }
 
-/** The paint a stroke resolves to: its path plus the fill/stroke attributes for one `<path>`. */
+/**
+ * The paint a stroke resolves to: the outline `<path>`'s attributes, plus an optional interior fill layer
+ * (`fillD`) drawn UNDER it - a filled brush shape needs both a solid interior and a nib-ribbon outline, two
+ * different paths. The fill uses the ink at `fillOpacity` (opaque for pen/brush, the highlighter's own alpha).
+ */
 export interface StrokePaint {
    d: string;
    fill: string;
    stroke: string;
    strokeWidth?: number;
    strokeOpacity?: number;
+   fillD?: string;
+   fillColor?: string;
+   fillOpacity?: number;
 }
 
 /** The stroke fields the paint helper reads (so a live preview can pass a transient, id-less stroke). */
-export type StrokePaintInput = Pick<Stroke, 'brush' | 'color' | 'width' | 'points' | 'shape'>;
+export type StrokePaintInput = Pick<Stroke, 'brush' | 'color' | 'width' | 'points' | 'shape' | 'filled'>;
 
 /**
- * Resolves a stroke to a single `<path>`'s paint, the ONE place the brush x shape matrix branches (so the
- * drawing item and the live preview render identically). A geometric brush stroke is a filled nib ribbon; a
- * geometric pen/highlighter is a crisp stroked polyline (the highlighter keeps its translucency); a freehand
- * brush stroke is the smoothed nib ribbon; a freehand pen/highlighter is the smoothed stroked path. A polygon
- * closes its path.
+ * Resolves a stroke to its outline `<path>`'s paint (plus an optional fill layer), the ONE place the brush x
+ * shape matrix branches (so the drawing item and the live preview render identically). A geometric brush
+ * stroke is a filled nib ribbon; a geometric pen/highlighter is a crisp stroked polyline (the highlighter
+ * keeps its translucency); a freehand brush stroke is the smoothed nib ribbon; a freehand pen/highlighter is
+ * the smoothed stroked path. A polygon closes its path. An ellipse/rect is a bounding-box region: the outline
+ * inherits the brush (a nib ribbon over the sampled ring / four corners, or a crisp stroked region), and a
+ * `filled` one adds an interior fill of the ink beneath it.
  */
 export function strokePaint(stroke: StrokePaintInput): StrokePaint {
-   const closed = stroke.shape === 'polygon';
    const ink = strokeColorToCss(stroke.color);
+   if (stroke.shape === 'ellipse' || stroke.shape === 'rect') {
+      const region = stroke.shape === 'ellipse' ? buildEllipsePath(stroke.points) : buildRectPath(stroke.points);
+      // The fill covers what's beneath at full ink opacity; the highlighter keeps its own translucency so a
+      // filled highlighter shape stays see-through rather than turning into an opaque block.
+      const fill = stroke.filled ? { fillD: region, fillColor: ink, fillOpacity: brushOpacity(stroke.brush) } : undefined;
+      if (stroke.brush === 'brush') {
+         const ring = stroke.shape === 'ellipse' ? shapeEllipseRing(stroke.points) : shapeRectCorners(stroke.points);
+         return { d: buildGeometricRibbonPath(ring, stroke.width, NIB_ANGLE, true), fill: ink, stroke: 'none', ...fill };
+      }
+      return { d: region, fill: 'none', stroke: ink, strokeWidth: stroke.width, strokeOpacity: brushOpacity(stroke.brush), ...fill };
+   }
+   const closed = stroke.shape === 'polygon';
    if (stroke.shape) {
       if (stroke.brush === 'brush') {
          return { d: buildGeometricRibbonPath(stroke.points, stroke.width, NIB_ANGLE, closed), fill: ink, stroke: 'none' };
@@ -385,10 +480,14 @@ export function strokePaint(stroke: StrokePaintInput): StrokePaint {
    return { d: buildStrokePath(stroke.points), fill: 'none', stroke: ink, strokeWidth: stroke.width, strokeOpacity: brushOpacity(stroke.brush) };
 }
 
-/** A fresh stroke over a flat point list, carrying its brush, ink, width, and (for a geometric stroke) shape. */
-export function makeStroke(id: string, points: number[], brush: BrushKind, color: string | null, width: number, shape?: Stroke['shape']): Stroke {
+/**
+ * A fresh stroke over a flat point list, carrying its brush, ink, width, and (for a geometric stroke) shape.
+ * `filled` is stamped only when true, so freehand/line/polygon strokes stay fill-less.
+ */
+export function makeStroke(id: string, points: number[], brush: BrushKind, color: string | null, width: number, shape?: Stroke['shape'], filled?: boolean): Stroke {
    const stroke: Stroke = { id, brush, color, width, points };
    if (shape) stroke.shape = shape;
+   if (filled) stroke.filled = true;
    return stroke;
 }
 
@@ -430,6 +529,33 @@ export function strokeHitsPoint(item: { x: number; y: number }, stroke: Stroke, 
    const reachSq = reach * reach;
    const localX = worldX - item.x;
    const localY = worldY - item.y;
+   // A bounding-box shape stores only its two diagonal corners, so the raw-polyline walk below would bite
+   // the diagonal, not the shape. Test the outline (box edges / sampled ring); a filled shape also erases
+   // anywhere in its interior.
+   if (stroke.shape === 'ellipse' || stroke.shape === 'rect') {
+      const { x0, y0, x1, y1 } = shapeBox(points);
+      const cx = (x0 + x1) / 2;
+      const cy = (y0 + y1) / 2;
+      const rx = (x1 - x0) / 2;
+      const ry = (y1 - y0) / 2;
+      if (stroke.filled) {
+         if (stroke.shape === 'rect') {
+            if (localX >= x0 && localX <= x1 && localY >= y0 && localY <= y1) return true;
+         } else if (rx > 0 && ry > 0) {
+            const nx = (localX - cx) / rx;
+            const ny = (localY - cy) / ry;
+            if (nx * nx + ny * ny <= 1) return true;
+         }
+      }
+      const ring = stroke.shape === 'ellipse' ? shapeEllipseRing(points) : shapeRectCorners(points);
+      const ringCount = ring.length / 2;
+      for (let i = 0; i < ringCount; i++) {
+         const a = i * 2;
+         const b = ((i + 1) % ringCount) * 2;
+         if (pointSegmentDistanceSq(localX, localY, ring[a], ring[a + 1], ring[b], ring[b + 1]) <= reachSq) return true;
+      }
+      return false;
+   }
    if (count === 1) {
       const ex = localX - points[0];
       const ey = localY - points[1];
@@ -550,4 +676,29 @@ export function recomputeDrawingBoxWithoutMany(item: DrawingBox, strokeIds: Set<
          ? remaining
          : remaining.map((stroke) => ({ ...stroke, points: rebasePoints(stroke.points, shiftX, shiftY) }));
    return { x: item.x + shiftX, y: item.y + shiftY, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY, strokes };
+}
+
+/**
+ * Folds several drawing layers into `target` as one merged layer. Each source layer's strokes are taken to
+ * WORLD coords (its ink position, origin-independent) and appended onto the target via
+ * {@link appendStrokeToDrawing} - which unions the box and re-bases every stroke to the merged origin for
+ * free - so the result's box is the union of every layer and its strokes stay in one local frame. `sources`
+ * MUST run bottom -> top so the merged stroke order matches the paint order (the target's own strokes sit
+ * lowest, then each source's in turn). Pure: the sources are read, never mutated.
+ */
+export function mergeDrawings(target: DrawingBox, sources: DrawingBox[]): DrawingBoxResult {
+   // Seed from the target's own box (re-fit to a tight origin - a no-op for the always-tight drawing box),
+   // then append every source stroke, in WORLD coords, onto the running result.
+   let result = recomputeDrawingBoxWithout({ x: target.x, y: target.y, content: target.content }, '');
+   for (const source of sources) {
+      for (const stroke of source.content.strokes) {
+         const world = rebasePoints(stroke.points, -source.x, -source.y);
+         result = appendStrokeToDrawing(
+            { x: result.x, y: result.y, content: { ...target.content, strokes: result.strokes } },
+            world,
+            (points) => ({ ...stroke, points }),
+         );
+      }
+   }
+   return result;
 }

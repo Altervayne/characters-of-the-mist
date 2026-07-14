@@ -28,6 +28,7 @@ export type BoardAction =
    | 'setTool:line'
    | 'setTool:freeformPolygon'
    | 'setTool:regularPolygon'
+   | 'setTool:shape'
    | 'setTool:eraser'
    | `setBrush:${BrushKind}`
    | 'saveItemToDrawer'
@@ -35,6 +36,7 @@ export type BoardAction =
    | `create:${CreatableKind}`
    | `setGrid:${BoardGridType}`
    | 'focusJumpToCoordinate'
+   | 'mergeSelectedLayers'
    | `embedNote:${string}`;
 
 interface AppGeneralState {

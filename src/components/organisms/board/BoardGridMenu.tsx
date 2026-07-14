@@ -72,7 +72,7 @@ export function BoardGridMenu({ grid, onSelect }: { grid: BoardGrid; onSelect: (
                type="button"
                title={t(`BoardView.${active.labelKey}`)}
                aria-label={t(`BoardView.${active.labelKey}`)}
-               className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
+               className="flex size-6 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted cursor-pointer"
             >
                <ActiveIcon className="h-4 w-4" />
             </button>

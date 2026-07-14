@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, MIN_LINE_LENGTH, NIB_ANGLE, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildGeometricRibbonPath, buildPolylinePath, buildStrokePath, isAppendTool, isLineDegenerate, makePenStroke, makeStroke, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, regularPolygonVertices, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
+import { BRUSH_MIN_WIDTH_FACTOR, DEFAULT_STROKE_WIDTH, HIGHLIGHTER_OPACITY, MIN_LINE_LENGTH, NIB_ANGLE, SHAPE_ELLIPSE_SEGMENTS, appendStrokeToDrawing, brushOpacity, buildBrushRibbonPath, buildEllipsePath, buildGeometricRibbonPath, buildPolylinePath, buildRectPath, buildStrokePath, ellipseVertices, isAppendTool, isLineDegenerate, makePenStroke, makeStroke, mergeDrawings, pointsBounds, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany, regularPolygonVertices, shapeBoxCorners, snapAngle, strokeColorToCss, strokeHitsPoint, strokePaint } from './drawingStyle';
 
 // -- Type Imports --
 import type { BrushKind, DrawingBoardContent, Stroke } from '@/lib/types/board';
@@ -83,6 +83,91 @@ describe('makeStroke', () => {
       expect(makeStroke('s1', [0, 0, 2, 2], 'pen', null, 3)).not.toHaveProperty('shape');
       expect(makeStroke('s2', [0, 0, 2, 2], 'pen', null, 3, 'line').shape).toBe('line');
       expect(makeStroke('s3', [0, 0, 2, 2, 4, 0], 'pen', null, 3, 'polygon').shape).toBe('polygon');
+   });
+
+   it('stamps filled only when true (an unfilled shape stays fill-less)', () => {
+      expect(makeStroke('s1', [0, 0, 2, 2], 'pen', null, 3, 'rect')).not.toHaveProperty('filled');
+      expect(makeStroke('s2', [0, 0, 2, 2], 'pen', null, 3, 'rect', false)).not.toHaveProperty('filled');
+      expect(makeStroke('s3', [0, 0, 2, 2], 'pen', null, 3, 'ellipse', true).filled).toBe(true);
+   });
+});
+
+describe('shapeBoxCorners', () => {
+   it('leaves the box A->B verbatim when freed', () => {
+      expect(shapeBoxCorners(2, 3, 12, 9, false)).toEqual([2, 3, 12, 9]);
+   });
+
+   it('makes an equal-sided box from the larger extent when constrained', () => {
+      // dx=10 dominates dy=6: the side is 10, so B lands at (12, 13) down-right of A.
+      expect(shapeBoxCorners(2, 3, 12, 9, true)).toEqual([2, 3, 12, 13]);
+   });
+
+   it('preserves the drag quadrant (an up-left drag stays up-left)', () => {
+      // dx=-8, dy=-4: side 8, B moves up and left of A.
+      expect(shapeBoxCorners(20, 20, 12, 16, true)).toEqual([20, 20, 12, 12]);
+   });
+
+   it('picks the dominant axis regardless of which is larger', () => {
+      // dy=14 dominates dx=5: the side is 14.
+      expect(shapeBoxCorners(0, 0, 5, 14, true)).toEqual([0, 0, 14, 14]);
+   });
+
+   it('collapses a zero drag to a zero box (sign defaults to +)', () => {
+      expect(shapeBoxCorners(5, 5, 5, 5, true)).toEqual([5, 5, 5, 5]);
+   });
+});
+
+describe('buildEllipsePath', () => {
+   it('draws a two-arc path with the box center and radii', () => {
+      // Box (0,0)-(20,10): center (10,5), rx 10, ry 5.
+      expect(buildEllipsePath([0, 0, 20, 10])).toBe('M 0 5 a 10 5 0 1 0 20 0 a 10 5 0 1 0 -20 0 Z');
+   });
+
+   it('normalizes reversed corners to the same path', () => {
+      expect(buildEllipsePath([20, 10, 0, 0])).toBe(buildEllipsePath([0, 0, 20, 10]));
+   });
+
+   it('yields no path for a fully degenerate (zero) box', () => {
+      expect(buildEllipsePath([7, 7, 7, 7])).toBe('');
+   });
+});
+
+describe('buildRectPath', () => {
+   it('draws a closed four-corner rectangle', () => {
+      expect(buildRectPath([0, 0, 20, 10])).toBe('M 0 0 L 20 0 L 20 10 L 0 10 Z');
+   });
+
+   it('normalizes reversed corners to the same path', () => {
+      expect(buildRectPath([20, 10, 0, 0])).toBe(buildRectPath([0, 0, 20, 10]));
+   });
+});
+
+describe('ellipseVertices', () => {
+   it('yields one vertex pair per segment', () => {
+      expect(ellipseVertices(0, 0, 1, 1, 8)).toHaveLength(16);
+   });
+
+   it('samples the unit circle at radius 1 on equal axes', () => {
+      const v = ellipseVertices(0, 0, 1, 1, 4);
+      // Vertex 0 at angle 0 -> (1,0); vertex 1 at 90deg -> (0,1).
+      expect(v[0]).toBeCloseTo(1);
+      expect(v[1]).toBeCloseTo(0);
+      expect(v[2]).toBeCloseTo(0);
+      expect(v[3]).toBeCloseTo(1);
+   });
+
+   it('honors differing axis radii', () => {
+      const v = ellipseVertices(0, 0, 10, 2, 4);
+      expect(v[0]).toBeCloseTo(10); // along x
+      expect(v[3]).toBeCloseTo(2); // along y
+   });
+
+   it('collapses every vertex onto the center at radius 0', () => {
+      const v = ellipseVertices(3, 4, 0, 0, 6);
+      for (let i = 0; i < v.length; i += 2) {
+         expect(v[i]).toBeCloseTo(3);
+         expect(v[i + 1]).toBeCloseTo(4);
+      }
    });
 });
 
@@ -269,6 +354,41 @@ describe('strokePaint', () => {
       const paint = strokePaint({ brush: 'pen', color: null, width: 3, points: [0, 0, 10, 10, 20, 0] });
       expect(paint.d.includes('C')).toBe(true); // smoothed bezier, not a crisp polyline
    });
+
+   it('paints an unfilled pen ellipse as a crisp stroked region with no fill layer', () => {
+      const paint = strokePaint({ brush: 'pen', color: '#00ff00', width: 4, points: [0, 0, 20, 10], shape: 'ellipse' });
+      expect(paint.d).toBe(buildEllipsePath([0, 0, 20, 10]));
+      expect(paint.fill).toBe('none');
+      expect(paint.stroke).toBe('#00ff00');
+      expect(paint.fillD).toBeUndefined();
+   });
+
+   it('adds a solid ink fill layer under a filled pen rect', () => {
+      const paint = strokePaint({ brush: 'pen', color: '#00ff00', width: 4, points: [0, 0, 20, 10], shape: 'rect', filled: true });
+      expect(paint.fillD).toBe(buildRectPath([0, 0, 20, 10]));
+      expect(paint.fillColor).toBe('#00ff00');
+      expect(paint.fillOpacity).toBe(1); // opaque - the fill covers what's beneath
+   });
+
+   it('keeps a filled highlighter shape translucent (its own alpha, not opaque)', () => {
+      const paint = strokePaint({ brush: 'highlighter', color: null, width: 8, points: [0, 0, 20, 20], shape: 'ellipse', filled: true });
+      expect(paint.fillOpacity).toBeCloseTo(HIGHLIGHTER_OPACITY);
+   });
+
+   it('paints a brush ellipse as a nib ribbon over the sampled ring', () => {
+      const paint = strokePaint({ brush: 'brush', color: null, width: 10, points: [0, 0, 20, 20], shape: 'ellipse' });
+      expect(paint.fill).toBe('var(--foreground)');
+      expect(paint.stroke).toBe('none');
+      expect(paint.d.includes('C')).toBe(false); // crisp geometric ribbon, not smoothed
+      expect(paint.fillD).toBeUndefined(); // unfilled: outline only
+   });
+
+   it('paints a filled brush rect as a ribbon outline over an interior fill', () => {
+      const paint = strokePaint({ brush: 'brush', color: null, width: 10, points: [0, 0, 20, 20], shape: 'rect', filled: true });
+      expect(paint.stroke).toBe('none'); // the ribbon is a fill, not a stroke
+      expect(paint.fillD).toBe(buildRectPath([0, 0, 20, 20]));
+      expect(paint.fillOpacity).toBe(1);
+   });
 });
 
 describe('brushOpacity', () => {
@@ -285,6 +405,7 @@ describe('isAppendTool', () => {
       expect(isAppendTool('line')).toBe(true);
       expect(isAppendTool('freeformPolygon')).toBe(true);
       expect(isAppendTool('regularPolygon')).toBe(true);
+      expect(isAppendTool('shape')).toBe(true);
    });
 
    it('is false for select and the eraser (no active-layer focus cue)', () => {
@@ -392,6 +513,39 @@ describe('strokeHitsPoint', () => {
       const open: Stroke = { ...square, shape: undefined };
       expect(strokeHitsPoint(origin, open, 100, 120, 8)).toBe(false);
    });
+
+   it('bites a rect on any edge, not just the stored diagonal, and misses its interior when unfilled', () => {
+      // Corners stored as the diagonal (0,0)-(40,40).
+      const rect: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points: [0, 0, 40, 40], shape: 'rect' };
+      expect(strokeHitsPoint(origin, rect, 120, 100, 8)).toBe(true); // local (20,0): top edge, off the diagonal
+      expect(strokeHitsPoint(origin, rect, 140, 120, 8)).toBe(true); // local (40,20): right edge
+      expect(strokeHitsPoint(origin, rect, 120, 120, 8)).toBe(false); // local (20,20): dead center, no outline
+   });
+
+   it('erases anywhere inside a FILLED rect', () => {
+      const rect: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points: [0, 0, 40, 40], shape: 'rect', filled: true };
+      expect(strokeHitsPoint(origin, rect, 120, 120, 8)).toBe(true); // local (20,20): interior now hits
+   });
+
+   it('bites an ellipse on its ring and misses its interior when unfilled', () => {
+      // Box (0,0)-(40,40): a circle of radius 20 centered at local (20,20).
+      const ellipse: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points: [0, 0, 40, 40], shape: 'ellipse' };
+      expect(strokeHitsPoint(origin, ellipse, 120, 100, 8)).toBe(true); // local (20,0): top of the ring
+      expect(strokeHitsPoint(origin, ellipse, 120, 120, 8)).toBe(false); // local (20,20): center, no fill
+   });
+
+   it('erases anywhere inside a FILLED ellipse', () => {
+      const ellipse: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points: [0, 0, 40, 40], shape: 'ellipse', filled: true };
+      expect(strokeHitsPoint(origin, ellipse, 120, 120, 8)).toBe(true); // local (20,20): interior now hits
+      // A corner of the bounding box sits OUTSIDE the ellipse, so it still misses even when filled.
+      expect(strokeHitsPoint(origin, ellipse, 102, 102, 2)).toBe(false); // local (2,2): outside the curve
+   });
+});
+
+describe('SHAPE_ELLIPSE_SEGMENTS', () => {
+   it('samples the ellipse ring at a smooth, even resolution', () => {
+      expect(SHAPE_ELLIPSE_SEGMENTS).toBeGreaterThanOrEqual(16);
+   });
 });
 
 describe('recomputeDrawingBoxWithoutMany', () => {
@@ -449,6 +603,54 @@ describe('appendStrokeToDrawing', () => {
          height: 30,
          strokes: [stroke('s1', [0, 0, 10, 10]), stroke('s2', [5, 5, 30, 30])],
       });
+   });
+});
+
+describe('mergeDrawings', () => {
+   it('unions the box and keeps the target\'s strokes first, then each source\'s, in order', () => {
+      const target = layer(0, 0, [stroke('t1', [0, 0, 10, 10])]);
+      // A far-away source (world (100,100)-(110,110)): the box grows to hold both, origin unchanged.
+      const source = layer(100, 100, [stroke('s1', [0, 0, 10, 10])]);
+      const merged = mergeDrawings(target, [source]);
+      expect(merged).toEqual({
+         x: 0,
+         y: 0,
+         width: 110,
+         height: 110,
+         strokes: [stroke('t1', [0, 0, 10, 10]), stroke('s1', [100, 100, 110, 110])],
+      });
+   });
+
+   it('shifts the origin up/left and re-bases every stroke when a source reaches above/left', () => {
+      const target = layer(0, 0, [stroke('t1', [0, 0, 10, 10])]);
+      const source = layer(-20, -20, [stroke('s1', [0, 0, 5, 5])]); // world (-20,-20)-(-15,-15)
+      const merged = mergeDrawings(target, [source]);
+      expect(merged).toEqual({
+         x: -20,
+         y: -20,
+         width: 30,
+         height: 30,
+         strokes: [stroke('t1', [20, 20, 30, 30]), stroke('s1', [0, 0, 5, 5])],
+      });
+      // The ink is world-stable: local + merged origin recovers each stroke's original world coords.
+      expect(rebasePoints(merged.strokes[0].points, -merged.x, -merged.y)).toEqual([0, 0, 10, 10]);
+      expect(rebasePoints(merged.strokes[1].points, -merged.x, -merged.y)).toEqual([-20, -20, -15, -15]);
+   });
+
+   it('folds several sources bottom -> top, preserving stroke stacking order', () => {
+      const target = layer(0, 0, [stroke('t1', [0, 0, 1, 1])]);
+      const lower = layer(0, 0, [stroke('a1', [0, 0, 1, 1])]);
+      const upper = layer(0, 0, [stroke('b1', [0, 0, 1, 1])]);
+      const merged = mergeDrawings(target, [lower, upper]);
+      expect(merged.strokes.map((s) => s.id)).toEqual(['t1', 'a1', 'b1']);
+      expect({ x: merged.x, y: merged.y, width: merged.width, height: merged.height }).toEqual({ x: 0, y: 0, width: 1, height: 1 });
+   });
+
+   it('carries every stroke of a multi-stroke source', () => {
+      const target = layer(0, 0, [stroke('t1', [0, 0, 4, 4])]);
+      const source = layer(0, 0, [stroke('s1', [0, 0, 2, 2]), stroke('s2', [1, 1, 3, 3])]);
+      const merged = mergeDrawings(target, [source]);
+      expect(merged.strokes.map((s) => s.id)).toEqual(['t1', 's1', 's2']);
    });
 });
 

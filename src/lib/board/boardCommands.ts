@@ -1,6 +1,6 @@
 // -- Local Imports --
 import { BoardNotFoundError } from './boardErrors';
-import { appendStrokeToDrawing, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany } from './drawingStyle';
+import { appendStrokeToDrawing, mergeDrawings, rebasePoints, recomputeDrawingBoxWithout, recomputeDrawingBoxWithoutMany } from './drawingStyle';
 import {
    addItem,
    deleteItem,
@@ -338,6 +338,42 @@ export function createRemoveStrokesCommand(id: string, strokeIds: string[]): Boa
             content = { ...content, strokes: next.strokes };
          }
          await updateItem(id, { x, y, width, height, content });
+      },
+   };
+}
+
+/**
+ * Merge several drawing layers into `targetId` as one step: folds every source layer's strokes into the
+ * target (growing its box to the union) and writes the target's new origin/size/content TOGETHER, so undo
+ * reverts the box shift with the content. Captures the target's full before-state {x,y,width,height,content}
+ * on first `do()` and restores it on undo (mirrors {@link createAppendStrokeCommand}'s co-write; unlike
+ * {@link createUpdateItemContentCommand}, which would leave the shifted origin behind). Recomputes the fold
+ * live each `do()` reading the sources - they still exist when this runs (it's ordered before their deletes
+ * in the compound, and undo restores them), so redo folds identically. The source deletes ride the same
+ * compound (see the store); this command only rewrites the target. No-ops if the target is missing or no
+ * longer a drawing.
+ */
+export function createMergeDrawingsCommand(targetId: string, sourceIds: string[]): BoardCommand {
+   let before: { x: number; y: number; width: number; height: number; content: BoardItemContent } | null = null;
+   return {
+      label: 'merge-drawings',
+      async do() {
+         const target = await getItem(targetId);
+         if (!target) throw new BoardNotFoundError(`Board item not found: ${targetId}`);
+         if (target.content.kind !== 'drawing') return;
+         if (!before) before = { x: target.x, y: target.y, width: target.width, height: target.height, content: target.content };
+         // Read every source live (they precede their own deletes in the compound); non-drawing / vanished
+         // sources are skipped, so a raced delete can't corrupt the fold.
+         const sources: { x: number; y: number; content: typeof target.content }[] = [];
+         for (const id of sourceIds) {
+            const source = await getItem(id);
+            if (source && source.content.kind === 'drawing') sources.push({ x: source.x, y: source.y, content: source.content });
+         }
+         const merged = mergeDrawings({ x: target.x, y: target.y, content: target.content }, sources);
+         await updateItem(targetId, { x: merged.x, y: merged.y, width: merged.width, height: merged.height, content: { ...target.content, strokes: merged.strokes } });
+      },
+      async undo() {
+         if (before) await updateItem(targetId, before);
       },
    };
 }

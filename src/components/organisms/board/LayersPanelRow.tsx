@@ -38,8 +38,8 @@ interface LayersPanelRowProps {
    collapsed?: boolean;
    /** Where the drop insertion line sits relative to this row, or null when it isn't the drop target. */
    insertion: 'before' | 'after' | null;
-   /** Single-click: select this item only (no pan). */
-   onSelect: (id: string) => void;
+   /** Click: select this row alone, or toggle it in the multi-selection (additive = Shift/Ctrl). */
+   onSelect: (id: string, additive: boolean) => void;
    /** Double-click: select and center the canvas on this item. */
    onActivate: (id: string) => void;
    /** Row hover -> highlight the element on the canvas (canvas hover does NOT flow back here). */
@@ -95,7 +95,7 @@ export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, coll
          )}
          <div
             ref={rowRef}
-            onClick={() => onSelect(item.id)}
+            onClick={(event) => onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey)}
             onDoubleClick={() => onActivate(item.id)}
             onPointerEnter={() => onHover(item.id)}
             onPointerLeave={() => onHover(null)}
@@ -148,7 +148,11 @@ export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, coll
                      title={item.label?.trim() || fallback}
                      aria-label={t('LayersPanel.renameLabel')}
                      onChange={(event) => setText(event.target.value)}
-                     onClick={(event) => event.stopPropagation()}
+                     // A plain click lands in the field to rename (stop it selecting); a Shift/Ctrl-click instead
+                     // bubbles to the row so the label area still joins a multi-selection (mousedown-prevent keeps
+                     // the field from stealing focus on that modified click).
+                     onMouseDown={(event) => { if (event.shiftKey || event.ctrlKey || event.metaKey) event.preventDefault(); }}
+                     onClick={(event) => { if (!(event.shiftKey || event.ctrlKey || event.metaKey)) event.stopPropagation(); }}
                      onDoubleClick={(event) => event.stopPropagation()}
                      onBlur={commit}
                      onKeyDown={(event) => {

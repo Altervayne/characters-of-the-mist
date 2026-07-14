@@ -57,7 +57,7 @@ export function BoardAddMenu({ onAddItem, onOpenPortalPicker, onAddTracker, onPi
                type="button"
                title={t('BoardView.addElement')}
                aria-label={t('BoardView.addElement')}
-               className="flex shrink-0 items-center gap-1.5 rounded px-2.5 py-2 text-sm font-medium text-foreground hover:bg-muted cursor-pointer"
+               className="flex h-6 shrink-0 items-center gap-1.5 rounded px-2.5 text-sm font-medium text-foreground hover:bg-muted cursor-pointer"
             >
                <Plus className="h-4 w-4" />
                <span className="whitespace-nowrap">{t('BoardView.addElement')}</span>

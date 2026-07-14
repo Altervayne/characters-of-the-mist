@@ -69,7 +69,9 @@ export function boardItemDisplayName(item: BoardItem, t: TFunction): string {
    const content = item.content;
    switch (content.kind) {
       case 'drawing':
-         return typeof content.seq === 'number' ? t('LayersPanel.layerName', { n: content.seq }) : t('LayersPanel.kinds.drawing');
+         // Number.isFinite (not `typeof === 'number'`) so a NaN seq from an old build reads as the plain
+         // kind noun, never "Layer NaN".
+         return Number.isFinite(content.seq) ? t('LayersPanel.layerName', { n: content.seq }) : t('LayersPanel.kinds.drawing');
       case 'zone':
          // A zone's name lives on its content (the canvas header edits it there), so the group node reads it too.
          return content.label?.trim() || t('BoardView.addZone');

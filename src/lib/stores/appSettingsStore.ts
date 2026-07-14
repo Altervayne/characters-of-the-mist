@@ -55,8 +55,9 @@ interface AppSettingsState {
    pendingDiceRoll: boolean;
    // The board drawing tool's settings, persisted so the last brush/color/size survive a reload. `color` and
    // `width` are BOTH shared across brushes (null color = the adaptive foreground, frozen to a hex only on
-   // pick), so switching brush keeps the current ink and size. Applied at stroke creation.
-   penSettings: { brush: BrushKind; color: string | null; width: number };
+   // pick), so switching brush keeps the current ink and size. `shapeBase` and `shapeFilled` drive the Shape
+   // tool (circle vs square base, and whether its interior is filled). Applied at stroke creation.
+   penSettings: { brush: BrushKind; color: string | null; width: number; shapeBase: 'circle' | 'square'; shapeFilled: boolean };
    actions: {
       setTheme: (theme: ActiveTheme) => void;
       setThemeMode: (mode: ThemeMode) => void;
@@ -93,6 +94,8 @@ interface AppSettingsState {
       setPenBrush: (brush: BrushKind) => void;
       setPenColor: (color: string | null) => void;
       setPenWidth: (width: number) => void;
+      setShapeBase: (base: 'circle' | 'square') => void;
+      setShapeFilled: (filled: boolean) => void;
    };
 }
 
@@ -121,7 +124,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          hasSeenDrawerMenuHint: false,
          diceTray: { content: { dice: [], modifiers: [] }, isOpen: false },
          pendingDiceRoll: false,
-         penSettings: { brush: 'pen', color: null, width: DEFAULT_STROKE_WIDTH },
+         penSettings: { brush: 'pen', color: null, width: DEFAULT_STROKE_WIDTH, shapeBase: 'circle', shapeFilled: false },
          actions: {
             setTheme: (theme) => set({ theme }),
             setThemeMode: (mode) => set({ themeMode: mode }),
@@ -188,6 +191,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setPenColor: (color) => set((state) => ({ penSettings: { ...state.penSettings, color } })),
             // One shared size across brushes (carries when the brush changes, like the shared ink).
             setPenWidth: (width) => set((state) => ({ penSettings: { ...state.penSettings, width } })),
+            setShapeBase: (base) => set((state) => ({ penSettings: { ...state.penSettings, shapeBase: base } })),
+            setShapeFilled: (filled) => set((state) => ({ penSettings: { ...state.penSettings, shapeFilled: filled } })),
          },
       }),
       {
