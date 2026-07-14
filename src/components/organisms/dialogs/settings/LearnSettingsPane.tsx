@@ -34,8 +34,9 @@ export function LearnSettingsPane() {
             </Button>
          </div>
 
-         {/* Seam for the tutorial list (start/replay + a done/updated status). It plugs in here once the
-             tutorial engine lands; until then nothing renders, so no half-built rows leak to the user. */}
+         {/* Seam for the tutorial list (start/replay + a done/updated status), the target of the palette's
+             openTutorials deep-link. It plugs in here once the tutorial engine lands; until then nothing
+             renders, so no half-built rows leak to the user. */}
       </div>
    );
 }

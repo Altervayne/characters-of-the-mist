@@ -11,7 +11,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Info, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -75,7 +75,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { setSideBySideView, toggleDiceTray, toggleNoteOutline, toggleLayersPanel, toggleNavigator } = useAppSettingsActions();
    const { setThemesOpen, setSettingsOpen, setSettingsInitialSection, requestBoardAction } = useAppGeneralStateActions();
 
-   // Deep-link the hub to a section (What's new / About), mirroring the sidebar doors.
+   // Deep-link the hub to a section (What's new / About / Learn), mirroring the sidebar doors.
    const openSettingsSection = (section: string) => {
       setSettingsInitialSection(section);
       setSettingsOpen(true);
@@ -155,6 +155,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'openSettings', scope: 'global', label: t('CommandPalette.commands.openSettings'), keywords: ['settings', 'preferences', 'config'], icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
       { id: 'openWhatsNew', scope: 'global', label: t('CommandPalette.commands.openWhatsNew'), keywords: ['what', 'new', 'patch', 'notes', 'release', 'changelog', 'update'], icon: Sparkles, group: t('CommandPalette.groups.general'), action: () => openSettingsSection('whatsNew') },
       { id: 'openAbout', scope: 'global', label: t('CommandPalette.commands.openAbout'), keywords: ['about', 'info', 'license', 'credits', 'version'], icon: Info, group: t('CommandPalette.groups.general'), action: () => openSettingsSection('about') },
+      { id: 'openTutorials', scope: 'global', label: t('CommandPalette.commands.openTutorials'), keywords: ['tutorials', 'learn', 'help', 'onboarding', 'guide', 'teach'], icon: GraduationCap, group: t('CommandPalette.groups.general'), action: () => openSettingsSection('learn') },
       { id: 'importFile', scope: 'global', label: t('CommandPalette.commands.importFile'), keywords: ['import', 'file', 'load', 'open', '.cotm'], icon: Import, group: t('CommandPalette.groups.general'), action: onImportFile },
       // Undo/Redo route themselves (drawer / board / character), so they show in any workspace.
       { id: 'undo', scope: 'global', label: t('CommandPalette.commands.undo'), keywords: ['undo', 'revert', 'back'], icon: Undo2, group: t('CommandPalette.groups.general'), action: undoActiveContext },
