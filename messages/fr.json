@@ -1821,6 +1821,32 @@
          "skip": "Passer"
       }
    },
+   "DesktopOnboarding": {
+      "interface": {
+         "title": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "tabs": {
+            "title": "[TO COMPLETE]",
+            "description": "[TO COMPLETE]"
+         },
+         "drawer": {
+            "title": "[TO COMPLETE]",
+            "description": "[TO COMPLETE]"
+         },
+         "board": {
+            "title": "[TO COMPLETE]",
+            "description": "[TO COMPLETE]"
+         },
+         "notes": {
+            "title": "[TO COMPLETE]",
+            "description": "[TO COMPLETE]"
+         },
+         "commandPalette": {
+            "title": "[TO COMPLETE]",
+            "description": "[TO COMPLETE]"
+         }
+      }
+   },
    "MobileTutorial": {
       "intro": {
          "title": "Bienvenue dans Characters of the Mist !",

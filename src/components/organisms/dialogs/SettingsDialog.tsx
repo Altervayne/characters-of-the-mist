@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 
 // -- Icon Imports --
-import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, HardDrive, Palette } from 'lucide-react';
+import { Sun, Moon, BookOpen, FlipHorizontal, AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, PlayCircle, Lock, UnlockIcon, Navigation, Menu, HardDrive, Palette, RotateCcw } from 'lucide-react';
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
@@ -139,7 +139,7 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
    const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode } = useAppSettingsStore();
    const { setTheme: setColorTheme, setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode } = useAppSettingsActions();
-   const { setThemesOpen } = useAppGeneralStateActions();
+   const { setThemesOpen, setDesktopOnboardingOpen } = useAppGeneralStateActions();
 
    // The quick selector: presets + customs (so any theme is one click away without opening the manager).
    const themeOptions = [
@@ -213,6 +213,12 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
 
    const handleLocaleChange = (newLocale: string) => {
       i18n.changeLanguage(newLocale);
+   };
+
+   // Replay the first-run onboarding on demand; close settings first so it isn't left behind the wash.
+   const handleReplayOnboarding = () => {
+      onOpenChange(false);
+      setDesktopOnboardingOpen(true);
    };
 
    
@@ -376,6 +382,16 @@ export function SettingsDialog({ isOpen, onOpenChange, onStartTour }: SettingsDi
                         <span className="truncate">{t('SettingsDialog.migration.button')}</span>
                      </Button>
                   </div>
+
+                  {!isMobile && (
+                     <div className="grid grid-cols-3 items-center gap-4">
+                        <Label className="text-left">{t('SettingsDialog.onboarding')}</Label>
+                        <Button onClick={handleReplayOnboarding} title={t('SettingsDialog.onboardingButton')} className="col-span-2 cursor-pointer min-w-0">
+                           <RotateCcw className="mr-2 h-4 w-4 shrink-0" />
+                           <span className="truncate">{t('SettingsDialog.onboardingButton')}</span>
+                        </Button>
+                     </div>
+                  )}
 
                   <div className="grid grid-cols-3 items-center gap-4">
                      <Label className="text-left">{t('SettingsDialog.tutorial')}</Label>

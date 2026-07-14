@@ -18,13 +18,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 // -- Component Imports --
 import { MobileBottomSheet } from '@/components/mobile/shared/MobileBottomSheet';
 import { EscapeHatchBanner } from '@/components/mobile/menu/EscapeHatchBanner';
+import { ThemeSwatch } from '@/components/molecules/theme/ThemeSwatch';
 
 // -- Icon Imports --
 import { ChevronLeft, Check, MoreHorizontal, Palette, Copy, Plus, Pencil, Trash2, Upload, Download } from 'lucide-react';
 
 // -- Utils and Store Imports --
 import { cn } from '@/lib/utils';
-import { PRESET_LABELS, PRESET_THEMES, customThemeClass, customThemeIdFromClass } from '@/lib/theme/themeTokens';
+import { PRESET_LABELS, PRESET_THEMES, customThemeClass, customThemeIdFromClass, resolveThemeTokens } from '@/lib/theme/themeTokens';
 import { exportCustomTheme, importFromFile } from '@/lib/utils/export-import';
 import { useThemeImport } from '@/lib/theme/useThemeImport';
 import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
@@ -49,17 +50,6 @@ interface ThemeEntry {
    source: { light: TokenSet; dark: TokenSet; radius: string; paper: PaperSet };
 }
 
-/** A mini three-stripe preview of a theme's background / primary / accent, so a theme reads at a glance. */
-function ThemeSwatch({ tokens }: { tokens: TokenSet }) {
-   return (
-      <span className="flex h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border">
-         <span className="flex-1" style={{ backgroundColor: tokens.background }} />
-         <span className="flex-1" style={{ backgroundColor: tokens.primary }} />
-         <span className="flex-1" style={{ backgroundColor: tokens.accent }} />
-      </span>
-   );
-}
-
 interface MobileThemesProps {
    onBack?: () => void;
    onOpenEditor?: () => void;
@@ -72,9 +62,6 @@ export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps
    const customThemes = useAppSettingsStore((state) => state.customThemes);
    const { setTheme, updateCustomTheme, deleteCustomTheme } = useAppSettingsActions();
    const createCustomFrom = useCreateCustomTheme();
-
-   // Row previews follow the app's current appearance, so a theme reads as it actually renders right now.
-   const swatchMode = resolvedMode === 'dark' ? 'dark' : 'light';
 
    const [renamingId, setRenamingId] = useState<string | null>(null);
    const [renameDraft, setRenameDraft] = useState('');
@@ -159,7 +146,8 @@ export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps
                isActive ? 'border-primary bg-accent text-accent-foreground' : 'border-border hover:bg-muted',
             )}
          >
-            <ThemeSwatch tokens={entry.source[swatchMode]} />
+            {/* Row previews follow the app's current appearance, so a theme reads as it actually renders right now. */}
+            <ThemeSwatch tokens={resolveThemeTokens(entry.source, resolvedMode)} />
             <span className="min-w-0 flex-1 truncate text-base font-medium">{entry.label}</span>
             {isActive && <Check className="h-5 w-5 shrink-0 text-primary" />}
             <DropdownMenu>

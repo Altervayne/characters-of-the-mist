@@ -48,6 +48,8 @@ interface AppSettingsState {
    areGestureHintsEnabled: boolean;
    hasSeenTrackerSelectHint: boolean;
    hasSeenDrawerMenuHint: boolean;
+   /** Whether first-run onboarding has been completed or skipped. The single first-run gate for both platforms. */
+   hasCompletedOnboarding: boolean;
    // The app-wide dice tray (a bottom sliding panel, reachable from any tab). Persisted, no undo: edits
    // and rolls write straight to `content`, so the configured dice/modifiers and the last roll survive a
    // reload. `isOpen` is the panel's slide state.
@@ -90,6 +92,7 @@ interface AppSettingsState {
       setGestureHintsEnabled: (enabled: boolean) => void;
       setHasSeenTrackerSelectHint: (seen: boolean) => void;
       setHasSeenDrawerMenuHint: (seen: boolean) => void;
+      setHasCompletedOnboarding: (completed: boolean) => void;
       setDiceTrayContent: (content: DiceTrayContent) => void;
       toggleDiceTray: () => void;
       setDiceTrayOpen: (isOpen: boolean) => void;
@@ -127,6 +130,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          areGestureHintsEnabled: true,
          hasSeenTrackerSelectHint: false,
          hasSeenDrawerMenuHint: false,
+         hasCompletedOnboarding: false,
          diceTray: { content: { dice: [], modifiers: [] }, isOpen: false },
          pendingDiceRoll: false,
          penSettings: { brush: 'pen', color: null, width: DEFAULT_STROKE_WIDTH, shapeBase: 'circle', shapeFilled: false },
@@ -185,6 +189,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setGestureHintsEnabled: (enabled) => set({ areGestureHintsEnabled: enabled }),
             setHasSeenTrackerSelectHint: (seen) => set({ hasSeenTrackerSelectHint: seen }),
             setHasSeenDrawerMenuHint: (seen) => set({ hasSeenDrawerMenuHint: seen }),
+            setHasCompletedOnboarding: (completed) => set({ hasCompletedOnboarding: completed }),
             // No undo: edits and rolls both write straight to content; the persist middleware saves it.
             setDiceTrayContent: (content) => set((state) => ({ diceTray: { ...state.diceTray, content } })),
             toggleDiceTray: () => set((state) => ({ diceTray: { ...state.diceTray, isOpen: !state.diceTray.isOpen } })),
@@ -224,6 +229,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             areGestureHintsEnabled: state.areGestureHintsEnabled,
             hasSeenTrackerSelectHint: state.hasSeenTrackerSelectHint,
             hasSeenDrawerMenuHint: state.hasSeenDrawerMenuHint,
+            hasCompletedOnboarding: state.hasCompletedOnboarding,
             diceTray: state.diceTray,
             penSettings: state.penSettings
          }),

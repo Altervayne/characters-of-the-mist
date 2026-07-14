@@ -55,7 +55,7 @@ interface AppGeneralState {
    isThemesOpen: boolean;
    isInfoOpen: boolean;
    isCardDialogOpen: boolean;
-   isWelcomeDialogOpen: boolean;
+   isDesktopOnboardingOpen: boolean;
    isLegacyDataDialogOpen: boolean;
    isMobileOnboardingOpen: boolean;
    isMobileTutorialOpen: boolean;
@@ -99,7 +99,7 @@ interface AppGeneralState {
       setThemesOpen: (isOpen: boolean) => void;
       setInfoOpen: (isOpen: boolean) => void;
       setCardDialogOpen: (isOpen: boolean) => void;
-      setWelcomeDialogOpen: (isOpen: boolean) => void;
+      setDesktopOnboardingOpen: (isOpen: boolean) => void;
       setLegacyDataDialogOpen: (isOpen: boolean) => void;
       setMobileOnboardingOpen: (isOpen: boolean) => void;
       setMobileTutorialOpen: (isOpen: boolean) => void;
@@ -146,7 +146,7 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    isThemesOpen: false,
    isInfoOpen: false,
    isCardDialogOpen: false,
-   isWelcomeDialogOpen: false,
+   isDesktopOnboardingOpen: false,
    isLegacyDataDialogOpen: false,
    isMobileOnboardingOpen: false,
    isMobileTutorialOpen: false,
@@ -185,7 +185,7 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setThemesOpen: (isOpen) => set({ isThemesOpen: isOpen }),
       setInfoOpen: (isOpen) => set({ isInfoOpen: isOpen }),
       setCardDialogOpen: (isOpen) => set({ isCardDialogOpen: isOpen }),
-      setWelcomeDialogOpen: (isOpen) => set({ isWelcomeDialogOpen: isOpen }),
+      setDesktopOnboardingOpen: (isOpen) => set({ isDesktopOnboardingOpen: isOpen }),
       setLegacyDataDialogOpen: (isOpen) => set({ isLegacyDataDialogOpen: isOpen }),
       setMobileOnboardingOpen: (isOpen) => set({ isMobileOnboardingOpen: isOpen }),
       setMobileTutorialOpen: (isOpen) => set({ isMobileTutorialOpen: isOpen }),

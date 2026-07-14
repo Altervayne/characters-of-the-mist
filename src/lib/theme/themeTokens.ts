@@ -5,6 +5,9 @@
  * colors are NOT chrome and live only in global.css - never here.
  */
 
+// -- Type Imports --
+import type { ResolvedMode } from '@/lib/theme/themeMode';
+
 /** The 19 chrome color tokens every theme defines, in editor / injection / duplicate order. */
 export const CHROME_TOKEN_KEYS = [
    'background', 'foreground',
@@ -273,6 +276,19 @@ export const PRESET_THEMES: Record<string, { light: TokenSet; dark: TokenSet; ra
       },
    },
 };
+
+/** A theme's palettes for both modes - what a swatch (or a duplicate) reads from. */
+export interface ThemeTokenSource {
+   light: TokenSet;
+   dark: TokenSet;
+   radius: string;
+   paper: PaperSet;
+}
+
+/** The palette a theme renders as under the given light/dark mode, so a preview shows its real colors right now. */
+export function resolveThemeTokens(source: ThemeTokenSource, resolvedMode: ResolvedMode): TokenSet {
+   return resolvedMode === 'dark' ? source.dark : source.light;
+}
 
 /**
  * Resolves an active theme value to the class to put on `<html>` and the CSS for the managed style element.

@@ -1988,6 +1988,32 @@
          "skip": "Skip"
       }
    },
+   "DesktopOnboarding": {
+      "interface": {
+         "title": "Find your way around",
+         "description": "A quick look at the desktop workspace",
+         "tabs": {
+            "title": "Tabs",
+            "description": "Open characters, boards and notes side by side and switch between them from the tab strip."
+         },
+         "drawer": {
+            "title": "The Drawer",
+            "description": "Organize characters and components in a full file system, then drag them onto your sheet."
+         },
+         "board": {
+            "title": "Boards",
+            "description": "Arrange characters, notes and freeform sketches together on an infinite canvas."
+         },
+         "notes": {
+            "title": "Notes",
+            "description": "Write rich markdown notes with live preview, links and mentions to tie your world together."
+         },
+         "commandPalette": {
+            "title": "Command Palette",
+            "description": "Press Ctrl+K to run any command straight from the keyboard."
+         }
+      }
+   },
    "MobileTutorial": {
       "intro": {
          "title": "Welcome to Characters of the Mist!",

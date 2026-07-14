@@ -20,9 +20,15 @@ import { Check, Copy, Download, GripVertical, MoreHorizontal, Pencil, Plus, Tras
 // -- DnD Component Imports --
 import { Sortable, DragStaticWrapper } from '@/components/dnd';
 
+// -- Component Imports --
+import { ThemeSwatch } from '@/components/molecules/theme/ThemeSwatch';
+
+// -- Hook Imports --
+import { useThemeMode } from '@/hooks/useThemeMode';
+
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { PRESET_LABELS, PRESET_THEMES, customThemeClass } from '@/lib/theme/themeTokens';
+import { PRESET_LABELS, PRESET_THEMES, customThemeClass, resolveThemeTokens } from '@/lib/theme/themeTokens';
 import { useCreateCustomTheme } from '@/lib/theme/useCreateCustomTheme';
 import { restrictToParentElement, restrictToVerticalAxis } from '@/lib/theme/themeReorderModifiers';
 import { DRAWER_MENU_TRIGGER_CLASS } from '@/components/molecules/drawer/drawerMenuTrigger';
@@ -65,6 +71,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 export function ThemeManager() {
    const { t } = useTranslation();
+   const { resolvedMode } = useThemeMode();
    const activeTheme = useAppSettingsStore((state) => state.theme);
    const customThemes = useAppSettingsStore((state) => state.customThemes);
    const { setTheme, updateCustomTheme, deleteCustomTheme, reorderCustomThemes } = useAppSettingsActions();
@@ -197,10 +204,11 @@ export function ThemeManager() {
                   <GripVertical className="h-4 w-4" />
                </button>
             )}
-            {/* `pr-8` keeps the truncated name clear of the overlaid menu trigger. */}
+            {/* Leading swatch, so a theme reads at a glance; resolved for the app's current light/dark mode. */}
+            <ThemeSwatch tokens={resolveThemeTokens(entry.source, resolvedMode)} className={cn('h-6 w-6', dragHandle ? 'ml-1' : 'ml-3')} />
             {/* Runs to the row's right edge and truncates there; the hover `...` trigger sits over the end
                 with its frosted backing. */}
-            <span className={cn('min-w-0 flex-1 truncate py-2 text-sm pr-1', dragHandle ? 'pl-1' : 'pl-3')}>{entry.label}</span>
+            <span className="min-w-0 flex-1 truncate py-2 pl-2 pr-1 text-sm">{entry.label}</span>
 
             <DropdownMenu>
                <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
