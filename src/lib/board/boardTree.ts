@@ -19,7 +19,7 @@ import type { BoardItem } from '@/lib/types/board';
  * The id of `item`'s live zone parent, or `null` when it has none. A zone-kind or connection item is
  * never a member; a `zoneId` that names a missing item or a non-zone is treated as no parent.
  */
-function zoneParentId(item: BoardItem, items: Record<string, BoardItem>): string | null {
+export function zoneParentId(item: BoardItem, items: Record<string, BoardItem>): string | null {
    if (item.kind === 'zone' || item.kind === 'connection') return null;
    const parentId = item.zoneId;
    if (!parentId) return null;
@@ -28,18 +28,24 @@ function zoneParentId(item: BoardItem, items: Record<string, BoardItem>): string
 }
 
 /** Orders a scope: by stored z, then by id so equal-z items (legacy data) stay deterministic. */
-function byZThenId(a: BoardItem, b: BoardItem): number {
+export function byZThenId(a: BoardItem, b: BoardItem): number {
    if (a.z !== b.z) return a.z - b.z;
    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
+/** A root item plus, when it is a zone, its members ascending in the zone's scope (empty otherwise). */
+export interface BoardTreeNode {
+   item: BoardItem;
+   members: BoardItem[];
+}
+
 /**
- * The scope-relative paint order (bottom -> top) for `items`: root items by ascending z, each zone
- * immediately followed by its members (ascending z within the zone). Connections are excluded (they
- * paint in their own SVG band). Works on ANY stored z - contiguity is derived here, not required of the
- * data - so the order is correct before and after the one-time {@link repairBoardZ}.
+ * The scope-relative tree (bottom -> top): root items by ascending z, each zone carrying its own members
+ * (ascending z within the zone). Connections are excluded (they paint in their own SVG band). This is the
+ * grouped shape the layers panel renders; {@link flattenBoardOrder} is its depth-first flattening, so the
+ * two never disagree about order.
  */
-export function flattenBoardOrder(items: Record<string, BoardItem>): BoardItem[] {
+export function buildBoardTree(items: Record<string, BoardItem>): BoardTreeNode[] {
    const membersByZone = new Map<string, BoardItem[]>();
    const roots: BoardItem[] = [];
    for (const item of Object.values(items)) {
@@ -54,17 +60,42 @@ export function flattenBoardOrder(items: Record<string, BoardItem>): BoardItem[]
       }
    }
    roots.sort(byZThenId);
+   return roots.map((root) => {
+      if (root.kind !== 'zone') return { item: root, members: [] };
+      const members = membersByZone.get(root.id) ?? [];
+      members.sort(byZThenId);
+      return { item: root, members };
+   });
+}
+
+/**
+ * The scope-relative paint order (bottom -> top) for `items`: root items by ascending z, each zone
+ * immediately followed by its members (ascending z within the zone). Connections are excluded (they
+ * paint in their own SVG band). Works on ANY stored z - contiguity is derived here, not required of the
+ * data - so the order is correct before and after the one-time {@link repairBoardZ}.
+ */
+export function flattenBoardOrder(items: Record<string, BoardItem>): BoardItem[] {
    const order: BoardItem[] = [];
-   for (const root of roots) {
-      order.push(root);
-      if (root.kind !== 'zone') continue;
-      const members = membersByZone.get(root.id);
-      if (members) {
-         members.sort(byZThenId);
-         order.push(...members);
-      }
+   for (const node of buildBoardTree(items)) {
+      order.push(node.item);
+      order.push(...node.members);
    }
    return order;
+}
+
+/**
+ * The z for a new item landing at the FRONT of its destination scope: `max(z) + 1` among the items sharing
+ * `zoneId` (root scope when `null`), else 0. Keeps a fresh item's z dense within its scope rather than at a
+ * global maximum, so a new zone member ranks just above its siblings instead of at a sparse global peak.
+ * Connections carry no paint rank, so they never count toward a scope's front.
+ */
+export function nextScopeZ(items: Record<string, BoardItem>, zoneId: string | null): number {
+   let max = -Infinity;
+   for (const item of Object.values(items)) {
+      if (item.kind === 'connection') continue;
+      if ((item.zoneId ?? null) === zoneId) max = Math.max(max, item.z);
+   }
+   return max === -Infinity ? 0 : max + 1;
 }
 
 /**

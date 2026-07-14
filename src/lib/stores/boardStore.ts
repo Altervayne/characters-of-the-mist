@@ -20,7 +20,7 @@ import {
    createUpdateItemContentCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
-import { repairBoardZ } from '@/lib/board/boardTree';
+import { byZThenId, repairBoardZ } from '@/lib/board/boardTree';
 import { appendStrokeToDrawing, recomputeDrawingBoxWithoutMany } from '@/lib/board/drawingStyle';
 import { zoneContaining } from '@/lib/board/zoneMembership';
 
@@ -117,6 +117,13 @@ export interface BoardState {
       setItemLabel: (id: string, label: string | undefined) => Promise<void>;
       /** Sets (or clears with `null`) an item's zone membership as one undo step. */
       setItemZone: (id: string, zoneId: string | null) => Promise<void>;
+      /**
+       * Moves an item to `dropIndex` within its destination scope (`newZoneId`, or `null` for root) as ONE
+       * undo step: a membership change (when the scope differs) plus a dense renumber of the DESTINATION scope
+       * to realize the index. The source scope is left with a harmless gap (z is scope-relative). Drives the
+       * layers-panel drag-reorder; the panel resolves a drop to `(scope, index)` and calls this.
+       */
+      reorderItem: (id: string, newZoneId: string | null, dropIndex: number) => Promise<void>;
       /** Raises an item to the front of ITS scope (`max(z) + 1` among siblings sharing its `zoneId`). */
       bringToFront: (id: string) => Promise<void>;
       /** Drops an item to the back of ITS scope (`min(z) - 1` among siblings sharing its `zoneId`). */
@@ -400,6 +407,11 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                for (const id of reevaluateIds) {
                   const item = items[id];
                   if (!item || item.kind === 'zone') continue;
+                  // A member whose own zone is moving with it shifts by the same delta, so their spatial
+                  // relationship - and thus its membership - can't change; skip the recompute. This also
+                  // protects a COLLAPSED zone's members: zoneContaining ignores a collapsed frame, so
+                  // recomputing would wrongly orphan them when a marquee grabs the zone and its contents.
+                  if (item.zoneId && moveSet.has(item.zoneId)) continue;
                   const moved = { id: item.id, x: item.x + delta.x, y: item.y + delta.y, width: item.width, height: item.height };
                   const newZone = zoneContaining(moved, zonesAfter);
                   if (newZone !== (item.zoneId ?? null)) zoneChanges.push({ id, zoneId: newZone });
@@ -565,6 +577,48 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, zoneId: zoneId ?? undefined } } }));
                await runItemMutation(createSetItemZoneCommand(id, zoneId));
+            },
+
+            reorderItem: async (id, newZoneId, dropIndex) => {
+               const target = get().items[id];
+               if (!target || target.kind === 'connection') return;
+               const newZone = newZoneId ?? null;
+               const currentZone = target.zoneId ?? null;
+
+               // The destination scope's final order: its current members (minus the target) by z, with the
+               // target spliced in at the clamped drop index. A dense 0..k renumber of THAT order realizes the
+               // drop; the source scope is untouched (a gap is harmless under scope-relative z).
+               const siblings = Object.values(get().items)
+                  .filter((item) => item.kind !== 'connection' && item.id !== id && (item.zoneId ?? null) === newZone)
+                  .sort(byZThenId);
+               const clamped = Math.max(0, Math.min(dropIndex, siblings.length));
+               const ordered = [...siblings.slice(0, clamped), target, ...siblings.slice(clamped)];
+               const zChanges = ordered
+                  .map((item, index) => ({ id: item.id, z: index }))
+                  .filter((change) => get().items[change.id]!.z !== change.z);
+
+               const zoneChanged = newZone !== currentZone;
+               if (!zoneChanged && zChanges.length === 0) return; // a drop in place: nothing to write
+
+               markDirty();
+               set((state) => {
+                  const next = { ...state.items };
+                  if (zoneChanged) {
+                     const existing = next[id];
+                     if (existing) next[id] = { ...existing, zoneId: newZone ?? undefined };
+                  }
+                  for (const change of zChanges) {
+                     const existing = next[change.id];
+                     if (existing) next[change.id] = { ...existing, z: change.z };
+                  }
+                  return { items: next };
+               });
+               // One compound: the membership change (if any) THEN the destination renumber, so undo reverts
+               // both together. Keeps setItemZone/setItemZ dumb - the membership<->z coupling lives only here.
+               await runItemMutation(createCompoundCommand([
+                  ...(zoneChanged ? [createSetItemZoneCommand(id, newZone)] : []),
+                  ...zChanges.map((change) => createSetItemZCommand(change.id, change.z)),
+               ]));
             },
 
             bringToFront: async (id) => {

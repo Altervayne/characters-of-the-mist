@@ -8,6 +8,7 @@ import { getItem } from '@/lib/drawer/drawerRepository';
 import { embeddedSpecForDrawerItem } from './embedDrawerItem';
 import { getActiveBoardStore } from './boardStoreRegistry';
 import { zoneContaining } from './zoneMembership';
+import { nextScopeZ } from './boardTree';
 
 // -- Type Imports --
 import type { EmbeddedBoardSpec } from './embedDrawerItem';
@@ -78,11 +79,12 @@ export async function spawnDrawerItemBeside(drawerItemId: string, originItemId: 
          return;
       }
 
-      const items = Object.values(store.getState().items);
-      const z = items.length > 0 ? Math.max(...items.map((existing) => existing.z)) + 1 : 0;
+      const itemMap = store.getState().items;
+      const items = Object.values(itemMap);
       const placement = besidePlacement(origin, spec, items);
       const zoneItems = items.filter((existing) => existing.kind === 'zone');
       const zoneId = zoneContaining({ id: '', ...placement }, zoneItems) ?? undefined;
+      const z = nextScopeZ(itemMap, zoneId ?? null);
       const newItem: BoardItem = { id: cuid(), kind: spec.kind, ...placement, z, zoneId, content: spec.content };
       await store.getState().actions.addItem(newItem);
    } finally {

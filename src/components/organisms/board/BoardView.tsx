@@ -20,7 +20,7 @@ import { hexTile } from '@/lib/board/hexGrid';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
 import { zoneContaining, zoneContentMinSize } from '@/lib/board/zoneMembership';
 import { connectionsZIndex, groupToolbarZIndex, itemZIndex } from '@/lib/board/boardLayering';
-import { flattenBoardOrder } from '@/lib/board/boardTree';
+import { flattenBoardOrder, nextScopeZ } from '@/lib/board/boardTree';
 import { ERASER_RADIUS, isAppendTool, isLineDegenerate, makeStroke, MIN_LINE_LENGTH, pointsBounds, rebasePoints, regularPolygonVertices, snapAngle, strokeHitsPoint } from '@/lib/board/drawingStyle';
 import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem } from '@/lib/board/embedDrawerItem';
 import { getItem } from '@/lib/drawer/drawerRepository';
@@ -415,6 +415,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    /** Layers panel: commit a row rename (or clear the label with `undefined`) as one undoable edit. */
    const handleLayerCommitLabel = useCallback((id: string, label: string | undefined) => void actions.setItemLabel(id, label), [actions]);
 
+   /** Layers panel: a drag-reorder lands the item at `(zoneId, index)` within its destination scope. */
+   const handleLayerReorder = useCallback((id: string, zoneId: string | null, index: number) => void actions.reorderItem(id, zoneId, index), [actions]);
+
+   /** Layers panel: the group chevron toggles the zone's collapse - the SAME content field the canvas edits. */
+   const handleZoneCollapseToggle = useCallback((id: string) => {
+      const zone = store.getState().items[id];
+      if (zone?.content.kind !== 'zone') return;
+      void actions.updateItemContent(id, { ...zone.content, collapsed: !zone.content.collapsed });
+   }, [store, actions]);
+
    /**
     * Starts a group move from an item's move grip (canvas-owned, like the connect drag).
     * The whole selection moves if the grabbed item is in it; otherwise it selects just that
@@ -684,8 +694,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          const bounds = pointsBounds(worldPoints);
          if (!bounds) return;
          const local = rebasePoints(worldPoints, bounds.minX, bounds.minY);
-         const zValues = Object.values(liveItems).map((item) => item.z);
-         const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
+         // A freehand layer spawns at root (never auto-joins a zone); land it at the front of the root scope.
+         const z = nextScopeZ(liveItems, null);
          const id = cuid();
          void actions.addItem({
             id,
@@ -1040,13 +1050,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * registry's empty factory; everything else about the placement/z/zone/select path is identical.
     */
    const createItemAt = (kind: CreatableKind, worldCenter: Point, contentOverride?: BoardItemContent) => {
-      const zValues = Object.values(items).map((item) => item.z);
-      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = CREATABLE_BY_KIND[kind].defaultSize;
       const id = cuid();
       const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
       // A non-zone item created over a zone joins it (same center-in-rectangle rule as a drop).
       const zoneId = kind === 'zone' ? undefined : zoneContaining(placement, zoneItems) ?? undefined;
+      const z = nextScopeZ(items, zoneId ?? null);
       void actions.addItem({ ...placement, kind, z, zoneId, content: contentOverride ?? CREATABLE_BY_KIND[kind].makeContent() });
       actions.setSelection([id]);
    };
@@ -1101,12 +1110,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * embed host (a NEUTRAL synthetic character), so it's app-themed and editable with no extra wiring.
     */
    const createTrackerAt = (trackerType: TrackerType, worldCenter: Point) => {
-      const zValues = Object.values(items).map((item) => item.z);
-      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const size = EMBEDDED_TRACKER_SIZES[trackerType];
       const id = cuid();
       const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
       const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+      const z = nextScopeZ(items, zoneId ?? null);
       void actions.addItem({ ...placement, kind: 'tracker', z, zoneId, content: { kind: 'tracker', mode: 'copy', data: emptyTracker(trackerType) } });
       actions.setSelection([id]);
    };
@@ -1119,12 +1127,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const createCardAt = (game: GameSystem, options: CreateCardOptions, worldCenter: Point) => {
       const card = buildCard(game, options);
       if (!card) return;
-      const zValues = Object.values(items).map((item) => item.z);
-      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const { width, height } = EMBEDDED_CARD_SIZE;
       const id = cuid();
       const placement = { id, x: worldCenter.x - width / 2, y: worldCenter.y - height / 2, width, height };
       const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+      const z = nextScopeZ(items, zoneId ?? null);
       void actions.addItem({ ...placement, kind: 'card', z, zoneId, content: { kind: 'card', mode: 'copy', data: card } });
       actions.setSelection([id]);
    };
@@ -1138,12 +1145,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const createChallengeAt = (worldCenter: Point) => {
       const card = buildCard('LEGENDS', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 });
       if (!card) return;
-      const zValues = Object.values(items).map((item) => item.z);
-      const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
       const { width, height } = EMBEDDED_CARD_SIZE;
       const id = cuid();
       const placement = { id, x: worldCenter.x - width / 2, y: worldCenter.y - height / 2, width, height };
       const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+      const z = nextScopeZ(items, zoneId ?? null);
       void actions.addItem({ ...placement, kind: 'card', z, zoneId, content: { kind: 'card', mode: 'copy', data: { ...card, expanded: true } } });
       actions.setSelection([id]);
    };
@@ -1158,11 +1164,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          if (!item) return;
          const spec = embeddedSpecForDrawerItem(item);
          if (!spec) return;
-         const zValues = Object.values(items).map((existing) => existing.z);
-         const z = zValues.length > 0 ? Math.max(...zValues) + 1 : 0;
          const id = cuid();
          const placement = { id, x: worldCenter.x - spec.width / 2, y: worldCenter.y - spec.height / 2, width: spec.width, height: spec.height };
          const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
+         const z = nextScopeZ(items, zoneId ?? null);
          void actions.addItem({ ...placement, kind: spec.kind, z, zoneId, content: spec.content });
          actions.setSelection([id]);
       });
@@ -1746,23 +1751,23 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   )}
                   <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
                   <BoardGridMenu grid={grid} onSelect={(type) => void actions.setGrid({ ...grid, type })} />
+                  <ToolbarButton title={t('LayersPanel.toggle')} active={layersPanelOpen} onClick={toggleLayersPanel}>
+                     <Layers className="h-4 w-4" />
+                  </ToolbarButton>
+                  <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+                  {/* Positioning cluster: the recenter button, the center on contents button, the live zoom %, then the world point
+                  the view is CENTERED on as two editable fields - typing + Enter recenters on that point (keeping zoom). */}
                   <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
                      <Maximize className="h-4 w-4" />
                   </ToolbarButton>
                   <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport(originViewport())}>
                      <Crosshair className="h-4 w-4" />
                   </ToolbarButton>
-                  <ToolbarButton title={t('LayersPanel.toggle')} active={layersPanelOpen} onClick={toggleLayersPanel}>
-                     <Layers className="h-4 w-4" />
-                  </ToolbarButton>
-                  <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
-                  {/* Positioning cluster: the live zoom %, then the world point the view is CENTERED on as two
-                      editable fields - typing + Enter recenters on that point (keeping zoom). */}
                   <div className="flex shrink-0 items-center gap-1.5 px-0.5">
-                     <span className="text-xs tabular-nums text-muted-foreground mr-1.5">{Math.round(viewport.zoom * 100)}%</span>
+                     <span className="text-xs tabular-nums text-muted-foreground mr-2 ml-1">{Math.round(viewport.zoom * 100)}%</span>
                      {/* Separates the read-only zoom from the editable view-center fields, so the % never reads as an input. */}
-                     <BoardCoordinateField ref={jumpXRef} prefix="x" label={t('BoardView.coordinateX')} value={Math.round(viewCenter.x)} onCommit={(x) => jumpToViewCenter({ x, y: Math.round(viewCenter.y) })} />
-                     <BoardCoordinateField prefix="y" label={t('BoardView.coordinateY')} value={Math.round(viewCenter.y)} onCommit={(y) => jumpToViewCenter({ x: Math.round(viewCenter.x), y })} />
+                     <BoardCoordinateField ref={jumpXRef} prefix="x:" label={t('BoardView.coordinateX')} value={Math.round(viewCenter.x)} onCommit={(x) => jumpToViewCenter({ x, y: Math.round(viewCenter.y) })} />
+                     <BoardCoordinateField prefix="y:" label={t('BoardView.coordinateY')} value={Math.round(viewCenter.y)} onCommit={(y) => jumpToViewCenter({ x: Math.round(viewCenter.x), y })} />
                   </div>
                </div>
             </div>
@@ -1797,6 +1802,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                onActivate={handleLayerActivate}
                onHover={actions.setHovered}
                onCommitLabel={handleLayerCommitLabel}
+               onReorder={handleLayerReorder}
+               onToggleZoneCollapse={handleZoneCollapseToggle}
             />
          )}
 
@@ -2081,7 +2088,7 @@ const BoardCoordinateField = forwardRef<HTMLInputElement, { prefix: string; labe
 
       return (
          <label className="flex items-center gap-0.5">
-            <span aria-hidden className="font-mono text-xs text-muted-foreground">{prefix}</span>
+            <span aria-hidden className="font-mono text-md text-muted-foreground">{prefix}</span>
             <input
                ref={ref}
                type="text"

@@ -11,6 +11,7 @@ import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
 
 // -- Utils Imports --
 import { trackerBoardItemForMention } from '@/lib/board/mintTrackerFromMention';
+import { nextScopeZ } from '@/lib/board/boardTree';
 
 // -- Type Imports --
 import type { MentionSegment } from '@/lib/challenge/parseMentions';
@@ -39,7 +40,8 @@ export function useBoardMentionMint(host: HostRect): (segment: MentionSegment) =
       const spec = trackerBoardItemForMention(segment, host, cascadeRef.current);
       if (!boardStore || !spec) return;
       cascadeRef.current += 1;
-      const z = Object.values(boardStore.getState().items).reduce((max, entry) => Math.max(max, entry.z), -1) + 1;
+      // A minted tracker spawns at root (beside its host), so it lands at the front of the root scope.
+      const z = nextScopeZ(boardStore.getState().items, null);
       void boardStore.getState().actions.addItem({ id: cuid(), z, ...spec });
       if (segment.type !== 'text') toast.success(t('BoardView.mentionAdded', { name: segment.name }));
    }, [host, t]);

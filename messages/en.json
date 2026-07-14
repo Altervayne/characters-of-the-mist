@@ -312,6 +312,7 @@
       "toggle": "Toggle layers panel",
       "empty": "No elements on this board yet",
       "renameLabel": "Rename layer",
+      "reorder": "Drag to reorder",
       "layerName": "Layer {{n}}",
       "untitledNote": "Untitled note",
       "untitledText": "Untitled text",

@@ -31,6 +31,7 @@ import { getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
 // -- Board Imports --
 import { screenToWorld } from '@/lib/board/boardCoordinates';
 import { zoneContaining } from '@/lib/board/zoneMembership';
+import { nextScopeZ } from '@/lib/board/boardTree';
 import { embeddedSpecForDrawerItem, embeddedSpecForComponent, characterElementSpec } from '@/lib/board/embedDrawerItem';
 import { importBoard } from '@/lib/board/boardRepository';
 import { importNote } from '@/lib/notes/noteRepository';
@@ -92,9 +93,9 @@ function boardDropPlacement(boardStore: BoardStore, dropPointer: { x: number; y:
    const rect = clip?.getBoundingClientRect() ?? null;
    const screenPoint = dropPointer && rect ? dropPointer : rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : null;
    const world = rect && screenPoint ? screenToWorld(screenPoint.x, screenPoint.y, { left: rect.left, top: rect.top }, viewport) : { x: 0, y: 0 };
-   const z = Object.values(items).reduce((max, item) => Math.max(max, item.z), -1) + 1;
    const placement = { id: cuid(), x: world.x - size.width / 2, y: world.y - size.height / 2, width: size.width, height: size.height };
    const zoneId = zoneContaining(placement, Object.values(items).filter((item) => item.kind === 'zone')) ?? undefined;
+   const z = nextScopeZ(items, zoneId ?? null);
    return { ...placement, z, zoneId };
 }
 

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // -- Local Imports --
 import { drawerDatabase } from '@/lib/drawer/drawerDatabase';
 import * as repository from '@/lib/board/boardRepository';
+import { flattenBoardOrder } from '@/lib/board/boardTree';
 import { createBoardStore } from './boardStore';
 import { useAppGeneralStateStore } from './appGeneralStateStore';
 import { DRAWER_ROOT_PARENT_ID } from '@/lib/drawer/drawerRecords';
@@ -389,6 +390,115 @@ describe('scope-relative z', () => {
 });
 
 // ==================
+//  reorderItem (layers-panel drag): one compound per drop, scope-aware
+// ==================
+
+describe('reorderItem', () => {
+   /** The scope-relative paint order (bottom -> top) as ids, the invariant the panel + canvas share. */
+   function order(store: ReturnType<typeof createBoardStore>): string[] {
+      return flattenBoardOrder(store.getState().items).map((item) => item.id);
+   }
+
+   /** A zone record for seeding (bounds don't matter here - membership is set explicitly via zoneId). */
+   function zoneRec(id: string, boardId: string, z: number): BoardItemRecord {
+      return makeRecord(id, boardId, z, { kind: 'zone', content: { kind: 'zone', collapsed: false } });
+   }
+
+   it('reorders within the root stack as ONE undo step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([makeRecord('a', board.id, 0), makeRecord('b', board.id, 1), makeRecord('c', board.id, 2)]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Send c to the back of the root scope.
+      await store.getState().actions.reorderItem('c', null, 0);
+      expect(order(store)).toEqual(['c', 'a', 'b']);
+      expect(store.getState().canUndo).toBe(true);
+
+      // A single undo reverts the whole reorder (no per-op spam).
+      await store.getState().actions.undo();
+      expect(order(store)).toEqual(['a', 'b', 'c']);
+      expect(store.getState().canUndo).toBe(false);
+   });
+
+   it('reorders within a zone as ONE undo step, keeping the band contiguous', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         zoneRec('Z', board.id, 0),
+         makeRecord('m1', board.id, 0, { zoneId: 'Z' }),
+         makeRecord('m2', board.id, 1, { zoneId: 'Z' }),
+         makeRecord('root', board.id, 1),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Move m1 to the front of its zone (above m2).
+      await store.getState().actions.reorderItem('m1', 'Z', 2);
+      expect(order(store)).toEqual(['Z', 'm2', 'm1', 'root']);
+      expect(store.getState().items['m1'].zoneId).toBe('Z');
+
+      await store.getState().actions.undo();
+      expect(order(store)).toEqual(['Z', 'm1', 'm2', 'root']);
+      expect(store.getState().canUndo).toBe(false);
+   });
+
+   it('drags a member OUT of its zone: clears membership + reinserts at root as ONE undo step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         zoneRec('Z', board.id, 0),
+         makeRecord('m', board.id, 0, { zoneId: 'Z' }),
+         makeRecord('r', board.id, 1),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Drop the member at root, behind r (index of r among root siblings [Z, r] = 1).
+      await store.getState().actions.reorderItem('m', null, 1);
+      expect(store.getState().items['m'].zoneId).toBeUndefined();
+      expect(order(store)).toEqual(['Z', 'm', 'r']);
+      expect((await repository.getItem('m'))?.zoneId).toBeUndefined();
+
+      // One undo restores BOTH the membership and the z.
+      await store.getState().actions.undo();
+      expect(store.getState().items['m'].zoneId).toBe('Z');
+      expect(order(store)).toEqual(['Z', 'm', 'r']);
+      expect(store.getState().canUndo).toBe(false);
+   });
+
+   it('drags an item INTO a zone: sets membership + lands at the target index as ONE undo step', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([
+         zoneRec('Z', board.id, 0),
+         makeRecord('m', board.id, 0, { zoneId: 'Z' }),
+         makeRecord('x', board.id, 5),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Join Z at its front (above the one member): index = sibling count (1).
+      await store.getState().actions.reorderItem('x', 'Z', 1);
+      expect(store.getState().items['x'].zoneId).toBe('Z');
+      expect(order(store)).toEqual(['Z', 'm', 'x']);
+
+      await store.getState().actions.undo();
+      expect(store.getState().items['x'].zoneId).toBeUndefined();
+      expect(store.getState().canUndo).toBe(false);
+   });
+
+   it('is a no-op (no undo entry) when the drop changes nothing', async () => {
+      const board = await repository.createBoard('Board');
+      await repository.bulkPutItems([makeRecord('a', board.id, 0), makeRecord('b', board.id, 1)]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // a is already at the back of root; dropping it there writes nothing.
+      await store.getState().actions.reorderItem('a', null, 0);
+      expect(store.getState().canUndo).toBe(false);
+      expect(store.getState().hasUnsavedChanges).toBe(false);
+   });
+});
+
+// ==================
 //  Reactive canUndo / canRedo
 // ==================
 
@@ -728,6 +838,23 @@ describe('zone membership (move/delete capture)', () => {
       await store.getState().actions.undo(); // ONE step
       expect(await repository.getItem('Z1')).toMatchObject({ x: 0, y: 0 });
       expect(await repository.getItem('m')).toMatchObject({ x: 50, y: 50, zoneId: 'Z1' });
+   });
+
+   it('a collapsed zone moved with a directly-reevaluated member keeps the member in the zone', async () => {
+      const board = await repository.createBoard('Board');
+      // A marquee grabs a COLLAPSED zone AND its member, so the member is reevaluated directly (not
+      // merely carried). zoneContaining ignores a collapsed frame, so without the "moving with its own
+      // zone" guard the recompute would orphan the member. It must stay in Z.
+      await repository.bulkPutItems([
+         makeRecord('Z', board.id, 0, { kind: 'zone', x: 0, y: 0, width: 400, height: 400, content: { kind: 'zone', collapsed: true } }),
+         makeRecord('m', board.id, 1, { x: 100, y: 100, zoneId: 'Z' }),
+      ]);
+      const store = createBoardStore();
+      await store.getState().actions.hydrate(board.id);
+
+      // Move the zone + its member together; 'm' is in reevaluateIds (a marquee selected it directly).
+      await store.getState().actions.moveItems(['Z', 'm'], { x: 50, y: 50 }, ['m']);
+      expect(await repository.getItem('m')).toMatchObject({ x: 150, y: 150, zoneId: 'Z' });
    });
 
    it('deleting a zone frees its members (they remain, zoneId cleared) as one undo step', async () => {

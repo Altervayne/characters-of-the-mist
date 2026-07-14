@@ -70,6 +70,9 @@ export function boardItemDisplayName(item: BoardItem, t: TFunction): string {
    switch (content.kind) {
       case 'drawing':
          return typeof content.seq === 'number' ? t('LayersPanel.layerName', { n: content.seq }) : t('LayersPanel.kinds.drawing');
+      case 'zone':
+         // A zone's name lives on its content (the canvas header edits it there), so the group node reads it too.
+         return content.label?.trim() || t('BoardView.addZone');
       case 'note':
          return t('LayersPanel.untitledNote');
       case 'text':

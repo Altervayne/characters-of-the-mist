@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { flattenBoardOrder, repairBoardZ } from './boardTree';
+import { buildBoardTree, flattenBoardOrder, nextScopeZ, repairBoardZ } from './boardTree';
 
 // -- Type Imports --
 import type { BoardItem } from '@/lib/types/board';
@@ -84,6 +84,46 @@ describe('flattenBoardOrder', () => {
    it('surfaces a dangling member (zone deleted) at root by its z', () => {
       const items = [leaf('a', 0), leaf('orphan', 5, { zoneId: 'gone' }), leaf('b', 1)];
       expect(orderIds(items)).toEqual(['a', 'b', 'orphan']);
+   });
+});
+
+describe('buildBoardTree', () => {
+   it('groups each zone with its members ascending, roots ascending', () => {
+      const tree = buildBoardTree(toMap([leaf('top', 5), zone('Z', 1), leaf('m1', 0, { zoneId: 'Z' }), leaf('m2', 1, { zoneId: 'Z' }), leaf('bottom', 0)]));
+      expect(tree.map((node) => node.item.id)).toEqual(['bottom', 'Z', 'top']);
+      expect(tree.find((node) => node.item.id === 'Z')!.members.map((m) => m.id)).toEqual(['m1', 'm2']);
+   });
+
+   it('gives a non-zone root no members', () => {
+      const tree = buildBoardTree(toMap([leaf('a', 0)]));
+      expect(tree[0].members).toEqual([]);
+   });
+
+   it('flattens to the same order as flattenBoardOrder', () => {
+      const map = toMap([leaf('t', 9), zone('Z', 2), leaf('m', 0, { zoneId: 'Z' }), leaf('b', 1)]);
+      const flatFromTree = buildBoardTree(map).flatMap((node) => [node.item, ...node.members]).map((i) => i.id);
+      expect(flatFromTree).toEqual(flattenBoardOrder(map).map((i) => i.id));
+   });
+});
+
+describe('nextScopeZ', () => {
+   it('is max(z)+1 among the root scope (zones and free items), members excluded', () => {
+      const map = toMap([leaf('a', 0), zone('Z', 3), leaf('m', 40, { zoneId: 'Z' })]);
+      expect(nextScopeZ(map, null)).toBe(4); // max(root: a=0, Z=3) + 1
+   });
+
+   it('is max(z)+1 among a zone\'s own members', () => {
+      const map = toMap([zone('Z', 9), leaf('m1', 0, { zoneId: 'Z' }), leaf('m2', 1, { zoneId: 'Z' })]);
+      expect(nextScopeZ(map, 'Z')).toBe(2); // max(m1=0, m2=1) + 1, not the zone's z
+   });
+
+   it('is 0 for an empty scope', () => {
+      expect(nextScopeZ(toMap([leaf('a', 5)]), 'Z')).toBe(0);
+   });
+
+   it('ignores connections', () => {
+      const map = toMap([leaf('a', 0), connection('c', 99)]);
+      expect(nextScopeZ(map, null)).toBe(1);
    });
 });
 
