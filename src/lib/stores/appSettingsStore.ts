@@ -39,6 +39,8 @@ interface AppSettingsState {
    isNoteOutlineOpen: boolean;
    /** Whether the board's layers panel is open. Persisted so it stays where the user left it (default closed). */
    layersPanelOpen: boolean;
+   /** Whether the Navigator slide-over is open. Persisted so it stays where the user left it (default closed). */
+   navigatorOpen: boolean;
    contextualGame: GameSystem;
    deviceTypeOverride?: DeviceType;
    isMobileFABMode: boolean;
@@ -79,6 +81,8 @@ interface AppSettingsState {
       toggleNoteOutline: () => void;
       setLayersPanelOpen: (isOpen: boolean) => void;
       toggleLayersPanel: () => void;
+      setNavigatorOpen: (isOpen: boolean) => void;
+      toggleNavigator: () => void;
       setContextualGame: (game: GameSystem) => void;
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
       setMobileFABMode: (enabled: boolean) => void;
@@ -115,6 +119,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          isSidebarCollapsed: false,
          isNoteOutlineOpen: false,
          layersPanelOpen: false,
+         navigatorOpen: false,
          contextualGame: 'LEGENDS',
          deviceTypeOverride: undefined,
          isMobileFABMode: false,
@@ -171,6 +176,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             toggleNoteOutline: () => set((state) => ({ isNoteOutlineOpen: !state.isNoteOutlineOpen })),
             setLayersPanelOpen: (isOpen) => set({ layersPanelOpen: isOpen }),
             toggleLayersPanel: () => set((state) => ({ layersPanelOpen: !state.layersPanelOpen })),
+            setNavigatorOpen: (isOpen) => set({ navigatorOpen: isOpen }),
+            toggleNavigator: () => set((state) => ({ navigatorOpen: !state.navigatorOpen })),
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
             setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled }),
@@ -209,6 +216,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isSidebarCollapsed: state.isSidebarCollapsed,
             isNoteOutlineOpen: state.isNoteOutlineOpen,
             layersPanelOpen: state.layersPanelOpen,
+            navigatorOpen: state.navigatorOpen,
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
             isMobileFABMode: state.isMobileFABMode,

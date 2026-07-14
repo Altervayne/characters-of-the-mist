@@ -28,6 +28,37 @@ export function collectNoteAssetHashes(body: string): Set<string> {
 }
 
 /**
+ * A markdown inline link, `[label](href)`. The href capture stops at the first whitespace or `)` so a
+ * `[a](url "title")` link drops its title and keeps the bare url. Deliberately a HEURISTIC scanner, not a
+ * grammar parse (see {@link collectNoteLinkHrefs}): it can match a `[x](y)` inside a fenced code block, an
+ * accepted false positive for a navigation tree. An image embed `![alt](asset:hash)` is rejected by the
+ * caller (the `!` prefix check), so an inline image never reads as a link.
+ */
+const NOTE_LINK_RE = /\[[^\]]*\]\(\s*([^)\s]+)[^)]*\)/g;
+
+/**
+ * Returns the hrefs of a note `body`'s markdown links, the outbound-edge candidates the Navigator crawls -
+ * a sibling of {@link collectNoteAssetHashes} (same `matchAll`-over-body shape). Image embeds
+ * (`![...](asset:...)`) are excluded (they are images, not links) and same-note `#section` fragments are
+ * dropped (a section is never a cross-workspace edge); the remaining `cotm://` and external hrefs are kept
+ * raw for a caller to classify via `parseLinkHref`. A regex scan is a heuristic - a `[x](y)` inside a code
+ * fence can slip through, cosmetic for a nav tree - so it must never crash on odd input, only over-collect.
+ */
+export function collectNoteLinkHrefs(body: string): string[] {
+   const hrefs: string[] = [];
+   if (!body) return hrefs;
+   for (const match of body.matchAll(NOTE_LINK_RE)) {
+      // Skip an image embed: the same `[...](...)` shape preceded by `!` is an image, not a link.
+      if (match.index > 0 && body[match.index - 1] === '!') continue;
+      const href = match[1];
+      // A same-note section fragment is not a navigable edge.
+      if (href.startsWith('#')) continue;
+      hrefs.push(href);
+   }
+   return hrefs;
+}
+
+/**
  * Adds a note's referenced asset hashes to `into` (the accumulating-set variant, for walk callers): its
  * inline body images AND its note-level cover image. The cover is a note property, not a body token, so it
  * must be folded in HERE - the one place export and the GC both walk a note - or the sweep reclaims a saved

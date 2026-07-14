@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { collectFromNote, collectNoteAssetHashes } from './noteAssets';
+import { collectFromNote, collectNoteAssetHashes, collectNoteLinkHrefs } from './noteAssets';
 
 // -- Type Imports --
 import type { Note } from '@/lib/types/board';
@@ -73,5 +73,39 @@ describe('collectFromNote: the cover image (a note property, not a body token)',
       const into = new Set<string>();
       collectFromNote(note('just prose'), into);
       expect(into.size).toBe(0);
+   });
+});
+
+describe('collectNoteLinkHrefs: the Navigator outbound-edge scanner', () => {
+   it('extracts cotm:// entity and external link hrefs', () => {
+      const body = 'See [the board](cotm://board/b1) and [the site](https://example.com).';
+      expect(collectNoteLinkHrefs(body)).toEqual(['cotm://board/b1', 'https://example.com']);
+   });
+
+   it('keeps a tabless element href for a downstream classify', () => {
+      expect(collectNoteLinkHrefs('[a card](cotm://item/drawer-9)')).toEqual(['cotm://item/drawer-9']);
+   });
+
+   it('ignores an inline image asset embed (an image is not a link)', () => {
+      expect(collectNoteLinkHrefs('![a map](asset:a1b2c3d4e5f6)')).toEqual([]);
+   });
+
+   it('ignores a same-note section fragment', () => {
+      expect(collectNoteLinkHrefs('[jump](#overview) then [go](cotm://note/n2)')).toEqual(['cotm://note/n2']);
+   });
+
+   it('drops a link title, keeping the bare href', () => {
+      expect(collectNoteLinkHrefs('[x](cotm://board/b2 "a title")')).toEqual(['cotm://board/b2']);
+   });
+
+   it('tolerates a code-fence false positive without crashing (over-collects, never throws)', () => {
+      const body = '```\n[not really a link](cotm://board/fenced)\n```\n\n[real](cotm://note/n3)';
+      // The heuristic scan cannot tell a fenced snippet from prose; both hrefs come through, harmlessly.
+      expect(collectNoteLinkHrefs(body)).toEqual(['cotm://board/fenced', 'cotm://note/n3']);
+   });
+
+   it('returns an empty array for a link-free or empty body', () => {
+      expect(collectNoteLinkHrefs('# Just prose, no links')).toEqual([]);
+      expect(collectNoteLinkHrefs('')).toEqual([]);
    });
 });
