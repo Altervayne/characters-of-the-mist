@@ -214,6 +214,7 @@ describe('importBoard / loadBoard round-trip', () => {
          viewport: { x: 12, y: 34, zoom: 2 },
          drawerItemId: 'drawer-1',
          grid: { type: 'lines' },
+         nextLayerSeq: 1,
          items: [
             { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, content: { kind: 'post-it', mode: 'copy', data: { id: 'n22', text: 'a' } } },
             { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, content: { kind: 'post-it', mode: 'copy', data: { id: 'n23', text: 'b' } } },
@@ -231,8 +232,8 @@ describe('importBoard / loadBoard round-trip', () => {
    });
 
    it('replaces any existing rows for the same board id on import', async () => {
-      await repository.importBoard({ id: 'b1', name: 'v1', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: null, items: [makeBoardItem('old')] });
-      await repository.importBoard({ id: 'b1', name: 'v2', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: null, items: [makeBoardItem('new')] });
+      await repository.importBoard({ id: 'b1', name: 'v1', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: null, nextLayerSeq: 1, items: [makeBoardItem('old')] });
+      await repository.importBoard({ id: 'b1', name: 'v2', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: null, nextLayerSeq: 1, items: [makeBoardItem('new')] });
 
       const reloaded = await repository.loadBoard('b1');
       expect(reloaded!.name).toBe('v2');
@@ -256,7 +257,7 @@ describe('save board to the drawer', () => {
       const board = await repository.createBoard('Saveable');
       await repository.addItem(makeItem('i1', board.id, 0));
       // Seed the linked drawer item, then link the board to it.
-      await drawerDatabase.items.put({ id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Saveable', createdAt: 0, updatedAt: 0, content: { id: board.id, name: 'stale', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', items: [] } });
+      await drawerDatabase.items.put({ id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Saveable', createdAt: 0, updatedAt: 0, content: { id: board.id, name: 'stale', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', nextLayerSeq: 1, items: [] } });
       await repository.linkBoardToDrawerItem(board.id, 'drw', { x: 0, y: 0, zoom: 1 });
 
       const result = await repository.saveBoardToLinkedDrawerItem(board.id, { x: 99, y: 99, zoom: 3 });

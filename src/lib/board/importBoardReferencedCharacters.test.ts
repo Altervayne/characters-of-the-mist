@@ -40,7 +40,7 @@ function charItem(id: string, content: CharacterBoardContent): BoardItem {
 }
 
 function board(items: BoardItem[]): Board {
-   return { id: 'b', name: 'My Board', viewport: { x: 0, y: 0, zoom: 1 }, items };
+   return { id: 'b', name: 'My Board', viewport: { x: 0, y: 0, zoom: 1 }, nextLayerSeq: 1, items };
 }
 
 /** Seeds a saved local character so a dedup lookup finds it. Returns its drawer item id. */

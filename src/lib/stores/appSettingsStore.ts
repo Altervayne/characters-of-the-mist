@@ -37,6 +37,8 @@ interface AppSettingsState {
    isSidebarCollapsed: boolean;
    /** Whether the note editor's document-outline rail is shown. Persisted so it stays where the user left it. */
    isNoteOutlineOpen: boolean;
+   /** Whether the board's layers panel is open. Persisted so it stays where the user left it (default closed). */
+   layersPanelOpen: boolean;
    contextualGame: GameSystem;
    deviceTypeOverride?: DeviceType;
    isMobileFABMode: boolean;
@@ -74,6 +76,8 @@ interface AppSettingsState {
       toggleSidebarCollapsed: () => void;
       setNoteOutlineOpen: (isOpen: boolean) => void;
       toggleNoteOutline: () => void;
+      setLayersPanelOpen: (isOpen: boolean) => void;
+      toggleLayersPanel: () => void;
       setContextualGame: (game: GameSystem) => void;
       setDeviceTypeOverride: (deviceType: DeviceType | undefined) => void;
       setMobileFABMode: (enabled: boolean) => void;
@@ -107,6 +111,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
          isNoteOutlineOpen: false,
+         layersPanelOpen: false,
          contextualGame: 'LEGENDS',
          deviceTypeOverride: undefined,
          isMobileFABMode: false,
@@ -161,6 +166,8 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
             setNoteOutlineOpen: (isOpen) => set({ isNoteOutlineOpen: isOpen }),
             toggleNoteOutline: () => set((state) => ({ isNoteOutlineOpen: !state.isNoteOutlineOpen })),
+            setLayersPanelOpen: (isOpen) => set({ layersPanelOpen: isOpen }),
+            toggleLayersPanel: () => set((state) => ({ layersPanelOpen: !state.layersPanelOpen })),
             setContextualGame: (game) => set({ contextualGame: game }),
             setDeviceTypeOverride: (deviceType) => set({ deviceTypeOverride: deviceType }),
             setMobileFABMode: (enabled) => set({ isMobileFABMode: enabled }),
@@ -196,6 +203,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
             isNoteOutlineOpen: state.isNoteOutlineOpen,
+            layersPanelOpen: state.layersPanelOpen,
             contextualGame: state.contextualGame,
             deviceTypeOverride: state.deviceTypeOverride,
             isMobileFABMode: state.isMobileFABMode,

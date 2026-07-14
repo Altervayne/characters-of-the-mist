@@ -111,7 +111,7 @@ describe('drawer save (dirty flag + link)', () => {
       // "Save As": link to a (seeded) drawer item; the link marks the board clean.
       await drawerDatabase.items.put({
          id: 'drw', parentFolderId: DRAWER_ROOT_PARENT_ID, order: 0, game: 'NEUTRAL', type: 'FULL_BOARD', name: 'Dirty', createdAt: 0, updatedAt: 0,
-         content: { id: board.id, name: 'Dirty', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', items: [] },
+         content: { id: board.id, name: 'Dirty', viewport: { x: 0, y: 0, zoom: 1 }, drawerItemId: 'drw', nextLayerSeq: 1, items: [] },
       });
       const aggregate = await store.getState().actions.linkToDrawerItem('drw');
       expect(aggregate?.drawerItemId).toBe('drw');

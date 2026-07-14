@@ -11,7 +11,7 @@ import { useThemeMode } from '@/hooks/useThemeMode';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -72,7 +72,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
-   const { setSideBySideView, toggleDiceTray, toggleNoteOutline } = useAppSettingsActions();
+   const { setSideBySideView, toggleDiceTray, toggleNoteOutline, toggleLayersPanel } = useAppSettingsActions();
    const { setThemesOpen, requestBoardAction } = useAppGeneralStateActions();
    const { setMode } = useThemeMode();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
@@ -123,7 +123,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       if (!store) return;
       try {
          const s = store.getState();
-         const board: Board = { id: s.boardId!, name: s.name, viewport: s.viewport, grid: s.grid, items: Object.values(s.items) };
+         const board: Board = { id: s.boardId!, name: s.name, viewport: s.viewport, grid: s.grid, nextLayerSeq: s.nextLayerSeq, items: Object.values(s.items) };
          const embedded = await collectBoardEmbeddedEntities(board);
          const fileName = generateExportFilename('NEUTRAL', 'FULL_BOARD', board.name);
          await exportToFile(board, 'FULL_BOARD', 'NEUTRAL', fileName, embedded);
@@ -249,6 +249,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setGridHex', scope: 'board', label: t('CommandPalette.commands.setGridHex'), keywords: ['grid', 'hex', 'hexagon', 'honeycomb', 'hive', 'board'], icon: Hexagon, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setGrid:hex') },
       // No coordinate rides the one-shot bridge, so this just focuses the bar's X field for the user to type.
       { id: 'jumpToCoordinate', scope: 'board', label: t('CommandPalette.commands.jumpToCoordinate'), keywords: ['jump', 'go', 'goto', 'coordinate', 'position', 'center', 'navigate', 'pan', 'board'], icon: LocateFixed, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('focusJumpToCoordinate') },
+      // The layers panel is a plain appSettings toggle (no board instance needed), like the dice tray.
+      { id: 'toggleLayersPanel', scope: 'board', label: t('CommandPalette.commands.toggleLayersPanel'), keywords: ['layers', 'panel', 'stack', 'z-order', 'order', 'elements', 'board'], icon: Layers, group: t('CommandPalette.groups.tools'), action: toggleLayersPanel },
       // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
       // active canvas consumes this request since it owns the drop point + selection/expand state.
       { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },

@@ -158,7 +158,7 @@ async function captureExport(run: () => Promise<void>): Promise<ExportFile> {
 }
 
 describe('exportToFile embedded entities', () => {
-   const board = (): Board => ({ id: 'b', name: 'Board', viewport: { x: 0, y: 0, zoom: 1 }, items: [] });
+   const board = (): Board => ({ id: 'b', name: 'Board', viewport: { x: 0, y: 0, zoom: 1 }, nextLayerSeq: 1, items: [] });
 
    it('omits embedded when none is passed (byte-shape unchanged)', async () => {
       const file = await captureExport(() => exportToFile(board(), 'FULL_BOARD', 'NEUTRAL', 'board'));

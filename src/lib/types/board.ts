@@ -380,6 +380,13 @@ export interface Stroke {
 export interface DrawingBoardContent {
    kind: 'drawing';
    strokes: Stroke[];
+   /**
+    * A stable, per-board numeric ordinal assigned at mint (from {@link Board.nextLayerSeq}), driving the
+    * layer's default "Layer N" name. Stored as a number, never the localized string, so the default stays
+    * language-adaptive; ignored once the user sets an explicit {@link BoardItem.label}. Absent on drawings
+    * minted before layer naming existed.
+    */
+   seq?: number;
 }
 
 /** A board item's payload, discriminated by `kind` (mirrors the item's own `kind`). */
@@ -418,6 +425,12 @@ export interface BoardItem {
    rotation?: number;
    /** The zone this item is a member of (set when it lands inside one), or absent when in no zone. */
    zoneId?: string;
+   /**
+    * A user-facing display name, presentational and NON-UNIQUE - never an identifier (identity stays `id`).
+    * Absent by default: the layers panel shows a kind-derived name (a drawing's "Layer N", else the kind noun)
+    * when unset, and materializes a literal string only on rename.
+    */
+   label?: string;
    content: BoardItemContent;
 }
 
@@ -430,5 +443,11 @@ export interface Board {
    drawerItemId?: string | null;
    /** Background grid style. Absent on boards created before grids existed - defaulted on read. */
    grid?: BoardGrid;
+   /**
+    * A monotonic counter sourcing each drawing layer's default-name ordinal ({@link DrawingBoardContent.seq}),
+    * incremented at every drawing mint. Monotonic-never-reused, so deleting a layer never lets a later one
+    * reclaim its number. Set at creation and carried through fork/import.
+    */
+   nextLayerSeq: number;
    items: BoardItem[];
 }

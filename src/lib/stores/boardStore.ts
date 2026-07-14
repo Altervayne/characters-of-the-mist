@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import cuid from 'cuid';
 
 // -- Board Data Layer Imports --
-import { getBoard, linkBoardToDrawerItem, listItems, loadBoard, renameBoard as renameBoardRecord, saveBoard, saveBoardToLinkedDrawerItem, updateItem } from '@/lib/board/boardRepository';
+import { getBoard, linkBoardToDrawerItem, listItems, loadBoard, renameBoard as renameBoardRecord, saveBoard, saveBoardLayerSeq, saveBoardToLinkedDrawerItem, updateItem } from '@/lib/board/boardRepository';
 import { DEFAULT_BOARD_GRID } from '@/lib/board/boardRecords';
 import { createBoardCommandEngine } from '@/lib/board/boardCommandEngine';
 import {
@@ -14,6 +14,7 @@ import {
    createMoveItemCommand,
    createRemoveStrokesCommand,
    createResizeItemCommand,
+   createSetItemLabelCommand,
    createSetItemZCommand,
    createSetItemZoneCommand,
    createUpdateItemContentCommand,
@@ -72,6 +73,11 @@ export interface BoardState {
    selectedIds: Set<string>;
    /** The hovered item id, or `null`. Ephemeral view state, same discipline as the selection. */
    hoveredId: string | null;
+   /**
+    * The next drawing-layer name ordinal, seeded on hydrate (above the board's stored counter and its live
+    * drawings) and advanced at each drawing mint. Persisted on the board record so a number is never reused.
+    */
+   nextLayerSeq: number;
    canUndo: boolean;
    canRedo: boolean;
    isLoading: boolean;
@@ -103,6 +109,11 @@ export interface BoardState {
        */
       syncItemSize: (id: string, size: { width?: number; height?: number }) => Promise<void>;
       setItemZ: (id: string, z: number) => Promise<void>;
+      /**
+       * Sets (or clears with `undefined`) an item's display label as one undo step. NON-additive; the layers
+       * panel row buffers the text and commits once on blur/Enter, so this never spams the undo stack.
+       */
+      setItemLabel: (id: string, label: string | undefined) => Promise<void>;
       /** Sets (or clears with `null`) an item's zone membership as one undo step. */
       setItemZone: (id: string, zoneId: string | null) => Promise<void>;
       /** Raises an item above all others (`max(z) + 1` over the live items). */
@@ -179,7 +190,7 @@ export interface BoardState {
 
 const initialState: Pick<
    BoardState,
-   'boardId' | 'name' | 'viewport' | 'grid' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'selectedIds' | 'hoveredId' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
+   'boardId' | 'name' | 'viewport' | 'grid' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'selectedIds' | 'hoveredId' | 'nextLayerSeq' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
 > = {
    boardId: null,
    name: '',
@@ -190,6 +201,7 @@ const initialState: Pick<
    items: {},
    selectedIds: new Set(),
    hoveredId: null,
+   nextLayerSeq: 1,
    canUndo: false,
    canRedo: false,
    isLoading: false,
@@ -218,6 +230,7 @@ function recordToItem(record: BoardItemRecord): BoardItem {
       z: record.z,
       rotation: record.rotation,
       zoneId: record.zoneId,
+      label: record.label,
       content: record.content,
    };
 }
@@ -324,7 +337,7 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                   for (const item of board.items) items[item.id] = item;
                   // Opened from its records: it matches its saved copy (if any), so it
                   // starts clean. The first mutation dirties it.
-                  set({ boardId, name: board.name, viewport: board.viewport, grid: board.grid ?? { ...DEFAULT_BOARD_GRID }, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, isLoading: false, error: null });
+                  set({ boardId, name: board.name, viewport: board.viewport, grid: board.grid ?? { ...DEFAULT_BOARD_GRID }, drawerItemId: board.drawerItemId ?? null, hasUnsavedChanges: false, items, nextLayerSeq: board.nextLayerSeq, isLoading: false, error: null });
                } catch (error) {
                   set({ isLoading: false, error: toErrorMessage(error) });
                }
@@ -334,8 +347,18 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const boardId = get().boardId;
                if (!boardId) return;
                markDirty();
-               const record: BoardItemRecord = { ...item, boardId };
-               set((state) => ({ items: { ...state.items, [item.id]: item } }));
+               // A freshly minted drawing layer takes the next monotonic ordinal for its default "Layer N"
+               // name; the counter advances and is persisted (a cosmetic, non-undoable board-record write) so
+               // the number is never reused. Folded into the creation record - no separate command.
+               let toAdd = item;
+               if (item.kind === 'drawing' && item.content.kind === 'drawing' && item.content.seq === undefined) {
+                  const seq = get().nextLayerSeq;
+                  toAdd = { ...item, content: { ...item.content, seq } };
+                  set({ nextLayerSeq: seq + 1 });
+                  void saveBoardLayerSeq(boardId, seq + 1).catch((error) => console.error('Board layer counter save failed:', error));
+               }
+               const record: BoardItemRecord = { ...toAdd, boardId };
+               set((state) => ({ items: { ...state.items, [toAdd.id]: toAdd } }));
                // A pure add: the optimistic insert above IS the truth, so skip the post-command reload.
                await runItemMutation(createAddItemCommand(record), { additive: true });
             },
@@ -495,6 +518,13 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, z } } }));
                await runItemMutation(createSetItemZCommand(id, z));
+            },
+
+            setItemLabel: async (id, label) => {
+               markDirty();
+               const existing = get().items[id];
+               if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, label } } }));
+               await runItemMutation(createSetItemLabelCommand(id, label));
             },
 
             setItemZone: async (id, zoneId) => {

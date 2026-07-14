@@ -29,7 +29,7 @@ function charItem(id: string, content: CharacterBoardContent): BoardItem {
 }
 
 function board(items: BoardItem[]): Board {
-   return { id: 'b', name: 'Board', viewport: { x: 0, y: 0, zoom: 1 }, items };
+   return { id: 'b', name: 'Board', viewport: { x: 0, y: 0, zoom: 1 }, nextLayerSeq: 1, items };
 }
 
 /** Seeds a saved drawer item so `resolveReferencedDrawerItem` reads it as live. */

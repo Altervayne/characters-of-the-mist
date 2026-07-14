@@ -37,13 +37,14 @@ import type { Character } from '@/lib/types/character';
 export async function forkBoardToDrawerItem(newItemId: string): Promise<Board | null> {
    const store = getActiveBoardStore();
    if (!store) return null;
-   const { boardId, name, viewport, grid, items } = store.getState();
+   const { boardId, name, viewport, grid, items, nextLayerSeq } = store.getState();
    if (!boardId) return null;
 
    // Re-id the WHOLE aggregate (fresh board id + item ids, with connection/zone/portal targets remapped
    // through the same id map), then bind it to the new drawer item. Built from live store state so an
-   // un-persisted camera/edit rides along into the fork.
-   const source: Board = { id: boardId, name, viewport, grid, drawerItemId: null, items: Object.values(items) };
+   // un-persisted camera/edit rides along into the fork; the layer counter carries forward so the fork
+   // keeps minting unique layer numbers.
+   const source: Board = { id: boardId, name, viewport, grid, drawerItemId: null, nextLayerSeq, items: Object.values(items) };
    const forked: Board = { ...reIdBoardAggregate(source), drawerItemId: newItemId };
 
    await importBoard(forked);

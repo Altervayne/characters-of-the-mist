@@ -19,6 +19,7 @@ function makeBoard(): Board {
       name: 'Imported',
       viewport: { x: 5, y: 6, zoom: 2 },
       drawerItemId: 'drawer-old',
+      nextLayerSeq: 1,
       items: [
          { id: 'a', kind: 'post-it', x: 0, y: 0, width: 100, height: 100, z: 0, zoneId: 'zone', content: { kind: 'post-it', mode: 'copy', data: { id: 'n15', text: 'a' } } },
          { id: 'b', kind: 'post-it', x: 10, y: 10, width: 100, height: 100, z: 1, zoneId: 'ghost', content: { kind: 'post-it', mode: 'copy', data: { id: 'n16', text: 'b' } } },

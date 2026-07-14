@@ -217,6 +217,31 @@ export function createSetItemZCommand(id: string, z: number): BoardCommand {
 }
 
 /**
+ * Set (or clear) an item's display label. Captures the previous label on first `do()`; undo restores it.
+ * `undefined` clears the label (the panel falls back to the kind-derived name). Undoable, so a rename is a
+ * Ctrl+Z-reachable edit - unlike the board rename, which is a direct write.
+ */
+export function createSetItemLabelCommand(id: string, label: string | undefined): BoardCommand {
+   let previousLabel: string | undefined;
+   let captured = false;
+   return {
+      label: 'set-item-label',
+      async do() {
+         if (!captured) {
+            const item = await getItem(id);
+            if (!item) throw new BoardNotFoundError(`Board item not found: ${id}`);
+            previousLabel = item.label;
+            captured = true;
+         }
+         await updateItem(id, { label });
+      },
+      async undo() {
+         if (captured) await updateItem(id, { label: previousLabel });
+      },
+   };
+}
+
+/**
  * Replace an item's content. Captures the previous content on first `do()`; undo
  * restores it. Covers note/journal text edits, image assetId swaps, and connection
  * restyling (a connection's {from, to, style} lives in its content).

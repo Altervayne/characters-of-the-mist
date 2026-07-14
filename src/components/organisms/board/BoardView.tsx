@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, LayoutGrid, Maximize, MousePointer2, PenTool, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, Layers, LayoutGrid, Maximize, MousePointer2, PenTool, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -44,6 +44,7 @@ import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
 import { BoardAddMenu } from './BoardAddMenu';
 import { BoardGridMenu } from './BoardGridMenu';
+import { LayersPanel } from './LayersPanel';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
 import { LinkTargetList } from '@/components/molecules/links/LinkTargetList';
 import { BoardPortalEditor } from './items/BoardPortalEditor';
@@ -110,6 +111,9 @@ const TOOLBAR_TOP_CLEARANCE = 48;
 const BAR_ARROW_CLASS =
    'absolute top-0 bottom-0 z-10 my-auto flex size-8 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
 
+/** The layers panel's fixed width (matches its `w-64`), used to inset the bottom bar when it's open. */
+const LAYERS_PANEL_WIDTH = 256;
+
 /** Screen-px the bottom-center tool bar keeps from the canvas floor when the dice tray is closed. */
 const BAR_EDGE_GAP = 12;
 /** Screen-px clearance the bar keeps above the open dice tray (which shares the bottom-center anchor). */
@@ -134,6 +138,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // Selection lives in the board store as ephemeral state (shared with the layers panel), never
    // persisted or routed through commands. Read here; mutated via the store's selection actions.
    const selectedIds = useStore(store, (state) => state.selectedIds);
+   // The hovered item drives a canvas highlight for a layers-panel row hover (row -> canvas only). Discrete
+   // enter/leave, so subscribing here re-renders on a boundary crossing, never per pointer move.
+   const hoveredId = useStore(store, (state) => state.hoveredId);
    const [isPanning, setIsPanning] = useState(false);
    // A Shift+background marquee (null when idle); a plain drag pans instead. Corners are in
    // client coords; the clip origin is captured at start so the overlay + world math never
@@ -202,6 +209,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // The tray is content-sized (its height varies with dice / history), so measure the live panel rather
    // than guess; closed, the height resets so the bar drops back to the floor.
    const diceTrayOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
+   const layersPanelOpen = useAppSettingsStore((state) => state.layersPanelOpen);
    const [diceTrayHeight, setDiceTrayHeight] = useState(0);
    useEffect(() => {
       if (!diceTrayOpen) { setDiceTrayHeight(0); return; }
@@ -239,7 +247,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // The pen/highlighter settings (brush, ink, per-brush widths), persisted in app settings. Every new
    // stroke and the live preview read the CURRENT values, so the pickers actually drive the ink.
    const penSettings = useAppSettingsStore((state) => state.penSettings);
-   const { setPenBrush, setPenColor, setPenWidth } = useAppSettingsActions();
+   const { setPenBrush, setPenColor, setPenWidth, toggleLayersPanel, setLayersPanelOpen } = useAppSettingsActions();
    // Space arms a mode-independent pan (mirrored to a ref for the pointer handlers, and to state for the
    // cursor). The pen overlay + a Space/middle-drag can all start a pan, so the trigger is mode-agnostic.
    const [spaceHeld, setSpaceHeld] = useState(false);
@@ -391,6 +399,23 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const newIds = await actions.duplicateItems([...selectedIds]);
       actions.setSelection(newIds);
    }, [actions, selectedIds]);
+
+   /** Layers panel: a row's single-click selects just that item (no pan). */
+   const handleLayerSelect = useCallback((id: string) => actions.setSelection([id]), [actions]);
+
+   /** Layers panel: a row's double-click centers the view on the item (keeping zoom). Reads live refs so
+    *  its identity stays stable (the panel subscribes to items/selection, not to it). */
+   const handleLayerActivate = useCallback((id: string) => {
+      const item = store.getState().items[id];
+      const el = clipRef.current;
+      if (!item || !el) return;
+      const rect = el.getBoundingClientRect();
+      const center = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
+      actions.setViewport(centerViewport(center, { width: rect.width, height: rect.height }, viewportRef.current.zoom));
+   }, [store, actions]);
+
+   /** Layers panel: commit a row rename (or clear the label with `undefined`) as one undoable edit. */
+   const handleLayerCommitLabel = useCallback((id: string, label: string | undefined) => void actions.setItemLabel(id, label), [actions]);
 
    /**
     * Starts a group move from an item's move grip (canvas-owned, like the connect drag).
@@ -574,6 +599,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          window.removeEventListener('blur', clear);
       };
    }, []);
+
+   // A bare `L` toggles the layers panel. Ignored while editing text (a board field / the panel's rename)
+   // and when a modifier is held (so browser shortcuts like Ctrl+L stay intact).
+   useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+         if (event.ctrlKey || event.metaKey || event.altKey) return;
+         const target = event.target;
+         if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+         if (event.key === 'l' || event.key === 'L') {
+            event.preventDefault();
+            toggleLayersPanel();
+         }
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [toggleLayersPanel]);
 
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
       // Middle-button and Space+drag pan in ANY tool (the pen's escape hatch out of its viewport).
@@ -1303,6 +1344,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const layerRank = new Map(spatialItems.map((item, index) => [item.id, index]));
    const layerCount = spatialItems.length;
 
+   // The element a layers-panel row is hovering, highlighted on the canvas. Skipped when it's already
+   // selected (its selection ring covers it) so the two cues never stack.
+   const hoveredItem = hoveredId ? items[hoveredId] : undefined;
+
    // Active drawing-layer focus cue. On only while a drawing (append) gesture is armed AND the append target
    // is a live drawing layer - guards a stale `activeLayerId` (deleted / no longer a drawing) to null. When
    // on: the target layer stays full, every other drawing layer dims (via context), and a dashed accent box
@@ -1563,6 +1608,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   }}
                />
             )}
+
+            {/* Layers-panel hover cue: a soft outline around the element a panel row is hovering, so probing
+                the list points it out on the board. Inert; theme tokens only; hidden once the item is selected. */}
+            {hoveredItem && hoveredItem.kind !== 'connection' && !selectedIds.has(hoveredItem.id) && (
+               <div
+                  className="pointer-events-none absolute rounded-sm border border-primary/50"
+                  style={{
+                     left: hoveredItem.x + (moveDeltaFor(hoveredItem.id)?.x ?? 0),
+                     top: hoveredItem.y + (moveDeltaFor(hoveredItem.id)?.y ?? 0),
+                     width: hoveredItem.width,
+                     height: hoveredItem.height,
+                     borderWidth: 2 / viewport.zoom,
+                     zIndex: groupToolbarZIndex(layerCount),
+                  }}
+               />
+            )}
          </div>
 
          {/* Draw capture overlay: a screen-space gesture surface above the world layer. Interactive ONLY in a
@@ -1620,8 +1681,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              clips a slide-out arrow at the card edge. */}
          <div
             onPointerDown={(event) => event.stopPropagation()}
-            style={{ bottom: barBottom }}
-            className="absolute left-1/2 z-40 flex w-fit max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm transition-[bottom] duration-300 ease-out"
+            style={{ bottom: barBottom, marginLeft: layersPanelOpen ? -(LAYERS_PANEL_WIDTH / 2) : 0 }}
+            className={cn(
+               'absolute left-1/2 z-40 flex w-fit -translate-x-1/2 items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm transition-[bottom,margin-left] duration-300 ease-out',
+               // Slide the bar out from under the panel and cap its width to the free region so it never underlaps.
+               layersPanelOpen ? 'max-w-[calc(100%-1.5rem-16rem)]' : 'max-w-[calc(100%-1.5rem)]',
+            )}
          >
             <AnimatePresence>
                {barCanScrollLeft && (
@@ -1694,6 +1759,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport(originViewport())}>
                      <Crosshair className="h-4 w-4" />
                   </ToolbarButton>
+                  <ToolbarButton title={t('LayersPanel.toggle')} active={layersPanelOpen} onClick={toggleLayersPanel}>
+                     <Layers className="h-4 w-4" />
+                  </ToolbarButton>
                   <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
                   {/* Positioning cluster: the live zoom %, then the world point the view is CENTERED on as two
                       editable fields - typing + Enter recenters on that point (keeping zoom). */}
@@ -1725,6 +1793,19 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                )}
             </AnimatePresence>
          </div>
+
+         {/* Layers panel: a frosted right-edge overlay inside the clip (screen-space, never in the pan/zoom
+             transform). Subscribes to items/selection/hover only, so a pan never re-renders it. */}
+         {layersPanelOpen && (
+            <LayersPanel
+               store={store}
+               onClose={() => setLayersPanelOpen(false)}
+               onSelect={handleLayerSelect}
+               onActivate={handleLayerActivate}
+               onHover={actions.setHovered}
+               onCommitLabel={handleLayerCommitLabel}
+            />
+         )}
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
          {radial && <BoardRadialMenu screen={radial.screen} root={radialRoot} onClose={() => setRadial(null)} />}
@@ -2032,15 +2113,19 @@ const BoardCoordinateField = forwardRef<HTMLInputElement, { prefix: string; labe
    },
 );
 
-/** A button in the canvas palette/view toolbar. */
-function ToolbarButton({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+/** A button in the canvas palette/view toolbar. `active` gives it a pressed-toggle state (aria-pressed + tint). */
+function ToolbarButton({ title, onClick, active, children }: { title: string; onClick: () => void; active?: boolean; children: React.ReactNode }) {
    return (
       <button
          type="button"
          onClick={onClick}
          title={title}
          aria-label={title}
-         className="flex shrink-0 items-center justify-center rounded p-2 text-foreground hover:bg-muted cursor-pointer"
+         aria-pressed={active}
+         className={cn(
+            'flex shrink-0 items-center justify-center rounded p-2 text-foreground hover:bg-muted cursor-pointer',
+            active && 'bg-muted ring-1 ring-primary/40',
+         )}
       >
          {children}
       </button>

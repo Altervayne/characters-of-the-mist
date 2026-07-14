@@ -31,6 +31,8 @@ export interface BoardRecord {
    drawerItemId?: string | null;
    /** Background grid style. Absent on pre-grid boards - defaulted to dots on read. */
    grid?: BoardGrid;
+   /** Monotonic source of drawing-layer name ordinals; set at creation, carried through fork/import. */
+   nextLayerSeq: number;
    /** Per-record schema marker for future record-shape migrations. */
    schemaVersion: number;
 }
@@ -66,6 +68,8 @@ export interface BoardItemRecord {
    rotation?: number;
    /** The zone this item belongs to (geometric membership, captured on drop), or absent when in none. */
    zoneId?: string;
+   /** A presentational display name (non-unique, never an identifier); absent until the user renames the item. */
+   label?: string;
    /** The serialized, kind-discriminated payload; stored inline, opaque to the repo. */
    content: BoardItemContent;
 }

@@ -306,6 +306,27 @@
       "saveItemToDrawer": "[TO COMPLETE]",
       "saveItemToDrawerAs": "[TO COMPLETE]"
    },
+   "LayersPanel": {
+      "title": "[TO COMPLETE]",
+      "close": "[TO COMPLETE]",
+      "toggle": "[TO COMPLETE]",
+      "empty": "[TO COMPLETE]",
+      "renameLabel": "[TO COMPLETE]",
+      "layerName": "[TO COMPLETE]",
+      "untitledNote": "[TO COMPLETE]",
+      "untitledText": "[TO COMPLETE]",
+      "memberCount_one": "[TO COMPLETE]",
+      "memberCount_other": "[TO COMPLETE]",
+      "strokeCount_one": "[TO COMPLETE]",
+      "strokeCount_other": "[TO COMPLETE]",
+      "kinds": {
+         "card": "[TO COMPLETE]",
+         "tracker": "[TO COMPLETE]",
+         "character": "[TO COMPLETE]",
+         "threat": "[TO COMPLETE]",
+         "drawing": "[TO COMPLETE]"
+      }
+   },
    "DragPuck": {
       "openAsTab": "[TO COMPLETE]",
       "open": "[TO COMPLETE]",
@@ -1249,6 +1270,7 @@
          "toggleDrawer": "Basculer : Tiroir",
          "openSettings": "Ouvrir : Paramètres",
          "toggleDiceTray": "[TO COMPLETE]",
+         "toggleLayersPanel": "[TO COMPLETE]",
          "importFile": "[TO COMPLETE]",
          "undo": "[TO COMPLETE]",
          "redo": "[TO COMPLETE]",

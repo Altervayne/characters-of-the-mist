@@ -82,6 +82,7 @@ function toBoardItem(record: BoardItemRecord): BoardItem {
       z: record.z,
       rotation: record.rotation,
       zoneId: record.zoneId,
+      label: record.label,
       content: record.content,
    };
 }
@@ -100,6 +101,7 @@ export function createBoard(name: string): Promise<BoardRecord> {
          viewport: { ...DEFAULT_VIEWPORT },
          drawerItemId: null,
          grid: { ...DEFAULT_BOARD_GRID },
+         nextLayerSeq: 1,
          schemaVersion: BOARD_SCHEMA_VERSION,
       };
       await db.boards.add(record);
@@ -123,6 +125,16 @@ export function saveBoard(board: BoardRecord): Promise<BoardRecord> {
       const record: BoardRecord = { ...board, updatedAt: Date.now() };
       await db.boards.put(record);
       return record;
+   });
+}
+
+/**
+ * Persists a board's drawing-layer name counter, refreshing `updatedAt`. A cosmetic, non-undoable
+ * write (like the viewport): it only advances the monotonic ordinal source. Idempotent on an absent board.
+ */
+export function saveBoardLayerSeq(id: string, nextLayerSeq: number): Promise<void> {
+   return runWriteTransaction([db.boards], async () => {
+      await db.boards.update(id, { nextLayerSeq, updatedAt: Date.now() });
    });
 }
 
@@ -232,6 +244,7 @@ export function loadBoard(id: string): Promise<Board | undefined> {
          viewport: record.viewport,
          drawerItemId: record.drawerItemId ?? null,
          grid: record.grid ?? { ...DEFAULT_BOARD_GRID },
+         nextLayerSeq: record.nextLayerSeq,
          items: items.map(toBoardItem),
       };
    });
@@ -245,6 +258,7 @@ function assembleBoard(record: BoardRecord, items: BoardItemRecord[]): Board {
       viewport: record.viewport,
       drawerItemId: record.drawerItemId ?? null,
       grid: record.grid ?? { ...DEFAULT_BOARD_GRID },
+      nextLayerSeq: record.nextLayerSeq,
       items: items.map(toBoardItem),
    };
 }
@@ -265,6 +279,7 @@ export function importBoard(board: Board): Promise<void> {
          viewport: board.viewport,
          drawerItemId: board.drawerItemId ?? null,
          grid: board.grid ?? { ...DEFAULT_BOARD_GRID },
+         nextLayerSeq: board.nextLayerSeq,
          schemaVersion: BOARD_SCHEMA_VERSION,
       };
       await db.boards.put(record);
@@ -279,6 +294,7 @@ export function importBoard(board: Board): Promise<void> {
          z: item.z,
          rotation: item.rotation,
          zoneId: item.zoneId,
+         label: item.label,
          content: item.content,
       }));
       await db.boardItems.bulkPut(records);
