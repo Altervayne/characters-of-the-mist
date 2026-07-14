@@ -39,13 +39,14 @@ import { resolveAppWideRootEdges } from '@/lib/navigator/navigatorRoots';
 import type { NavNode } from '@/lib/navigator/navigatorGraph';
 
 /*
- * The Navigator: a LEFT slide-over rail that crawls the app's outbound PORTAL graph. It mounts at app-shell
- * level (beside the trail + drawer), above the tab-switch boundary, so a future jump that switches tabs cannot
- * unmount it mid-crawl - its tree lives in the ephemeral `navigatorStore`, not in this component. The header
- * mirrors the Layers-panel chrome; a filter strip sits under it. The tree grows lazily: roots materialize on
- * open, and each deeper level ONLY when its caret is clicked (via the N1 cache + in-flight dedup). App tokens
- * only - a character branch shows a plain muted glyph, never game-tinted. Jump (double-click) is a no-op here;
- * it wires to the shared portal trail in N3.
+ * The Navigator: an in-flow LEFT panel that crawls the app's outbound PORTAL graph. It docks as a flex sibling
+ * (like the Drawer, mirrored to the left) and SHRINKS the workspace when it takes its column - not an overlay.
+ * It mounts at app-shell level (beside the trail + drawer), above the tab-switch boundary, so a future jump that
+ * switches tabs cannot unmount it mid-crawl - its tree lives in the ephemeral `navigatorStore`, not in this
+ * component. Header + filter strip ride the lighter `bg-card`, the tree body the slightly darker `bg-popover` -
+ * the Sidebar's contrast-of-importance idiom. The tree grows lazily: roots materialize on open, and each deeper
+ * level ONLY when its caret is clicked (via the N1 cache + in-flight dedup). App tokens only - a character branch
+ * shows a plain muted glyph, never game-tinted.
  */
 
 export function NavigatorPanel() {
@@ -136,7 +137,10 @@ export function NavigatorPanel() {
          if (expandedIds.has(node.instanceId)) { actions.collapse(node.instanceId); return; }
          setLoadingIds((prev) => new Set(prev).add(node.instanceId));
          void loadNavChildren(node.target).then((edges) => {
-            actions.expand(node.instanceId, buildChildNodes(node, edges));
+            // A branch that resolves to no outbound portals is a dead end: drop its caret (treat it as a leaf)
+            // rather than leave a twisty that expands to nothing.
+            if (edges.length === 0) actions.markChildless(node.instanceId);
+            else actions.expand(node.instanceId, buildChildNodes(node, edges));
             setLoadingIds((prev) => { const next = new Set(prev); next.delete(node.instanceId); return next; });
          });
       },
@@ -171,20 +175,24 @@ export function NavigatorPanel() {
    // state instead, so an edgeless workspace reads as "no portals here" rather than a bare row.
    const showEmpty = rows.length === 0 || (rootScope === 'current-workspace' && childCount === 0);
 
+   // Take/release the column by animating WIDTH (not an x-transform), so the workspace reflows and shrinks
+   // beside it - the Drawer's docking model, mirrored to the left. The inner content is fixed-width so it
+   // never squishes mid-animation; `overflow-hidden` on the outer clips it while the column grows.
    const slide = { type: 'tween' as const, duration: reduce ? 0 : 0.2, ease: 'easeOut' as const };
 
    return (
       <motion.aside
          aria-label={t('Navigator.title')}
-         initial={{ x: '-100%' }}
-         animate={{ x: 0 }}
-         exit={{ x: '-100%' }}
+         initial={{ width: 0 }}
+         animate={{ width: '18rem' }}
+         exit={{ width: 0 }}
          transition={slide}
          onPointerDown={(event) => event.stopPropagation()}
-         className="absolute inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-card shadow-sm"
+         className="flex h-full shrink-0 flex-col overflow-hidden border-r-2 border-border bg-card shadow-sm"
       >
-         {/* Header: mirrors the Layers-panel chrome. */}
-         <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-2.5">
+       <div className="flex h-full w-72 flex-col">
+         {/* Header: the lighter `bg-card` chrome (the Sidebar's header treatment). */}
+         <div className="flex items-center gap-2 border-b border-border bg-card px-3 py-2.5">
             <Waypoints className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <span className="text-sm font-semibold text-foreground">{t('Navigator.title')}</span>
             <span className="ml-auto text-xs tabular-nums text-muted-foreground">{showEmpty ? 0 : rows.length}</span>
@@ -210,8 +218,11 @@ export function NavigatorPanel() {
 
          <NavigatorFilterStrip />
 
+         {/* Tree body: the slightly darker `bg-popover` (the Sidebar's content treatment). A small symmetric
+             inset keeps the rows' rounded hover off the panel edges; each row carries its own left padding so
+             the chevron sits inset within the row, not flush against it. */}
          {!showEmpty ? (
-            <div role="tree" className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-1.5">
+            <div role="tree" className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-popover px-1.5 py-1.5">
                {rows.map((row) => (
                   <NavigatorRow
                      key={row.node.instanceId}
@@ -235,6 +246,7 @@ export function NavigatorPanel() {
                variant={filterActive && hasMaterial ? 'filtered' : rootScope === 'app-wide' ? 'firstRun' : 'workspace'}
             />
          )}
+       </div>
       </motion.aside>
    );
 }
@@ -245,7 +257,7 @@ function NavigatorEmptyState({ loading, variant }: { loading: boolean; variant: 
 
    if (loading) {
       return (
-         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
+         <div className="flex flex-1 flex-col items-center justify-center gap-2 bg-popover px-4 text-center text-muted-foreground">
             <Waypoints className="size-8 animate-pulse opacity-40" aria-hidden />
             <p className="text-xs">{t('Navigator.loading')}</p>
          </div>
@@ -260,7 +272,7 @@ function NavigatorEmptyState({ loading, variant }: { loading: boolean; variant: 
         : null;
 
    return (
-      <div className={cn('flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-muted-foreground')}>
+      <div className={cn('flex flex-1 flex-col items-center justify-center gap-2 bg-popover px-6 text-center text-muted-foreground')}>
          <Waypoints className="size-8 opacity-40" aria-hidden />
          <p className="text-xs">{message}</p>
          {hint && <p className="text-xs text-muted-foreground/70">{hint}</p>}

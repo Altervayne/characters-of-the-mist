@@ -31,8 +31,7 @@ import type { NoteHeading } from '@/lib/notes/noteOutline';
 /** The Navigator crawls the portal graph, not a note's sections, so link metadata resolves against no headings. */
 const NO_HEADINGS: NoteHeading[] = [];
 
-/** Each indent guide is this wide; the whole set clamps so a deep dive never pushes the name off-panel. */
-const GUIDE_STEP = '0.75rem';
+/** Indent guides clamp after this many levels, so a deep dive never pushes the name off-panel. */
 const MAX_GUIDES = 6;
 
 interface NavigatorRowProps {
@@ -83,7 +82,8 @@ export function NavigatorRow({
    // Dead ONLY on a confirmed miss; an unresolved (undefined) target reads live, so a resolving row never flashes dead.
    const dead = metadata?.exists === false;
    const seenAbove = node.seenAbove;
-   const showTwisty = node.crawlable && !dead;
+   // No caret on a leaf, a dead target, or a branch that already resolved to zero children (a dead end).
+   const showTwisty = node.crawlable && !dead && !node.childless;
 
    // A "seen above" pulse scrolls the canonical row into view and flashes it (the drawer-reveal idiom).
    useEffect(() => {
@@ -116,15 +116,19 @@ export function NavigatorRow({
          onClick={handleClick}
          onDoubleClick={() => onActivate(node)}
          className={cn(
-            'group flex min-h-8 cursor-pointer select-none items-center rounded pr-1.5 text-sm',
+            'group flex min-h-8 cursor-pointer select-none items-center rounded pl-2 pr-1.5 text-sm',
             'hover:bg-muted/60',
             (isSelected || isCurrentLocation) && 'bg-muted ring-1 ring-inset ring-primary/40',
             isPulsing && 'motion-safe:animate-drawer-reveal',
          )}
       >
-         {/* Indent guides: one faint rail per depth, clamped so a deep branch never scrolls the name sideways. */}
+         {/* Indent guides: one faint vertical rail per nesting level, centered in its column so the line threads
+             down through the parent's chevron and reads as a connector. Clamped so a deep branch never scrolls
+             the name sideways. */}
          {Array.from({ length: Math.min(depth, MAX_GUIDES) }).map((_, i) => (
-            <span key={i} aria-hidden className="h-8 shrink-0 border-l border-border/40" style={{ width: GUIDE_STEP }} />
+            <span key={i} aria-hidden className="flex h-8 w-5 shrink-0 justify-center">
+               <span className="h-full border-l border-border/60" />
+            </span>
          ))}
 
          {/* Twisty slot (a separate hit target): the crawl caret, the cycle marker, or an empty aligner. */}

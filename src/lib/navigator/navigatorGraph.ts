@@ -57,6 +57,8 @@ export interface NavNode {
    seenAbove: boolean;
    /** Whether this node exposes a crawl caret (a live board/note branch, not a back-edge). */
    crawlable: boolean;
+   /** Set once an expand resolves to zero outbound edges: a crawlable branch that is really a leaf, so it drops its caret. */
+   childless?: boolean;
 }
 
 /** The synthetic parent id the forest roots hang from; a root's own instance id is `root:<ordinal>`. */

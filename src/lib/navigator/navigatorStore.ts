@@ -54,6 +54,8 @@ interface NavigatorState {
       expand: (instanceId: string, children: NavNode[]) => void;
       /** Collapses a node (hides its subtree; the cached nodes stay for an instant re-expand). */
       collapse: (instanceId: string) => void;
+      /** Marks a crawlable node that resolved to zero edges as childless, so it drops its dead-end caret. */
+      markChildless: (instanceId: string) => void;
       /** Drops the whole tree (roots, nodes, expansion) - a hard reset for re-seeding. */
       reset: () => void;
    };
@@ -92,6 +94,16 @@ export const useNavigatorStore = create<NavigatorState>((set) => ({
             const expandedIds = new Set(state.expandedIds);
             expandedIds.delete(instanceId);
             return { expandedIds };
+         }),
+      // A branch that resolved to no outbound portals is really a leaf: flag it so the row drops its caret
+      // (the flag dies with the node on any re-seed, so a workspace switch never carries a stale mark).
+      markChildless: (instanceId) =>
+         set((state) => {
+            const node = state.nodes.get(instanceId);
+            if (!node || node.childless) return {};
+            const nodes = new Map(state.nodes);
+            nodes.set(instanceId, { ...node, childless: true });
+            return { nodes };
          }),
       reset: () => set({ nodes: new Map(), expandedIds: new Set() }),
    },

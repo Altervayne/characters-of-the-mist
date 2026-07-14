@@ -287,9 +287,10 @@ function DesktopCharacterSheetPage() {
                 under it). `overflow-hidden` clips the overlay's recede off-screen - no page scroll. */}
             <div className="relative flex flex-1 min-w-0 overflow-hidden">
 
-            {/* Navigator: a LEFT slide-over crawling the portal graph. Mounted here (above the per-tab
-                surface switch) so a jump-induced tab change never unmounts it mid-crawl; screen-space, never
-                inside a board's pan/zoom. Opposite the right-side Layers panel + Drawer. */}
+            {/* Navigator: an in-flow LEFT panel crawling the portal graph - a flex sibling (like the Drawer,
+                mirrored left) that SHRINKS the workspace rather than overlaying it. Mounted here (above the
+                per-tab surface switch) so a jump-induced tab change never unmounts it mid-crawl. Opposite the
+                right-side Layers panel + Drawer. */}
             <AnimatePresence>
                {navigatorOpen && <NavigatorPanel />}
             </AnimatePresence>

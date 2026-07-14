@@ -43,7 +43,7 @@ export function useInputDebouncer<T>(
   // write, so a tab/character switch (which unmounts the surface without a blur)
   // would otherwise drop the last keystrokes. The latest-ref is mandatory: it
   // holds the current render's closure so the flush commits the value the field
-  // was bound to when it last rendered — not a stale first-render one. Dirty-
+  // was bound to when it last rendered. Not a stale first-render one. Dirty-
   // guarded (localValue !== externalValue) so a debounce that already fired no-ops.
   const flushRef = useRef<() => void>(() => {});
   useEffect(() => {

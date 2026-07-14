@@ -41,31 +41,32 @@ export function NavigatorFilterStrip() {
    const workspaceOnly = rootScope === 'current-workspace';
 
    return (
-      <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-2">
-         {/* Root-set switch: ON crawls only the active workspace, OFF the whole forest. */}
+      <div className="flex flex-col gap-2 border-b border-border bg-card px-3 py-2">
+         {/* Root-set switch: its OWN row, full width, with a label free to wrap - ON crawls only the active
+             workspace, OFF the whole forest. */}
          <button
             type="button"
             role="switch"
             aria-checked={workspaceOnly}
             onClick={() => setScope(workspaceOnly ? 'app-wide' : 'current-workspace')}
             className={cn(
-               'flex min-w-0 shrink cursor-pointer items-center gap-1.5 rounded px-1.5 py-1 text-xs',
+               'flex w-full cursor-pointer items-start gap-1.5 rounded px-1.5 py-1 text-left text-xs',
                workspaceOnly ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
          >
             <span
                className={cn(
-                  'flex size-4 shrink-0 items-center justify-center rounded-sm border',
+                  'mt-px flex size-4 shrink-0 items-center justify-center rounded-sm border',
                   workspaceOnly ? 'border-primary/50 bg-primary/15 text-primary' : 'border-border text-transparent',
                )}
             >
                <Check className="size-3" aria-hidden />
             </span>
-            <span className="truncate">{t('Navigator.scopeToggle')}</span>
+            <span className="min-w-0">{t('Navigator.scopeToggle')}</span>
          </button>
 
-         {/* Per-kind chips: icon toggles, active = tinted. Off-kind rows hide; the walk is untouched. */}
-         <div className="ml-auto flex shrink-0 items-center gap-1">
+         {/* Per-kind chips: their own row - icon toggles, active = tinted. Off-kind rows hide; the walk is untouched. */}
+         <div className="flex items-center gap-1">
             {NAV_TYPE_FILTER_KINDS.map((kind) => {
                const Glyph = KIND_GLYPH[kind];
                const active = typeFilter.has(kind);
