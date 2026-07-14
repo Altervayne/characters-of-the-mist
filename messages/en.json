@@ -918,6 +918,19 @@
       "flawTagCountLabel": "Flaws",
       "wildcardSlotsLabel": "Wildcard Slots"
    },
+   "SettingsShell": {
+      "title": "Settings",
+      "groups": {
+         "configure": "Configure",
+         "help": "Help and info"
+      },
+      "sections": {
+         "general": "General",
+         "appearance": "Appearance",
+         "data": "Data and storage",
+         "learn": "Learn"
+      }
+   },
    "SettingsDialog": {
       "title": "App Settings",
       "description": "You will find adjustable settings for the app in general here, like the color theme, or light and dark mode.",

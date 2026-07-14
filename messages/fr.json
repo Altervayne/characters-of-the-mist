@@ -877,6 +877,19 @@
       "flawTagCountLabel": "Défauts",
       "wildcardSlotsLabel": "Emplacements Joker"
    },
+   "SettingsShell": {
+      "title": "[TO COMPLETE]",
+      "groups": {
+         "configure": "[TO COMPLETE]",
+         "help": "[TO COMPLETE]"
+      },
+      "sections": {
+         "general": "[TO COMPLETE]",
+         "appearance": "[TO COMPLETE]",
+         "data": "[TO COMPLETE]",
+         "learn": "[TO COMPLETE]"
+      }
+   },
    "SettingsDialog": {
       "title": "Paramètres de l'Application",
       "description": "Vous trouverez ici des paramètres pour l'application en général comme la palette de thème, le mode sombre ou clair, etc...",

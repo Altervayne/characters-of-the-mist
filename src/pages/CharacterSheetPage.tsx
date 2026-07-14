@@ -37,7 +37,7 @@ import { NavigatorPanel } from '@/components/organisms/navigator/NavigatorPanel'
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
-import { SettingsDialog } from '@/components/organisms/dialogs/SettingsDialog';
+import { SettingsShell } from '@/components/organisms/dialogs/settings/SettingsShell';
 import { ThemesDialog } from '@/components/organisms/dialogs/ThemesDialog';
 import { InfoDialog } from '@/components/organisms/dialogs/InfoDialog';
 import MainMenu from '@/components/organisms/MainMenu';
@@ -54,7 +54,6 @@ import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
 import { useNoteMarkdownIO } from '@/hooks/useNoteMarkdownIO';
-import { useAppTourDriver } from '@/hooks/useAppTourDriver';
 
 // The note and board surfaces are deferred: each pulls in a heavy stack (the
 // note editor drags in the whole markdown/inspector chain incl. the ~500 KiB CodeMirror
@@ -122,9 +121,9 @@ function DesktopCharacterSheetPage() {
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
    const isThemesOpen = useAppGeneralStateStore((state) => state.isThemesOpen);
    const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
-   const isTourOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
+   const isTourOpen = useAppGeneralStateStore((state) => state.isTourOpen);
    const { setDrawerOpen, setIsEditing, setSettingsOpen, setThemesOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
-   const { setSidebarCollapsed, toggleSidebarCollapsed, toggleNavigator } = useAppSettingsActions();
+   const { toggleSidebarCollapsed, toggleNavigator } = useAppSettingsActions();
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
 
@@ -234,21 +233,8 @@ function DesktopCharacterSheetPage() {
    });
 
 
-   // ############################
-   // ###   TUTORIAL HANDLER   ###
-   // ############################
-
-   const { startTour } = useAppTourDriver();
-
    // Warm the note + board lazy chunks on idle, so the first tab open doesn't cold-block on its fetch.
    usePrefetchTabChunks();
-
-   const handleStartTour = () => {
-      setSidebarCollapsed(false);
-      setSettingsOpen(false);
-      setDrawerOpen(false);
-      startTour();
-   };
 
 
    // While the active character is still being read from IndexedDB, show a neutral
@@ -440,10 +426,9 @@ function DesktopCharacterSheetPage() {
             card={challengeCardToEdit}
             modal={!isTourOpen}
          />
-         <SettingsDialog
+         <SettingsShell
             isOpen={isSettingsOpen}
             onOpenChange={setSettingsOpen}
-            onStartTour={handleStartTour}
          />
          <ThemesDialog
             isOpen={isThemesOpen}
