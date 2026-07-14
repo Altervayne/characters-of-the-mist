@@ -131,8 +131,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const items = useStore(store, (state) => state.items);
    const actions = useStore(store, (state) => state.actions);
 
-   // Selection is ephemeral: a local set, never persisted or routed through commands.
-   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+   // Selection lives in the board store as ephemeral state (shared with the layers panel), never
+   // persisted or routed through commands. Read here; mutated via the store's selection actions.
+   const selectedIds = useStore(store, (state) => state.selectedIds);
    const [isPanning, setIsPanning] = useState(false);
    // A Shift+background marquee (null when idle); a plain drag pans instead. Corners are in
    // client coords; the clip origin is captured at start so the overlay + world math never
@@ -151,17 +152,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     *  `world` is unused on a retarget; stable for the same box-memoization reason as the Edit handler. */
    const handleRequestRelinkPortal = useCallback((itemId: string, screen: { x: number; y: number }) => {
       setPortalPicker({ world: { x: 0, y: 0 }, screen, retargetItemId: itemId });
-   }, []);
-
-   /** Selects an item: `additive` (Shift/Ctrl) toggles it in/out of the set, else it replaces the set. */
-   const handleSelect = useCallback((id: string, additive: boolean) => {
-      setSelectedIds((prev) => {
-         if (!additive) return new Set([id]);
-         const next = new Set(prev);
-         if (next.has(id)) next.delete(id);
-         else next.add(id);
-         return next;
-      });
    }, []);
 
    // Cross-surface drop target for dragging a drawer card/tracker onto the canvas. Only
@@ -383,12 +373,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const handleDelete = useCallback(
       (id: string) => {
          void actions.deleteItems([id]);
-         setSelectedIds((prev) => {
-            if (!prev.has(id)) return prev;
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-         });
+         actions.deselectItem(id);
       },
       [actions],
    );
@@ -397,14 +382,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const handleDeleteSelection = useCallback(() => {
       if (selectedIds.size === 0) return;
       void actions.deleteItems([...selectedIds]);
-      setSelectedIds(new Set());
+      actions.clearSelection();
    }, [actions, selectedIds]);
 
    /** Duplicates the selection (copies + in-selection connections, offset), then selects the copies. */
    const handleDuplicateSelection = useCallback(async () => {
       if (selectedIds.size === 0) return;
       const newIds = await actions.duplicateItems([...selectedIds]);
-      setSelectedIds(new Set(newIds));
+      actions.setSelection(newIds);
    }, [actions, selectedIds]);
 
    /**
@@ -416,7 +401,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       (id: string, event: ReactPointerEvent) => {
          if (event.button !== 0) return; // right-click is for the radial menu, not a move
          const base = selectedIds.has(id) ? new Set(selectedIds) : new Set([id]);
-         if (!selectedIds.has(id)) setSelectedIds(base);
+         if (!selectedIds.has(id)) actions.setSelection([id]);
 
          // Expand the move set with every member of any zone in it, so a zone carries its contents.
          // `reevaluate` is the directly-grabbed non-zone items (their membership is recomputed on
@@ -605,7 +590,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          return;
       }
       // A plain background drag pans and clears the selection.
-      setSelectedIds(new Set());
+      actions.clearSelection();
       beginPan(event.clientX, event.clientY);
    };
 
@@ -629,7 +614,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             maxX: Math.max(a.x, b.x),
             maxY: Math.max(a.y, b.y),
          });
-         setSelectedIds((prev) => new Set([...prev, ...hits]));
+         actions.addToSelection(hits);
       }
       setMarquee(null);
    };
@@ -1024,7 +1009,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       // A non-zone item created over a zone joins it (same center-in-rectangle rule as a drop).
       const zoneId = kind === 'zone' ? undefined : zoneContaining(placement, zoneItems) ?? undefined;
       void actions.addItem({ ...placement, kind, z, zoneId, content: contentOverride ?? CREATABLE_BY_KIND[kind].makeContent() });
-      setSelectedIds(new Set([id]));
+      actions.setSelection([id]);
    };
 
    /** Drops a portal (target picked in the list) at `worldCenter` with the smart-default icon+text style. */
@@ -1084,7 +1069,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const placement = { id, x: worldCenter.x - size.width / 2, y: worldCenter.y - size.height / 2, width: size.width, height: size.height };
       const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
       void actions.addItem({ ...placement, kind: 'tracker', z, zoneId, content: { kind: 'tracker', mode: 'copy', data: emptyTracker(trackerType) } });
-      setSelectedIds(new Set([id]));
+      actions.setSelection([id]);
    };
 
    /**
@@ -1102,7 +1087,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const placement = { id, x: worldCenter.x - width / 2, y: worldCenter.y - height / 2, width, height };
       const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
       void actions.addItem({ ...placement, kind: 'card', z, zoneId, content: { kind: 'card', mode: 'copy', data: card } });
-      setSelectedIds(new Set([id]));
+      actions.setSelection([id]);
    };
 
    /**
@@ -1121,7 +1106,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const placement = { id, x: worldCenter.x - width / 2, y: worldCenter.y - height / 2, width, height };
       const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
       void actions.addItem({ ...placement, kind: 'card', z, zoneId, content: { kind: 'card', mode: 'copy', data: { ...card, expanded: true } } });
-      setSelectedIds(new Set([id]));
+      actions.setSelection([id]);
    };
 
    /**
@@ -1140,7 +1125,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          const placement = { id, x: worldCenter.x - spec.width / 2, y: worldCenter.y - spec.height / 2, width: spec.width, height: spec.height };
          const zoneId = zoneContaining(placement, zoneItems) ?? undefined;
          void actions.addItem({ ...placement, kind: spec.kind, z, zoneId, content: spec.content });
-         setSelectedIds(new Set([id]));
+         actions.setSelection([id]);
       });
    };
 
@@ -1266,7 +1251,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
       event.preventDefault();
       const itemId = target instanceof Element ? target.closest('[data-board-item-id]')?.getAttribute('data-board-item-id') ?? null : null;
-      if (itemId && !selectedIds.has(itemId)) setSelectedIds(new Set([itemId]));
+      if (itemId && !selectedIds.has(itemId)) actions.setSelection([itemId]);
       const world = cursorToWorld(event.clientX, event.clientY);
       if (!world) return;
       setRadial({ screen: { x: event.clientX, y: event.clientY }, world });
@@ -1358,7 +1343,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             zoom={viewport.zoom}
             moveDelta={moveDeltaFor(item.id)}
             isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
-            onSelect={handleSelect}
+            onSelect={actions.selectItem}
             onMoveStart={handleMoveStart}
             onResize={actions.resizeItem}
             onSyncSize={actions.syncItemSize}
@@ -1537,7 +1522,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                collapsedZoneIds={collapsedZoneIds}
                connectPreview={connectPreview}
                zIndex={connectionsZIndex(layerCount)}
-               onSelect={(id) => handleSelect(id, false)}
+               onSelect={(id) => actions.selectItem(id, false)}
                onUpdateStyle={(id, style) => void actions.updateItemContent(id, buildConnectionContent(items[id], style))}
                onDelete={handleDelete}
             />

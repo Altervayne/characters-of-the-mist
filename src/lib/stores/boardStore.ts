@@ -65,6 +65,13 @@ export interface BoardState {
     * `z`. Connections are items too (`kind: 'connection'`), in this same map.
     */
    items: Record<string, BoardItem>;
+   /**
+    * The current selection, ephemeral view state shared with the canvas: never persisted,
+    * never a command, never dirties the board (same discipline as the viewport / lastKnown caches).
+    */
+   selectedIds: Set<string>;
+   /** The hovered item id, or `null`. Ephemeral view state, same discipline as the selection. */
+   hoveredId: string | null;
    canUndo: boolean;
    canRedo: boolean;
    isLoading: boolean;
@@ -155,12 +162,24 @@ export interface BoardState {
       linkToDrawerItem: (drawerItemId: string) => Promise<Board | null>;
       undo: () => Promise<void>;
       redo: () => Promise<void>;
+      /** Selects `id`: `additive` (Shift/Ctrl) toggles it in/out, else it replaces the selection. Ephemeral view state. */
+      selectItem: (id: string, additive: boolean) => void;
+      /** Replaces the selection with exactly `ids`. */
+      setSelection: (ids: string[]) => void;
+      /** Unions `ids` into the selection (a marquee sweep adds to what's already held). */
+      addToSelection: (ids: string[]) => void;
+      /** Drops `id` from the selection; a no-op (stable reference) when it isn't selected. */
+      deselectItem: (id: string) => void;
+      /** Clears the selection. */
+      clearSelection: () => void;
+      /** Sets (or clears with `null`) the hovered item. Ephemeral view state. */
+      setHovered: (id: string | null) => void;
    };
 }
 
 const initialState: Pick<
    BoardState,
-   'boardId' | 'name' | 'viewport' | 'grid' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
+   'boardId' | 'name' | 'viewport' | 'grid' | 'drawerItemId' | 'hasUnsavedChanges' | 'items' | 'selectedIds' | 'hoveredId' | 'canUndo' | 'canRedo' | 'isLoading' | 'error'
 > = {
    boardId: null,
    name: '',
@@ -169,6 +188,8 @@ const initialState: Pick<
    drawerItemId: null,
    hasUnsavedChanges: false,
    items: {},
+   selectedIds: new Set(),
+   hoveredId: null,
    canUndo: false,
    canRedo: false,
    isLoading: false,
@@ -662,6 +683,34 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                await engine.redo();
                await syncItemsFromRepo();
             },
+
+            // Selection + hover: plain `set`s, never a command, never markDirty - view state, so it must
+            // not touch the repo, the undo stack, or the dirty flag (merely clicking an item would else
+            // flag the board changed and mis-route Ctrl+Z).
+            selectItem: (id, additive) => {
+               set((state) => {
+                  if (!additive) return { selectedIds: new Set([id]) };
+                  const next = new Set(state.selectedIds);
+                  if (next.has(id)) next.delete(id);
+                  else next.add(id);
+                  return { selectedIds: next };
+               });
+            },
+
+            setSelection: (ids) => set({ selectedIds: new Set(ids) }),
+
+            addToSelection: (ids) => set((state) => ({ selectedIds: new Set([...state.selectedIds, ...ids]) })),
+
+            deselectItem: (id) => set((state) => {
+               if (!state.selectedIds.has(id)) return state; // stable reference: no re-render when it wasn't selected
+               const next = new Set(state.selectedIds);
+               next.delete(id);
+               return { selectedIds: next };
+            }),
+
+            clearSelection: () => set({ selectedIds: new Set() }),
+
+            setHovered: (id) => set({ hoveredId: id }),
          },
       };
    });
