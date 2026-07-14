@@ -1713,9 +1713,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   {/* Positioning cluster: the live zoom %, then the world point the view is CENTERED on as two
                       editable fields - typing + Enter recenters on that point (keeping zoom). */}
                   <div className="flex shrink-0 items-center gap-1.5 px-0.5">
-                     <span className="text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
+                     <span className="text-xs tabular-nums text-muted-foreground mr-1.5">{Math.round(viewport.zoom * 100)}%</span>
                      {/* Separates the read-only zoom from the editable view-center fields, so the % never reads as an input. */}
-                     <div className="h-6 w-px shrink-0 bg-border" />
                      <BoardCoordinateField ref={jumpXRef} prefix="x" label={t('BoardView.coordinateX')} value={Math.round(viewCenter.x)} onCommit={(x) => jumpToViewCenter({ x, y: Math.round(viewCenter.y) })} />
                      <BoardCoordinateField prefix="y" label={t('BoardView.coordinateY')} value={Math.round(viewCenter.y)} onCommit={(y) => jumpToViewCenter({ x: Math.round(viewCenter.x), y })} />
                   </div>
