@@ -49,6 +49,12 @@ export interface LayerDropTarget {
    index: number;
 }
 
+/**
+ * The droppable id of the trailing zone below every group. Dropping here leaves any zone for the back of
+ * the root stack - the only way to pull a member out the BOTTOM of a zone that has nothing below it.
+ */
+export const LAYERS_ROOT_END = 'layers-root-end';
+
 /** The ascending (back -> front) member list of a scope: root items, or a zone's own members. */
 function scopeAscending(items: Record<string, BoardItem>, zoneId: string | null): BoardItem[] {
    const tree = buildBoardTree(items);
@@ -73,6 +79,13 @@ export function resolveLayerDrop(
    overId: string,
    position: 'before' | 'after',
 ): LayerDropTarget | null {
+   // The trailing drop zone: leave any zone for the back of the root stack (the escape hatch for a member
+   // out the bottom of a zone that has nothing below it). Ignores `position` - it's a single target.
+   if (overId === LAYERS_ROOT_END) {
+      const dragged = items[activeId];
+      if (!dragged || dragged.kind === 'connection') return null;
+      return { zoneId: null, index: 0 };
+   }
    if (activeId === overId) return null;
    const active = items[activeId];
    const over = items[overId];

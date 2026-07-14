@@ -17,9 +17,10 @@ import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import type { BoardItem } from '@/lib/types/board';
 
 /*
- * One layers-panel row: a drag grip (the reorder handle), the item's kind glyph, and a two-line stack - a
- * label on top, a muted metadata line below. A zone renders as a group HEADER (a collapse chevron + a tint
- * left-rail); its members nest beneath it, each carrying the same rail. Single-click selects; double-click
+ * One layers-panel row: an always-visible drag grip (the reorder handle), the item's kind glyph, and a
+ * two-line stack - a label on top, a muted metadata line below. A zone renders as a group HEADER (a collapse
+ * chevron); the panel wraps that header and its members in one tinted container, so the group reads as a
+ * single object holding its contents rather than a stack of tagged rows. Single-click selects; double-click
  * centers the canvas on the item; hovering probes it on the board. A non-zone label buffers locally and
  * commits once on blur/Enter, flushing on unmount so a board switch mid-rename never drops the edit; a zone
  * is renamed on the canvas, so its header name is read-only here.
@@ -35,8 +36,6 @@ interface LayersPanelRowProps {
    isZone: boolean;
    /** A zone header's collapsed state (shared with the canvas). Ignored off a zone. */
    collapsed?: boolean;
-   /** The group's tint rail color (the zone's own color); undefined falls back to a theme token. */
-   railColor?: string;
    /** Where the drop insertion line sits relative to this row, or null when it isn't the drop target. */
    insertion: 'before' | 'after' | null;
    /** Single-click: select this item only (no pan). */
@@ -51,7 +50,7 @@ interface LayersPanelRowProps {
    onToggleCollapse?: (id: string) => void;
 }
 
-export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, collapsed, railColor, insertion, onSelect, onActivate, onHover, onCommitLabel, onToggleCollapse }: LayersPanelRowProps) {
+export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, collapsed, insertion, onSelect, onActivate, onHover, onCommitLabel, onToggleCollapse }: LayersPanelRowProps) {
    const { t } = useTranslation();
    // The grip is the drag handle; the rest of the row stays free for click-to-select. Static strategy zeroes
    // the transform (resting rows never move), so only the source row's dim is read from `isDragging`.
@@ -87,7 +86,7 @@ export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, coll
    }, [isSelected]);
 
    return (
-      <div ref={setNodeRef} className="relative">
+      <div ref={setNodeRef} className="relative shrink-0">
          {insertion && (
             <div
                aria-hidden
@@ -100,11 +99,9 @@ export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, coll
             onDoubleClick={() => onActivate(item.id)}
             onPointerEnter={() => onHover(item.id)}
             onPointerLeave={() => onHover(null)}
-            style={railColor ? { borderLeftColor: railColor } : undefined}
             className={cn(
-               'group/row flex cursor-pointer items-center gap-1 rounded border-l-2 py-1 pr-1',
-               depth === 1 ? 'pl-3' : 'pl-1.5',
-               railColor ? '' : isZone || depth === 1 ? 'border-primary/40' : 'border-transparent',
+               'group/row flex cursor-pointer items-center gap-1 rounded py-1 pr-1',
+               depth === 1 ? 'pl-2.5' : 'pl-1.5',
                isSelected ? 'bg-muted ring-1 ring-inset ring-primary/40' : 'hover:bg-muted',
                isDragging && 'opacity-50',
             )}
@@ -117,7 +114,7 @@ export function LayersPanelRow({ item, metadata, isSelected, depth, isZone, coll
                onClick={(event) => event.stopPropagation()}
                title={t('LayersPanel.reorder')}
                aria-label={t('LayersPanel.reorder')}
-               className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/40 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100"
+               className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/40"
             >
                <GripVertical className="size-4" aria-hidden />
             </button>

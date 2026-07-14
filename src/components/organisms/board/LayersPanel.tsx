@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { useStore } from 'zustand';
-import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
 
 // -- Icon Imports --
@@ -14,11 +14,13 @@ import { Layers, X } from 'lucide-react';
 import { LayersPanelRow } from './LayersPanelRow';
 
 // -- Utils Imports --
+import { cn } from '@/lib/utils';
 import { boardItemDisplayName, boardItemKindIcon, boardItemMetadata } from '@/lib/board/boardItemDisplay';
 import { staticListSortingStrategy } from '@/lib/utils/dnd';
-import { buildLayerRows, resolveLayerDrop } from '@/lib/board/layersReorder';
+import { buildLayerRows, resolveLayerDrop, LAYERS_ROOT_END } from '@/lib/board/layersReorder';
 
 // -- Type Imports --
+import type { LayerRow } from '@/lib/board/layersReorder';
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import type { BoardItem } from '@/lib/types/board';
 import type { BoardStore } from '@/lib/stores/boardStore';
@@ -71,6 +73,20 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
    // The top-down group rows (front-first), and the sortable id list in the same order.
    const rows = useMemo(() => buildLayerRows(items, collapsedZoneIds), [items, collapsedZoneIds]);
    const rowIds = useMemo(() => rows.map((row) => row.item.id), [rows]);
+
+   // Fold the flat rows into render groups: a zone header + its members share ONE container so the group
+   // reads as a single object; every other row stands alone. buildLayerRows emits a header immediately
+   // followed by its members, so a single pass collects them.
+   const groups = useMemo(() => {
+      const out: ({ zone: LayerRow; members: LayerRow[] } | { solo: LayerRow })[] = [];
+      for (const row of rows) {
+         const last = out[out.length - 1];
+         if (row.isZone) out.push({ zone: row, members: [] });
+         else if (row.depth === 1 && last && 'zone' in last) last.members.push(row);
+         else out.push({ solo: row });
+      }
+      return out;
+   }, [rows]);
 
    // Members per zone, so a zone row can show its count without each row walking the whole map.
    const zoneMemberCounts = useMemo(() => {
@@ -132,6 +148,25 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
 
    const activeItem = activeId ? items[activeId] : null;
 
+   // One row, whether it stands alone or sits inside a zone container (the container owns the group tint).
+   const renderRow = (row: LayerRow) => (
+      <LayersPanelRow
+         key={row.item.id}
+         item={row.item}
+         metadata={boardItemMetadata(row.item, t, zoneMemberCounts.get(row.item.id))}
+         isSelected={selectedIds.has(row.item.id)}
+         depth={row.depth}
+         isZone={row.isZone}
+         collapsed={row.isZone ? collapsedZoneIds.has(row.item.id) : undefined}
+         insertion={indicator?.overId === row.item.id ? indicator.position : null}
+         onSelect={onSelect}
+         onActivate={onActivate}
+         onHover={onHover}
+         onCommitLabel={onCommitLabel}
+         onToggleCollapse={row.isZone ? onToggleZoneCollapse : undefined}
+      />
+   );
+
    return (
       <div
          onPointerDown={(event) => event.stopPropagation()}
@@ -167,25 +202,24 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
                onDragCancel={handleDragCancel}
             >
                <SortableContext items={rowIds} strategy={staticListSortingStrategy}>
-                  <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain p-1.5">
-                     {rows.map((row) => (
-                        <LayersPanelRow
-                           key={row.item.id}
-                           item={row.item}
-                           metadata={boardItemMetadata(row.item, t, zoneMemberCounts.get(row.item.id))}
-                           isSelected={selectedIds.has(row.item.id)}
-                           depth={row.depth}
-                           isZone={row.isZone}
-                           collapsed={row.isZone ? collapsedZoneIds.has(row.item.id) : undefined}
-                           railColor={zoneColor(row.isZone ? row.item.id : row.scopeZoneId)}
-                           insertion={indicator?.overId === row.item.id ? indicator.position : null}
-                           onSelect={onSelect}
-                           onActivate={onActivate}
-                           onHover={onHover}
-                           onCommitLabel={onCommitLabel}
-                           onToggleCollapse={row.isZone ? onToggleZoneCollapse : undefined}
-                        />
-                     ))}
+                  <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-1.5">
+                     {groups.map((group) => {
+                        if (!('zone' in group)) return renderRow(group.solo);
+                        const color = zoneColor(group.zone.item.id);
+                        return (
+                           <div
+                              key={group.zone.item.id}
+                              className={cn('shrink-0 space-y-0.5 rounded-md border border-border/60 bg-muted/20 p-0.5', !color && 'border-l-2 border-l-primary/40')}
+                              style={color ? { borderLeftWidth: 2, borderLeftColor: color } : undefined}
+                           >
+                              {renderRow(group.zone)}
+                              {group.members.map(renderRow)}
+                           </div>
+                        );
+                     })}
+                     {/* The empty tail below every group is a drop target: release here to pull an item out to
+                         the root stack - the way out the bottom of a zone that has nothing under it. */}
+                     <RootEndDropZone showLine={indicator?.overId === LAYERS_ROOT_END} />
                   </div>
                </SortableContext>
                <DragOverlay dropAnimation={null}>
@@ -205,6 +239,16 @@ function LayerDragPreview({ item, t }: { item: BoardItem; t: ReturnType<typeof u
          {/* eslint-disable-next-line react-hooks/static-components */}
          <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
          <span className="truncate">{boardItemDisplayName(item, t)}</span>
+      </div>
+   );
+}
+
+/** The trailing droppable filling the list's empty tail; a drop here resolves to the back of the root stack. */
+function RootEndDropZone({ showLine }: { showLine: boolean }) {
+   const { setNodeRef } = useDroppable({ id: LAYERS_ROOT_END });
+   return (
+      <div ref={setNodeRef} className="relative min-h-10 flex-1">
+         {showLine && <div aria-hidden className="pointer-events-none absolute inset-x-2 top-1 h-0.5 rounded-full bg-primary" />}
       </div>
    );
 }

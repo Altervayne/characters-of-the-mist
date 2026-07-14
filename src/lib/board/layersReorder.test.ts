@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { buildLayerRows, resolveLayerDrop } from './layersReorder';
+import { buildLayerRows, resolveLayerDrop, LAYERS_ROOT_END } from './layersReorder';
 
 // -- Type Imports --
 import type { BoardItem } from '@/lib/types/board';
@@ -84,6 +84,13 @@ describe('resolveLayerDrop', () => {
       // Drag Z2 onto Z1's member: a zone can't nest, so it lands at root adjacent to Z1 (never zoneId: 'Z1').
       const target = resolveLayerDrop(map, 'Z2', 'm', 'before');
       expect(target?.zoneId).toBeNull();
+   });
+
+   it('drops a member out the bottom onto the trailing zone (leaves the zone for the back of root)', () => {
+      // A zone with nothing below it: the trailing drop zone is the only way out the bottom.
+      const map = toMap([zone('Z', 0), leaf('m1', 0, { zoneId: 'Z' }), leaf('m2', 1, { zoneId: 'Z' })]);
+      expect(resolveLayerDrop(map, 'm2', LAYERS_ROOT_END, 'before')).toEqual({ zoneId: null, index: 0 });
+      expect(resolveLayerDrop(map, 'm2', LAYERS_ROOT_END, 'after')).toEqual({ zoneId: null, index: 0 });
    });
 
    it('is a no-op on a self drop', () => {
