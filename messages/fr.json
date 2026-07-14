@@ -341,6 +341,28 @@
          "drawing": "[TO COMPLETE]"
       }
    },
+   "Navigator": {
+      "title": "[TO COMPLETE]",
+      "close": "[TO COMPLETE]",
+      "refresh": "[TO COMPLETE]",
+      "expand": "[TO COMPLETE]",
+      "collapse": "[TO COMPLETE]",
+      "loading": "[TO COMPLETE]",
+      "empty": "[TO COMPLETE]",
+      "emptyWorkspaceHint": "[TO COMPLETE]",
+      "emptyFilterHint": "[TO COMPLETE]",
+      "firstRun": "[TO COMPLETE]",
+      "seenAbove": "[TO COMPLETE]",
+      "seenAboveHint": "[TO COMPLETE]",
+      "scopeToggle": "[TO COMPLETE]",
+      "untitled": "[TO COMPLETE]",
+      "kinds": {
+         "board": "[TO COMPLETE]",
+         "note": "[TO COMPLETE]",
+         "character": "[TO COMPLETE]",
+         "external": "[TO COMPLETE]"
+      }
+   },
    "DragPuck": {
       "openAsTab": "[TO COMPLETE]",
       "open": "[TO COMPLETE]",
@@ -559,7 +581,8 @@
          "settings": "Paramètres",
          "info": "À Propos",
          "patchNotes": "Patch Notes",
-         "diceTray": "[TO COMPLETE]"
+         "diceTray": "[TO COMPLETE]",
+         "navigator": "[TO COMPLETE]"
       }
    },
    "DiceTray": {
@@ -1283,6 +1306,7 @@
       "commands": {
          "toggleEdit": "Basculer : Mode Édition",
          "toggleDrawer": "Basculer : Tiroir",
+         "toggleNavigator": "[TO COMPLETE]",
          "openSettings": "Ouvrir : Paramètres",
          "toggleDiceTray": "[TO COMPLETE]",
          "toggleLayersPanel": "[TO COMPLETE]",

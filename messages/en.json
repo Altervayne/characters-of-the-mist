@@ -341,6 +341,28 @@
          "drawing": "Drawing"
       }
    },
+   "Navigator": {
+      "title": "Navigator",
+      "close": "Close navigator",
+      "refresh": "Refresh",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "loading": "Scanning the whole graph...",
+      "empty": "No portals in scope",
+      "emptyWorkspaceHint": "No portals in this workspace — turn off \"This workspace only\" to see the whole graph.",
+      "emptyFilterHint": "No matches — clear the filters to see more.",
+      "firstRun": "Nothing links anywhere yet. Add a portal to a board, or a link in a note, and it will show up here.",
+      "seenAbove": "Seen above",
+      "seenAboveHint": "Already shown above — jump to it",
+      "scopeToggle": "This workspace only",
+      "untitled": "Untitled",
+      "kinds": {
+         "board": "Board",
+         "note": "Note",
+         "character": "Character",
+         "external": "External link"
+      }
+   },
    "DragPuck": {
       "openAsTab": "Open as tab",
       "open": "Open",
@@ -573,7 +595,8 @@
          "settings": "Settings",
          "info": "App Info",
          "patchNotes": "Patch Notes",
-         "diceTray": "Dice Tray"
+         "diceTray": "Dice Tray",
+         "navigator": "Navigator"
       }
    },
    "DiceTray": {
@@ -1369,6 +1392,7 @@
       "commands": {
          "toggleEdit": "Toggle: Edit Mode",
          "toggleDrawer": "Toggle: Drawer",
+         "toggleNavigator": "Toggle: Navigator",
          "openSettings": "Open: Settings",
          "toggleDiceTray": "Toggle: Dice Tray",
          "toggleLayersPanel": "Toggle: Layers Panel",

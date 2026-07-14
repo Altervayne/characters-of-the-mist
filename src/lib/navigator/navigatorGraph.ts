@@ -43,6 +43,8 @@ export interface NavNode {
    parentInstanceId: string | null;
    /** The edge target, reused from the shared resolver's union. */
    target: LinkTarget;
+   /** The source-side caption (a board portal's `style.label`), the row's PREFERRED name; absent for a note link. */
+   label?: string;
    /** `${type}:${entityId}` - the cache + cycle-detection key. */
    canonicalKey: string;
    /** The displayed/filterable kind. */
@@ -119,6 +121,7 @@ function buildNode(edge: PortalEdge, instanceId: string, parentInstanceId: strin
       instanceId,
       parentInstanceId,
       target: edge.target,
+      label: edge.label,
       canonicalKey,
       navKind: navKindForTarget(edge.target),
       depth,
@@ -145,4 +148,53 @@ export function buildChildNodes(parent: NavNode, edges: PortalEdge[]): NavNode[]
    return edges.map((edge, ordinal) =>
       buildNode(edge, makeChildInstanceId(parent.instanceId, ordinal), parent.instanceId, parent.depth + 1, ancestorKeys),
    );
+}
+
+// ==================
+//  Visible-tree flattening (pure; consumed by the panel's render list)
+// ==================
+
+/** One row the panel renders: the node plus its VISIBLE depth (hidden intermediates don't consume a level). */
+export interface NavVisibleRow {
+   node: NavNode;
+   /** Indent depth counting only the visible ancestors above it, so a filtered-out parent collapses the indent. */
+   depth: number;
+}
+
+/** The trailing ordinal of an instance id (`root:0:2` -> 2), the child order within a parent. */
+function instanceOrdinal(instanceId: string): number {
+   return Number(instanceId.slice(instanceId.lastIndexOf(':') + 1));
+}
+
+/** A parent's materialized children, in edge order (a forest root's parent id is `null`). */
+function childrenOf(nodes: Map<string, NavNode>, parentInstanceId: string | null): NavNode[] {
+   const out: NavNode[] = [];
+   for (const node of nodes.values()) if (node.parentInstanceId === parentInstanceId) out.push(node);
+   return out.sort((a, b) => instanceOrdinal(a.instanceId) - instanceOrdinal(b.instanceId));
+}
+
+/**
+ * Flattens the materialized tree into the ordered, filtered row list the panel renders. Depth-first from the
+ * forest roots, descending into a node only when it is expanded. The type filter hides a row whose kind is
+ * off, but the WALK is never filtered: a hidden-yet-expanded intermediate still surfaces its lit descendants
+ * (they promote to its visible depth), so a filtered branch stays traversable to a matching leaf below it.
+ */
+export function flattenVisibleTree(
+   nodes: Map<string, NavNode>,
+   expandedIds: Set<string>,
+   typeFilter: ReadonlySet<NavKind>,
+): NavVisibleRow[] {
+   const rows: NavVisibleRow[] = [];
+   const walk = (parentInstanceId: string | null, depth: number): void => {
+      for (const node of childrenOf(nodes, parentInstanceId)) {
+         // `element` leaves carry no filter chip, so they are never hidden; only the four chip kinds toggle.
+         const visible = node.navKind === 'element' || typeFilter.has(node.navKind);
+         if (visible) rows.push({ node, depth });
+         // Descend into an expanded node regardless of its own visibility; a hidden node keeps the same depth
+         // so its promoted descendants don't gain a phantom indent level.
+         if (expandedIds.has(node.instanceId)) walk(node.instanceId, visible ? depth + 1 : depth);
+      }
+   };
+   walk(null, 0);
+   return rows;
 }

@@ -7,6 +7,7 @@ import {
    buildRootNodes,
    canonicalKeyForTarget,
    classifySeenAbove,
+   flattenVisibleTree,
    isCrawlableTarget,
    makeChildInstanceId,
    navKindForTarget,
@@ -14,7 +15,7 @@ import {
 } from './navigatorGraph';
 
 // -- Type Imports --
-import type { NavNode, PortalEdge } from './navigatorGraph';
+import type { NavKind, NavNode, PortalEdge } from './navigatorGraph';
 import type { LinkTarget } from '@/lib/portals/linkTarget';
 
 /*
@@ -152,5 +153,63 @@ describe('buildChildNodes / buildRootNodes (position + ancestor bookkeeping)', (
       const labeled: PortalEdge = { target: { kind: 'entity', entity: 'note', id: 'n' } as LinkTarget, label: 'To the note' };
       const [root] = buildRootNodes([labeled]);
       expect(root.navKind).toBe('note');
+      expect(root.label).toBe('To the note');
+   });
+});
+
+describe('flattenVisibleTree (render list: order, depth, filter passthrough)', () => {
+   const ALL: Set<NavKind> = new Set(['board', 'note', 'character', 'external']);
+
+   // A -> [note N, character C]; N -> [board B, element E]. Instance ids: A=root:0, N=root:0:0, C=root:0:1,
+   // B=root:0:0:0, E=root:0:0:1.
+   function fixture() {
+      const [rootA] = buildRootNodes([board('a')]);
+      const [nodeN, nodeC] = buildChildNodes(rootA, [
+         { target: { kind: 'entity', entity: 'note', id: 'n' } },
+         { target: { kind: 'entity', entity: 'character', id: 'c' } },
+      ]);
+      const [nodeB, nodeE] = buildChildNodes(nodeN, [board('b'), { target: { kind: 'element', drawerItemId: 'e' } }]);
+      const nodes = new Map<string, NavNode>();
+      for (const node of [rootA, nodeN, nodeC, nodeB, nodeE]) nodes.set(node.instanceId, node);
+      return { nodes, rootA, nodeN, nodeC, nodeB, nodeE };
+   }
+
+   it('walks depth-first in edge order, descending only into expanded nodes', () => {
+      const { nodes, rootA, nodeN } = fixture();
+      const expanded = new Set([rootA.instanceId, nodeN.instanceId]);
+      const rows = flattenVisibleTree(nodes, expanded, ALL);
+      expect(rows.map((row) => [row.node.canonicalKey, row.depth])).toEqual([
+         ['board:a', 0],
+         ['note:n', 1],
+         ['board:b', 2],
+         ['element:e', 2],
+         ['character:c', 1],
+      ]);
+   });
+
+   it('hides a collapsed node subtree (no walk past an unexpanded caret)', () => {
+      const { nodes, rootA } = fixture();
+      const rows = flattenVisibleTree(nodes, new Set([rootA.instanceId]), ALL);
+      expect(rows.map((row) => row.node.canonicalKey)).toEqual(['board:a', 'note:n', 'character:c']);
+   });
+
+   it('hides a filtered-out kind but keeps a filtered intermediate traversable to its lit descendants', () => {
+      const { nodes, rootA, nodeN } = fixture();
+      const expanded = new Set([rootA.instanceId, nodeN.instanceId]);
+      // Drop notes: N is hidden, but its board/element descendants promote to N's depth (no phantom indent).
+      const rows = flattenVisibleTree(nodes, expanded, new Set(['board', 'character', 'external']));
+      expect(rows.map((row) => [row.node.canonicalKey, row.depth])).toEqual([
+         ['board:a', 0],
+         ['board:b', 1],
+         ['element:e', 1],
+         ['character:c', 1],
+      ]);
+   });
+
+   it('never hides an element leaf - it carries no filter chip', () => {
+      const { nodes, rootA, nodeN } = fixture();
+      const expanded = new Set([rootA.instanceId, nodeN.instanceId]);
+      const rows = flattenVisibleTree(nodes, expanded, new Set<NavKind>());
+      expect(rows.map((row) => row.node.canonicalKey)).toEqual(['element:e']);
    });
 });

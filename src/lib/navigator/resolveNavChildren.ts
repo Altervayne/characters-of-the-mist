@@ -4,14 +4,13 @@ import { getNote } from '@/lib/notes/noteRepository';
 import { getBoardItemIdMap, getNoteItemIdMap, getItem } from '@/lib/drawer/drawerRepository';
 
 // -- Local Imports --
-import { collectNoteLinkHrefs } from '@/lib/notes/noteAssets';
-import { parseLinkHref } from '@/lib/portals/linkTarget';
-import { portalTargetToLinkTarget } from '@/lib/portals/portalTarget';
+import { boardPortalItemsToEdges, noteBodyToEdges } from './navigatorEdges';
 
 // -- Type Imports --
+import type { BoardItemLike } from './navigatorEdges';
 import type { PortalEdge } from './navigatorGraph';
 import type { LinkTarget } from '@/lib/portals/linkTarget';
-import type { Board, BoardItemContent, BoardItemKind, Note, PortalBoardContent } from '@/lib/types/board';
+import type { Board, Note } from '@/lib/types/board';
 
 /*
  * The Navigator's one genuinely-new reader: an entity's OUTBOUND edges, read live per expansion (no persisted
@@ -23,9 +22,6 @@ import type { Board, BoardItemContent, BoardItemKind, Note, PortalBoardContent }
  * recently-open) entity lives in its working table; a saved-but-closed one lives only as its drawer snapshot.
  * Reading both means a portal crawls into a closed board/note just as well as an open one.
  */
-
-/** A common projection over the two board-item homes: enough to filter portals and read their content. */
-type BoardItemLike = { kind: BoardItemKind; content: BoardItemContent };
 
 /**
  * A board's items, dual-home: the working `boardItems` rows when a working board row exists (the source of
@@ -67,30 +63,12 @@ export async function resolveNavChildren(target: LinkTarget): Promise<PortalEdge
    if (target.kind !== 'entity') return [];
 
    if (target.entity === 'board') {
-      const items = await readBoardItems(target.id);
-      const edges: PortalEdge[] = [];
-      for (const item of items) {
-         // The record's `kind` discriminant mirrors `content.kind`; a non-portal item (embed, card, note tile) is not an edge.
-         if (item.kind !== 'portal') continue;
-         const portal = item.content as PortalBoardContent;
-         const edgeTarget = portalTargetToLinkTarget(portal.target);
-         if (!edgeTarget) continue; // board-element -> null: omitted from the tree v1
-         const label = portal.style.label || undefined;
-         edges.push({ target: edgeTarget, label });
-      }
-      return edges;
+      return boardPortalItemsToEdges(await readBoardItems(target.id));
    }
 
    if (target.entity === 'note') {
       const body = await readNoteBody(target.id);
-      if (body === null) return [];
-      const edges: PortalEdge[] = [];
-      for (const href of collectNoteLinkHrefs(body)) {
-         const edgeTarget = parseLinkHref(href);
-         // Note edges are cotm:// links only: an entity (owns a tab) or a tabless element. External/section/unknown drop out.
-         if (edgeTarget.kind === 'entity' || edgeTarget.kind === 'element') edges.push({ target: edgeTarget });
-      }
-      return edges;
+      return body === null ? [] : noteBodyToEdges(body);
    }
 
    // character: a leaf v1 (a character sheet carries no outbound link field yet).

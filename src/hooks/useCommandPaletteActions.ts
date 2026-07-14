@@ -72,7 +72,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
-   const { setSideBySideView, toggleDiceTray, toggleNoteOutline, toggleLayersPanel } = useAppSettingsActions();
+   const { setSideBySideView, toggleDiceTray, toggleNoteOutline, toggleLayersPanel, toggleNavigator } = useAppSettingsActions();
    const { setThemesOpen, requestBoardAction } = useAppGeneralStateActions();
    const { setMode } = useThemeMode();
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
@@ -145,6 +145,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // #########################
       { id: 'toggleEdit', scope: 'character', label: t('CommandPalette.commands.toggleEdit'), keywords: ['edit', 'toggle'], icon: Pencil, group: t('CommandPalette.groups.general'), action: onToggleEditMode },
       { id: 'toggleDrawer', scope: 'global', label: t('CommandPalette.commands.toggleDrawer'), keywords: ['drawer', 'toggle'], icon: PanelLeftOpen, group: t('CommandPalette.groups.general'), action: onToggleDrawer },
+      { id: 'toggleNavigator', scope: 'global', label: t('CommandPalette.commands.toggleNavigator'), keywords: ['navigator', 'portals', 'graph', 'links', 'crawl', 'jump', 'toggle', 'panel'], icon: Waypoints, group: t('CommandPalette.groups.general'), action: toggleNavigator },
       { id: 'openSettings', scope: 'global', label: t('CommandPalette.commands.openSettings'), keywords: ['settings', 'preferences', 'config'], icon: Settings, group: t('CommandPalette.groups.general'), action: onOpenSettings },
       { id: 'importFile', scope: 'global', label: t('CommandPalette.commands.importFile'), keywords: ['import', 'file', 'load', 'open', '.cotm'], icon: Import, group: t('CommandPalette.groups.general'), action: onImportFile },
       // Undo/Redo route themselves (drawer / board / character), so they show in any workspace.

@@ -33,6 +33,7 @@ import { DiceTrayPanel } from '@/components/organisms/dice/DiceTrayPanel';
 import { SidebarMenu } from '@/components/organisms/SidebarMenu';
 import { TabStrip } from '@/components/organisms/tabs/TabStrip';
 import { PortalTrailBar } from '@/components/organisms/tabs/PortalTrailBar';
+import { NavigatorPanel } from '@/components/organisms/navigator/NavigatorPanel';
 import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
@@ -116,15 +117,33 @@ function DesktopCharacterSheetPage() {
    const isDrawerOpen = useAppGeneralStateStore((state) => state.isDrawerOpen);
    const isDrawerExpanded = useAppGeneralStateStore((state) => state.isDrawerExpanded);
    const isSidebarCollapsed = useAppSettingsStore((state) => state.isSidebarCollapsed);
+   const navigatorOpen = useAppSettingsStore((state) => state.navigatorOpen);
    const isEditing = useAppGeneralStateStore((state) => state.isEditing);
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
    const isThemesOpen = useAppGeneralStateStore((state) => state.isThemesOpen);
    const isInfoOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const isTourOpen = useAppGeneralStateStore((state) => state.isInfoOpen);
    const { setDrawerOpen, setIsEditing, setSettingsOpen, setThemesOpen, setInfoOpen, setPatchNotesOpen } = useAppGeneralStateActions();
-   const { setSidebarCollapsed, toggleSidebarCollapsed } = useAppSettingsActions();
+   const { setSidebarCollapsed, toggleSidebarCollapsed, toggleNavigator } = useAppSettingsActions();
 
    const areTrackersEditable = isEditing || isTrackersAlwaysEditable;
+
+   // A bare `N` toggles the Navigator (its main door - a power-nav tool). Ignored while editing text (a field,
+   // a board/note editor) and when a modifier is held, so browser shortcuts stay intact. Global (unlike the
+   // board-only `L` for Layers), since the Navigator crawls from any workspace.
+   useEffect(() => {
+      const onKeyDown = (event: KeyboardEvent) => {
+         if (event.ctrlKey || event.metaKey || event.altKey) return;
+         const target = event.target;
+         if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+         if (event.key === 'n' || event.key === 'N') {
+            event.preventDefault();
+            toggleNavigator();
+         }
+      };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [toggleNavigator]);
 
    // ==================
    //  Drag and Drop
@@ -267,6 +286,13 @@ function DesktopCharacterSheetPage() {
                 overlay that covers exactly this region (so it starts at the sidebar's right edge, never
                 under it). `overflow-hidden` clips the overlay's recede off-screen - no page scroll. */}
             <div className="relative flex flex-1 min-w-0 overflow-hidden">
+
+            {/* Navigator: a LEFT slide-over crawling the portal graph. Mounted here (above the per-tab
+                surface switch) so a jump-induced tab change never unmounts it mid-crawl; screen-space, never
+                inside a board's pan/zoom. Opposite the right-side Layers panel + Drawer. */}
+            <AnimatePresence>
+               {navigatorOpen && <NavigatorPanel />}
+            </AnimatePresence>
 
             {/* Character Sheet Area. `min-w-0` caps this flex item to its allocation so
                 the tab strip scrolls instead of growing the item and pushing the

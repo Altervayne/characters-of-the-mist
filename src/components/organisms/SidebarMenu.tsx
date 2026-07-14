@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // -- Icon Imports --
-import { Edit, Dices, BookUser, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw, FileUp } from 'lucide-react';
+import { Edit, Dices, BookUser, Waypoints, Save, Download, Upload, Layers, Trash2, PanelLeftOpen, PanelLeftClose, Settings, Info, Newspaper, SaveAll, SquareMenu, RefreshCw, FileUp } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -76,6 +76,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
    // The app-wide dice tray toggles a bottom panel (reachable from any window).
    const isDiceTrayOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
    const { toggleDiceTray } = useAppSettingsActions();
+
+   // The Navigator toggles a left slide-over that crawls the portal graph (reachable from any window).
+   const navigatorOpen = useAppSettingsStore((state) => state.navigatorOpen);
+   const { toggleNavigator } = useAppSettingsActions();
 
    const characterImportInputRef = useRef<HTMLInputElement>(null);
    const characterFormRef = useRef<HTMLFormElement>(null);
@@ -458,8 +462,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
             {/* Context-specific scrollable buttons */}
             <div className="flex flex-col grow w-full min-h-0 overflow-y-auto overscroll-contain">
-               {/* Submenus: the two panel toggles (Drawer + Dice Tray) lead every context, side by side and
-                   identical wherever you are. Each goes muted while its panel is open. */}
+               {/* Submenus: the panel toggles (Drawer + Dice Tray + Navigator) lead every context, side by side
+                   and identical wherever you are. Each goes muted while its panel is open. */}
                <motion.section layout transition={{ duration: 0.2 }} className={cn(
                   "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
                   isCollapsed ? "px-0" : "px-2"
@@ -469,6 +473,9 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   </SidebarButton>
                   <SidebarButton data-tour="dice-tray-button" isCollapsed={isCollapsed} onClick={toggleDiceTray} variant={isDiceTrayOpen ? 'secondary' : 'default'} Icon={Dices}>
                      {t('CharacterSheetPage.SidebarMenu.diceTray')}
+                  </SidebarButton>
+                  <SidebarButton data-tour="navigator-button" isCollapsed={isCollapsed} onClick={toggleNavigator} variant={navigatorOpen ? 'secondary' : 'default'} Icon={Waypoints}>
+                     {t('CharacterSheetPage.SidebarMenu.navigator')}
                   </SidebarButton>
                </motion.section>
 

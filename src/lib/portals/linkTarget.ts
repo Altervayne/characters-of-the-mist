@@ -16,12 +16,12 @@
 
 /**
  * The render host that owns the clicked link, stamped by the rendering component (never stored on the note).
- * The board-embed host's `noteId` is OPTIONAL: a note tile stamps it, but a board PORTAL (which wraps no note)
- * omits it - the only host-dependent branch (element -> spawn-on-board) needs `boardId`/`itemId`, not `noteId`,
- * so one `resolveLinkAction` serves both surfaces.
+ * `noteId` is OPTIONAL on BOTH variants: a note tile / a note tab stamps it, but a board PORTAL (which wraps no
+ * note) and a Navigator jump (which is not on a note at all) omit it - no host-dependent branch reads `noteId`
+ * (the element -> spawn-on-board branch needs `boardId`/`itemId`), so one `resolveLinkAction` serves every surface.
  */
 export type NoteHostContext =
-   | { kind: 'tab'; noteId: string }
+   | { kind: 'tab'; noteId?: string }
    | { kind: 'board-embed'; boardId: string; itemId: string; noteId?: string };
 
 /** The classified destination of a note-body link. */
