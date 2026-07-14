@@ -9,6 +9,7 @@ import {
    TEXT_FONT_FAMILIES,
    TEXT_FONT_LABELS,
    TEXT_FONT_STACKS,
+   TEXT_SIZE_PRESETS,
    defaultTextStyle,
    steppedTextSize,
    textStyleToCss,
@@ -62,6 +63,23 @@ describe('the font token tables', () => {
       expect(TEXT_FONT_STACKS.handwriting).toContain("'Caveat'");
       expect(TEXT_FONT_STACKS.marker).toContain("'Permanent Marker'");
       expect(TEXT_FONT_STACKS.rounded).toContain("'Fredoka'");
+   });
+});
+
+describe('the size presets', () => {
+   it('includes the classic small sizes and stays sorted with no duplicates', () => {
+      expect(TEXT_SIZE_PRESETS).toContain(7);
+      expect(TEXT_SIZE_PRESETS).toContain(8);
+      expect(TEXT_SIZE_PRESETS).toContain(10);
+      expect([...TEXT_SIZE_PRESETS]).toEqual([...TEXT_SIZE_PRESETS].sort((a, b) => a - b));
+      expect(new Set(TEXT_SIZE_PRESETS).size).toBe(TEXT_SIZE_PRESETS.length);
+   });
+
+   it('keeps every preset within the clamp bounds', () => {
+      for (const preset of TEXT_SIZE_PRESETS) {
+         expect(preset).toBeGreaterThanOrEqual(MIN_TEXT_SIZE);
+         expect(preset).toBeLessThanOrEqual(MAX_TEXT_SIZE);
+      }
    });
 });
 

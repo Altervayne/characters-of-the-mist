@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useCallback, useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -10,11 +10,11 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Icon Imports --
-import { ChevronLeft, ChevronRight, Copy, Crosshair, FilePlus2, LayoutGrid, ListChecks, Maximize, MousePointer2, PenTool, Plus, Skull, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Crosshair, LayoutGrid, Maximize, MousePointer2, PenTool, Trash2, X } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
-import { fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
+import { centerViewport, fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from '@/lib/board/boardCoordinates';
 import { gridBackground } from '@/lib/board/gridStyle';
 import { hexTile } from '@/lib/board/hexGrid';
 import { DEFAULT_CONNECTION_STYLE } from '@/lib/board/boardConnections';
@@ -27,7 +27,8 @@ import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
-import { CREATABLE_REGISTRY, CREATABLE_BY_KIND, type CreatableKind } from '@/lib/creation/creatableRegistry';
+import { CREATABLE_BY_KIND, type CreatableKind } from '@/lib/creation/creatableRegistry';
+import { CREATION_TAXONOMY } from '@/lib/creation/creationTaxonomy';
 import { makePortalContent, portalTargetFromInsert } from '@/lib/creation/portalContent';
 import { PORTAL_MIN_SIZE } from '@/lib/board/portalSizing';
 import { EMPTY_STROKE_IDS, PendingEraseContext } from '@/lib/board/PendingEraseContext';
@@ -41,7 +42,7 @@ import { BoardConnectionsLayer } from './BoardConnectionsLayer';
 import { BoardToolSettingsBar } from './BoardToolSettingsBar';
 import { BoardGroupToolbar } from './BoardGroupToolbar';
 import { BoardRadialMenu, type RadialNode } from './BoardRadialMenu';
-import { BoardAddGameElementMenu } from './BoardAddGameElementMenu';
+import { BoardAddMenu } from './BoardAddMenu';
 import { BoardGridMenu } from './BoardGridMenu';
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
 import { LinkTargetList } from '@/components/molecules/links/LinkTargetList';
@@ -62,7 +63,7 @@ import type { BoardStore } from '@/lib/stores/boardStore';
 import type { ActiveTool, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
-import type { GameSystem, GeneralItemType } from '@/lib/types/drawer';
+import type { GameSystem } from '@/lib/types/drawer';
 import type { CreateCardOptions } from '@/lib/types/creation';
 
 /*
@@ -73,19 +74,6 @@ import type { CreateCardOptions } from '@/lib/types/creation';
  * drawer items, connections, and threats are later prompts.
  */
 
-/**
- * The tracker create actions, in ring order. `itemType` maps each `TrackerType` to its drawer item
- * type so the radial pulls the SAME glyph as the drawer list view (via `getItemTypeIconComponent`),
- * rather than its own ad-hoc icons.
- */
-const RADIAL_TRACKERS: { id: string; trackerType: TrackerType; itemType: GeneralItemType; labelKey: string }[] = [
-   { id: 'status', trackerType: 'STATUS', itemType: 'STATUS_TRACKER', labelKey: 'Trackers.addStatus' },
-   { id: 'story-tag', trackerType: 'STORY_TAG', itemType: 'STORY_TAG_TRACKER', labelKey: 'Trackers.addStoryTag' },
-   { id: 'story-theme', trackerType: 'STORY_THEME', itemType: 'STORY_THEME_TRACKER', labelKey: 'Trackers.addStoryTheme' },
-];
-
-/** The portal create leaf's glyph, from the shared registry so the radial matches the toolbar/menu later. */
-const PortalCreateIcon = CREATABLE_BY_KIND.portal.icon;
 
 /** Rebuilds a connection's content with a new style, preserving its endpoints. The style carries
  *  the full set (width + color + dash), so any single-facet edit keeps the others. */
@@ -120,7 +108,12 @@ const TOOLBAR_TOP_CLEARANCE = 48;
  * the slide-in/out; the side (`left-0.5`/`right-0.5`) is appended per arrow.
  */
 const BAR_ARROW_CLASS =
-   'absolute top-0 bottom-0 z-10 my-auto flex size-7 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
+   'absolute top-0 bottom-0 z-10 my-auto flex size-8 items-center justify-center rounded border border-border bg-popover/95 text-popover-foreground shadow-md backdrop-blur-sm hover:bg-muted cursor-pointer';
+
+/** Screen-px the bottom-center tool bar keeps from the canvas floor when the dice tray is closed. */
+const BAR_EDGE_GAP = 12;
+/** Screen-px clearance the bar keeps above the open dice tray (which shares the bottom-center anchor). */
+const BAR_TRAY_GAP = 12;
 
 /** The canvas; renders nothing when no board tab is active. */
 export function BoardView() {
@@ -205,12 +198,35 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       observer.observe(el);
       return () => observer.disconnect();
    }, []);
-   // The world point at the clip's center, for the corner readout. Origin cancels for the centre, so
+   // The world point at the clip's center, for the positioning cluster. Origin cancels for the centre, so
    // it derives from the live viewport + clip size alone (no layout read during render).
    const viewCenter = screenToWorld(clipRect.width / 2, clipRect.height / 2, { left: 0, top: 0 }, viewport);
-   // Reset-view places the world origin at the clip's center (so the readout reads 0, 0), not the
+   // Reset-view places the world origin at the clip's center (so the cluster reads 0, 0), not the
    // top-left corner that a zero offset would give.
-   const originViewport = (): Viewport => ({ x: clipRect.width / 2, y: clipRect.height / 2, zoom: 1 });
+   const originViewport = (): Viewport => centerViewport({ x: 0, y: 0 }, clipRect, 1);
+   // Recenters the viewport on a world point (keeping zoom): the coordinate cluster's jump. Same centering
+   // as fit-to-content / reset-view; routed through the debounced, non-undoable camera setter.
+   const jumpToViewCenter = (world: Point) => actions.setViewport(centerViewport(world, clipRect, viewport.zoom));
+
+   // The app-wide dice tray shares this bar's bottom-center anchor, so lift the bar clear of it when open.
+   // The tray is content-sized (its height varies with dice / history), so measure the live panel rather
+   // than guess; closed, the height resets so the bar drops back to the floor.
+   const diceTrayOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
+   const [diceTrayHeight, setDiceTrayHeight] = useState(0);
+   useEffect(() => {
+      if (!diceTrayOpen) { setDiceTrayHeight(0); return; }
+      const panel = document.querySelector('[data-dice-tray-panel]');
+      if (!(panel instanceof HTMLElement)) return;
+      const observer = new ResizeObserver(() => setDiceTrayHeight(panel.offsetHeight));
+      observer.observe(panel);
+      return () => observer.disconnect();
+   }, [diceTrayOpen]);
+   // The bar's live bottom offset: above the open tray, else a small gap off the floor.
+   const barBottom = diceTrayOpen ? diceTrayHeight + BAR_TRAY_GAP : BAR_EDGE_GAP;
+
+   // The positioning cluster's X input, focused by the palette's jump command (it can't carry a coordinate
+   // through the one-shot bridge, so it focuses the field and lets the user type).
+   const jumpXRef = useRef<HTMLInputElement | null>(null);
 
    // The in-progress connect drag (preview line follows the cursor in world coords).
    const [connectPreview, setConnectPreview] = useState<{ fromId: string; cursor: Point } | null>(null);
@@ -1193,6 +1209,12 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       else if (pendingBoardAction === 'saveItemToDrawer') saveSelectedItemToDrawer(false);
       else if (pendingBoardAction === 'saveItemToDrawerAs') saveSelectedItemToDrawer(true);
       else if (pendingBoardAction.startsWith('setGrid:')) void actions.setGrid({ ...grid, type: pendingBoardAction.slice('setGrid:'.length) as BoardGridType });
+      else if (pendingBoardAction === 'focusJumpToCoordinate') {
+         // Reveal the X input if the bar has scrolled it out of view, then focus + select it to type over.
+         jumpXRef.current?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+         jumpXRef.current?.focus();
+         jumpXRef.current?.select();
+      }
       else if (pendingBoardAction.startsWith('create:')) {
          const kind = pendingBoardAction.slice('create:'.length) as CreatableKind;
          // A picker-first kind (a portal) opens its target picker instead of dropping a targetless item.
@@ -1355,71 +1377,64 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       );
    };
 
-   // The radial's node tree: a "New" submenu holding the per-kind create leaves (each placed at the
-   // click), plus duplicate + delete leaves at the root when something is selected. Built only while
-   // the menu is open. The root stays lean - it grows later via the same tree.
+   // The radial's node tree: the three creation groups (Basic / Rich / Game) as flat root branches,
+   // each opening straight to its leaves, plus duplicate + delete leaves at the root when something is
+   // selected. Built only while the menu is open, from the same taxonomy the Add popover reads.
    const radialRoot: RadialNode[] = radial
       ? [
-           {
-              id: 'new-board',
-              icon: <Plus className="h-5 w-5" />,
-              label: t('BoardView.radialNewBoardElement'),
-              children: [
-                 // Immediate one-click creates; a picker-first kind (a portal) is offered as its own leaf below.
-                 ...CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => ({
-                    id: kind,
-                    icon: <Icon className="h-5 w-5" />,
-                    label: t(`BoardView.${labelKey}`),
-                    onSelect: () => createItemAt(kind, radial.world),
-                 })),
-                 {
-                    // Ellipsis label: picking a target follows before the portal drops.
-                    id: 'portal',
-                    icon: <PortalCreateIcon className="h-5 w-5" />,
-                    label: t('BoardView.addPortal'),
-                    onSelect: () => setPortalPicker({ world: radial.world, screen: radial.screen }),
-                 },
-              ],
-           },
-           {
-              id: 'new-sheet',
-              icon: <FilePlus2 className="h-5 w-5" />,
-              label: t('BoardView.radialNewSheetElement'),
-              children: [
-                 {
-                    id: 'trackers',
-                    icon: <ListChecks className="h-5 w-5" />,
-                    label: t('BoardView.radialTrackers'),
-                    children: RADIAL_TRACKERS.map(({ id, trackerType, itemType, labelKey }) => {
-                       const Icon = getItemTypeIconComponent(itemType);
-                       return { id, icon: <Icon className="h-5 w-5" />, label: t(labelKey), onSelect: () => createTrackerAt(trackerType, radial.world) };
+           ...CREATION_TAXONOMY.map((group): RadialNode => {
+              const GroupIcon = group.icon;
+              if (group.key === 'game') {
+                 return {
+                    id: `group-${group.key}`,
+                    icon: <GroupIcon className="h-5 w-5" />,
+                    label: t(group.labelKey),
+                    children: group.rows.map((row): RadialNode => {
+                       const RowIcon = row.icon;
+                       if (row.kind === 'trackers') {
+                          return {
+                             id: 'trackers',
+                             icon: <RowIcon className="h-5 w-5" />,
+                             label: t(row.labelKey),
+                             children: row.rows.map(({ id, trackerType, itemType, labelKey }) => {
+                                const Icon = getItemTypeIconComponent(itemType);
+                                return { id, icon: <Icon className="h-5 w-5" />, label: t(labelKey), onSelect: () => createTrackerAt(trackerType, radial.world) };
+                             }),
+                          };
+                       }
+                       if (row.kind === 'cards') {
+                          return {
+                             id: 'cards',
+                             icon: <RowIcon className="h-5 w-5" />,
+                             label: t(row.labelKey),
+                             children: GAME_CARD_OPTIONS.map(({ game }) => {
+                                const { Icon } = GAME_VISUALS[game];
+                                // Open the creation popover for that game; the drop happens on confirm.
+                                return { id: `card-${game}`, icon: <Icon className="h-5 w-5" />, label: t(`Drawer.Types.${game}`), onSelect: () => setPendingCard({ game, world: radial.world, screen: radial.screen }) };
+                             }),
+                          };
+                       }
+                       // A challenge is always LEGENDS-flavored (no theme wizardry), so it drops immediately.
+                       return { id: 'challenge', icon: <RowIcon className="h-5 w-5" />, label: t(row.labelKey), onSelect: () => createChallengeAt(radial.world) };
                     }),
-                 },
-                 {
-                    id: 'cards',
-                    icon: <LayoutGrid className="h-5 w-5" />,
-                    label: t('BoardView.radialCards'),
-                    children: GAME_CARD_OPTIONS.map(({ game }) => {
-                       const { Icon } = GAME_VISUALS[game];
-                       return {
-                          id: `card-${game}`,
-                          icon: <Icon className="h-5 w-5" />,
-                          label: t(`Drawer.Types.${game}`),
-                          // Open the creation popover for that game; the drop happens on confirm.
-                          onSelect: () => setPendingCard({ game, world: radial.world, screen: radial.screen }),
-                       };
-                    }),
-                 },
-                 {
-                    // A peer leaf, not nested under a game: a challenge is always LEGENDS-flavored (no
-                    // theme wizardry to configure), so it drops immediately - no creation popover.
-                    id: 'challenge',
-                    icon: <Skull className="h-5 w-5" />,
-                    label: t('BoardView.addChallenge'),
-                    onSelect: () => createChallengeAt(radial.world),
-                 },
-              ],
-           },
+                 };
+              }
+              return {
+                 id: `group-${group.key}`,
+                 icon: <GroupIcon className="h-5 w-5" />,
+                 label: t(group.labelKey),
+                 children: group.kinds.map((kind) => {
+                    const { icon: Icon, labelKey, requiresPicker } = CREATABLE_BY_KIND[kind];
+                    return {
+                       id: kind,
+                       icon: <Icon className="h-5 w-5" />,
+                       label: t(`BoardView.${labelKey}`),
+                       // A picker-first kind (a portal) opens its target picker before it drops.
+                       onSelect: () => (requiresPicker ? setPortalPicker({ world: radial.world, screen: radial.screen }) : createItemAt(kind, radial.world)),
+                    };
+                 }),
+              };
+           }),
            ...(selectedIds.size > 0
               ? [
                    { id: 'duplicate', icon: <Copy className="h-5 w-5" />, label: t('BoardView.duplicateSelection'), onSelect: () => void handleDuplicateSelection() },
@@ -1601,14 +1616,27 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             />
          )}
 
-         {/* Single top-left bar: the board name leads, then the palette + view controls. It grows to
-             fit the title and, when its contents exceed the canvas, scrolls horizontally inside (capped
-             at the canvas width minus its margins) - the wheel scrolls it, the scrollbar is hidden, and
-             edge arrows appear per side (like the tab strip). Stops the pointer so editing the title or
-             scrolling the bar never pans. `overflow-x-clip` clips a slide-out arrow at the card edge. */}
+         {/* Board name pill: identity, not a tool, so it sits in its own top-center frame rather than crowding
+             the tool bar. Same frosted chrome; stops the pointer so editing the title never pans, and grows
+             to fit the title (capped at the canvas width) via the field's own auto-size mirror. */}
          <div
             onPointerDown={(event) => event.stopPropagation()}
-            className="absolute left-3 top-3 flex w-fit max-w-[calc(100%-1.5rem)] items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm"
+            className="absolute left-1/2 top-3 z-40 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center overflow-hidden rounded-md border border-border bg-card/90 p-1.5 shadow-sm backdrop-blur-sm"
+         >
+            <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
+         </div>
+
+         {/* Bottom-center tool bar: the mode segment, the contextual creation/drawing section, then the view
+             controls + positioning cluster. It grows to fit its contents and, when they exceed the canvas,
+             scrolls horizontally inside (capped at the canvas width minus its margins) - the wheel scrolls it,
+             the scrollbar is hidden, and edge arrows appear per side (like the tab strip). Stops the pointer so
+             editing a field or scrolling the bar never pans. Lifts above the dice tray when it's open, and sits
+             above the board content but below the floating windows / radial / tray (z-40). `overflow-x-clip`
+             clips a slide-out arrow at the card edge. */}
+         <div
+            onPointerDown={(event) => event.stopPropagation()}
+            style={{ bottom: barBottom }}
+            className="absolute left-1/2 z-40 flex w-fit max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm transition-[bottom] duration-300 ease-out"
          >
             <AnimatePresence>
                {barCanScrollLeft && (
@@ -1632,9 +1660,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             {/* The only scrollable element: capped to the card width (min-w-0) and scrolls; the wheel
                 handler maps a vertical wheel to horizontal scroll, so the hidden scrollbar shows nothing. */}
             <div ref={barScrollRef} className="min-w-0 overflow-x-auto overscroll-x-contain scrollbar-hide">
-               <div ref={barContentRef} className="flex w-max items-center gap-1 p-1">
-                  <BoardNameField name={name} placeholder={t('BoardView.boardNamePlaceholder')} onCommit={(value) => void actions.renameBoard(value)} />
-                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+               <div ref={barContentRef} className="flex w-max items-center gap-1.5 p-1.5">
                   {/* Sticky mode segment (Elements / Drawing): labeled toggles with a stable icon per mode, so
                       the modes read as distinct from the icon-only clusters below. The Drawing glyph never
                       tracks the active gesture; the specific gesture lives in the settings bar. Drawing is
@@ -1652,13 +1678,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                       mode segment above and the view controls below stay visible in both modes. */}
                   {activeTool === 'select' ? (
                      <>
-                        <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-                        {CREATABLE_REGISTRY.filter(({ requiresPicker }) => !requiresPicker).map(({ kind, icon: Icon, labelKey }) => (
-                           <ToolbarButton key={kind} title={t(`BoardView.${labelKey}`)} onClick={() => handleAddItem(kind)}>
-                              <Icon className="h-4 w-4" />
-                           </ToolbarButton>
-                        ))}
-                        <BoardAddGameElementMenu
+                        <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+                        <BoardAddMenu
+                           onAddItem={handleAddItem}
+                           onOpenPortalPicker={openPortalPickerAtViewCenter}
                            onAddTracker={(trackerType) => createTrackerAt(trackerType, currentViewCenter())}
                            onPickCardGame={handlePickCardGame}
                            onAddChallenge={() => createChallengeAt(currentViewCenter())}
@@ -1678,7 +1701,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                         onSetSides={setPolygonSides}
                      />
                   )}
-                  <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+                  <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
                   <BoardGridMenu grid={grid} onSelect={(type) => void actions.setGrid({ ...grid, type })} />
                   <ToolbarButton title={t('BoardView.fitToContent')} onClick={handleFitToContent}>
                      <Maximize className="h-4 w-4" />
@@ -1686,7 +1709,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   <ToolbarButton title={t('BoardView.returnToOrigin')} onClick={() => actions.setViewport(originViewport())}>
                      <Crosshair className="h-4 w-4" />
                   </ToolbarButton>
-                  <span className="shrink-0 px-1.5 text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
+                  <div className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+                  {/* Positioning cluster: the live zoom %, then the world point the view is CENTERED on as two
+                      editable fields - typing + Enter recenters on that point (keeping zoom). */}
+                  <div className="flex shrink-0 items-center gap-1.5 px-0.5">
+                     <span className="text-xs tabular-nums text-muted-foreground">{Math.round(viewport.zoom * 100)}%</span>
+                     {/* Separates the read-only zoom from the editable view-center fields, so the % never reads as an input. */}
+                     <div className="h-6 w-px shrink-0 bg-border" />
+                     <BoardCoordinateField ref={jumpXRef} prefix="x" label={t('BoardView.coordinateX')} value={Math.round(viewCenter.x)} onCommit={(x) => jumpToViewCenter({ x, y: Math.round(viewCenter.y) })} />
+                     <BoardCoordinateField prefix="y" label={t('BoardView.coordinateY')} value={Math.round(viewCenter.y)} onCommit={(y) => jumpToViewCenter({ x: Math.round(viewCenter.x), y })} />
+                  </div>
                </div>
             </div>
 
@@ -1708,13 +1740,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   </motion.button>
                )}
             </AnimatePresence>
-         </div>
-
-         {/* View-center coordinate readout: where the clip is centered in world space, to orient on a
-             large board. Screen-space, bottom-right, inert (never eats a pan/click), tabular so the
-             digits don't jump on negative or large values. Kept out of the scrolling top bar. */}
-         <div className="pointer-events-none absolute bottom-2 right-2 select-none rounded bg-card/85 px-2 py-1 font-mono text-sm font-medium tabular-nums text-foreground/80 shadow-sm backdrop-blur-sm">
-            x {Math.round(viewCenter.x)}, y {Math.round(viewCenter.y)}
          </div>
 
          {/* Right-click radial menu (portals to the body; screen-space, edge-clamped). */}
@@ -1953,7 +1978,7 @@ function BoardNameField({ name, placeholder, onCommit }: { name: string; placeho
    return (
       <div className="relative shrink-0">
          {/* Invisible mirror: its width (text or the placeholder when empty) sizes the field. */}
-         <span aria-hidden className="invisible block whitespace-pre px-2 text-sm font-semibold">{text || placeholder}</span>
+         <span aria-hidden className="invisible block whitespace-pre px-2.5 text-base font-semibold">{text || placeholder}</span>
          <input
             type="text"
             value={text}
@@ -1968,11 +1993,60 @@ function BoardNameField({ name, placeholder, onCommit }: { name: string; placeho
                   event.currentTarget.blur();
                }
             }}
-            className="pointer-events-auto absolute inset-0 h-full w-full rounded bg-transparent px-2 text-sm font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/60 hover:bg-muted/60 focus:bg-muted/50"
+            className="pointer-events-auto absolute inset-0 h-full w-full rounded bg-transparent px-2.5 text-base font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/60 hover:bg-muted/60 focus:bg-muted/50"
          />
       </div>
    );
 }
+
+/**
+ * One axis of the view-center coordinate (X or Y) in the positioning cluster: shows the rounded world
+ * value the view is centered on, editable to recenter the viewport on that axis. Controlled buffer,
+ * commit on blur/Enter, revert on Escape; the buffer resyncs when the value changes externally (a pan /
+ * zoom / fit) via adjust-state-during-render. A non-numeric or unchanged entry reverts. Stops the pointer
+ * so editing never pans; the X field forwards its ref so the palette's jump command can focus it.
+ */
+const BoardCoordinateField = forwardRef<HTMLInputElement, { prefix: string; label: string; value: number; onCommit: (value: number) => void }>(
+   function BoardCoordinateField({ prefix, label, value, onCommit }, ref) {
+      const [text, setText] = useState(String(value));
+      const [synced, setSynced] = useState(value);
+      if (value !== synced) {
+         setSynced(value);
+         setText(String(value));
+      }
+
+      const commit = () => {
+         const parsed = Number.parseInt(text, 10);
+         if (Number.isFinite(parsed) && parsed !== value) onCommit(parsed);
+         else setText(String(value)); // invalid or unchanged -> revert to the live value
+      };
+
+      return (
+         <label className="flex items-center gap-0.5">
+            <span aria-hidden className="font-mono text-xs text-muted-foreground">{prefix}</span>
+            <input
+               ref={ref}
+               type="text"
+               inputMode="numeric"
+               value={text}
+               aria-label={label}
+               title={label}
+               onChange={(event) => setText(event.target.value)}
+               onPointerDown={(event) => event.stopPropagation()}
+               onBlur={commit}
+               onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.currentTarget.blur();
+                  else if (event.key === 'Escape') {
+                     setText(String(value));
+                     event.currentTarget.blur();
+                  }
+               }}
+               className="w-12 rounded bg-transparent px-1 py-0.5 text-center font-mono text-xs tabular-nums text-foreground outline-none hover:bg-muted/60 focus:bg-muted/50"
+            />
+         </label>
+      );
+   },
+);
 
 /** A button in the canvas palette/view toolbar. */
 function ToolbarButton({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
@@ -1982,7 +2056,7 @@ function ToolbarButton({ title, onClick, children }: { title: string; onClick: (
          onClick={onClick}
          title={title}
          aria-label={title}
-         className="flex shrink-0 items-center justify-center rounded p-1.5 text-foreground hover:bg-muted cursor-pointer"
+         className="flex shrink-0 items-center justify-center rounded p-2 text-foreground hover:bg-muted cursor-pointer"
       >
          {children}
       </button>
@@ -2000,7 +2074,7 @@ function ToolToggleButton({ title, label, active, onClick, children }: { title: 
          aria-label={title}
          aria-pressed={active}
          className={cn(
-            'flex shrink-0 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-sm hover:bg-muted cursor-pointer',
+            'flex shrink-0 items-center justify-center gap-1.5 rounded px-2.5 py-2 text-sm hover:bg-muted cursor-pointer',
             active ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
          )}
       >

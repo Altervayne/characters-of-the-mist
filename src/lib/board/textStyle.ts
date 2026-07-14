@@ -37,12 +37,12 @@ export const TEXT_FONT_LABELS: Record<TextFontFamily, string> = {
 export const TEXT_FONT_FAMILIES: TextFontFamily[] = ['sans', 'serif', 'mono', 'handwriting', 'marker', 'rounded'];
 
 /** The size ladder (world px) the stepper walks between {@link MIN_TEXT_SIZE} and {@link MAX_TEXT_SIZE}. */
-export const TEXT_SIZE_PRESETS = [12, 14, 16, 20, 24, 32, 48, 64, 96] as const;
+export const TEXT_SIZE_PRESETS = [7, 8, 10, 12, 14, 16, 20, 24, 32, 48, 64, 96] as const;
 
 /** A fresh text element's size. */
 export const DEFAULT_TEXT_SIZE = 24;
-/** Size clamp bounds (world px). */
-export const MIN_TEXT_SIZE = 8;
+/** Size clamp bounds (world px); the floor holds the classic small presets (7). */
+export const MIN_TEXT_SIZE = 7;
 export const MAX_TEXT_SIZE = 240;
 
 /** A fresh text element's style: adaptive color, sans, default size, no emphasis, left-aligned. */

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // -- Local Imports --
-import { MAX_ZOOM, MIN_ZOOM, clampZoom, fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from './boardCoordinates';
+import { MAX_ZOOM, MIN_ZOOM, centerViewport, clampZoom, fitViewport, gridSpacing, itemsInMarquee, screenDeltaToWorld, screenToWorld, zoomToCursor } from './boardCoordinates';
 
 // -- Type Imports --
 import type { BoardItem, Viewport } from '@/lib/types/board';
@@ -47,6 +47,21 @@ describe('clampZoom', () => {
       expect(clampZoom(0.05)).toBe(MIN_ZOOM); // below the floor clamps up
       expect(clampZoom(5)).toBe(MAX_ZOOM);
       expect(clampZoom(1)).toBe(1);
+   });
+});
+
+describe('centerViewport', () => {
+   const clip = { width: 800, height: 600 };
+
+   it('puts the given world point at the clip center for the kept zoom', () => {
+      const vp = centerViewport({ x: 120, y: -40 }, clip, 1.5);
+      expect(vp.zoom).toBe(1.5);
+      // The world point maps back to the clip center under this viewport.
+      expect(screenToWorld(clip.width / 2, clip.height / 2, { left: 0, top: 0 }, vp)).toEqual({ x: 120, y: -40 });
+   });
+
+   it('centers the world origin at the clip center at zoom 1 (the reset-view case)', () => {
+      expect(centerViewport({ x: 0, y: 0 }, clip, 1)).toEqual({ x: 400, y: 300, zoom: 1 });
    });
 });
 

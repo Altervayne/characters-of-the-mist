@@ -278,7 +278,7 @@ function TextSizeControl({ size, onApplyStyle }: { size: number; onApplyStyle: (
                }}
                onBlur={commitDraft}
                onPointerDown={(event) => event.stopPropagation()}
-               className="w-7 bg-transparent px-1 text-center text-xs tabular-nums text-popover-foreground outline-none"
+               className="w-10 bg-transparent px-1 text-center text-xs tabular-nums text-popover-foreground outline-none"
             />
             <Popover open={open} onOpenChange={setOpen}>
                <PopoverTrigger asChild>

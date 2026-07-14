@@ -69,6 +69,18 @@ export function gridSpacing(zoom: number): number {
    return Math.min(GRID_MAX_SCREEN, Math.max(GRID_MIN_SCREEN, 40 * zoom));
 }
 
+/**
+ * Returns the viewport that places `worldCenter` at the clip's screen center, keeping `zoom`. The one
+ * centering the fit-to-content, reset-view, and coordinate-jump paths all share, so they can't disagree.
+ */
+export function centerViewport(worldCenter: { x: number; y: number }, clipSize: { width: number; height: number }, zoom: number): Viewport {
+   return {
+      zoom,
+      x: clipSize.width / 2 - worldCenter.x * zoom,
+      y: clipSize.height / 2 - worldCenter.y * zoom,
+   };
+}
+
 /** A world-space axis-aligned rectangle (e.g. a marquee), as min/max corners. */
 export interface WorldRect {
    minX: number;
@@ -123,13 +135,7 @@ export function fitViewport(items: BoardItem[], clipSize: { width: number; heigh
    const zoom = clampZoom(fitZoom);
 
    // Place the content's world center at the clip's screen center.
-   const centerX = (minX + maxX) / 2;
-   const centerY = (minY + maxY) / 2;
-   return {
-      zoom,
-      x: clipSize.width / 2 - centerX * zoom,
-      y: clipSize.height / 2 - centerY * zoom,
-   };
+   return centerViewport({ x: (minX + maxX) / 2, y: (minY + maxY) / 2 }, clipSize, zoom);
 }
 
 /**

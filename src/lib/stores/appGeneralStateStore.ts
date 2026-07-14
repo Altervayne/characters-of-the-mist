@@ -34,6 +34,7 @@ export type BoardAction =
    | 'saveItemToDrawerAs'
    | `create:${CreatableKind}`
    | `setGrid:${BoardGridType}`
+   | 'focusJumpToCoordinate'
    | `embedNote:${string}`;
 
 interface AppGeneralState {
