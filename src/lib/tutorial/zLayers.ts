@@ -1,0 +1,15 @@
+/**
+ * Stacking band for the tutorial engine. Sits ABOVE the command palette and the
+ * drag-morph cluster (both z-1000) so a step can spotlight or drive them, and below
+ * the dev-preview hazard frame (9998) and the legacy-data boot gate (10000), which
+ * must never coexist with a running tutorial. Centralized here so no arbitrary
+ * z-index drifts out of the band.
+ */
+export const TUTORIAL_Z = {
+   /** Dim veil + interaction blocker. */
+   scrim: 1100,
+   /** Spotlight halo ring. */
+   ring: 1101,
+   /** Coach-mark card. */
+   coach: 1102,
+} as const;

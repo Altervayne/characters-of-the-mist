@@ -1393,6 +1393,16 @@
       }
    },
    "Tutorial": {
+      "controls": {
+         "back": "[TO COMPLETE]",
+         "next": "[TO COMPLETE]",
+         "done": "[TO COMPLETE]",
+         "skip": "[TO COMPLETE]",
+         "skipStep": "[TO COMPLETE]"
+      },
+      "progress": "[TO COMPLETE]",
+      "header": "[TO COMPLETE]",
+      "anchorMissing": "[TO COMPLETE]",
       "welcome_title": "Bienvenue dans Characters of the Mist !",
       "welcome_content": "Ce court tutoriel vous guidera à travers les fonctionnalités principales. Vous pouvez quitter à tout moment en appuyant sur le 'X' en haut à droite de cette petite fenêtre, ou n'importe où à l'extérieur. Si vous quittez par accident, vous pouvez relancer le tutoriel depuis le menu des Paramètres.",
       "mainMenuGames_title": "Choisissez votre jeu",

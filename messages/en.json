@@ -1487,6 +1487,16 @@
       }
    },
    "Tutorial": {
+      "controls": {
+         "back": "Back",
+         "next": "Next",
+         "done": "Done",
+         "skip": "Skip",
+         "skipStep": "Skip this step"
+      },
+      "progress": "{{current}} / {{total}}",
+      "header": "{{name}} · {{current}} of {{total}}",
+      "anchorMissing": "This part of the app has changed, so the tutorial is ending here.",
       "welcome_title": "Welcome to Characters of the Mist!",
       "welcome_content": "This short tour will guide you through the main features. You can exit at any time by pressing the 'X' at the top right of this small window, or anywhere outside. If you exit by accident, you can start the tutorial again from the Settings menu.",
 
