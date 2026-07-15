@@ -288,7 +288,10 @@ function DesktopCharacterSheetPage() {
             {/* Character Sheet Area. `min-w-0` caps this flex item to its allocation so
                 the tab strip scrolls instead of growing the item and pushing the
                 sidebar/drawer off-screen. */}
-            <div {...getRootProps()} className="relative w-full h-full flex-1 min-w-0 flex flex-col">
+            {/* `isolate`: contain the workspace's own stacking (the board's z-40 toolbar/name pill, floating
+                windows, etc.) so the whole column reads as one layer BELOW the Expanded drawer overlay, which
+                sits above it as the takeover it is. Without this the board chrome leaks over the drawer. */}
+            <div {...getRootProps()} className="relative isolate w-full h-full flex-1 min-w-0 flex flex-col">
 
                {/* Multi-character tab strip (desktop top bar) */}
                <TabStrip forceDropHighlight={isOverTabLane} />
