@@ -101,6 +101,7 @@ export function PortalTrailBar() {
 
    return (
       <motion.nav
+         data-tutorial="portal-trail"
          aria-label={t('Tabs.portalTrail')}
          initial={reduce ? false : { opacity: 0, y: -4 }}
          animate={{ opacity: 1, y: 0 }}

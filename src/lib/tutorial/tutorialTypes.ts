@@ -35,6 +35,7 @@ export type TutorialAction =
    | { type: 'openSettings'; section?: string }
    | { type: 'closeSettings' }
    | { type: 'setSettingsSection'; section: string }
+   | { type: 'clearJourney' }
    | { type: 'board'; action: BoardAction };
 
 /** How a gated step detects the user's real action. */
@@ -100,8 +101,8 @@ export interface TutorialDefinition {
    icon?: LucideIcon;
    /**
     * When set, the engine seeds isolated demo content before the first step and discards it on exit.
-    * `'character'` and `'board'` are built (portal-graph extends this as its tutorial lands).
+    * `'portal-graph'` seeds a two-board-plus-note graph the Navigator crawls.
     */
-   needsDemo?: 'character' | 'board';
+   needsDemo?: 'character' | 'board' | 'portal-graph';
    steps: TutorialStep[];
 }

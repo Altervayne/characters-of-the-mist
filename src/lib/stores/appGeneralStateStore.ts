@@ -38,6 +38,7 @@ export type BoardAction =
    | 'focusJumpToCoordinate'
    | 'mergeSelectedLayers'
    | 'frameConnections'
+   | 'framePortals'
    | `embedNote:${string}`;
 
 interface AppGeneralState {

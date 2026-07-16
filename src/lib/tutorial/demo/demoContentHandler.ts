@@ -5,14 +5,16 @@ import {
    setActiveInstance,
 } from '@/lib/character/characterStoreRegistry';
 import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
-import { setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
+import { disposeNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { restoreActivePointers, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { WORKSPACE_KEY } from '@/lib/character/workspaceSession';
 
 // -- Local Imports --
 import { createDemoCharacter } from './demoCharacter';
 import { createDemoBoard } from './demoBoard';
+import { createDemoPortalGraph } from './demoPortalGraph';
 import { disposeDemoBoard, installDemoBoard } from './demoBoardBackend';
+import { disposeDemoNote, installDemoNote } from './demoNoteBackend';
 import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, isDemoId } from './demoSentinels';
 
 // -- Type Imports --
@@ -28,22 +30,27 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  * - A demo BOARD is persist-then-resync (commands write the repo, the view rebuilds from it), so a
  *   handle-less trick is not enough. Its fixture is hydrated into a per-id in-memory `boardRepository`
  *   backend keyed by the sentinel board id, so its commands do/undo in memory and persist to NOTHING.
+ * - The demo PORTAL GRAPH is a mixed graph: two demo boards (the board backend) plus a demo note (a sibling
+ *   in-memory `noteRepository` backend), so the whole thing crawls and jumps entirely in memory.
  *
- * Both share the tab wiring: seeding sets tab/active-pointer state through raw `setState`, never
+ * All kinds share the tab wiring: seeding sets tab/active-pointer state through raw `setState`, never
  * `appendAndActivate*`/`persistWorkspace`, so it never touches `localStorage`. Teardown restores the
- * captured prior pointers, drops the demo instance (and the board backend), AND re-asserts the exact prior
- * `localStorage` workspace bytes - so even a driven beat that DOES persist (a menu-park or a re-activate,
- * which call `persistWorkspace`) can never leave the demo tab behind after the run.
+ * captured prior pointers, drops every demo instance (and its backend), AND re-asserts the exact prior
+ * `localStorage` workspace bytes - so even a driven beat that DOES persist (a menu-park, a re-activate, or a
+ * portal jump that opens a note tab, all of which call `persistWorkspace`) can never leave a demo tab behind.
  */
 
 /** The kind of demo content a tutorial seeds; matches `TutorialDefinition.needsDemo`. */
-export type DemoKind = 'character' | 'board';
+export type DemoKind = 'character' | 'board' | 'portal-graph';
 
-/** A live demo: the seeded sentinel id(s) plus the user's captured prior workspace, for exact restore. */
+/** One seeded demo entity, tagged by kind so teardown drops the right backend + any store instance a jump created. */
+type DemoEntity = { id: string; entity: 'character' | 'board' | 'note' };
+
+/** A live demo: every seeded sentinel entity plus the user's captured prior workspace, for exact restore. */
 export interface DemoHandle {
    kind: DemoKind;
-   /** The sentinel id(s) minted (one each for the character and board demos). */
-   ids: string[];
+   /** The sentinel entities seeded, each tagged for teardown disposal (a mixed graph carries several). */
+   entities: DemoEntity[];
    /** The user's real workspace at seed time, restored verbatim on teardown. */
    prior: { openTabs: OpenTab[]; activeTabId: string | null };
    /** The serialized `localStorage` workspace at seed time (or `null` if absent), restored byte-for-byte. */
@@ -72,6 +79,7 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
    }
 
    if (kind === 'board') return seedDemoBoard(prior, priorWorkspaceRaw);
+   if (kind === 'portal-graph') return seedDemoPortalGraph(prior, priorWorkspaceRaw);
    return seedDemoCharacter(prior, priorWorkspaceRaw);
 }
 
@@ -96,7 +104,7 @@ function seedDemoCharacter(prior: PriorWorkspace, priorWorkspaceRaw: string | nu
       activeTabId: DEMO_CHARACTER_ID,
    });
 
-   return { kind: 'character', ids: [DEMO_CHARACTER_ID], prior, priorWorkspaceRaw };
+   return { kind: 'character', entities: [{ id: DEMO_CHARACTER_ID, entity: 'character' }], prior, priorWorkspaceRaw };
 }
 
 /** Seeds the demo BOARD: a fixture in the in-memory repository backend, hydrated into a real board instance. */
@@ -115,15 +123,47 @@ async function seedDemoBoard(prior: PriorWorkspace, priorWorkspaceRaw: string | 
       activeTabId: DEMO_BOARD_ID,
    });
 
-   return { kind: 'board', ids: [DEMO_BOARD_ID], prior, priorWorkspaceRaw };
+   return { kind: 'board', entities: [{ id: DEMO_BOARD_ID, entity: 'board' }], prior, priorWorkspaceRaw };
+}
+
+/** Seeds the demo PORTAL GRAPH: two boards + a note in their in-memory backends, the entry board hydrated live. */
+async function seedDemoPortalGraph(prior: PriorWorkspace, priorWorkspaceRaw: string | null): Promise<DemoHandle> {
+   // Load all three fixtures into their per-id in-memory backends, then hydrate ONLY the entry board instance -
+   // the surface the tour opens on. The leaf board and the note hydrate lazily when a crawl or a jump reaches
+   // them, each read routed to its backend, so the whole graph lives in memory and reaches Dexie for nothing.
+   const { entryBoard, leafBoard, note } = createDemoPortalGraph();
+   installDemoBoard(entryBoard);
+   installDemoBoard(leafBoard);
+   installDemoNote(note);
+
+   const instance = getOrCreateBoardInstance(entryBoard.id);
+   await instance.getState().actions.hydrate(entryBoard.id);
+
+   // Park every registry for a board tab and inject the entry tab via raw setState - never persistWorkspace.
+   restoreActivePointers({ id: entryBoard.id, type: 'board' });
+   useTabManagerStore.setState({
+      openTabs: [...prior.openTabs, { id: entryBoard.id, type: 'board' }],
+      activeTabId: entryBoard.id,
+   });
+
+   return {
+      kind: 'portal-graph',
+      entities: [
+         { id: entryBoard.id, entity: 'board' },
+         { id: leafBoard.id, entity: 'board' },
+         { id: note.id, entity: 'note' },
+      ],
+      prior,
+      priorWorkspaceRaw,
+   };
 }
 
 /**
  * Tears the demo down and returns the user to exactly where they were. Order matters: restore the tab
  * state FIRST (so React unmounts the demo sheet and its flush-on-unmount lands in the still-live demo
- * instance), re-point the registries at the prior tab, THEN drop the demo instance. Finally re-assert
- * the captured `localStorage` workspace verbatim, undoing any persist a driven beat triggered so the
- * demo tab can never linger. Idempotent.
+ * instance), re-point the registries at the prior tab, THEN drop every demo instance. Finally re-assert
+ * the captured `localStorage` workspace verbatim, undoing any persist a driven beat triggered so no
+ * demo tab can linger. Idempotent.
  */
 export function teardownDemo(handle: DemoHandle): void {
    useTabManagerStore.setState({ openTabs: handle.prior.openTabs, activeTabId: handle.prior.activeTabId });
@@ -131,12 +171,17 @@ export function teardownDemo(handle: DemoHandle): void {
    const priorTab = handle.prior.openTabs.find((tab) => tab.id === handle.prior.activeTabId) ?? null;
    restoreActivePointers(priorTab);
 
-   for (const id of handle.ids) {
-      if (handle.kind === 'board') {
-         // Drop the board instance THEN its in-memory backing; a late write for the sentinel id can no
-         // longer reach the backend but also can never fall through to Dexie (routed by the sentinel prefix).
+   for (const { id, entity } of handle.entities) {
+      // Drop the store instance THEN its in-memory backing (a board/note demo dives may have created a store
+      // instance the seed did not); a late write for the sentinel id can no longer reach the backend but also
+      // can never fall through to Dexie (routed by the sentinel prefix). Every dispose is idempotent, so an
+      // instance a jump never created is a harmless no-op.
+      if (entity === 'board') {
          disposeBoardInstance(id);
          disposeDemoBoard(id);
+      } else if (entity === 'note') {
+         disposeNoteInstance(id);
+         disposeDemoNote(id);
       } else {
          disposeInstance(id);
       }

@@ -15,6 +15,15 @@ export const DEMO_CHARACTER_ID = '__tutorial_demo_character__';
 /** The demo board's id, doubling as its registry key AND the sentinel the in-memory repository backend claims. */
 export const DEMO_BOARD_ID = '__tutorial_demo_board__';
 
+/** The portal-graph entry board (The Sunken Vault): its registry key + the sentinel the board backend claims. */
+export const DEMO_PORTAL_BOARD_ID = '__tutorial_demo_portal_board__';
+
+/** The portal-graph note (Field Notes): its registry key + the sentinel the note backend claims. */
+export const DEMO_PORTAL_NOTE_ID = '__tutorial_demo_portal_note__';
+
+/** The portal-graph leaf board (The Deeper Vault): its registry key + the sentinel the board backend claims. */
+export const DEMO_PORTAL_BOARD2_ID = '__tutorial_demo_portal_board2__';
+
 /**
  * The demo portrait's stand-in asset id. NOT a content hash and never stored: the portrait
  * seam in `useAssetObjectUrl` short-circuits it to a bundled placeholder before any asset-store

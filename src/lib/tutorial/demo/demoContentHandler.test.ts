@@ -5,15 +5,19 @@ import type { MockInstance } from 'vitest';
 // -- Under Test --
 import { seedDemo, teardownDemo } from './demoContentHandler';
 import { disposeDemoBoard } from './demoBoardBackend';
-import { DEMO_BOARD_ID, DEMO_CHARACTER_ID } from './demoSentinels';
+import { disposeDemoNote } from './demoNoteBackend';
+import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_PORTAL_BOARD_ID, DEMO_PORTAL_BOARD2_ID, DEMO_PORTAL_NOTE_ID } from './demoSentinels';
 
 // -- Store / Repo Imports --
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { disposeInstance, getCharacterInstanceIds, getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { disposeBoardInstance, getBoardInstanceIds, getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
+import { disposeNoteInstance, getNoteInstanceIds, getOrCreateNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { saveCharacter } from '@/lib/character/characterRepository';
-import { createNote } from '@/lib/notes/noteRepository';
+import { createNote, importNote, loadNote } from '@/lib/notes/noteRepository';
+import { resolveNavChildren } from '@/lib/navigator/resolveNavChildren';
+import { loadLinkMetadata } from '@/lib/portals/linkMetadata';
 import { writeWorkspace, WORKSPACE_KEY } from '@/lib/character/workspaceSession';
 import * as assetRepository from '@/lib/assets/assetRepository';
 
@@ -152,6 +156,12 @@ afterEach(async () => {
    disposeInstance('baseline-char');
    disposeBoardInstance(DEMO_BOARD_ID);
    disposeDemoBoard(DEMO_BOARD_ID);
+   for (const id of [DEMO_PORTAL_BOARD_ID, DEMO_PORTAL_BOARD2_ID]) {
+      disposeBoardInstance(id);
+      disposeDemoBoard(id);
+   }
+   disposeNoteInstance(DEMO_PORTAL_NOTE_ID);
+   disposeDemoNote(DEMO_PORTAL_NOTE_ID);
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
    await new Promise((resolve) => setTimeout(resolve, 0));
 });
@@ -296,5 +306,76 @@ describe('demo handler zero-write invariant', () => {
       const handle = await seedDemo('board');
       expect(getBoardInstanceIds()).not.toContain(DEMO_BOARD_ID);
       teardownDemo(handle);
+   });
+
+   it('leaves every table + the workspace byte-identical through a COMPLETE portal-graph run (crawl + jump + edit)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      const handle = await seedDemo('portal-graph');
+      expect(useTabManagerStore.getState().activeTabId).toBe(DEMO_PORTAL_BOARD_ID);
+
+      // Crawl the whole graph the way the Navigator does - board -> note -> board - reading every node THROUGH
+      // the repository (routed to the in-memory backends: getBoard/listItems for a board, getNote for a note),
+      // and assert the edges resolve to the fixture targets down to the leaf's dead end.
+      const rootEdges = await resolveNavChildren({ kind: 'entity', entity: 'board', id: DEMO_PORTAL_BOARD_ID });
+      expect(rootEdges).toEqual([{ target: { kind: 'entity', entity: 'note', id: DEMO_PORTAL_NOTE_ID }, label: 'Field Notes' }]);
+      const noteEdges = await resolveNavChildren({ kind: 'entity', entity: 'note', id: DEMO_PORTAL_NOTE_ID });
+      expect(noteEdges).toEqual([{ target: { kind: 'entity', entity: 'board', id: DEMO_PORTAL_BOARD2_ID } }]);
+      const leafEdges = await resolveNavChildren({ kind: 'entity', entity: 'board', id: DEMO_PORTAL_BOARD2_ID });
+      expect(leafEdges).toEqual([]);
+
+      // The Navigator resolves each row's name via the link-metadata cache; a demo target short-circuits to the
+      // backend, so it reads LIVE with its fixture name instead of a drawer miss painting it dead.
+      const noteMeta = await loadLinkMetadata({ kind: 'entity', entity: 'note', id: DEMO_PORTAL_NOTE_ID });
+      expect(noteMeta).toEqual({ exists: true, displayName: 'Field Notes', itemType: 'NOTE' });
+
+      // Jump into the note the way a portal dive does: materialize its aggregate into the working table (the
+      // sharp `openNoteReference -> importNote -> put`), then open its tab (hydrates a note instance, and
+      // `appendAndActivateNote` persists the demo tab to localStorage - which teardown must heal).
+      const noteAggregate = await loadNote(DEMO_PORTAL_NOTE_ID);
+      expect(noteAggregate).toBeDefined();
+      await importNote(noteAggregate!, null);
+      await useTabManagerStore.getState().actions.openNoteTab(DEMO_PORTAL_NOTE_ID);
+      expect(getNoteInstanceIds()).toContain(DEMO_PORTAL_NOTE_ID);
+      expect(localStorage.getItem(WORKSPACE_KEY)).not.toBe(baselineWorkspace); // the jump leaked the demo tab
+
+      // Edit the landed note (a keystroke) and flush on unmount - the note store's patchNote, routed to the backend.
+      const noteInstance = getOrCreateNoteInstance(DEMO_PORTAL_NOTE_ID);
+      noteInstance.getState().actions.updateBody(`${noteInstance.getState().note!.body}\n\nScribbled mid-dive.`);
+      noteInstance.getState().actions.flush();
+
+      teardownDemo(handle);
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+
+      // Prior state restored exactly; every demo instance gone from both registries.
+      expect(useTabManagerStore.getState().openTabs).toEqual([{ id: 'baseline-char', type: 'character' }]);
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getBoardInstanceIds()).not.toContain(DEMO_PORTAL_BOARD_ID);
+      expect(getBoardInstanceIds()).not.toContain(DEMO_PORTAL_BOARD2_ID);
+      expect(getNoteInstanceIds()).not.toContain(DEMO_PORTAL_NOTE_ID);
+   });
+
+   it('leaves every table + the workspace byte-identical through a SKIP portal-graph run (no interaction)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      const handle = await seedDemo('portal-graph');
+      teardownDemo(handle); // immediate skip: no interaction
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getBoardInstanceIds()).not.toContain(DEMO_PORTAL_BOARD_ID);
+      expect(getBoardInstanceIds()).not.toContain(DEMO_PORTAL_BOARD2_ID);
+      expect(getNoteInstanceIds()).not.toContain(DEMO_PORTAL_NOTE_ID);
    });
 });

@@ -66,6 +66,11 @@ export function runTutorialAction(action: TutorialAction): void | Promise<void> 
          // reactively (not only on open), so pushing it here moves the walk from tab to tab.
          general.setSettingsInitialSection(action.section);
          return;
+      case 'clearJourney':
+         // Zero the portal trail so a jump gate measures a FRESH dive from this step, not one the user
+         // already took from a lit earlier beat (which would leave the gate pre-satisfied on arrival).
+         tabs.clearJourney();
+         return;
       case 'board':
          general.requestBoardAction(action.action);
          return;

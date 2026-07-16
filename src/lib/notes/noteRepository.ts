@@ -4,6 +4,7 @@ import cuid from 'cuid';
 // -- Local Imports --
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
 import { NOTE_SCHEMA_VERSION, recordToNote } from './noteRecords';
+import * as demoNoteBackend from '@/lib/tutorial/demo/demoNoteBackend';
 
 // -- Type Imports --
 import type { NoteRecord } from './noteRecords';
@@ -15,6 +16,11 @@ import type { Note } from '@/lib/types/board';
  * one `notes` row (no normalization, unlike boards). Mirrors the board repository's
  * create / load / save / link / import / clear surface, minus the item-row machinery.
  * Nothing outside this module touches `db.notes`.
+ *
+ * This is the ONE Dexie boundary the note store funnels through, so it is also where the
+ * tutorial engine's demo note is isolated: a demo note id routes to a per-id in-memory backend
+ * that touches Dexie for NOTHING, while every real id is unchanged. The demo note's edits (and
+ * a portal jump's `importNote`) thus live in memory and persist nowhere.
  */
 
 /** The default title a new Note gets, until the user names it. */
@@ -41,11 +47,13 @@ export async function createNote(): Promise<NoteRecord> {
 
 /** Loads a note record by id, or `undefined` if it does not exist. */
 export function getNote(id: string): Promise<NoteRecord | undefined> {
+   if (demoNoteBackend.ownsNote(id)) return demoNoteBackend.getNote(id);
    return db.notes.get(id);
 }
 
 /** Loads a note and assembles its {@link Note} aggregate, or `undefined` when absent. */
 export async function loadNote(id: string): Promise<Note | undefined> {
+   if (demoNoteBackend.ownsNote(id)) return demoNoteBackend.loadNote(id);
    const record = await db.notes.get(id);
    return record ? recordToNote(record) : undefined;
 }
@@ -62,11 +70,13 @@ export async function saveNoteRecord(record: NoteRecord): Promise<NoteRecord> {
  * absent (idempotent), so a debounced save that races a close never throws.
  */
 export async function patchNote(id: string, patch: Partial<Pick<NoteRecord, 'title' | 'body' | 'cover'>>): Promise<void> {
+   if (demoNoteBackend.ownsNote(id)) return demoNoteBackend.patchNote(id, patch);
    await db.notes.update(id, { ...patch, updatedAt: Date.now() });
 }
 
 /** Deletes a note. Idempotent: deleting an absent id is a no-op. */
 export async function deleteNote(id: string): Promise<void> {
+   if (demoNoteBackend.ownsNote(id)) return demoNoteBackend.deleteNote(id);
    await db.notes.delete(id);
 }
 
@@ -83,6 +93,7 @@ export interface SaveNoteToDrawerResult {
  * dangling link returns `false` so the caller routes to "Save As".
  */
 export function saveNoteToLinkedDrawerItem(note: Note): Promise<SaveNoteToDrawerResult> {
+   if (demoNoteBackend.ownsNote(note.id)) return demoNoteBackend.saveNoteToLinkedDrawerItem(note);
    return db.transaction('rw', [db.notes, db.items], async () => {
       const record = await db.notes.get(note.id);
       if (!record) return { linkedItemUpdated: false };
@@ -106,6 +117,7 @@ export function saveNoteToLinkedDrawerItem(note: Note): Promise<SaveNoteToDrawer
  * title/body, and returns the aggregate to seed that drawer item's content.
  */
 export function linkNoteToDrawerItem(note: Note, drawerItemId: string): Promise<Note> {
+   if (demoNoteBackend.ownsNote(note.id)) return demoNoteBackend.linkNoteToDrawerItem(note, drawerItemId);
    return db.transaction('rw', [db.notes], async () => {
       const record = await db.notes.get(note.id);
       const merged: NoteRecord = {
@@ -131,6 +143,7 @@ export function linkNoteToDrawerItem(note: Note, drawerItemId: string): Promise<
  * save then routes to "Save As").
  */
 export async function importNote(note: Note, drawerItemId: string | null): Promise<void> {
+   if (demoNoteBackend.ownsNote(note.id)) return demoNoteBackend.importNote(note, drawerItemId);
    const record: NoteRecord = {
       id: note.id,
       title: note.title,

@@ -16,7 +16,10 @@
 
 // -- Repository Imports --
 import { getItem, findEntityDrawerItem } from '@/lib/drawer/drawerRepository';
+import { getBoard } from '@/lib/board/boardRepository';
+import { getNote } from '@/lib/notes/noteRepository';
 import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
+import { isDemoId } from '@/lib/tutorial/demo/demoSentinels';
 
 // -- Type Imports --
 import type { LinkTarget } from './linkTarget';
@@ -66,6 +69,25 @@ function cacheKey(target: LinkTarget): string | null {
    return null;
 }
 
+/**
+ * A demo target lives only in the in-memory repository backend (routed by the sentinel prefix), never the
+ * drawer, so a drawer lookup would read a miss and paint the row dead. Resolve its name from the backend
+ * (the demo-routed `getBoard`/`getNote`) so a demo portal reads LIVE with its fixture name. Returns `null`
+ * for a non-demo target, or an absent demo record, so the caller falls through to the drawer path.
+ */
+async function resolveDemoEntity(target: Extract<LinkTarget, { kind: 'entity' }>): Promise<LinkMetadata | null> {
+   if (!isDemoId(target.id)) return null;
+   if (target.entity === 'board') {
+      const record = await getBoard(target.id);
+      return record ? { exists: true, displayName: record.name, itemType: ENTITY_ITEM_TYPE.board } : null;
+   }
+   if (target.entity === 'note') {
+      const record = await getNote(target.id);
+      return record ? { exists: true, displayName: record.title, itemType: ENTITY_ITEM_TYPE.note } : null;
+   }
+   return null;
+}
+
 /** Reads the drawer to build an entity/element target's metadata; a missing row resolves to a confirmed miss. */
 async function loadFromDrawer(target: LinkTarget): Promise<LinkMetadata> {
    if (target.kind === 'element') {
@@ -73,6 +95,8 @@ async function loadFromDrawer(target: LinkTarget): Promise<LinkMetadata> {
       return record ? { exists: true, displayName: record.name, itemType: record.type } : { exists: false };
    }
    if (target.kind === 'entity') {
+      const demo = await resolveDemoEntity(target);
+      if (demo) return demo;
       const record = await findEntityDrawerItem(target.entity, target.id);
       return record ? { exists: true, displayName: record.name, itemType: ENTITY_ITEM_TYPE[target.entity] } : { exists: false };
    }

@@ -1514,6 +1514,10 @@
          "board": {
             "title": "The Board",
             "teach": "The canvas, elements, drawing tools, layers, and connections."
+         },
+         "portals": {
+            "title": "Portals and the Navigator",
+            "teach": "Linking one workspace to another, and the Navigator that maps them."
          }
       }
    },
@@ -1768,6 +1772,28 @@
          "dice_body": "The Dice Tray rides along here too, so you can build a pool and roll it without ever leaving the board.",
          "wrap_title": "That's the Board",
          "wrap_body": "That is the Board. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "portals": {
+         "welcome_title": "Portals and the Navigator",
+         "welcome_body": "A portal is a link from one workspace to another, so a board can point to a note and a note can point to another board. This lesson shows how to make one and how to follow it, then opens the Navigator, the map that reads your whole web of links.",
+         "whatIsPortal_title": "What a Portal Is",
+         "whatIsPortal_body": "This tile is a portal. It stands in for another workspace and carries you there when you dive through it. To dive, you double-click the tile, and you land in whatever it points to.",
+         "makeALink_title": "Making a Link",
+         "makeALink_body": "You make a portal from the Add menu. Choose Portal, then pick the board, note, or character you want it to point to, and the tile drops onto the board ready to dive through. The picker lists your own workspaces, so leave it be for now.",
+         "openNavigator_title": "Where the Map Lives",
+         "openNavigator_body": "One portal is easy to follow, but a web of them is easier to read as a map. That map is the Navigator, and this button on the side opens it.",
+         "readTheTree_title": "Reading the Tree",
+         "readTheTree_body": "The Navigator draws your links as a tree. The ringed row at the top is where you are now, and the rows beneath it are the places its portals lead. Each of those can branch again, so the whole path is laid out in one view.",
+         "crawl_title": "Crawl a Link",
+         "crawl_body": "A row with a caret leads somewhere further. Click the caret to open it and see where that link goes, without leaving where you are.",
+         "jump_title": "Dive Through",
+         "jump_body": "Reading the tree is one thing, and going there is another. Double-click a row to dive through the link and open that workspace for real.",
+         "mapRecenters_title": "The Map Re-centers",
+         "mapRecenters_body": "You landed in the linked workspace, and the tree redrew around it. The ringed row is now where you are, and its own links branch below, so the Navigator always maps outward from wherever you stand.",
+         "backTrail_title": "The Trail Back",
+         "backTrail_body": "The bar that appeared above tracks your dive, one crumb per stop. The Back arrow steps you out the way you came, and any crumb takes you straight to that stop, so a long dive never strands you.",
+         "wrap_title": "That's Portals",
+         "wrap_body": "You have made a link, read the map, and followed a dive out and back. You can replay this lesson any time from the Learn section in your Settings."
       }
    },
 

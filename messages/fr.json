@@ -1420,6 +1420,10 @@
          "board": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "portals": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1633,6 +1637,28 @@
          "connections_body": "[TO COMPLETE]",
          "dice_title": "[TO COMPLETE]",
          "dice_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "portals": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "whatIsPortal_title": "[TO COMPLETE]",
+         "whatIsPortal_body": "[TO COMPLETE]",
+         "makeALink_title": "[TO COMPLETE]",
+         "makeALink_body": "[TO COMPLETE]",
+         "openNavigator_title": "[TO COMPLETE]",
+         "openNavigator_body": "[TO COMPLETE]",
+         "readTheTree_title": "[TO COMPLETE]",
+         "readTheTree_body": "[TO COMPLETE]",
+         "crawl_title": "[TO COMPLETE]",
+         "crawl_body": "[TO COMPLETE]",
+         "jump_title": "[TO COMPLETE]",
+         "jump_body": "[TO COMPLETE]",
+         "mapRecenters_title": "[TO COMPLETE]",
+         "mapRecenters_body": "[TO COMPLETE]",
+         "backTrail_title": "[TO COMPLETE]",
+         "backTrail_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       }

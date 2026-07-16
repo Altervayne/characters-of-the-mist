@@ -1343,6 +1343,24 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             actions.setViewport({ ...fitted, y: fitted.y - lift });
          }
       }
+      else if (pendingBoardAction === 'framePortals') {
+         // Bring the board's portals into view for a read: select mode (tiles are the interaction target,
+         // not a draw surface), then frame the portal items. The read beat's coach-mark is centered in the
+         // window, so a tile fit dead-center would land under it. Reserve the coach's lower half of the
+         // window and fit the tile into the band ABOVE it, so the whole tile sits clear with room to breathe.
+         // A window too short for a band falls back to a plain centered fit. No portals leaves the view as-is.
+         setActiveTool('select');
+         const el = clipRef.current;
+         const portals = Object.values(items).filter((item) => item.content.kind === 'portal');
+         if (el && portals.length) {
+            const rect = el.getBoundingClientRect();
+            const COACH_HALF_HEIGHT = 130;
+            const PORTAL_FRAME_PADDING = 24;
+            const band = window.innerHeight / 2 - COACH_HALF_HEIGHT - rect.top;
+            const clip = band > PORTAL_FRAME_PADDING * 2 ? { width: rect.width, height: band } : { width: rect.width, height: rect.height };
+            actions.setViewport(fitViewport(portals, clip, PORTAL_FRAME_PADDING));
+         }
+      }
       else if (pendingBoardAction.startsWith('embedNote:')) embedNoteAt(pendingBoardAction.slice('embedNote:'.length), viewCenter);
       clearBoardAction();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
