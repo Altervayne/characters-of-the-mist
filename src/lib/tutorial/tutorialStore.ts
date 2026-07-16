@@ -1,11 +1,26 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
 
+// -- Store Imports --
+import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+
 /** Where the runner is in a step's sequence. Ephemeral, for observability. */
 export type TutorialPhase = 'driving' | 'awaiting-anchor' | 'showing' | 'gated' | null;
 
 /** Where to return when the tutorial exits. */
 export type TutorialEntryPoint = 'onboarding' | 'settings' | null;
+
+/**
+ * Sends the user back where they launched from once a run ends. A settings-launched run reopens the hub on
+ * Learn so the list is right there to start the next one; an onboarding-launched run just lands in the app.
+ */
+function returnToEntryPoint(entryPoint: TutorialEntryPoint): void {
+   if (entryPoint !== 'settings') return;
+   const { setSettingsInitialSection, setSettingsOpen } = useAppGeneralStateStore.getState().actions;
+   setSettingsInitialSection('learn');
+   setSettingsOpen(true);
+}
 
 interface TutorialState {
    activeTutorialId: string | null;
@@ -23,8 +38,10 @@ interface TutorialState {
       goTo: (index: number) => void;
       /** Leaves without completing (the X / Esc). */
       skip: () => void;
-      /** Ends the run (reached the end, or an internal bail). */
+      /** Ends the run without marking it complete (an internal bail). */
       exit: () => void;
+      /** Ends the run at its final step: records completion, then returns to the entry point. */
+      complete: () => void;
       /** The runner reports its per-step phase here. */
       setPhase: (phase: TutorialPhase) => void;
    };
@@ -35,7 +52,9 @@ interface TutorialState {
  * lives in a store, not component state, so the runner survives a DRIVE-induced tab switch
  * (which unmounts the previous surface). Persisted progress lands in appSettings later.
  */
-export const useTutorialStore = create<TutorialState>((set) => ({
+const CLEARED = { activeTutorialId: null, stepIndex: 0, phase: null, entryPoint: null } as const;
+
+export const useTutorialStore = create<TutorialState>((set, get) => ({
    activeTutorialId: null,
    stepIndex: 0,
    phase: null,
@@ -45,8 +64,20 @@ export const useTutorialStore = create<TutorialState>((set) => ({
       next: () => set((state) => (state.activeTutorialId ? { stepIndex: state.stepIndex + 1 } : {})),
       back: () => set((state) => (state.activeTutorialId ? { stepIndex: Math.max(0, state.stepIndex - 1) } : {})),
       goTo: (index) => set((state) => (state.activeTutorialId ? { stepIndex: Math.max(0, index) } : {})),
-      skip: () => set({ activeTutorialId: null, stepIndex: 0, phase: null, entryPoint: null }),
-      exit: () => set({ activeTutorialId: null, stepIndex: 0, phase: null, entryPoint: null }),
+      skip: () => {
+         returnToEntryPoint(get().entryPoint);
+         set(CLEARED);
+      },
+      exit: () => {
+         returnToEntryPoint(get().entryPoint);
+         set(CLEARED);
+      },
+      complete: () => {
+         const { activeTutorialId, entryPoint } = get();
+         if (activeTutorialId) useAppSettingsStore.getState().actions.markTutorialCompleted(activeTutorialId);
+         returnToEntryPoint(entryPoint);
+         set(CLEARED);
+      },
       setPhase: (phase) => set({ phase }),
    },
 }));

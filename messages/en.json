@@ -1388,6 +1388,9 @@
       "jumpToSection": {
          "empty": "This note has no headings."
       },
+      "startTutorial": {
+         "title": "Start a tutorial"
+      },
 
       "groups": {
          "general": "General",
@@ -1415,6 +1418,7 @@
          "openWhatsNew": "Open: What's New",
          "openAbout": "Open: About",
          "openTutorials": "Open: Tutorials",
+         "startTutorial": "Start: Tutorial…",
          "toggleDiceTray": "Toggle: Dice Tray",
          "toggleLayersPanel": "Toggle: Layers Panel",
          "mergeSelectedLayers": "Merge Selected Layers",
@@ -1485,6 +1489,19 @@
          "trackerTypeStatus": "Type: Status Tracker",
          "trackerTypeStoryTag": "Type: Story Tag Tracker"
       }
+   },
+   "TutorialsDialog": {
+      "title": "Tutorials",
+      "listLabel": "Tutorials",
+      "status": {
+         "done": "Completed",
+         "notStarted": "Not started"
+      },
+      "action": {
+         "start": "Start",
+         "replay": "Replay"
+      },
+      "resetProgress": "Reset all tutorial progress"
    },
    "Tutorial": {
       "controls": {

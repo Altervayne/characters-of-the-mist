@@ -71,7 +71,7 @@ export default function TutorialRunner() {
 
    const advanceOrComplete = useCallback(() => {
       const { stepIndex: current, actions } = useTutorialStore.getState();
-      if (current >= stepsRef.current.length - 1) actions.exit();
+      if (current >= stepsRef.current.length - 1) actions.complete();
       else actions.next();
    }, []);
 

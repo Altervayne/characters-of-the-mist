@@ -15,13 +15,14 @@ import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores
 import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
+import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 import { useCommandPaletteNavigation } from '@/hooks/command-palette/useCommandPaletteNavigation';
 import { useCommandPaletteWizard } from '@/hooks/command-palette/useCommandPaletteWizard';
 
 // -- Local Imports --
 import { commandVariants } from './constants';
 import { RootPage } from './pages/RootPage';
-import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage, EmbedNote_PickPage, JumpToSection_PickPage } from './pages/SimplePages';
+import { RenameCharacterPage, SetThemePalettePage, NewCharacter_GamePage, RollDicePage, EmbedNote_PickPage, JumpToSection_PickPage, StartTutorial_PickPage } from './pages/SimplePages';
 import {
    CreateCard_TypePage,
    CreateCard_LegendsThemeTypePage,
@@ -241,6 +242,13 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         <JumpToSection_PickPage onSelect={(heading) => {
                            // The active note surface routes the jump per mode (CM6 scroll vs Reading `#slug`).
                            activeNoteStore?.getState().actions.jumpToHeading(heading);
+                           setCommandPaletteOpen(false);
+                        }} />
+                     )}
+                     {activePage === 'startTutorial' && (
+                        <StartTutorial_PickPage onSelect={(id) => {
+                           // Launched from the palette; the runner returns to the Learn list on exit (settings entry).
+                           useTutorialStore.getState().actions.start(id, 'settings');
                            setCommandPaletteOpen(false);
                         }} />
                      )}

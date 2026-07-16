@@ -24,6 +24,7 @@ import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoadin
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useIsBootHydrating } from '@/lib/character/characterPersistence';
@@ -168,6 +169,13 @@ export default function MobileCharacterSheetPage() {
 		setMobileOnboardingOpen(true);
 	};
 
+	// Launch a re-explorable tutorial from the settings list: leave the menu for the sheet, then run it. The
+	// runner is app chrome (above this surface), so it survives the tab switch away from settings.
+	const handleStartTutorial = (id: string) => {
+		navigateToTab('sheet');
+		useTutorialStore.getState().actions.start(id, 'settings');
+	};
+
 	const handleOpenDrawer = () => {
 		navigateToTab('drawer');
 	};
@@ -287,6 +295,7 @@ export default function MobileCharacterSheetPage() {
 					<MobileSettings
 						onStartTour={handleStartTour}
 						onRestartOnboarding={handleRestartOnboarding}
+						onStartTutorial={handleStartTutorial}
 						onOpenThemes={() => navigateToTab('themes')}
 						onBack={() => navigateToTab('menu')}
 					/>

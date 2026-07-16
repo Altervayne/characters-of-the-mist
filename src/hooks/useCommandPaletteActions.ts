@@ -6,6 +6,7 @@ import React from 'react';
 // -- Hook Imports --
 import { useTranslation } from 'react-i18next';
 import { useThemeMode } from '@/hooks/useThemeMode';
+import { useDeviceType } from '@/hooks/useDeviceType';
 
 // -- Other Library Imports --
 import toast from 'react-hot-toast';
@@ -28,6 +29,7 @@ import { collectBoardEmbeddedEntities } from '@/lib/board/collectBoardEmbeddedEn
 import { undoActiveContext, redoActiveContext } from '@/lib/history/undoRouting';
 import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 import { CREATABLE_REGISTRY } from '@/lib/creation/creatableRegistry';
+import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
 
 // -- Type Imports --
 import type { Board } from '@/lib/types/board';
@@ -81,6 +83,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       setSettingsOpen(true);
    };
    const { setMode } = useThemeMode();
+   const { deviceType } = useDeviceType();
+   // The jump-to-a-tutorial picker only earns a slot when there's something to start (empty until the real
+   // tutorials are authored; the `dev.` scenarios surface it in dev). openTutorials -> hub@learn stays regardless.
+   const hasTutorials = getTutorialsForPlatform(deviceType, { includeDev: import.meta.env.DEV }).length > 0;
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
    const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab } = useTabManagerActions();
    const activeNote = useActiveNoteInstance();
@@ -156,6 +162,9 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'openWhatsNew', scope: 'global', label: t('CommandPalette.commands.openWhatsNew'), keywords: ['what', 'new', 'patch', 'notes', 'release', 'changelog', 'update'], icon: Sparkles, group: t('CommandPalette.groups.general'), action: () => openSettingsSection('whatsNew') },
       { id: 'openAbout', scope: 'global', label: t('CommandPalette.commands.openAbout'), keywords: ['about', 'info', 'license', 'credits', 'version'], icon: Info, group: t('CommandPalette.groups.general'), action: () => openSettingsSection('about') },
       { id: 'openTutorials', scope: 'global', label: t('CommandPalette.commands.openTutorials'), keywords: ['tutorials', 'learn', 'help', 'onboarding', 'guide', 'teach'], icon: GraduationCap, group: t('CommandPalette.groups.general'), action: () => openSettingsSection('learn') },
+      ...(hasTutorials ? [
+         { id: 'startTutorial', scope: 'global' as const, label: t('CommandPalette.commands.startTutorial'), keywords: ['tutorial', 'start', 'learn', 'lesson', 'teach', 'guide', 'run'], icon: GraduationCap, group: t('CommandPalette.groups.general'), pageId: 'startTutorial' },
+      ] : []),
       { id: 'importFile', scope: 'global', label: t('CommandPalette.commands.importFile'), keywords: ['import', 'file', 'load', 'open', '.cotm'], icon: Import, group: t('CommandPalette.groups.general'), action: onImportFile },
       // Undo/Redo route themselves (drawer / board / character), so they show in any workspace.
       { id: 'undo', scope: 'global', label: t('CommandPalette.commands.undo'), keywords: ['undo', 'revert', 'back'], icon: Undo2, group: t('CommandPalette.groups.general'), action: undoActiveContext },

@@ -7,7 +7,13 @@ import { Command } from 'cmdk';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { CornerDownLeft, Palette, Dices, NotebookText, ListTree } from 'lucide-react';
+import { CornerDownLeft, Palette, Dices, NotebookText, ListTree, GraduationCap } from 'lucide-react';
+
+// -- Hook Imports --
+import { useDeviceType } from '@/hooks/useDeviceType';
+
+// -- Tutorial Imports --
+import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
 
 // -- Store Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -230,6 +236,44 @@ export const JumpToSection_PickPage = ({ onSelect }: JumpToSection_PickPageProps
                <span style={{ paddingLeft: `${(heading.level - 1) * 0.75}rem` }} className="truncate">{heading.text}</span>
             </Command.Item>
          ))}
+      </Command.Group>
+   );
+};
+
+
+
+// ########################
+// ###   START TUTORIAL  ###
+// ########################
+interface StartTutorial_PickPageProps {
+   onSelect: (id: string) => void;
+};
+
+/**
+ * Lists the current platform's tutorials as a jump-to picker (a shortcut past the Learn list). The palette
+ * filter narrows by name; selecting one starts it from step 1. The `dev.` scenarios show only in dev.
+ */
+export const StartTutorial_PickPage = ({ onSelect }: StartTutorial_PickPageProps) => {
+   const { t } = useTranslation();
+   const { deviceType } = useDeviceType();
+   const tutorials = getTutorialsForPlatform(deviceType, { includeDev: import.meta.env.DEV });
+
+   return (
+      <Command.Group heading={t('CommandPalette.startTutorial.title')}>
+         {tutorials.map((definition) => {
+            const Glyph = definition.icon ?? GraduationCap;
+            return (
+               <Command.Item
+                  key={definition.id}
+                  value={t(definition.titleKey)}
+                  onSelect={() => onSelect(definition.id)}
+                  className={commonItemClass}
+               >
+                  <Glyph className="mr-2 h-4 w-4" />
+                  <span>{t(definition.titleKey)}</span>
+               </Command.Item>
+            );
+         })}
       </Command.Group>
    );
 };

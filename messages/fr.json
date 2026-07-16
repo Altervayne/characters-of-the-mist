@@ -1307,6 +1307,9 @@
       "jumpToSection": {
          "empty": "[TO COMPLETE]"
       },
+      "startTutorial": {
+         "title": "[TO COMPLETE]"
+      },
       "groups": {
          "general": "Général",
          "tabs": "[TO COMPLETE]",
@@ -1329,6 +1332,7 @@
          "openWhatsNew": "[TO COMPLETE]",
          "openAbout": "[TO COMPLETE]",
          "openTutorials": "[TO COMPLETE]",
+         "startTutorial": "[TO COMPLETE]",
          "toggleDiceTray": "[TO COMPLETE]",
          "toggleLayersPanel": "[TO COMPLETE]",
          "mergeSelectedLayers": "[TO COMPLETE]",
@@ -1391,6 +1395,19 @@
          "trackerTypeStatus": "Type : Suivi de Statut",
          "trackerTypeStoryTag": "Type : Suivi de Trait Narratif"
       }
+   },
+   "TutorialsDialog": {
+      "title": "[TO COMPLETE]",
+      "listLabel": "[TO COMPLETE]",
+      "status": {
+         "done": "[TO COMPLETE]",
+         "notStarted": "[TO COMPLETE]"
+      },
+      "action": {
+         "start": "[TO COMPLETE]",
+         "replay": "[TO COMPLETE]"
+      },
+      "resetProgress": "[TO COMPLETE]"
    },
    "Tutorial": {
       "controls": {

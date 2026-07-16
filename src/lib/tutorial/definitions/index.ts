@@ -22,10 +22,15 @@ export function getTutorialDefinition(id: string): TutorialDefinition | null {
 
 /**
  * The tutorials to offer on a platform, feeding the list and the first-run trigger.
- * `dev.` ids are internal proof/scaffolding and never surface.
+ * `dev.` ids are internal proof/scaffolding, hidden unless `includeDev` is set - the list and picker pass
+ * `import.meta.env.DEV` so the throwaway scenarios are exercisable in dev while prod stays clean of them.
  */
-export function getTutorialsForPlatform(platform: TutorialPlatform): TutorialDefinition[] {
+export function getTutorialsForPlatform(
+   platform: TutorialPlatform,
+   options?: { includeDev?: boolean },
+): TutorialDefinition[] {
+   const includeDev = options?.includeDev ?? false;
    return Object.values(TUTORIALS).filter(
-      (definition) => definition.platform === platform && !definition.id.startsWith('dev.'),
+      (definition) => definition.platform === platform && (includeDev || !definition.id.startsWith('dev.')),
    );
 }

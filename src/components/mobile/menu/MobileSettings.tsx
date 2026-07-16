@@ -35,7 +35,10 @@ import {
    Eye,
    EyeOff,
    Lightbulb,
-   Palette
+   Palette,
+   GraduationCap,
+   Check,
+   Play
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -61,6 +64,7 @@ import { useLegacyBlobRemovable } from '@/hooks/useLegacyBlobRemovable';
 // -- Utils Imports --
 import { IconButton } from '@/components/ui/icon-button';
 import { PRESET_LABELS, customThemeClass, customThemeIdFromClass } from '@/lib/theme/themeTokens';
+import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
 
 const locales = [
 	{ code: 'en', name: 'English' },
@@ -71,17 +75,22 @@ const locales = [
 interface MobileSettingsProps {
 	onStartTour?: () => void;
 	onRestartOnboarding?: () => void;
+	onStartTutorial?: (id: string) => void;
 	onOpenThemes?: () => void;
 	onBack?: () => void;
 }
 
-export default function MobileSettings({ onStartTour, onRestartOnboarding, onOpenThemes, onBack }: MobileSettingsProps) {
+export default function MobileSettings({ onStartTour, onRestartOnboarding, onStartTutorial, onOpenThemes, onBack }: MobileSettingsProps) {
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language?.split('-')[0] || 'en';
 
 	const { resolvedMode, setMode } = useThemeMode();
 
-	const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
+	const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled, completedTutorials } = useAppSettingsStore();
+
+	// The mobile tutorials, empty until the real content is authored (dev scenarios are desktop-only, so this
+	// stays empty in dev too); when empty the whole group renders nothing, no orphan header.
+	const tutorials = onStartTutorial ? getTutorialsForPlatform('mobile', { includeDev: import.meta.env.DEV }) : [];
 	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
 
 	// The active theme's display name: a preset label, or the custom's own name.
@@ -328,6 +337,31 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onOpe
 							<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
 						</Button>
 					</div>
+
+					{/* Tutorials (re-explorable lessons; distinct from replaying onboarding or the gesture tips) */}
+					{tutorials.length > 0 && (
+						<div className="space-y-2 pb-safe">
+							<Label className="text-sm font-semibold">{t('TutorialsDialog.listLabel')}</Label>
+							{tutorials.map((definition) => {
+								const Glyph = definition.icon ?? GraduationCap;
+								const done = completedTutorials.includes(definition.id);
+								return (
+									<Button
+										key={definition.id}
+										onClick={() => onStartTutorial?.(definition.id)}
+										variant="outline"
+										className="w-full min-h-12 text-base justify-start"
+									>
+										<Glyph className="mr-3 h-5 w-5 shrink-0" />
+										<span className="flex-1 text-left truncate">{t(definition.titleKey)}</span>
+										{done
+											? <Check className="h-5 w-5 shrink-0 text-primary" aria-label={t('TutorialsDialog.status.done')} />
+											: <Play className="h-5 w-5 shrink-0 text-muted-foreground" aria-label={t('TutorialsDialog.action.start')} />}
+									</Button>
+								);
+							})}
+						</div>
+					)}
 
 					{/* Tutorial */}
 					{onStartTour && (

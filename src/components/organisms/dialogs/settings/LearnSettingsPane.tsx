@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 // -- Icon Imports --
 import { RotateCcw } from 'lucide-react';
 
+// -- Component Imports --
+import { DesktopTutorialList } from './DesktopTutorialList';
+
 // -- Store and Hook Imports --
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
@@ -34,9 +37,9 @@ export function LearnSettingsPane() {
             </Button>
          </div>
 
-         {/* Seam for the tutorial list (start/replay + a done/updated status), the target of the palette's
-             openTutorials deep-link. It plugs in here once the tutorial engine lands; until then nothing
-             renders, so no half-built rows leak to the user. */}
+         {/* The tutorial list (start/replay + a completed check), the target of the palette's openTutorials
+             deep-link. Renders nothing until the real tutorials are authored, so no empty header leaks. */}
+         <DesktopTutorialList />
       </div>
    );
 }
