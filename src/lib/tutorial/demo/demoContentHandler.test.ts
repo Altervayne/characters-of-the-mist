@@ -6,7 +6,7 @@ import type { MockInstance } from 'vitest';
 import { seedDemo, teardownDemo } from './demoContentHandler';
 import { disposeDemoBoard } from './demoBoardBackend';
 import { disposeDemoNote } from './demoNoteBackend';
-import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_PORTAL_BOARD_ID, DEMO_PORTAL_BOARD2_ID, DEMO_PORTAL_NOTE_ID } from './demoSentinels';
+import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_NOTE_ID, DEMO_PORTAL_BOARD_ID, DEMO_PORTAL_BOARD2_ID, DEMO_PORTAL_NOTE_ID } from './demoSentinels';
 
 // -- Store / Repo Imports --
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
@@ -160,6 +160,8 @@ afterEach(async () => {
       disposeBoardInstance(id);
       disposeDemoBoard(id);
    }
+   disposeNoteInstance(DEMO_NOTE_ID);
+   disposeDemoNote(DEMO_NOTE_ID);
    disposeNoteInstance(DEMO_PORTAL_NOTE_ID);
    disposeDemoNote(DEMO_PORTAL_NOTE_ID);
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
@@ -306,6 +308,54 @@ describe('demo handler zero-write invariant', () => {
       const handle = await seedDemo('board');
       expect(getBoardInstanceIds()).not.toContain(DEMO_BOARD_ID);
       teardownDemo(handle);
+   });
+
+   it('leaves every table + the workspace byte-identical through a COMPLETE note run (with body edits)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      // Seed the demo note, then type into its body and flush on unmount - the note store's debounce-save and
+      // flush both route patchNote to the in-memory backend, so the persist path reaches Dexie for nothing.
+      const handle = await seedDemo('note');
+      expect(useTabManagerStore.getState().activeTabId).toBe(DEMO_NOTE_ID);
+      const note = getOrCreateNoteInstance(DEMO_NOTE_ID);
+      // The fixture hydrated: the handout body is present.
+      expect(note.getState().note?.body.length ?? 0).toBeGreaterThan(0);
+
+      note.getState().actions.updateBody(`${note.getState().note!.body}\n\nScribbled mid-tour.`);
+      note.getState().actions.flush();
+
+      // Mid-run: the edit lived in the backend, so the workspace is still untouched.
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+
+      teardownDemo(handle);
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+
+      // Prior state restored exactly; demo note instance gone from the registry.
+      expect(useTabManagerStore.getState().openTabs).toEqual([{ id: 'baseline-char', type: 'character' }]);
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getNoteInstanceIds()).not.toContain(DEMO_NOTE_ID);
+   });
+
+   it('leaves every table + the workspace byte-identical through a SKIP note run (no edits)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      const handle = await seedDemo('note');
+      teardownDemo(handle); // immediate skip: no interaction
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getNoteInstanceIds()).not.toContain(DEMO_NOTE_ID);
    });
 
    it('leaves every table + the workspace byte-identical through a COMPLETE portal-graph run (crawl + jump + edit)', async () => {

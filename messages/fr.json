@@ -1424,6 +1424,10 @@
          "portals": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "notes": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1659,6 +1663,30 @@
          "mapRecenters_body": "[TO COMPLETE]",
          "backTrail_title": "[TO COMPLETE]",
          "backTrail_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "notes": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "surface_title": "[TO COMPLETE]",
+         "surface_body": "[TO COMPLETE]",
+         "livePreview_title": "[TO COMPLETE]",
+         "livePreview_body": "[TO COMPLETE]",
+         "typeMarkdown_title": "[TO COMPLETE]",
+         "typeMarkdown_body": "[TO COMPLETE]",
+         "mentions_title": "[TO COMPLETE]",
+         "mentions_body": "[TO COMPLETE]",
+         "linksOut_title": "[TO COMPLETE]",
+         "linksOut_body": "[TO COMPLETE]",
+         "toolbar_title": "[TO COMPLETE]",
+         "toolbar_body": "[TO COMPLETE]",
+         "images_title": "[TO COMPLETE]",
+         "images_body": "[TO COMPLETE]",
+         "cover_title": "[TO COMPLETE]",
+         "cover_body": "[TO COMPLETE]",
+         "modes_title": "[TO COMPLETE]",
+         "modes_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       }

@@ -1518,6 +1518,10 @@
          "portals": {
             "title": "Portals and the Navigator",
             "teach": "Linking one workspace to another, and the Navigator that maps them."
+         },
+         "notes": {
+            "title": "Notes",
+            "teach": "Writing a note in Live mode, with markdown, mentions, links, and images."
          }
       }
    },
@@ -1794,6 +1798,30 @@
          "backTrail_body": "The bar that appeared above tracks your dive, one crumb per stop. The Back arrow steps you out the way you came, and any crumb takes you straight to that stop, so a long dive never strands you.",
          "wrap_title": "That's Portals",
          "wrap_body": "You have made a link, read the map, and followed a dive out and back. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "notes": {
+         "welcome_title": "Notes",
+         "welcome_body": "A note is a page for your words. You can keep session prep, a handout to read aloud, or the lore behind a place, and set it beside a character sheet or a board so the writing lives with the rest of your game.",
+         "surface_title": "This Is a Note",
+         "surface_body": "This is a note, opened on its own page. It starts in Live mode, the one where you both read and write the same document, so what you see here is exactly how the note reads.",
+         "livePreview_title": "Edit the Finished Look",
+         "livePreview_body": "In Live mode you type into the finished page. The heading, the bold words, the list, and the quote all show the way they will read, and you edit them right where they sit. Look it over, then continue.",
+         "typeMarkdown_title": "Type Something",
+         "typeMarkdown_body": "Find the blank line beneath Your turn and write a few words. Start a line with # for a heading, with - for a list, or wrap a word in ** for bold. The page catches up a moment after you type, and the tour moves on once it does.",
+         "mentions_title": "Mentions",
+         "mentions_body": "The colored pills are mentions, a status or a tag written inside braces. In a note they are a visual reference, a tidy way to note the statuses and tags in play. The same braces are live elsewhere: write one in a journal or a challenge on a character sheet, or on a board, and clicking the pill there creates that tag or status for real.",
+         "linksOut_title": "Links",
+         "linksOut_body": "A note can link to a heading inside itself, to another note, board, or character, or out to the web. This button inserts one. Links and the Navigator that maps them have a tutorial of their own, so start there when you want the full tour.",
+         "toolbar_title": "The Toolbar",
+         "toolbar_body": "Every bit of formatting has a button here: headings, lists, quotes, tables, images, and links. You can type the markdown yourself or click these instead, whichever feels faster in the moment.",
+         "images_title": "Images",
+         "images_body": "Notes hold images too. Add one with this button, paste it from your clipboard, or drag a file onto the page. Once it lands you can set its size, choose its aspect ratio, and pick which side of the page it aligns to.",
+         "cover_title": "The Cover",
+         "cover_body": "A note can also wear a cover, a banner image across the top of the page. Add one from this button, then set how wide it runs and its aspect ratio to frame the page the way you like.",
+         "modes_title": "Three Modes",
+         "modes_body": "This toggle switches how you view the note. Live is where you write, Reading shows the clean handout with nothing to edit, and Source shows the raw markdown behind it. Live is home, and the other two are there when you want them.",
+         "wrap_title": "That's Notes",
+         "wrap_body": "You have typed in a note, met mentions and links, and seen the three modes. To make your own, add a note from the tab menu or the command palette, and find it later in the Drawer with the rest of your files. You can replay this lesson any time from the Learn section in your Settings."
       }
    },
 

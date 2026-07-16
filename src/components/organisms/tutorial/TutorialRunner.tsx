@@ -12,6 +12,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { useNavigatorStore } from '@/lib/navigator/navigatorStore';
 import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
+import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
 
 // -- Hook Imports --
 import { useDeviceType } from '@/hooks/useDeviceType';
@@ -159,16 +160,18 @@ export default function TutorialRunner() {
             advanceOrComplete();
          };
          // A gate may read a store outside the app-level trio: the ACTIVE character store (create a status,
-         // story tag, card, journal, or portrait) or the Navigator (crawl a caret to grow `expandedIds`).
-         // Subscribe to both, else those mutations fire on a store nothing here listens to and the gate
-         // never advances.
+         // story tag, card, journal, or portrait), the ACTIVE note store (type into the note body), or the
+         // Navigator (crawl a caret to grow `expandedIds`). Subscribe to each, else those mutations fire on a
+         // store nothing here listens to and the gate never advances.
          const characterStore = getActiveCharacterStore();
+         const noteStore = getActiveNoteStore();
          const unsubscribers = [
             useAppGeneralStateStore.subscribe(check),
             useAppSettingsStore.subscribe(check),
             useTabManagerStore.subscribe(check),
             useNavigatorStore.subscribe(check),
             ...(characterStore ? [characterStore.subscribe(check)] : []),
+            ...(noteStore ? [noteStore.subscribe(check)] : []),
          ];
          return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
       },

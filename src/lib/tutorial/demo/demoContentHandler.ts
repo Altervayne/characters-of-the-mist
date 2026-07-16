@@ -5,17 +5,18 @@ import {
    setActiveInstance,
 } from '@/lib/character/characterStoreRegistry';
 import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
-import { disposeNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
+import { disposeNoteInstance, getOrCreateNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { restoreActivePointers, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { WORKSPACE_KEY } from '@/lib/character/workspaceSession';
 
 // -- Local Imports --
 import { createDemoCharacter } from './demoCharacter';
 import { createDemoBoard } from './demoBoard';
+import { createDemoNote } from './demoNote';
 import { createDemoPortalGraph } from './demoPortalGraph';
 import { disposeDemoBoard, installDemoBoard } from './demoBoardBackend';
 import { disposeDemoNote, installDemoNote } from './demoNoteBackend';
-import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, isDemoId } from './demoSentinels';
+import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_NOTE_ID, isDemoId } from './demoSentinels';
 
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
@@ -30,6 +31,9 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  * - A demo BOARD is persist-then-resync (commands write the repo, the view rebuilds from it), so a
  *   handle-less trick is not enough. Its fixture is hydrated into a per-id in-memory `boardRepository`
  *   backend keyed by the sentinel board id, so its commands do/undo in memory and persist to NOTHING.
+ * - A demo NOTE takes the board's seam in miniature: its fixture lives in the per-id in-memory
+ *   `noteRepository` backend keyed by the sentinel note id, so the note store's debounce-save lands in
+ *   memory and reaches Dexie for nothing.
  * - The demo PORTAL GRAPH is a mixed graph: two demo boards (the board backend) plus a demo note (a sibling
  *   in-memory `noteRepository` backend), so the whole thing crawls and jumps entirely in memory.
  *
@@ -41,7 +45,7 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  */
 
 /** The kind of demo content a tutorial seeds; matches `TutorialDefinition.needsDemo`. */
-export type DemoKind = 'character' | 'board' | 'portal-graph';
+export type DemoKind = 'character' | 'board' | 'note' | 'portal-graph';
 
 /** One seeded demo entity, tagged by kind so teardown drops the right backend + any store instance a jump created. */
 type DemoEntity = { id: string; entity: 'character' | 'board' | 'note' };
@@ -79,6 +83,7 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
    }
 
    if (kind === 'board') return seedDemoBoard(prior, priorWorkspaceRaw);
+   if (kind === 'note') return seedDemoNote(prior, priorWorkspaceRaw);
    if (kind === 'portal-graph') return seedDemoPortalGraph(prior, priorWorkspaceRaw);
    return seedDemoCharacter(prior, priorWorkspaceRaw);
 }
@@ -124,6 +129,25 @@ async function seedDemoBoard(prior: PriorWorkspace, priorWorkspaceRaw: string | 
    });
 
    return { kind: 'board', entities: [{ id: DEMO_BOARD_ID, entity: 'board' }], prior, priorWorkspaceRaw };
+}
+
+/** Seeds the demo NOTE: a fixture in the in-memory note backend, hydrated into a real note instance. */
+async function seedDemoNote(prior: PriorWorkspace, priorWorkspaceRaw: string | null): Promise<DemoHandle> {
+   // Load the fixture into the per-id in-memory note backend, then hydrate the note instance FROM it - the
+   // same load path a real note takes, only the repository reads/writes memory for this id, never Dexie.
+   installDemoNote(createDemoNote());
+   const instance = getOrCreateNoteInstance(DEMO_NOTE_ID);
+   await instance.getState().actions.hydrate(DEMO_NOTE_ID);
+
+   // Park every registry for a note tab (character/board cleared, note live) and inject the demo tab via raw
+   // setState - never persistWorkspace, so `localStorage` is untouched.
+   restoreActivePointers({ id: DEMO_NOTE_ID, type: 'note' });
+   useTabManagerStore.setState({
+      openTabs: [...prior.openTabs, { id: DEMO_NOTE_ID, type: 'note' }],
+      activeTabId: DEMO_NOTE_ID,
+   });
+
+   return { kind: 'note', entities: [{ id: DEMO_NOTE_ID, entity: 'note' }], prior, priorWorkspaceRaw };
 }
 
 /** Seeds the demo PORTAL GRAPH: two boards + a note in their in-memory backends, the entry board hydrated live. */

@@ -167,7 +167,7 @@ export function NoteToolbar({
    }, [getEditor]);
 
    return (
-      <div ref={rowRef} className="flex items-center gap-0.5 border-b border-border bg-popover px-2 py-1.5">
+      <div ref={rowRef} data-tutorial="note-toolbar" className="flex items-center gap-0.5 border-b border-border bg-popover px-2 py-1.5">
          {/* Outline toggle: shown in ALL modes (the document outline works in Reading too), leftmost. */}
          <button
             type="button"
@@ -227,7 +227,7 @@ export function NoteToolbar({
                </ToolbarButton>
                <ToolbarDivider />
                {/* Insert. */}
-               <ToolbarButton label={t('NoteView.insertImage')} onClick={onInsertImage} disabled={isImageProcessing}>
+               <ToolbarButton label={t('NoteView.insertImage')} onClick={onInsertImage} disabled={isImageProcessing} dataTutorial="note-insert-image">
                   {isImageProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                </ToolbarButton>
                <TableButton onInsert={insertTable} />
@@ -236,7 +236,7 @@ export function NoteToolbar({
          )}
 
          {/* Mode toggle: ALWAYS shown, pushed to the right. Segmented when it fits, cycling button when tight. */}
-         <div className="ml-auto pl-2">
+         <div data-tutorial="note-mode-toggle" className="ml-auto pl-2">
             <ModeToggle mode={mode} onChange={onModeChange} compact={compact} />
          </div>
       </div>
@@ -248,11 +248,13 @@ function ToolbarButton({
    label,
    onClick,
    disabled,
+   dataTutorial,
    children,
 }: {
    label: string;
    onClick: () => void;
    disabled?: boolean;
+   dataTutorial?: string;
    children: ReactNode;
 }) {
    return (
@@ -261,6 +263,7 @@ function ToolbarButton({
          title={label}
          aria-label={label}
          disabled={disabled}
+         data-tutorial={dataTutorial}
          onMouseDown={(event) => event.preventDefault()}
          onClick={onClick}
          className="grid h-7 w-7 place-items-center rounded text-foreground hover:bg-muted cursor-pointer disabled:cursor-default disabled:opacity-60"
@@ -351,7 +354,7 @@ function CoverButton({
 
    if (!hasCover) {
       return (
-         <button type="button" onClick={onAdd} disabled={isProcessing} className={triggerClass} title={t('NoteView.cover.add')}>
+         <button type="button" data-tutorial="note-cover-button" onClick={onAdd} disabled={isProcessing} className={triggerClass} title={t('NoteView.cover.add')}>
             {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Image className="h-4 w-4" />}
             <span className="hidden md:inline">{t('NoteView.cover.add')}</span>
          </button>
@@ -366,7 +369,7 @@ function CoverButton({
    return (
       <Popover open={open} onOpenChange={setOpen}>
          <PopoverTrigger asChild>
-            <button type="button" disabled={isProcessing} className={triggerClass} title={t('NoteView.cover.label')}>
+            <button type="button" data-tutorial="note-cover-button" disabled={isProcessing} className={triggerClass} title={t('NoteView.cover.label')}>
                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Image className="h-4 w-4" />}
                <span className="hidden md:inline">{t('NoteView.cover.label')}</span>
                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
@@ -419,6 +422,7 @@ function LinkButton({
                type="button"
                title={t('NoteView.toolbar.insertLink')}
                aria-label={t('NoteView.toolbar.insertLink')}
+               data-tutorial="note-link-button"
                onMouseDown={(event) => event.preventDefault()}
                className="grid h-7 w-7 place-items-center rounded text-foreground hover:bg-muted cursor-pointer"
             >

@@ -358,7 +358,7 @@ function NoteSurface() {
             <div ref={deskRef} className="min-w-0 flex-1 overflow-y-auto bg-background px-4 py-8 md:px-8 md:py-12">
                {/* The paper sheet: parchment by default, re-themed by a custom theme's --paper-* tokens. Both
                    modes share the sheet, so toggling reading/editing stays on the same page. */}
-               <div className="mx-auto w-full max-w-[46rem] rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-lg shadow-black/5">
+               <div data-tutorial="note-editor" className="mx-auto w-full max-w-[46rem] rounded-lg border border-paper-border bg-paper-background text-paper-foreground shadow-lg shadow-black/5">
                <div className="px-6 py-10 sm:px-10 md:px-16 md:py-16">
                   {/* The document title: a large heading in the paper column, ABOVE the cover. Editable in the
                       editable modes; in Reading it renders as the document H1 (inside NoteDocument). */}

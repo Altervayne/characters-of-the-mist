@@ -15,6 +15,9 @@ export const DEMO_CHARACTER_ID = '__tutorial_demo_character__';
 /** The demo board's id, doubling as its registry key AND the sentinel the in-memory repository backend claims. */
 export const DEMO_BOARD_ID = '__tutorial_demo_board__';
 
+/** The demo note's id, doubling as its registry key AND the sentinel the in-memory note backend claims. */
+export const DEMO_NOTE_ID = '__tutorial_demo_note__';
+
 /** The portal-graph entry board (The Sunken Vault): its registry key + the sentinel the board backend claims. */
 export const DEMO_PORTAL_BOARD_ID = '__tutorial_demo_portal_board__';
 
