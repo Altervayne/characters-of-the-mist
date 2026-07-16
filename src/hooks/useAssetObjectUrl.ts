@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 // -- Store Imports --
 import { getAssetBlob } from '@/lib/assets/assetRepository';
 
+// -- Demo Portrait Seam --
+import { DEMO_PORTRAIT_ASSET_ID } from '@/lib/tutorial/demo/demoSentinels';
+import { DEMO_PORTRAIT_URL } from '@/lib/tutorial/demo/demoPortrait';
+
 /*
  * Resolves a stored asset hash to a temporary object URL for an <img>. An asset hash is
  * content-addressed and immutable, so its object URL is stable: it lives in a shared,
@@ -117,7 +121,8 @@ export function useAssetObjectUrl(hash: string | null): AssetObjectUrl {
    const [, bump] = useState(0);
 
    useEffect(() => {
-      if (!hash) return;
+      // The demo portrait resolves to a bundled placeholder with no store access, so nothing to acquire.
+      if (!hash || hash === DEMO_PORTRAIT_ASSET_ID) return;
 
       let cancelled = false;
       const entry = acquireAssetUrl(hash);
@@ -133,6 +138,9 @@ export function useAssetObjectUrl(hash: string | null): AssetObjectUrl {
          releaseAssetUrl(hash);
       };
    }, [hash]);
+
+   // The demo portrait short-circuits the whole asset-store path: a bundled URL, never a Dexie read.
+   if (hash === DEMO_PORTRAIT_ASSET_ID) return { url: DEMO_PORTRAIT_URL, isLoading: false };
 
    return peekAssetUrl(hash);
 }

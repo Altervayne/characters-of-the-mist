@@ -77,7 +77,10 @@ export interface TutorialDefinition {
    teachKey: string;
    /** Per-tutorial glyph for the list row (consumed by the tutorials list). */
    icon?: LucideIcon;
-   /** When set, the engine seeds isolated demo content before running (authored later). */
-   needsDemo?: 'board' | 'portal-graph';
+   /**
+    * When set, the engine seeds isolated demo content before the first step and discards it on exit.
+    * Only `'character'` is built today (board + portal-graph extend this as their tutorials land).
+    */
+   needsDemo?: 'character';
    steps: TutorialStep[];
 }

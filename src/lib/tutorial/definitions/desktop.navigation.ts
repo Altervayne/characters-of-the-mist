@@ -17,6 +17,9 @@ export const DESKTOP_NAVIGATION_TUTORIAL: TutorialDefinition = {
    titleKey: 'TutorialsDialog.tutorials.navigation.title',
    teachKey: 'TutorialsDialog.tutorials.navigation.teach',
    icon: Compass,
+   // Seed a demo character so the play-area beat always has a real sheet to spotlight, regardless
+   // of what the user has open, and the user's own sheet is never touched.
+   needsDemo: 'character',
    steps: [
       {
          id: 'welcome',

@@ -219,6 +219,16 @@ function activatePointersForTab(tab: OpenTab): void {
 }
 
 /**
+ * Re-points every registry at `tab` (or the menu when `null`), reusing the module-private three-way
+ * park logic. Exposed for the tutorial demo teardown, which must restore whichever kind the user's
+ * prior tab was without duplicating the park rules. Pointer-only: touches no tab or workspace state.
+ */
+export function restoreActivePointers(tab: OpenTab | null): void {
+   if (tab) activatePointersForTab(tab);
+   else activateMenuPointers();
+}
+
+/**
  * Points the active instance at the character `id`, appends a character tab for it when
  * not already open, marks it active, and persists the workspace. Keep-alive: this never
  * disposes the previously active instance.

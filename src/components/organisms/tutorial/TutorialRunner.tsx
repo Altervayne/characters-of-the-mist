@@ -19,7 +19,9 @@ import { getTutorialDefinition } from '@/lib/tutorial/definitions';
 import { runTutorialActions } from '@/lib/tutorial/runTutorialAction';
 import { resolveAnchor } from '@/lib/tutorial/resolveAnchor';
 import { getTutorialProfile } from '@/lib/tutorial/tutorialConfig';
+import { seedDemo, teardownDemo } from '@/lib/tutorial/demo/demoContentHandler';
 import type { TutorialStep } from '@/lib/tutorial/tutorialTypes';
+import type { DemoHandle } from '@/lib/tutorial/demo/demoContentHandler';
 
 type RenderMode = 'spotlight' | 'centered' | 'bail' | null;
 
@@ -55,6 +57,7 @@ export default function TutorialRunner() {
    });
 
    const enteredIndexRef = useRef<number | null>(null);
+   const demoHandleRef = useRef<DemoHandle | null>(null);
    const driveRef = useRef<{ key: string; promise: Promise<void> } | null>(null);
    const settledKeyRef = useRef<string | null>(null);
    const missStreakRef = useRef(0);
@@ -127,6 +130,12 @@ export default function TutorialRunner() {
          const previousIndex = enteredIndexRef.current;
          enteredIndexRef.current = stepIndex;
          const promise = (async () => {
+            // Initial entry: seed the demo content (if any) BEFORE the first drive, so the surface is
+            // mounted before any anchor is queried (drive/anchor already await this promise).
+            if (previousIndex === null && definition.needsDemo && !demoHandleRef.current) {
+               setPhase('seeding');
+               demoHandleRef.current = await seedDemo(definition.needsDemo);
+            }
             if (previousIndex !== null && previousIndex !== stepIndex) {
                await runTutorialActions(currentSteps[previousIndex]?.teardown);
             }
@@ -202,11 +211,17 @@ export default function TutorialRunner() {
       };
    }, [activeTutorialId, stepIndex, definition, measure, armAdvance, advanceOrComplete, setPhase]);
 
-   // Tutorial ended: run the last-entered step's teardown, then reset engine state.
+   // Tutorial ended: run the last-entered step's teardown, THEN discard any demo content (a step
+   // teardown may still reference it), then reset engine state. Covers skip / exit / complete alike.
    useEffect(() => {
       if (activeTutorialId) return;
       const index = enteredIndexRef.current;
-      if (index !== null) void runTutorialActions(stepsRef.current[index]?.teardown);
+      const demoHandle = demoHandleRef.current;
+      const stepTeardown = index !== null ? runTutorialActions(stepsRef.current[index]?.teardown) : Promise.resolve();
+      void Promise.resolve(stepTeardown).then(() => {
+         if (demoHandle) teardownDemo(demoHandle);
+      });
+      demoHandleRef.current = null;
       enteredIndexRef.current = null;
       driveRef.current = null;
       settledKeyRef.current = null;

@@ -1,6 +1,9 @@
 // -- Store Imports --
 import { createCharacterStore } from '@/lib/stores/characterStore';
 
+// -- Local Imports --
+import { isDemoId } from '@/lib/tutorial/demo/demoSentinels';
+
 // -- Type Imports --
 import type { CharacterStore } from '@/lib/stores/characterStore';
 
@@ -84,13 +87,15 @@ export function disposeInstance(id: string): void {
 
 /**
  * Lists the ids of all live character instances, EXCLUDING the permanent menu
- * fallback. Backs the mobile single-live invariant (dispose every character instance
- * but the menu fallback before opening the next).
+ * fallback and any tutorial demo instance. Backs the mobile single-live invariant
+ * (dispose every character instance but the menu fallback before opening the next);
+ * the demo sentinel is filtered so no per-instance consumer ever touches ephemeral
+ * demo content.
  *
  * @returns The character instance ids currently held in the registry.
  */
 export function getCharacterInstanceIds(): string[] {
-   return [...registry.keys()].filter((id) => id !== SINGLE_ACTIVE_INSTANCE_ID);
+   return [...registry.keys()].filter((id) => id !== SINGLE_ACTIVE_INSTANCE_ID && !isDemoId(id));
 }
 
 /**

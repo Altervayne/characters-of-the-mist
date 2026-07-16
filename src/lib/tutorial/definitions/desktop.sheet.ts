@@ -21,6 +21,8 @@ export const DESKTOP_SHEET_TUTORIAL: TutorialDefinition = {
    titleKey: 'TutorialsDialog.tutorials.sheet.title',
    teachKey: 'TutorialsDialog.tutorials.sheet.teach',
    icon: ScrollText,
+   // Teach against a seeded demo character (deterministic sample content), never the user's real sheet.
+   needsDemo: 'character',
    steps: [
       {
          id: 'overview',

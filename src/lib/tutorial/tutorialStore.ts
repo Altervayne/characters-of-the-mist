@@ -6,7 +6,7 @@ import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 /** Where the runner is in a step's sequence. Ephemeral, for observability. */
-export type TutorialPhase = 'driving' | 'awaiting-anchor' | 'showing' | 'gated' | null;
+export type TutorialPhase = 'seeding' | 'driving' | 'awaiting-anchor' | 'showing' | 'gated' | null;
 
 /** Where to return when the tutorial exits. */
 export type TutorialEntryPoint = 'onboarding' | 'settings' | null;
