@@ -86,7 +86,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { deviceType } = useDeviceType();
    // The jump-to-a-tutorial picker only earns a slot when there's something to start (empty until the real
    // tutorials are authored; the `dev.` scenarios surface it in dev). openTutorials -> hub@learn stays regardless.
-   const hasTutorials = getTutorialsForPlatform(deviceType, { includeDev: import.meta.env.DEV }).length > 0;
+   const hasTutorials = getTutorialsForPlatform(deviceType).length > 0;
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
    const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab } = useTabManagerActions();
    const activeNote = useActiveNoteInstance();

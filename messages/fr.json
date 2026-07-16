@@ -1416,6 +1416,10 @@
          "sheet": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "board": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1593,6 +1597,42 @@
          "exportImport_body": "[TO COMPLETE]",
          "createCharacter_title": "[TO COMPLETE]",
          "createCharacter_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "board": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "canvas_title": "[TO COMPLETE]",
+         "canvas_body": "[TO COMPLETE]",
+         "panZoom_title": "[TO COMPLETE]",
+         "panZoom_body": "[TO COMPLETE]",
+         "toolbar_title": "[TO COMPLETE]",
+         "toolbar_body": "[TO COMPLETE]",
+         "modes_title": "[TO COMPLETE]",
+         "modes_body": "[TO COMPLETE]",
+         "addMenu_title": "[TO COMPLETE]",
+         "addMenu_body": "[TO COMPLETE]",
+         "dropElement_title": "[TO COMPLETE]",
+         "dropElement_body": "[TO COMPLETE]",
+         "radialMenu_title": "[TO COMPLETE]",
+         "radialMenu_body": "[TO COMPLETE]",
+         "drawTools_title": "[TO COMPLETE]",
+         "drawTools_body": "[TO COMPLETE]",
+         "drawStroke_title": "[TO COMPLETE]",
+         "drawStroke_body": "[TO COMPLETE]",
+         "shapes_title": "[TO COMPLETE]",
+         "shapes_body": "[TO COMPLETE]",
+         "backToElements_title": "[TO COMPLETE]",
+         "backToElements_body": "[TO COMPLETE]",
+         "layersToggle_title": "[TO COMPLETE]",
+         "layersToggle_body": "[TO COMPLETE]",
+         "layersPanel_title": "[TO COMPLETE]",
+         "layersPanel_body": "[TO COMPLETE]",
+         "connections_title": "[TO COMPLETE]",
+         "connections_body": "[TO COMPLETE]",
+         "dice_title": "[TO COMPLETE]",
+         "dice_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       }

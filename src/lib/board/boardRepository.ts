@@ -6,6 +6,7 @@ import cuid from 'cuid';
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
 import { BOARD_SCHEMA_VERSION, DEFAULT_BOARD_GRID } from './boardRecords';
 import { BoardNotFoundError, BoardTransactionError } from './boardErrors';
+import * as demoBoardBackend from '@/lib/tutorial/demo/demoBoardBackend';
 
 // -- Type Imports --
 import type { BoardItemRecord, BoardRecord } from './boardRecords';
@@ -18,6 +19,11 @@ import type { Board, BoardItem, Viewport } from '@/lib/types/board';
  * per-item under a command engine. Every multi-row op runs in one Dexie transaction;
  * errors are thrown as the typed errors in `boardErrors.ts`. Nothing outside this
  * module touches `db.boards`/`db.boardItems`.
+ *
+ * This is the ONE Dexie boundary the board command engine funnels through, so it is also
+ * where the tutorial engine's demo board is isolated: a demo board id (or an item it owns)
+ * routes to a per-id in-memory backend that touches Dexie for NOTHING, while every real id
+ * is unchanged. The demo board thus does/undoes in memory and persists nowhere.
  */
 
 /** A fresh board's camera: origin, no zoom. The viewport persists thereafter. */
@@ -111,6 +117,7 @@ export function createBoard(name: string): Promise<BoardRecord> {
 
 /** Loads a board record by id, or `undefined` if it does not exist. */
 export function getBoard(id: string): Promise<BoardRecord | undefined> {
+   if (demoBoardBackend.ownsBoard(id)) return demoBoardBackend.getBoard(id);
    return db.boards.get(id);
 }
 
@@ -121,6 +128,7 @@ export function listBoards(): Promise<BoardRecord[]> {
 
 /** Upserts a board record, refreshing `updatedAt`. Returns the stored record. */
 export function saveBoard(board: BoardRecord): Promise<BoardRecord> {
+   if (demoBoardBackend.ownsBoard(board.id)) return demoBoardBackend.saveBoard(board);
    return runWriteTransaction([db.boards], async () => {
       const record: BoardRecord = { ...board, updatedAt: Date.now() };
       await db.boards.put(record);
@@ -133,6 +141,7 @@ export function saveBoard(board: BoardRecord): Promise<BoardRecord> {
  * write (like the viewport): it only advances the monotonic ordinal source. Idempotent on an absent board.
  */
 export function saveBoardLayerSeq(id: string, nextLayerSeq: number): Promise<void> {
+   if (demoBoardBackend.ownsBoard(id)) return demoBoardBackend.saveBoardLayerSeq(id, nextLayerSeq);
    return runWriteTransaction([db.boards], async () => {
       await db.boards.update(id, { nextLayerSeq, updatedAt: Date.now() });
    });
@@ -140,6 +149,7 @@ export function saveBoardLayerSeq(id: string, nextLayerSeq: number): Promise<voi
 
 /** Renames a board, refreshing `updatedAt`. Throws {@link BoardNotFoundError} if absent. */
 export function renameBoard(id: string, name: string): Promise<void> {
+   if (demoBoardBackend.ownsBoard(id)) return demoBoardBackend.renameBoard(id, name);
    return runWriteTransaction([db.boards], async () => {
       const updated = await db.boards.update(id, { name, updatedAt: Date.now() });
       if (!updated) throw new BoardNotFoundError(`Board not found: ${id}`);
@@ -163,6 +173,7 @@ export function deleteBoard(id: string): Promise<void> {
 
 /** Inserts or replaces a single board item. */
 export function addItem(record: BoardItemRecord): Promise<void> {
+   if (demoBoardBackend.ownsBoard(record.boardId)) return demoBoardBackend.putItem(record);
    return runWriteTransaction([db.boardItems], async () => {
       await db.boardItems.put(record);
    });
@@ -170,11 +181,13 @@ export function addItem(record: BoardItemRecord): Promise<void> {
 
 /** Loads a single item record by id, or `undefined` if it does not exist. */
 export function getItem(id: string): Promise<BoardItemRecord | undefined> {
+   if (demoBoardBackend.ownsItem(id)) return demoBoardBackend.getItem(id);
    return db.boardItems.get(id);
 }
 
 /** Lists a board's items in z-order, via the `[boardId+z]` index. */
 export function listItems(boardId: string): Promise<BoardItemRecord[]> {
+   if (demoBoardBackend.ownsBoard(boardId)) return demoBoardBackend.listItems(boardId);
    return orderedItems(boardId);
 }
 
@@ -188,6 +201,7 @@ export function putItem(record: BoardItemRecord): Promise<void> {
  * {@link BoardNotFoundError} if the item does not exist. `id`/`boardId` are immutable.
  */
 export function updateItem(id: string, patch: Partial<Omit<BoardItemRecord, 'id' | 'boardId'>>): Promise<void> {
+   if (demoBoardBackend.ownsItem(id)) return demoBoardBackend.updateItem(id, patch);
    return runWriteTransaction([db.boardItems], async () => {
       const updated = await db.boardItems.update(id, patch);
       if (!updated) throw new BoardNotFoundError(`Board item not found: ${id}`);
@@ -196,6 +210,7 @@ export function updateItem(id: string, patch: Partial<Omit<BoardItemRecord, 'id'
 
 /** Deletes a single item. Idempotent: deleting an absent id is a no-op. */
 export function deleteItem(id: string): Promise<void> {
+   if (demoBoardBackend.ownsItem(id)) return demoBoardBackend.deleteItem(id);
    return runWriteTransaction([db.boardItems], async () => {
       await db.boardItems.delete(id);
    });
@@ -234,6 +249,7 @@ export function bulkDeleteItems(ids: string[]): Promise<void> {
  * inverse (aggregate -> records, for drawer-save/export) is a later prompt.
  */
 export function loadBoard(id: string): Promise<Board | undefined> {
+   if (demoBoardBackend.ownsBoard(id)) return demoBoardBackend.loadBoard(id);
    return runReadTransaction([db.boards, db.boardItems], async () => {
       const record = await db.boards.get(id);
       if (!record) return undefined;
@@ -315,6 +331,7 @@ export interface SaveBoardToDrawerResult {
  * link returns `false` so the caller routes to "Save As".
  */
 export function saveBoardToLinkedDrawerItem(boardId: string, viewport: Viewport): Promise<SaveBoardToDrawerResult> {
+   if (demoBoardBackend.ownsBoard(boardId)) return demoBoardBackend.saveBoardToLinkedDrawerItem(boardId, viewport);
    return runWriteTransaction([db.boards, db.boardItems, db.items], async () => {
       const record = await db.boards.get(boardId);
       if (!record) return { linkedItemUpdated: false };
@@ -339,6 +356,7 @@ export function saveBoardToLinkedDrawerItem(boardId: string, viewport: Viewport)
  * returns the aggregate to seed that drawer item's content. Used by "Save Board As".
  */
 export function linkBoardToDrawerItem(boardId: string, drawerItemId: string, viewport: Viewport): Promise<Board> {
+   if (demoBoardBackend.ownsBoard(boardId)) return demoBoardBackend.linkBoardToDrawerItem(boardId, drawerItemId, viewport);
    return runWriteTransaction([db.boards, db.boardItems], async () => {
       const record = await db.boards.get(boardId);
       if (!record) throw new BoardNotFoundError(`Board not found: ${boardId}`);

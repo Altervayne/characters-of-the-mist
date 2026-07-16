@@ -37,6 +37,7 @@ export type BoardAction =
    | `setGrid:${BoardGridType}`
    | 'focusJumpToCoordinate'
    | 'mergeSelectedLayers'
+   | 'frameConnections'
    | `embedNote:${string}`;
 
 interface AppGeneralState {

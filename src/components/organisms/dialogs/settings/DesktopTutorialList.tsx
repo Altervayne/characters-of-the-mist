@@ -29,7 +29,7 @@ export function DesktopTutorialList() {
    const completedTutorials = useAppSettingsStore((state) => state.completedTutorials);
    const { resetTutorialProgress } = useAppSettingsActions();
 
-   const tutorials = getTutorialsForPlatform('desktop', { includeDev: import.meta.env.DEV });
+   const tutorials = getTutorialsForPlatform('desktop');
    if (tutorials.length === 0) return null;
 
    const launch = (id: string) => {

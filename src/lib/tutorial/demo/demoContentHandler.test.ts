@@ -4,12 +4,14 @@ import type { MockInstance } from 'vitest';
 
 // -- Under Test --
 import { seedDemo, teardownDemo } from './demoContentHandler';
-import { DEMO_CHARACTER_ID } from './demoSentinels';
+import { disposeDemoBoard } from './demoBoardBackend';
+import { DEMO_BOARD_ID, DEMO_CHARACTER_ID } from './demoSentinels';
 
 // -- Store / Repo Imports --
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { disposeInstance, getCharacterInstanceIds, getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
+import { disposeBoardInstance, getBoardInstanceIds, getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
 import { saveCharacter } from '@/lib/character/characterRepository';
 import { createNote } from '@/lib/notes/noteRepository';
 import { writeWorkspace, WORKSPACE_KEY } from '@/lib/character/workspaceSession';
@@ -17,7 +19,7 @@ import * as assetRepository from '@/lib/assets/assetRepository';
 
 // -- Type Imports --
 import type { Character } from '@/lib/types/character';
-import type { BoardItemContent } from '@/lib/types/board';
+import type { BoardItem, BoardItemContent } from '@/lib/types/board';
 import type { DrawerItemContent } from '@/lib/types/drawer';
 
 /*
@@ -148,6 +150,8 @@ afterEach(async () => {
    vi.restoreAllMocks();
    disposeInstance(DEMO_CHARACTER_ID);
    disposeInstance('baseline-char');
+   disposeBoardInstance(DEMO_BOARD_ID);
+   disposeDemoBoard(DEMO_BOARD_ID);
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
    await new Promise((resolve) => setTimeout(resolve, 0));
 });
@@ -229,6 +233,68 @@ describe('demo handler zero-write invariant', () => {
    it('excludes the demo instance from the registry lister while it is live', async () => {
       const handle = await seedDemo('character');
       expect(getCharacterInstanceIds()).not.toContain(DEMO_CHARACTER_ID);
+      teardownDemo(handle);
+   });
+
+   it('leaves every table + the workspace byte-identical through a COMPLETE board run (with board edits)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      // Seed the demo board, then drive real board gestures on it - add a tile, move it, undo the move -
+      // through the demo board store's own actions, proving the persist-then-resync command path runs
+      // entirely in the in-memory backend and reaches Dexie for nothing.
+      const handle = await seedDemo('board');
+      expect(useTabManagerStore.getState().activeTabId).toBe(DEMO_BOARD_ID);
+      const board = getOrCreateBoardInstance(DEMO_BOARD_ID);
+      // The fixture hydrated: its representative tiles are present on the canvas.
+      expect(Object.keys(board.getState().items).length).toBeGreaterThan(0);
+
+      const addedId = 'demo-board-added-tile';
+      const added: BoardItem = { id: addedId, kind: 'post-it', x: 500, y: 500, width: 180, height: 180, z: 99, content: { kind: 'post-it', mode: 'copy', data: { id: 'p-added', text: 'Dropped mid-tour' } } };
+      await board.getState().actions.addItem(added);
+      expect(board.getState().items[addedId]).toBeDefined();
+      await board.getState().actions.moveItem(addedId, { x: 560, y: 560 });
+      expect(board.getState().items[addedId]?.x).toBe(560);
+      await board.getState().actions.undo();
+      // The undo reverted the move in memory; the tile is still there, back at its added position.
+      expect(board.getState().items[addedId]?.x).toBe(500);
+
+      // Mid-run: every command lived in the backend, so the workspace is still untouched.
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+
+      teardownDemo(handle);
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+
+      // Prior state restored exactly; demo board instance gone from the registry.
+      expect(useTabManagerStore.getState().openTabs).toEqual([{ id: 'baseline-char', type: 'character' }]);
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getBoardInstanceIds()).not.toContain(DEMO_BOARD_ID);
+   });
+
+   it('leaves every table + the workspace byte-identical through a SKIP board run (no edits)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      const handle = await seedDemo('board');
+      teardownDemo(handle); // immediate skip: no interaction
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getBoardInstanceIds()).not.toContain(DEMO_BOARD_ID);
+   });
+
+   it('excludes the demo board from the registry lister while it is live', async () => {
+      const handle = await seedDemo('board');
+      expect(getBoardInstanceIds()).not.toContain(DEMO_BOARD_ID);
       teardownDemo(handle);
    });
 });

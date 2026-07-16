@@ -55,6 +55,7 @@ export function BoardAddMenu({ onAddItem, onOpenPortalPicker, onAddTracker, onPi
          <DropdownMenuTrigger asChild>
             <button
                type="button"
+               data-tutorial="board-add-menu"
                title={t('BoardView.addElement')}
                aria-label={t('BoardView.addElement')}
                className="flex h-6 shrink-0 items-center gap-1.5 rounded px-2.5 text-sm font-medium text-foreground hover:bg-muted cursor-pointer"

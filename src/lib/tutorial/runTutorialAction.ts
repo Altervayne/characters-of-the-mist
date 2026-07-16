@@ -45,6 +45,9 @@ export function runTutorialAction(action: TutorialAction): void | Promise<void> 
       case 'setNavigator':
          settings.setNavigatorOpen(action.open);
          return;
+      case 'setLayersPanel':
+         settings.setLayersPanelOpen(action.open);
+         return;
       case 'setDiceTray':
          settings.setDiceTrayOpen(action.open);
          return;

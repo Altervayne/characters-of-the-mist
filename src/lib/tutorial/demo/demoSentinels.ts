@@ -12,6 +12,9 @@ export const DEMO_ID_PREFIX = '__tutorial_demo';
 /** The demo character's id, doubling as its registry key (character id === registry key). */
 export const DEMO_CHARACTER_ID = '__tutorial_demo_character__';
 
+/** The demo board's id, doubling as its registry key AND the sentinel the in-memory repository backend claims. */
+export const DEMO_BOARD_ID = '__tutorial_demo_board__';
+
 /**
  * The demo portrait's stand-in asset id. NOT a content hash and never stored: the portrait
  * seam in `useAssetObjectUrl` short-circuits it to a bundled placeholder before any asset-store

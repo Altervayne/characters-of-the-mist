@@ -29,6 +29,7 @@ export type TutorialAction =
    | { type: 'setEditing'; value: boolean }
    | { type: 'setDrawer'; mode: 'closed' | 'open' | 'expanded' }
    | { type: 'setNavigator'; open: boolean }
+   | { type: 'setLayersPanel'; open: boolean }
    | { type: 'setDiceTray'; open: boolean }
    | { type: 'setCommandPalette'; open: boolean }
    | { type: 'openSettings'; section?: string }
@@ -99,8 +100,8 @@ export interface TutorialDefinition {
    icon?: LucideIcon;
    /**
     * When set, the engine seeds isolated demo content before the first step and discards it on exit.
-    * Only `'character'` is built today (board + portal-graph extend this as their tutorials land).
+    * `'character'` and `'board'` are built (portal-graph extends this as its tutorial lands).
     */
-   needsDemo?: 'character';
+   needsDemo?: 'character' | 'board';
    steps: TutorialStep[];
 }

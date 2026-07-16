@@ -1,6 +1,9 @@
 // -- Store Imports --
 import { createBoardStore } from '@/lib/stores/boardStore';
 
+// -- Local Imports --
+import { isDemoId } from '@/lib/tutorial/demo/demoSentinels';
+
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
 
@@ -61,7 +64,10 @@ export function disposeBoardInstance(id: string): void {
    }
 }
 
-/** Lists the ids of all live board instances. */
+/**
+ * Lists the ids of all live board instances, EXCLUDING any tutorial demo board. The demo sentinel is
+ * filtered so no per-instance consumer ever reaches ephemeral demo content (mirrors the character lister).
+ */
 export function getBoardInstanceIds(): string[] {
-   return [...registry.keys()];
+   return [...registry.keys()].filter((id) => !isDemoId(id));
 }

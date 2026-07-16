@@ -1315,6 +1315,34 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          else createItemAt(kind, viewCenter);
       }
       else if (pendingBoardAction === 'mergeSelectedLayers') handleLayerMerge();
+      else if (pendingBoardAction === 'frameConnections') {
+         // Present every connection for reading: select mode (so cards are the interaction target, not a
+         // draw surface) and a viewport that frames each link's two endpoints, so a connection can never
+         // sit out of view after the user has panned or zoomed. No connections leaves the viewport as-is.
+         setActiveTool('select');
+         const el = clipRef.current;
+         const seen = new Set<string>();
+         const endpoints: BoardItem[] = [];
+         for (const item of Object.values(items)) {
+            if (item.content.kind !== 'connection') continue;
+            for (const endId of [item.content.from, item.content.to]) {
+               const endpoint = items[endId];
+               if (endpoint && !seen.has(endId)) { seen.add(endId); endpoints.push(endpoint); }
+            }
+         }
+         if (el && endpoints.length) {
+            const rect = el.getBoundingClientRect();
+            const fitted = fitViewport(endpoints, { width: rect.width, height: rect.height }, FIT_PADDING);
+            // The read beat's coach-mark is centered in the window, so a link running through the framed
+            // center would sit under it. Lift the content so its midline (where a link between two aligned
+            // cards runs) clears the coach's top edge by a fixed margin, whatever the window height: the
+            // `rect.top / 2` term cancels the canvas offset, leaving half the coach height plus breathing room.
+            const COACH_HALF_HEIGHT = 130;
+            const BREATHING_ROOM = 32;
+            const lift = rect.top / 2 + COACH_HALF_HEIGHT + BREATHING_ROOM;
+            actions.setViewport({ ...fitted, y: fitted.y - lift });
+         }
+      }
       else if (pendingBoardAction.startsWith('embedNote:')) embedNoteAt(pendingBoardAction.slice('embedNote:'.length), viewCenter);
       clearBoardAction();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers close over live selection/viewCenter that change every render; only the action id should re-trigger this.
@@ -1547,6 +1575,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       <div
          ref={setClipRefs}
          data-board-clip
+         data-tutorial="board-canvas"
          onPointerDown={handleBackgroundPointerDown}
          onPointerMove={handleBackgroundPointerMove}
          onPointerUp={handleBackgroundPointerUp}
@@ -1750,6 +1779,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              above the board content but below the floating windows / radial / tray (z-40). `overflow-x-clip`
              clips a slide-out arrow at the card edge. */}
          <div
+            data-tutorial="board-toolbar"
             onPointerDown={(event) => event.stopPropagation()}
             style={{ bottom: barBottom, marginLeft: layersPanelOpen ? -(LAYERS_PANEL_WIDTH / 2) : 0 }}
             className={cn(
@@ -1785,7 +1815,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                       the modes read as distinct from the icon-only clusters below. The Drawing glyph never
                       tracks the active gesture; the specific gesture lives in the settings bar. Drawing is
                       pressed for any drawing gesture and re-enters the last one - exit via Elements, Esc, or V. */}
-                  <div className="flex shrink-0 items-center gap-0.5">
+                  <div data-tutorial="board-mode-segment" className="flex shrink-0 items-center gap-0.5">
                      <ToolToggleButton active={activeTool === 'select'} title={t('BoardView.toolSelect')} label={t('BoardView.toolSelect')} onClick={() => setActiveTool('select')}>
                         <MousePointer2 className="h-4 w-4" />
                      </ToolToggleButton>
@@ -1827,7 +1857,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                   )}
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
                   <BoardGridMenu grid={grid} onSelect={(type) => void actions.setGrid({ ...grid, type })} />
-                  <ToolbarButton title={t('LayersPanel.toggle')} active={layersPanelOpen} onClick={toggleLayersPanel}>
+                  <ToolbarButton title={t('LayersPanel.toggle')} active={layersPanelOpen} onClick={toggleLayersPanel} dataTutorial="board-layers-toggle">
                      <Layers className="h-4 w-4" />
                   </ToolbarButton>
                   <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
@@ -2191,7 +2221,7 @@ const BoardCoordinateField = forwardRef<HTMLInputElement, { prefix: string; labe
 );
 
 /** A button in the canvas palette/view toolbar. `active` gives it a pressed-toggle state (aria-pressed + tint). */
-function ToolbarButton({ title, onClick, active, children }: { title: string; onClick: () => void; active?: boolean; children: React.ReactNode }) {
+function ToolbarButton({ title, onClick, active, dataTutorial, children }: { title: string; onClick: () => void; active?: boolean; dataTutorial?: string; children: React.ReactNode }) {
    return (
       <button
          type="button"
@@ -2199,6 +2229,7 @@ function ToolbarButton({ title, onClick, active, children }: { title: string; on
          title={title}
          aria-label={title}
          aria-pressed={active}
+         data-tutorial={dataTutorial}
          className={cn(
             'flex size-6 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted cursor-pointer',
             active && 'bg-muted ring-1 ring-primary/40',

@@ -231,6 +231,7 @@ function ToolSelector({ tool, onSetTool }: { tool: ActiveTool; onSetTool: (tool:
          <DropdownMenuTrigger asChild>
             <button
                type="button"
+               data-tutorial="board-draw-tools"
                title={t('BoardView.drawTool')}
                className="flex h-6 shrink-0 items-center gap-1 rounded px-1.5 text-foreground hover:bg-muted cursor-pointer"
             >

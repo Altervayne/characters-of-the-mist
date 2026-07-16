@@ -1510,6 +1510,10 @@
          "sheet": {
             "title": "Character Sheet",
             "teach": "Name, trackers, cards, and switching between Edit and Play mode."
+         },
+         "board": {
+            "title": "The Board",
+            "teach": "The canvas, elements, drawing tools, layers, and connections."
          }
       }
    },
@@ -1728,6 +1732,42 @@
          "createCharacter_body": "When you want a fresh character, you start from this home menu, or from the plus button in the tab bar. Pick a game and you are ready to build a new one from scratch.",
          "wrap_title": "Nicely Done",
          "wrap_body": "You have built a sheet from start to finish. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "board": {
+         "welcome_title": "The Board",
+         "welcome_body": "The Board is a freeform canvas for your table. You can lay out a scene, a map of clues, or a cast of characters, arranged however you think about them, so your whole game has a place to live.",
+         "canvas_title": "The Canvas",
+         "canvas_body": "This is the canvas. It stretches as far as you need in every direction, and everything you place lives at its own spot in that space, so you can spread your work out and come back to it later.",
+         "panZoom_title": "Moving Around",
+         "panZoom_body": "You can drag the background to move around the canvas, and scroll to zoom in and out. Try it now to get a feel for it, then continue when you are ready.",
+         "toolbar_title": "The Toolbar",
+         "toolbar_body": "The bar along the bottom holds everything you need. From here you can switch between the two work modes, add or draw whatever you like, open the Layers panel, and use the view controls that recenter and zoom the canvas.",
+         "modes_title": "Elements and Drawing",
+         "modes_body": "The Board has two modes. Elements mode is where you place things like cards and notes, while Drawing mode lets you sketch and mark up the canvas directly. You can switch between them with this toggle.",
+         "addMenu_title": "The Add Menu",
+         "addMenu_body": "In Elements mode, everything you can place lives behind this Add button. From here you can drop notes, portals, game cards, trackers, and more onto the board.",
+         "dropElement_title": "Place an Element",
+         "dropElement_body": "Open the Add menu and drop something onto the board. A Post-it or a Pin is the quickest way to start, and it will land in the middle of your view.",
+         "radialMenu_title": "The Quick Menu",
+         "radialMenu_body": "There is a faster way to add things: right-click anywhere on the canvas to open a radial menu, and whatever you pick drops right where you clicked. Give it a try, then continue.",
+         "drawTools_title": "The Drawing Tools",
+         "drawTools_body": "In Drawing mode you first pick a gesture, either freehand, straight lines, shapes, or the eraser, and then set the brush, its size, and its ink. The New layer button starts your next stroke on a layer of its own.",
+         "drawStroke_title": "Draw on the Canvas",
+         "drawStroke_body": "Now draw something on the canvas by pressing and dragging across it. Anything you like will do.",
+         "shapes_title": "The Shape Tools",
+         "shapes_body": "The shape tools drag out clean circles, squares, and polygons, which are useful for marking zones and regions on your map. You can pick one and drag out a shape if you like, then continue.",
+         "backToElements_title": "Back to Elements",
+         "backToElements_body": "Back in Elements mode, you can select, move, and arrange everything you have placed on the board.",
+         "layersToggle_title": "Open the Layers Panel",
+         "layersToggle_body": "Let's look at the Layers panel. Press the Layers button here to open it.",
+         "layersPanel_title": "The Layers Panel",
+         "layersPanel_body": "This lists every element on the board, stacked from the top of the list to the front of the canvas. You can hover a row to find an element, click to select it, and drag to restack it, and you can group related things together into zones. Drawing layers can be merged from here too.",
+         "connections_title": "Connections",
+         "connections_body": "Elements can be linked to one another. These two cards are joined by a connection line, which is a good way to show how things relate. To make your own, you select an element and drag its connect handle onto another, and you can select a line to recolor it, change its arrow, or remove it.",
+         "dice_title": "The Dice Tray",
+         "dice_body": "The Dice Tray rides along here too, so you can build a pool and roll it without ever leaving the board.",
+         "wrap_title": "That's the Board",
+         "wrap_body": "That is the Board. You can replay this lesson any time from the Learn section in your Settings."
       }
    },
 

@@ -190,6 +190,7 @@ export function LayersPanel({ store, onClose, onSelect, onActivate, onHover, onC
 
    return (
       <div
+         data-tutorial="board-layers-panel"
          onPointerDown={(event) => event.stopPropagation()}
          className="absolute inset-y-0 right-0 z-40 flex w-64 flex-col border-l border-border bg-card shadow-sm"
       >

@@ -4,38 +4,45 @@ import {
    getOrCreateInstance,
    setActiveInstance,
 } from '@/lib/character/characterStoreRegistry';
-import { setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
+import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
 import { setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { restoreActivePointers, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { WORKSPACE_KEY } from '@/lib/character/workspaceSession';
 
 // -- Local Imports --
 import { createDemoCharacter } from './demoCharacter';
-import { DEMO_CHARACTER_ID, isDemoId } from './demoSentinels';
+import { createDemoBoard } from './demoBoard';
+import { disposeDemoBoard, installDemoBoard } from './demoBoardBackend';
+import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, isDemoId } from './demoSentinels';
 
 // -- Type Imports --
 import type { OpenTab } from '@/lib/character/tabManagerStore';
 
 /*
  * The one seam that seeds and discards the tutorial engine's isolated demo content. The whole
- * zero-write guarantee rests here: a demo character is a registry instance we load a fixture into
- * and NEVER attach a persistence handle to (the only bridge to Dexie), so no edit - not even a
- * flush-on-unmount - can reach the store. Seeding sets tab/active-pointer state through raw
- * `setState`, never `appendAndActivate*`/`persistWorkspace`, so it never touches `localStorage`.
- * Teardown restores the captured prior pointers, drops the demo instance, AND re-asserts the exact
- * prior `localStorage` workspace bytes - so even a driven beat that DOES persist (a menu-park or a
- * re-activate, which call `persistWorkspace`) can never leave the demo tab behind after the run.
+ * zero-write guarantee rests here, and the two kinds get OPPOSITE seams because their stores have
+ * opposite persistence architectures:
  *
- * Scope: the CHARACTER demo only. Board + portal-graph demos land with their own tutorials.
+ * - A demo CHARACTER is a registry instance we load a fixture into and NEVER attach a persistence
+ *   handle to (the only bridge to Dexie), so no edit - not even a flush-on-unmount - can reach the store.
+ * - A demo BOARD is persist-then-resync (commands write the repo, the view rebuilds from it), so a
+ *   handle-less trick is not enough. Its fixture is hydrated into a per-id in-memory `boardRepository`
+ *   backend keyed by the sentinel board id, so its commands do/undo in memory and persist to NOTHING.
+ *
+ * Both share the tab wiring: seeding sets tab/active-pointer state through raw `setState`, never
+ * `appendAndActivate*`/`persistWorkspace`, so it never touches `localStorage`. Teardown restores the
+ * captured prior pointers, drops the demo instance (and the board backend), AND re-asserts the exact prior
+ * `localStorage` workspace bytes - so even a driven beat that DOES persist (a menu-park or a re-activate,
+ * which call `persistWorkspace`) can never leave the demo tab behind after the run.
  */
 
 /** The kind of demo content a tutorial seeds; matches `TutorialDefinition.needsDemo`. */
-export type DemoKind = 'character';
+export type DemoKind = 'character' | 'board';
 
 /** A live demo: the seeded sentinel id(s) plus the user's captured prior workspace, for exact restore. */
 export interface DemoHandle {
    kind: DemoKind;
-   /** The sentinel id(s) minted (one for the character demo). */
+   /** The sentinel id(s) minted (one each for the character and board demos). */
    ids: string[];
    /** The user's real workspace at seed time, restored verbatim on teardown. */
    prior: { openTabs: OpenTab[]; activeTabId: string | null };
@@ -45,9 +52,9 @@ export interface DemoHandle {
 
 /**
  * Seeds the demo content for `kind`, makes it the active surface, and returns a handle for teardown.
- * Async so a future board demo (async hydrate) folds in unchanged; the character demo resolves
- * synchronously. Idempotent-safe: prior state is captured from the user's real (non-demo) tabs, so a
- * re-seed can never mistake a live demo tab for prior state.
+ * Async because the board demo hydrates asynchronously; the character demo resolves synchronously.
+ * Idempotent-safe: prior state is captured from the user's real (non-demo) tabs, so a re-seed can never
+ * mistake a live demo tab for prior state.
  */
 export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
    const { openTabs, activeTabId } = useTabManagerStore.getState();
@@ -64,6 +71,15 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
       // localStorage unavailable (e.g. privacy mode): nothing was persisted to restore.
    }
 
+   if (kind === 'board') return seedDemoBoard(prior, priorWorkspaceRaw);
+   return seedDemoCharacter(prior, priorWorkspaceRaw);
+}
+
+/** Prior workspace snapshot captured at seed, shared by both kinds' seeders. */
+type PriorWorkspace = DemoHandle['prior'];
+
+/** Seeds the demo CHARACTER: a fixture in a handle-less registry instance (its only route to Dexie unopened). */
+function seedDemoCharacter(prior: PriorWorkspace, priorWorkspaceRaw: string | null): DemoHandle {
    // Load the fixture into a registry instance. Crucially NO attachPersistenceHandle: a handle-less
    // instance is inert (its only route to Dexie is the handle's save subscription), so demo edits
    // live purely in memory.
@@ -76,11 +92,30 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
    setActiveBoardInstance(null);
    setActiveNoteInstance(null);
    useTabManagerStore.setState({
-      openTabs: [...priorOpenTabs, { id: DEMO_CHARACTER_ID, type: 'character' }],
+      openTabs: [...prior.openTabs, { id: DEMO_CHARACTER_ID, type: 'character' }],
       activeTabId: DEMO_CHARACTER_ID,
    });
 
-   return { kind, ids: [DEMO_CHARACTER_ID], prior, priorWorkspaceRaw };
+   return { kind: 'character', ids: [DEMO_CHARACTER_ID], prior, priorWorkspaceRaw };
+}
+
+/** Seeds the demo BOARD: a fixture in the in-memory repository backend, hydrated into a real board instance. */
+async function seedDemoBoard(prior: PriorWorkspace, priorWorkspaceRaw: string | null): Promise<DemoHandle> {
+   // Load the fixture into the per-id in-memory backend, then hydrate the board instance FROM it - the
+   // same load path a real board takes, only the repository reads/writes memory for this id, never Dexie.
+   installDemoBoard(createDemoBoard());
+   const instance = getOrCreateBoardInstance(DEMO_BOARD_ID);
+   await instance.getState().actions.hydrate(DEMO_BOARD_ID);
+
+   // Park every registry for a board tab (character on the menu fallback, board live, note cleared) and
+   // inject the demo tab via raw setState - never persistWorkspace, so `localStorage` is untouched.
+   restoreActivePointers({ id: DEMO_BOARD_ID, type: 'board' });
+   useTabManagerStore.setState({
+      openTabs: [...prior.openTabs, { id: DEMO_BOARD_ID, type: 'board' }],
+      activeTabId: DEMO_BOARD_ID,
+   });
+
+   return { kind: 'board', ids: [DEMO_BOARD_ID], prior, priorWorkspaceRaw };
 }
 
 /**
@@ -96,7 +131,16 @@ export function teardownDemo(handle: DemoHandle): void {
    const priorTab = handle.prior.openTabs.find((tab) => tab.id === handle.prior.activeTabId) ?? null;
    restoreActivePointers(priorTab);
 
-   for (const id of handle.ids) disposeInstance(id);
+   for (const id of handle.ids) {
+      if (handle.kind === 'board') {
+         // Drop the board instance THEN its in-memory backing; a late write for the sentinel id can no
+         // longer reach the backend but also can never fall through to Dexie (routed by the sentinel prefix).
+         disposeBoardInstance(id);
+         disposeDemoBoard(id);
+      } else {
+         disposeInstance(id);
+      }
+   }
 
    try {
       if (handle.priorWorkspaceRaw === null) localStorage.removeItem(WORKSPACE_KEY);

@@ -17,7 +17,6 @@ import MobileOnboarding from '@/components/mobile/onboarding/MobileOnboarding';
 import DesktopOnboarding from '@/components/organisms/onboarding/DesktopOnboarding';
 import { MigrationNoticeDialog } from '@/components/organisms/dialogs/MigrationNoticeDialog';
 import TutorialRunner from '@/components/organisms/tutorial/TutorialRunner';
-import TutorialDevProbe from '@/components/organisms/tutorial/TutorialDevProbe';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
@@ -305,8 +304,6 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
          />
          {/* App chrome above the tab-switch boundary, so a DRIVE-induced tab switch never unmounts it. */}
          <TutorialRunner />
-         {/* Verification-only scaffolding for the engine, stripped from every production build. */}
-         {import.meta.env.DEV && <TutorialDevProbe />}
       </>
    );
 };

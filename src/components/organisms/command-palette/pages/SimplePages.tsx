@@ -256,7 +256,7 @@ interface StartTutorial_PickPageProps {
 export const StartTutorial_PickPage = ({ onSelect }: StartTutorial_PickPageProps) => {
    const { t } = useTranslation();
    const { deviceType } = useDeviceType();
-   const tutorials = getTutorialsForPlatform(deviceType, { includeDev: import.meta.env.DEV });
+   const tutorials = getTutorialsForPlatform(deviceType);
 
    return (
       <Command.Group heading={t('CommandPalette.startTutorial.title')}>

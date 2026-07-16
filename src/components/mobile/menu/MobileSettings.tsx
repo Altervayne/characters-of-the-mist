@@ -90,7 +90,7 @@ export default function MobileSettings({ onStartTour, onRestartOnboarding, onSta
 
 	// The mobile tutorials, empty until the real content is authored (dev scenarios are desktop-only, so this
 	// stays empty in dev too); when empty the whole group renders nothing, no orphan header.
-	const tutorials = onStartTutorial ? getTutorialsForPlatform('mobile', { includeDev: import.meta.env.DEV }) : [];
+	const tutorials = onStartTutorial ? getTutorialsForPlatform('mobile') : [];
 	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
 
 	// The active theme's display name: a preset label, or the custom's own name.
