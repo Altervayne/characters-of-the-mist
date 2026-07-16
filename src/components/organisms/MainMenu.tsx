@@ -109,6 +109,7 @@ const MainMenu: React.FC = () => {
 
             {/* The shared tab-type chooser: one click on a game card or the board card creates that tab. */}
             <motion.div
+               data-tutorial="main-menu-chooser"
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}
                transition={{ delay: 0.3 }}

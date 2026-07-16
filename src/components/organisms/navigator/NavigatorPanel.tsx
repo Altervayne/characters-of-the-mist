@@ -182,6 +182,7 @@ export function NavigatorPanel() {
 
    return (
       <motion.aside
+         data-tutorial="navigator-panel"
          aria-label={t('Navigator.title')}
          initial={{ width: 0 }}
          animate={{ width: '18rem' }}

@@ -1,5 +1,6 @@
 // -- Store Imports --
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
+import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 
 // -- Type Imports --
@@ -14,6 +15,7 @@ import type { TutorialAction } from './tutorialTypes';
  */
 export function runTutorialAction(action: TutorialAction): void | Promise<void> {
    const general = useAppGeneralStateStore.getState().actions;
+   const settings = useAppSettingsStore.getState().actions;
    const tabs = useTabManagerStore.getState().actions;
 
    switch (action.type) {
@@ -40,12 +42,26 @@ export function runTutorialAction(action: TutorialAction): void | Promise<void> 
             general.setDrawerExpanded(false);
          }
          return;
+      case 'setNavigator':
+         settings.setNavigatorOpen(action.open);
+         return;
+      case 'setDiceTray':
+         settings.setDiceTrayOpen(action.open);
+         return;
+      case 'setCommandPalette':
+         general.setCommandPaletteOpen(action.open);
+         return;
       case 'openSettings':
          if (action.section !== undefined) general.setSettingsInitialSection(action.section);
          general.setSettingsOpen(true);
          return;
       case 'closeSettings':
          general.setSettingsOpen(false);
+         return;
+      case 'setSettingsSection':
+         // Live-switch the OPEN hub's active section. The shell follows `settingsInitialSection`
+         // reactively (not only on open), so pushing it here moves the walk from tab to tab.
+         general.setSettingsInitialSection(action.section);
          return;
       case 'board':
          general.requestBoardAction(action.action);

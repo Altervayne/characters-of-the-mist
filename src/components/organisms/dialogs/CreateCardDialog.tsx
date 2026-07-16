@@ -7,6 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 // -- Component Imports --
 import { CardCreationForm } from '@/components/organisms/cards/CardCreationForm';
 
+// -- Store Imports --
+import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
+
 // -- Type Imports --
 import type { Card as CardData } from '@/lib/types/character';
 import type { CreateCardOptions } from '@/lib/types/creation';
@@ -31,10 +34,17 @@ interface CreateCardDialogProps {
 
 export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardData, modal = true, game, allowCharacterCard = false }: CreateCardDialogProps) {
    const { t } = useTranslation();
+   // During a tutorial the coach-mark lives outside this modal, so a click on it reads as an outside dismiss;
+   // ignore outside-close + Esc while a run is active so the create-card step can't be stranded.
+   const isTutorialActive = useTutorialStore((state) => state.activeTutorialId !== null);
 
    return (
       <Dialog open={isOpen} onOpenChange={onOpenChange} modal={modal}>
-         <DialogContent data-tutorial="creation-dialog">
+         <DialogContent
+            data-tutorial="creation-dialog"
+            onInteractOutside={(event) => { if (isTutorialActive) event.preventDefault(); }}
+            onEscapeKeyDown={(event) => { if (isTutorialActive) event.preventDefault(); }}
+         >
             <DialogHeader>
                <DialogTitle>{mode === 'create' ? t('CreateCardDialog.title') : t('CreateCardDialog.editTitle')}</DialogTitle>
                <DialogDescription>{mode === 'create' ? t('CreateCardDialog.description') : t('CreateCardDialog.editDescription')}</DialogDescription>

@@ -12,4 +12,10 @@ export const TUTORIAL_Z = {
    ring: 1101,
    /** Coach-mark card. */
    coach: 1102,
+   /**
+    * No-dim interaction guard. A `scrim:'none'` step still blocks the app so a stray click can't derail it,
+    * but this blocker sits BELOW the app's modal/popover layer (Radix dialogs + dropdowns at z-50) - so the
+    * `Add...` menu or the card dialog the step needs stays reachable while everything beneath it is inert.
+    */
+   noDimBlock: 40,
 } as const;

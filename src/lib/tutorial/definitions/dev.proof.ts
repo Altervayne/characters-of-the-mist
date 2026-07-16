@@ -17,8 +17,8 @@ export const DEV_PROOF_TUTORIAL: TutorialDefinition = {
    steps: [
       {
          id: 'driven',
-         drive: { type: 'openSettings', section: 'appearance' },
-         teardown: { type: 'closeSettings' },
+         onArrive: { type: 'openSettings', section: 'appearance' },
+         onLeave: { type: 'closeSettings' },
          anchorKey: 'dev.driven',
          titleKey: 'Tutorial.welcome_title',
          bodyKey: 'Tutorial.welcome_content',

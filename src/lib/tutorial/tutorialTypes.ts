@@ -28,8 +28,12 @@ export type TutorialAction =
    | { type: 'deactivateToMenu' }
    | { type: 'setEditing'; value: boolean }
    | { type: 'setDrawer'; mode: 'closed' | 'open' | 'expanded' }
+   | { type: 'setNavigator'; open: boolean }
+   | { type: 'setDiceTray'; open: boolean }
+   | { type: 'setCommandPalette'; open: boolean }
    | { type: 'openSettings'; section?: string }
    | { type: 'closeSettings' }
+   | { type: 'setSettingsSection'; section: string }
    | { type: 'board'; action: BoardAction };
 
 /** How a gated step detects the user's real action. */
@@ -56,13 +60,29 @@ export interface TutorialStep {
    bodyKey: string;
    placement?: TutorialPlacement;
    highlightPadding?: number;
-   /** Actions run on step ENTER, awaited in order. */
-   drive?: TutorialAction | TutorialAction[];
-   /** Actions run on step EXIT / abort - undo what `drive` changed. */
-   teardown?: TutorialAction | TutorialAction[];
+   /*
+    * Step lifecycle hooks. Each runs its actions through `runTutorialAction` (store-fresh), awaited in
+    * order. Nothing is ever auto-reversed: whatever a hook sets PERSISTS. Author `onArrive` to
+    * IDEMPOTENTLY ensure the step's required state (e.g. "the drawer is open") so back-navigation
+    * re-establishes it; put the cleanup that hands off to the next section in `onForward` / `onLeave`.
+    */
+   /** Runs when the step becomes active, entered from EITHER direction. */
+   onArrive?: TutorialAction | TutorialAction[];
+   /** Runs when the step is left, in EITHER direction (also on skip / exit / complete). */
+   onLeave?: TutorialAction | TutorialAction[];
+   /** Runs when leaving this step toward the NEXT step. */
+   onForward?: TutorialAction | TutorialAction[];
+   /** Runs when leaving this step toward the PREVIOUS step. */
+   onBack?: TutorialAction | TutorialAction[];
    advance: TutorialAdvance;
    /** Overlay hit-testing. Gated steps require `anchor-only` so the real anchor is clickable. */
    interaction?: 'blocked' | 'anchor-only';
+   /**
+    * Full-screen veil (default `'dim'`). `'none'` renders no veil - coach-mark only, with just a
+    * non-dimming ring at the anchor - so a dialog / dropdown / dice-tray / palette the user opened
+    * stays lit and visible instead of buried under the dim. Pair with `interaction:'anchor-only'`.
+    */
+   scrim?: 'dim' | 'none';
    /** A missing anchor bails the tutorial when `true`, otherwise the step is skipped. */
    required?: boolean;
 }

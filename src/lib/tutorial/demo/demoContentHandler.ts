@@ -7,6 +7,7 @@ import {
 import { setActiveBoardInstance } from '@/lib/board/boardStoreRegistry';
 import { setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { restoreActivePointers, useTabManagerStore } from '@/lib/character/tabManagerStore';
+import { WORKSPACE_KEY } from '@/lib/character/workspaceSession';
 
 // -- Local Imports --
 import { createDemoCharacter } from './demoCharacter';
@@ -19,10 +20,11 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  * The one seam that seeds and discards the tutorial engine's isolated demo content. The whole
  * zero-write guarantee rests here: a demo character is a registry instance we load a fixture into
  * and NEVER attach a persistence handle to (the only bridge to Dexie), so no edit - not even a
- * flush-on-unmount - can reach the store. Tab/active-pointer state is set through raw `setState`,
- * never `appendAndActivate*`/`persistWorkspace`, so the demo tab never touches `localStorage`
- * either. On teardown the captured prior pointers are restored and the demo instance is dropped;
- * nothing was persisted, so the real prior workspace still stands in `localStorage`.
+ * flush-on-unmount - can reach the store. Seeding sets tab/active-pointer state through raw
+ * `setState`, never `appendAndActivate*`/`persistWorkspace`, so it never touches `localStorage`.
+ * Teardown restores the captured prior pointers, drops the demo instance, AND re-asserts the exact
+ * prior `localStorage` workspace bytes - so even a driven beat that DOES persist (a menu-park or a
+ * re-activate, which call `persistWorkspace`) can never leave the demo tab behind after the run.
  *
  * Scope: the CHARACTER demo only. Board + portal-graph demos land with their own tutorials.
  */
@@ -37,6 +39,8 @@ export interface DemoHandle {
    ids: string[];
    /** The user's real workspace at seed time, restored verbatim on teardown. */
    prior: { openTabs: OpenTab[]; activeTabId: string | null };
+   /** The serialized `localStorage` workspace at seed time (or `null` if absent), restored byte-for-byte. */
+   priorWorkspaceRaw: string | null;
 }
 
 /**
@@ -52,6 +56,13 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
       openTabs: priorOpenTabs,
       activeTabId: activeTabId !== null && isDemoId(activeTabId) ? null : activeTabId,
    };
+   // Snapshot the serialized workspace so any persist a driven beat triggers is undone byte-for-byte.
+   let priorWorkspaceRaw: string | null = null;
+   try {
+      priorWorkspaceRaw = localStorage.getItem(WORKSPACE_KEY);
+   } catch {
+      // localStorage unavailable (e.g. privacy mode): nothing was persisted to restore.
+   }
 
    // Load the fixture into a registry instance. Crucially NO attachPersistenceHandle: a handle-less
    // instance is inert (its only route to Dexie is the handle's save subscription), so demo edits
@@ -69,14 +80,15 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
       activeTabId: DEMO_CHARACTER_ID,
    });
 
-   return { kind, ids: [DEMO_CHARACTER_ID], prior };
+   return { kind, ids: [DEMO_CHARACTER_ID], prior, priorWorkspaceRaw };
 }
 
 /**
  * Tears the demo down and returns the user to exactly where they were. Order matters: restore the tab
  * state FIRST (so React unmounts the demo sheet and its flush-on-unmount lands in the still-live demo
- * instance), re-point the registries at the prior tab, THEN drop the demo instance. Nothing was
- * persisted, so `localStorage` already holds the real prior workspace. Idempotent.
+ * instance), re-point the registries at the prior tab, THEN drop the demo instance. Finally re-assert
+ * the captured `localStorage` workspace verbatim, undoing any persist a driven beat triggered so the
+ * demo tab can never linger. Idempotent.
  */
 export function teardownDemo(handle: DemoHandle): void {
    useTabManagerStore.setState({ openTabs: handle.prior.openTabs, activeTabId: handle.prior.activeTabId });
@@ -85,4 +97,11 @@ export function teardownDemo(handle: DemoHandle): void {
    restoreActivePointers(priorTab);
 
    for (const id of handle.ids) disposeInstance(id);
+
+   try {
+      if (handle.priorWorkspaceRaw === null) localStorage.removeItem(WORKSPACE_KEY);
+      else localStorage.setItem(WORKSPACE_KEY, handle.priorWorkspaceRaw);
+   } catch {
+      // localStorage unavailable: nothing was persisted, nothing to restore.
+   }
 }

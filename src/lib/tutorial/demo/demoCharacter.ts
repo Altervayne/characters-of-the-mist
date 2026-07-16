@@ -5,21 +5,21 @@ import cuid from 'cuid';
 import { emptyCharacterCardDetails } from '@/lib/utils/character';
 import { buildCard } from '@/lib/cards/buildCard';
 import { emptyTracker } from '@/lib/trackers/emptyTracker';
-import { DEFAULT_IMAGE_CARD_SIZE } from '@/lib/constants/imageCard';
 
 // -- Local Imports --
-import { DEMO_CHARACTER_ID, DEMO_PORTRAIT_ASSET_ID } from './demoSentinels';
+import { DEMO_CHARACTER_ID } from './demoSentinels';
 
 // -- Type Imports --
-import type { Card, Character, ImageCardDetails, LegendsHeroDetails, LegendsThemeDetails, StatusTracker, StoryTagTracker } from '@/lib/types/character';
+import type { Card, Character, LegendsHeroDetails, LegendsThemeDetails, StatusTracker, StoryTagTracker } from '@/lib/types/character';
 
 /*
  * The demo character the tutorials teach against (D1 Navigation, D2 Sheet). A plain, valid
  * LEGENDS `Character` authored to the current 2.0 model: a complete `sheetLayout`, `journals: []`,
  * cards + trackers built through the real factories so their unions can never drift from a hand-
- * written literal. The portrait rides a bundled placeholder via a reserved asset sentinel, never
- * the asset store. The assembled template is deep-frozen and a fresh `structuredClone` is handed
- * out per run, so a demo-sheet edit mutates only the clone and the next run starts clean.
+ * written literal. It ships NO portrait, so D2 can teach adding one from the sheet's Add menu; the
+ * hero card plus a themed card and two trackers still read as a full sheet. The assembled template
+ * is deep-frozen and a fresh `structuredClone` is handed out per run, so a demo-sheet edit mutates
+ * only the clone and the next run starts clean.
  */
 
 const DEMO_NAME = 'Aria Duskbound';
@@ -70,20 +70,7 @@ function buildThemeCard(): Card {
    return card;
 }
 
-/** The portrait: an empty-frame IMAGE_CARD pointed at the bundled placeholder sentinel (no asset store). */
-function buildPortraitCard(): Card {
-   const details: ImageCardDetails = {
-      game: 'NEUTRAL',
-      assetId: DEMO_PORTRAIT_ASSET_ID,
-      fit: 'cover',
-      width: DEFAULT_IMAGE_CARD_SIZE.width,
-      height: DEFAULT_IMAGE_CARD_SIZE.height,
-   };
-   return { id: cuid(), cardType: 'IMAGE_CARD', title: 'Portrait', isFlipped: false, details };
-}
-
 function buildDemoCharacter(): Character {
-   const portrait = buildPortraitCard();
    const hero = buildHeroCard();
    const theme = buildThemeCard();
 
@@ -94,10 +81,9 @@ function buildDemoCharacter(): Character {
       id: DEMO_CHARACTER_ID,
       name: DEMO_NAME,
       game: 'LEGENDS',
-      cards: [portrait, hero, theme],
+      cards: [hero, theme],
       journals: [],
       sheetLayout: [
-         { kind: 'card', id: portrait.id },
          { kind: 'card', id: hero.id },
          { kind: 'card', id: theme.id },
       ],

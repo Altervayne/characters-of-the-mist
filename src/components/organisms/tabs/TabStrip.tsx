@@ -195,6 +195,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
             {/* New-tab button sits right after the last tab and scrolls with them. */}
             <button
                type="button"
+               data-tutorial="tab-new"
                onClick={() => setIsNewTabDialogOpen(true)}
                aria-label={t('Tabs.newTab')}
                title={t('Tabs.newTab')}

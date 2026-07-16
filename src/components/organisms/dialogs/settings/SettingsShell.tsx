@@ -25,6 +25,7 @@ import { AboutSettingsPane } from './AboutSettingsPane';
 // -- Store and Hook Imports --
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
+import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 
 // -- Type Imports --
 import type { ComponentType } from 'react';
@@ -68,6 +69,16 @@ const SECTIONS: SettingsSection[] = [
 const DEFAULT_SECTION: SettingsSectionId = 'general';
 const SECTION_IDS = new Set<string>(SECTIONS.map((section) => section.id));
 
+/** The `data-tutorial` anchor for each rail tab, so a tutorial can spotlight and walk every section. */
+const SECTION_ANCHORS: Record<SettingsSectionId, string> = {
+   general: 'settings-general',
+   appearance: 'settings-appearance',
+   data: 'settings-data',
+   learn: 'settings-learn',
+   whatsNew: 'settings-whatsNew',
+   about: 'settings-about',
+};
+
 
 
 interface SettingsShellProps {
@@ -85,6 +96,11 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
    // The New! dot rides the What's-new rail row until the user opens that section (which marks the newest release read).
    const hasUnreadPatchNotes = useHasUnreadPatchNotes();
 
+   // While a tutorial walks the hub, its coach-mark (and the Next button) live OUTSIDE this modal dialog, so
+   // a Next click reads to Radix as an outside dismissal and closes the hub - which the next step reopens,
+   // flickering it in and out. Ignore outside-close + Esc during a run; the tutorial's own hooks own open/close.
+   const isTutorialActive = useTutorialStore((state) => state.activeTutorialId !== null);
+
    // On open, honor a one-shot deep-link target (then clear it); otherwise land on the default section so a
    // reopen never drops the user back into wherever they last wandered (e.g. the Danger Zone).
    useEffect(() => {
@@ -98,9 +114,22 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
       // eslint-disable-next-line react-hooks/exhaustive-deps -- seed the section only when the hub opens
    }, [isOpen]);
 
+   // Follow a live section push while already open (the tutorial's settings walk switches tab to tab), the
+   // same one-shot field the open-seed reads. Consumed and cleared; ignored while closed (the open-seed
+   // handles that case) so it never fights the reopen-on-default behaviour.
+   useEffect(() => {
+      if (!isOpen || !settingsInitialSection) return;
+      if (SECTION_IDS.has(settingsInitialSection)) setActiveSection(settingsInitialSection as SettingsSectionId);
+      setSettingsInitialSection(null);
+   }, [isOpen, settingsInitialSection, setSettingsInitialSection]);
+
    return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-         <DialogContent className="flex h-[min(70vh,640px)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+         <DialogContent
+            className="flex h-[min(70vh,640px)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+            onInteractOutside={(event) => { if (isTutorialActive) event.preventDefault(); }}
+            onEscapeKeyDown={(event) => { if (isTutorialActive) event.preventDefault(); }}
+         >
             {/* One full-width header band over the rail + pane, mirroring the Themes window - three surface
                 shades (header card / rail popover / pane background) read as distinct bands, light and dark. */}
             <DialogHeader className="shrink-0 border-b border-border bg-card px-6 py-4 pr-10 text-left">
@@ -131,6 +160,7 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
                                  <TabsPrimitive.Trigger
                                     key={section.id}
                                     value={section.id}
+                                    data-tutorial={SECTION_ANCHORS[section.id]}
                                     className={cn(
                                        'flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground outline-none transition-colors',
                                        'hover:bg-muted hover:text-foreground',

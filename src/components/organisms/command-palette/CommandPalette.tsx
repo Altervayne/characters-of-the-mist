@@ -173,6 +173,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
          {isOpen && (
             <motion.div
                ref={paletteRef}
+               data-tutorial="command-palette"
                variants={commandVariants}
                initial="hidden"
                animate="visible"

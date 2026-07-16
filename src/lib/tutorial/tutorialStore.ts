@@ -14,8 +14,10 @@ export type TutorialEntryPoint = 'onboarding' | 'settings' | null;
 /**
  * Sends the user back where they launched from once a run ends. A settings-launched run reopens the hub on
  * Learn so the list is right there to start the next one; an onboarding-launched run just lands in the app.
+ * The runner calls this as the LAST step of its exit sequence - AFTER the chrome snapshot is restored - so
+ * the settings reopen wins over the snapshot (which captured the hub closed, since launching closes it).
  */
-function returnToEntryPoint(entryPoint: TutorialEntryPoint): void {
+export function returnToEntryPoint(entryPoint: TutorialEntryPoint): void {
    if (entryPoint !== 'settings') return;
    const { setSettingsInitialSection, setSettingsOpen } = useAppGeneralStateStore.getState().actions;
    setSettingsInitialSection('learn');
@@ -64,18 +66,14 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
       next: () => set((state) => (state.activeTutorialId ? { stepIndex: state.stepIndex + 1 } : {})),
       back: () => set((state) => (state.activeTutorialId ? { stepIndex: Math.max(0, state.stepIndex - 1) } : {})),
       goTo: (index) => set((state) => (state.activeTutorialId ? { stepIndex: Math.max(0, index) } : {})),
-      skip: () => {
-         returnToEntryPoint(get().entryPoint);
-         set(CLEARED);
-      },
-      exit: () => {
-         returnToEntryPoint(get().entryPoint);
-         set(CLEARED);
-      },
+      // skip / exit / complete only clear the store; the runner watches the clear and runs the leaving
+      // step's `onLeave`, restores the chrome snapshot, disposes the demo, then returns to the entry point
+      // (order matters, so the whole exit sequence lives in one place - the runner - not split with the store).
+      skip: () => set(CLEARED),
+      exit: () => set(CLEARED),
       complete: () => {
-         const { activeTutorialId, entryPoint } = get();
+         const { activeTutorialId } = get();
          if (activeTutorialId) useAppSettingsStore.getState().actions.markTutorialCompleted(activeTutorialId);
-         returnToEntryPoint(entryPoint);
          set(CLEARED);
       },
       setPhase: (phase) => set({ phase }),

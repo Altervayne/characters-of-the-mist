@@ -159,16 +159,20 @@ describe('demo handler zero-write invariant', () => {
       const baselineTables = await snapshotTables();
       const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
 
-      // Seed the demo, then EDIT the demo sheet the way D2 teaches - proving even edits never leak
-      // (there is no persistence handle to carry them to Dexie).
+      // Seed the demo, then build the sheet end to end the way D2 teaches - a status, a story tag, a
+      // card, a journal, a portrait - proving even the full creation flow never leaks (there is no
+      // persistence handle to carry any of it to Dexie, and the portrait writes no asset).
       const handle = await seedDemo('character');
       expect(useTabManagerStore.getState().activeTabId).toBe(DEMO_CHARACTER_ID);
       const demo = getOrCreateInstance(DEMO_CHARACTER_ID);
       demo.getState().actions.updateCharacterName('Edited In Demo');
       demo.getState().actions.addStatus('Bleeding-3');
       demo.getState().actions.addStoryTag('New lead');
+      demo.getState().actions.addCard({ cardType: 'CHARACTER_THEME', themebook: 'Sample', themeType: 'Adventure', powerTagsCount: 2, weaknessTagsCount: 1 });
+      demo.getState().actions.addJournal();
+      demo.getState().actions.addPortrait();
 
-      // Mid-run: the workspace must already be untouched (the demo tab never persists).
+      // Mid-run: every creation lived in memory, so the workspace is still untouched.
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
 
       teardownDemo(handle);
@@ -196,6 +200,30 @@ describe('demo handler zero-write invariant', () => {
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
       expect(storeAssetSpy).not.toHaveBeenCalled();
       expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+   });
+
+   it('heals the workspace after a driven menu-swap that persists the demo tab (D1 #18 / D2 #16)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      const handle = await seedDemo('character');
+      // The create-character / home-base beats drive `deactivateToMenu` then re-activate the demo tab;
+      // both call `persistWorkspace`, so the demo tab DOES reach localStorage mid-run.
+      const tabActions = useTabManagerStore.getState().actions;
+      tabActions.deactivate();
+      tabActions.setActiveTab(DEMO_CHARACTER_ID);
+      expect(localStorage.getItem(WORKSPACE_KEY)).not.toBe(baselineWorkspace); // leak proven
+
+      teardownDemo(handle);
+
+      // Teardown re-asserts the exact prior bytes: the leak is gone and every table is untouched.
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+      expect(getCharacterInstanceIds()).not.toContain(DEMO_CHARACTER_ID);
    });
 
    it('excludes the demo instance from the registry lister while it is live', async () => {
