@@ -142,7 +142,7 @@ export function TabStrip({ forceDropHighlight = false }: { forceDropHighlight?: 
       <div
          ref={setNodeRef}
          data-tab-strip
-         data-tour="tab-strip"
+         data-tutorial="tab-strip"
          className={cn(
             // Inset, recessed strip: the active tab below overlaps this single bottom
             // border to merge with the sheet. The outer strip is NOT the scroll

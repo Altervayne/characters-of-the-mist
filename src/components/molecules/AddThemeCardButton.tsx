@@ -20,7 +20,7 @@ export function AddCardButton({ onClick }: AddCardButtonProps) {
 
    return (
       <div
-         data-tour="add-card-button"
+         data-tutorial="add-card-button"
          onClick={onClick}
          className={cn(
             "cursor-pointer flex flex-col gap-4 items-center justify-center min-w-62.5 w-62.5 max-h-150 h-150 p-4",

@@ -312,7 +312,7 @@ function DesktopCharacterSheetPage() {
                         <BoardView />
                      </Suspense>
                   ) : character ? (
-                     <main data-tour="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
+                     <main data-tutorial="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
                         <CharacterNameHeader
                            key={character.id}
                            name={character.name}

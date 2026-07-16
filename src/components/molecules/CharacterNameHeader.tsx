@@ -20,7 +20,7 @@ export function CharacterNameHeader({ name, onCommit, placeholder }: CharacterNa
    return (
       <header className="p-4 bg-popover border-b border-border">
          <input
-            data-tour="character-name-input"
+            data-tutorial="character-name-input"
             type="text"
             value={localName}
             onChange={(e) => setLocalName(e.target.value)}

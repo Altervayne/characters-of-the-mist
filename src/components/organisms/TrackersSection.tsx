@@ -73,7 +73,7 @@ export function TrackersSection({
 
    return (
       <div
-         data-tour="trackers-section"
+         data-tutorial="trackers-section"
          ref={trackersDropRef}
          className={cn(
             "flex gap-4",
@@ -106,7 +106,7 @@ export function TrackersSection({
                   ))}
                   {areTrackersEditable && (
                      <Button
-                        data-tour="add-status-button"
+                        data-tutorial="add-status-button"
                         variant="ghost"
                         onClick={() => onAddStatus()}
                         className={cn("cursor-pointer flex items-center justify-center w-55 h-25",
@@ -145,7 +145,7 @@ export function TrackersSection({
                   ))}
                   {areTrackersEditable && (
                      <Button
-                        data-tour="add-story-tag-button"
+                        data-tutorial="add-story-tag-button"
                         variant="ghost"
                         onClick={() => onAddStoryTag()}
                         title={tTrackers('Trackers.addStoryTag')}

@@ -66,7 +66,7 @@ export function SheetAddMenu({ game, hasPortrait, onAddCard, onAddPortrait, onAd
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
             <div
-               data-tour="add-card-button"
+               data-tutorial="add-card-button"
                className={cn(
                   "cursor-pointer flex flex-col gap-4 items-center justify-center min-w-62.5 w-62.5 max-h-150 h-150 p-4",
                   "rounded-lg border-2 border-dashed border-border text-muted-foreground text-center bg-muted/50",

@@ -25,7 +25,7 @@ export function DrawerUndoRedoControls({ compact = false }: { compact?: boolean 
       // buttons so disabled state reads correctly when there's nothing to undo/redo.
       const iconButton = 'rounded p-2 hover:bg-muted cursor-pointer disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent';
       return (
-         <div data-tour="drawer-undo-redo-buttons" className="flex items-center">
+         <div data-tutorial="drawer-undo-redo-buttons" className="flex items-center">
             <button type="button" onClick={() => { void undo(); }} disabled={!canUndo} aria-label={t('Actions.undo')} title={t('Actions.undo')} className={iconButton}>
                <Undo className="h-6 w-6" />
             </button>
@@ -37,7 +37,7 @@ export function DrawerUndoRedoControls({ compact = false }: { compact?: boolean 
    }
 
    return (
-      <div data-tour="drawer-undo-redo-buttons" className="flex items-center gap-2 justify-evenly max-w-50">
+      <div data-tutorial="drawer-undo-redo-buttons" className="flex items-center gap-2 justify-evenly max-w-50">
          <Button
             variant="outline"
             size="sm"

@@ -1501,7 +1501,17 @@
          "start": "Start",
          "replay": "Replay"
       },
-      "resetProgress": "Reset all tutorial progress"
+      "resetProgress": "Reset all tutorial progress",
+      "tutorials": {
+         "navigation": {
+            "title": "App Navigation",
+            "teach": "A tour of the sidebar, tabs, play area, and command palette."
+         },
+         "sheet": {
+            "title": "Character Sheet",
+            "teach": "Name, trackers, cards, and switching between Edit and Play mode."
+         }
+      }
    },
    "Tutorial": {
       "controls": {

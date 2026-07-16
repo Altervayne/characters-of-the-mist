@@ -33,7 +33,7 @@ export function UndoRedoButtons({ controller, isCollapsed }: { controller: UndoC
 
    return (
       <motion.div
-         data-tour="menu-undo-redo-buttons"
+         data-tutorial="menu-undo-redo-buttons"
          layout
          className={cn(
             'flex items-center gap-2 mt-2 justify-evenly',

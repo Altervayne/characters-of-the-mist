@@ -34,7 +34,7 @@ export function CreateCardDialog({ isOpen, onOpenChange, onConfirm, mode, cardDa
 
    return (
       <Dialog open={isOpen} onOpenChange={onOpenChange} modal={modal}>
-         <DialogContent data-tour="creation-dialog">
+         <DialogContent data-tutorial="creation-dialog">
             <DialogHeader>
                <DialogTitle>{mode === 'create' ? t('CreateCardDialog.title') : t('CreateCardDialog.editTitle')}</DialogTitle>
                <DialogDescription>{mode === 'create' ? t('CreateCardDialog.description') : t('CreateCardDialog.editDescription')}</DialogDescription>

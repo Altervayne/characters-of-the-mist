@@ -472,7 +472,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
 
    return (
       <aside
-         data-tour="sidebar-menu"
+         data-tutorial="sidebar-menu"
          className={cn(
             "hidden md:flex flex-col bg-card pt-2 border-r-2 border-border space-y-4 ease-in-out overflow-hidden",
             isCollapsed ? "w-14 items-center" : "w-60"
@@ -496,7 +496,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                )}>
                   {!isCollapsed && <h2 className="text-lg font-bold">{t('CharacterSheetPage.SidebarMenu.sidebarTitle')}</h2>}
 
-                  <div data-tour="menu-collapse-button" onClick={onToggleCollapse} className="rounded p-2 hover:bg-muted cursor-pointer">
+                  <div data-tutorial="menu-collapse-button" onClick={onToggleCollapse} className="rounded p-2 hover:bg-muted cursor-pointer">
                      {isCollapsed ? <PanelLeftOpen className="h-6 w-6" /> : <PanelLeftClose className="h-6 w-6" />}
                   </div>
                </motion.div>
@@ -528,24 +528,24 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
                   isCollapsed ? "px-0" : "px-2"
                )}>
-                  <SidebarButton data-tour="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} variant={isDrawerOpen ? 'secondary' : 'default'} Icon={BookUser}>
+                  <SidebarButton data-tutorial="drawer-toggle" isCollapsed={isCollapsed} onClick={onToggleDrawer} variant={isDrawerOpen ? 'secondary' : 'default'} Icon={BookUser}>
                      {t('CharacterSheetPage.SidebarMenu.drawer')}
                   </SidebarButton>
-                  <SidebarButton data-tour="dice-tray-button" isCollapsed={isCollapsed} onClick={toggleDiceTray} variant={isDiceTrayOpen ? 'secondary' : 'default'} Icon={Dices}>
+                  <SidebarButton data-tutorial="dice-tray-button" isCollapsed={isCollapsed} onClick={toggleDiceTray} variant={isDiceTrayOpen ? 'secondary' : 'default'} Icon={Dices}>
                      {t('CharacterSheetPage.SidebarMenu.diceTray')}
                   </SidebarButton>
-                  <SidebarButton data-tour="navigator-button" isCollapsed={isCollapsed} onClick={toggleNavigator} variant={navigatorOpen ? 'secondary' : 'default'} Icon={Waypoints}>
+                  <SidebarButton data-tutorial="navigator-button" isCollapsed={isCollapsed} onClick={toggleNavigator} variant={navigatorOpen ? 'secondary' : 'default'} Icon={Waypoints}>
                      {t('CharacterSheetPage.SidebarMenu.navigator')}
                   </SidebarButton>
                </motion.section>
 
                { activeWindow === 'PLAY_AREA' &&
                   <>
-                     <motion.section data-tour="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
+                     <motion.section data-tutorial="menu-edit-drawer-buttons" layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 py-2 bg-popover border-b border-border",
                         isCollapsed ? "px-0" : "px-2"
                      )}>
-                        <SidebarButton data-tour="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} variant={isEditing ? 'secondary' : 'default'} Icon={Edit}>
+                        <SidebarButton data-tutorial="edit-mode-toggle" isCollapsed={isCollapsed} onClick={onToggleEditing} variant={isEditing ? 'secondary' : 'default'} Icon={Edit}>
                            {t('CharacterSheetPage.SidebarMenu.editMode')}
                         </SidebarButton>
                      </motion.section>
@@ -553,22 +553,22 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
-                        <SidebarButton data-tour="save-character-button" isCollapsed={isCollapsed} onClick={saveCharacterToDrawer} Icon={Save}>
+                        <SidebarButton data-tutorial="save-character-button" isCollapsed={isCollapsed} onClick={saveCharacterToDrawer} Icon={Save}>
                            {t('CharacterSheetPage.SidebarMenu.saveToDrawer')}
                         </SidebarButton>
-                        <SidebarButton data-tour="save-character-as-button" isCollapsed={isCollapsed} onClick={saveCharacterAsToDrawer} Icon={SaveAll}>
+                        <SidebarButton data-tutorial="save-character-as-button" isCollapsed={isCollapsed} onClick={saveCharacterAsToDrawer} Icon={SaveAll}>
                            {t('CharacterSheetPage.SidebarMenu.saveToDrawerAs')}
                         </SidebarButton>
-                        <SidebarButton data-tour="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
+                        <SidebarButton data-tutorial="export-character-button" isCollapsed={isCollapsed} onClick={handleExportCharacter} Icon={Upload}>
                            {t('CharacterSheetPage.SidebarMenu.exportCharacter')}
                         </SidebarButton>
-                        <SidebarButton data-tour="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
+                        <SidebarButton data-tutorial="import-character-button" isCollapsed={isCollapsed} onClick={() => characterImportInputRef.current?.click()} Icon={Download}>
                            {t('CharacterSheetPage.SidebarMenu.importCharacter')}
                         </SidebarButton>
                         <SidebarButton isCollapsed={isCollapsed} onClick={() => characterUpdateInputRef.current?.click()} Icon={RefreshCw}>
                            {t('CharacterSheetPage.SidebarMenu.updateCharacter')}
                         </SidebarButton>
-                        <SidebarButton data-tour="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
+                        <SidebarButton data-tutorial="import-component-button" isCollapsed={isCollapsed} onClick={() => componentImportInputRef.current?.click()} Icon={Layers}>
                            {t('CharacterSheetPage.SidebarMenu.importComponent')}
                         </SidebarButton>
                      </motion.section>
@@ -576,7 +576,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                      <motion.section layout transition={{ duration: 0.2 }} className={cn(
                         "flex flex-col items-center gap-2 p-2 bg-popover border-b border-border"
                      )}>
-                        <SidebarButton data-tour="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
+                        <SidebarButton data-tutorial="reset-character-button" disabled={!character} variant="destructive" isCollapsed={isCollapsed} onClick={() => setIsResetDialogOpen(true)} Icon={Trash2}>
                            {t('CharacterSheetPage.SidebarMenu.resetCharacter')}
                         </SidebarButton>
                      </motion.section>
@@ -659,7 +659,7 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   <motion.section layout transition={{ duration: 0.2 }} className={cn(
                      "flex flex-col items-center gap-2 p-2 bg-card border-t-2 border-b border-border"
                   )}>
-                     <SidebarButton data-tour="open-menu-button" isCollapsed={isCollapsed} onClick={handleOpenMenu} Icon={SquareMenu}>
+                     <SidebarButton data-tutorial="open-menu-button" isCollapsed={isCollapsed} onClick={handleOpenMenu} Icon={SquareMenu}>
                         {t('CharacterSheetPage.SidebarMenu.openMenu')}
                      </SidebarButton>
                   </motion.section>
@@ -670,19 +670,19 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                   "flex flex-col items-center gap-2 p-2 bg-card",
                   activeWindow === 'MAIN_MENU' && "border-t-2 border-border"
                )}>
-                  <SidebarButton data-tour="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
+                  <SidebarButton data-tutorial="settings-button" isCollapsed={isCollapsed} onClick={onOpenSettings} Icon={Settings}>
                      {t('CharacterSheetPage.SidebarMenu.settings')}
                   </SidebarButton>
                   {/* What's new carries the New! dot in its corner until the section is opened. */}
                   <div className="relative">
-                     <SidebarButton data-tour="whats-new-button" isCollapsed={isCollapsed} onClick={onOpenWhatsNew} Icon={Sparkles}>
+                     <SidebarButton data-tutorial="whats-new-button" isCollapsed={isCollapsed} onClick={onOpenWhatsNew} Icon={Sparkles}>
                         {t('CharacterSheetPage.SidebarMenu.whatsNew')}
                      </SidebarButton>
                      {hasUnreadPatchNotes && (
                         <span className="pointer-events-none absolute right-2 top-2 size-2 rounded-full bg-primary" aria-hidden />
                      )}
                   </div>
-                  <SidebarButton data-tour="help-button" isCollapsed={isCollapsed} onClick={onOpenHelp} Icon={LifeBuoy}>
+                  <SidebarButton data-tutorial="help-button" isCollapsed={isCollapsed} onClick={onOpenHelp} Icon={LifeBuoy}>
                      {t('CharacterSheetPage.SidebarMenu.help')}
                   </SidebarButton>
                </motion.section>

@@ -74,7 +74,7 @@ export function CardsSection({
 
    return (
       <div
-         data-tour="cards-section"
+         data-tutorial="cards-section"
          ref={cardsDropRef}
          className={cn(
             "flex flex-wrap gap-12 justify-center w-full p-4 rounded-lg border-2 border-transparent transition-colors",

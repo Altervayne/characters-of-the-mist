@@ -41,7 +41,7 @@ export function DrawerHeader({ title, isCompactDrawer, onToggleView, modeIcon, m
             <div className="flex items-center gap-1">
                <DrawerUndoRedoControls compact />
                <div className="mx-1 h-6 w-px shrink-0 bg-border" />
-               <div onClick={onToggleView} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.toggleView')} title={t('Drawer.toggleView')} data-tour="drawer-rich-view-toggle">
+               <div onClick={onToggleView} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.toggleView')} title={t('Drawer.toggleView')} data-tutorial="drawer-rich-view-toggle">
                   {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
                </div>
                <div onClick={onMode} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={modeLabel} title={modeLabel}>

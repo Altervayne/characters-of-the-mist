@@ -150,7 +150,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = fals
 
    return (
       <motion.aside
-         data-tour="drawer"
+         data-tutorial="drawer"
          data-drawer-panel
          variants={drawerVariants}
          initial="initial"
@@ -234,7 +234,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = fals
                         {/* Reflow containers animate POSITION not size: a full `layout` scales the box to
                             its new size, which stretches the non-`layout` children (folder rows, cards)
                             mid-animation. `layout="position"` slides them into place without that distortion. */}
-                        <motion.div data-tour="drawer-folders" layout="position" transition={{ duration: 0.1 }} className="flex flex-col w-full p-2 pt-0 border-b-2 border-border overflow-hidden shrink-0">
+                        <motion.div data-tutorial="drawer-folders" layout="position" transition={{ duration: 0.1 }} className="flex flex-col w-full p-2 pt-0 border-b-2 border-border overflow-hidden shrink-0">
                            {currentFolderId && (
                               <motion.div
                                  layout="position"
@@ -305,7 +305,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = fals
                            </motion.div>
                         </motion.div>
 
-                        <motion.div data-tour="drawer-items" layout="position" transition={{ duration: 0.1 }} className="flex-1 p-1 flex flex-col">
+                        <motion.div data-tutorial="drawer-items" layout="position" transition={{ duration: 0.1 }} className="flex-1 p-1 flex flex-col">
                            <div
                               ref={setNodeRef}
                               data-drawer-items-area
@@ -366,7 +366,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = fals
                            />
                         </form>
                         <Button
-                           data-tour="drawer-import"
+                           data-tutorial="drawer-import"
                            variant="default"
                            className="w-full cursor-pointer"
                            onClick={() => fileInputRef.current?.click()}
@@ -375,7 +375,7 @@ export function Drawer({ isDragHovering, activeDragId, isFolderDragActive = fals
                            {tActions('Drawer.Actions.import')}
                         </Button>
                         <Button
-                           data-tour="drawer-export"
+                           data-tutorial="drawer-export"
                            variant="default"
                            className="w-full cursor-pointer"
                            onClick={handleExportDrawer}

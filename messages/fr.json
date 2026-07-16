@@ -1407,7 +1407,17 @@
          "start": "[TO COMPLETE]",
          "replay": "[TO COMPLETE]"
       },
-      "resetProgress": "[TO COMPLETE]"
+      "resetProgress": "[TO COMPLETE]",
+      "tutorials": {
+         "navigation": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
+         },
+         "sheet": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
+         }
+      }
    },
    "Tutorial": {
       "controls": {

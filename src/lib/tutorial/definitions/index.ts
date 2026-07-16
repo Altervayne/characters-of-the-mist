@@ -1,4 +1,6 @@
 // -- Definition Imports --
+import { DESKTOP_NAVIGATION_TUTORIAL } from './desktop.navigation';
+import { DESKTOP_SHEET_TUTORIAL } from './desktop.sheet';
 import { DEV_PROOF_TUTORIAL } from './dev.proof';
 import { DEV_DEGRADE_TUTORIAL } from './dev.degrade';
 
@@ -7,10 +9,12 @@ import type { TutorialDefinition, TutorialPlatform } from '../tutorialTypes';
 
 /**
  * Every tutorial keyed by id. Authored as data (one file per tutorial), aggregated here.
- * The real tutorials land in later phases; for now this holds only the throwaway `dev.`
- * proof/degradation scenarios.
+ * Real tutorials sit alongside the throwaway `dev.` proof/degradation scenarios, which the
+ * platform selector filters out of the user-facing surfaces.
  */
 export const TUTORIALS: Record<string, TutorialDefinition> = {
+   [DESKTOP_NAVIGATION_TUTORIAL.id]: DESKTOP_NAVIGATION_TUTORIAL,
+   [DESKTOP_SHEET_TUTORIAL.id]: DESKTOP_SHEET_TUTORIAL,
    [DEV_PROOF_TUTORIAL.id]: DEV_PROOF_TUTORIAL,
    [DEV_DEGRADE_TUTORIAL.id]: DEV_DEGRADE_TUTORIAL,
 };
