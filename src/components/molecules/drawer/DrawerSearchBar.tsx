@@ -40,6 +40,7 @@ export function DrawerSearchBar({ wide = false, isMobile = false }: { wide?: boo
                   onChange={(event) => setText(event.target.value)}
                   placeholder={t('Drawer.search.placeholder')}
                   className={cn('h-9 pl-8 pr-20', isMobile && 'h-11 text-base')}
+                  data-tutorial="drawer-search"
                />
                {isSearchActive && (
                   <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">

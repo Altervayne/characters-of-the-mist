@@ -101,8 +101,9 @@ export interface TutorialDefinition {
    icon?: LucideIcon;
    /**
     * When set, the engine seeds isolated demo content before the first step and discards it on exit.
-    * `'note'` seeds a single throwaway note; `'portal-graph'` seeds a two-board-plus-note graph the Navigator crawls.
+    * `'note'` seeds a single throwaway note; `'portal-graph'` seeds a two-board-plus-note graph the Navigator
+    * crawls; `'drawer'` seeds a read-only demo library the drawer reads through an in-memory overlay.
     */
-   needsDemo?: 'character' | 'board' | 'note' | 'portal-graph';
+   needsDemo?: 'character' | 'board' | 'note' | 'portal-graph' | 'drawer';
    steps: TutorialStep[];
 }

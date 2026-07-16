@@ -1522,6 +1522,10 @@
          "notes": {
             "title": "Notes",
             "teach": "Writing a note in Live mode, with markdown, mentions, links, and images."
+         },
+         "drawer": {
+            "title": "The Drawer",
+            "teach": "Opening your library, sorting folders, searching, and the expanded Drawer."
          }
       }
    },
@@ -1822,6 +1826,30 @@
          "modes_body": "This toggle switches how you view the note. Live is where you write, Reading shows the clean handout with nothing to edit, and Source shows the raw markdown behind it. Live is home, and the other two are there when you want them.",
          "wrap_title": "That's Notes",
          "wrap_body": "You have typed in a note, met mentions and links, and seen the three modes. To make your own, add a note from the tab menu or the command palette, and find it later in the Drawer with the rest of your files. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "drawer": {
+         "welcome_title": "The Drawer",
+         "welcome_body": "The Drawer is your library. Every character, board, note, and card you save is kept here, ready to open again or drop into whatever you are working on. This lesson opens it, sorts it into folders, searches it, and expands it to the full width when you want the space.",
+         "open_title": "Open the Drawer",
+         "open_body": "The Drawer rests closed at the edge of the screen until you call for it. This button on the side opens it. Click it now to slide the Drawer out.",
+         "folders_title": "Folders",
+         "folders_body": "Folders sort your library the way shelves sort a bookcase. Open one to see what it holds, and nest folders inside folders to keep a long collection in order.",
+         "items_title": "Your Items",
+         "items_body": "Each card here is something you saved, and its icon tells you what: a character, a board, a note, or a card. The card carries a small preview and the date you last touched it, so a familiar item is easy to find. The button up top switches between these rich cards and a tighter list, whichever you prefer.",
+         "seeWorkspace_title": "Bring an Item In",
+         "seeWorkspace_body": "You can drag an item out of the Drawer and onto the sheet or board you are working in. It drops in as a live copy you can edit freely, while the saved original stays untouched in the Drawer.",
+         "search_title": "Search",
+         "search_body": "Type here to search your whole library by name at once, across every folder. The Filters button beside it narrows the results further, by kind of item, by game, or by when you last changed it.",
+         "importExport_title": "Import and Export",
+         "importExport_body": "Export sends an item to a file you can back up or hand to another player, and Import brings one of those files back in. It is how you move a character or a board between devices, or share one with your table.",
+         "undoRedo_title": "Undo and Redo",
+         "undoRedo_body": "If a change in the Drawer goes wrong, a move, a rename, or a delete, these arrows step it back and forward. They cover the Drawer itself, so a tidy-up gone sideways is never final.",
+         "expand_title": "Expand the Drawer",
+         "expand_body": "The side panel is handy for a quick reach, but a large library is easier to browse with room to spread out. This button expands the Drawer to fill the width of the screen. Click it to open it up.",
+         "expanded_title": "The Expanded Drawer",
+         "expanded_body": "This is the same Drawer with the whole width to lay its items out. It is the place to sort, rename, and tidy in bulk. To drop an item onto the surface behind it, start dragging and hold at the bottom edge, and the Drawer slides aside to let the item through.",
+         "wrap_title": "That's the Drawer",
+         "wrap_body": "You have opened the Drawer, browsed its folders and items, searched them, and expanded it to full width. It waits behind the button on the side wherever you are, holding everything you save. You can replay this lesson any time from the Learn section in your Settings."
       }
    },
 

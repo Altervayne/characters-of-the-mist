@@ -33,6 +33,10 @@ type RenderMode = 'spotlight' | 'centered' | 'bail' | null;
 
 const NOOP = () => {};
 
+// The anchor-follow keeps re-measuring for at least this many frames before it may exit on a stable rect,
+// so a panel whose open animation starts a few frames after the measure (the Drawer slide) is still tracked.
+const MIN_FOLLOW_FRAMES = 15;
+
 /**
  * The platform-agnostic runner, mounted once as app chrome (above the tab-switch boundary),
  * so a drive that switches tabs never unmounts it. Generalizes the mobile tutorial's proven
@@ -114,7 +118,12 @@ export default function TutorialRunner() {
          last = next;
          stable = moved ? 0 : stable + 1;
          frames += 1;
-         followRafRef.current = stable < 3 && frames < 90 ? requestAnimationFrame(follow) : null;
+         // A panel the prior gate just opened (the Drawer slide) can begin a few frames AFTER this measure, so
+         // its opening frames read as "stable" and the follow would quit before the panel finishes coming out.
+         // Hold the follow through a short settle window before the stable-exit is allowed, so the animation has
+         // time to start; then exit once the rect holds still (or a hard frame cap).
+         const settled = frames >= MIN_FOLLOW_FRAMES && stable >= 3;
+         followRafRef.current = !settled && frames < 90 ? requestAnimationFrame(follow) : null;
       };
       followRafRef.current = requestAnimationFrame(follow);
    }, []);
@@ -302,9 +311,9 @@ export default function TutorialRunner() {
       const snapshot = chromeSnapshotRef.current;
       const entryPoint = entryPointRef.current;
       const stepLeave = index !== null ? runTutorialActions(stepsRef.current[index]?.onLeave) : Promise.resolve();
-      void Promise.resolve(stepLeave).then(() => {
+      void Promise.resolve(stepLeave).then(async () => {
          if (snapshot) restoreChromeSnapshot(snapshot);
-         if (demoHandle) teardownDemo(demoHandle);
+         if (demoHandle) await teardownDemo(demoHandle);
          if (snapshot) returnToEntryPoint(entryPoint);
       });
       demoHandleRef.current = null;

@@ -44,7 +44,7 @@ export function DrawerHeader({ title, isCompactDrawer, onToggleView, modeIcon, m
                <div onClick={onToggleView} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.toggleView')} title={t('Drawer.toggleView')} data-tutorial="drawer-rich-view-toggle">
                   {isCompactDrawer ? <LayoutGrid className="h-6 w-6" /> : <Rows className="h-6 w-6" />}
                </div>
-               <div onClick={onMode} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={modeLabel} title={modeLabel}>
+               <div onClick={onMode} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={modeLabel} title={modeLabel} data-tutorial="drawer-expand">
                   {modeIcon}
                </div>
                <div onClick={onClose} className="cursor-pointer rounded p-2 hover:bg-muted" role="button" aria-label={t('Drawer.close')}>

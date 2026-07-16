@@ -8,14 +8,18 @@ import { disposeBoardInstance, getOrCreateBoardInstance, setActiveBoardInstance 
 import { disposeNoteInstance, getOrCreateNoteInstance, setActiveNoteInstance } from '@/lib/notes/noteStoreRegistry';
 import { restoreActivePointers, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { WORKSPACE_KEY } from '@/lib/character/workspaceSession';
+import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { rebuildFolderTree, whenFolderTreeSettled } from '@/lib/drawer/drawerFolderTree';
 
 // -- Local Imports --
 import { createDemoCharacter } from './demoCharacter';
 import { createDemoBoard } from './demoBoard';
 import { createDemoNote } from './demoNote';
+import { createDemoDrawer } from './demoDrawer';
 import { createDemoPortalGraph } from './demoPortalGraph';
 import { disposeDemoBoard, installDemoBoard } from './demoBoardBackend';
 import { disposeDemoNote, installDemoNote } from './demoNoteBackend';
+import { disposeDemoDrawer, installDemoDrawer } from './demoDrawerBackend';
 import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_NOTE_ID, isDemoId } from './demoSentinels';
 
 // -- Type Imports --
@@ -36,6 +40,11 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  *   memory and reaches Dexie for nothing.
  * - The demo PORTAL GRAPH is a mixed graph: two demo boards (the board backend) plus a demo note (a sibling
  *   in-memory `noteRepository` backend), so the whole thing crawls and jumps entirely in memory.
+ * - The demo DRAWER is the odd one out: the drawer is a global singleton tree, not a per-id entity, so it
+ *   cannot be a sentinel-keyed backend. It is a whole-repository READ-ONLY overlay behind a module flag - the
+ *   drawer's read functions route to an in-memory fixture while the flag is on. It is NOT a tab (the drawer is
+ *   a panel over the current surface), so its seed leaves `openTabs`/`activeTabId` untouched; it only primes
+ *   the folder-tree cache from the fixture and reloads the drawer view.
  *
  * All kinds share the tab wiring: seeding sets tab/active-pointer state through raw `setState`, never
  * `appendAndActivate*`/`persistWorkspace`, so it never touches `localStorage`. Teardown restores the
@@ -45,7 +54,7 @@ import type { OpenTab } from '@/lib/character/tabManagerStore';
  */
 
 /** The kind of demo content a tutorial seeds; matches `TutorialDefinition.needsDemo`. */
-export type DemoKind = 'character' | 'board' | 'note' | 'portal-graph';
+export type DemoKind = 'character' | 'board' | 'note' | 'portal-graph' | 'drawer';
 
 /** One seeded demo entity, tagged by kind so teardown drops the right backend + any store instance a jump created. */
 type DemoEntity = { id: string; entity: 'character' | 'board' | 'note' };
@@ -59,6 +68,8 @@ export interface DemoHandle {
    prior: { openTabs: OpenTab[]; activeTabId: string | null };
    /** The serialized `localStorage` workspace at seed time (or `null` if absent), restored byte-for-byte. */
    priorWorkspaceRaw: string | null;
+   /** The drawer's real current folder at seed time (`'drawer'` kind only), restored on teardown. */
+   priorDrawerFolderId?: string | null;
 }
 
 /**
@@ -85,6 +96,7 @@ export async function seedDemo(kind: DemoKind): Promise<DemoHandle> {
    if (kind === 'board') return seedDemoBoard(prior, priorWorkspaceRaw);
    if (kind === 'note') return seedDemoNote(prior, priorWorkspaceRaw);
    if (kind === 'portal-graph') return seedDemoPortalGraph(prior, priorWorkspaceRaw);
+   if (kind === 'drawer') return seedDemoDrawer(prior, priorWorkspaceRaw);
    return seedDemoCharacter(prior, priorWorkspaceRaw);
 }
 
@@ -183,13 +195,64 @@ async function seedDemoPortalGraph(prior: PriorWorkspace, priorWorkspaceRaw: str
 }
 
 /**
- * Tears the demo down and returns the user to exactly where they were. Order matters: restore the tab
- * state FIRST (so React unmounts the demo sheet and its flush-on-unmount lands in the still-live demo
+ * Seeds the demo DRAWER: a read-only overlay, not a tab. It flips the module flag on (installing the fixture
+ * into the in-memory backend), re-derives the folder-tree cache FROM that fixture - the routed `getAllFolders`
+ * now reads the demo, so a rebuild fills the cache with demo folders - then loads the demo root view. It never
+ * touches `openTabs`/`activeTabId`: the drawer is a panel over whatever surface is already active.
+ *
+ * Settle discipline: a rebuild started before the flag flip could settle AFTER it and paint the wrong drawer
+ * into the cache, so drain any in-flight rebuild first, then await the demo rebuild before loading the view.
+ */
+async function seedDemoDrawer(prior: PriorWorkspace, priorWorkspaceRaw: string | null): Promise<DemoHandle> {
+   const priorDrawerFolderId = useDrawerStore.getState().currentFolderId;
+
+   // Drain any in-flight (real-reading) rebuild so it can't settle after the flip and clobber the demo cache.
+   await whenFolderTreeSettled();
+   installDemoDrawer(createDemoDrawer());
+   // Re-derive the cache from the demo backend, then load the demo library at root.
+   await rebuildFolderTree();
+   await useDrawerStore.getState().actions.setDrawerCurrentFolderId(null);
+
+   return { kind: 'drawer', entities: [], prior, priorWorkspaceRaw, priorDrawerFolderId };
+}
+
+/**
+ * Tears the demo drawer down: the mirror of {@link seedDemoDrawer}. It flips the flag off (dropping the
+ * fixture), re-derives the folder-tree cache from the REAL repository, and restores the drawer to its prior
+ * folder. Nothing reached Dexie, so there is no per-entity disposal - the flag flip IS the guarantee. The same
+ * settle discipline applies: drain the in-flight (demo-reading) rebuild before the flip so a stale reload can't
+ * repaint demo rows into the real view.
+ */
+async function teardownDemoDrawer(handle: DemoHandle): Promise<void> {
+   await whenFolderTreeSettled();
+   disposeDemoDrawer();
+   await rebuildFolderTree();
+   await useDrawerStore.getState().actions.setDrawerCurrentFolderId(handle.priorDrawerFolderId ?? null);
+
+   // Belt-and-suspenders: re-assert the exact prior workspace bytes. The read-only overlay never persists, but
+   // this keeps every teardown path identical.
+   try {
+      if (handle.priorWorkspaceRaw === null) localStorage.removeItem(WORKSPACE_KEY);
+      else localStorage.setItem(WORKSPACE_KEY, handle.priorWorkspaceRaw);
+   } catch {
+      // localStorage unavailable: nothing was persisted, nothing to restore.
+   }
+}
+
+/**
+ * Tears the demo down and returns the user to exactly where they were. The drawer overlay is its own path (no
+ * tabs, no instances - a flag flip plus a cache re-derive). For the tab-backed kinds, order matters: restore
+ * the tab state FIRST (so React unmounts the demo sheet and its flush-on-unmount lands in the still-live demo
  * instance), re-point the registries at the prior tab, THEN drop every demo instance. Finally re-assert
  * the captured `localStorage` workspace verbatim, undoing any persist a driven beat triggered so no
  * demo tab can linger. Idempotent.
  */
-export function teardownDemo(handle: DemoHandle): void {
+export async function teardownDemo(handle: DemoHandle): Promise<void> {
+   if (handle.kind === 'drawer') {
+      await teardownDemoDrawer(handle);
+      return;
+   }
+
    useTabManagerStore.setState({ openTabs: handle.prior.openTabs, activeTabId: handle.prior.activeTabId });
 
    const priorTab = handle.prior.openTabs.find((tab) => tab.id === handle.prior.activeTabId) ?? null;

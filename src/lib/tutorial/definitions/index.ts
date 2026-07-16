@@ -4,6 +4,7 @@ import { DESKTOP_SHEET_TUTORIAL } from './desktop.sheet';
 import { DESKTOP_BOARD_TUTORIAL } from './desktop.board';
 import { DESKTOP_NOTES_TUTORIAL } from './desktop.notes';
 import { DESKTOP_PORTALS_TUTORIAL } from './desktop.portals';
+import { DESKTOP_DRAWER_TUTORIAL } from './desktop.drawer';
 
 // -- Type Imports --
 import type { TutorialDefinition, TutorialPlatform } from '../tutorialTypes';
@@ -17,6 +18,7 @@ export const TUTORIALS: Record<string, TutorialDefinition> = {
    [DESKTOP_BOARD_TUTORIAL.id]: DESKTOP_BOARD_TUTORIAL,
    [DESKTOP_NOTES_TUTORIAL.id]: DESKTOP_NOTES_TUTORIAL,
    [DESKTOP_PORTALS_TUTORIAL.id]: DESKTOP_PORTALS_TUTORIAL,
+   [DESKTOP_DRAWER_TUTORIAL.id]: DESKTOP_DRAWER_TUTORIAL,
 };
 
 /** Looks up a definition by id. */

@@ -1428,6 +1428,10 @@
          "notes": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "drawer": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1687,6 +1691,30 @@
          "cover_body": "[TO COMPLETE]",
          "modes_title": "[TO COMPLETE]",
          "modes_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "drawer": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "open_title": "[TO COMPLETE]",
+         "open_body": "[TO COMPLETE]",
+         "folders_title": "[TO COMPLETE]",
+         "folders_body": "[TO COMPLETE]",
+         "items_title": "[TO COMPLETE]",
+         "items_body": "[TO COMPLETE]",
+         "seeWorkspace_title": "[TO COMPLETE]",
+         "seeWorkspace_body": "[TO COMPLETE]",
+         "search_title": "[TO COMPLETE]",
+         "search_body": "[TO COMPLETE]",
+         "importExport_title": "[TO COMPLETE]",
+         "importExport_body": "[TO COMPLETE]",
+         "undoRedo_title": "[TO COMPLETE]",
+         "undoRedo_body": "[TO COMPLETE]",
+         "expand_title": "[TO COMPLETE]",
+         "expand_body": "[TO COMPLETE]",
+         "expanded_title": "[TO COMPLETE]",
+         "expanded_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       }

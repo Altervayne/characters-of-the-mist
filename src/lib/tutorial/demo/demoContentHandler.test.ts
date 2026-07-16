@@ -6,10 +6,25 @@ import type { MockInstance } from 'vitest';
 import { seedDemo, teardownDemo } from './demoContentHandler';
 import { disposeDemoBoard } from './demoBoardBackend';
 import { disposeDemoNote } from './demoNoteBackend';
-import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_NOTE_ID, DEMO_PORTAL_BOARD_ID, DEMO_PORTAL_BOARD2_ID, DEMO_PORTAL_NOTE_ID } from './demoSentinels';
+import { disposeDemoDrawer, isDemoDrawerActive } from './demoDrawerBackend';
+import {
+   DEMO_BOARD_ID,
+   DEMO_CHARACTER_ID,
+   DEMO_DRAWER_FOLDER_CREW_ID,
+   DEMO_DRAWER_FOLDER_HANDOUTS_ID,
+   DEMO_DRAWER_ITEM_CHARACTER_ID,
+   DEMO_DRAWER_ITEM_NOTE_ID,
+   DEMO_NOTE_ID,
+   DEMO_PORTAL_BOARD_ID,
+   DEMO_PORTAL_BOARD2_ID,
+   DEMO_PORTAL_NOTE_ID,
+} from './demoSentinels';
 
 // -- Store / Repo Imports --
 import { drawerDatabase as db } from '@/lib/drawer/drawerDatabase';
+import { useDrawerStore } from '@/lib/stores/drawerStore';
+import { getAllFolders } from '@/lib/drawer/drawerRepository';
+import { getChildFolders } from '@/lib/drawer/drawerFolderTree';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { disposeInstance, getCharacterInstanceIds, getOrCreateInstance } from '@/lib/character/characterStoreRegistry';
 import { disposeBoardInstance, getBoardInstanceIds, getOrCreateBoardInstance } from '@/lib/board/boardStoreRegistry';
@@ -164,6 +179,8 @@ afterEach(async () => {
    disposeDemoNote(DEMO_NOTE_ID);
    disposeNoteInstance(DEMO_PORTAL_NOTE_ID);
    disposeDemoNote(DEMO_PORTAL_NOTE_ID);
+   disposeDemoDrawer();
+   useDrawerStore.setState({ currentFolderId: null, currentFolderView: null, searchCriteria: null, searchResults: null });
    useTabManagerStore.setState({ openTabs: [], activeTabId: null });
    await new Promise((resolve) => setTimeout(resolve, 0));
 });
@@ -191,7 +208,7 @@ describe('demo handler zero-write invariant', () => {
       // Mid-run: every creation lived in memory, so the workspace is still untouched.
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
 
-      teardownDemo(handle);
+      await teardownDemo(handle);
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -210,7 +227,7 @@ describe('demo handler zero-write invariant', () => {
       const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
 
       const handle = await seedDemo('character');
-      teardownDemo(handle); // immediate skip: no interaction
+      await teardownDemo(handle); // immediate skip: no interaction
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -232,7 +249,7 @@ describe('demo handler zero-write invariant', () => {
       tabActions.setActiveTab(DEMO_CHARACTER_ID);
       expect(localStorage.getItem(WORKSPACE_KEY)).not.toBe(baselineWorkspace); // leak proven
 
-      teardownDemo(handle);
+      await teardownDemo(handle);
 
       // Teardown re-asserts the exact prior bytes: the leak is gone and every table is untouched.
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -245,7 +262,7 @@ describe('demo handler zero-write invariant', () => {
    it('excludes the demo instance from the registry lister while it is live', async () => {
       const handle = await seedDemo('character');
       expect(getCharacterInstanceIds()).not.toContain(DEMO_CHARACTER_ID);
-      teardownDemo(handle);
+      await teardownDemo(handle);
    });
 
    it('leaves every table + the workspace byte-identical through a COMPLETE board run (with board edits)', async () => {
@@ -276,7 +293,7 @@ describe('demo handler zero-write invariant', () => {
       // Mid-run: every command lived in the backend, so the workspace is still untouched.
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
 
-      teardownDemo(handle);
+      await teardownDemo(handle);
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -295,7 +312,7 @@ describe('demo handler zero-write invariant', () => {
       const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
 
       const handle = await seedDemo('board');
-      teardownDemo(handle); // immediate skip: no interaction
+      await teardownDemo(handle); // immediate skip: no interaction
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -307,7 +324,7 @@ describe('demo handler zero-write invariant', () => {
    it('excludes the demo board from the registry lister while it is live', async () => {
       const handle = await seedDemo('board');
       expect(getBoardInstanceIds()).not.toContain(DEMO_BOARD_ID);
-      teardownDemo(handle);
+      await teardownDemo(handle);
    });
 
    it('leaves every table + the workspace byte-identical through a COMPLETE note run (with body edits)', async () => {
@@ -330,7 +347,7 @@ describe('demo handler zero-write invariant', () => {
       // Mid-run: the edit lived in the backend, so the workspace is still untouched.
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
 
-      teardownDemo(handle);
+      await teardownDemo(handle);
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -349,7 +366,7 @@ describe('demo handler zero-write invariant', () => {
       const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
 
       const handle = await seedDemo('note');
-      teardownDemo(handle); // immediate skip: no interaction
+      await teardownDemo(handle); // immediate skip: no interaction
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -397,7 +414,7 @@ describe('demo handler zero-write invariant', () => {
       noteInstance.getState().actions.updateBody(`${noteInstance.getState().note!.body}\n\nScribbled mid-dive.`);
       noteInstance.getState().actions.flush();
 
-      teardownDemo(handle);
+      await teardownDemo(handle);
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -418,7 +435,7 @@ describe('demo handler zero-write invariant', () => {
       const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
 
       const handle = await seedDemo('portal-graph');
-      teardownDemo(handle); // immediate skip: no interaction
+      await teardownDemo(handle); // immediate skip: no interaction
 
       expect(await snapshotTables()).toEqual(baselineTables);
       expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
@@ -427,5 +444,68 @@ describe('demo handler zero-write invariant', () => {
       expect(getBoardInstanceIds()).not.toContain(DEMO_PORTAL_BOARD_ID);
       expect(getBoardInstanceIds()).not.toContain(DEMO_PORTAL_BOARD2_ID);
       expect(getNoteInstanceIds()).not.toContain(DEMO_PORTAL_NOTE_ID);
+   });
+
+   it('leaves every table + the workspace byte-identical through a COMPLETE drawer run (browse + navigate + search)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      // Seed the demo drawer (a read-only overlay, NOT a tab), then exercise every read the tour hits - all
+      // routed to the in-memory fixture, none reaching Dexie.
+      const handle = await seedDemo('drawer');
+      expect(isDemoDrawerActive()).toBe(true);
+      // The drawer is a panel: the active tab is untouched, still the user's real character.
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+
+      // Browse: the routed reads return the fixture. The folder-tree cache re-derived to the demo folders, and
+      // the root view loaded the demo's two root items.
+      expect((await getAllFolders()).map((folder) => folder.name).sort()).toEqual(['Handouts', 'The Vault Crew']);
+      expect(getChildFolders(null).map((folder) => folder.id).sort()).toEqual([DEMO_DRAWER_FOLDER_CREW_ID, DEMO_DRAWER_FOLDER_HANDOUTS_ID].sort());
+      const rootItems = useDrawerStore.getState().currentFolderView?.items ?? [];
+      expect(rootItems.map((item) => item.name).sort()).toEqual(['Rising Tide', 'The Sunken Vault']);
+
+      // Navigate into a folder: its items load from the fixture.
+      await useDrawerStore.getState().actions.setDrawerCurrentFolderId(DEMO_DRAWER_FOLDER_CREW_ID);
+      const crewItems = useDrawerStore.getState().currentFolderView?.items ?? [];
+      expect(crewItems.map((item) => item.id)).toEqual([DEMO_DRAWER_ITEM_CHARACTER_ID]);
+
+      // Search the whole library: the query layer runs against the fixture.
+      await useDrawerStore.getState().actions.applySearch({ text: 'warden' });
+      const results = useDrawerStore.getState().searchResults ?? [];
+      expect(results.map((result) => result.id)).toEqual([DEMO_DRAWER_ITEM_NOTE_ID]);
+
+      // Mid-run: nothing was written, so the workspace is still untouched.
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+
+      await teardownDemo(handle);
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+
+      // Overlay off and the REAL drawer restored: the cache re-derives to the real folders, no demo left.
+      expect(isDemoDrawerActive()).toBe(false);
+      expect((await getAllFolders()).map((folder) => folder.name)).toEqual(['Real Folder']);
+      expect(getChildFolders(null).map((folder) => folder.id)).toEqual(['baseline-folder']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
+   });
+
+   it('leaves every table + the workspace byte-identical through a SKIP drawer run (no interaction)', async () => {
+      await seedBaseline();
+      setPriorWorkspace();
+      const baselineTables = await snapshotTables();
+      const baselineWorkspace = localStorage.getItem(WORKSPACE_KEY);
+
+      const handle = await seedDemo('drawer');
+      await teardownDemo(handle); // immediate skip: no interaction
+
+      expect(await snapshotTables()).toEqual(baselineTables);
+      expect(localStorage.getItem(WORKSPACE_KEY)).toBe(baselineWorkspace);
+      expect(storeAssetSpy).not.toHaveBeenCalled();
+      expect(isDemoDrawerActive()).toBe(false);
+      expect((await getAllFolders()).map((folder) => folder.name)).toEqual(['Real Folder']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('baseline-char');
    });
 });

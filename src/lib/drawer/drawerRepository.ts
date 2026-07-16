@@ -10,6 +10,9 @@ import { drawerDatabase as db } from './drawerDatabase';
 import { DRAWER_ROOT_PARENT_ID } from './drawerRecords';
 import { DrawerInvalidOperationError, DrawerNotFoundError, DrawerTransactionError } from './drawerErrors';
 
+// -- Tutorial Demo Imports --
+import * as demoDrawerBackend from '@/lib/tutorial/demo/demoDrawerBackend';
+
 // -- Type Imports --
 import type { DrawerFolderRecord, DrawerItemRecord } from './drawerRecords';
 import type { Drawer, DrawerItem, DrawerItemContent, Folder, GameSystem, GeneralItemType } from '@/lib/types/drawer';
@@ -280,6 +283,7 @@ export function getFolder(folderId: string): Promise<DrawerFolderRecord | undefi
  * are tiny and mutations rare relative to navigation, so a full read cannot drift.
  */
 export function getAllFolders(): Promise<DrawerFolderRecord[]> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getAllFolders();
    return db.folders.toArray();
 }
 
@@ -289,6 +293,7 @@ export function getAllFolders(): Promise<DrawerFolderRecord[]> {
  * items - this is the read it uses.
  */
 export function getFolderItems(parentFolderId: string | null): Promise<DrawerItemRecord[]> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getFolderItems(parentFolderId);
    const storedParentId = toStoredParentId(parentFolderId);
    return runReadTransaction([db.items], () => orderedChildItems(storedParentId));
 }
@@ -299,6 +304,7 @@ export function getFolderItems(parentFolderId: string | null): Promise<DrawerIte
  * only, so navigation never queries the folders table.
  */
 export function getItemCountsForFolders(folderIds: string[]): Promise<Map<string, number>> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getItemCountsForFolders(folderIds);
    return runReadTransaction([db.items], async () => {
       const counts = new Map<string, number>();
       for (const folderId of folderIds) {
@@ -310,6 +316,7 @@ export function getItemCountsForFolders(folderIds: string[]): Promise<Map<string
 
 /** Loads a single item record by id, or `undefined` if it does not exist. */
 export function getItem(itemId: string): Promise<DrawerItemRecord | undefined> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getItem(itemId);
    return db.items.get(itemId);
 }
 
@@ -969,6 +976,7 @@ function sortItemRecords(records: DrawerItemRecord[], sort: DrawerItemQuery['sor
  * {@link DrawerItemSummary} rows. All provided criteria AND together; absent ones are ignored.
  */
 export function queryItems(query: DrawerItemQuery): Promise<DrawerItemSummary[]> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.queryItems(query);
    return runReadTransaction([db.folders, db.items], async () => {
       const matched = await collectMatchingItemRecords(query);
       return sortItemRecords(matched, query.sort).map(toItemSummary);
