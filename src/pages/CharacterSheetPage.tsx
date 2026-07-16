@@ -38,7 +38,6 @@ import { TabDragPreview } from '@/components/organisms/tabs/TabDragPreview';
 import { CharacterLoadDropZone } from '@/components/organisms/CharacterLoadDropzone';
 import { CannotDropOverlay } from '@/components/organisms/CannotDropOverlay';
 import { SettingsShell } from '@/components/organisms/dialogs/settings/SettingsShell';
-import { ThemesDialog } from '@/components/organisms/dialogs/ThemesDialog';
 import MainMenu from '@/components/organisms/MainMenu';
 import MobileCharacterSheetPage from '@/components/mobile/character-sheet/MobileCharacterSheetPage';
 import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
@@ -118,9 +117,8 @@ function DesktopCharacterSheetPage() {
    const navigatorOpen = useAppSettingsStore((state) => state.navigatorOpen);
    const isEditing = useAppGeneralStateStore((state) => state.isEditing);
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
-   const isThemesOpen = useAppGeneralStateStore((state) => state.isThemesOpen);
    const isTourOpen = useAppGeneralStateStore((state) => state.isTourOpen);
-   const { setDrawerOpen, setIsEditing, setSettingsOpen, setSettingsInitialSection, setThemesOpen } = useAppGeneralStateActions();
+   const { setDrawerOpen, setIsEditing, setSettingsOpen, setSettingsInitialSection } = useAppGeneralStateActions();
    const { toggleSidebarCollapsed, toggleNavigator } = useAppSettingsActions();
 
    // The three sidebar doors all open the one hub, each deep-linked to its section (Settings lands on the default).
@@ -436,10 +434,6 @@ function DesktopCharacterSheetPage() {
          <SettingsShell
             isOpen={isSettingsOpen}
             onOpenChange={setSettingsOpen}
-         />
-         <ThemesDialog
-            isOpen={isThemesOpen}
-            onOpenChange={setThemesOpen}
          />
          {/* DIALOGS END */}
 

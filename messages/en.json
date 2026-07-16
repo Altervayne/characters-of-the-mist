@@ -945,9 +945,15 @@
 
       "accentColor": "Theme Palette",
       "appearance": "Theme Mode",
+      "mode": "Mode",
+      "modeLight": "Light",
+      "modeSystem": "System",
+      "modeDark": "Dark",
+      "theme": "Theme",
 
       "themes": {
          "manage": "Manage themes",
+         "editThemes": "Edit themes",
          "windowTitle": "Themes",
          "windowDescription": "Select, duplicate, rename, or delete your themes. Presets can be duplicated into a custom theme.",
          "presetsHeading": "Presets",

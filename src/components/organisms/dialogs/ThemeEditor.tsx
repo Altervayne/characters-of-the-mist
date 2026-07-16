@@ -27,6 +27,7 @@ import { lowContrastPairs } from '@/lib/theme/contrastWarnings';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
 // -- Type Imports --
+import type { ReactNode } from 'react';
 import type { ChromeTokenKey, CustomTheme, PaperTokenKey, TokenSet } from '@/lib/theme/themeTokens';
 import type { ContrastWarning } from '@/lib/theme/contrastWarnings';
 
@@ -47,7 +48,7 @@ const RADIUS_MIN = 0;
 const RADIUS_MAX = 1.5;
 const RADIUS_STEP = 0.05;
 
-export function ThemeEditor({ theme }: { theme: CustomTheme }) {
+export function ThemeEditor({ theme, headerLeft, headerRight }: { theme: CustomTheme; headerLeft?: ReactNode; headerRight?: ReactNode }) {
    const { t } = useTranslation();
    const { beginThemeDraft, patchThemeDraft, saveThemeDraft } = useAppSettingsActions();
    const themeDraft = useAppSettingsStore((state) => state.themeDraft);
@@ -93,13 +94,18 @@ export function ThemeEditor({ theme }: { theme: CustomTheme }) {
 
    return (
       <div className="flex h-full min-h-0 flex-col">
-         {/* Opaque, non-scrolling header: the body scrolls beneath it. Edits preview live but only persist on
-             Save, which enables only when dirty. */}
-         <div className="flex shrink-0 items-center justify-end gap-3 border-b border-border bg-background px-4 py-2">
-            {dirty && <span className="text-xs text-muted-foreground">{t('SettingsDialog.themes.unsavedChanges')}</span>}
-            <Button size="sm" onClick={saveThemeDraft} disabled={!dirty} className="cursor-pointer">
-               <Save className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.saveChanges')}
-            </Button>
+         {/* Opaque, non-scrolling header: the body scrolls beneath it. An optional left slot carries the hub's
+             Back affordance + theme name; Save stays at the right. Edits preview live but only persist on Save,
+             which enables only when dirty. */}
+         <div className="flex shrink-0 items-center gap-3 border-b border-border bg-background px-4 py-2">
+            {headerLeft}
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+               {dirty && <span className="text-xs text-muted-foreground">{t('SettingsDialog.themes.unsavedChanges')}</span>}
+               {headerRight}
+               <Button size="sm" onClick={saveThemeDraft} disabled={!dirty} className="cursor-pointer">
+                  <Save className="mr-1 h-4 w-4" />{t('SettingsDialog.themes.saveChanges')}
+               </Button>
+            </div>
          </div>
 
          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">

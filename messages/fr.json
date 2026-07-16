@@ -902,9 +902,15 @@
       "selectThemePlaceholder": "Sélectionner un thème",
       "accentColor": "Palette",
       "appearance": "Mode",
+      "mode": "[TO COMPLETE]",
+      "modeLight": "[TO COMPLETE]",
+      "modeSystem": "[TO COMPLETE]",
+      "modeDark": "[TO COMPLETE]",
+      "theme": "[TO COMPLETE]",
 
       "themes": {
          "manage": "[TO COMPLETE]",
+         "editThemes": "[TO COMPLETE]",
          "windowTitle": "[TO COMPLETE]",
          "windowDescription": "[TO COMPLETE]",
          "presetsHeading": "[TO COMPLETE]",

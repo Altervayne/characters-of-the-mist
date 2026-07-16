@@ -75,7 +75,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const character = useCharacterStore((state) => state.character);
    const { resetCharacter } = useCharacterActions();
    const { setSideBySideView, toggleDiceTray, toggleNoteOutline, toggleLayersPanel, toggleNavigator } = useAppSettingsActions();
-   const { setThemesOpen, setSettingsOpen, setSettingsInitialSection, requestBoardAction } = useAppGeneralStateActions();
+   const { setSettingsOpen, setSettingsInitialSection, requestBoardAction } = useAppGeneralStateActions();
 
    // Deep-link the hub to a section (What's new / About / Learn), mirroring the sidebar doors.
    const openSettingsSection = (section: string) => {
@@ -200,7 +200,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'setThemeModeLight', scope: 'global', label: t('CommandPalette.commands.setThemeModeLight'), keywords: ['light', 'mode', 'theme'], icon: Sun, group: t('CommandPalette.groups.settings'), action: () => setMode('light') },
       { id: 'setThemeModeDark', scope: 'global', label: t('CommandPalette.commands.setThemeModeDark'), keywords: ['dark', 'mode', 'theme'], icon: Moon, group: t('CommandPalette.groups.settings'), action: () => setMode('dark') },
       { id: 'setThemePalette', scope: 'global', label: t('CommandPalette.commands.setThemePalette'), keywords: ['palette', 'theme', 'color'], icon: Palette, group: t('CommandPalette.groups.settings'), pageId: 'setThemePalette' },
-      { id: 'manageThemes', scope: 'global', label: t('CommandPalette.commands.manageThemes'), keywords: ['theme', 'themes', 'editor', 'manage', 'custom', 'palette'], icon: SwatchBook, group: t('CommandPalette.groups.settings'), action: () => setThemesOpen(true) },
+      { id: 'manageThemes', scope: 'global', label: t('CommandPalette.commands.manageThemes'), keywords: ['theme', 'themes', 'editor', 'manage', 'custom', 'palette'], icon: SwatchBook, group: t('CommandPalette.groups.settings'), action: () => openSettingsSection('appearance') },
       { id: 'viewFlipping', scope: 'character', label: t('CommandPalette.commands.viewFlipping'), keywords: ['flip', 'view', 'card'], icon: FlipHorizontal, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(false) },
       { id: 'viewSideBySide', scope: 'character', label: t('CommandPalette.commands.viewSideBySide'), keywords: ['side', 'view', 'card'], icon: BookOpen, group: t('CommandPalette.groups.settings'), action: () => setSideBySideView(true) },
 

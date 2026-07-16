@@ -57,7 +57,6 @@ interface AppGeneralState {
    // One-shot deep-link into the settings hub: the section to land on the next time it opens, read
    // and cleared by the shell (mirrors `initialPatchNotesVersion`). Null lands on the default section.
    settingsInitialSection: string | null;
-   isThemesOpen: boolean;
    isCardDialogOpen: boolean;
    isDesktopOnboardingOpen: boolean;
    isLegacyDataDialogOpen: boolean;
@@ -100,7 +99,6 @@ interface AppGeneralState {
       // Dialogs
       setSettingsOpen: (isOpen: boolean) => void;
       setSettingsInitialSection: (section: string | null) => void;
-      setThemesOpen: (isOpen: boolean) => void;
       setCardDialogOpen: (isOpen: boolean) => void;
       setDesktopOnboardingOpen: (isOpen: boolean) => void;
       setLegacyDataDialogOpen: (isOpen: boolean) => void;
@@ -146,7 +144,6 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    // Dialogs
    isSettingsOpen: false,
    settingsInitialSection: null,
-   isThemesOpen: false,
    isCardDialogOpen: false,
    isDesktopOnboardingOpen: false,
    isLegacyDataDialogOpen: false,
@@ -184,7 +181,6 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       // Dialogs
       setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
       setSettingsInitialSection: (section) => set({ settingsInitialSection: section }),
-      setThemesOpen: (isOpen) => set({ isThemesOpen: isOpen }),
       setCardDialogOpen: (isOpen) => set({ isCardDialogOpen: isOpen }),
       setDesktopOnboardingOpen: (isOpen) => set({ isDesktopOnboardingOpen: isOpen }),
       setLegacyDataDialogOpen: (isOpen) => set({ isLegacyDataDialogOpen: isOpen }),

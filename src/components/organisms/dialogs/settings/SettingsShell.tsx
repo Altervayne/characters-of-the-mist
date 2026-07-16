@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -27,9 +27,13 @@ import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores
 import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
 import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 
+// -- Focus Context Imports --
+import { SettingsFocusProvider } from './settingsFocus';
+
 // -- Type Imports --
 import type { ComponentType } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import type { GuardedThemeSwitch } from '@/components/organisms/dialogs/themeSwitchGuard';
 
 /*
  * The desktop settings hub: one full-width header band over a section rail + a content pane, mirroring the
@@ -101,10 +105,26 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
    // flickering it in and out. Ignore outside-close + Esc during a run; the tutorial's own hooks own open/close.
    const isTutorialActive = useTutorialStore((state) => state.activeTutorialId !== null);
 
+   // A pane can take the whole hub over (the Appearance pane's theme editor): the rail hides and the dialog
+   // widens so the editor gets its two-column room. The pane raises/clears this through the focus context.
+   const [editorOpen, setEditorOpen] = useState(false);
+
+   // A pane that owns an unsaved draft registers a guard here, so closing the hub confirms before discarding.
+   // Kept in a ref (not state) so registering it never re-renders the shell; the close path reads it live.
+   const closeGuardRef = useRef<GuardedThemeSwitch | null>(null);
+   const registerCloseGuard = useCallback((guard: GuardedThemeSwitch | null) => { closeGuardRef.current = guard; }, []);
+   const requestClose = () => {
+      const guard = closeGuardRef.current;
+      if (guard) guard(() => onOpenChange(false));
+      else onOpenChange(false);
+   };
+
    // On open, honor a one-shot deep-link target (then clear it); otherwise land on the default section so a
-   // reopen never drops the user back into wherever they last wandered (e.g. the Danger Zone).
+   // reopen never drops the user back into wherever they last wandered (e.g. the Danger Zone). A reopen always
+   // starts on the list, never mid-editor.
    useEffect(() => {
       if (!isOpen) return;
+      setEditorOpen(false);
       if (settingsInitialSection && SECTION_IDS.has(settingsInitialSection)) {
          setActiveSection(settingsInitialSection as SettingsSectionId);
          setSettingsInitialSection(null);
@@ -124,9 +144,15 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
    }, [isOpen, settingsInitialSection, setSettingsInitialSection]);
 
    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <SettingsFocusProvider value={{ editorOpen, setEditorOpen, registerCloseGuard }}>
+      <Dialog open={isOpen} onOpenChange={(open) => { if (open) onOpenChange(true); else requestClose(); }}>
          <DialogContent
-            className="flex h-[min(70vh,640px)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+            className={cn(
+               'flex h-[min(70vh,640px)] w-full flex-col gap-0 overflow-hidden p-0',
+               // A pane takeover (the theme editor) widens the hub a step so its two-column layout fits,
+               // without the empty gutters a full-wide dialog leaves around it.
+               editorOpen ? 'sm:max-w-4xl' : 'sm:max-w-3xl',
+            )}
             onInteractOutside={(event) => { if (isTutorialActive) event.preventDefault(); }}
             onEscapeKeyDown={(event) => { if (isTutorialActive) event.preventDefault(); }}
          >
@@ -143,10 +169,14 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
                orientation="vertical"
                className="flex min-h-0 w-full flex-1"
             >
-               {/* Nav rail: the middle `bg-popover` shade, grouped tabs; owns its own scroll. */}
+               {/* Nav rail: the middle `bg-popover` shade, grouped tabs; owns its own scroll. Hidden while a
+                   pane takes the hub over (the theme editor), which gives the takeover the full width. */}
                <TabsPrimitive.List
                   aria-label={t('SettingsShell.title')}
-                  className="flex w-56 shrink-0 flex-col gap-3 overflow-y-auto border-r border-border bg-popover p-2"
+                  className={cn(
+                     'w-56 shrink-0 flex-col gap-3 overflow-y-auto border-r border-border bg-popover p-2',
+                     editorOpen ? 'hidden' : 'flex',
+                  )}
                >
                   {GROUP_ORDER.map((group) => (
                      <div key={group}>
@@ -189,7 +219,12 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
                         <TabsPrimitive.Content
                            key={section.id}
                            value={section.id}
-                           className="min-h-0 flex-1 overflow-y-auto px-5 py-4 outline-none"
+                           // A pane takeover (the theme editor) owns its own scroll + layout, so the pane box
+                           // sheds its padding and scroll then; otherwise it scrolls the section normally.
+                           className={cn(
+                              'min-h-0 flex-1 outline-none',
+                              editorOpen ? 'overflow-hidden' : 'overflow-y-auto px-5 py-4',
+                           )}
                         >
                            <Pane />
                         </TabsPrimitive.Content>
@@ -199,5 +234,6 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
             </TabsPrimitive.Root>
          </DialogContent>
       </Dialog>
+      </SettingsFocusProvider>
    );
 }

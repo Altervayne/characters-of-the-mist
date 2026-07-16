@@ -69,7 +69,8 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
    return <span className="px-1 text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">{children}</span>;
 }
 
-export function ThemeManager() {
+/** `onEnterEditor` opens the hub's editor takeover after selecting a theme (the New button + per-row pencil). */
+export function ThemeManager({ onEnterEditor }: { onEnterEditor?: () => void } = {}) {
    const { t } = useTranslation();
    const { resolvedMode } = useThemeMode();
    const activeTheme = useAppSettingsStore((state) => state.theme);
@@ -112,8 +113,11 @@ export function ThemeManager() {
    // Duplicate ANY entry into a new, independent custom (deep-copied token sets), then select it.
    const duplicate = (entry: ThemeEntry) => guardedSwitch(() => createCustomFrom(entry.source, t('SettingsDialog.themes.copyName', { name: entry.label })));
 
-   // Start a fresh theme from the Neutral preset (also the empty-state action), then select it.
-   const createNew = () => guardedSwitch(() => createCustomFrom(PRESET_THEMES['theme-neutral'], t('SettingsDialog.themes.newThemeName')));
+   // Start a fresh theme from the Neutral preset (also the empty-state action), select it, then edit it.
+   const createNew = () => guardedSwitch(() => { createCustomFrom(PRESET_THEMES['theme-neutral'], t('SettingsDialog.themes.newThemeName')); onEnterEditor?.(); });
+
+   // Per-custom one-click edit: apply the row's theme, then drop into the editor takeover on it.
+   const editCustom = (entry: ThemeEntry) => guardedSwitch(() => { if (entry.value !== activeTheme) setTheme(entry.value); onEnterEditor?.(); });
 
    const startRename = (id: string, current: string) => { setRenamingId(id); setRenameDraft(current); };
    const commitRename = (id: string) => {
@@ -210,6 +214,21 @@ export function ThemeManager() {
                 with its frosted backing. */}
             <span className="min-w-0 flex-1 truncate py-2 pl-2 pr-1 text-sm">{entry.label}</span>
 
+            {/* Custom rows get a hover-revealed pencil (left of the `...`) for one-click edit; presets are
+                immutable, so they never show it. */}
+            {entry.isCustom && customId && (
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(event) => { event.stopPropagation(); editCustom(entry); }}
+                  title={t('SettingsDialog.themes.edit')}
+                  aria-label={t('SettingsDialog.themes.edit')}
+                  className={`absolute right-8 top-1/2 h-6 w-6 -translate-y-1/2 shrink-0 cursor-pointer opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 ${DRAWER_MENU_TRIGGER_CLASS}`}
+               >
+                  <Pencil className="h-4 w-4" />
+               </Button>
+            )}
+
             <DropdownMenu>
                <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
                   <Button
@@ -248,16 +267,17 @@ export function ThemeManager() {
    };
 
    return (
-      <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="flex flex-col gap-3">
          {/* Presets stay pinned at the top. */}
          <div className="flex flex-col gap-1">
             <SectionHeading>{t('SettingsDialog.themes.presetsHeading')}</SectionHeading>
             <div className="flex flex-col gap-1">{presetEntries.map((entry) => renderRow(entry))}</div>
          </div>
 
-         {/* Customs get their own scroller, so the presets never scroll away. Only this section is
-             sortable - a local DndContext + SortableContext over the custom ids; presets stay outside it. */}
-         <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-border pt-3">
+         {/* Customs sit below a divider; the hub pane owns the scroll (no inner scroller, else it double-scrolls).
+             Only this section is sortable - a local DndContext + SortableContext over the custom ids; presets
+             stay outside it. */}
+         <div className="flex flex-col gap-1 border-t border-border pt-3">
             <div className="flex items-center justify-between gap-2">
                <SectionHeading>{t('SettingsDialog.themes.customsHeading')}</SectionHeading>
                {/* Icon-only to leave the heading room; the label lives in the tooltip + aria-label/title. */}
@@ -280,7 +300,7 @@ export function ThemeManager() {
             {customEntries.length > 0 ? (
                <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis, restrictToParentElement]} onDragEnd={handleDragEnd}>
                   <SortableContext items={customThemes.map((theme) => theme.id)} strategy={verticalListSortingStrategy}>
-                     <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+                     <div className="flex flex-col gap-1">
                         {customEntries.map((entry) => {
                            const id = entry.value.replace('theme-custom-', '');
                            return (
@@ -297,7 +317,7 @@ export function ThemeManager() {
                   </SortableContext>
                </DndContext>
             ) : (
-               <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+               <div className="flex flex-col gap-1">
                   <p className="px-1 py-2 text-xs text-muted-foreground">{t('SettingsDialog.themes.noCustoms')}</p>
                </div>
             )}
