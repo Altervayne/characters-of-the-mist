@@ -5,6 +5,7 @@ export const otherscapeThemebooks = {
       { value: "Artifact", key: "OtherscapeData.themebook.artifact" },
       { value: "Esoterica", key: "OtherscapeData.themebook.esoterica" },
       { value: "Exposure", key: "OtherscapeData.themebook.exposure" },
+      { value: "Companion", key: "OtherscapeData.themebook.companion" },
    ],
    Self: [
       { value: "Affiliation", key: "OtherscapeData.themebook.affiliation" },
@@ -17,5 +18,7 @@ export const otherscapeThemebooks = {
    Noise: [
       { value: "Augmentation", key: "OtherscapeData.themebook.augmentation" },
       { value: "Cutting Edge", key: "OtherscapeData.themebook.cuttingEdge" },
+      { value: "Cyberspace", key: "OtherscapeData.themebook.cyberspace" },
+      { value: "Drones", key: "OtherscapeData.themebook.drones" },
    ],
 };

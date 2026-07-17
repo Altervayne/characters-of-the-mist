@@ -86,7 +86,7 @@ export function SheetJournalCard({ journal, isEditing, onExport, dragAttributes,
          />
          {/* Bookmarks use a body-portaled popover (not protruding tabs), so the card body simply clips its
              page content to the card shape - no side slot to keep un-clipped. */}
-         <div className="relative min-w-62.5 w-62.5 h-150 overflow-hidden rounded-lg border-2 border-border bg-paper-background text-paper-foreground z-0">
+         <div className="relative min-w-62.5 w-62.5 h-150 overflow-hidden rounded-lg border-2 border-card-border bg-paper-background text-paper-foreground z-0">
             <JournalItem
                item={SHEET_HOST_RECT}
                content={content}

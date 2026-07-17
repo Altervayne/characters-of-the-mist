@@ -311,8 +311,10 @@ export default function MobileCharacterSheetPage() {
 		return <CharacterBootLoading />;
 	}
 
+	// Fill the app shell, not the raw viewport: the shell reserves the dev-preview banner's height above this,
+	// so 100% stays inside bounds while a fixed 100dvh would overflow past the banner.
 	return (
-		<div className="overflow-hidden flex flex-col" style={{ height: '100dvh', width: '100dvw' }}>
+		<div className="h-full w-full overflow-hidden flex flex-col">
 			{/* Main Content */}
 			<div className="flex-1 overflow-hidden">
 				{activeTab === 'sheet' && character && (

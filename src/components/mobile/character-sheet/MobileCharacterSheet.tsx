@@ -136,6 +136,7 @@ export default function MobileCharacterSheet({
 		isToolbeltOpen,
 		setCurrentCardIndex,
 		setIsToolbeltOpen: handleToolbeltOpenChange,
+		onNavigateToTrackers: () => setActiveTab('trackers'),
 	});
 
 

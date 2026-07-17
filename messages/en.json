@@ -2151,12 +2151,24 @@
          "relic": "Relic",
          "subversion": "Subversion",
          "training": "Training",
+         "conjuration": "Conjuration",
+         "destiny": "Destiny",
+         "enclave": "Enclave",
+         "familiar": "Familiar",
+         "esoterica": "Esoterica",
 
          "definingEvent": "Defining Event",
          "definingRelationship": "Defining Relationship",
          "mission": "Mission",
          "personality": "Personality",
-         "occupation": "Occupation"
+         "possessions": "Possessions",
+         "routine": "Routine",
+         "struggle": "Struggle",
+         "turf": "Turf",
+         "tradition": "Tradition",
+         "ride": "Ride",
+         "baseOfOperations": "Base of Operations",
+         "ally": "Ally"
       }
    },
    "OtherscapeData": {
@@ -2164,6 +2176,7 @@
          "artifact": "Artifact",
          "esoterica": "Esoterica",
          "exposure": "Exposure",
+         "companion": "Companion",
 
          "affiliation": "Affiliation",
          "assets": "Assets",
@@ -2173,7 +2186,9 @@
          "troubledPast": "Troubled Past",
 
          "augmentation": "Augmentation",
-         "cuttingEdge": "Cutting Edge"
+         "cuttingEdge": "Cutting Edge",
+         "cyberspace": "Cyberspace",
+         "drones": "Drones"
       }
    },
    "ThemeTypes": {

@@ -96,6 +96,16 @@ const POLYGON_CLOSE_THRESHOLD = 12;
 /** The regular polygon's rotation snap step (radians) while Shift is held: 15deg detents. */
 const ROTATION_SNAP = Math.PI / 12;
 
+/** Screen-px a pointer must travel before a drag arms a move/marquee; a sub-threshold press dispatches nothing. */
+const MOVE_THRESHOLD = 5;
+/** Screen-px a right-drag must travel to pan instead of opening the radial (larger so a jittery right-click still opens it). */
+const RIGHT_PAN_THRESHOLD = 8;
+
+/** True when the target is a live text field / editor, so board pointer gestures defer to it (native menu, typing). */
+function isEditableTarget(target: EventTarget | null): boolean {
+   return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+}
+
 /** Screen-px margin fit-to-content leaves around the framed items. */
 const FIT_PADDING = 64;
 /**
@@ -254,6 +264,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // cursor). The pen overlay + a Space/middle-drag can all start a pan, so the trigger is mode-agnostic.
    const [spaceHeld, setSpaceHeld] = useState(false);
    const spaceHeldRef = useRef(false);
+   // Alt likewise arms a pan (Alt+left-drag). Only the cursor needs it in state - the pointerdown reads
+   // `event.altKey` live - so there's no ref twin; keyup / blur disarm it, mirroring Space.
+   const [altHeld, setAltHeld] = useState(false);
    // The in-flight pen stroke's WORLD points (captured in screen, painted in world) + its live preview.
    // The cleanup ref tears the window listeners down on unmount so a mid-stroke tab switch can't leak them.
    const currentStrokeRef = useRef<{ points: number[] } | null>(null);
@@ -599,24 +612,32 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       [actions],
    );
 
-   // Space arms a pan while held, cleared on keyup or a window blur (no stuck pan after an alt-tab).
-   // Ignored while editing text on the board (a post-it/journal/text field), so typing a space never arms it.
+   // Space and Alt each arm a pan while held, cleared on keyup or a window blur (no stuck arm after an
+   // alt-tab). Space is ignored while editing text on the board (a post-it/journal/text field) so typing
+   // a space never arms it; Alt isn't a typing key, so it needs no such guard.
    useEffect(() => {
-      const isEditable = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+      const clearSpace = () => { spaceHeldRef.current = false; setSpaceHeld(false); };
       const onKeyDown = (event: KeyboardEvent) => {
-         if (event.code !== 'Space' || isEditable(event.target)) return;
-         if (!spaceHeldRef.current) { spaceHeldRef.current = true; setSpaceHeld(true); }
-         event.preventDefault(); // stop the page from scrolling on Space
+         if (event.code === 'Space') {
+            if (isEditableTarget(event.target)) return;
+            if (!spaceHeldRef.current) { spaceHeldRef.current = true; setSpaceHeld(true); }
+            event.preventDefault(); // stop the page from scrolling on Space
+         } else if (event.key === 'Alt') {
+            setAltHeld(true);
+         }
       };
-      const clear = () => { spaceHeldRef.current = false; setSpaceHeld(false); };
-      const onKeyUp = (event: KeyboardEvent) => { if (event.code === 'Space') clear(); };
+      const onKeyUp = (event: KeyboardEvent) => {
+         if (event.code === 'Space') clearSpace();
+         else if (event.key === 'Alt') setAltHeld(false);
+      };
+      const clearAll = () => { clearSpace(); setAltHeld(false); };
       window.addEventListener('keydown', onKeyDown);
       window.addEventListener('keyup', onKeyUp);
-      window.addEventListener('blur', clear);
+      window.addEventListener('blur', clearAll);
       return () => {
          window.removeEventListener('keydown', onKeyDown);
          window.removeEventListener('keyup', onKeyUp);
-         window.removeEventListener('blur', clear);
+         window.removeEventListener('blur', clearAll);
       };
    }, []);
 
@@ -636,18 +657,64 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       return () => window.removeEventListener('keydown', onKeyDown);
    }, [toggleLayersPanel]);
 
+   /** Opens the radial at a screen point (create-at-cursor + selection actions). A right-click on an
+    *  unselected item selects it first so the actions target it; an empty press keeps the current selection. */
+   const openRadial = useCallback((itemId: string | null, clientX: number, clientY: number) => {
+      if (itemId && !store.getState().selectedIds.has(itemId)) actions.setSelection([itemId]);
+      const world = cursorToWorld(clientX, clientY);
+      if (!world) return;
+      setRadial({ screen: { x: clientX, y: clientY }, world });
+   }, [store, actions, cursorToWorld]);
+
+   /**
+    * Starts a marquee from a screen point via WINDOW listeners (mirroring beginPan): the rectangle grows
+    * with the cursor and, on release past the move threshold, selects the framed items - `additive` keeps
+    * the current selection (adds the hits), otherwise it replaces it. The clip origin is captured up front
+    * so the overlay + world math never read a ref during render.
+    */
+   const beginMarquee = useCallback((clientX: number, clientY: number, { additive }: { additive: boolean }) => {
+      const el = clipRef.current;
+      if (!el) return;
+      const clip = el.getBoundingClientRect();
+      setMarquee({ x0: clientX, y0: clientY, x1: clientX, y1: clientY, clipLeft: clip.left, clipTop: clip.top });
+      const onMove = (moveEvent: PointerEvent) => {
+         setMarquee((current) => (current ? { ...current, x1: moveEvent.clientX, y1: moveEvent.clientY } : null));
+      };
+      const onUp = (upEvent: PointerEvent) => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+         // Ignore a sub-threshold press (no real drag) so it never selects under the point.
+         const dragged = Math.abs(upEvent.clientX - clientX) >= MOVE_THRESHOLD || Math.abs(upEvent.clientY - clientY) >= MOVE_THRESHOLD;
+         if (dragged) {
+            const origin = { left: clip.left, top: clip.top };
+            const a = screenToWorld(clientX, clientY, origin, viewportRef.current);
+            const b = screenToWorld(upEvent.clientX, upEvent.clientY, origin, viewportRef.current);
+            const hits = itemsInMarquee(Object.values(store.getState().items), {
+               minX: Math.min(a.x, b.x),
+               minY: Math.min(a.y, b.y),
+               maxX: Math.max(a.x, b.x),
+               maxY: Math.max(a.y, b.y),
+            });
+            if (additive) actions.addToSelection(hits);
+            else actions.setSelection(hits);
+         }
+         setMarquee(null);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+   }, [store, actions]);
+
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
-      // Middle-button and Space+drag pan in ANY tool (the pen's escape hatch out of its viewport).
+      // Middle-button, Space+drag, and Alt+drag pan in ANY tool (the pen's escape hatch out of its viewport).
       if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
-      if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
+      if (event.button === 0 && (spaceHeldRef.current || event.altKey)) { beginPan(event.clientX, event.clientY); return; }
+      // The right button is owned by the capture handler (radial / right-drag pan), so it never reaches here.
       // Past here only the select tool acts on the background; a Draw gesture's background is owned by the
       // capture overlay (a higher sibling), so a plain draw pointerdown never reaches here.
       if (event.button !== 0 || activeTool !== 'select') return;
       if (event.shiftKey) {
-         // Shift+drag is a marquee, not a pan; it keeps the current selection (additive).
-         const clip = event.currentTarget.getBoundingClientRect();
-         setMarquee({ x0: event.clientX, y0: event.clientY, x1: event.clientX, y1: event.clientY, clipLeft: clip.left, clipTop: clip.top });
-         event.currentTarget.setPointerCapture(event.pointerId);
+         // Shift+drag is an additive marquee, not a pan; it keeps the current selection.
+         beginMarquee(event.clientX, event.clientY, { additive: true });
          return;
       }
       // A plain background drag pans and clears the selection.
@@ -655,29 +722,36 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       beginPan(event.clientX, event.clientY);
    };
 
-   // The marquee owns the clip's own pointer capture; the pan now rides window listeners (via beginPan).
-   const handleBackgroundPointerMove = (event: ReactPointerEvent) => {
-      if (marquee) setMarquee((current) => (current ? { ...current, x1: event.clientX, y1: event.clientY } : null));
-   };
-
-   const handleBackgroundPointerUp = (event: ReactPointerEvent) => {
-      if (!marquee) return;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      // Ignore a tiny shift-click (no real drag) so it never selects under the point.
-      const dragged = Math.abs(marquee.x1 - marquee.x0) >= 3 || Math.abs(marquee.y1 - marquee.y0) >= 3;
-      if (dragged) {
-         const origin = { left: marquee.clipLeft, top: marquee.clipTop };
-         const a = screenToWorld(marquee.x0, marquee.y0, origin, viewportRef.current);
-         const b = screenToWorld(marquee.x1, marquee.y1, origin, viewportRef.current);
-         const hits = itemsInMarquee(Object.values(store.getState().items), {
-            minX: Math.min(a.x, b.x),
-            minY: Math.min(a.y, b.y),
-            maxX: Math.max(a.x, b.x),
-            maxY: Math.max(a.y, b.y),
-         });
-         actions.addToSelection(hits);
-      }
-      setMarquee(null);
+   /**
+    * Right-button DRAG detector (select mode), captured at the clip so it fires over the background AND any
+    * item - even ones whose own handlers stop pointer propagation. It never opens the radial (that rides the
+    * reliable contextmenu event); it only watches for a drag: past the threshold it pans and sets
+    * `suppressRadialRef` so the contextmenu stays shut, and closes any menu that already opened on press
+    * (GTK fires contextmenu on pointerdown). The suppress flag is cleared up front so a prior right-drag
+    * can't eat this click's menu on a platform where no closing contextmenu followed it. Draw gestures own
+    * their overlay; a live text editor keeps its native menu.
+    */
+   const handleClipPointerDownCapture = (event: ReactPointerEvent) => {
+      if (event.button !== 2 || activeTool !== 'select' || isEditableTarget(event.target)) return;
+      event.stopPropagation(); // this sequence owns the right button; no item handler also acts on it
+      suppressRadialRef.current = false; // fresh gesture: drop any flag a prior drag left unconsumed
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let panning = false;
+      const onMove = (moveEvent: PointerEvent) => {
+         if (panning) return;
+         if (Math.abs(moveEvent.clientX - startX) < RIGHT_PAN_THRESHOLD && Math.abs(moveEvent.clientY - startY) < RIGHT_PAN_THRESHOLD) return;
+         panning = true;
+         suppressRadialRef.current = true; // a real right-drag swallows the contextmenu that follows
+         setRadial(null); // GTK opens the menu on pointerdown; dismiss it as the drag takes over
+         beginPan(moveEvent.clientX, moveEvent.clientY);
+      };
+      const onUp = () => {
+         window.removeEventListener('pointermove', onMove);
+         window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
    };
 
    // ==================
@@ -1394,22 +1468,20 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    /**
-    * Right-click opens the radial menu at the cursor (create-at-cursor + selection actions). Over a
-    * text field it does nothing, leaving the native edit menu; right-clicking an unselected item
-    * selects it first so the selection actions target it (empty canvas keeps the current selection).
+    * Opens the radial from the native context-menu event - reliable on every real right-click, every
+    * platform (the right-button pointerup is NOT, around a context menu). Over a text field it does nothing
+    * (native edit menu stays); right-clicking an unselected item selects it first. A right-drag pan sets
+    * `suppressRadialRef` (consumed here) so a drag never opens the menu.
     */
    const handleContextMenu = (event: ReactMouseEvent) => {
-      // A right-click that just finished a freeform polygon suppresses the radial (and stops here so the
-      // clip's own context-menu doesn't reopen it as the event bubbles).
+      // A right-drag pan (or a right-click that just finished a freeform polygon) already decided the menu
+      // should stay closed; consume the flag and swallow the event so nothing reopens.
       if (suppressRadialRef.current) { suppressRadialRef.current = false; event.preventDefault(); event.stopPropagation(); return; }
-      const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      // Over a live text editor: leave the native edit menu (copy/paste) intact.
+      if (isEditableTarget(event.target)) return;
       event.preventDefault();
-      const itemId = target instanceof Element ? target.closest('[data-board-item-id]')?.getAttribute('data-board-item-id') ?? null : null;
-      if (itemId && !selectedIds.has(itemId)) actions.setSelection([itemId]);
-      const world = cursorToWorld(event.clientX, event.clientY);
-      if (!world) return;
-      setRadial({ screen: { x: event.clientX, y: event.clientY }, world });
+      const itemId = event.target instanceof Element ? event.target.closest('[data-board-item-id]')?.getAttribute('data-board-item-id') ?? null : null;
+      openRadial(itemId, event.clientX, event.clientY);
    };
 
    /** Frames every spatial item, centered and zoom-clamped (origin when the board is empty). */
@@ -1594,11 +1666,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          ref={setClipRefs}
          data-board-clip
          data-tutorial="board-canvas"
+         onPointerDownCapture={handleClipPointerDownCapture}
          onPointerDown={handleBackgroundPointerDown}
-         onPointerMove={handleBackgroundPointerMove}
-         onPointerUp={handleBackgroundPointerUp}
          onContextMenu={handleContextMenu}
-         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld ? 'cursor-grab' : activeTool === 'select' ? 'cursor-grab' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
+         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld || altHeld ? 'cursor-grab' : activeTool === 'select' ? 'cursor-grab' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
       >
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}

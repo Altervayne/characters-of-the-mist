@@ -14,6 +14,7 @@ interface UseMobileCardSheetGesturesParameters {
 	isToolbeltOpen: boolean;
 	setCurrentCardIndex: Dispatch<SetStateAction<number>>;
 	setIsToolbeltOpen: (value: boolean) => void;
+	onNavigateToTrackers: () => void;
 }
 
 // A swipe must be clearly horizontal to count as card navigation: its horizontal
@@ -27,7 +28,8 @@ const NAVIGATE_MIN_DISTANCE = 50;
  * touch handlers to spread onto each.
  *
  * - **Card area:** a horizontal swipe anywhere on the card body navigates to the
- *   previous/next card (same logic as the nav bar). Card flip is now an explicit
+ *   previous/next card (same logic as the nav bar); a "previous" swipe on the first
+ *   card crosses over to the Trackers tab. Card flip is now an explicit
  *   nav-bar button, so the former edge-swipe-flip is retired; the former
  *   side-panel edge-swipe-toolbelt is also retired here in favour of the tab-bar
  *   toolbelt button, so the card body navigates uniformly with no edge zones.
@@ -54,6 +56,7 @@ export function useMobileCardSheetGestures({
 	isToolbeltOpen,
 	setCurrentCardIndex,
 	setIsToolbeltOpen,
+	onNavigateToTrackers,
 }: UseMobileCardSheetGesturesParameters) {
 	// Shared prev/next navigation for the card-area and nav-bar swipes. Steps one
 	// card on a clearly-horizontal swipe (G3 dominance + minimum distance),
@@ -70,6 +73,10 @@ export function useMobileCardSheetGestures({
 			setCurrentCardIndex(i => i + 1);
 		} else if (deltaX > 0 && safeCardIndex > 0) {
 			setCurrentCardIndex(i => i - 1);
+		} else if (deltaX > 0 && safeCardIndex === 0) {
+			// Past the first card the "previous" direction has no card to step to, so it
+			// crosses over to the Trackers tab - closer than reaching the tab bar.
+			onNavigateToTrackers();
 		}
 	};
 

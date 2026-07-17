@@ -2039,11 +2039,23 @@
          "relic": "Relique",
          "subversion": "Subversion",
          "training": "Entraînement",
+         "conjuration": "[TO COMPLETE]",
+         "destiny": "[TO COMPLETE]",
+         "enclave": "[TO COMPLETE]",
+         "familiar": "[TO COMPLETE]",
+         "esoterica": "[TO COMPLETE]",
          "definingEvent": "Événement Déterminant",
          "definingRelationship": "Relation Déterminante",
          "mission": "Mission",
          "personality": "Personnalité",
-         "occupation": "Occupation"
+         "possessions": "[TO COMPLETE]",
+         "routine": "[TO COMPLETE]",
+         "struggle": "[TO COMPLETE]",
+         "turf": "[TO COMPLETE]",
+         "tradition": "[TO COMPLETE]",
+         "ride": "[TO COMPLETE]",
+         "baseOfOperations": "[TO COMPLETE]",
+         "ally": "[TO COMPLETE]"
       }
    },
    "OtherscapeData": {
@@ -2051,6 +2063,7 @@
          "artifact": "Artefact",
          "esoterica": "Ésotérique",
          "exposure": "Exposition",
+         "companion": "[TO COMPLETE]",
          "affiliation": "Affiliation",
          "assets": "Ressources",
          "expertise": "Expertise",
@@ -2058,7 +2071,9 @@
          "personality": "Personnalité",
          "troubledPast": "Passé Tourmenté",
          "augmentation": "Augmentation",
-         "cuttingEdge": "Pointe du Progrès"
+         "cuttingEdge": "Pointe du Progrès",
+         "cyberspace": "[TO COMPLETE]",
+         "drones": "[TO COMPLETE]"
       }
    },
    "ThemeTypes": {

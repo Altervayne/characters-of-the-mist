@@ -146,8 +146,8 @@ export function StatusTrackerCard({ tracker, isEditing=false, isDrawerPreview, i
                   <div
                      key={index}
                      className="flex-1 flex flex-col justify-between items-end p-1 cursor-pointer"
-                     // Faint wash of the card's ink so the zebra adapts per card-type + light/dark.
-                     style={{ backgroundColor: `color-mix(in srgb, var(--card-paper-fg) ${index % 2 === 0 ? 6 : 3}%, transparent)` }}
+                     // Alternating wash of the card's ink so the zebra adapts per card-type + light/dark.
+                     style={{ backgroundColor: `color-mix(in srgb, var(--card-paper-fg) ${index % 2 === 0 ? 10 : 2}%, transparent)` }}
                      onClick={() => handleTierClick(index)}
                   >
                      <Check className={cn("h-6 w-6 transition-opacity", isActive ? 'opacity-100 text-card-paper-fg' : 'opacity-0')} />
