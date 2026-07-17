@@ -1,11 +1,7 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
-
 // -- Basic UI Imports --
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -20,8 +16,6 @@ import {
 	Hand,
 	Eye,
 	EyeOff,
-	Lightbulb,
-	ChevronRight,
 } from 'lucide-react';
 
 // -- Component Imports --
@@ -47,20 +41,10 @@ export default function MobileSettingsGeneral({ onBack }: MobileSettingsGeneralP
 	const locale = i18n.language?.split('-')[0] || 'en';
 
 	const { isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
-	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
+	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled } = useAppSettingsActions();
 
 	const handleLocaleChange = (newLocale: string) => {
 		i18n.changeLanguage(newLocale);
-	};
-
-	// Re-arm the one-time gesture tips: turn them back on and clear the
-	// "already seen" flags so each hint shows again the next time its surface
-	// (trackers / drawer) is opened. For users who dismissed or missed them.
-	const handleReplayGestureTips = () => {
-		setGestureHintsEnabled(true);
-		setHasSeenTrackerSelectHint(false);
-		setHasSeenDrawerMenuHint(false);
-		toast.success(t('Notifications.general.gestureTipsReset'));
 	};
 
 	return (
@@ -176,20 +160,6 @@ export default function MobileSettingsGeneral({ onBack }: MobileSettingsGeneralP
 					},
 				]}
 			/>
-
-			{/* Replay gesture tips (re-arm the one-time hints) */}
-			<div className="space-y-2">
-				<Label className="text-sm font-semibold">{t('SettingsDialog.gestureHints.replayLabel')}</Label>
-				<Button
-					onClick={handleReplayGestureTips}
-					variant="default"
-					className="w-full h-12 text-base justify-start"
-				>
-					<Lightbulb className="mr-3 h-5 w-5 shrink-0" />
-					<span className="flex-1 text-left">{t('SettingsDialog.gestureHints.replayButton')}</span>
-					<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-				</Button>
-			</div>
 		</MobileSettingsSubScreen>
 	);
 }

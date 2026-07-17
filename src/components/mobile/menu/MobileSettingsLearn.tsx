@@ -1,18 +1,21 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 
+// -- Other Library Imports --
+import toast from 'react-hot-toast';
+
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 // -- Icon Imports --
-import { GraduationCap, Check, Play, PlayCircle, RotateCcw, ChevronRight } from 'lucide-react';
+import { GraduationCap, Check, Play, PlayCircle, RotateCcw, Lightbulb, ChevronRight } from 'lucide-react';
 
 // -- Component Imports --
 import { MobileSettingsSubScreen } from '@/components/mobile/menu/MobileSettingsSubScreen';
 
 // -- Store and Util Imports --
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
 
 interface MobileSettingsLearnProps {
@@ -26,6 +29,16 @@ interface MobileSettingsLearnProps {
 export default function MobileSettingsLearn({ onStartTour, onRestartOnboarding, onStartTutorial, onBack }: MobileSettingsLearnProps) {
 	const { t } = useTranslation();
 	const completedTutorials = useAppSettingsStore((state) => state.completedTutorials);
+	const { setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
+
+	// Re-arm the one-time gesture tips: turn them back on and clear the "already seen" flags so each hint
+	// shows again the next time its surface (trackers / drawer) is opened.
+	const handleReplayGestureTips = () => {
+		setGestureHintsEnabled(true);
+		setHasSeenTrackerSelectHint(false);
+		setHasSeenDrawerMenuHint(false);
+		toast.success(t('Notifications.general.gestureTipsReset'));
+	};
 
 	// The mobile tutorials, empty until the real content is authored (dev scenarios are desktop-only, so this
 	// stays empty in dev too); when empty the whole group renders nothing, no orphan header.
@@ -89,6 +102,20 @@ export default function MobileSettingsLearn({ onStartTour, onRestartOnboarding, 
 					</Button>
 				</div>
 			)}
+
+			{/* Replay gesture tips: re-arm the one-time hints, alongside the other "re-experience it" actions. */}
+			<div className="space-y-2">
+				<Label className="text-sm font-semibold">{t('SettingsDialog.gestureHints.replayLabel')}</Label>
+				<Button
+					onClick={handleReplayGestureTips}
+					variant="default"
+					className="w-full h-12 text-base justify-start"
+				>
+					<Lightbulb className="mr-3 h-5 w-5 shrink-0" />
+					<span className="flex-1 text-left">{t('SettingsDialog.gestureHints.replayButton')}</span>
+					<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+				</Button>
+			</div>
 		</MobileSettingsSubScreen>
 	);
 }
