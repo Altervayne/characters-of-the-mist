@@ -91,7 +91,7 @@ export default function MobileSettings({ onOpenGeneral, onOpenAppearance, onOpen
 				</p>
 			</div>
 
-			<div className="px-6 pb-[calc(2rem_+_env(safe-area-inset-bottom))] space-y-6">
+			<div data-tutorial="settings-content" className="px-6 pb-[calc(2rem_+_env(safe-area-inset-bottom))] space-y-6">
 				{groups.map((group) => (
 					<div key={group.labelKey} className="space-y-1">
 						<div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

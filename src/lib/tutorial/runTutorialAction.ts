@@ -4,14 +4,52 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useTabManagerStore } from '@/lib/character/tabManagerStore';
 
 // -- Type Imports --
+import type { MobileNavAction } from '@/lib/mobile/mobileNavTypes';
 import type { TutorialAction } from './tutorialTypes';
+
+/**
+ * How long a queued nav request waits for the page to consume it. A drain lands within a render cycle, so
+ * this only catches the case where nothing is mounted to consume the queue at all - a desktop run, or a
+ * teardown that unmounts the page mid-drive - where waiting forever would freeze the run. Kept well under
+ * `ANCHOR_TIMEOUT_MS` so a drive that gives up still settles into the runner's own missing-anchor path
+ * rather than deadlocking ahead of it.
+ */
+const MOBILE_NAV_DRAIN_TIMEOUT_MS = 1000;
+
+/**
+ * Queues a nav request and resolves once the page has drained the queue against its own setters. The page
+ * consumes from an effect, so a caller that only fired and forgot would run on and read the DOM a commit
+ * early - measuring a control that is still mid-exit, or binding a gate to a node that is about to be
+ * replaced. Settles exactly once: on the drain, or on the timeout when nothing consumes it.
+ */
+function dispatchMobileNav(action: MobileNavAction): Promise<void> {
+   useAppGeneralStateStore.getState().actions.requestMobileNavAction(action);
+   return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+         if (settled) return;
+         settled = true;
+         unsubscribe();
+         clearTimeout(timer);
+         resolve();
+      };
+
+      const unsubscribe = useAppGeneralStateStore.subscribe((state) => {
+         if (state.pendingMobileNavActions.length === 0) finish();
+      });
+      const timer = setTimeout(finish, MOBILE_NAV_DRAIN_TIMEOUT_MS);
+
+      // The page may have drained between the request and the subscribe; re-check.
+      if (useAppGeneralStateStore.getState().pendingMobileNavActions.length === 0) finish();
+   });
+}
 
 /**
  * The one seam that knows how to talk to the stores. Switches on the descriptor's `type`
  * and calls each store action read FRESH at dispatch (never a captured setter), mirroring
- * the board-action bridge. Tab opens return a Promise the runner awaits before it anchors.
- * Every verb is idempotent and writes no new record - the engine performs zero repository
- * writes against real stores.
+ * the board-action bridge. Tab opens and mobile nav drives return a Promise the runner awaits
+ * before it anchors. Every verb is idempotent and writes no new record - the engine performs
+ * zero repository writes against real stores.
  */
 export function runTutorialAction(action: TutorialAction): void | Promise<void> {
    const general = useAppGeneralStateStore.getState().actions;
@@ -75,8 +113,7 @@ export function runTutorialAction(action: TutorialAction): void | Promise<void> 
          general.requestBoardAction(action.action);
          return;
       case 'mobileNav':
-         general.requestMobileNavAction(action.action);
-         return;
+         return dispatchMobileNav(action.action);
    }
 }
 

@@ -1464,6 +1464,10 @@
          "mobileSheet": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "mobileNav": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1673,6 +1677,41 @@
          "openReorder_body": "[TO COMPLETE]",
          "reorderDrag_title": "[TO COMPLETE]",
          "reorderDrag_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "mobileNav": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "navControl_title": "[TO COMPLETE]",
+         "navControl_body": "[TO COMPLETE]",
+         "navControl_title_fab": "[TO COMPLETE]",
+         "navControl_body_fab": "[TO COMPLETE]",
+         "openRing_title": "[TO COMPLETE]",
+         "openRing_body": "[TO COMPLETE]",
+         "sheetDest_title": "[TO COMPLETE]",
+         "sheetDest_body": "[TO COMPLETE]",
+         "drawerDest_title": "[TO COMPLETE]",
+         "drawerDest_body": "[TO COMPLETE]",
+         "drawerLanding_title": "[TO COMPLETE]",
+         "drawerLanding_body": "[TO COMPLETE]",
+         "drawerLanding_body_fab": "[TO COMPLETE]",
+         "reopenRing_title": "[TO COMPLETE]",
+         "reopenRing_body": "[TO COMPLETE]",
+         "menuDest_title": "[TO COMPLETE]",
+         "menuDest_body": "[TO COMPLETE]",
+         "menuContent_title": "[TO COMPLETE]",
+         "menuContent_body": "[TO COMPLETE]",
+         "toolbeltLocator_title": "[TO COMPLETE]",
+         "toolbeltLocator_body": "[TO COMPLETE]",
+         "toolbeltLocator_body_fab": "[TO COMPLETE]",
+         "reopenRing2_title": "[TO COMPLETE]",
+         "reopenRing2_body": "[TO COMPLETE]",
+         "settingsEntry_title": "[TO COMPLETE]",
+         "settingsEntry_body": "[TO COMPLETE]",
+         "settingsEntry_body_fab": "[TO COMPLETE]",
+         "settingsContent_title": "[TO COMPLETE]",
+         "settingsContent_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       },

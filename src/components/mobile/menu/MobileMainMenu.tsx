@@ -162,6 +162,7 @@ export default function MobileMainMenu({ onOpenSettings, onCharacterOpened }: Mo
 				<button
 					type="button"
 					onClick={onOpenSettings}
+					data-tutorial="menu-settings"
 					className="flex w-full shrink-0 items-center gap-3 border-b border-border px-6 py-3 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 				>
 					<Settings className="h-5 w-5 shrink-0" />

@@ -8,6 +8,7 @@ import { DESKTOP_DRAWER_TUTORIAL } from './desktop.drawer';
 import { DESKTOP_THEMES_TUTORIAL } from './desktop.themes';
 import { DESKTOP_COMMAND_PALETTE_TUTORIAL } from './desktop.commandPalette';
 import { MOBILE_SHEET_TUTORIAL } from './mobile.sheet';
+import { MOBILE_NAV_TUTORIAL } from './mobile.nav';
 
 // -- Type Imports --
 import type { TutorialDefinition, TutorialPlatform } from '../tutorialTypes';
@@ -25,6 +26,7 @@ export const TUTORIALS: Record<string, TutorialDefinition> = {
    [DESKTOP_THEMES_TUTORIAL.id]: DESKTOP_THEMES_TUTORIAL,
    [DESKTOP_COMMAND_PALETTE_TUTORIAL.id]: DESKTOP_COMMAND_PALETTE_TUTORIAL,
    [MOBILE_SHEET_TUTORIAL.id]: MOBILE_SHEET_TUTORIAL,
+   [MOBILE_NAV_TUTORIAL.id]: MOBILE_NAV_TUTORIAL,
 };
 
 /** Looks up a definition by id. */

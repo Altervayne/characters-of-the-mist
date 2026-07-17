@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // -- Component Imports --
 import TutorialOverlay from './TutorialOverlay';
@@ -22,6 +22,7 @@ import { useDeviceType } from '@/hooks/useDeviceType';
 import { getTutorialDefinition } from '@/lib/tutorial/definitions';
 import { runTutorialActions } from '@/lib/tutorial/runTutorialAction';
 import { resolveAnchor } from '@/lib/tutorial/resolveAnchor';
+import { resolveShellSteps } from '@/lib/tutorial/resolveShellSteps';
 import { getTutorialProfile } from '@/lib/tutorial/tutorialConfig';
 import { seedDemo, teardownDemo } from '@/lib/tutorial/demo/demoContentHandler';
 import { captureChromeSnapshot, restoreChromeSnapshot } from '@/lib/tutorial/chromeSnapshot';
@@ -60,8 +61,13 @@ export default function TutorialRunner() {
    const { deviceType } = useDeviceType();
    const profile = getTutorialProfile(deviceType);
 
+   const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
+
    const definition = activeTutorialId ? getTutorialDefinition(activeTutorialId) : null;
-   const steps = definition?.steps ?? [];
+   // The mobile shell exposes different controls in its two forms, so a beat may override its anchor, copy or
+   // arrival for the FAB ring. Resolved once per definition + shell: `stepsRef`, `steps.length` and the
+   // per-step effect all read this, so it has to stay referentially stable across renders.
+   const steps = useMemo(() => resolveShellSteps(definition, isMobileFABMode), [definition, isMobileFABMode]);
    const step: TutorialStep | undefined = steps[stepIndex];
 
    const [displayRect, setDisplayRect] = useState<DOMRect | null>(null);

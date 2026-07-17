@@ -1558,6 +1558,10 @@
          "mobileSheet": {
             "title": "Character Sheet",
             "teach": "Your name, trackers and cards, the toolbelt, and the touch gestures that drive them."
+         },
+         "mobileNav": {
+            "title": "App Navigation",
+            "teach": "Where everything lives: the Sheet, the Drawer, the Menu, your tools, and your settings."
          }
       }
    },
@@ -1808,6 +1812,41 @@
          "reorderDrag_body": "Press and hold a card's grip handle first, then drag it up or down the list. A drag on its own will not pick the card up. Tapping a card jumps straight to it, and the check button saves your order when it looks right.",
          "wrap_title": "Nicely Done",
          "wrap_body": "That is your character sheet, top to bottom. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "mobileNav": {
+         "welcome_title": "Finding Your Way Around",
+         "welcome_body": "A quick look at where everything lives: the three places you work, your tools, and your settings. Nothing you have is changed along the way.",
+         "navControl_title": "The Navigation Bar",
+         "navControl_body": "The bar along the bottom is how you move around. It holds the three places you work, plus your toolbelt, and it stays with you wherever you go.",
+         "navControl_title_fab": "The Navigation Button",
+         "navControl_body_fab": "This floating button is how you move around. Tapping it opens a ring holding the three places you work, plus your settings, and it stays with you wherever you go.",
+         "openRing_title": "Open the Ring",
+         "openRing_body": "Give it a tap. Your destinations fan out around it.",
+         "sheetDest_title": "The Sheet",
+         "sheetDest_body": "The Sheet is your character: trackers on one half, cards on the other. With no character loaded there is nothing to open, so it greys out until you make or load one.",
+         "drawerDest_title": "The Drawer",
+         "drawerDest_body": "The Drawer is your library. Every character, card and tracker you save goes in here, in folders you arrange yourself. Tap it to have a look.",
+         "drawerLanding_title": "Here Is the Drawer",
+         "drawerLanding_body": "Your library, in full. Search it, sort it into folders, and pull pieces onto your sheet from here. The Drawer lesson walks through all of that properly.",
+         "drawerLanding_body_fab": "Your library, in full. Notice the ring closed itself on the way in: picking a destination puts it away, so it is never sitting on top of the page you asked for. The Drawer lesson walks through the rest of this properly.",
+         "reopenRing_title": "Bringing It Back",
+         "reopenRing_body": "The button never leaves. Tap it again to open the ring and pick somewhere new.",
+         "menuDest_title": "The Menu",
+         "menuDest_body": "The Menu is home. It is where a character begins, and where you land whenever none is loaded. Tap it to head back.",
+         "menuContent_title": "The Main Menu",
+         "menuContent_body": "Back home. Pick your game system here, then create a character or import one from a file. Either one replaces the character you have loaded, so you are always warned first, with the chance to save it to the Drawer.",
+         "toolbeltLocator_title": "Your Tools",
+         "toolbeltLocator_body": "The wrench holds your workspace tools: Edit mode, the dice, and everything you can add. It lights up on your sheet, where those tools have something to work on. The Character Sheet lesson covers using them.",
+         "toolbeltLocator_body_fab": "Your sheet has a second floating button, the wrench, sitting just above the navigation one. It holds your workspace tools: Edit mode, the dice, and everything you can add. The Character Sheet lesson covers using them.",
+         "reopenRing2_title": "One More Stop",
+         "reopenRing2_body": "Tap the button once more.",
+         "settingsEntry_title": "Settings",
+         "settingsEntry_body": "Settings sits right at the top of the Menu. Tap it to open the hub.",
+         "settingsEntry_body_fab": "Settings has its own place in the ring, so it is one tap away from anywhere. Tap it to open the hub.",
+         "settingsContent_title": "What Is In Here",
+         "settingsContent_body": "And this is the hub, holding everything that is not the three places you work. General, Appearance and Data for setting things up, then What's new and About. Learn is where these lessons live, so you can replay any of them whenever you like.",
+         "wrap_title": "That Is the Layout",
+         "wrap_body": "Sheet, Drawer and Menu are the three places you work, your tools ride along with them, and Settings holds the rest. You can replay this lesson any time from the Learn section in your Settings."
       },
       "board": {
          "welcome_title": "The Board",

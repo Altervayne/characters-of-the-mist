@@ -105,6 +105,13 @@ export interface TutorialStep {
    /** Runs when leaving this step toward the PREVIOUS step. */
    onBack?: TutorialAction | TutorialAction[];
    advance: TutorialAdvance;
+   /** Overrides applied when the FAB nav shell is active: it exposes different controls than the bottom bar,
+    *  so a beat may swap the anchor, copy, or the state its arrival establishes. Absent = the beat is identical
+    *  in both shells. */
+   fabMode?: Partial<Pick<TutorialStep, 'anchorKey' | 'titleKey' | 'bodyKey' | 'placement' | 'onArrive' | 'gestureCue' | 'interaction'>>;
+   /** Restricts the beat to one mobile shell. Absent = it runs in both. The FAB's ring is a control the
+    *  bottom bar simply does not have, so the beats that work it exist only there. */
+   shell?: 'fab' | 'navbar';
    /** Overlay hit-testing. Gated steps require `anchor-only` so the real anchor is clickable. */
    interaction?: 'blocked' | 'anchor-only';
    /**
