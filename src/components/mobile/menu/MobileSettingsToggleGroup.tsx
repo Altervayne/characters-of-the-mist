@@ -23,6 +23,8 @@ interface MobileSettingsToggleGroupProps {
 	label: string;
 	/** The mutually-exclusive options, rendered side by side in an even grid. */
 	options: MobileSettingsToggleOption[];
+	/** Optional `data-tutorial` anchor for the group root, so a tutorial can spotlight the whole toggle. */
+	dataTutorial?: string;
 }
 
 /** One grid column per option, kept as static classes so Tailwind emits them. */
@@ -37,9 +39,9 @@ const GRID_COLS: Record<number, string> = { 2: 'grid-cols-2', 3: 'grid-cols-3' }
  * node, so each caller controls its own icon sizing/transform (e.g. the handedness
  * group's mirrored, margin-less hand) without this component needing to know about it.
  */
-export function MobileSettingsToggleGroup({ label, options }: MobileSettingsToggleGroupProps) {
+export function MobileSettingsToggleGroup({ label, options, dataTutorial }: MobileSettingsToggleGroupProps) {
 	return (
-		<div className="space-y-2">
+		<div className="space-y-2" data-tutorial={dataTutorial}>
 			<Label className="text-sm font-semibold">{label}</Label>
 			<div className={`grid ${GRID_COLS[options.length] ?? 'grid-cols-2'} gap-3`}>
 				{options.map((option, index) => (

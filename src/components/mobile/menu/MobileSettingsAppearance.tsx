@@ -30,6 +30,7 @@ export default function MobileSettingsAppearance({ onBack, onOpenEditor }: Mobil
 		<MobileSettingsSubScreen title={t('SettingsShell.sections.appearance')} onBack={onBack}>
 			{/* Mode: keyed on the chosen mode so a `system` pick lights `system`, not its resolved light/dark. */}
 			<MobileSettingsToggleGroup
+				dataTutorial="appearance-mode"
 				label={t('SettingsDialog.appearance')}
 				options={[
 					{

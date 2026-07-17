@@ -187,13 +187,13 @@ export function MobileThemeList({ onOpenEditor }: MobileThemeListProps) {
    };
 
    const newButton = (
-      <Button className="w-full h-12 justify-start text-base" onClick={createNewTheme}>
+      <Button data-tutorial="themes-edit" className="w-full h-12 justify-start text-base" onClick={createNewTheme}>
          <Plus className="mr-3 h-5 w-5 shrink-0" />
          <span>{t('SettingsDialog.themes.newTheme')}</span>
       </Button>
    );
    const importButton = (
-      <Button variant="outline" className="w-full h-12 justify-start text-base" onClick={() => importInputRef.current?.click()}>
+      <Button data-tutorial="themes-import" variant="outline" className="w-full h-12 justify-start text-base" onClick={() => importInputRef.current?.click()}>
          <Download className="mr-3 h-5 w-5 shrink-0" />
          <span>{t('SettingsDialog.themes.importTheme')}</span>
       </Button>
@@ -204,8 +204,8 @@ export function MobileThemeList({ onOpenEditor }: MobileThemeListProps) {
          {/* Reset banner, shown only while a custom theme is active. */}
          {isCustomActive && <EscapeHatchBanner onReset={() => setTheme('theme-neutral')} />}
 
-         {/* Presets */}
-         <div className="space-y-2">
+         {/* Presets - the tutorial's theme-list anchor: the rows a first pick applies from, kept on screen for the gate. */}
+         <div data-tutorial="themes-list" className="space-y-2">
             <Label className="text-sm font-semibold">{t('SettingsDialog.themes.presetsHeading')}</Label>
             <div className="space-y-2">{presetEntries.map(renderRow)}</div>
          </div>
