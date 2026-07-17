@@ -12,7 +12,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // -- Type Imports --
-import type { ToolbeltAction } from '@/lib/types/toolbelt';
+import type { ToolbeltAction, ToolbeltGroup } from '@/lib/types/toolbelt';
 
 
 
@@ -39,6 +39,10 @@ interface ToolbeltBottomSheetProps {
  * this component owns only the toolbelt-specific chrome and tile layout. The
  * `data-tutorial="toolbelt"` anchor is preserved for the mobile tour.
  *
+ * The tiles are split into labelled sections by their `group` (Item · Edit · Add ·
+ * Workspace). A section renders only when it has tiles, and a lone tile is folded
+ * into a neighbour so no header ever sits over a single tile.
+ *
  * @param isOpen - Whether the sheet is shown.
  * @param onOpenChange - Called with `false` to close (backdrop tap, close button, or after running an action).
  * @param itemActions - Context-specific actions for the selected card/tracker (may be empty).
@@ -51,7 +55,37 @@ export default function ToolbeltBottomSheet({
 	globalActions,
 }: ToolbeltBottomSheetProps) {
 	const { t } = useTranslation();
-	const hasItemActions = itemActions.length > 0;
+
+	// Ordered, labelled groups. Item leads (when the context supplies it), then the
+	// edit/add/workspace groups follow in a stable order.
+	const groupOrder: { group: ToolbeltGroup; label: string }[] = [
+		{ group: 'item', label: t('Toolbelt.itemSection') },
+		{ group: 'edit', label: t('Toolbelt.editSection') },
+		{ group: 'add', label: t('Toolbelt.addSection') },
+		{ group: 'workspace', label: t('Toolbelt.workspaceSection') },
+	];
+
+	const allActions = [...itemActions, ...globalActions];
+	const populated = groupOrder
+		.map(({ group, label }) => ({ label, actions: allActions.filter((a) => a.group === group) }))
+		.filter((section) => section.actions.length > 0);
+
+	// Fold any lone tile into a neighbour so a header never sits over a single tile
+	// (e.g. a one-tile Add folds back under Edit). Absorbs backwards where possible.
+	const sections: { label: string; actions: ToolbeltAction[] }[] = [];
+	for (const section of populated) {
+		const prev = sections[sections.length - 1];
+		if (section.actions.length === 1 && prev) {
+			prev.actions = [...prev.actions, ...section.actions];
+		} else {
+			sections.push({ label: section.label, actions: [...section.actions] });
+		}
+	}
+	// A lone leading tile has no previous section to absorb it; fold it forward instead.
+	if (sections.length > 1 && sections[0].actions.length === 1) {
+		sections[1].actions = [...sections[0].actions, ...sections[1].actions];
+		sections.shift();
+	}
 
 	const renderTile = (action: ToolbeltAction) => {
 		const Icon = action.icon;
@@ -90,32 +124,21 @@ export default function ToolbeltBottomSheet({
 				</Button>
 			</div>
 
-			{/* Action tiles */}
+			{/* Action tiles, one labelled section per populated group */}
 			<div
 				data-tutorial="toolbelt"
 				className="max-h-[55vh] overflow-y-auto p-3 pb-safe space-y-4"
 			>
-				{/* Item Actions Section (only when the context supplies item actions) */}
-				{hasItemActions && (
-					<div>
+				{sections.map((section) => (
+					<div key={section.label}>
 						<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 pb-2">
-							{t('Toolbelt.itemSection')}
+							{section.label}
 						</h3>
 						<div className="grid grid-cols-3 gap-2">
-							{itemActions.map(renderTile)}
+							{section.actions.map(renderTile)}
 						</div>
 					</div>
-				)}
-
-				{/* Global Actions Section (globalActions is always non-empty) */}
-				<div>
-					<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 pb-2">
-						{t('Toolbelt.globalSection')}
-					</h3>
-					<div className="grid grid-cols-3 gap-2">
-						{globalActions.map(renderTile)}
-					</div>
-				</div>
+				))}
 			</div>
 		</MobileBottomSheet>
 	);

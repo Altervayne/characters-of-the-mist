@@ -21,7 +21,14 @@ import { cn } from '@/lib/utils';
 import { getFloatingBottom } from '@/lib/utils/mobileFloating';
 
 // -- Type Imports --
-import type { ToolbeltAction } from '@/lib/types/toolbelt';
+import type { ToolbeltAction, ToolbeltGroup } from '@/lib/types/toolbelt';
+
+
+
+// Grouping in the FAB ring is expressed by ORDER alone (no header rows, so the
+// index-based measurement math stays on a flat, uniform-height list): edit, then
+// add, then workspace, with the context (item) actions last where they've always sat.
+const GROUP_ORDER: Record<ToolbeltGroup, number> = { edit: 0, add: 1, workspace: 2, item: 3 };
 
 
 
@@ -48,7 +55,11 @@ export default function ToolbeltFAB({
 }: ToolbeltFABProps) {
 	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
 	const isLeft = mobileHandedness === 'left';
-	const allActions = [...globalActions, ...itemActions];
+	// Stable sort keeps each group's internal order; the list stays flat and uniform-height,
+	// so the center-snap / scale / padding math below is unaffected.
+	const allActions = [...globalActions, ...itemActions].sort(
+		(a, b) => GROUP_ORDER[a.group] - GROUP_ORDER[b.group]
+	);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [scrollY, setScrollY] = useState(0);
 	const rafRef = useRef<number | null>(null);

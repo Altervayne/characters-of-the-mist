@@ -3,12 +3,17 @@ import type { Card, StatusTracker, StoryTagTracker, StoryThemeTracker } from './
 
 export type ToolbeltMode = 'side-panel' | 'fab';
 
+export type ToolbeltGroup = 'item' | 'edit' | 'add' | 'workspace';
+
 export interface ToolbeltAction {
 	id: string;
 	label: string;
 	icon: LucideIcon;
 	onClick: () => void;
 	variant?: 'default' | 'destructive';
+	// Which labelled section the action belongs to. The bottom sheet renders one
+	// header per group; the FAB expresses grouping by order alone (no header rows).
+	group: ToolbeltGroup;
 	show: boolean;
 }
 

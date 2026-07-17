@@ -24,7 +24,10 @@ import {
    RectangleEllipsis,
    WalletCards,
    FolderInput,
-   Dices
+   Dices,
+   Upload,
+   RefreshCw,
+   LogOut
 } from 'lucide-react';
 
 // -- Other Library Imports --
@@ -32,14 +35,16 @@ import toast from 'react-hot-toast';
 import cuid from 'cuid';
 
 // -- Store Imports --
-import { useCharacterActions } from '@/lib/stores/characterStore';
+import { useCharacterActions, useCharacterStore } from '@/lib/stores/characterStore';
 import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useDrawerActions, useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 
 // -- Hook Imports --
 import useCharacterTemporalStore from '@/hooks/useCharacterTemporalStore';
+import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 
 // -- Utils Imports --
 import { exportToFile, exportCharacterSheet } from '@/lib/utils/export-import';
@@ -56,7 +61,7 @@ import type { CardViewMode, Card, Tracker } from '@/lib/types/character';
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void, onEditCard?: (card: Card) => void): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void, onEditCard?: (card: Card) => void, onImportUpdate?: () => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		loadCharacter,
@@ -81,6 +86,12 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 	const { initiateItemDrop, reloadCurrentFolder } = useDrawerActions();
 
+	// Workspace actions gate on a loaded character; read it reactively so the group appears/hides in step.
+	const character = useCharacterStore((state) => state.character);
+	// Save As (a fresh drawer copy) and Unload reuse the shared desktop paths, so mobile can't drift from them.
+	const { saveCharacterAsToDrawer } = useSaveToDrawer();
+	const { mobileReturnToMenu } = useTabManagerActions();
+
 	const { undo, redo, pastStates, futureStates } = useCharacterTemporalStore(
 		(state) => state,
 	);
@@ -91,6 +102,12 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		const itemActions: ToolbeltAction[] = [];
 		const globalActions: ToolbeltAction[] = [];
 
+		// Every context action belongs to the Item group; stamp it here so the pushes stay terse.
+		const pushItem = (action: Omit<ToolbeltAction, 'group'>) => {
+			const stamped: ToolbeltAction = { ...action, group: 'item' };
+			itemActions.push(stamped);
+		};
+
 		// ==================
 		//  Undo/Redo (always visible, grayed when disabled)
 		// ==================
@@ -99,6 +116,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: t('Toolbelt.undo'),
 			icon: Undo2,
 			onClick: () => canUndo && undo(),
+			group: 'edit',
 			show: true
 		});
 
@@ -107,6 +125,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: t('Toolbelt.redo'),
 			icon: Redo2,
 			onClick: () => canRedo && redo(),
+			group: 'edit',
 			show: true
 		});
 
@@ -118,6 +137,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: isEditing ? (t('Toolbelt.playMode')) : (t('Toolbelt.editMode')),
 			icon: EditIcon,
 			onClick: () => toggleIsEditing(),
+			group: 'edit',
 			show: true
 		});
 
@@ -129,16 +149,18 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			label: t('Toolbelt.dice'),
 			icon: Dices,
 			onClick: () => setDiceTrayOpen(true),
+			group: 'edit',
 			show: true
 		});
 
 		// ==================
-		//  Save Character actions
+		//  Workspace actions (all require a loaded character)
 		// ==================
 		globalActions.push({
 			id: 'save-character',
 			label: t('Toolbelt.saveCharacter'),
 			icon: Save,
+			group: 'workspace',
 			onClick: () => {
 				const character = getActiveCharacterStore()?.getState().character;
 				if (!character) return;
@@ -186,21 +208,55 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					saveAsNewDrawerItem();
 				}
 			},
-			show: true
+			show: !!character
 		});
 
+		// Save As: a NEW drawer copy (desktop semantics), not an export to file.
 		globalActions.push({
 			id: 'save-character-as',
 			label: t('Toolbelt.saveCharacterAs'),
 			icon: SaveAll,
+			group: 'workspace',
+			onClick: () => { void saveCharacterAsToDrawer(); },
+			show: !!character
+		});
+
+		// Export: write the sheet to a `.cotm` file (the old Save-As behavior).
+		globalActions.push({
+			id: 'export-character',
+			label: t('Toolbelt.exportCharacter'),
+			icon: Upload,
+			group: 'workspace',
 			onClick: () => {
-				const character = getActiveCharacterStore()?.getState().character;
-				if (character) {
-					exportCharacterSheet(character);
+				const activeCharacter = getActiveCharacterStore()?.getState().character;
+				if (activeCharacter) {
+					exportCharacterSheet(activeCharacter);
 					toast.success(t('Notifications.character.exported'));
 				}
 			},
-			show: true
+			show: !!character
+		});
+
+		// Update from file: replace the current character in place (keeps id + drawer link). Destructive,
+		// so the caller owns the confirm gate; disabled when no picker is wired.
+		globalActions.push({
+			id: 'update-character',
+			label: t('Toolbelt.updateCharacter'),
+			icon: RefreshCw,
+			group: 'workspace',
+			onClick: () => onImportUpdate?.(),
+			show: !!character && !!onImportUpdate
+		});
+
+		// Unload: leave the character and return to the menu (keeps the working row).
+		globalActions.push({
+			id: 'unload-character',
+			label: t('Toolbelt.unloadCharacter'),
+			icon: LogOut,
+			variant: 'destructive',
+			group: 'workspace',
+			onClick: () => mobileReturnToMenu(),
+			show: !!character
 		});
 
 		// ==================
@@ -215,6 +271,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					label: t('Toolbelt.reorderCards'),
 					icon: ArrowUpDown,
 					onClick: onEnterCardReorderMode,
+					group: 'add',
 					show: true
 				});
 			}
@@ -223,6 +280,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				id: 'add-card',
 				label: t('Toolbelt.addCard'),
 				icon: PlusCircle,
+				group: 'add',
 				onClick: () => {
 					if (onOpenAddCard) {
 						onOpenAddCard();
@@ -241,6 +299,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				label: t('Toolbelt.addStatus'),
 				icon: CreditCard,
 				onClick: () => addStatus(),
+				group: 'add',
 				show: true
 			});
 
@@ -249,6 +308,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				label: t('Toolbelt.addStoryTag'),
 				icon: RectangleEllipsis,
 				onClick: () => addStoryTag(),
+				group: 'add',
 				show: true
 			});
 
@@ -257,6 +317,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				label: t('Toolbelt.addStoryTheme'),
 				icon: WalletCards,
 				onClick: () => addStoryTheme(),
+				group: 'add',
 				show: true
 			});
 		}
@@ -279,7 +340,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 			// Delete action - NOT allowed for CHARACTER_CARD
 			if (card.cardType !== 'CHARACTER_CARD') {
-				itemActions.push({
+				pushItem({
 					id: 'delete-card',
 					label: t('Toolbelt.delete'),
 					icon: Trash2,
@@ -290,7 +351,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			}
 
 			// Flip card action
-			itemActions.push({
+			pushItem({
 				id: 'flip-card',
 				label: t('Toolbelt.flipCard'),
 				icon: FlipVertical,
@@ -305,7 +366,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				? (t('Toolbelt.sideBySideMode'))
 				: (t('Toolbelt.flipMode'));
 
-			itemActions.push({
+			pushItem({
 				id: 'toggle-view-mode',
 				label: viewModeLabel,
 				icon: SplitSquareVertical,
@@ -314,7 +375,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			});
 
 			// Export action
-			itemActions.push({
+			pushItem({
 				id: 'export-card',
 				label: t('Toolbelt.export'),
 				icon: Download,
@@ -330,7 +391,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			});
 
 			// Save to Drawer action
-			itemActions.push({
+			pushItem({
 				id: 'save-card-to-drawer',
 				label: t('Toolbelt.saveToDrawer'),
 				icon: FolderInput,
@@ -340,7 +401,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 			// Edit themebook/type action
 			if (card.cardType === 'CHARACTER_THEME') {
-				itemActions.push({
+				pushItem({
 					id: 'edit-themebook',
 					label: t('Toolbelt.editThemebook'),
 					icon: Edit3,
@@ -370,7 +431,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			// Status tracker actions
 			if (tracker.trackerType === 'STATUS') {
 				// Delete first
-				itemActions.push({
+				pushItem({
 					id: 'delete-status',
 					label: t('Toolbelt.delete'),
 					icon: Trash2,
@@ -380,7 +441,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				});
 
 				// Export last
-				itemActions.push({
+				pushItem({
 					id: 'export-status',
 					label: t('Toolbelt.export'),
 					icon: Download,
@@ -395,7 +456,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					show: true
 				});
 
-				itemActions.push({
+				pushItem({
 					id: 'save-status-to-drawer',
 					label: t('Toolbelt.saveToDrawer'),
 					icon: FolderInput,
@@ -407,7 +468,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			// Story tag tracker actions
 			if (tracker.trackerType === 'STORY_TAG') {
 				// Delete first
-				itemActions.push({
+				pushItem({
 					id: 'delete-story-tag',
 					label: t('Toolbelt.delete'),
 					icon: Trash2,
@@ -418,7 +479,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 
 				// Toggle positive/negative
 				const isWeakness = tracker.isWeakness ?? false;
-				itemActions.push({
+				pushItem({
 					id: 'toggle-story-tag-type',
 					label: isWeakness
 						? (t('Toolbelt.makePositive'))
@@ -429,7 +490,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				});
 
 				// Upgrade to theme
-				itemActions.push({
+				pushItem({
 					id: 'upgrade-to-theme',
 					label: t('Toolbelt.upgradeToTheme'),
 					icon: TrendingUp,
@@ -438,7 +499,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				});
 
 				// Export last
-				itemActions.push({
+				pushItem({
 					id: 'export-story-tag',
 					label: t('Toolbelt.export'),
 					icon: Download,
@@ -453,7 +514,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					show: true
 				});
 
-				itemActions.push({
+				pushItem({
 					id: 'save-story-tag-to-drawer',
 					label: t('Toolbelt.saveToDrawer'),
 					icon: FolderInput,
@@ -465,7 +526,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			// Story theme tracker actions
 			if (tracker.trackerType === 'STORY_THEME') {
 				// Delete first
-				itemActions.push({
+				pushItem({
 					id: 'delete-story-theme',
 					label: t('Toolbelt.delete'),
 					icon: Trash2,
@@ -475,7 +536,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				});
 
 				// Downgrade to tag
-				itemActions.push({
+				pushItem({
 					id: 'downgrade-to-tag',
 					label: t('Toolbelt.downgradeToTag'),
 					icon: TrendingDown,
@@ -484,7 +545,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				});
 
 				// Export last
-				itemActions.push({
+				pushItem({
 					id: 'export-story-theme',
 					label: t('Toolbelt.export'),
 					icon: Download,
@@ -499,7 +560,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 					show: true
 				});
 
-				itemActions.push({
+				pushItem({
 					id: 'save-story-theme-to-drawer',
 					label: t('Toolbelt.saveToDrawer'),
 					icon: FolderInput,
@@ -546,9 +607,13 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		initiateItemDrop,
 		reloadCurrentFolder,
 		setDrawerOpen,
+		character,
+		saveCharacterAsToDrawer,
+		mobileReturnToMenu,
 		onEnterCardReorderMode,
 		onOpenAddCard,
 		onSaveToDrawer,
 		onEditCard,
+		onImportUpdate,
 	]);
 }
