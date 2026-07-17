@@ -12,7 +12,6 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconButton } from '@/components/ui/icon-button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // -- Component Imports --
@@ -21,7 +20,7 @@ import { EscapeHatchBanner } from '@/components/mobile/menu/EscapeHatchBanner';
 import { ThemeSwatch } from '@/components/molecules/theme/ThemeSwatch';
 
 // -- Icon Imports --
-import { ChevronLeft, Check, MoreHorizontal, Palette, Copy, Plus, Pencil, Trash2, Upload, Download } from 'lucide-react';
+import { Check, MoreHorizontal, Palette, Copy, Plus, Pencil, Trash2, Upload, Download } from 'lucide-react';
 
 // -- Utils and Store Imports --
 import { cn } from '@/lib/utils';
@@ -36,10 +35,9 @@ import type { CustomTheme, PaperSet, TokenSet } from '@/lib/theme/themeTokens';
 import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
 
 /*
- * The mobile Themes screen: select any theme (presets + customs), import a theme file, and manage
- * customs (rename / delete / export). Built for touch - a color-preview per row, always-visible action
- * menus, no hover. Reuses the desktop theme actions; the editor (new/duplicate/edit) is desktop-only for
- * now, so this screen only selects and imports fully-formed themes.
+ * The mobile theme list: select any theme (presets + customs), import a theme file, create a new one, and
+ * manage customs (edit / rename / delete / export). Built for touch - a color-preview per row, always-visible
+ * action menus, no hover. Edit / New / Duplicate open the theme editor through `onOpenEditor`.
  */
 
 /** A selectable theme entry: its active value, label, and the palettes its preview/duplicate draw from. */
@@ -50,12 +48,12 @@ interface ThemeEntry {
    source: { light: TokenSet; dark: TokenSet; radius: string; paper: PaperSet };
 }
 
-interface MobileThemesProps {
-   onBack?: () => void;
+interface MobileThemeListProps {
+   /** Enter the theme editor (an editable custom is selected/created first). */
    onOpenEditor?: () => void;
 }
 
-export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps) {
+export function MobileThemeList({ onOpenEditor }: MobileThemeListProps) {
    const { t } = useTranslation();
    const { resolvedMode } = useThemeMode();
    const activeTheme = useAppSettingsStore((state) => state.theme);
@@ -202,49 +200,32 @@ export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps
    );
 
    return (
-      <div className="h-full flex flex-col overflow-y-auto pt-safe">
-         <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-               {onBack && (
-                  <IconButton variant="ghost" size="lg" onClick={onBack} className="h-10 w-10 p-0">
-                     <ChevronLeft className="h-8 w-8" />
-                  </IconButton>
-               )}
-               <h2 className="flex-1 text-2xl font-bold">{t('SettingsDialog.themes.windowTitle')}</h2>
-            </div>
+      <>
+         {/* Reset banner, shown only while a custom theme is active. */}
+         {isCustomActive && <EscapeHatchBanner onReset={() => setTheme('theme-neutral')} />}
+
+         {/* Presets */}
+         <div className="space-y-2">
+            <Label className="text-sm font-semibold">{t('SettingsDialog.themes.presetsHeading')}</Label>
+            <div className="space-y-2">{presetEntries.map(renderRow)}</div>
          </div>
 
-         {/* Reset banner, shown only while a custom theme is active. */}
-         {isCustomActive && (
-            <div className="px-6 pb-2">
-               <EscapeHatchBanner onReset={() => setTheme('theme-neutral')} />
-            </div>
-         )}
-
-         <div className="flex-1 px-6 pb-6 space-y-6">
-            {/* Presets */}
-            <div className="space-y-2">
-               <Label className="text-sm font-semibold">{t('SettingsDialog.themes.presetsHeading')}</Label>
-               <div className="space-y-2">{presetEntries.map(renderRow)}</div>
-            </div>
-
-            {/* Customs */}
-            <div className="space-y-2">
-               <Label className="text-sm font-semibold">{t('SettingsDialog.themes.customsHeading')}</Label>
-               {customEntries.length > 0 ? (
-                  <>
-                     <div className="space-y-2">{customEntries.map(renderRow)}</div>
-                     {newButton}
-                     {importButton}
-                  </>
-               ) : (
-                  <div className="space-y-2">
-                     <p className="text-sm text-muted-foreground">{t('SettingsDialog.themes.noCustomsMobile')}</p>
-                     {newButton}
-                     {importButton}
-                  </div>
-               )}
-            </div>
+         {/* Customs */}
+         <div className="space-y-2">
+            <Label className="text-sm font-semibold">{t('SettingsDialog.themes.customsHeading')}</Label>
+            {customEntries.length > 0 ? (
+               <>
+                  <div className="space-y-2">{customEntries.map(renderRow)}</div>
+                  {newButton}
+                  {importButton}
+               </>
+            ) : (
+               <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">{t('SettingsDialog.themes.noCustomsMobile')}</p>
+                  {newButton}
+                  {importButton}
+               </div>
+            )}
          </div>
 
          {/* Rename: a bottom-sheet prompt with an autofocused input. */}
@@ -297,6 +278,6 @@ export default function MobileThemes({ onBack, onOpenEditor }: MobileThemesProps
          <form ref={importFormRef} className="hidden">
             <input type="file" ref={importInputRef} onChange={handleImportFileSelected} accept=".cotm,application/json" />
          </form>
-      </div>
+      </>
    );
 }

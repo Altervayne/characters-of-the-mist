@@ -14,7 +14,6 @@ export type MobileTabId =
    | 'settingsAppearance'
    | 'settingsData'
    | 'settingsLearn'
-   | 'themes'
    | 'themeEditor'
    | 'about'
    | 'patchNotes'

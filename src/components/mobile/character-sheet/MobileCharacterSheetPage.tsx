@@ -14,7 +14,6 @@ import MobileSettingsGeneral from '@/components/mobile/menu/MobileSettingsGenera
 import MobileSettingsAppearance from '@/components/mobile/menu/MobileSettingsAppearance';
 import MobileSettingsData from '@/components/mobile/menu/MobileSettingsData';
 import MobileSettingsLearn from '@/components/mobile/menu/MobileSettingsLearn';
-import MobileThemes from '@/components/mobile/menu/MobileThemes';
 import MobileThemeEditor from '@/components/mobile/menu/MobileThemeEditor';
 import MobileAbout from '@/components/mobile/menu/MobileAbout';
 import MobilePatchNotes from '@/components/mobile/menu/MobilePatchNotes';
@@ -44,7 +43,7 @@ type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
 // The full-screen chrome tabs (settings drill-down, themes, about, add-card): the bottom navigation hides while
 // any of these is open so it never sits over a pushed sub-screen.
-const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themes', 'themeEditor', 'about', 'patchNotes', 'addCard']);
+const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themeEditor', 'about', 'patchNotes', 'addCard']);
 
 // The landing tab when the app opens, or history resets with nothing pushed: the
 // sheet when a character is loaded (or still loading at boot), otherwise the Menu -
@@ -358,7 +357,7 @@ export default function MobileCharacterSheetPage() {
 					<MobileSettingsGeneral onBack={() => navigateToTab('settings')} />
 				)}
 				{activeTab === 'settingsAppearance' && (
-					<MobileSettingsAppearance onBack={() => navigateToTab('settings')} onOpenThemes={() => navigateToTab('themes')} />
+					<MobileSettingsAppearance onBack={() => navigateToTab('settings')} onOpenEditor={() => navigateToTab('themeEditor')} />
 				)}
 				{activeTab === 'settingsData' && (
 					<MobileSettingsData onBack={() => navigateToTab('settings')} />
@@ -371,11 +370,8 @@ export default function MobileCharacterSheetPage() {
 						onBack={() => navigateToTab('settings')}
 					/>
 				)}
-				{activeTab === 'themes' && (
-					<MobileThemes onBack={() => navigateToTab('settingsAppearance')} onOpenEditor={() => navigateToTab('themeEditor')} />
-				)}
 				{activeTab === 'themeEditor' && (
-					<MobileThemeEditor onBack={() => navigateToTab('themes')} />
+					<MobileThemeEditor onBack={() => navigateToTab('settingsAppearance')} />
 				)}
 				{activeTab === 'about' && (
 					<MobileAbout onBack={() => navigateToTab('settings')} />

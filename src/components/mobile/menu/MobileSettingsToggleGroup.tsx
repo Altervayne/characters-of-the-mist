@@ -21,25 +21,27 @@ interface MobileSettingsToggleOption {
 interface MobileSettingsToggleGroupProps {
 	/** The group's heading label. */
 	label: string;
-	/** Exactly the two mutually-exclusive options, rendered side by side. */
-	options: [MobileSettingsToggleOption, MobileSettingsToggleOption];
+	/** The mutually-exclusive options, rendered side by side in an even grid. */
+	options: MobileSettingsToggleOption[];
 }
 
+/** One grid column per option, kept as static classes so Tailwind emits them. */
+const GRID_COLS: Record<number, string> = { 2: 'grid-cols-2', 3: 'grid-cols-3' };
+
 /**
- * A labelled two-option toggle row used across the mobile settings screen
- * (appearance, card view, tracker editing, mobile UI mode, handedness). Renders
- * the heading and two side-by-side buttons; the selected option uses the filled
- * `default` variant and the other the `outline` variant. Purely presentational -
- * it holds no store state and resolves nothing itself. The icon is passed in as a
- * ready-rendered node, so each caller controls its own icon sizing/transform
- * (e.g. the handedness group's mirrored, margin-less hand) without this component
- * needing to know about it.
+ * A labelled toggle row used across the mobile settings screen (appearance mode,
+ * card view, tracker editing, mobile UI mode, handedness). Renders the heading and
+ * an even grid of buttons; the selected option uses the filled `default` variant
+ * and the others the `outline` variant. Purely presentational - it holds no store
+ * state and resolves nothing itself. The icon is passed in as a ready-rendered
+ * node, so each caller controls its own icon sizing/transform (e.g. the handedness
+ * group's mirrored, margin-less hand) without this component needing to know about it.
  */
 export function MobileSettingsToggleGroup({ label, options }: MobileSettingsToggleGroupProps) {
 	return (
 		<div className="space-y-2">
 			<Label className="text-sm font-semibold">{label}</Label>
-			<div className="grid grid-cols-2 gap-3">
+			<div className={`grid ${GRID_COLS[options.length] ?? 'grid-cols-2'} gap-3`}>
 				{options.map((option, index) => (
 					<Button
 						key={index}

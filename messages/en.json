@@ -954,12 +954,11 @@
       "themes": {
          "manage": "Manage themes",
          "editThemes": "Edit themes",
-         "windowTitle": "Themes",
          "windowDescription": "Select, duplicate, rename, or delete your themes. Presets can be duplicated into a custom theme.",
          "presetsHeading": "Presets",
          "customsHeading": "Your themes",
          "noCustoms": "No custom themes yet. Duplicate a preset to start one.",
-         "noCustomsMobile": "No custom themes yet. Import one, or create one on desktop.",
+         "noCustomsMobile": "No custom themes yet. Create or import one to get started.",
          "actionsMenu": "Theme actions",
          "reorder": "Drag to reorder",
          "export": "Export",
