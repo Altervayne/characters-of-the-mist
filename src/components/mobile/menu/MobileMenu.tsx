@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { Settings, Info, FileUp, Save, FileText, LogOut, FolderUp, SaveAll } from 'lucide-react';
+import { Settings, Info, FileUp, Save, FileText, LogOut, SaveAll } from 'lucide-react';
 
 // -- Component Imports --
 import { MobileMenuItemButton } from '@/components/mobile/menu/MobileMenuItemButton';
@@ -13,14 +13,13 @@ import { MobileMenuItemButton } from '@/components/mobile/menu/MobileMenuItemBut
 // -- Store Imports --
 import { useCharacterStore } from '@/lib/stores/characterStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
-import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/config';
-import { exportDrawer, exportCharacterSheet } from '@/lib/utils/export-import';
+import { exportCharacterSheet } from '@/lib/utils/export-import';
 
 
 
@@ -83,12 +82,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 			destructive: false,
 		},
 		{
-			id: 'exportDrawer',
-			label: t('Drawer.Actions.exportFull'),
-			icon: FolderUp,
-			destructive: false,
-		},
-		{
 			id: 'unload',
 			label: t('MobileMenu.unload'),
 			icon: LogOut,
@@ -125,17 +118,6 @@ export default function MobileMenu({ onOpenSettings, onOpenAbout, onOpenPatchNot
 					exportCharacterSheet(character);
 					toast.success(t('Notifications.character.exported'));
 				}
-				break;
-			case 'exportDrawer':
-				void (async () => {
-					try {
-						const drawer = await exportEntireDrawerAsNestedTree();
-						exportDrawer(drawer);
-						toast.success(t('Notifications.drawer.exported'));
-					} catch {
-						toast.error(t('Notifications.drawer.actionFailed'));
-					}
-				})();
 				break;
 			case 'unload':
 				mobileReturnToMenu();

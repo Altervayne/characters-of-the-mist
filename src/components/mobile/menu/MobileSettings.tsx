@@ -1,490 +1,126 @@
 // -- React Imports --
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-// -- Hook Imports --
-import { useThemeMode } from '@/hooks/useThemeMode';
-
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
-
-// -- Basic UI Imports --
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // -- Icon Imports --
 import {
-	Sun,
-	Moon,
-	BookOpen,
-	FlipHorizontal,
-	AlertTriangle,
-	Trash2,
-	OctagonMinus,
-	DatabaseBackup,
-	PlayCircle,
-	Lock,
-	UnlockIcon,
-	ChevronRight,
 	ChevronLeft,
-	RotateCcw,
-   Hand,
-   SquareMenu,
-   PanelsRightBottom,
-   Eye,
-   EyeOff,
-   Lightbulb,
-   Palette,
-   GraduationCap,
-   Check,
-   Play
+	ChevronRight,
+	SlidersHorizontal,
+	Palette,
+	Database,
+	GraduationCap,
+	Sparkles,
+	Info,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-// -- Component Imports --
-import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
-import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyDrawerBackupDialog';
-import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/LegacyCharacterBackupDialog';
-import { MobileSettingsConfirmationDialog } from '@/components/mobile/menu/MobileSettingsConfirmationDialog';
-import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettingsToggleGroup';
+// -- Basic UI Imports --
+import { IconButton } from '@/components/ui/icon-button';
 
 // -- Store and Hook Imports --
-import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { clearAllCharacterData } from '@/lib/character/characterRepository';
-import { clearAllAssets } from '@/lib/assets/assetRepository';
-import { clearAllBoards } from '@/lib/board/boardRepository';
-import { clearAllNotes } from '@/lib/notes/noteRepository';
-import { clearWorkspace } from '@/lib/character/workspaceSession';
-import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
-import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
-import { getLegacyBlobRemovalState } from '@/lib/drawer/runDrawerMigration';
-import { getCharacterLegacyBlobRemovalState } from '@/lib/character/runCharacterMigration';
-import { useLegacyBlobRemovable } from '@/hooks/useLegacyBlobRemovable';
+import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
 
 // -- Utils Imports --
-import { IconButton } from '@/components/ui/icon-button';
-import { PRESET_LABELS, customThemeClass, customThemeIdFromClass } from '@/lib/theme/themeTokens';
-import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
-
-const locales = [
-	{ code: 'en', name: 'English' },
-	{ code: 'fr', name: 'Français' },
-	{ code: 'de', name: 'Deutsch' },
-];
+import { APP_VERSION } from '@/lib/config';
 
 interface MobileSettingsProps {
-	onStartTour?: () => void;
-	onRestartOnboarding?: () => void;
-	onStartTutorial?: (id: string) => void;
-	onOpenThemes?: () => void;
+	onOpenGeneral: () => void;
+	onOpenAppearance: () => void;
+	onOpenData: () => void;
+	onOpenLearn: () => void;
+	onOpenWhatsNew: () => void;
+	onOpenAbout: () => void;
 	onBack?: () => void;
 }
 
-export default function MobileSettings({ onStartTour, onRestartOnboarding, onStartTutorial, onOpenThemes, onBack }: MobileSettingsProps) {
-	const { t, i18n } = useTranslation();
-	const locale = i18n.language?.split('-')[0] || 'en';
+interface SettingsCategory {
+	id: string;
+	labelKey: string;
+	icon: LucideIcon;
+	onOpen: () => void;
+	showDot?: boolean;
+}
 
-	const { resolvedMode, setMode } = useThemeMode();
+/**
+ * The mobile settings hub: a category list that mirrors the desktop taxonomy, grouped into Configure and
+ * Help & info. Each row pushes a sub-screen; the What's-new row carries the New! dot until it's opened.
+ */
+export default function MobileSettings({ onOpenGeneral, onOpenAppearance, onOpenData, onOpenLearn, onOpenWhatsNew, onOpenAbout, onBack }: MobileSettingsProps) {
+	const { t } = useTranslation();
+	const hasUnreadPatchNotes = useHasUnreadPatchNotes();
 
-	const { theme: colorTheme, customThemes, isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled, completedTutorials } = useAppSettingsStore();
-
-	// The mobile tutorials, empty until the real content is authored (dev scenarios are desktop-only, so this
-	// stays empty in dev too); when empty the whole group renders nothing, no orphan header.
-	const tutorials = onStartTutorial ? getTutorialsForPlatform('mobile') : [];
-	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
-
-	// The active theme's display name: a preset label, or the custom's own name.
-	const activeThemeName = customThemeIdFromClass(colorTheme)
-		? (customThemes.find((theme) => customThemeClass(theme.id) === colorTheme)?.name ?? colorTheme)
-		: (PRESET_LABELS[colorTheme] ?? colorTheme);
-
-	const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
-	const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
-	const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
-	const [isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen] = useState(false);
-	const [isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen] = useState(false);
-	const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable(getLegacyBlobRemovalState);
-	const { removable: legacyCharacterRemovable, refresh: refreshLegacyCharacterRemovable } = useLegacyBlobRemovable(getCharacterLegacyBlobRemovalState);
-
-	const handleAppReset = async () => {
-		await clearAllCharacterData();
-		await clearAllAssets();
-		await clearAllBoards();
-		await clearAllNotes();
-		clearWorkspace();
-		await clearAllDrawerData();
-		drawerCommandEngine.clear();
-		useAppSettingsStore.persist.clearStorage();
-		setTimeout(() => window.location.reload(), 500);
-		toast.success(t('Notifications.general.appReset'));
-	};
-
-	const handleDeleteDrawer = async () => {
-		await clearAllDrawerData();
-		drawerCommandEngine.clear();
-		setTimeout(() => window.location.reload(), 500);
-		toast.success(t('Notifications.drawer.deleted'));
-	};
-
-	const handleLocaleChange = (newLocale: string) => {
-		i18n.changeLanguage(newLocale);
-	};
-
-	// Re-arm the one-time gesture tips: turn them back on and clear the
-	// "already seen" flags so each hint shows again the next time its surface
-	// (trackers / drawer) is opened. For users who dismissed or missed them.
-	const handleReplayGestureTips = () => {
-		setGestureHintsEnabled(true);
-		setHasSeenTrackerSelectHint(false);
-		setHasSeenDrawerMenuHint(false);
-		toast.success(t('Notifications.general.gestureTipsReset'));
-	};
+	const groups: { labelKey: string; categories: SettingsCategory[] }[] = [
+		{
+			labelKey: 'SettingsShell.groups.configure',
+			categories: [
+				{ id: 'general', labelKey: 'SettingsShell.sections.general', icon: SlidersHorizontal, onOpen: onOpenGeneral },
+				{ id: 'appearance', labelKey: 'SettingsShell.sections.appearance', icon: Palette, onOpen: onOpenAppearance },
+				{ id: 'data', labelKey: 'SettingsShell.sections.data', icon: Database, onOpen: onOpenData },
+			],
+		},
+		{
+			labelKey: 'SettingsShell.groups.help',
+			categories: [
+				{ id: 'learn', labelKey: 'SettingsShell.sections.learn', icon: GraduationCap, onOpen: onOpenLearn },
+				{ id: 'whatsNew', labelKey: 'SettingsShell.sections.whatsNew', icon: Sparkles, onOpen: onOpenWhatsNew, showDot: hasUnreadPatchNotes },
+				{ id: 'about', labelKey: 'SettingsShell.sections.about', icon: Info, onOpen: onOpenAbout },
+			],
+		},
+	];
 
 	return (
-		<>
-			<div className="h-full flex flex-col overflow-y-auto pt-safe">
-				<div className="p-6">
-					<div className="flex items-center gap-3 mb-4">
-						{onBack && (
-							<IconButton
-								variant="ghost"
-								size="lg"
-								onClick={onBack}
-								className="h-10 w-10 p-0"
-							>
-								<ChevronLeft className="h-8 w-8" />
-							</IconButton>
-						)}
-						<div className="flex-1">
-							<h2 className="text-2xl font-bold">{t('SettingsDialog.title')}</h2>
-						</div>
-					</div>
-					<p className="text-sm text-muted-foreground">
-						{t('SettingsDialog.description')}
-					</p>
-				</div>
-
-				<div className="flex-1 px-6 pb-6 space-y-6">
-					{/* Language */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.language')}</Label>
-						<Select value={locale} onValueChange={handleLocaleChange}>
-							<SelectTrigger className="h-12 text-base">
-								<SelectValue placeholder={t('SettingsDialog.selectLanguagePlaceholder')} />
-							</SelectTrigger>
-							<SelectContent>
-								{locales.map((loc) => (
-									<SelectItem key={loc.code} value={loc.code} className="text-base py-3">
-										{loc.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					{/* Theme: opens the dedicated Themes screen (select presets/customs, import, manage). */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.themes.windowTitle')}</Label>
-						<Button
-							onClick={onOpenThemes}
-							variant="default"
-							className="w-full h-12 text-base justify-start"
+		<div className="h-full flex flex-col overflow-y-auto pt-safe">
+			<div className="p-6">
+				<div className="flex items-center gap-3 mb-4">
+					{onBack && (
+						<IconButton
+							variant="ghost"
+							size="lg"
+							onClick={onBack}
+							className="h-10 w-10 p-0"
 						>
-							<Palette className="mr-3 h-5 w-5 shrink-0" />
-							<span className="flex-1 text-left truncate">{activeThemeName}</span>
-							<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-						</Button>
-					</div>
-
-					{/* Appearance (Light/Dark) */}
-					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.appearance')}
-						options={[
-							{
-								icon: <Sun className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.light'),
-								isActive: resolvedMode === 'light',
-								onSelect: () => setMode('light'),
-							},
-							{
-								icon: <Moon className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.dark'),
-								isActive: resolvedMode === 'dark',
-								onSelect: () => setMode('dark'),
-							},
-						]}
-					/>
-
-					{/* Card View Mode */}
-					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.cardView.title')}
-						options={[
-							{
-								icon: <FlipHorizontal className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.cardView.flipping'),
-								isActive: !isSideBySideView,
-								onSelect: () => setSideBySideView(false),
-							},
-							{
-								icon: <BookOpen className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.cardView.sideBySide'),
-								isActive: isSideBySideView,
-								onSelect: () => setSideBySideView(true),
-							},
-						]}
-					/>
-
-					{/* Tracker Editing Mode */}
-					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.trackerEdit.title')}
-						options={[
-							{
-								icon: <UnlockIcon className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.trackerEdit.unlocked'),
-								isActive: !isTrackersAlwaysEditable,
-								onSelect: () => setTrackersAlwaysEditable(false),
-							},
-							{
-								icon: <Lock className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.trackerEdit.locked'),
-								isActive: isTrackersAlwaysEditable,
-								onSelect: () => setTrackersAlwaysEditable(true),
-							},
-						]}
-					/>
-
-					{/* Mobile UI Mode */}
-					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.mobileFABMode.title')}
-						options={[
-							{
-								icon: <PanelsRightBottom className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.mobileFABMode.bottomTabs'),
-								isActive: !isMobileFABMode,
-								onSelect: () => setMobileFABMode(false),
-							},
-							{
-								icon: <SquareMenu className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.mobileFABMode.fab'),
-								isActive: isMobileFABMode,
-								onSelect: () => setMobileFABMode(true),
-							},
-						]}
-					/>
-
-					{/* Mobile Handedness */}
-					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.mobileHandedness.title')}
-						options={[
-							{
-								icon: <Hand className="w-8 h-8 -scale-x-100" />,
-								label: t('SettingsDialog.mobileHandedness.left'),
-								isActive: mobileHandedness === 'left',
-								onSelect: () => setMobileHandedness('left'),
-							},
-							{
-								icon: <Hand className="w-8 h-8" />,
-								label: t('SettingsDialog.mobileHandedness.right'),
-								isActive: mobileHandedness === 'right',
-								onSelect: () => setMobileHandedness('right'),
-							},
-						]}
-					/>
-
-					{/* Gesture Tips */}
-					<MobileSettingsToggleGroup
-						label={t('SettingsDialog.gestureHints.title')}
-						options={[
-							{
-								icon: <Eye className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.gestureHints.shown'),
-								isActive: areGestureHintsEnabled,
-								onSelect: () => setGestureHintsEnabled(true),
-							},
-							{
-								icon: <EyeOff className="mr-2 h-5 w-5 shrink-0" />,
-								label: t('SettingsDialog.gestureHints.hidden'),
-								isActive: !areGestureHintsEnabled,
-								onSelect: () => setGestureHintsEnabled(false),
-							},
-						]}
-					/>
-
-					{/* Replay gesture tips (re-arm the one-time hints) */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.gestureHints.replayLabel')}</Label>
-						<Button
-							onClick={handleReplayGestureTips}
-							variant="default"
-							className="w-full h-12 text-base justify-start"
-						>
-							<Lightbulb className="mr-3 h-5 w-5 shrink-0" />
-							<span className="flex-1 text-left">{t('SettingsDialog.gestureHints.replayButton')}</span>
-							<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-						</Button>
-					</div>
-
-					{/* Migration */}
-					<div className="space-y-2">
-						<Label className="text-sm font-semibold">{t('SettingsDialog.migration.label')}</Label>
-						<Button
-							onClick={() => setIsMigrationDialogOpen(true)}
-							variant="default"
-							className="w-full h-12 text-base justify-start"
-						>
-							<DatabaseBackup className="mr-3 h-5 w-5 shrink-0" />
-							<span className="flex-1 text-left">{t('SettingsDialog.migration.button')}</span>
-							<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-						</Button>
-					</div>
-
-					{/* Tutorials (re-explorable lessons; distinct from replaying onboarding or the gesture tips) */}
-					{tutorials.length > 0 && (
-						<div className="space-y-2 pb-safe">
-							<Label className="text-sm font-semibold">{t('TutorialsDialog.listLabel')}</Label>
-							{tutorials.map((definition) => {
-								const Glyph = definition.icon ?? GraduationCap;
-								const done = completedTutorials.includes(definition.id);
-								return (
-									<Button
-										key={definition.id}
-										onClick={() => onStartTutorial?.(definition.id)}
-										variant="outline"
-										className="w-full min-h-12 text-base justify-start"
-									>
-										<Glyph className="mr-3 h-5 w-5 shrink-0" />
-										<span className="flex-1 text-left truncate">{t(definition.titleKey)}</span>
-										{done
-											? <Check className="h-5 w-5 shrink-0 text-primary" aria-label={t('TutorialsDialog.status.done')} />
-											: <Play className="h-5 w-5 shrink-0 text-muted-foreground" aria-label={t('TutorialsDialog.action.start')} />}
-									</Button>
-								);
-							})}
-						</div>
+							<ChevronLeft className="h-8 w-8" />
+						</IconButton>
 					)}
-
-					{/* Tutorial */}
-					{onStartTour && (
-						<div className="space-y-2">
-							<Label className="text-sm font-semibold">{t('SettingsDialog.tutorial')}</Label>
-							<Button
-								onClick={onStartTour}
-								variant="default"
-								className="w-full h-12 text-base justify-start"
-							>
-								<PlayCircle className="mr-3 h-5 w-5 shrink-0" />
-								<span className="flex-1 text-left">{t('SettingsDialog.tutorialButton')}</span>
-								<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-							</Button>
-						</div>
-					)}
-
-					{/* Restart Onboarding */}
-					{onRestartOnboarding && (
-						<div className="space-y-2">
-							<Label className="text-sm font-semibold">{t('SettingsDialog.onboarding')}</Label>
-							<Button
-								onClick={onRestartOnboarding}
-								variant="default"
-								className="w-full h-12 text-base justify-start"
-							>
-								<RotateCcw className="mr-3 h-5 w-5 shrink-0" />
-								<span className="flex-1 text-left">{t('SettingsDialog.onboardingButton')}</span>
-								<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-							</Button>
-						</div>
-					)}
-
-					{/* Danger Zone */}
-					<div className="space-y-3 rounded-lg border-2 border-destructive bg-destructive/5 p-4 mt-8">
-						<div className="flex items-start gap-3">
-							<AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
-							<div>
-								<h3 className="font-semibold text-base">{t('SettingsDialog.dangerZone.title')}</h3>
-								<p className="text-sm text-muted-foreground mt-1">{t('SettingsDialog.dangerZone.description')}</p>
-							</div>
-						</div>
-
-						<div className="space-y-2 mt-4">
-							<Button
-								variant="destructive"
-								className="w-full h-12 text-base justify-start"
-								onClick={() => setIsDeleteDrawerDialogOpen(true)}
-							>
-								<Trash2 className="mr-3 h-5 w-5 shrink-0" />
-								<span>{t('SettingsDialog.dangerZone.deleteDrawerButton')}</span>
-							</Button>
-							<Button
-								variant="destructive"
-								className="w-full h-12 text-base justify-start"
-								onClick={() => setIsResetAppDialogOpen(true)}
-							>
-								<OctagonMinus className="mr-3 h-5 w-5 shrink-0" />
-								<span>{t('SettingsDialog.dangerZone.resetButton')}</span>
-							</Button>
-							{/* Legacy backup cleanup - shown only when the migration is
-							    verified and the blob is still present; removal is gated on a
-							    backup export + explicit confirm inside the dialog. */}
-							{legacyBlobRemovable && (
-								<Button
-									variant="outline"
-									className="w-full h-12 text-base justify-start"
-									onClick={() => setIsLegacyBackupDialogOpen(true)}
-								>
-									<span className="truncate">{t('SettingsDialog.legacyBackup.actionLabel')}</span>
-								</Button>
-							)}
-							{legacyCharacterRemovable && (
-								<Button
-									variant="outline"
-									className="w-full h-12 text-base justify-start"
-									onClick={() => setIsLegacyCharacterBackupDialogOpen(true)}
-								>
-									<span className="truncate">{t('SettingsDialog.legacyCharacterBackup.actionLabel')}</span>
-								</Button>
-							)}
-						</div>
+					<div className="flex-1">
+						<h2 className="text-2xl font-bold">{t('SettingsShell.title')}</h2>
 					</div>
 				</div>
+				<p className="text-sm text-muted-foreground">
+					{t('SettingsDialog.description')}
+				</p>
 			</div>
 
-			{/* Dialogs */}
-			<MigrationDialog
-				isOpen={isMigrationDialogOpen}
-				onOpenChange={setIsMigrationDialogOpen}
-			/>
+			<div className="flex-1 px-6 pb-6 space-y-6 pb-safe">
+				{groups.map((group) => (
+					<div key={group.labelKey} className="space-y-1">
+						<div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+							{t(group.labelKey)}
+						</div>
+						{group.categories.map((category) => {
+							const Icon = category.icon;
+							return (
+								<button
+									key={category.id}
+									onClick={category.onOpen}
+									className="w-full min-h-12 flex items-center gap-3 px-3 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+								>
+									<Icon className="size-5 shrink-0" />
+									<span className="flex-1 text-left truncate text-foreground">{t(category.labelKey)}</span>
+									{category.showDot && <span className="ml-auto size-2 shrink-0 rounded-full bg-primary" aria-hidden />}
+									<ChevronRight className="size-5 shrink-0" />
+								</button>
+							);
+						})}
+					</div>
+				))}
 
-			<MobileSettingsConfirmationDialog
-				open={isDeleteDrawerDialogOpen}
-				onOpenChange={setIsDeleteDrawerDialogOpen}
-				onConfirm={handleDeleteDrawer}
-				title={t('SettingsDialog.dangerZone.deleteDrawerDialog.title')}
-				description={t('SettingsDialog.dangerZone.deleteDrawerDialog.description')}
-				confirmationText="DELETE DRAWER"
-				confirmButtonText={t('SettingsDialog.dangerZone.deleteDrawerDialog.confirm')}
-			/>
-
-			<MobileSettingsConfirmationDialog
-				open={isResetAppDialogOpen}
-				onOpenChange={setIsResetAppDialogOpen}
-				onConfirm={handleAppReset}
-				title={t('SettingsDialog.dangerZone.resetDialog.title')}
-				description={t('SettingsDialog.dangerZone.resetDialog.description')}
-				confirmationText="DELETE ALL MY APP DATA"
-				confirmButtonText={t('SettingsDialog.dangerZone.resetDialog.confirm')}
-			/>
-
-			<LegacyDrawerBackupDialog
-				isOpen={isLegacyBackupDialogOpen}
-				onOpenChange={setIsLegacyBackupDialogOpen}
-				onRemoved={refreshLegacyBlobRemovable}
-			/>
-
-			<LegacyCharacterBackupDialog
-				isOpen={isLegacyCharacterBackupDialogOpen}
-				onOpenChange={setIsLegacyCharacterBackupDialogOpen}
-				onRemoved={refreshLegacyCharacterRemovable}
-			/>
-		</>
+				{/* Version footer */}
+				<div className="text-xs text-center text-muted-foreground pt-4">
+					<p>Characters of the Mist</p>
+					<p>Version {APP_VERSION || '1.0.0'}</p>
+				</div>
+			</div>
+		</div>
 	);
 }

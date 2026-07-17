@@ -1,9 +1,6 @@
 // -- React Imports --
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
 
 // -- Basic UI Imports --
 import { Button } from '@/components/ui/button';
@@ -20,18 +17,7 @@ import { LegacyDrawerBackupDialog } from '@/components/organisms/dialogs/LegacyD
 import { LegacyCharacterBackupDialog } from '@/components/organisms/dialogs/LegacyCharacterBackupDialog';
 
 // -- Store and Hook Imports --
-import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
-import { clearAllCharacterData } from '@/lib/character/characterRepository';
-import { clearAllAssets } from '@/lib/assets/assetRepository';
-import { clearAllBoards } from '@/lib/board/boardRepository';
-import { clearAllNotes } from '@/lib/notes/noteRepository';
-import { runSweep, estimateStorageUsage } from '@/lib/assets/assetGarbageCollector';
-import { clearWorkspace } from '@/lib/character/workspaceSession';
-import { clearAllDrawerData } from '@/lib/drawer/drawerRepository';
-import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
-import { getLegacyBlobRemovalState } from '@/lib/drawer/runDrawerMigration';
-import { getCharacterLegacyBlobRemovalState } from '@/lib/character/runCharacterMigration';
-import { useLegacyBlobRemovable } from '@/hooks/useLegacyBlobRemovable';
+import { useDataSettingsActions } from '@/hooks/useDataSettingsActions';
 
 
 
@@ -107,68 +93,17 @@ function ConfirmationDialog({ open, onOpenChange, onConfirm, title, description,
 export function DataSettingsPane() {
    const { t } = useTranslation();
 
-   const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
-   const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
-   const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
-   const [isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen] = useState(false);
-   const [isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen] = useState(false);
-   const { removable: legacyBlobRemovable, refresh: refreshLegacyBlobRemovable } = useLegacyBlobRemovable(getLegacyBlobRemovalState);
-   const { removable: legacyCharacterRemovable, refresh: refreshLegacyCharacterRemovable } = useLegacyBlobRemovable(getCharacterLegacyBlobRemovalState);
-
-   const handleAppReset = async () => {
-      await clearAllCharacterData();
-      await clearAllAssets();
-      await clearAllBoards();
-      await clearAllNotes();
-      clearWorkspace();
-      await clearAllDrawerData();
-      drawerCommandEngine.clear();
-      useAppSettingsStore.persist.clearStorage();
-      setTimeout(() => window.location.reload(), 500);
-      toast.success(t('Notifications.general.appReset'));
-   };
-
-   const handleDeleteDrawer = async () => {
-      await clearAllDrawerData();
-      drawerCommandEngine.clear();
-      setTimeout(() => window.location.reload(), 500);
-      toast.success(t('Notifications.drawer.deleted'));
-   }
-
-   // ==================
-   //  Storage usage + reclaim (asset GC)
-   // ==================
-   // `null` means the estimate API is unavailable; the readout shows "unavailable".
-   const [storageUsageBytes, setStorageUsageBytes] = useState<number | null>(null);
-   const [isReclaiming, setIsReclaiming] = useState(false);
-
-   // Refresh the usage readout when the pane mounts (i.e. when this section is first opened).
-   useEffect(() => {
-      let active = true;
-      void estimateStorageUsage().then((usage) => {
-         if (active) setStorageUsageBytes(usage);
-      });
-      return () => { active = false; };
-   }, []);
-
-   const formatMegabytes = (bytes: number): string => (bytes / (1024 * 1024)).toFixed(1);
-
-   const handleReclaimImageSpace = async () => {
-      setIsReclaiming(true);
-      try {
-         const { deleted, reclaimedBytes } = await runSweep('manual');
-         setStorageUsageBytes(await estimateStorageUsage());
-         if (deleted > 0) {
-            toast.success(t('SettingsDialog.storage.reclaimed', { count: deleted, mb: formatMegabytes(reclaimedBytes) }));
-         } else {
-            toast(t('SettingsDialog.storage.nothing'));
-         }
-      } catch {
-         toast.error(t('SettingsDialog.storage.failed'));
-      } finally {
-         setIsReclaiming(false);
-      }
-   };
+   const {
+      isResetAppDialogOpen, setIsResetAppDialogOpen,
+      isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen,
+      handleAppReset, handleDeleteDrawer,
+      isMigrationDialogOpen, setIsMigrationDialogOpen,
+      isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen,
+      isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen,
+      legacyBlobRemovable, refreshLegacyBlobRemovable,
+      legacyCharacterRemovable, refreshLegacyCharacterRemovable,
+      storageUsageBytes, isReclaiming, formatMegabytes, handleReclaimImageSpace,
+   } = useDataSettingsActions();
 
    return (
       <>

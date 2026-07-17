@@ -11,6 +11,10 @@ import MobileBottomTabs from '@/components/mobile/menu/MobileBottomTabs';
 import MobileFAB from '@/components/mobile/menu/MobileFAB';
 import MobileMenu from '@/components/mobile/menu/MobileMenu';
 import MobileSettings from '@/components/mobile/menu/MobileSettings';
+import MobileSettingsGeneral from '@/components/mobile/menu/MobileSettingsGeneral';
+import MobileSettingsAppearance from '@/components/mobile/menu/MobileSettingsAppearance';
+import MobileSettingsData from '@/components/mobile/menu/MobileSettingsData';
+import MobileSettingsLearn from '@/components/mobile/menu/MobileSettingsLearn';
 import MobileThemes from '@/components/mobile/menu/MobileThemes';
 import MobileThemeEditor from '@/components/mobile/menu/MobileThemeEditor';
 import MobileAbout from '@/components/mobile/menu/MobileAbout';
@@ -35,9 +39,13 @@ import type { CreateCardOptions } from '@/lib/types/creation';
 import type { Card, Character } from '@/lib/types/character';
 import type { DrawerItem } from '@/lib/types/drawer';
 
-type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'themes' | 'themeEditor' | 'about' | 'patchNotes' | 'addCard';
+type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'settingsGeneral' | 'settingsAppearance' | 'settingsData' | 'settingsLearn' | 'themes' | 'themeEditor' | 'about' | 'patchNotes' | 'addCard';
 type SheetTab = 'trackers' | 'cards';
 type NavigationTabId = 'sheet' | 'drawer' | 'menu';
+
+// The full-screen chrome tabs (settings drill-down, themes, about, add-card): the bottom navigation hides while
+// any of these is open so it never sits over a pushed sub-screen.
+const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themes', 'themeEditor', 'about', 'patchNotes', 'addCard']);
 
 interface HistoryState {
 	tab: TabId;
@@ -293,24 +301,43 @@ export default function MobileCharacterSheetPage() {
 				)}
 				{activeTab === 'settings' && (
 					<MobileSettings
-						onStartTour={handleStartTour}
-						onRestartOnboarding={handleRestartOnboarding}
-						onStartTutorial={handleStartTutorial}
-						onOpenThemes={() => navigateToTab('themes')}
+						onOpenGeneral={() => navigateToTab('settingsGeneral')}
+						onOpenAppearance={() => navigateToTab('settingsAppearance')}
+						onOpenData={() => navigateToTab('settingsData')}
+						onOpenLearn={() => navigateToTab('settingsLearn')}
+						onOpenWhatsNew={() => navigateToTab('patchNotes')}
+						onOpenAbout={() => navigateToTab('about')}
 						onBack={() => navigateToTab('menu')}
 					/>
 				)}
+				{activeTab === 'settingsGeneral' && (
+					<MobileSettingsGeneral onBack={() => navigateToTab('settings')} />
+				)}
+				{activeTab === 'settingsAppearance' && (
+					<MobileSettingsAppearance onBack={() => navigateToTab('settings')} onOpenThemes={() => navigateToTab('themes')} />
+				)}
+				{activeTab === 'settingsData' && (
+					<MobileSettingsData onBack={() => navigateToTab('settings')} />
+				)}
+				{activeTab === 'settingsLearn' && (
+					<MobileSettingsLearn
+						onStartTour={handleStartTour}
+						onRestartOnboarding={handleRestartOnboarding}
+						onStartTutorial={handleStartTutorial}
+						onBack={() => navigateToTab('settings')}
+					/>
+				)}
 				{activeTab === 'themes' && (
-					<MobileThemes onBack={() => navigateToTab('settings')} onOpenEditor={() => navigateToTab('themeEditor')} />
+					<MobileThemes onBack={() => navigateToTab('settingsAppearance')} onOpenEditor={() => navigateToTab('themeEditor')} />
 				)}
 				{activeTab === 'themeEditor' && (
 					<MobileThemeEditor onBack={() => navigateToTab('themes')} />
 				)}
 				{activeTab === 'about' && (
-					<MobileAbout onBack={() => navigateToTab('menu')} />
+					<MobileAbout onBack={() => navigateToTab('settings')} />
 				)}
 				{activeTab === 'patchNotes' && (
-					<MobilePatchNotes onBack={() => navigateToTab('menu')} />
+					<MobilePatchNotes onBack={() => navigateToTab('settings')} />
 				)}
 				{activeTab === 'addCard' && character && (
 					<MobileAddCard
@@ -323,8 +350,8 @@ export default function MobileCharacterSheetPage() {
 				)}
 			</div>
 
-			{/* Navigation - Hidden when reordering cards or in settings/themes/themeEditor/about/patchNotes/addCard */}
-			{!isReorderingCards && activeTab !== 'settings' && activeTab !== 'themes' && activeTab !== 'themeEditor' && activeTab !== 'about' && activeTab !== 'patchNotes' && activeTab !== 'addCard' && (
+			{/* Navigation - Hidden when reordering cards or while a full-screen chrome tab is open. */}
+			{!isReorderingCards && !CHROME_TABS.has(activeTab) && (
 				!isMobileFABMode ? (
 					<MobileBottomTabs
 						activeTab={activeTab as NavigationTabId}
