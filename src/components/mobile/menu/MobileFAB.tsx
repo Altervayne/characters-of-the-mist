@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IconButton } from '@/components/ui/icon-button';
 
 // -- Icon Imports --
-import { Menu, X, FolderOpen, Home, Settings } from 'lucide-react';
+import { Menu, X, FolderOpen, Home, Settings, LayoutGrid } from 'lucide-react';
 
 // -- Store Imports --
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
@@ -26,6 +26,7 @@ interface MobileFABProps {
 	onTabChange: (tab: TabId) => void;
 	onOpenDrawer: () => void;
 	onOpenMenu: () => void;
+	onOpenSettings: () => void;
 	sheetActiveTab?: SheetTab;
 	isToolbeltOpen?: boolean;
 	isExpanded?: boolean;
@@ -37,6 +38,7 @@ export default function MobileFAB({
 	onTabChange,
 	onOpenDrawer,
 	onOpenMenu,
+	onOpenSettings,
 	sheetActiveTab,
 	isToolbeltOpen,
 	isExpanded: controlledIsExpanded,
@@ -95,13 +97,25 @@ export default function MobileFAB({
 		{
 			id: 'menu',
 			label: t('MobileFAB.menu'),
-			icon: Settings,
+			icon: LayoutGrid,
 			onClick: () => {
 				onOpenMenu();
 				toggleExpanded();
 			},
 			show: true,
 			active: activeTab === 'menu',
+		},
+		{
+			id: 'settings',
+			label: t('MobileFAB.settings'),
+			icon: Settings,
+			onClick: () => {
+				onOpenSettings();
+				toggleExpanded();
+			},
+			show: true,
+			// Settings is app chrome, never a resting nav tab, so its pill never reads as active.
+			active: false,
 		},
 	].filter(action => action.show);
 

@@ -298,20 +298,48 @@ describe('desktop deactivate (Return to Menu, keep tabs)', () => {
 });
 
 describe('mobile single-live lifecycle', () => {
-   it('keeps exactly one live character instance across opens/creates, never pruning openTabs', () => {
+   it('mobileOpenCharacter keeps exactly one live character instance across opens, never pruning openTabs', () => {
       const actions = useTabManagerStore.getState().actions;
 
       actions.mobileOpenCharacter(makeCharacter('A'));
       expect(getCharacterInstanceIds()).toEqual(['A']);
 
-      actions.mobileCreateCharacter('LEGENDS');
-      const created = useTabManagerStore.getState().activeTabId!;
-      // A's instance is gone, only the new one is live; A stays in openTabs.
-      expect(getCharacterInstanceIds()).toEqual([created]);
-      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toContain('A');
-      expect(useTabManagerStore.getState().openTabs.length).toBe(2);
+      actions.mobileOpenCharacter(makeCharacter('B'));
+      // A's instance is gone, only B is live; both stay in openTabs (shared desktop set).
+      expect(getCharacterInstanceIds()).toEqual(['B']);
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual(['A', 'B']);
+   });
 
+   it('mobileReplaceWithNewCharacter discards the outgoing live character and prunes its tab', () => {
+      const actions = useTabManagerStore.getState().actions;
+
+      actions.mobileOpenCharacter(makeCharacter('A'));
+      expect(getCharacterInstanceIds()).toEqual(['A']);
+
+      actions.mobileReplaceWithNewCharacter('LEGENDS');
+      const created = useTabManagerStore.getState().activeTabId!;
+      // TRUE overwrite: A's instance is gone AND its tab is pruned (not the old keep-and-orphan).
+      expect(getCharacterInstanceIds()).toEqual([created]);
+      const ids = useTabManagerStore.getState().openTabs.map((t) => t.id);
+      expect(ids).not.toContain('A');
+      expect(ids).toEqual([created]);
+
+      detachPersistenceHandle(created);
       disposeInstance(created); // cleanup the minted instance
+   });
+
+   it('mobileReplaceWithImportedCharacter discards the outgoing live character and loads the import', () => {
+      const actions = useTabManagerStore.getState().actions;
+
+      actions.mobileOpenCharacter(makeCharacter('A'));
+      actions.mobileReplaceWithImportedCharacter(makeCharacter('B'));
+
+      // The import replaces A: only B is live, A's tab is pruned, B is active.
+      expect(getCharacterInstanceIds()).toEqual(['B']);
+      expect(useTabManagerStore.getState().activeTabId).toBe('B');
+      const ids = useTabManagerStore.getState().openTabs.map((t) => t.id);
+      expect(ids).not.toContain('A');
+      expect(ids).toEqual(['B']);
    });
 
    it('mobileReturnToMenu disposes the live instance, nulls active, and keeps openTabs', () => {

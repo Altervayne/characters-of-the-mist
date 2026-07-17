@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import MobileCharacterSheet from '@/components/mobile/character-sheet/MobileCharacterSheet';
 import MobileBottomTabs from '@/components/mobile/menu/MobileBottomTabs';
 import MobileFAB from '@/components/mobile/menu/MobileFAB';
-import MobileMenu from '@/components/mobile/menu/MobileMenu';
 import MobileSettings from '@/components/mobile/menu/MobileSettings';
 import MobileSettingsGeneral from '@/components/mobile/menu/MobileSettingsGeneral';
 import MobileSettingsAppearance from '@/components/mobile/menu/MobileSettingsAppearance';
@@ -196,14 +195,6 @@ export default function MobileCharacterSheetPage() {
 		navigateToTab('settings');
 	};
 
-	const handleOpenAbout = () => {
-		navigateToTab('about');
-	};
-
-	const handleOpenPatchNotes = () => {
-		navigateToTab('patchNotes');
-	};
-
 	const handleOpenAddCard = () => {
 		setCardToEdit(null);
 		navigateToTab('addCard');
@@ -286,18 +277,14 @@ export default function MobileCharacterSheetPage() {
 							initialCardId={newlyCreatedCardId}
 						/>
 					) : (
-						<MobileMainMenu />
+						<MobileMainMenu onOpenSettings={handleOpenSettings} onCharacterOpened={() => navigateToTab('sheet')} />
 					)
 				)}
 				{activeTab === 'drawer' && (
 					<MobileDrawer onAddToCharacter={handleAddDrawerItemToCharacter} onLoadCharacter={handleLoadCharacterFromDrawer} />
 				)}
 				{activeTab === 'menu' && (
-					<MobileMenu
-						onOpenSettings={handleOpenSettings}
-						onOpenAbout={handleOpenAbout}
-						onOpenPatchNotes={handleOpenPatchNotes}
-					/>
+					<MobileMainMenu onOpenSettings={handleOpenSettings} onCharacterOpened={() => navigateToTab('sheet')} />
 				)}
 				{activeTab === 'settings' && (
 					<MobileSettings
@@ -366,6 +353,7 @@ export default function MobileCharacterSheetPage() {
 						onTabChange={navigateToTab}
 						onOpenDrawer={handleOpenDrawer}
 						onOpenMenu={handleOpenMenu}
+						onOpenSettings={handleOpenSettings}
 						sheetActiveTab={activeTab === 'sheet' ? sheetActiveTab : undefined}
 						isToolbeltOpen={isToolbeltOpen}
 						isExpanded={isMenuFABExpanded}

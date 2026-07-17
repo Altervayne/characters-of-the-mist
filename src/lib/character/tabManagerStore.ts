@@ -1,5 +1,6 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
+import cuid from 'cuid';
 
 // -- Utils Imports --
 import { harmonizeData } from '@/lib/harmonization';
@@ -149,8 +150,17 @@ interface TabManagerState {
       // -- Mobile (single live character instance) --
       /** Mobile open: disposes the current live character, loads `character`, adds it to `openTabs` if missing, activates. */
       mobileOpenCharacter: (character: Character, drawerItemId?: string) => void;
-      /** Mobile create: disposes the current live character, builds + appends a new one, activates. */
-      mobileCreateCharacter: (game: GameSystem) => void;
+      /**
+       * Mobile overwrite: DISCARDS the current live character (drop its handle without flushing,
+       * delete its working row, prune its tab), then builds + appends a new character of `game`.
+       * The forward-compat seam for a post-2.0 `openWorkspace`.
+       */
+      mobileReplaceWithNewCharacter: (game: GameSystem) => void;
+      /**
+       * Mobile overwrite with an imported sheet: DISCARDS the current live character (as
+       * {@link mobileReplaceWithNewCharacter}), then loads `character` as the new live sheet.
+       */
+      mobileReplaceWithImportedCharacter: (character: Character) => void;
       /** Mobile "Return to Menu": disposes the live character and shows the menu, keeping `openTabs`. */
       mobileReturnToMenu: () => void;
    };
@@ -288,6 +298,29 @@ function disposeLiveCharacterInstances(): void {
    for (const id of getCharacterInstanceIds()) {
       detachPersistenceHandle(id);
       disposeInstance(id);
+   }
+}
+
+/**
+ * Tears down every live character instance the DISCARD way (drop the handle without flushing,
+ * dispose, delete its working row) and prunes its tab from `openTabs`. The mobile overwrite
+ * teardown: the outgoing working copy is thrown away, never flushed - flushing would race the
+ * debounced save against the delete and could resurrect a just-deleted row. Contrast
+ * {@link disposeLiveCharacterInstances}, which flushes and leaves the tab in place.
+ */
+function discardLiveCharacterInstances(): void {
+   const liveIds = getCharacterInstanceIds();
+   for (const id of liveIds) {
+      discardPersistenceHandle(id);
+      disposeInstance(id);
+      void deleteCharacter(id).catch((error) => {
+         console.error('Failed to delete replaced character record:', error);
+      });
+   }
+   if (liveIds.length > 0) {
+      useTabManagerStore.setState((state) => ({
+         openTabs: state.openTabs.filter((tab) => !liveIds.includes(tab.id)),
+      }));
    }
 }
 
@@ -565,13 +598,29 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          if (drawerItemId) instance.getState().actions.setHasUnsavedChanges(false);
          appendAndActivate(character.id);
       },
-      mobileCreateCharacter: (game) => {
-         disposeLiveCharacterInstances();
+      mobileReplaceWithNewCharacter: (game) => {
+         // TRUE overwrite: discard the outgoing working copy (never flush), then build the new one.
+         discardLiveCharacterInstances();
          const character = buildNewCharacter(game);
          const instance = getOrCreateInstance(character.id);
          attachPersistenceHandle(character.id, instance);
          instance.getState().actions.loadCharacter(character);
          appendAndActivate(character.id);
+      },
+      mobileReplaceWithImportedCharacter: (character) => {
+         // If the import's id collides with the outgoing character we're deleting, re-id it so the
+         // async delete of the old row can't reap the freshly-loaded one (import-as-new is a fresh
+         // identity anyway). The common case (distinct ids) keeps the file's id untouched.
+         const incoming = getCharacterInstanceIds().includes(character.id)
+            ? { ...character, id: cuid() }
+            : character;
+         // TRUE overwrite with an imported sheet: discard the outgoing working copy, then load the
+         // import (no drawer link, so it starts dirty).
+         discardLiveCharacterInstances();
+         const instance = getOrCreateInstance(incoming.id);
+         attachPersistenceHandle(incoming.id, instance);
+         instance.getState().actions.loadCharacter(incoming);
+         appendAndActivate(incoming.id);
       },
       mobileReturnToMenu: () => {
          // Dispose the live character (don't surface a hidden neighbour), then show

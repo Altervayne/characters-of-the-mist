@@ -1,19 +1,33 @@
 // -- React Imports --
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 // -- Component Imports --
 import { Button } from '@/components/ui/button';
 import { MobileMainMenuGameCard } from '@/components/mobile/menu/MobileMainMenuGameCard';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // -- Icon Imports --
-import { Plus } from 'lucide-react';
+import { Plus, Import, Settings, ChevronRight } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { getFloatingContentPadding } from '@/lib/utils/mobileFloating';
+import { importFromFile } from '@/lib/utils/export-import';
+import { harmonizeData } from '@/lib/harmonization';
 
 // -- Constants --
 import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
@@ -22,23 +36,109 @@ import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
+import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 
 // -- Type Imports --
 import type { GameSystem } from '@/lib/types/drawer';
+import type { Character } from '@/lib/types/character';
 
-export default function MobileMainMenu() {
+interface MobileMainMenuProps {
+	/** Opens the Settings hub (the gear in navbar mode; the FAB owns its own Settings pill). */
+	onOpenSettings: () => void;
+	/** Called after a new/imported character becomes the live sheet, so the host can surface it. */
+	onCharacterOpened: () => void;
+}
+
+// A create/import request awaiting the overwrite confirm (or run straight through when nothing is loaded).
+type PendingAction =
+	| { kind: 'create'; game: GameSystem }
+	| { kind: 'import'; character: Character };
+
+export default function MobileMainMenu({ onOpenSettings, onCharacterOpened }: MobileMainMenuProps) {
 	const { t } = useTranslation();
 	const { contextualGame, isMobileFABMode } = useAppSettingsStore();
-	const { mobileCreateCharacter } = useTabManagerActions();
+	const { mobileReplaceWithNewCharacter, mobileReplaceWithImportedCharacter } = useTabManagerActions();
 	const { setContextualGame } = useAppSettingsActions();
+	const { saveCharacterToDrawer } = useSaveToDrawer();
+
+	// The overwrite confirm is owned here: `pending` holds the deferred action, `recoverable` picks the
+	// soft/firm variant, read from the LIVE outgoing character at request time (never captured at render).
+	const [pending, setPending] = useState<PendingAction | null>(null);
+	const [recoverable, setRecoverable] = useState(false);
+
+	// Run the create/import against the discard-and-replace seam, then hand off to the host to surface the sheet.
+	const runAction = (action: PendingAction) => {
+		if (action.kind === 'create') {
+			mobileReplaceWithNewCharacter(action.game);
+		} else {
+			mobileReplaceWithImportedCharacter(action.character);
+		}
+		onCharacterOpened();
+	};
+
+	// Gate an action behind the overwrite confirm when a character is loaded; run it straight through otherwise.
+	const requestAction = (action: PendingAction) => {
+		const state = getActiveCharacterStore()?.getState();
+		const outgoing = state?.character ?? null;
+		if (!outgoing) {
+			runAction(action);
+			return;
+		}
+		// Recoverable = the outgoing copy is safely in the Drawer and unchanged, so replacing it loses nothing.
+		setRecoverable(outgoing.drawerItemId != null && !state!.hasUnsavedChanges);
+		setPending(action);
+	};
 
 	const handleCreateCharacter = () => {
-		mobileCreateCharacter(contextualGame);
+		requestAction({ kind: 'create', game: contextualGame });
 	};
 
 	const handleGameSelect = (game: GameSystem) => {
 		setContextualGame(game);
 	};
+
+	// Import a `.cotm` AS a new character: same overwrite semantics as Create (routed through the same confirm).
+	const handleImportCharacter = () => {
+		const input = document.createElement('input');
+		input.type = 'file';
+		input.accept = '.cotm,application/json';
+		input.onchange = async () => {
+			const file = input.files?.[0];
+			if (!file) return;
+			try {
+				const importedData = await importFromFile(file);
+				if (importedData.fileType !== 'FULL_CHARACTER_SHEET') {
+					toast.error(t('Notifications.general.importFailed'));
+					return;
+				}
+				const character = harmonizeData(importedData.content, importedData.fileType) as Character;
+				requestAction({ kind: 'import', character });
+			} catch (error) {
+				console.error('Failed to import character file:', error);
+				toast.error(t('Notifications.general.importFailed'));
+			}
+		};
+		input.click();
+	};
+
+	// Confirm proceed: discard-and-replace now.
+	const handleConfirmProceed = () => {
+		if (pending) runAction(pending);
+		setPending(null);
+	};
+
+	// Save-and-continue: persist the outgoing copy to the Drawer first, THEN replace (not a dead-end).
+	const handleSaveThenProceed = async () => {
+		await saveCharacterToDrawer();
+		if (pending) runAction(pending);
+		setPending(null);
+	};
+
+	// The proceed button's verb follows the action kind and the recoverability variant.
+	const proceedLabel = pending?.kind === 'import'
+		? t(recoverable ? 'MainMenu.overwrite.importNew' : 'MainMenu.overwrite.importAnyway')
+		: t(recoverable ? 'MainMenu.overwrite.createNew' : 'MainMenu.overwrite.createAnyway');
 
 	// Icon/color/gradient come from the shared GAME_VISUALS, the same source the desktop menu uses,
 	// so every surface stays in sync (and Otherscape is the circuit board).
@@ -54,7 +154,22 @@ export default function MobileMainMenu() {
 	});
 
 	return (
-		<div className="h-full flex flex-col overflow-hidden pt-safe bg-gradient-to-b from-background via-background to-muted/10">
+		<div className="relative h-full flex flex-col overflow-hidden pt-safe bg-gradient-to-b from-background via-background to-muted/10" data-tutorial="menu-content">
+			{/* Settings: navbar mode only (the FAB carries its own Settings pill). A prominent, labelled
+			    full-width row pinned above the scrollable menu, so it reads as an obvious destination
+			    rather than a corner icon to hunt for. */}
+			{!isMobileFABMode && (
+				<button
+					type="button"
+					onClick={onOpenSettings}
+					className="flex w-full shrink-0 items-center gap-3 border-b border-border px-6 py-3 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+				>
+					<Settings className="h-5 w-5 shrink-0" />
+					<span className="flex-1 font-medium text-foreground">{t('MainMenu.settings')}</span>
+					<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+				</button>
+			)}
+
 			{/* Scroll region: the hero header scrolls together with the game list so
 			    short viewports get more room. `min-h-0` lets this flex child shrink
 			    and scroll internally instead of pushing the footer off-screen. */}
@@ -111,8 +226,8 @@ export default function MobileMainMenu() {
 			</div>
 			</div>
 
-			{/* Action Button - the primary CTA stays pinned below the scroll region so
-			    it is always reachable regardless of list length. */}
+			{/* Action Buttons - the primary CTA (plus Import) stays pinned below the scroll region so
+			    they are always reachable regardless of list length. */}
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -132,7 +247,41 @@ export default function MobileMainMenu() {
 					<Plus className="h-5 w-5" />
 					{t('MainMenu.createButton')}
 				</Button>
+				<Button
+					onClick={handleImportCharacter}
+					variant="outline"
+					size="lg"
+					className="w-full gap-2 h-12 text-base font-semibold"
+				>
+					<Import className="h-5 w-5" />
+					{t('MainMenu.importButton')}
+				</Button>
 			</motion.div>
+
+			{/* Overwrite confirm: soft when the outgoing character is safely in the Drawer, firm otherwise
+			    (with a save-and-continue path so it is never a dead-end). */}
+			<AlertDialog open={pending !== null} onOpenChange={(open) => { if (!open) setPending(null); }}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{t(recoverable ? 'MainMenu.overwrite.titleSoft' : 'MainMenu.overwrite.titleFirm')}</AlertDialogTitle>
+						<AlertDialogDescription>{t(recoverable ? 'MainMenu.overwrite.descriptionSoft' : 'MainMenu.overwrite.descriptionFirm')}</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						{!recoverable && (
+							<Button variant="secondary" className="cursor-pointer" onClick={() => void handleSaveThenProceed()}>
+								{t('MainMenu.overwrite.saveToDrawer')}
+							</Button>
+						)}
+						<AlertDialogCancel className="cursor-pointer">{t('MainMenu.overwrite.cancel')}</AlertDialogCancel>
+						<AlertDialogAction
+							className={cn('cursor-pointer', !recoverable && 'bg-destructive text-destructive-foreground hover:bg-destructive/90')}
+							onClick={handleConfirmProceed}
+						>
+							{proceedLabel}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

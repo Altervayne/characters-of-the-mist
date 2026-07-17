@@ -1297,8 +1297,22 @@
       "title": "Characters of the Mist",
       "subtitle": "Welcome to Characters of the Mist, please pick a game system, or load a character directly.",
       "createButton": "Create New Character",
+      "importButton": "Import Character from File",
+      "settings": "Settings",
       "openDrawerButton": "Open Drawer",
       "hint": "Pick a character sheet or a board above to get started",
+      "overwrite": {
+         "titleSoft": "Replace your current character?",
+         "titleFirm": "Discard your current character?",
+         "descriptionSoft": "Your current character is saved in your Drawer — you can reopen it anytime. Creating a new one replaces what's on screen.",
+         "descriptionFirm": "This character isn't saved to your Drawer, so creating a new one on mobile will discard it.",
+         "cancel": "Cancel",
+         "saveToDrawer": "Save to Drawer",
+         "createNew": "Create new",
+         "createAnyway": "Create anyway",
+         "importNew": "Import new",
+         "importAnyway": "Import anyway"
+      },
       "games": {
          "legends": {
             "title": "Legend in the Mist",
@@ -2202,6 +2216,7 @@
       "drawer": "Drawer",
       "sheet": "Sheet",
       "menu": "Menu",
+      "settings": "Settings",
       "open": "Open menu",
       "close": "Close"
    },

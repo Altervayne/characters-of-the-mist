@@ -1,5 +1,6 @@
 // -- React Imports --
 import { useRef, useState, useLayoutEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // -- Component Imports --
 import { IconButton } from '@/components/ui/icon-button';
@@ -25,10 +26,15 @@ import type { ToolbeltAction, ToolbeltGroup } from '@/lib/types/toolbelt';
 
 
 
-// Grouping in the FAB ring is expressed by ORDER alone (no header rows, so the
-// index-based measurement math stays on a flat, uniform-height list): edit, then
-// add, then workspace, with the context (item) actions last where they've always sat.
+// The ring is ordered edit → add → workspace → item (context actions last, where they've
+// always sat), and each group is headed by a title separator so a scanning thumb can find
+// its way. A separator is a FULL-HEIGHT row (one ITEM_HEIGHT slot, exactly like an action),
+// so the index-based measurement math below still runs on a uniform-height list; it is
+// scale-neutral and inert, and the center-snap counts ACTION rows only (never a title).
 const GROUP_ORDER: Record<ToolbeltGroup, number> = { edit: 0, add: 1, workspace: 2, item: 3 };
+
+/** A ring row: either a group's title separator or one action. Both occupy one `ITEM_HEIGHT` slot. */
+type FabRow = { kind: 'divider'; group: ToolbeltGroup } | { kind: 'action'; action: ToolbeltAction };
 
 
 
@@ -53,6 +59,7 @@ export default function ToolbeltFAB({
 	activeTab,
 	isMenuFABExpanded
 }: ToolbeltFABProps) {
+	const { t } = useTranslation();
 	const mobileHandedness = useAppSettingsStore((state) => state.mobileHandedness);
 	const isLeft = mobileHandedness === 'left';
 	// Stable sort keeps each group's internal order; the list stays flat and uniform-height,
@@ -60,6 +67,21 @@ export default function ToolbeltFAB({
 	const allActions = [...globalActions, ...itemActions].sort(
 		(a, b) => GROUP_ORDER[a.group] - GROUP_ORDER[b.group]
 	);
+	// Interleave a title separator before each group's first action. Separators are full slots,
+	// so the row list stays uniform-height; `actionRowIndices` lets the center-snap ignore them.
+	const rows: FabRow[] = [];
+	let lastGroup: ToolbeltGroup | null = null;
+	for (const action of allActions) {
+		if (action.group !== lastGroup) {
+			rows.push({ kind: 'divider', group: action.group });
+			lastGroup = action.group;
+		}
+		rows.push({ kind: 'action', action });
+	}
+	const actionRowIndices = rows.reduce<number[]>((acc, row, index) => {
+		if (row.kind === 'action') acc.push(index);
+		return acc;
+	}, []);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [scrollY, setScrollY] = useState(0);
 	const rafRef = useRef<number | null>(null);
@@ -84,9 +106,11 @@ export default function ToolbeltFAB({
 
 
 	useLayoutEffect(() => {
-		if (isOpen && scrollContainerRef.current && allActions.length > 0 && windowHeight > 0) {
-			const middleIndex = Math.floor(allActions.length / 2);
-         const targetScroll = middleIndex * ITEM_HEIGHT;
+		if (isOpen && scrollContainerRef.current && actionRowIndices.length > 0 && windowHeight > 0) {
+			// Snap to the MIDDLE ACTION's row (not the middle of the interleaved list), so the ring
+			// never opens resting on a title separator.
+			const middleRowIndex = actionRowIndices[Math.floor(actionRowIndices.length / 2)];
+         const targetScroll = middleRowIndex * ITEM_HEIGHT;
          scrollContainerRef.current.scrollTop = targetScroll;
          setScrollY(targetScroll);
 		}
@@ -176,7 +200,28 @@ export default function ToolbeltFAB({
 									"flex flex-col w-full",
 									isLeft ? "items-start" : "items-end"
 								)}>
-									{allActions.map((action, index) => {
+									{rows.map((row, index) => {
+										if (row.kind === 'divider') {
+											// A title separator: one full slot, edge-anchored, scale-neutral, and inert
+											// (stops its click so a tap on a title neither runs an action nor closes the ring).
+											return (
+												<div
+													key={`divider-${row.group}`}
+													style={{ height: ITEM_HEIGHT }}
+													onClick={(e) => e.stopPropagation()}
+													className="flex items-end"
+												>
+													<div className={cn("flex items-center gap-2 pb-2", isLeft ? "flex-row" : "flex-row-reverse")}>
+														<span className="rounded-full bg-card border border-border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shadow-sm">
+															{t(`Toolbelt.${row.group}Section`)}
+														</span>
+														<span className="h-px w-6 bg-border" />
+													</div>
+												</div>
+											);
+										}
+
+										const action = row.action;
 										const Icon = action.icon;
 										const { scale } = getItemTransform(index);
 

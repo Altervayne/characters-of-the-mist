@@ -1227,8 +1227,22 @@
       "title": "Characters of the Mist",
       "subtitle": "Bienvenue dans Characters of the Mist, veuillez choisir un système de jeu, ou charger un personnage directement.",
       "createButton": "Créer un Nouveau Personnage",
+      "importButton": "[TO COMPLETE]",
+      "settings": "[TO COMPLETE]",
       "openDrawerButton": "Ouvrir le Tiroir",
       "hint": "Sélectionnez un système de jeu ci-dessus pour commencer",
+      "overwrite": {
+         "titleSoft": "[TO COMPLETE]",
+         "titleFirm": "[TO COMPLETE]",
+         "descriptionSoft": "[TO COMPLETE]",
+         "descriptionFirm": "[TO COMPLETE]",
+         "cancel": "[TO COMPLETE]",
+         "saveToDrawer": "[TO COMPLETE]",
+         "createNew": "[TO COMPLETE]",
+         "createAnyway": "[TO COMPLETE]",
+         "importNew": "[TO COMPLETE]",
+         "importAnyway": "[TO COMPLETE]"
+      },
       "games": {
          "legends": {
             "title": "Legend in the Mist",
@@ -2035,6 +2049,7 @@
       "drawer": "Tiroir",
       "sheet": "Fiche",
       "menu": "Menu",
+      "settings": "[TO COMPLETE]",
       "open": "Ouvrir le menu",
       "close": "Fermer"
    },
