@@ -15,6 +15,9 @@ export interface ToolbeltAction {
 	// header per group; the FAB expresses grouping by order alone (no header rows).
 	group: ToolbeltGroup;
 	show: boolean;
+	// Optional `data-tutorial` key stamped on the rendered tile, so a tutorial can anchor a coach-mark to a
+	// dynamically-built action (the Edit toggle) without the renderers string-matching on ids.
+	tutorialAnchor?: string;
 }
 
 export interface ToolbeltActions {

@@ -246,6 +246,7 @@ export default function ToolbeltFAB({
 													className="h-full"
 												>
 													<button
+														data-tutorial={action.tutorialAnchor}
 														className={cn(
 															"flex items-center gap-3 h-full",
 															isLeft ? "justify-start flex-row" : "justify-end flex-row-reverse"

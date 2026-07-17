@@ -74,6 +74,9 @@ export function runTutorialAction(action: TutorialAction): void | Promise<void> 
       case 'board':
          general.requestBoardAction(action.action);
          return;
+      case 'mobileNav':
+         general.requestMobileNavAction(action.action);
+         return;
    }
 }
 

@@ -4,6 +4,7 @@ import { create } from 'zustand';
 // -- Type Imports --
 import type { CreatableKind } from '@/lib/creation/creatableRegistry';
 import type { BoardGridType, BrushKind } from '@/lib/types/board';
+import type { MobileNavAction, MobileNavSnapshot } from '@/lib/mobile/mobileNavTypes';
 
 
 
@@ -85,6 +86,16 @@ interface AppGeneralState {
    // pending. The canvas owns the drop point AND the selection, so the palette signals through here.
    pendingBoardAction: BoardAction | null;
 
+   // Nav requests the mobile page consumes against its own local setters and drains (mirrors
+   // `pendingBoardAction`). The mobile shell keeps its nav state component-local, above the store the
+   // tutorial runner can reach, so a drive signals through here. It is a QUEUE, not a slot: one arrival
+   // legitimately establishes several nav axes at once (sub-tab AND toolbelt AND reorder mode), and a
+   // single slot would keep only the last of them. Empty when nothing is pending.
+   pendingMobileNavActions: MobileNavAction[];
+   // A write-only mirror the mobile page publishes as its landing position changes. Nothing drives the
+   // page FROM it - it exists purely so a tutorial can snapshot the pre-run position and restore it on exit.
+   mobileNav: MobileNavSnapshot | null;
+
    actions: {
       // Undo/Redo Context
       setLastModifiedStore: (storeName: StoreName) => void;
@@ -126,6 +137,11 @@ interface AppGeneralState {
       // Pending board action
       requestBoardAction: (action: BoardAction) => void;
       clearBoardAction: () => void;
+
+      // Pending mobile nav actions + the write-only landing-position mirror
+      requestMobileNavAction: (action: MobileNavAction) => void;
+      clearMobileNavActions: () => void;
+      setMobileNavSnapshot: (snapshot: MobileNavSnapshot) => void;
    };
 }
 
@@ -166,6 +182,10 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
 
    // Pending board action
    pendingBoardAction: null,
+
+   // Pending mobile nav actions + landing-position mirror
+   pendingMobileNavActions: [],
+   mobileNav: null,
 
    actions: {
       // Undo/Redo Context
@@ -208,6 +228,12 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       // Pending board action
       requestBoardAction: (action) => set({ pendingBoardAction: action }),
       clearBoardAction: () => set({ pendingBoardAction: null }),
+
+      // Pending mobile nav actions + landing-position mirror. Requests APPEND: a step's arrival dispatches
+      // its axes one after another in the same tick, and every one of them has to reach the page.
+      requestMobileNavAction: (action) => set((state) => ({ pendingMobileNavActions: [...state.pendingMobileNavActions, action] })),
+      clearMobileNavActions: () => set({ pendingMobileNavActions: [] }),
+      setMobileNavSnapshot: (snapshot) => set({ mobileNav: snapshot }),
    },
 }));
 

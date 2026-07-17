@@ -123,6 +123,7 @@ export function MobileCardReorderView({ cards, isMobileFABMode, isLeftHanded, on
 											<button
 												type="button"
 												aria-label={t('Common.dragHandle')}
+												data-tutorial="card-reorder-grip"
 												className={cn(
 													"flex shrink-0 items-center justify-center h-11 w-11 text-muted-foreground touch-none cursor-grab active:cursor-grabbing",
 													// Drag affordance cue, gated on the gesture-tips setting.

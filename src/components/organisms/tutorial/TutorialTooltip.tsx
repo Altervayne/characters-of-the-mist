@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -16,6 +16,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 // -- Utils --
 import { TUTORIAL_Z } from '@/lib/tutorial/zLayers';
+import { useSafeAreaInsets } from '@/lib/tutorial/safeAreaInsets';
 import type { TutorialConfigProfile } from '@/lib/tutorial/tutorialConfig';
 import type { TutorialPlacement } from '@/lib/tutorial/tutorialTypes';
 
@@ -84,8 +85,29 @@ export default function TutorialTooltip({
 }: TutorialTooltipProps) {
    const { t } = useTranslation();
    const { width: viewWidth, height: viewHeight } = useWindowSize();
+   const insets = useSafeAreaInsets();
    const [measuredHeight, setMeasuredHeight] = useState(200);
    const observerRef = useRef<ResizeObserver | null>(null);
+
+   // The on-screen keyboard shrinks the visual viewport without changing `innerHeight` (notably iOS), so a
+   // coach anchored to a focused input would otherwise clamp against the full height and hide behind the
+   // keyboard. Track the visual-viewport height and clamp the bottom against it. Desktop has no shrink, so
+   // this equals the layout height and leaves positioning unchanged.
+   const [visualHeight, setVisualHeight] = useState<number | null>(() =>
+      typeof window !== 'undefined' ? window.visualViewport?.height ?? null : null,
+   );
+   useEffect(() => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const update = () => setVisualHeight(vv.height);
+      update();
+      vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+      return () => {
+         vv.removeEventListener('resize', update);
+         vv.removeEventListener('scroll', update);
+      };
+   }, []);
 
    // Measure via a callback ref so the height tracks the real element the frame it mounts,
    // not a stale one, and reflows keep it in sync.
@@ -111,13 +133,20 @@ export default function TutorialTooltip({
    const layout = useMemo(() => {
       const vw = viewWidth || window.innerWidth;
       const vh = viewHeight || window.innerHeight;
+      // Bottom edge follows the visual viewport (keyboard-aware); the safe-area insets carve the notch /
+      // home-indicator margins out of every edge. All zero on desktop, so the clamps below are unchanged there.
+      const effectiveVh = visualHeight ?? vh;
       const height = measuredHeight;
+      const minLeft = EDGE_PADDING + insets.left;
+      const maxLeft = Math.max(minLeft, vw - cardWidth - EDGE_PADDING - insets.right);
+      const minTop = EDGE_PADDING + insets.top;
+      const maxTop = Math.max(minTop, effectiveVh - height - EDGE_PADDING - insets.bottom);
 
       // Centered/modal step (no anchor, or an explicit center placement).
       if (!targetRect || placement === 'center' || variant !== 'spotlight') {
          return {
-            left: clamp((vw - cardWidth) / 2, EDGE_PADDING, Math.max(EDGE_PADDING, vw - cardWidth - EDGE_PADDING)),
-            top: clamp((vh - height) / 2, EDGE_PADDING, Math.max(EDGE_PADDING, vh - height - EDGE_PADDING)),
+            left: clamp((vw - cardWidth) / 2, minLeft, maxLeft),
+            top: clamp((effectiveVh - height) / 2, minTop, maxTop),
             side: null as Side | null,
             pointer: 0,
          };
@@ -143,13 +172,13 @@ export default function TutorialTooltip({
       let left: number;
       let top: number;
       if (side === 'bottom' || side === 'top') {
-         left = clamp(targetRect.left + targetRect.width / 2 - cardWidth / 2, EDGE_PADDING, Math.max(EDGE_PADDING, vw - cardWidth - EDGE_PADDING));
+         left = clamp(targetRect.left + targetRect.width / 2 - cardWidth / 2, minLeft, maxLeft);
          top = side === 'bottom' ? targetRect.bottom + ARROW_OFFSET : targetRect.top - ARROW_OFFSET - height;
-         top = clamp(top, EDGE_PADDING, Math.max(EDGE_PADDING, vh - height - EDGE_PADDING));
+         top = clamp(top, minTop, maxTop);
       } else {
-         top = clamp(targetRect.top + targetRect.height / 2 - height / 2, EDGE_PADDING, Math.max(EDGE_PADDING, vh - height - EDGE_PADDING));
+         top = clamp(targetRect.top + targetRect.height / 2 - height / 2, minTop, maxTop);
          left = side === 'right' ? targetRect.right + ARROW_OFFSET : targetRect.left - ARROW_OFFSET - cardWidth;
-         left = clamp(left, EDGE_PADDING, Math.max(EDGE_PADDING, vw - cardWidth - EDGE_PADDING));
+         left = clamp(left, minLeft, maxLeft);
       }
 
       // Pointer offset: the anchor center along the shared edge, clamped inside the card.
@@ -160,7 +189,7 @@ export default function TutorialTooltip({
       const pointer = clamp(anchorCenter, POINTER_SIZE * 2, span - POINTER_SIZE * 2);
 
       return { left, top, side, pointer };
-   }, [targetRect, placement, variant, viewWidth, viewHeight, measuredHeight, cardWidth, profile.placements]);
+   }, [targetRect, placement, variant, viewWidth, viewHeight, visualHeight, insets, measuredHeight, cardWidth, profile.placements]);
 
    if ((viewWidth || window.innerWidth) === 0) return null;
 

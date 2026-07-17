@@ -5,6 +5,7 @@ import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 // -- Type Imports --
 import type { ActiveTheme } from '@/lib/stores/appSettingsStore';
 import type { ThemeMode } from '@/lib/theme/themeMode';
+import type { MobileNavSnapshot } from '@/lib/mobile/mobileNavTypes';
 
 /**
  * The app-chrome flags captured when a tutorial starts and restored verbatim when it ends. A run
@@ -25,6 +26,8 @@ export interface ChromeSnapshot {
    diceTrayOpen: boolean;
    theme: ActiveTheme;
    themeMode: ThemeMode;
+   // Null on desktop, where the mobile shell never mounts to publish it.
+   mobileNav: MobileNavSnapshot | null;
 }
 
 /** Reads the current app-chrome flags fresh off the stores. */
@@ -41,6 +44,7 @@ export function captureChromeSnapshot(): ChromeSnapshot {
       diceTrayOpen: settings.diceTray.isOpen,
       theme: settings.theme,
       themeMode: settings.themeMode,
+      mobileNav: general.mobileNav,
    };
 }
 
@@ -60,4 +64,8 @@ export function restoreChromeSnapshot(snapshot: ChromeSnapshot): void {
    settings.setTheme(snapshot.theme);
    settings.setThemeMode(snapshot.themeMode);
    settings.discardThemeDraft();
+   // Mobile only: hand the page its landing position back. Null on desktop, so nothing to restore there.
+   if (snapshot.mobileNav) {
+      general.requestMobileNavAction({ kind: 'restore', snapshot: snapshot.mobileNav });
+   }
 }

@@ -1,6 +1,7 @@
 // -- Type Imports --
 import type { LucideIcon } from 'lucide-react';
 import type { BoardAction } from '@/lib/stores/appGeneralStateStore';
+import type { MobileNavAction } from '@/lib/mobile/mobileNavTypes';
 
 export type TutorialPlatform = 'mobile' | 'desktop';
 export type TutorialSystem =
@@ -14,6 +15,26 @@ export type TutorialSystem =
    | 'themes'
    | 'palette';
 export type TutorialPlacement = 'top' | 'bottom' | 'left' | 'right' | 'center';
+
+/** How far a directional cue travels. */
+export type TutorialGestureCueIntensity = 'subtle' | 'normal' | 'wide';
+
+/**
+ * A looping touch-gesture hint. `direction` is only meaningful for swipe / drag / press-drag / scroll.
+ *
+ * `press-drag` is the compound gesture: press and hold, THEN drag. It is what the touch drag sensors
+ * actually require on the sortable surfaces - a plain `drag` there teaches a gesture that does nothing,
+ * because a drag with no dwell never arms.
+ */
+export type TutorialGestureCue = {
+   kind: 'tap' | 'long-press' | 'swipe' | 'drag' | 'press-drag' | 'scroll';
+   direction?: 'up' | 'down' | 'left' | 'right';
+   /**
+    * Travel amplitude of the directional loops (swipe / drag / press-drag / scroll). Default 'normal'.
+    * A no-op for tap / long-press - they have no travel.
+    */
+   intensity?: TutorialGestureCueIntensity;
+};
 
 /**
  * A named, serializable app-drive descriptor. Resolved fresh against the live stores at
@@ -37,7 +58,8 @@ export type TutorialAction =
    | { type: 'closeSettings' }
    | { type: 'setSettingsSection'; section: string }
    | { type: 'clearJourney' }
-   | { type: 'board'; action: BoardAction };
+   | { type: 'board'; action: BoardAction }
+   | { type: 'mobileNav'; action: MobileNavAction };
 
 /** How a gated step detects the user's real action. */
 export type AdvanceSignal =
@@ -63,6 +85,11 @@ export interface TutorialStep {
    bodyKey: string;
    placement?: TutorialPlacement;
    highlightPadding?: number;
+   /** An optional looping gesture hint drawn at the anchor: teaches the raw touch gesture the step invites
+    *  (long-press / swipe / drag / press-drag / tap / scroll) that a static coach-mark can't convey. Purely
+    *  decorative -
+    *  never intercepts the gesture (pointer-events-none) and reduced-motion falls back to a static glyph. */
+   gestureCue?: TutorialGestureCue;
    /*
     * Step lifecycle hooks. Each runs its actions through `runTutorialAction` (store-fresh), awaited in
     * order. Nothing is ever auto-reversed: whatever a hook sets PERSISTS. Author `onArrive` to

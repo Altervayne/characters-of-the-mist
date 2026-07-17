@@ -80,6 +80,7 @@ export function MobileCardNavigationBar({ cards, safeCardIndex, isLeftHanded, on
 			onClick={onReorder}
 			aria-label={t('Toolbelt.reorderCards')}
 			className="h-11 w-11 shrink-0"
+			data-tutorial="card-reorder-button"
 		>
 			<ArrowUpDown className="h-5 w-5" />
 		</IconButton>

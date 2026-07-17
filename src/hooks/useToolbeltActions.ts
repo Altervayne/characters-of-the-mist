@@ -138,7 +138,8 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 			icon: EditIcon,
 			onClick: () => toggleIsEditing(),
 			group: 'edit',
-			show: true
+			show: true,
+			tutorialAnchor: 'edit-mode-toggle'
 		});
 
 		// ==================

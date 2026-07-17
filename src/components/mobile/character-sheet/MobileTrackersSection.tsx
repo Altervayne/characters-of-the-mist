@@ -134,6 +134,7 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 						{areTrackersEditable && (
 							<Button
 								variant="ghost"
+								data-tutorial="add-status-button"
 								onClick={onAddStatus}
 								className={cn(
 									// Compact add affordance: a self-sizing ≥44px pill, not a full
@@ -181,6 +182,7 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 						{areTrackersEditable && (
 							<Button
 								variant="ghost"
+								data-tutorial="add-story-tag-button"
 								onClick={onAddStoryTag}
 								className={cn(
 									"h-14 px-4 self-center border-2 border-dashed border-primary/25",
@@ -225,6 +227,7 @@ export function MobileTrackersSection({ character, areTrackersEditable, isEditin
 						{areTrackersEditable && (
 							<Button
 								variant="ghost"
+								data-tutorial="add-story-theme-button"
 								onClick={onAddStoryTheme}
 								className={cn(
 									"h-14 px-4 self-center border-2 border-dashed border-primary/25",

@@ -92,6 +92,7 @@ export default function ToolbeltBottomSheet({
 		return (
 			<button
 				key={action.id}
+				data-tutorial={action.tutorialAnchor}
 				onClick={() => {
 					action.onClick();
 					onOpenChange(false);

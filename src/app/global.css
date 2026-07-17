@@ -791,3 +791,63 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
    100% { background-color: transparent; box-shadow: inset 0 0 0 0 transparent; }
 }
 @utility animate-drawer-reveal { animation: drawer-reveal-pulse 1500ms ease-out; }
+
+/* Tutorial gesture cues: looping touch-gesture hints drawn at a step's anchor. Transform/opacity only
+   (cheap, compositor-friendly), gated behind `motion-safe:` at the call site so reduced-motion readers get
+   a static glyph instead. The swipe/drag/scroll loops travel along an axis; `--cue-shift` lets a caller set
+   the travel sign per direction without a keyframe per direction. Tap is a scale pulse. */
+@keyframes cue-swipe {
+   0% { transform: translateX(0); opacity: 0; }
+   15% { opacity: 1; }
+   70% { transform: translateX(var(--cue-shift, 16px)); opacity: 1; }
+   100% { transform: translateX(var(--cue-shift, 16px)); opacity: 0; }
+}
+@utility animate-cue-swipe { animation: cue-swipe 1400ms ease-in-out infinite; }
+
+@keyframes cue-drag {
+   0% { transform: translateY(0); opacity: 0; }
+   15% { opacity: 1; }
+   70% { transform: translateY(var(--cue-shift, 16px)); opacity: 1; }
+   100% { transform: translateY(var(--cue-shift, 16px)); opacity: 0; }
+}
+@utility animate-cue-drag { animation: cue-drag 1400ms ease-in-out infinite; }
+
+@keyframes cue-tap {
+   0%, 100% { transform: scale(1); opacity: 0.9; }
+   50% { transform: scale(0.7); opacity: 1; }
+}
+@utility animate-cue-tap { animation: cue-tap 1100ms ease-in-out infinite; }
+
+@keyframes cue-scroll {
+   0%, 100% { transform: translateY(0); }
+   50% { transform: translateY(var(--cue-shift, 8px)); }
+}
+@utility animate-cue-scroll { animation: cue-scroll 1200ms ease-in-out infinite; }
+
+/* Press-and-hold-THEN-drag: the compound the touch drag sensors require. Two layers, one shared 2200ms
+   loop, so the dot and its dwell ring cannot drift apart - the percentages below are two halves of one
+   timeline and MUST be edited together. The dot sits still while the ring fills (5%-27%, ~480ms of dwell:
+   comfortably longer than the sensors' hold, so the cue never implies a faster press than they accept),
+   the ring releases as the dot travels (27%-70%), it holds long enough to read (to 88%), then fades and
+   loops. Travel is per-axis so `direction` covers all four; the ring stays put, which is what reads as
+   "you held HERE, then moved". */
+@keyframes cue-press-drag {
+   0% { transform: translate(0, 0); opacity: 0; }
+   5% { transform: translate(0, 0); opacity: 1; }
+   27% { transform: translate(0, 0); opacity: 1; }
+   70% { transform: translate(var(--cue-shift-x, 0), var(--cue-shift-y, 0)); opacity: 1; }
+   88% { transform: translate(var(--cue-shift-x, 0), var(--cue-shift-y, 0)); opacity: 1; }
+   100% { transform: translate(var(--cue-shift-x, 0), var(--cue-shift-y, 0)); opacity: 0; }
+}
+@utility animate-cue-press-drag { animation: cue-press-drag 2200ms ease-in-out infinite; }
+
+/* The dwell half of the same loop. Fills exactly like `spring-ring` (same 2π·16 dasharray, same
+   empty-to-full read) so a hold looks the same wherever it is taught, but on the loop's own clock. */
+@keyframes cue-press-drag-ring {
+   0% { stroke-dashoffset: 100.53; opacity: 0; }
+   5% { stroke-dashoffset: 100.53; opacity: 1; }
+   27% { stroke-dashoffset: 0; opacity: 1; }
+   40% { stroke-dashoffset: 0; opacity: 0; }
+   100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@utility animate-cue-press-drag-ring { animation: cue-press-drag-ring 2200ms linear infinite; }

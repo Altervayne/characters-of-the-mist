@@ -1554,6 +1554,10 @@
          "commandPalette": {
             "title": "The Command Palette",
             "teach": "The keyboard command bar: opening it, searching, running commands, and multi-step commands."
+         },
+         "mobileSheet": {
+            "title": "Character Sheet",
+            "teach": "Your name, trackers and cards, the toolbelt, and the touch gestures that drive them."
          }
       }
    },
@@ -1772,6 +1776,38 @@
          "createCharacter_body": "When you want a fresh character, you start from this home menu, or from the plus button in the tab bar. Pick a game and you are ready to build a new one from scratch.",
          "wrap_title": "Nicely Done",
          "wrap_body": "You have built a sheet from start to finish. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "mobileSheet": {
+         "overview_title": "Your Character Sheet",
+         "overview_body": "This is your character sheet. It holds your trackers and your cards, and everything about your character lives here.",
+         "name_title": "The Name",
+         "name_body": "The title up top is your character's name. Tap it to rename, and your changes are saved as you type.",
+         "tabs_title": "Trackers and Cards",
+         "tabs_body": "Your sheet has two halves. Tap between the Trackers tab and the Cards tab to move from one to the other.",
+         "trackers_title": "Trackers",
+         "trackers_body": "This is where your trackers live: statuses, story tags, and story themes. They hold your character's state during play.",
+         "toolbelt_title": "The Toolbelt",
+         "toolbelt_body": "Your tools live here. This is where you find Edit mode, the dice, and the buttons to add to your sheet.",
+         "enterEdit_title": "Enter Edit Mode",
+         "enterEdit_body": "Let's start building. Tap Edit to unlock the tools for adding and changing things.",
+         "addStatus_title": "Add a Status",
+         "addStatus_body": "Statuses are temporary conditions like Wounded or Empowered, each with a tier. Tap here to add one.",
+         "addMore_title": "Story Tags and Themes",
+         "addMore_body": "Story tags and story themes add the same way, with their own buttons right here.",
+         "trackerSelect_title": "Select a Tracker",
+         "trackerSelect_body": "Press and hold a tracker to select it. The toolbelt then acts on whatever you have selected.",
+         "cards_title": "Your Cards",
+         "cards_body": "Now the other half. Tap the Cards tab to switch over to your cards.",
+         "cardSwipe_title": "Move Between Cards",
+         "cardSwipe_body": "Swipe left or right across a card to move through them one at a time.",
+         "cardNav_title": "The Card Bar",
+         "cardNav_body": "The bar below your cards helps you get around. Use the arrows to step through, tap a dot to jump, and tap a card to flip it.",
+         "openReorder_title": "Reorder Your Cards",
+         "openReorder_body": "Rearranging your cards has its own mode, with the whole deck as a list. Tap Reorder to open it.",
+         "reorderDrag_title": "Drag Them Into Place",
+         "reorderDrag_body": "Press and hold a card's grip handle first, then drag it up or down the list. A drag on its own will not pick the card up. Tapping a card jumps straight to it, and the check button saves your order when it looks right.",
+         "wrap_title": "Nicely Done",
+         "wrap_body": "That is your character sheet, top to bottom. You can replay this lesson any time from the Learn section in your Settings."
       },
       "board": {
          "welcome_title": "The Board",
@@ -2432,7 +2468,7 @@
       "goToCard": "Go to card {{number}}"
    },
    "MobileGestureHints": {
-      "trackerLongPress": "Tip: press and hold a tracker (or use its select button) to select it for the toolbelt.",
+      "trackerLongPress": "Tip: press and hold a tracker to select it for the toolbelt.",
       "drawerLongPress": "Tip: press and hold an item to drag it, or tap its ⋯ button for more options.",
       "selectTracker": "Select tracker for actions"
    },

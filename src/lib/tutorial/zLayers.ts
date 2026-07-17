@@ -10,6 +10,11 @@ export const TUTORIAL_Z = {
    scrim: 1100,
    /** Spotlight halo ring. */
    ring: 1101,
+   /**
+    * Looping gesture-cue overlay. Co-planar with the ring but painted after the overlay, so it sits above
+    * the halo while staying below the coach - the cue can never cover the coach text.
+    */
+   gestureCue: 1101,
    /** Coach-mark card. */
    coach: 1102,
    /**

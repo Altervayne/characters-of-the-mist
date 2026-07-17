@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // -- Component Imports --
 import TutorialOverlay from './TutorialOverlay';
 import TutorialTooltip from './TutorialTooltip';
+import TutorialGestureCue from './TutorialGestureCue';
 
 // -- Store Imports --
 import { useTutorialStore, returnToEntryPoint } from '@/lib/tutorial/tutorialStore';
@@ -387,6 +388,9 @@ export default function TutorialRunner() {
             interaction={mode === 'spotlight' ? interaction : 'blocked'}
             scrim={scrim}
          />
+         {step.gestureCue && (mode === 'spotlight' || mode === 'centered') && (
+            <TutorialGestureCue cue={step.gestureCue} targetRect={mode === 'spotlight' ? displayRect : null} />
+         )}
          {mode && (
             <TutorialTooltip
                variant={mode}

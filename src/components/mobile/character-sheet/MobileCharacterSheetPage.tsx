@@ -38,9 +38,8 @@ import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores
 import type { CreateCardOptions } from '@/lib/types/creation';
 import type { Card, Character } from '@/lib/types/character';
 import type { DrawerItem } from '@/lib/types/drawer';
+import type { MobileTabId as TabId, MobileSheetTab as SheetTab } from '@/lib/mobile/mobileNavTypes';
 
-type TabId = 'sheet' | 'drawer' | 'menu' | 'settings' | 'settingsGeneral' | 'settingsAppearance' | 'settingsData' | 'settingsLearn' | 'themes' | 'themeEditor' | 'about' | 'patchNotes' | 'addCard';
-type SheetTab = 'trackers' | 'cards';
 type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
 // The full-screen chrome tabs (settings drill-down, themes, about, add-card): the bottom navigation hides while
@@ -74,7 +73,8 @@ export default function MobileCharacterSheetPage() {
 	// With no character loaded there is no sheet to show; the Sheet nav option greys out.
 	const hasSheet = character !== null;
 	const isMobileTutorialOpen = useAppGeneralStateStore((state) => state.isMobileTutorialOpen);
-	const { setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
+	const pendingMobileNavActions = useAppGeneralStateStore((state) => state.pendingMobileNavActions);
+	const { setMobileOnboardingOpen, setMobileTutorialOpen, setMobileNavSnapshot, clearMobileNavActions } = useAppGeneralStateActions();
 
 	// Card creation state
 	const { t: tNotifications } = useTranslation();
@@ -190,6 +190,46 @@ export default function MobileCharacterSheetPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [character, activeTab, isBootHydrating]);
 
+	// Publish the nav position to the store's mirror so a tutorial can snapshot it at run start and restore it
+	// on exit, and so a step can gate on a mode the user enters here. Nothing reads it back to drive this page.
+	useEffect(() => {
+		setMobileNavSnapshot({
+			tab: activeTab,
+			sheetTab: sheetActiveTab,
+			toolbeltOpen: isToolbeltOpen,
+			fabExpanded: isMenuFABExpanded,
+			reordering: isReorderingCards
+		});
+	}, [activeTab, sheetActiveTab, isToolbeltOpen, isMenuFABExpanded, isReorderingCards, setMobileNavSnapshot]);
+
+	// Consume the runner's queued nav requests against this page's own setters, in order, then drain the queue
+	// (mirrors BoardView's pending-action bridge). A step's arrival establishes every axis it needs in one tick,
+	// so the queue may hold several. No-ops while it is empty, so non-tutorial nav is untouched - and draining
+	// hands back a fresh empty array, which re-runs this and stops on the same early return.
+	useEffect(() => {
+		if (pendingMobileNavActions.length === 0) return;
+		for (const action of pendingMobileNavActions) {
+			// The three history-pushing axes only move when the request actually changes them: an arrival
+			// re-asserts every axis it depends on, and re-asserting the value we already hold must not pile
+			// a redundant entry onto the back stack.
+			if (action.kind === 'navTab') { if (action.tab !== activeTab) navigateToTab(action.tab); }
+			else if (action.kind === 'sheetTab') { if (action.tab !== sheetActiveTab) navigateToSheetTab(action.tab); }
+			else if (action.kind === 'reorder') { if (action.active !== isReorderingCards) setReorderingWithHistory(action.active); }
+			else if (action.kind === 'toolbelt') setIsToolbeltOpen(action.open);
+			else if (action.kind === 'fab') setIsMenuFABExpanded(action.expanded);
+			else if (action.kind === 'restore') {
+				// Land straight on the captured position; `setActiveTab` (not `navigateToTab`) so no history is pushed.
+				setActiveTab(action.snapshot.tab);
+				setSheetActiveTab(action.snapshot.sheetTab);
+				setIsToolbeltOpen(action.snapshot.toolbeltOpen);
+				setIsMenuFABExpanded(action.snapshot.fabExpanded);
+				setIsReorderingCards(action.snapshot.reordering);
+			}
+		}
+		clearMobileNavActions();
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- the nav helpers close over live nav state that changes every render; only a new pending queue should re-run this.
+	}, [pendingMobileNavActions, clearMobileNavActions]);
+
 	const handleStartTour = () => {
 		navigateToTab('sheet');
 		setMobileTutorialOpen(true);
@@ -200,10 +240,12 @@ export default function MobileCharacterSheetPage() {
 		setMobileOnboardingOpen(true);
 	};
 
-	// Launch a re-explorable tutorial from the settings list: leave the menu for the sheet, then run it. The
-	// runner is app chrome (above this surface), so it survives the tab switch away from settings.
+	// Launch a re-explorable tutorial from the settings list. The tutorial's first beat claims whatever tab it
+	// needs, and only once its demo content is seeded; navigating there from here instead would bounce a user
+	// with no character of their own straight back to the Menu before the demo lands. Staying put also means
+	// the run captures the tab it was launched from, so exiting returns the user to the list they started from.
+	// The runner is app chrome (above this surface), so it survives the tab switch away from settings.
 	const handleStartTutorial = (id: string) => {
-		navigateToTab('sheet');
 		useTutorialStore.getState().actions.start(id, 'settings');
 	};
 

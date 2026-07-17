@@ -1460,6 +1460,10 @@
          "commandPalette": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "mobileSheet": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1637,6 +1641,38 @@
          "exportImport_body": "[TO COMPLETE]",
          "createCharacter_title": "[TO COMPLETE]",
          "createCharacter_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "mobileSheet": {
+         "overview_title": "[TO COMPLETE]",
+         "overview_body": "[TO COMPLETE]",
+         "name_title": "[TO COMPLETE]",
+         "name_body": "[TO COMPLETE]",
+         "tabs_title": "[TO COMPLETE]",
+         "tabs_body": "[TO COMPLETE]",
+         "trackers_title": "[TO COMPLETE]",
+         "trackers_body": "[TO COMPLETE]",
+         "toolbelt_title": "[TO COMPLETE]",
+         "toolbelt_body": "[TO COMPLETE]",
+         "enterEdit_title": "[TO COMPLETE]",
+         "enterEdit_body": "[TO COMPLETE]",
+         "addStatus_title": "[TO COMPLETE]",
+         "addStatus_body": "[TO COMPLETE]",
+         "addMore_title": "[TO COMPLETE]",
+         "addMore_body": "[TO COMPLETE]",
+         "trackerSelect_title": "[TO COMPLETE]",
+         "trackerSelect_body": "[TO COMPLETE]",
+         "cards_title": "[TO COMPLETE]",
+         "cards_body": "[TO COMPLETE]",
+         "cardSwipe_title": "[TO COMPLETE]",
+         "cardSwipe_body": "[TO COMPLETE]",
+         "cardNav_title": "[TO COMPLETE]",
+         "cardNav_body": "[TO COMPLETE]",
+         "openReorder_title": "[TO COMPLETE]",
+         "openReorder_body": "[TO COMPLETE]",
+         "reorderDrag_title": "[TO COMPLETE]",
+         "reorderDrag_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       },
@@ -2265,7 +2301,7 @@
       "goToCard": "Aller à la carte {{number}}"
    },
    "MobileGestureHints": {
-      "trackerLongPress": "Astuce : appuyez longuement sur un tracker (ou utilisez son bouton de sélection) pour le sélectionner dans la ceinture à outils.",
+      "trackerLongPress": "[TO COMPLETE]",
       "drawerLongPress": "Astuce : appuyez longuement sur un élément pour le déplacer, ou touchez son bouton ⋯ pour plus d'options.",
       "selectTracker": "Sélectionner le tracker pour les actions"
    },
