@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 // -- Icon Imports --
-import { GraduationCap, Check, Play, PlayCircle, RotateCcw, Lightbulb, ChevronRight } from 'lucide-react';
+import { GraduationCap, Check, Play, RotateCcw, Lightbulb, ChevronRight } from 'lucide-react';
 
 // -- Component Imports --
 import { MobileSettingsSubScreen } from '@/components/mobile/menu/MobileSettingsSubScreen';
@@ -19,14 +19,13 @@ import { useAppSettingsStore, useAppSettingsActions } from '@/lib/stores/appSett
 import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
 
 interface MobileSettingsLearnProps {
-	onStartTour?: () => void;
 	onRestartOnboarding?: () => void;
 	onStartTutorial?: (id: string) => void;
 	onBack?: () => void;
 }
 
-/** Learn settings: the re-explorable tutorials, plus replaying the first-run onboarding and the tour. */
-export default function MobileSettingsLearn({ onStartTour, onRestartOnboarding, onStartTutorial, onBack }: MobileSettingsLearnProps) {
+/** Learn settings: the re-explorable tutorials, plus replaying the first-run onboarding and the gesture tips. */
+export default function MobileSettingsLearn({ onRestartOnboarding, onStartTutorial, onBack }: MobileSettingsLearnProps) {
 	const { t } = useTranslation();
 	const completedTutorials = useAppSettingsStore((state) => state.completedTutorials);
 	const { setGestureHintsEnabled, setHasSeenTrackerSelectHint, setHasSeenDrawerMenuHint } = useAppSettingsActions();
@@ -68,22 +67,6 @@ export default function MobileSettingsLearn({ onStartTour, onRestartOnboarding, 
 							</Button>
 						);
 					})}
-				</div>
-			)}
-
-			{/* Tutorial (the guided tour) */}
-			{onStartTour && (
-				<div className="space-y-2">
-					<Label className="text-sm font-semibold">{t('SettingsDialog.tutorial')}</Label>
-					<Button
-						onClick={onStartTour}
-						variant="default"
-						className="w-full h-12 text-base justify-start"
-					>
-						<PlayCircle className="mr-3 h-5 w-5 shrink-0" />
-						<span className="flex-1 text-left">{t('SettingsDialog.tutorialButton')}</span>
-						<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-					</Button>
 				</div>
 			)}
 

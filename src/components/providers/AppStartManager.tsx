@@ -21,6 +21,7 @@ import TutorialRunner from '@/components/organisms/tutorial/TutorialRunner';
 // -- Store and Hook Imports --
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
+import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 import { useDeviceType } from '@/hooks/useDeviceType';
 
 // -- Migrations --
@@ -69,7 +70,7 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
    const isLegacyDataDialogOpen = useAppGeneralStateStore((state) => state.isLegacyDataDialogOpen);
    const isDesktopOnboardingOpen = useAppGeneralStateStore((state) => state.isDesktopOnboardingOpen);
    const isMobileOnboardingOpen = useAppGeneralStateStore((state) => state.isMobileOnboardingOpen);
-   const { setLegacyDataDialogOpen, setDesktopOnboardingOpen, setSettingsOpen, setSettingsInitialSection, setInitialPatchNotesVersion, setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
+   const { setLegacyDataDialogOpen, setDesktopOnboardingOpen, setSettingsOpen, setSettingsInitialSection, setInitialPatchNotesVersion, setMobileOnboardingOpen } = useAppGeneralStateActions();
    const { setHasCompletedOnboarding } = useAppSettingsActions();
 
    // Conditional periodic asset sweep, mounted once for the app's lifetime.
@@ -256,9 +257,10 @@ export const AppStartManagerProvider = ({ children }: { children: React.ReactNod
       setCurrentDialog(null);
 
       if (startTutorial) {
-         // Small delay to allow onboarding to close before starting tutorial
+         // Let the onboarding sheet unmount before the runner mounts its first coach-mark. The nav lesson is
+         // the no-character orientation, so it stands on its own with nothing loaded.
          setTimeout(() => {
-            setMobileTutorialOpen(true);
+            useTutorialStore.getState().actions.start('mobile.nav', 'onboarding');
          }, 300);
       }
    };

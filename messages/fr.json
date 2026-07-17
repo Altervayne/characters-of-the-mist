@@ -1117,8 +1117,6 @@
          "sidePanel": "Panneau Latéral",
          "fab": "Bouton Flottant"
       },
-      "tutorial": "Tutoriel de l'Appli.",
-      "tutorialButton": "Lancer le Tutoriel",
       "storage": {
          "label": "[TO COMPLETE]",
          "usageUsed": "[TO COMPLETE]",
@@ -2296,84 +2294,6 @@
             "title": "[TO COMPLETE]",
             "description": "[TO COMPLETE]"
          }
-      }
-   },
-   "MobileTutorial": {
-      "intro": {
-         "title": "Bienvenue dans Characters of the Mist !",
-         "description": "Ce court tour vous fera découvrir l'application et vous aidera à vous repérer."
-      },
-      "navigation": {
-         "title": "Navigation",
-         "tabs": {
-            "description": "Vous pouvez utiliser ces onglets pour naviguer entre les différentes sections de l'application. Vous pouvez également basculer entre le mode Édition et le mode Jeu depuis ici."
-         },
-         "fab": {
-            "description": "Vous pouvez ouvrir le menu de navigation avec ce bouton."
-         }
-      },
-      "menu": {
-         "title": "Menu",
-         "description": "Jetons maintenant un coup d'œil au Menu."
-      },
-      "sheet": {
-         "title": "Fiche de Personnage",
-         "description": "Vous pouvez appuyer sur cette option pour accéder à la Fiche de Personnage."
-      },
-      "trackers": {
-         "title": "Suivis",
-         "description": "Cette section contient les suivis de votre Fiche de Personnage. Vous y trouverez une liste de Suivis de Statut, de Suivis de Traits Narratifs et de Suivis de Thèmes Narratifs."
-      },
-      "trackerSelection": {
-         "title": "Sélection et Réorganisation",
-         "description": "Maintenez appuyé sur un suivi pour le sélectionner. Une fois sélectionné, vous pouvez utiliser les boutons qui apparaissent pour réorganiser vos suivis vers le haut ou le bas."
-      },
-      "toolbelt": {
-         "title": "Ceinture à Outils",
-         "sidePanel": {
-            "description": "Vous pouvez appuyer sur l'icône de clé en haut, ou glisser depuis le bord de l'écran de votre côté préféré (selon votre réglage de latéralité) pour ouvrir la Ceinture à Outils. Elle contient les actions que vous pouvez effectuer sur votre personnage."
-         },
-         "fab": {
-            "description": "Vous pouvez appuyer ici pour ouvrir la liste des actions disponibles sur la Fiche de Personnage."
-         }
-      },
-      "cards": {
-         "title": "Vos Cartes",
-         "description": "Vous pouvez passer à la section Cartes de Thème en appuyant sur cet onglet."
-      },
-      "cardNavigation": {
-         "title": "Navigation des Cartes",
-         "description": "Ceci est la barre de navigation des Cartes de Thème. Vous pouvez utiliser les flèches ou glisser à gauche et à droite sur la barre pour naviguer entre vos cartes. Vous pouvez également glisser vers le haut depuis la barre pour ouvrir la liste des cartes, où vous pouvez sélectionner une carte et les réorganiser."
-      },
-      "drawer": {
-         "title": "Votre Tiroir",
-         "description": "Jetons maintenant un coup d'œil au Tiroir."
-      },
-      "drawerContent": {
-         "title": "Contenu du Tiroir",
-         "description": "Characters of the Mist vous permet de stocker et organiser vos personnages, cartes et suivis ici."
-      },
-      "drawerInteractions": {
-         "title": "Interagir avec les Éléments",
-         "description": "Appuyez sur un dossier pour l'ouvrir. Maintenez appuyé sur un dossier ou un élément pour voir plus d'options comme renommer, déplacer, exporter ou supprimer."
-      },
-      "drawerToolbar": {
-         "title": "Actions du Tiroir",
-         "description": "Vous pouvez créer de nouveaux dossiers, importer des éléments depuis des fichiers, ou changer le mode d'affichage depuis ici."
-      },
-      "menuActions": {
-         "title": "Actions du Menu",
-         "description": "Vous pouvez accéder aux notes de mise à jour, à la section À propos ou aux paramètres de l'application depuis ici. Vous pouvez également sauvegarder, exporter ou importer des fichiers, personnages et éléments depuis ici."
-      },
-      "complete": {
-         "title": "Le tour est terminé !",
-         "description": "Explorez Characters of the Mist et n'hésitez pas à envoyer vos retours sur le serveur Discord de Tools of the Mist !"
-      },
-      "controls": {
-         "next": "Suivant",
-         "back": "Retour",
-         "skip": "Passer le Tutoriel",
-         "done": "Terminé"
       }
    },
    "MobileCardNavigationBar": {

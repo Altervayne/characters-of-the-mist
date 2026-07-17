@@ -20,7 +20,6 @@ import MobilePatchNotes from '@/components/mobile/menu/MobilePatchNotes';
 import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
 import MobileAddCard from '@/components/mobile/menu/MobileAddCard';
 import MobileDrawer from '@/components/mobile/drawer/MobileDrawer';
-import MobileTutorial from '@/components/mobile/tutorial/MobileTutorial';
 import { MobileDiceTraySheet } from '@/components/mobile/dice/MobileDiceTraySheet';
 import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
 
@@ -71,9 +70,8 @@ export default function MobileCharacterSheetPage() {
 	const isBootHydrating = useIsBootHydrating();
 	// With no character loaded there is no sheet to show; the Sheet nav option greys out.
 	const hasSheet = character !== null;
-	const isMobileTutorialOpen = useAppGeneralStateStore((state) => state.isMobileTutorialOpen);
 	const pendingMobileNavActions = useAppGeneralStateStore((state) => state.pendingMobileNavActions);
-	const { setMobileOnboardingOpen, setMobileTutorialOpen, setMobileNavSnapshot, clearMobileNavActions } = useAppGeneralStateActions();
+	const { setMobileOnboardingOpen, setMobileNavSnapshot, clearMobileNavActions } = useAppGeneralStateActions();
 
 	// Card creation state
 	const { t: tNotifications } = useTranslation();
@@ -229,11 +227,6 @@ export default function MobileCharacterSheetPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- the nav helpers close over live nav state that changes every render; only a new pending queue should re-run this.
 	}, [pendingMobileNavActions, clearMobileNavActions]);
 
-	const handleStartTour = () => {
-		navigateToTab('sheet');
-		setMobileTutorialOpen(true);
-	};
-
 	const handleRestartOnboarding = () => {
 		navigateToTab('menu');
 		setMobileOnboardingOpen(true);
@@ -364,7 +357,6 @@ export default function MobileCharacterSheetPage() {
 				)}
 				{activeTab === 'settingsLearn' && (
 					<MobileSettingsLearn
-						onStartTour={handleStartTour}
 						onRestartOnboarding={handleRestartOnboarding}
 						onStartTutorial={handleStartTutorial}
 						onBack={() => navigateToTab('settings')}
@@ -418,22 +410,6 @@ export default function MobileCharacterSheetPage() {
 
 			{/* App-wide dice tray (shared with desktop); overlays any tab, opened from the toolbelt. */}
 			<MobileDiceTraySheet />
-
-			{/* Mobile Tutorial */}
-			<MobileTutorial
-				isOpen={isMobileTutorialOpen}
-				onComplete={() => setMobileTutorialOpen(false)}
-				actions={{
-					navigateToTab,
-					setSheetTab: setSheetActiveTab,
-					openSettings: handleOpenSettings,
-					closeSettings: () => navigateToTab('menu'),
-					expandFAB: () => setIsMenuFABExpanded(true),
-					collapseFAB: () => setIsMenuFABExpanded(false),
-					openToolbelt: () => setIsToolbeltOpen(true),
-					closeToolbelt: () => setIsToolbeltOpen(false),
-				}}
-			/>
 		</div>
 	);
 }
