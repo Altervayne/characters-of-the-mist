@@ -2039,6 +2039,7 @@
    },
    "MobileBottomTabs": {
       "sheet": "Fiche",
+      "sheetDisabled": "[TO COMPLETE]",
       "drawer": "Tiroir",
       "menu": "Menu",
       "edit": "Modifier",

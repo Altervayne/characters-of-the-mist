@@ -2206,6 +2206,7 @@
    },
    "MobileBottomTabs": {
       "sheet": "Sheet",
+      "sheetDisabled": "No sheet loaded",
       "drawer": "Drawer",
       "menu": "Menu",
       "edit": "Edit",

@@ -31,6 +31,8 @@ interface MobileFABProps {
 	isToolbeltOpen?: boolean;
 	isExpanded?: boolean;
 	onIsExpandedChange?: (isExpanded: boolean) => void;
+	/** Whether a character is loaded; the Sheet action greys out when false. */
+	hasSheet?: boolean;
 }
 
 export default function MobileFAB({
@@ -42,7 +44,8 @@ export default function MobileFAB({
 	sheetActiveTab,
 	isToolbeltOpen,
 	isExpanded: controlledIsExpanded,
-	onIsExpandedChange
+	onIsExpandedChange,
+	hasSheet = true
 }: MobileFABProps) {
 	const { t } = useTranslation();
 	const [internalIsExpanded, setInternalIsExpanded] = useState(false);
@@ -81,7 +84,9 @@ export default function MobileFAB({
 				toggleExpanded();
 			},
 			show: true,
-			active: activeTab === 'sheet',
+			// No character loaded means no sheet to open: greyed and inert, never selected.
+			active: hasSheet && activeTab === 'sheet',
+			disabled: !hasSheet,
 		},
 		{
 			id: 'drawer',
@@ -93,6 +98,7 @@ export default function MobileFAB({
 			},
 			show: true,
 			active: activeTab === 'drawer',
+			disabled: false,
 		},
 		{
 			id: 'menu',
@@ -104,6 +110,7 @@ export default function MobileFAB({
 			},
 			show: true,
 			active: activeTab === 'menu',
+			disabled: false,
 		},
 		{
 			id: 'settings',
@@ -116,6 +123,7 @@ export default function MobileFAB({
 			show: true,
 			// Settings is app chrome, never a resting nav tab, so its pill never reads as active.
 			active: false,
+			disabled: false,
 		},
 	].filter(action => action.show);
 
@@ -158,13 +166,16 @@ export default function MobileFAB({
 									delay: index * 0.05,
 								}}
 								onClick={action.onClick}
+								aria-disabled={action.disabled}
 								className={cn(
 									"flex items-center gap-3 rounded-full shadow-lg",
 									"px-4 py-3 min-w-max",
 									"active:scale-95 transition-transform",
-									action.active
-										? "bg-primary text-primary-foreground"
-										: "bg-card text-foreground border border-border"
+									action.disabled
+										? "bg-card text-foreground border border-border opacity-40 pointer-events-none"
+										: action.active
+											? "bg-primary text-primary-foreground"
+											: "bg-card text-foreground border border-border"
 								)}
 							>
 								<Icon className="h-5 w-5" />

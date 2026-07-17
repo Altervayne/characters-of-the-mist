@@ -25,7 +25,7 @@ interface MobileSettingsSubScreenProps {
  */
 export function MobileSettingsSubScreen({ title, description, onBack, children }: MobileSettingsSubScreenProps) {
 	return (
-		<div className="h-full flex flex-col overflow-y-auto pt-safe">
+		<div className="h-full overflow-y-auto pt-safe">
 			<div className="p-6">
 				<div className="flex items-center gap-3 mb-4">
 					{onBack && (
@@ -47,7 +47,7 @@ export function MobileSettingsSubScreen({ title, description, onBack, children }
 				)}
 			</div>
 
-			<div className="flex-1 px-6 pb-6 space-y-6 pb-safe">
+			<div className="px-6 pb-[calc(2rem_+_env(safe-area-inset-bottom))] space-y-6">
 				{children}
 			</div>
 		</div>

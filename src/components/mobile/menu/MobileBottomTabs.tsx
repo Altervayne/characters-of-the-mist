@@ -16,17 +16,16 @@ interface MobileBottomTabsProps {
 	isToolbeltOpen: boolean;
 	/** Toggles the toolbelt side-panel open/closed. */
 	onToggleToolbelt: () => void;
-	/** True when the sheet tab is showing the main menu (no character loaded). */
-	isMainMenu?: boolean;
+	/** Whether a character is loaded; the Sheet tab greys out when false. */
+	hasSheet?: boolean;
 }
 
-export default function MobileBottomTabs({ activeTab, onTabChange, isToolbeltOpen, onToggleToolbelt, isMainMenu = false }: MobileBottomTabsProps) {
+export default function MobileBottomTabs({ activeTab, onTabChange, isToolbeltOpen, onToggleToolbelt, hasSheet = true }: MobileBottomTabsProps) {
 	const { t } = useTranslation();
 
 	// The toolbelt only operates on the character sheet, so its trigger is
-	// disabled (and visually grayed) on every other tab - including the main
-	// menu the sheet tab shows when no character is loaded.
-	const isToolbeltAvailable = activeTab === 'sheet' && !isMainMenu;
+	// disabled (and visually grayed) whenever there is no sheet to act on.
+	const isToolbeltAvailable = activeTab === 'sheet' && hasSheet;
 
 	const tabs = [
 		{
@@ -52,20 +51,29 @@ export default function MobileBottomTabs({ activeTab, onTabChange, isToolbeltOpe
 				{tabs.map((tab) => {
 					const Icon = tab.icon;
 					const isActive = activeTab === tab.id;
+					// With no character loaded there is no sheet to open; grey the tab but keep
+					// it present so it reads as "not now" rather than a missing, broken option.
+					const isDisabled = tab.id === 'sheet' && !hasSheet;
 
 					return (
 						<button
 							key={tab.id}
 							onClick={() => onTabChange(tab.id)}
+							disabled={isDisabled}
 							data-tutorial={`${tab.id}-tab`}
 							className={cn(
 								"flex flex-col items-center justify-center flex-1 h-full transition-colors",
-								"active:bg-muted/50",
-								isActive
-									? "text-primary"
-									: "text-muted-foreground hover:text-foreground"
+								isDisabled
+									? "text-muted-foreground/40 cursor-not-allowed"
+									: cn(
+										"active:bg-muted/50",
+										isActive
+											? "text-primary"
+											: "text-muted-foreground hover:text-foreground"
+									)
 							)}
-							aria-label={tab.label}
+							aria-label={isDisabled ? t('MobileBottomTabs.sheetDisabled') : tab.label}
+							title={isDisabled ? t('MobileBottomTabs.sheetDisabled') : undefined}
 						>
 							<Icon className="h-6 w-6 mb-1" />
 							<span className="text-xs font-medium">{tab.label}</span>

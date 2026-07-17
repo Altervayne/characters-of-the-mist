@@ -29,8 +29,9 @@ import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoadin
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useTabManagerActions } from '@/lib/character/tabManagerStore';
-import { useIsBootHydrating } from '@/lib/character/characterPersistence';
+import { useIsBootHydrating, useCharacterBootStore } from '@/lib/character/characterPersistence';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
 
 // -- Type Imports --
@@ -46,6 +47,15 @@ type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 // any of these is open so it never sits over a pushed sub-screen.
 const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themes', 'themeEditor', 'about', 'patchNotes', 'addCard']);
 
+// The landing tab when the app opens, or history resets with nothing pushed: the
+// sheet when a character is loaded (or still loading at boot), otherwise the Menu -
+// its main-menu home - so we never open onto the greyed, character-less sheet.
+function resolveDefaultTab(): TabId {
+	const bootExpectsCharacter = useCharacterBootStore.getState().isBootHydrating;
+	const hasCharacter = (getActiveCharacterStore()?.getState().character ?? null) !== null;
+	return bootExpectsCharacter || hasCharacter ? 'sheet' : 'menu';
+}
+
 interface HistoryState {
 	tab: TabId;
 	sheetTab?: SheetTab;
@@ -53,7 +63,7 @@ interface HistoryState {
 }
 
 export default function MobileCharacterSheetPage() {
-	const [activeTab, setActiveTab] = useState<TabId>('sheet');
+	const [activeTab, setActiveTab] = useState<TabId>(resolveDefaultTab);
 	const [sheetActiveTab, setSheetActiveTab] = useState<SheetTab>('trackers');
 	const [isMenuFABExpanded, setIsMenuFABExpanded] = useState(false);
 	const [isToolbeltOpen, setIsToolbeltOpen] = useState(false);
@@ -61,6 +71,8 @@ export default function MobileCharacterSheetPage() {
 	const isMobileFABMode = useAppSettingsStore((state) => state.isMobileFABMode);
 	const character = useCharacterStore((state) => state.character);
 	const isBootHydrating = useIsBootHydrating();
+	// With no character loaded there is no sheet to show; the Sheet nav option greys out.
+	const hasSheet = character !== null;
 	const isMobileTutorialOpen = useAppGeneralStateStore((state) => state.isMobileTutorialOpen);
 	const { setMobileOnboardingOpen, setMobileTutorialOpen } = useAppGeneralStateActions();
 
@@ -122,11 +134,12 @@ export default function MobileCharacterSheetPage() {
 
 	// Handle browser back button
 	useEffect(() => {
-		// Set initial state
+		// Set initial state - mirrors the boot landing tab (sheet, or the Menu with no character).
+		const initialTab = resolveDefaultTab();
 		const initialState: HistoryState = {
-			tab: 'sheet',
-			sheetTab: 'trackers',
-			isReordering: false
+			tab: initialTab,
+			sheetTab: initialTab === 'sheet' ? 'trackers' : undefined,
+			isReordering: initialTab === 'sheet' ? false : undefined
 		};
 		window.history.replaceState(initialState, '', window.location.pathname + window.location.search);
 
@@ -147,8 +160,9 @@ export default function MobileCharacterSheetPage() {
 					setIsReorderingCards(false);
 				}
 			} else {
-				// If no state (initial page load or external navigation), reset to defaults
-				setActiveTab('sheet');
+				// If no state (initial page load or external navigation), reset to defaults -
+				// the Menu, not the greyed sheet, when no character is loaded.
+				setActiveTab(resolveDefaultTab());
 				setSheetActiveTab('trackers');
 				setIsReorderingCards(false);
 			}
@@ -165,6 +179,16 @@ export default function MobileCharacterSheetPage() {
 			window.removeEventListener('popstate', handlePopState);
 		};
 	}, []);
+
+	// A character disposed while its sheet is open (Unload, or the overwrite discard) would
+	// strand the user on an empty sheet, so redirect to the Menu the moment it goes away.
+	// Skipped while boot is still hydrating, when a character may yet be on its way in.
+	useEffect(() => {
+		if (!isBootHydrating && !character && activeTab === 'sheet') {
+			navigateToTab('menu');
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [character, activeTab, isBootHydrating]);
 
 	const handleStartTour = () => {
 		navigateToTab('sheet');
@@ -253,32 +277,23 @@ export default function MobileCharacterSheetPage() {
 		return <CharacterBootLoading />;
 	}
 
-	// The tab system is always active: with no character loaded, the sheet tab
-	// hosts the main menu so the Drawer (where a character is loaded) stays
-	// reachable through the bottom nav.
-	const isMainMenu = activeTab === 'sheet' && !character;
-
 	return (
 		<div className="overflow-hidden flex flex-col" style={{ height: '100dvh', width: '100dvw' }}>
 			{/* Main Content */}
 			<div className="flex-1 overflow-hidden">
-				{activeTab === 'sheet' && (
-					character ? (
-						<MobileCharacterSheet
-							activeTab={sheetActiveTab}
-							onTabChange={navigateToSheetTab}
-							isToolbeltOpen={isToolbeltOpen}
-							onToolbeltOpenChange={setIsToolbeltOpen}
-							isMenuFABExpanded={isMenuFABExpanded}
-							isReorderingCards={isReorderingCards}
-							onReorderingCardsChange={setReorderingWithHistory}
-							onOpenAddCard={handleOpenAddCard}
-							onEditCard={handleEditCard}
-							initialCardId={newlyCreatedCardId}
-						/>
-					) : (
-						<MobileMainMenu onOpenSettings={handleOpenSettings} onCharacterOpened={() => navigateToTab('sheet')} />
-					)
+				{activeTab === 'sheet' && character && (
+					<MobileCharacterSheet
+						activeTab={sheetActiveTab}
+						onTabChange={navigateToSheetTab}
+						isToolbeltOpen={isToolbeltOpen}
+						onToolbeltOpenChange={setIsToolbeltOpen}
+						isMenuFABExpanded={isMenuFABExpanded}
+						isReorderingCards={isReorderingCards}
+						onReorderingCardsChange={setReorderingWithHistory}
+						onOpenAddCard={handleOpenAddCard}
+						onEditCard={handleEditCard}
+						initialCardId={newlyCreatedCardId}
+					/>
 				)}
 				{activeTab === 'drawer' && (
 					<MobileDrawer onAddToCharacter={handleAddDrawerItemToCharacter} onLoadCharacter={handleLoadCharacterFromDrawer} />
@@ -345,7 +360,7 @@ export default function MobileCharacterSheetPage() {
 						onTabChange={navigateToTab}
 						isToolbeltOpen={isToolbeltOpen}
 						onToggleToolbelt={() => setIsToolbeltOpen((open) => !open)}
-						isMainMenu={isMainMenu}
+						hasSheet={hasSheet}
 					/>
 				) : (
 					<MobileFAB
@@ -358,6 +373,7 @@ export default function MobileCharacterSheetPage() {
 						isToolbeltOpen={isToolbeltOpen}
 						isExpanded={isMenuFABExpanded}
 						onIsExpandedChange={setIsMenuFABExpanded}
+						hasSheet={hasSheet}
 					/>
 				)
 			)}
