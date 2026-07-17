@@ -267,7 +267,7 @@ export function ThemeManager({ onEnterEditor }: { onEnterEditor?: () => void } =
    };
 
    return (
-      <div className="flex flex-col gap-3">
+      <div data-tutorial="themes-list" className="flex flex-col gap-3">
          {/* Presets stay pinned at the top. */}
          <div className="flex flex-col gap-1">
             <SectionHeading>{t('SettingsDialog.themes.presetsHeading')}</SectionHeading>
@@ -284,6 +284,7 @@ export function ThemeManager({ onEnterEditor }: { onEnterEditor?: () => void } =
                <Tooltip>
                   <TooltipTrigger asChild>
                      <Button
+                        data-tutorial="themes-import"
                         variant="ghost"
                         size="icon"
                         onClick={() => importInputRef.current?.click()}

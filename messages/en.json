@@ -1532,6 +1532,10 @@
          "drawer": {
             "title": "The Drawer",
             "teach": "Opening your library, sorting folders, searching, and the expanded Drawer."
+         },
+         "themes": {
+            "title": "Themes",
+            "teach": "Choosing a theme, the light and dark modes, and building your own colors."
          }
       }
    },
@@ -1856,6 +1860,22 @@
          "expanded_body": "This is the same Drawer with the whole width to lay its items out. It is the place to sort, rename, and tidy in bulk. To drop an item onto the surface behind it, start dragging and hold at the bottom edge, and the Drawer slides aside to let the item through.",
          "wrap_title": "That's the Drawer",
          "wrap_body": "You have opened the Drawer, browsed its folders and items, searched them, and expanded it to full width. It waits behind the button on the side wherever you are, holding everything you save. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "themes": {
+         "welcome_title": "Themes",
+         "welcome_body": "The whole look of the app is a theme, a set of colors you can change or build yourself. This lesson opens your appearance settings, tries a ready-made theme, and points you to where you can craft your own.",
+         "mode_title": "Light and Dark",
+         "mode_body": "This switch sets the overall mode. Light and Dark pin it one way, and System follows whatever your device is set to. It is the coarse choice you make before you pick the colors themselves.",
+         "themeList_title": "The Theme List",
+         "themeList_body": "Below the mode sit your themes: the presets that ship with the app, and any you have made yourself. Selecting one applies it at once, and the whole app takes on its colors, this window included.",
+         "applyPreset_title": "Try One On",
+         "applyPreset_body": "Click a theme in the list to put it on, and watch the colors change around you as the app re-skins live. Pick whichever one you like, and the tour moves on.",
+         "makeYourOwn_title": "Make Your Own",
+         "makeYourOwn_body": "This button opens the theme editor. Inside, you set each color by hand for both light and dark, with a live preview beside you as you work. A seed generator can grow a whole palette from a single color when you want a fast start. Presets cannot be edited in place, so the editor hands you an editable copy to build from.",
+         "importExport_title": "Share Themes",
+         "importExport_body": "A theme you make can travel. This button imports one from a file, and each of your own themes can be exported the same way from its menu. It is how you hand a palette to another player or carry one between your devices.",
+         "wrap_title": "That's Themes",
+         "wrap_body": "You have set the mode, tried a theme, and seen where to build your own. We put your theme back the way you found it, so nothing here changed your setup. You can replay this lesson any time from the Learn section in your Settings."
       }
    },
 

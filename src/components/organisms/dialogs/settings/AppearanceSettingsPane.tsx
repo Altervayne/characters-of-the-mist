@@ -167,7 +167,7 @@ export function AppearanceSettingsPane() {
 
             {/* Mode: keyed on the CHOSEN mode (not the resolved one), so a `system` pick lights `system` rather
                 than the light/dark it happens to resolve to. */}
-            <div className="grid grid-cols-3 items-center gap-4">
+            <div data-tutorial="appearance-mode" className="grid grid-cols-3 items-center gap-4">
                <Label className="text-left">{t('SettingsDialog.mode')}</Label>
                <div className="col-span-2 inline-flex w-full rounded-md border border-border bg-muted p-0.5">
                   {MODE_OPTIONS.map((option) => {
@@ -195,7 +195,7 @@ export function AppearanceSettingsPane() {
             <div className="grid gap-3">
                <div className="flex items-center justify-between gap-2">
                   <Label className="text-left">{t('SettingsDialog.theme')}</Label>
-                  <Button variant="outline" size="sm" onClick={() => setEditorOpen(true)} className="shrink-0 cursor-pointer">
+                  <Button data-tutorial="themes-edit" variant="outline" size="sm" onClick={() => setEditorOpen(true)} className="shrink-0 cursor-pointer">
                      <Palette className="h-4 w-4 shrink-0" />{t('SettingsDialog.themes.editThemes')}
                   </Button>
                </div>
@@ -213,7 +213,10 @@ export function AppearanceSettingsPane() {
  */
 function EditableThemeName({ id, name, onRename, label }: { id: string; name: string; onRename: (id: string, name: string) => void; label: string }) {
    const [value, setValue] = useState(name);
-   useEffect(() => setValue(name), [name]);
+   // Re-sync to the saved name if it changes underneath us (a rename elsewhere, a theme switch) by adjusting
+   // during render rather than in an effect - no extra commit, and it never fights what the user is typing.
+   const [seenName, setSeenName] = useState(name);
+   if (name !== seenName) { setSeenName(name); setValue(name); }
    const commit = () => {
       const trimmed = value.trim();
       if (trimmed && trimmed !== name) onRename(id, trimmed);

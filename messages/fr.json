@@ -1438,6 +1438,10 @@
          "drawer": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "themes": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1721,6 +1725,22 @@
          "expand_body": "[TO COMPLETE]",
          "expanded_title": "[TO COMPLETE]",
          "expanded_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "themes": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "mode_title": "[TO COMPLETE]",
+         "mode_body": "[TO COMPLETE]",
+         "themeList_title": "[TO COMPLETE]",
+         "themeList_body": "[TO COMPLETE]",
+         "applyPreset_title": "[TO COMPLETE]",
+         "applyPreset_body": "[TO COMPLETE]",
+         "makeYourOwn_title": "[TO COMPLETE]",
+         "makeYourOwn_body": "[TO COMPLETE]",
+         "importExport_title": "[TO COMPLETE]",
+         "importExport_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       }
