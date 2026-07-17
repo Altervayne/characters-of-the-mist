@@ -475,7 +475,7 @@
    },
    "Errors": {
       "localStorageDisabled_title": "Critical Storage Error",
-      "localStorageDisabled_description": "It seems that for one reason or another, your browser's local storage is not accessible for the App. Characters of the Mist relies solely on browser local storage for data management and persistance, and does not use a server at all. This means that in your case, it cannot run.",
+      "localStorageDisabled_description": "It seems that for one reason or another, your browser's local storage is not accessible for the App. Campaigns of the Mist relies solely on browser local storage for data management and persistance, and does not use a server at all. This means that in your case, it cannot run.",
       "ErrorBoundary": {
          "title": "Something went wrong",
          "description": "I'm sorry, but an unexpected error occurred. Please submit a bug report to the Tools of the Mist discord, while explaining what you were doing at the time of the error. You can try reloading the app to fix it.",
@@ -1237,12 +1237,12 @@
          "credits": "Credits"
       },
       "content": {
-         "about": "#### What is Characters of the Mist?\n\nCharacters of the Mist is an **unofficial**, fan-made character creator and manager for the TTRPGs from [Amit Moshe and Son of Oak Game Studio LLC](https://cityofmist.co). It's built from the ground up with a modern and responsive design, and all your data is saved directly in your browser for complete privacy and control. This tool is in no way endorsed by Amit Moshe or Son of Oak Game Studio LLC.\n\n---\n\n#### What can this tool do?\n\nThis tool is meant to help you create and update your character sheet quickly and easily. It allows you to edit your Theme Cards, Statuses, and Name, and save everything automatically. Beyond the basics, it's packed with powerful features to make managing your character a breeze:\n\n* A versatile **Drawer** that acts like a complete file system for your character components, with full drag-and-drop organization and a compact view for managing many items.\n\n* Intuitive **drag-and-drop** for almost everything: reorder your cards and trackers, move items between folders, or even load an entire character by dragging it from the drawer.\n\n* A fully **dynamic character sheet** with flexible cards. You can even switch to a **side-by-side view** if you prefer to see the front and back of cards at the same time.\n\n* A powerful **Undo & Redo system** (`Ctrl+Z` / `Ctrl+Y`) that will allow you to fix your mistakes whether they happened in the Drawer or on your Character Sheet.\n\n* A **Command Palette** (`Ctrl+K` or `Cmd+K`) that lets you find and use any feature in the app without touching your mouse.\n\n* **Game-related personalization** with multiple color themes assorted to Mist TTRPGs and a light/dark mode toggle to make the app feel like your own.\n\n---\n\n#### Can this tool be used as a VTT?\n\nAs it is right now, this tool is only a character manager. It doesn't support battlemaps, handouts, dice rollers or further automatization. You are free to fork this project and add those features, as long as the license terms are respected.\n\n---\n\n#### Can I report a problem with the app?\n\nYou can send me a message on [the official Tools of the Mist discord](https://discord.gg/c7GBPyTcWW) should you encounter a problem with the app, and I will see what I can do about it. Keep in mind however that this app is distributed AS-IS, with no guarantees whatsoever.",
+         "about": "#### What is Campaigns of the Mist?\n\nCampaigns of the Mist is an **unofficial**, fan-made character creator and manager for the TTRPGs from [Amit Moshe and Son of Oak Game Studio LLC](https://cityofmist.co). It's built from the ground up with a modern and responsive design, and all your data is saved directly in your browser for complete privacy and control. This tool is in no way endorsed by Amit Moshe or Son of Oak Game Studio LLC.\n\n---\n\n#### What can this tool do?\n\nThis tool is meant to help you create and update your character sheet quickly and easily. It allows you to edit your Theme Cards, Statuses, and Name, and save everything automatically. Beyond the basics, it's packed with powerful features to make managing your character a breeze:\n\n* A versatile **Drawer** that acts like a complete file system for your character components, with full drag-and-drop organization and a compact view for managing many items.\n\n* Intuitive **drag-and-drop** for almost everything: reorder your cards and trackers, move items between folders, or even load an entire character by dragging it from the drawer.\n\n* A fully **dynamic character sheet** with flexible cards. You can even switch to a **side-by-side view** if you prefer to see the front and back of cards at the same time.\n\n* A powerful **Undo & Redo system** (`Ctrl+Z` / `Ctrl+Y`) that will allow you to fix your mistakes whether they happened in the Drawer or on your Character Sheet.\n\n* A **Command Palette** (`Ctrl+K` or `Cmd+K`) that lets you find and use any feature in the app without touching your mouse.\n\n* **Game-related personalization** with multiple color themes assorted to Mist TTRPGs and a light/dark mode toggle to make the app feel like your own.\n\n---\n\n#### Can this tool be used as a VTT?\n\nAs it is right now, this tool is only a character manager. It doesn't support battlemaps, handouts, dice rollers or further automatization. You are free to fork this project and add those features, as long as the license terms are respected.\n\n---\n\n#### Can I report a problem with the app?\n\nYou can send me a message on [the official Tools of the Mist discord](https://discord.gg/c7GBPyTcWW) should you encounter a problem with the app, and I will see what I can do about it. Keep in mind however that this app is distributed AS-IS, with no guarantees whatsoever.",
          "license": "#### What license is this code under?\n\nThis app is under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html).\n\nThis means you are free to use, copy, modify, and redistribute the code, including for commercial purposes. However, if you distribute or run a modified version (including hosting it for others over a network), you must make your full source code available under this same license.",
          "credits": "#### Credits & Attributions\n\nThank you to [Son of Oak Game Studio LLC](https://cityofmist.co) for creating City of Mist, Metro:OTHERSCAPE and Legend in the Mist. The City of Mist Logos and Mythos icons, as well as the :Otherscape Noise, Self and Mythos icons are the intellectual property of Son of Oak Game Studios. I do not claim any ownership on these icons, and will remove them from the app should it be requested.",
-         "localization": "#### Localization\n\nThank you to everyone who helped make Characters of the Mist available in languages other than English!"
+         "localization": "#### Localization\n\nThank you to everyone who helped make Campaigns of the Mist available in languages other than English!"
       },
-      "license_credit": "Characters of the Mist was created and is being maintained by Altervayne (Discord: @altervayne) and is licensed under the GNU Affero General Public License v3.0."
+      "license_credit": "Campaigns of the Mist was created and is being maintained by Altervayne (Discord: @altervayne) and is licensed under the GNU Affero General Public License v3.0."
    },
    "PatchNotesDialog": {
       "title": "Patch Notes",
@@ -1261,8 +1261,8 @@
    "MigrationDialog": {
       "title": "Migrate legacy character data",
       "removeFile": "Remove file",
-      "description": "Here, you can migrate legacy character files from the alpha version of Characters of the Mist to the new, polished version. The Migrator will place the updated files at the root of your Drawer.",
-      "thankYou": "If you are here, you most likely used the alpha version of Characters of the Mist. I would like to personally thank you for using my app, despite its many flaws. Much love,",
+      "description": "Here, you can migrate legacy character files from the alpha version of Campaigns of the Mist to the new, polished version. The Migrator will place the updated files at the root of your Drawer.",
+      "thankYou": "If you are here, you most likely used the alpha version of Campaigns of the Mist. I would like to personally thank you for using my app, despite its many flaws. Much love,",
 
       "dropzone": {
          "inactive": "Waiting for a file...",
@@ -1275,7 +1275,7 @@
    },
    "LegacyDataDialog": {
       "title": "Legacy data found!",
-      "info": "Legacy data from the old, Alpha version of Characters of the Mist was found in your browser storage.",
+      "info": "Legacy data from the old, Alpha version of Campaigns of the Mist was found in your browser storage.",
       "description": "The App is going to delete this data as a cleanup measure. Before that, you can download your old data to use with the migration tools if you want.",
       "warning": "If you press Dismiss, the data will be deleted and lost forever. You cannot undo this. Pressing Download will trigger a browser download of the legacy data.",
 
@@ -1285,8 +1285,8 @@
       "downloadButton": "Download legacy data"
    },
    "MainMenu": {
-      "title": "Characters of the Mist",
-      "subtitle": "Welcome to Characters of the Mist, please pick a game system, or load a character directly.",
+      "title": "Campaigns of the Mist",
+      "subtitle": "Welcome to Campaigns of the Mist, please pick a game system, or load a character directly.",
       "createButton": "Create New Character",
       "importButton": "Import Character from File",
       "settings": "Settings",
@@ -1320,7 +1320,7 @@
       }
    },
    "WelcomeDialog": {
-      "title": "Welcome to Characters of the Mist!",
+      "title": "Welcome to Campaigns of the Mist!",
       "description": "This is an unofficial, fan-made character manager for TTRPGs by Son of Oak Game Studios. All your data is saved in your browser, ensuring complete privacy.",
       "featuresTitle": "Key Features:",
       "feature1": "A dynamic character sheet with full drag & drop functionality.",
@@ -1328,7 +1328,7 @@
       "feature3": "A full file system in the Drawer to organize your characters and components.",
       "feature4": "A robust Undo/Redo system to fix any mistakes.",
       "callToAction": "There is a simple beginner's tutorial at your disposal, which you may start with the button below. Alternatively, you could go and read the patch notes. If you want to get straight to the app, you can simply close this window.",
-      "needHelp": "If you need help, or find a bug, you can reach out to the Tools of the Mist discord for support. You will find a link in the \"About\" section of the App Info window. Thank you for using Characters of the Mist, have fun!",
+      "needHelp": "If you need help, or find a bug, you can reach out to the Tools of the Mist discord for support. You will find a link in the \"About\" section of the App Info window. Thank you for using Campaigns of the Mist, have fun!",
       "startTutorialButton": "Start Tutorial",
       "patchNotesButton": "View Patch Notes"
    },
@@ -1572,7 +1572,7 @@
       "anchorMissing": "This part of the app has changed, so the tutorial is ending here.",
 
       "mainMenuGames_title": "Choose Your Game",
-      "mainMenuGames_content": "Characters of the Mist supports three game systems: Legend in the Mist, City of Mist, and Otherscape. You can create characters for any of these systems.",
+      "mainMenuGames_content": "Campaigns of the Mist supports three game systems: Legend in the Mist, City of Mist, and Otherscape. You can create characters for any of these systems.",
 
       "mainMenuLegends_title": "Legend in the Mist",
       "mainMenuLegends_content": "For this tutorial, we'll create a Legend in the Mist character. Click this card to select it, then we'll proceed to create your first character!",
@@ -2274,7 +2274,7 @@
    },
    "MobileOnboarding": {
       "welcome": {
-         "title": "Welcome to Characters of the Mist",
+         "title": "Welcome to Campaigns of the Mist",
          "description": "Let's set up your preferences to get you started. You can always get back to this screen from the Settings",
          "getStarted": "Get Started"
       },
@@ -2310,7 +2310,7 @@
       "ready": {
          "title": "You're All Set!",
          "description": "Your preferences have been saved",
-         "startApp": "Start Characters of the Mist",
+         "startApp": "Start Campaigns of the Mist",
          "takeTour": "Start the Tutorial",
          "tutorialReminder": "You can restart the tutorial anytime from Settings"
       },

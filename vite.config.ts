@@ -30,7 +30,7 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'icons/**/*', 'fonts/**/*.woff2'],
       manifest: {
-        name: 'Characters of the Mist',
+        name: 'Campaigns of the Mist',
         short_name: 'CotM',
         description: 'A modern, privacy-first character sheet manager for City of Mist, Otherscape, and Legend in the Mist TTRPGs.',
         id: '/',

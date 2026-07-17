@@ -117,7 +117,7 @@ export default function MobileSettings({ onOpenGeneral, onOpenAppearance, onOpen
 
 				{/* Version footer */}
 				<div className="text-xs text-center text-muted-foreground pt-4">
-					<p>Characters of the Mist</p>
+					<p>Campaigns of the Mist</p>
 					<p>Version {APP_VERSION || '1.0.0'}</p>
 				</div>
 			</div>

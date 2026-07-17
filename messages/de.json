@@ -45,7 +45,7 @@
    },
    "Errors": {
       "localStorageDisabled_title": "Kritischer Speicherfehler",
-      "localStorageDisabled_description": "Ihr Browser kann den lokalen Speicher für die App nicht nutzen. Characters of the Mist benötigt diesen Speicher für die Datenverwaltung und verwendet keinen Server. Daher kann die App in Ihrem Fall nicht ausgeführt werden."
+      "localStorageDisabled_description": "Ihr Browser kann den lokalen Speicher für die App nicht nutzen. Campaigns of the Mist benötigt diesen Speicher für die Datenverwaltung und verwendet keinen Server. Daher kann die App in Ihrem Fall nicht ausgeführt werden."
    },
    "Tooltips": {
       "ViewMode": {
@@ -253,7 +253,7 @@
       }
    },
    "InfoDialog": {
-      "title": "Über Characters of the Mist",
+      "title": "Über Campaigns of the Mist",
       "description": "Informationen, Credits und Lizenzierung für diese Anwendung.",
       "close": "Schließen",
       "tabs": {
@@ -262,13 +262,13 @@
          "credits": "Würdigungen"
       },
       "content": {
-         "about": "#### Was ist Characters of the Mist?\n\nCharacters of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.\n\n---\n\n#### Was kann dieses Tool tun?\n\nDieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:\n\n* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.\n\n* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.\n\n* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.\n\n* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.\n\n* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.\n\n* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.\n\n---\n\n#### Kann dieses Tool als VTT verwendet werden?\n\nAktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.\n\n---\n\n#### Kann ich ein Problem mit der App melden?\n\nSie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
+         "about": "#### Was ist Campaigns of the Mist?\n\nCampaigns of the Mist ist ein **inoffizieller**, von Fans erstellter Charaktergenerator und -manager für die TTRPGs von [Amit Moshe und Son of Oak Game Studio LLC](https://cityofmist.co). Es wurde von Grund auf mit einem modernen und responsiven Design entwickelt, und alle Ihre Daten werden direkt in Ihrem Browser gespeichert, um vollständige Privatsphäre und Kontrolle zu gewährleisten. Dieses Tool wird in keiner Weise von Amit Moshe oder Son of Oak Game Studio LLC unterstützt.\n\n---\n\n#### Was kann dieses Tool tun?\n\nDieses Tool soll Ihnen helfen, Ihr Charakterblatt schnell und einfach zu erstellen und zu aktualisieren. Es ermöglicht Ihnen, Ihre Theme Cards, Status und Namen zu bearbeiten und alles automatisch zu speichern. Neben den Grundlagen ist es mit leistungsstarken Funktionen ausgestattet, um das Verwalten Ihres Charakters zu erleichtern:\n\n* Ein vielseitiger **Drawer**, der wie ein komplettes Dateisystem für Ihre Charakterkomponenten funktioniert, mit vollständiger Drag-and-Drop-Organisation und einer kompakten Ansicht zum Verwalten vieler Elemente.\n\n* Intuitives **Drag-and-Drop** für fast alles: Ordnen Sie Ihre Karten und Tracker neu, verschieben Sie Elemente zwischen Ordnern oder laden Sie sogar einen ganzen Charakter, indem Sie ihn aus dem Drawer ziehen.\n\n* Ein vollständig **dynamisches Charakterblatt** mit flexiblen Karten. Sie können sogar zu einer **nebeneinander Ansicht** wechseln, wenn Sie die Vorder- und Rückseite der Karten gleichzeitig sehen möchten.\n\n* Ein leistungsstarkes **Undo & Redo-System** (`Ctrl+Z` / `Ctrl+Y`), das es Ihnen ermöglicht, Ihre Fehler zu beheben, egal ob sie im Drawer oder auf Ihrem Charakterblatt passiert sind.\n\n* Eine **Command Palette** (`Ctrl+K` oder `Cmd+K`), die Ihnen ermöglicht, jede Funktion in der App zu finden und zu nutzen, ohne Ihre Maus zu berühren.\n\n* **Spielbezogene Personalisierung** mit mehreren Farbthemen, die auf Mist TTRPGs abgestimmt sind, und einem Licht-/Dunkelmodus-Umschalter, um die App wie Ihre eigene zu gestalten.\n\n---\n\n#### Kann dieses Tool als VTT verwendet werden?\n\nAktuell ist dieses Tool nur ein Charaktermanager. Es unterstützt keine Battlemaps, Handouts, Würfelroller oder weitere Automatisierung. Sie sind frei, dieses Projekt zu forken und diese Funktionen hinzuzufügen, solange die Lizenzbedingungen respektiert werden.\n\n---\n\n#### Kann ich ein Problem mit der App melden?\n\nSie können mir eine Nachricht auf [dem offiziellen Tools of the Mist Discord](https://discord.gg/c7GBPyTcWW) senden, wenn Sie ein Problem mit der App haben, und ich werde sehen, was ich tun kann. Bedenken Sie jedoch, dass diese App AS-IS verteilt wird, ohne jegliche Garantien.",
          "credits": "#### Credits & Attributions\n\nVielen Dank an [Son of Oak Game Studio LLC](https://cityofmist.co) für die Erstellung von City of Mist, Metro: OTHERSCAPE und Legend in the Mist.",
-         "localization": "#### Localization\n\nVielen Dank an alle, die dazu beigetragen haben, dass Characters of the Mist in anderen Sprachen als Englisch verfügbar ist!"
+         "localization": "#### Localization\n\nVielen Dank an alle, die dazu beigetragen haben, dass Campaigns of the Mist in anderen Sprachen als Englisch verfügbar ist!"
       }
    },
    "PatchNotesDialog": {
-      "title": "Characters of the Mist - Patch Hinweise",
+      "title": "Campaigns of the Mist - Patch Hinweise",
       "description": "Sie werden die Patch-Notizen für die neuesten Versionen in diesem Fenster sehen.",
 
       "versionLabel": "Version",
@@ -280,8 +280,8 @@
    },
    "MigrationDialog": {
       "title": "Legacy Charakter Daten migrieren",
-      "description": "Hier können Sie alte Charakterdateien aus der Alpha-Version von Characters of the Mist in die neue, optimierte Version migrieren. Der Migrator platziert die aktualisierten Dateien im Wurzelverzeichnis Ihres Drawer",
-      "thankYou": "Wenn Sie hier sind, haben Sie höchstwahrscheinlich die Alpha-Version von Characters of the Mist verwendet. Ich möchte mich persönlich bei Ihnen bedanken, dass Sie meine App genutzt haben, trotz ihrer vielen Mängel. Viel Liebe,",
+      "description": "Hier können Sie alte Charakterdateien aus der Alpha-Version von Campaigns of the Mist in die neue, optimierte Version migrieren. Der Migrator platziert die aktualisierten Dateien im Wurzelverzeichnis Ihres Drawer",
+      "thankYou": "Wenn Sie hier sind, haben Sie höchstwahrscheinlich die Alpha-Version von Campaigns of the Mist verwendet. Ich möchte mich persönlich bei Ihnen bedanken, dass Sie meine App genutzt haben, trotz ihrer vielen Mängel. Viel Liebe,",
 
       "dropzone": {
          "inactive": "Warte auf Datei...",
@@ -294,7 +294,7 @@
    },
    "LegacyDataDialog": {
       "title": "Legacy Daten gefunden!",
-      "info": "Legacy-Daten aus der alten Alpha-Version von Characters of the Mist wurden in Ihrem Browser-Speicher gefunden.",
+      "info": "Legacy-Daten aus der alten Alpha-Version von Campaigns of the Mist wurden in Ihrem Browser-Speicher gefunden.",
       "description": "Die App wird diese Daten als Bereinigungsmaßnahme löschen. Vorher kannst du deine alten Daten herunterladen, um sie bei den Migrationstools zu verwenden, wenn du möchtest.",
       "warning": "Wenn Sie auf Verwerfen drücken, werden die Daten gelöscht und für immer verloren sein. Diese Aktion kann nicht rückgängig gemacht werden. Durch Drücken von Herunterladen wird ein Download der Legacy-Daten im Browser ausgelöst.",
 
@@ -304,7 +304,7 @@
       "downloadButton": "Legacy Daten herrunterladen"
    },
    "WelcomeDialog": {
-      "title": "Wilkonnen zu Characters of the Mist!",
+      "title": "Wilkonnen zu Campaigns of the Mist!",
       "description": "Dies ist ein inoffizieller, von Fans erstellter Charaktermanager für TTRPGs von Son of Oak Game Studios. Alle Ihre Daten werden in Ihrem Browser gespeichert, um vollständige Privatsphäre zu gewährleisten.",
       "featuresTitle": "Hauptmerkmale:",
       "feature1": "Ein dynamisches Charakterblatt mit vollständiger Drag & Drop-Funktionalität.",
@@ -312,7 +312,7 @@
       "feature3": "Ein vollständiges Dateisystem in der Drawer zur Organisation deiner Charaktere und Komponenten.",
       "feature4": "Ein robustes Rückgängig/Wiederherstellen-System, um Fehler zu beheben.",
       "callToAction": "Es gibt ein einfaches Anfänger-Tutorial, das Sie mit der Schaltfläche unten starten können. Alternativ können Sie die Patch-Notizen lesen. Wenn Sie direkt zur App möchten, können Sie einfach dieses Fenster schließen.",
-      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt „Über“ des App-Info-Fensters. Vielen Dank, dass Sie Characters of the Mist verwenden, viel Spaß!",
+      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt „Über“ des App-Info-Fensters. Vielen Dank, dass Sie Campaigns of the Mist verwenden, viel Spaß!",
       "startTutorialButton": "Tutorial beginnen",
       "patchNotesButton": "Patch Hinweise ansehen"
    },
@@ -419,14 +419,14 @@
       }
    },
    "Tutorial": {
-      "welcome_title": "Wilkommen zu Characters of the Mist!",
+      "welcome_title": "Wilkommen zu Campaigns of the Mist!",
       "welcome_content": "Diese kurze Tour führt Sie durch die Hauptfunktionen. Sie können jederzeit aussteigen, indem Sie auf das 'X' oben rechts in diesem kleinen Fenster oder außerhalb klicken. Wenn Sie versehentlich aussteigen, können Sie das Tutorial erneut im Einstellungsmenü starten.",
       
       "sidebar_title": "Hauptseitenleiste",
       "sidebar_content": "Dies ist die Hauptseitenleiste. Sie enthält globale Aktionen wie das Umschalten des Bearbeitungsmodus, das Öffnen der Dateiansicht und den Zugriff auf die Einstellungen.",
 
       "playArea_title": "Charakterbogen",
-      "playArea_content": "Characters of the Mist kann sich auf deinen „Spielbereich“ oder „Charakterbogen“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
+      "playArea_content": "Campaigns of the Mist kann sich auf deinen „Spielbereich“ oder „Charakterbogen“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
       
       "characterName_title": "Charaktername",
       "characterName_content": "Du kannst den Namen deines Charakters hier jederzeit ändern. Deine Änderungen werden automatisch gespeichert.",
@@ -453,16 +453,16 @@
       "exportCharacter_content": "Dieser Button ermöglicht es Ihnen, Ihren aktuellen Charakter zu exportieren, wodurch Ihr Browser zum Herunterladen einer Datei aufgefordert wird.",
 
       "importCharacter_title": "Einen Charakter importieren",
-      "importCharacter_content": "Dieser Button fordert Sie auf, eine Datei auszuwählen. Wenn Sie eine Charakterdatei von Characters of the Mist auswählen, wird diese Datei in die App als Ihr neuer aktiver Charakter geladen.",
+      "importCharacter_content": "Dieser Button fordert Sie auf, eine Datei auszuwählen. Wenn Sie eine Charakterdatei von Campaigns of the Mist auswählen, wird diese Datei in die App als Ihr neuer aktiver Charakter geladen.",
 
       "importComponent_title": "Eine Komponente importieren",
-      "importComponent_content": "Dieser Button fordert Sie ebenfalls auf, eine Datei auszuwählen. Wenn Sie eine Karten- oder Tracker-Datei aus Characters of the Mist auswählen, wird sie geladen und zu Ihrem aktuellen Charakter hinzugefügt.",
+      "importComponent_content": "Dieser Button fordert Sie ebenfalls auf, eine Datei auszuwählen. Wenn Sie eine Karten- oder Tracker-Datei aus Campaigns of the Mist auswählen, wird sie geladen und zu Ihrem aktuellen Charakter hinzugefügt.",
 
       "resetCharacter_title": "Charakter zurücksetzen",
       "resetCharacter_content": "Dieser Button löscht deinen aktiven Charakter vollständig und verwandelt dein Charakterblatt in eine frische leere Vorlage, um von vorne zu beginnen.",
 
       "settings_title": "Einstellungen",
-      "settings_content": "Dieser Button öffnet das Einstellungsmenü, wo Sie Funktionen wie die Auswahl der Farbpalette Ihrer App, den Wechsel zwischen Hell- und Dunkelmodus oder das Zurücksetzen aller Ihrer Daten nutzen können. Hier finden Sie auch das Migrationswerkzeug, mit dem Sie die Daten der Legacy Characters of the Mist in diese neue Version migrieren können.",
+      "settings_content": "Dieser Button öffnet das Einstellungsmenü, wo Sie Funktionen wie die Auswahl der Farbpalette Ihrer App, den Wechsel zwischen Hell- und Dunkelmodus oder das Zurücksetzen aller Ihrer Daten nutzen können. Hier finden Sie auch das Migrationswerkzeug, mit dem Sie die Daten der Legacy Campaigns of the Mist in diese neue Version migrieren können.",
 
       "appInfo_title": "App Informaton",
       "appInfo_content": "Dieser Button öffnet ein Informationsmenü, das einen allgemeinen „Über“-Bereich für diese App, Lizenzinformationen und Danksagungen enthält.",
@@ -501,7 +501,7 @@
       "drawerUndoRedo_content": "Ähnlich wie im Seitenmenü verfügt die Drawer über ein Paar Rückgängig/Wiederholen-Buttons. Diese Buttons ermöglichen es Ihnen, Aktionen innerhalb der Drawer rückgängig zu machen oder wiederherzustellen. Genau wie beim Charakterblatt können Sie, wenn Ihre letzte Aktion in der Drawer war, auch die Tasten CTRL+Z und CTRL+Y verwenden.",
 
       "drawerRichView_title": "Ausführliche Ansicht",
-      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Characters of the Mist als „Ausführliche Ansicht“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
+      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Campaigns of the Mist als „Ausführliche Ansicht“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
 
       "drawerFolders_title": "Ordner",
       "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche „Ordner hinzufügen“, mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von „...“ auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
@@ -510,16 +510,16 @@
       "drawerItems_content": "Hier ist der Ort, an dem Ihre Items gespeichert sind. Items sind Charakterblätter, Karten oder Tracker. Sie können Einträge hinzufügen, indem Sie Ihren Charakter speichern oder sie von Ihrem Charakterblatt in die Schublade ziehen und ablegen. Jeder Eintrag verfügt außerdem über ein Kontextmenü mit verschiedenen Optionen und kann verschoben werden.",
 
       "drawerImport_title": "Datei importieren",
-      "drawerImport_content": "Sie können eine externe Datei in Ihren Drawer importieren. Die Datei muss eine gültige Characters of the Mist-Datei sein, das heißt, ein Drawer, ein Charakterblatt, eine Karte, ein Ordner oder ein Tracker.",
+      "drawerImport_content": "Sie können eine externe Datei in Ihren Drawer importieren. Die Datei muss eine gültige Campaigns of the Mist-Datei sein, das heißt, ein Drawer, ein Charakterblatt, eine Karte, ein Ordner oder ein Tracker.",
 
       "drawerExport_title": "Deinen Drawer exportieren",
       "drawerExport_content": "Dieser Button ermöglicht es Ihnen, Ihren gesamten Drawer als Datei zu exportieren.",
 
       "commandPalette_title": "Kommando Palette",
-      "commandPalette_content": "Characters of the Mist bietet eine leistungsstarke Kommando-Palette, mit der Sie die Funktionen der App nur mit Ihrer Tastatur nutzen können! Um sie zu verwenden, drücken Sie einfach CTRL+K. Beachten Sie, dass dieses Feature auf Power-User ausgerichtet ist.",
+      "commandPalette_content": "Campaigns of the Mist bietet eine leistungsstarke Kommando-Palette, mit der Sie die Funktionen der App nur mit Ihrer Tastatur nutzen können! Um sie zu verwenden, drücken Sie einfach CTRL+K. Beachten Sie, dass dieses Feature auf Power-User ausgerichtet ist.",
 
       "closingWords_title": "Das Ende",
-      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt „App-Info“. Vielen Dank, dass Sie Characters of the Mist verwenden!"
+      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt „App-Info“. Vielen Dank, dass Sie Campaigns of the Mist verwenden!"
    },
 
 
