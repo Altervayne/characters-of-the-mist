@@ -11,7 +11,8 @@ export type TutorialSystem =
    | 'notes'
    | 'portals'
    | 'drawer'
-   | 'themes';
+   | 'themes'
+   | 'palette';
 export type TutorialPlacement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
 /**

@@ -1536,6 +1536,10 @@
          "themes": {
             "title": "Themes",
             "teach": "Choosing a theme, the light and dark modes, and building your own colors."
+         },
+         "commandPalette": {
+            "title": "The Command Palette",
+            "teach": "The keyboard command bar: opening it, searching, running commands, and multi-step commands."
          }
       }
    },
@@ -1876,6 +1880,22 @@
          "importExport_body": "A theme you make can travel. This button imports one from a file, and each of your own themes can be exported the same way from its menu. It is how you hand a palette to another player or carry one between your devices.",
          "wrap_title": "That's Themes",
          "wrap_body": "You have set the mode, tried a theme, and seen where to build your own. We put your theme back the way you found it, so nothing here changed your setup. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "commandPalette": {
+         "welcome_title": "The Command Palette",
+         "welcome_body": "The command palette is a search bar for actions. It reaches almost everything in the app from the keyboard, so you can create, jump, and run without hunting through menus. This lesson opens it, searches it, runs a command, and walks one of the commands that asks a follow-up.",
+         "open_title": "Open the Palette",
+         "open_body": "The palette answers to a single shortcut from anywhere in the app. Press Ctrl or Cmd + K to summon it now, and it drops in ready for a command.",
+         "anatomy_title": "Input and Results",
+         "anatomy_body": "At the top is the input where you type, and below it the commands, grouped by what they do. The list is scoped to where you are, so a character sheet offers its cards and trackers while a note or a board offers theirs. Look it over, then continue.",
+         "search_title": "Search to Filter",
+         "search_body": "Type a word and the list narrows to the commands that match. It reads hidden aliases too, so 'die' finds the dice tray and 'roll' finds Roll even though neither word is in the name. Try a query, then continue.",
+         "run_title": "Run a Command",
+         "run_body": "The highlighted command is the one that runs. Press Enter to run it, or click it with the mouse. Open, find, run is the whole loop.",
+         "multiStep_title": "Commands That Ask More",
+         "multiStep_body": "Some commands need a detail before they can finish, so they open a follow-up page instead of running at once. Try New Tracker. It asks what kind, then asks you to name it, and creating it lands on the sheet in front of you. Backspace steps back a page if you change your mind.",
+         "wrap_title": "That's the Command Palette",
+         "wrap_body": "You have opened the palette, searched it, run a command, and walked one that asked for more. It is always a Ctrl or Cmd + K away, wherever you are. That is the whole desktop app, and you have now seen every part of it. You can replay any lesson from the Learn section in your Settings."
       }
    },
 

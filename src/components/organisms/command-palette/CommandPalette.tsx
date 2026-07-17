@@ -101,6 +101,9 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
    // ==================
    useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
+         // A tutorial's coach-mark sits outside the palette, so its Next click reads as a click-outside.
+         // Read the flag fresh here (not closed over) so the palette never self-closes mid-tour.
+         if (useTutorialStore.getState().activeTutorialId !== null) return;
          if (paletteRef.current && !paletteRef.current.contains(event.target as Node)) {
             setCommandPaletteOpen(false);
          }
@@ -210,6 +213,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                >
                   <Command.Input
                      ref={inputRef}
+                     data-tutorial="command-palette-input"
                      value={inputValue}
                      onValueChange={setInputValue}
                      placeholder={activePage === 'renameCharacter' ? t('CommandPalette.placeholders.renameCharacter') : placeholder}
@@ -220,7 +224,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                         "disabled:cursor-not-allowed disabled:opacity-50"
                      )}
                   />
-                  <Command.List className="max-h-75 overflow-y-auto overflow-x-hidden p-2 bg-card rounded-b-lg">
+                  <Command.List data-tutorial="command-palette-list" className="max-h-75 overflow-y-auto overflow-x-hidden p-2 bg-card rounded-b-lg">
                      <Command.Empty className="py-6 text-center text-sm">{t('CommandPalette.empty')}</Command.Empty>
                      {activePage === 'root' && (<RootPage commandGroups={commandGroups} onSelectCommand={onSelectCommand} />)}
                      {activePage === 'renameCharacter' && (<RenameCharacterPage inputValue={inputValue} />)}

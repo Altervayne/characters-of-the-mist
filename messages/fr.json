@@ -1442,6 +1442,10 @@
          "themes": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "commandPalette": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1741,6 +1745,22 @@
          "makeYourOwn_body": "[TO COMPLETE]",
          "importExport_title": "[TO COMPLETE]",
          "importExport_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "commandPalette": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "open_title": "[TO COMPLETE]",
+         "open_body": "[TO COMPLETE]",
+         "anatomy_title": "[TO COMPLETE]",
+         "anatomy_body": "[TO COMPLETE]",
+         "search_title": "[TO COMPLETE]",
+         "search_body": "[TO COMPLETE]",
+         "run_title": "[TO COMPLETE]",
+         "run_body": "[TO COMPLETE]",
+         "multiStep_title": "[TO COMPLETE]",
+         "multiStep_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       }
