@@ -22,7 +22,8 @@ import {
    createReorderFoldersCommand,
    createReorderItemsCommand,
    createUpdateItemContentCommand,
-   drawerCommandEngine,
+   getActiveDrawerEngine,
+   subscribeActiveDrawerEngine,
 } from '@/lib/drawer/drawerCommandEngine';
 
 // -- Store and Hook Imports --
@@ -204,7 +205,7 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
    const runMutation = async (command: DrawerCommand): Promise<void> => {
       markDrawerModified();
       try {
-         await drawerCommandEngine.execute(command);
+         await getActiveDrawerEngine().execute(command);
       } catch (error) {
          set({ error: toStoreError(error) });
          throw error;
@@ -405,11 +406,11 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          //  Undo / redo (engine-backed, navigation-independent)
          // ==================
          undoDrawer: async () => {
-            await drawerCommandEngine.undo();
+            await getActiveDrawerEngine().undo();
             await loadView(get().currentFolderId);
          },
          redoDrawer: async () => {
-            await drawerCommandEngine.redo();
+            await getActiveDrawerEngine().redo();
             await loadView(get().currentFolderId);
          },
       },
@@ -442,6 +443,9 @@ export const useDrawerActions = () => useDrawerStore((state) => state.actions);
 // Mirror the command engine's undo/redo availability into the store so the UI can
 // read `canUndo`/`canRedo` reactively. The engine notifies on execute/undo/redo/
 // clear; commands operate by id, so this is independent of the current folder.
-drawerCommandEngine.subscribe(() => {
-   useDrawerStore.setState({ canUndo: drawerCommandEngine.canUndo(), canRedo: drawerCommandEngine.canRedo() });
+// It follows the ACTIVE engine, so a tutorial's run reports its own history and the
+// user's returns, untouched, the moment the demo engine is dropped.
+subscribeActiveDrawerEngine(() => {
+   const engine = getActiveDrawerEngine();
+   useDrawerStore.setState({ canUndo: engine.canUndo(), canRedo: engine.canRedo() });
 });

@@ -11,16 +11,21 @@ vi.mock('./appGeneralStateStore', () => ({
    useAppGeneralStateStore: { getState: () => ({ actions: { setLastModifiedStore: vi.fn() } }) },
 }));
 
-vi.mock('@/lib/drawer/drawerCommandEngine', () => ({
-   drawerCommandEngine: {
+vi.mock('@/lib/drawer/drawerCommandEngine', () => {
+   const engine = {
       execute: vi.fn().mockResolvedValue(undefined),
       undo: vi.fn().mockResolvedValue(undefined),
       redo: vi.fn().mockResolvedValue(undefined),
       canUndo: () => false,
       canRedo: () => false,
       subscribe: vi.fn(),
-   },
-}));
+   };
+   return {
+      drawerCommandEngine: engine,
+      getActiveDrawerEngine: () => engine,
+      subscribeActiveDrawerEngine: vi.fn(),
+   };
+});
 
 vi.mock('@/lib/drawer/drawerRepository', () => ({
    getFolderItems: vi.fn().mockResolvedValue([]),

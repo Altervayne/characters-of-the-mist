@@ -1,6 +1,9 @@
 // -- Utils Imports --
 import { reorderList } from '@/lib/utils/drawer';
 
+// -- Tutorial Demo Imports --
+import { getDemoDrawerEngine, subscribeDemoDrawerSession } from '@/lib/tutorial/demo/demoDrawerBackend';
+
 // -- Local Imports --
 import { DRAWER_ROOT_PARENT_ID } from './drawerRecords';
 import { DrawerNotFoundError } from './drawerErrors';
@@ -524,5 +527,51 @@ export function createDrawerCommandEngine(options: DrawerCommandEngineOptions = 
    };
 }
 
-/** The shared singleton engine the store drives and mirrors. */
+/** The real engine, holding the user's own undo history for the whole session. */
 export const drawerCommandEngine = createDrawerCommandEngine();
+
+/*
+ * A Drawer tutorial runs on its own engine. Routing the repository is only half of the isolation: a demo
+ * command executed on the real engine would sit on the user's undo stack after the lesson ended, and undoing
+ * it would replay a demo operation - captured against a fixture that no longer exists - onto real records.
+ * A separate engine means the real stacks are never touched at all, and the demo's history dies with the
+ * fixture it describes. Undo/redo still work normally inside the lesson, on the demo's own edits.
+ *
+ * The demo engine is not held here: it lives ON the demo session, beside the records it describes, so the two
+ * cannot be installed or dropped separately. This module only asks which engine is in charge. The import is
+ * one-way at runtime (the backend takes the engine TYPE only), so no cycle forms.
+ */
+
+/** The engine every drawer mutation and undo/redo goes through: the demo's while one runs, the real one otherwise. */
+export function getActiveDrawerEngine(): DrawerCommandEngine {
+   return getDemoDrawerEngine() ?? drawerCommandEngine;
+}
+
+const activeListeners = new Set<() => void>();
+let unbindActive: (() => void) | null = null;
+
+const notifyActive = (): void => {
+   for (const listener of activeListeners) listener();
+};
+
+/** Points the stable subscription at whichever engine is now active, and announces the swap. */
+function bindActive(): void {
+   unbindActive?.();
+   unbindActive = getActiveDrawerEngine().subscribe(notifyActive);
+   notifyActive();
+}
+
+/**
+ * Subscribes to the ACTIVE engine's stack changes across swaps, so a mirror set up once keeps reporting the
+ * engine actually in charge. Returns an unsubscribe function.
+ */
+export function subscribeActiveDrawerEngine(listener: () => void): () => void {
+   activeListeners.add(listener);
+   return () => {
+      activeListeners.delete(listener);
+   };
+}
+
+// The session opening or closing IS the swap, so follow it rather than being told about it separately.
+subscribeDemoDrawerSession(bindActive);
+bindActive();

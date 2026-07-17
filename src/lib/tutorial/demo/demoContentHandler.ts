@@ -20,6 +20,7 @@ import { createDemoPortalGraph } from './demoPortalGraph';
 import { disposeDemoBoard, installDemoBoard } from './demoBoardBackend';
 import { disposeDemoNote, installDemoNote } from './demoNoteBackend';
 import { disposeDemoDrawer, installDemoDrawer } from './demoDrawerBackend';
+import { createDrawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { DEMO_BOARD_ID, DEMO_CHARACTER_ID, DEMO_NOTE_ID, isDemoId } from './demoSentinels';
 
 // -- Type Imports --
@@ -195,37 +196,62 @@ async function seedDemoPortalGraph(prior: PriorWorkspace, priorWorkspaceRaw: str
 }
 
 /**
- * Seeds the demo DRAWER: a read-only overlay, not a tab. It flips the module flag on (installing the fixture
- * into the in-memory backend), re-derives the folder-tree cache FROM that fixture - the routed `getAllFolders`
- * now reads the demo, so a rebuild fills the cache with demo folders - then loads the demo root view. It never
- * touches `openTabs`/`activeTabId`: the drawer is a panel over whatever surface is already active.
+ * Seeds the demo DRAWER: a routed overlay, not a tab. It opens the backend's session (installing the fixture)
+ * and swaps in a fresh command engine, re-derives the folder-tree cache FROM that fixture - the routed
+ * `getAllFolders` now reads the demo, so a rebuild fills the cache with demo folders - then loads the demo root
+ * view. It never touches `openTabs`/`activeTabId`: the drawer is a panel over whatever surface is already active.
  *
- * Settle discipline: a rebuild started before the flag flip could settle AFTER it and paint the wrong drawer
- * into the cache, so drain any in-flight rebuild first, then await the demo rebuild before loading the view.
+ * The records and their history install in ONE call, because they are one fact: the session carries the demo's
+ * engine beside its fixture, so there is no instant where the demo's rows are live while its edits would land
+ * on the user's undo stack.
+ *
+ * Everything after that install is guarded, and this is the half that matters most: a caller only ever gets a
+ * handle to tear down if this function RETURNS. A rebuild or a view load that threw would leave the session
+ * live with nobody holding a handle to it - routing on, forever, sending the user's next real save into a
+ * fixture nobody is reading. So a failed seed drops the session on its way out and re-raises: either a demo is
+ * live and its handle exists, or there is no demo at all.
+ *
+ * Settle discipline: a rebuild started before the swap could settle AFTER it and paint the wrong drawer into the
+ * cache, so drain any in-flight rebuild first, then await the demo rebuild before loading the view.
  */
 async function seedDemoDrawer(prior: PriorWorkspace, priorWorkspaceRaw: string | null): Promise<DemoHandle> {
    const priorDrawerFolderId = useDrawerStore.getState().currentFolderId;
 
-   // Drain any in-flight (real-reading) rebuild so it can't settle after the flip and clobber the demo cache.
+   // Drain any in-flight (real-reading) rebuild so it can't settle after the swap and clobber the demo cache.
    await whenFolderTreeSettled();
-   installDemoDrawer(createDemoDrawer());
-   // Re-derive the cache from the demo backend, then load the demo library at root.
-   await rebuildFolderTree();
-   await useDrawerStore.getState().actions.setDrawerCurrentFolderId(null);
+   installDemoDrawer(createDemoDrawer(), createDrawerCommandEngine());
+   try {
+      // Re-derive the cache from the demo backend, then load the demo library at root.
+      await rebuildFolderTree();
+      await useDrawerStore.getState().actions.setDrawerCurrentFolderId(null);
+   } catch (error) {
+      disposeDemoDrawer();
+      throw error;
+   }
 
    return { kind: 'drawer', entities: [], prior, priorWorkspaceRaw, priorDrawerFolderId };
 }
 
 /**
- * Tears the demo drawer down: the mirror of {@link seedDemoDrawer}. It flips the flag off (dropping the
- * fixture), re-derives the folder-tree cache from the REAL repository, and restores the drawer to its prior
- * folder. Nothing reached Dexie, so there is no per-entity disposal - the flag flip IS the guarantee. The same
- * settle discipline applies: drain the in-flight (demo-reading) rebuild before the flip so a stale reload can't
- * repaint demo rows into the real view.
+ * Tears the demo drawer down: the mirror of {@link seedDemoDrawer}. It closes the session - dropping the fixture
+ * and its history in one act - re-derives the folder-tree cache from the REAL repository, and restores the
+ * drawer to its prior folder. Nothing reached Dexie, so there is no per-entity disposal: dropping the session IS
+ * the guarantee.
+ *
+ * The disposal sits in a `finally` around everything that can throw, and runs BEFORE the work that needs the
+ * real drawer back. That ordering is the guarantee, not tidiness: routing that survived a failed teardown would
+ * send the user's next real save into a fixture nobody is reading, which is the one failure mode this design
+ * exists to rule out. A rebuild or a view load may fail; the drawer still comes home.
+ *
+ * The same settle discipline applies: drain the in-flight (demo-reading) rebuild before the swap back so a
+ * stale reload can't repaint demo rows into the real view.
  */
 async function teardownDemoDrawer(handle: DemoHandle): Promise<void> {
-   await whenFolderTreeSettled();
-   disposeDemoDrawer();
+   try {
+      await whenFolderTreeSettled();
+   } finally {
+      disposeDemoDrawer();
+   }
    await rebuildFolderTree();
    await useDrawerStore.getState().actions.setDrawerCurrentFolderId(handle.priorDrawerFolderId ?? null);
 

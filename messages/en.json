@@ -1562,6 +1562,10 @@
          "mobileNav": {
             "title": "App Navigation",
             "teach": "Where everything lives: the Sheet, the Drawer, the Menu, your tools, and your settings."
+         },
+         "mobileDrawer": {
+            "title": "The Drawer",
+            "teach": "Your library: searching and filtering it, folders, what each item can do, and rearranging."
          }
       }
    },
@@ -1847,6 +1851,26 @@
          "settingsContent_body": "And this is the hub, holding everything that is not the three places you work. General, Appearance and Data for setting things up, then What's new and About. Learn is where these lessons live, so you can replay any of them whenever you like.",
          "wrap_title": "That Is the Layout",
          "wrap_body": "Sheet, Drawer and Menu are the three places you work, your tools ride along with them, and Settings holds the rest. You can replay this lesson any time from the Learn section in your Settings."
+      },
+      "mobileDrawer": {
+         "welcome_title": "Your Library",
+         "welcome_body": "The Drawer is where everything you save lives: characters, cards, trackers, boards and notes, filed into folders you arrange yourself. This lesson runs on a small sample library, so nothing you have saved is touched along the way.",
+         "content_title": "What Is In Here",
+         "content_body": "Folders sit at the top, and everything saved in the folder you are standing in comes below them. Each saved item shows you what it is, which game it belongs to, and when you last worked on it.",
+         "search_title": "Finding Things",
+         "search_body": "Search by name from here, and it looks through your whole library rather than just the folder you are in. The sliders button beside the field opens Filters, which narrows a search down by kind, by game, or by when something was made or last changed.",
+         "viewToggle_title": "Two Ways to Look",
+         "viewToggle_body": "This button switches your saved items between compact rows and rich previews. Compact fits far more on screen at once; rich shows you a proper look at each one, so you can tell two similar things apart before you open either.",
+         "folders_title": "Folders",
+         "folders_body": "Tap a folder to go inside it, and everything filed in there takes over the list. The trail along the bottom always shows where you are, and tapping any step of it walks you back out.",
+         "itemMenu_title": "What an Item Can Do",
+         "itemMenu_body": "Every saved item carries this button, and everything you can do with that item is behind it: add it to your sheet, load it, rename it, move it to another folder, export it to a file, or delete it for good.",
+         "reorder_title": "Rearranging",
+         "reorder_body": "Press and hold an item anywhere on its row, keep holding until it lifts, then drag it up or down. There is no separate handle here, the row itself is the grip, which is why the hold has to be a deliberate one: a quick tap does nothing, and a fast swipe just scrolls the list. Have a go, then carry on. Folders move the same way.",
+         "toolbar_title": "The Drawer Tools",
+         "toolbar_body": "Along the bottom: a new folder, importing a saved file back into your library, and the view switch. The two arrows on the other side undo and redo whatever you change in here, so a move, a rename or a delete is never final.",
+         "wrap_title": "That Is the Drawer",
+         "wrap_body": "Save your work into it, sort it into folders that suit you, and pull any of it back out onto your sheet whenever you need it. You can replay this lesson any time from the Learn section in your Settings."
       },
       "board": {
          "welcome_title": "The Board",

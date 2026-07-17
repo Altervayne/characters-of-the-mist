@@ -442,6 +442,7 @@ export default function MobileDrawer({ onAddToCharacter, onLoadCharacter }: Mobi
 
                {/* View toggle */}
                <IconButton
+                  data-tutorial="drawer-view-toggle"
                   variant="outline"
                   size="lg"
                   onClick={() => setIsCompactView(!isCompactView)}

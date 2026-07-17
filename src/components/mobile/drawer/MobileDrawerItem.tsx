@@ -68,6 +68,7 @@ export default function MobileDrawerItem({
 	const menuButton = (
 		<button
 			type="button"
+			data-tutorial="drawer-item-menu"
 			aria-label={t('Common.moreOptions')}
 			onClick={(event) => {
 				event.stopPropagation();
@@ -99,6 +100,7 @@ export default function MobileDrawerItem({
 							<div
 								{...dragAttributes}
 								{...dragListeners}
+								data-tutorial="drawer-item-body"
 								className="flex flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none"
 							>
 								<div className="flex flex-1 min-w-0 items-center gap-2 p-2 min-h-11">
@@ -128,6 +130,7 @@ export default function MobileDrawerItem({
 						<div
 							{...dragAttributes}
 							{...dragListeners}
+							data-tutorial="drawer-item-body"
 							className="cursor-grab active:cursor-grabbing select-none"
 						>
 							<DrawerItemPreview

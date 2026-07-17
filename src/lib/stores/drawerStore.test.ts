@@ -16,20 +16,27 @@ vi.mock('./appGeneralStateStore', () => ({
    useAppGeneralStateStore: { getState: () => ({ actions: { setLastModifiedStore: vi.fn() } }) },
 }));
 
-vi.mock('@/lib/drawer/drawerCommandEngine', () => ({
-   drawerCommandEngine: {
+vi.mock('@/lib/drawer/drawerCommandEngine', () => {
+   // The store reaches the engine through `getActiveDrawerEngine`, so the stub answers there too - the same
+   // object either way, which keeps the assertions on `drawerCommandEngine.execute` reading the real calls.
+   const engine = {
       execute: vi.fn().mockResolvedValue(undefined),
       undo: vi.fn().mockResolvedValue(undefined),
       redo: vi.fn().mockResolvedValue(undefined),
       canUndo: () => false,
       canRedo: () => false,
       subscribe: vi.fn(),
-   },
-   createReorderItemsCommand: vi.fn(() => ({ label: 'reorder-item' })),
-   createReorderFoldersCommand: vi.fn(() => ({ label: 'reorder-folder' })),
-   createMoveItemCommand: vi.fn(() => ({ label: 'move-item' })),
-   createMoveFolderCommand: vi.fn(() => ({ label: 'move-folder' })),
-}));
+   };
+   return {
+      drawerCommandEngine: engine,
+      getActiveDrawerEngine: () => engine,
+      subscribeActiveDrawerEngine: vi.fn(),
+      createReorderItemsCommand: vi.fn(() => ({ label: 'reorder-item' })),
+      createReorderFoldersCommand: vi.fn(() => ({ label: 'reorder-folder' })),
+      createMoveItemCommand: vi.fn(() => ({ label: 'move-item' })),
+      createMoveFolderCommand: vi.fn(() => ({ label: 'move-folder' })),
+   };
+});
 
 vi.mock('@/lib/drawer/drawerRepository', () => ({
    getFolderItems: vi.fn().mockResolvedValue([]),

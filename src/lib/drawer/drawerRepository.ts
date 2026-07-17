@@ -265,6 +265,7 @@ function assertSamePermutation(current: string[], provided: string[], label: str
 export function getFolderChildren(
    parentFolderId: string | null,
 ): Promise<{ folders: DrawerFolderRecord[]; items: DrawerItemRecord[] }> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getFolderChildren(parentFolderId);
    const storedParentId = toStoredParentId(parentFolderId);
    return runReadTransaction([db.folders, db.items], async () => ({
       folders: await orderedChildFolders(storedParentId),
@@ -274,6 +275,7 @@ export function getFolderChildren(
 
 /** Loads a single folder record by id, or `undefined` if it does not exist. */
 export function getFolder(folderId: string): Promise<DrawerFolderRecord | undefined> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getFolder(folderId);
    return db.folders.get(folderId);
 }
 
@@ -478,6 +480,9 @@ export function getChildCountsForFolders(
  * the move pickers.
  */
 export function isFolderSelfOrDescendant(candidateFolderId: string, potentialAncestorFolderId: string): Promise<boolean> {
+   if (demoDrawerBackend.isDemoDrawerActive()) {
+      return demoDrawerBackend.isFolderSelfOrDescendant(candidateFolderId, potentialAncestorFolderId);
+   }
    return runReadTransaction([db.folders], () =>
       isSelfOrDescendantWithinTransaction(candidateFolderId, potentialAncestorFolderId),
    );
@@ -489,6 +494,7 @@ export function isFolderSelfOrDescendant(candidateFolderId: string, potentialAnc
 
 /** Creates an empty folder appended to the end of its parent (`null` = root). */
 export function createFolder(input: { name: string; parentFolderId: string | null }): Promise<DrawerFolderRecord> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.createFolder(input);
    const storedParentId = toStoredParentId(input.parentFolderId);
    return runWriteTransaction([db.folders], async () => {
       const order = await db.folders.where('parentFolderId').equals(storedParentId).count();
@@ -500,6 +506,7 @@ export function createFolder(input: { name: string; parentFolderId: string | nul
 
 /** Renames a folder. Throws {@link DrawerNotFoundError} if it does not exist. */
 export function renameFolder(folderId: string, newName: string): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.renameFolder(folderId, newName);
    return runWriteTransaction([db.folders], async () => {
       const updated = await db.folders.update(folderId, { name: newName });
       if (updated === 0) throw new DrawerNotFoundError(`Drawer folder not found: ${folderId}`);
@@ -513,6 +520,7 @@ export function renameFolder(folderId: string, newName: string): Promise<void> {
  * folder itself or one of its descendants (which would create a cycle).
  */
 export function moveFolder(folderId: string, destinationParentFolderId: string | null): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.moveFolder(folderId, destinationParentFolderId);
    const destinationStored = toStoredParentId(destinationParentFolderId);
    return runWriteTransaction([db.folders], async () => {
       const folder = await requireFolder(folderId);
@@ -536,6 +544,7 @@ export function moveFolder(folderId: string, destinationParentFolderId: string |
  * {@link DrawerNotFoundError} if the folder does not exist.
  */
 export function deleteFolder(folderId: string): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.deleteFolder(folderId);
    return runWriteTransaction([db.folders, db.items], async () => {
       const folder = await requireFolder(folderId);
       const subtreeFolderIds = await collectSubtreeFolderIds(folderId);
@@ -553,6 +562,7 @@ export function deleteFolder(folderId: string): Promise<void> {
  * if either index is out of range.
  */
 export function reorderFolders(parentFolderId: string | null, oldIndex: number, newIndex: number): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.reorderFolders(parentFolderId, oldIndex, newIndex);
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.folders], async () => {
       const siblings = await orderedChildFolders(storedParentId);
@@ -583,6 +593,7 @@ export function createItem(input: {
    content: DrawerItemContent;
    parentFolderId: string | null;
 }): Promise<DrawerItemRecord> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.createItem(input);
    const storedParentId = toStoredParentId(input.parentFolderId);
    return runWriteTransaction([db.items], async () => {
       const order = await db.items.where('parentFolderId').equals(storedParentId).count();
@@ -605,6 +616,7 @@ export function createItem(input: {
 
 /** Renames an item. Throws {@link DrawerNotFoundError} if it does not exist. */
 export function renameItem(itemId: string, newName: string): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.renameItem(itemId, newName);
    return runWriteTransaction([db.items], async () => {
       // A rename is a content/name edit, so it bumps `updatedAt` ("last edited").
       const updated = await db.items.update(itemId, { name: newName, updatedAt: Date.now() });
@@ -618,6 +630,7 @@ export function renameItem(itemId: string, newName: string): Promise<void> {
  * {@link DrawerNotFoundError} if the item does not exist.
  */
 export function moveItem(itemId: string, destinationParentFolderId: string | null): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.moveItem(itemId, destinationParentFolderId);
    const destinationStored = toStoredParentId(destinationParentFolderId);
    return runWriteTransaction([db.items], async () => {
       const item = await requireItem(itemId);
@@ -631,6 +644,7 @@ export function moveItem(itemId: string, destinationParentFolderId: string | nul
 
 /** Deletes an item, then reindexes its source sibling set. Throws {@link DrawerNotFoundError} if absent. */
 export function deleteItem(itemId: string): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.deleteItem(itemId);
    return runWriteTransaction([db.items], async () => {
       const item = await requireItem(itemId);
       await db.items.delete(itemId);
@@ -644,6 +658,7 @@ export function deleteItem(itemId: string): Promise<void> {
  * {@link DrawerNotFoundError} if the item does not exist.
  */
 export function updateItemContent(itemId: string, content: DrawerItemContent, name?: string): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.updateItemContent(itemId, content, name);
    return runWriteTransaction([db.items], async () => {
       // A content (and optional name) edit bumps `updatedAt` ("last edited").
       const updatedAt = Date.now();
@@ -660,6 +675,7 @@ export function updateItemContent(itemId: string, content: DrawerItemContent, na
  * if either index is out of range.
  */
 export function reorderItems(parentFolderId: string | null, oldIndex: number, newIndex: number): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.reorderItems(parentFolderId, oldIndex, newIndex);
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.items], async () => {
       const siblings = await orderedChildItems(storedParentId);
@@ -685,6 +701,7 @@ export function reorderItems(parentFolderId: string | null, oldIndex: number, ne
  *   such as the undo command layer can later target the created subtree.
  */
 export function importNestedFolderAsRecords(folder: Folder, parentFolderId: string | null): Promise<DrawerFolderRecord> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.refuseImport();
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.folders, db.items], async () => {
       const freshFolder = deepReId(folder);
@@ -708,6 +725,7 @@ export function importDrawerAsFolder(
    folderName: string,
    parentFolderId: string | null = null,
 ): Promise<DrawerFolderRecord> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.refuseImport();
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.folders, db.items], async () => {
       const syntheticFolder: Folder = {
@@ -782,6 +800,7 @@ export function restoreRecords(
    folderRecords: DrawerFolderRecord[],
    itemRecords: DrawerItemRecord[],
 ): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.restoreRecords(folderRecords, itemRecords);
    return runWriteTransaction([db.folders, db.items], async () => {
       if (folderRecords.length > 0) await db.folders.bulkAdd(folderRecords);
       if (itemRecords.length > 0) await db.items.bulkAdd(itemRecords);
@@ -795,6 +814,7 @@ export function restoreRecords(
  * must be restored.
  */
 export function applyFolderOrder(parentFolderId: string | null, orderedFolderIds: string[]): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.applyFolderOrder(parentFolderId, orderedFolderIds);
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.folders], async () => {
       const siblings = await orderedChildFolders(storedParentId);
@@ -810,6 +830,7 @@ export function applyFolderOrder(parentFolderId: string | null, orderedFolderIds
  * current child set. Backs reorder/move/delete undo for items.
  */
 export function applyItemOrder(parentFolderId: string | null, orderedItemIds: string[]): Promise<void> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.applyItemOrder(parentFolderId, orderedItemIds);
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.items], async () => {
       const siblings = await orderedChildItems(storedParentId);
@@ -828,6 +849,7 @@ export function applyItemOrder(parentFolderId: string | null, orderedItemIds: st
 export function getFolderSubtreeRecords(
    folderId: string,
 ): Promise<{ folderRecords: DrawerFolderRecord[]; itemRecords: DrawerItemRecord[] }> {
+   if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.getFolderSubtreeRecords(folderId);
    return runReadTransaction([db.folders, db.items], async () => {
       const rootFolder = await requireFolder(folderId);
       const folderRecords: DrawerFolderRecord[] = [];

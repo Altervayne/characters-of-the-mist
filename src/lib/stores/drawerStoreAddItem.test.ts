@@ -16,20 +16,25 @@ vi.mock('./appGeneralStateStore', () => ({
 
 // Capture the content each create command is built with; the engine execute is a no-op.
 const capturedCreateInputs: Array<{ type: string; content: unknown }> = [];
-vi.mock('@/lib/drawer/drawerCommandEngine', () => ({
-   drawerCommandEngine: {
+vi.mock('@/lib/drawer/drawerCommandEngine', () => {
+   const engine = {
       execute: vi.fn().mockResolvedValue(undefined),
       undo: vi.fn().mockResolvedValue(undefined),
       redo: vi.fn().mockResolvedValue(undefined),
       canUndo: () => false,
       canRedo: () => false,
       subscribe: vi.fn(),
-   },
-   createCreateItemCommand: vi.fn((input: { type: string; content: unknown }) => {
-      capturedCreateInputs.push({ type: input.type, content: input.content });
-      return { label: 'create-item', getCreatedItemId: () => 'new-id' };
-   }),
-}));
+   };
+   return {
+      drawerCommandEngine: engine,
+      getActiveDrawerEngine: () => engine,
+      subscribeActiveDrawerEngine: vi.fn(),
+      createCreateItemCommand: vi.fn((input: { type: string; content: unknown }) => {
+         capturedCreateInputs.push({ type: input.type, content: input.content });
+         return { label: 'create-item', getCreatedItemId: () => 'new-id' };
+      }),
+   };
+});
 
 vi.mock('@/lib/drawer/drawerRepository', () => ({
    getFolderItems: vi.fn().mockResolvedValue([]),

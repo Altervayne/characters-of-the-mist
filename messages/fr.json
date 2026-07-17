@@ -1468,6 +1468,10 @@
          "mobileNav": {
             "title": "[TO COMPLETE]",
             "teach": "[TO COMPLETE]"
+         },
+         "mobileDrawer": {
+            "title": "[TO COMPLETE]",
+            "teach": "[TO COMPLETE]"
          }
       }
    },
@@ -1712,6 +1716,26 @@
          "settingsEntry_body_fab": "[TO COMPLETE]",
          "settingsContent_title": "[TO COMPLETE]",
          "settingsContent_body": "[TO COMPLETE]",
+         "wrap_title": "[TO COMPLETE]",
+         "wrap_body": "[TO COMPLETE]"
+      },
+      "mobileDrawer": {
+         "welcome_title": "[TO COMPLETE]",
+         "welcome_body": "[TO COMPLETE]",
+         "content_title": "[TO COMPLETE]",
+         "content_body": "[TO COMPLETE]",
+         "search_title": "[TO COMPLETE]",
+         "search_body": "[TO COMPLETE]",
+         "viewToggle_title": "[TO COMPLETE]",
+         "viewToggle_body": "[TO COMPLETE]",
+         "folders_title": "[TO COMPLETE]",
+         "folders_body": "[TO COMPLETE]",
+         "itemMenu_title": "[TO COMPLETE]",
+         "itemMenu_body": "[TO COMPLETE]",
+         "reorder_title": "[TO COMPLETE]",
+         "reorder_body": "[TO COMPLETE]",
+         "toolbar_title": "[TO COMPLETE]",
+         "toolbar_body": "[TO COMPLETE]",
          "wrap_title": "[TO COMPLETE]",
          "wrap_body": "[TO COMPLETE]"
       },

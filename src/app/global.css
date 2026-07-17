@@ -824,30 +824,31 @@ main[data-tour="character-sheet"] > header:has(input[data-tour="character-name-i
 }
 @utility animate-cue-scroll { animation: cue-scroll 1200ms ease-in-out infinite; }
 
-/* Press-and-hold-THEN-drag: the compound the touch drag sensors require. Two layers, one shared 2200ms
+/* Press-and-hold-THEN-drag: the compound the touch drag sensors require. Two layers, one shared 2400ms
    loop, so the dot and its dwell ring cannot drift apart - the percentages below are two halves of one
-   timeline and MUST be edited together. The dot sits still while the ring fills (5%-27%, ~480ms of dwell:
-   comfortably longer than the sensors' hold, so the cue never implies a faster press than they accept),
-   the ring releases as the dot travels (27%-70%), it holds long enough to read (to 88%), then fades and
-   loops. Travel is per-axis so `direction` covers all four; the ring stays put, which is what reads as
-   "you held HERE, then moved". */
+   timeline and MUST be edited together. The dot sits still while the ring fills (5%-32%, ~650ms of dwell),
+   the ring releases as the dot travels (32%-70%), it holds long enough to read (to 88%), then fades and
+   loops. The dwell MUST stay longer than the longest hold any sortable surface asks for - the drawer's
+   rows want 500ms, the card list 150ms - because over-stating a hold only costs a beat of patience, while
+   under-stating it teaches a press the sensor rejects. Travel is per-axis so `direction` covers all four;
+   the ring stays put, which is what reads as "you held HERE, then moved". */
 @keyframes cue-press-drag {
    0% { transform: translate(0, 0); opacity: 0; }
    5% { transform: translate(0, 0); opacity: 1; }
-   27% { transform: translate(0, 0); opacity: 1; }
+   32% { transform: translate(0, 0); opacity: 1; }
    70% { transform: translate(var(--cue-shift-x, 0), var(--cue-shift-y, 0)); opacity: 1; }
    88% { transform: translate(var(--cue-shift-x, 0), var(--cue-shift-y, 0)); opacity: 1; }
    100% { transform: translate(var(--cue-shift-x, 0), var(--cue-shift-y, 0)); opacity: 0; }
 }
-@utility animate-cue-press-drag { animation: cue-press-drag 2200ms ease-in-out infinite; }
+@utility animate-cue-press-drag { animation: cue-press-drag 2400ms ease-in-out infinite; }
 
 /* The dwell half of the same loop. Fills exactly like `spring-ring` (same 2π·16 dasharray, same
    empty-to-full read) so a hold looks the same wherever it is taught, but on the loop's own clock. */
 @keyframes cue-press-drag-ring {
    0% { stroke-dashoffset: 100.53; opacity: 0; }
    5% { stroke-dashoffset: 100.53; opacity: 1; }
-   27% { stroke-dashoffset: 0; opacity: 1; }
-   40% { stroke-dashoffset: 0; opacity: 0; }
+   32% { stroke-dashoffset: 0; opacity: 1; }
+   45% { stroke-dashoffset: 0; opacity: 0; }
    100% { stroke-dashoffset: 0; opacity: 0; }
 }
-@utility animate-cue-press-drag-ring { animation: cue-press-drag-ring 2200ms linear infinite; }
+@utility animate-cue-press-drag-ring { animation: cue-press-drag-ring 2400ms linear infinite; }

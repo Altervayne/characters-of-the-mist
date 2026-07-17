@@ -318,11 +318,19 @@ export default function TutorialRunner() {
       const snapshot = chromeSnapshotRef.current;
       const entryPoint = entryPointRef.current;
       const stepLeave = index !== null ? runTutorialActions(stepsRef.current[index]?.onLeave) : Promise.resolve();
-      void Promise.resolve(stepLeave).then(async () => {
-         if (snapshot) restoreChromeSnapshot(snapshot);
-         if (demoHandle) await teardownDemo(demoHandle);
-         if (snapshot) returnToEntryPoint(entryPoint);
-      });
+      // The demo teardown must run whatever happens on the way out: it is what returns the drawer's routing and
+      // the character registry to the user's real data, so a failing `onLeave` or chrome restore must not be
+      // able to strand a run inside its own demo.
+      void Promise.resolve(stepLeave)
+         .catch(() => undefined)
+         .then(async () => {
+            try {
+               if (snapshot) restoreChromeSnapshot(snapshot);
+            } finally {
+               if (demoHandle) await teardownDemo(demoHandle);
+            }
+            if (snapshot) returnToEntryPoint(entryPoint);
+         });
       demoHandleRef.current = null;
       chromeSnapshotRef.current = null;
       entryPointRef.current = null;
