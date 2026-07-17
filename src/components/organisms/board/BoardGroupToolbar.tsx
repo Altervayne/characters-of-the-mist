@@ -17,15 +17,13 @@ import { cn } from '@/lib/utils';
 
 interface BoardGroupToolbarProps {
    zoom: number;
-   /** Drives the grip cursor (grab vs grabbing) during a group move. */
-   isMoving: boolean;
    /** Pointer-down on the grip starts the group move (canvas-owned). */
    onMoveStart: (event: ReactPointerEvent) => void;
    onDuplicate: () => void;
    onDelete: () => void;
 }
 
-export function BoardGroupToolbar({ zoom, isMoving, onMoveStart, onDuplicate, onDelete }: BoardGroupToolbarProps) {
+export function BoardGroupToolbar({ zoom, onMoveStart, onDuplicate, onDelete }: BoardGroupToolbarProps) {
    const { t } = useTranslation();
 
    return (
@@ -40,7 +38,8 @@ export function BoardGroupToolbar({ zoom, isMoving, onMoveStart, onDuplicate, on
                   }}
                   title={t('BoardView.moveItem')}
                   aria-label={t('BoardView.moveItem')}
-                  className={cn('flex items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted', isMoving ? 'cursor-grabbing' : 'cursor-grab')}
+                  // The grip icon is its own affordance; the cursor stays the regular default (the hand is pan-only).
+                  className="flex cursor-default items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted"
                >
                   <GripVertical className="h-4 w-4" />
                </div>

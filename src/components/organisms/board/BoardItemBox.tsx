@@ -85,10 +85,14 @@ interface BoardItemBoxProps {
    zoom: number;
    /** Live world offset during an active group move (null when idle); renders the box at the offset. */
    moveDelta: { x: number; y: number } | null;
-   /** Whether this item is part of the active group move (drives the grip cursor). */
-   isMoving: boolean;
+   /** A canvas gesture (pan / marquee / move) is live, so the hover ring stays suppressed. */
+   interacting: boolean;
    /** Selects this item; `additive` (Shift/Ctrl) toggles it in/out of the set instead of replacing. */
    onSelect: (id: string, additive: boolean) => void;
+   /** A non-text item's body press: the canvas owns the deferred move / marquee / select decision. */
+   onItemPointerDown: (id: string, event: ReactPointerEvent) => void;
+   /** A double-click's deep action (challenge card expand); a no-op for kinds without one. */
+   onDeepAction: (id: string) => void;
    /** Pointer-down on the move grip; the canvas owns the (group-aware) move gesture. */
    onMoveStart: (id: string, event: ReactPointerEvent) => void;
    onResize: (id: string, patch: ResizePatch) => void;
@@ -141,8 +145,10 @@ export const BoardItemBox = memo(function BoardItemBox({
    memberCount,
    zoom,
    moveDelta,
-   isMoving,
+   interacting,
    onSelect,
+   onItemPointerDown,
+   onDeepAction,
    onMoveStart,
    onResize,
    onSyncSize,
@@ -172,6 +178,10 @@ export const BoardItemBox = memo(function BoardItemBox({
    // for chrome that must protrude past the box - the journal's bookmark tabs. Always present
    // (tabs show when unselected too); state-backed like the toolbar slot.
    const [sideSlot, setSideSlot] = useState<HTMLDivElement | null>(null);
+
+   // Pointer hover over the box body, driving the faint "you can drag me" ring. Local (one item hovers at
+   // a time); the ring is gated off while a canvas gesture runs (`interacting`) and for text kinds.
+   const [hovered, setHovered] = useState(false);
 
    // An expanded challenge card is a FIXED landscape sheet, not the portrait fit-width card: it opts
    // out of every content-measure so the box uses the exact expanded footprint (see below), bypassing
@@ -241,14 +251,22 @@ export const BoardItemBox = memo(function BoardItemBox({
    //  Select (body click)
    // ==================
 
+   // Text kinds (post-it / journal / bare text) keep the select-to-edit model - a body click selects (a
+   // sole-selection mounts the editor), a modifier toggles, and the move stays on the grip. Every other
+   // kind routes to the canvas, which defers the press into a move / marquee / select by drag distance.
+   const isTextEditable = item.kind === 'post-it' || item.kind === 'journal' || item.kind === 'text';
+
    const handleBodyPointerDown = (event: ReactPointerEvent) => {
       if (event.button !== 0) return; // right-click selection + menu is handled by the canvas
-      event.stopPropagation(); // don't start a background pan
-      const additive = event.shiftKey || event.ctrlKey || event.metaKey;
-      // Selecting renders the item on top only while selected (a render-only boost in the canvas);
-      // stored z is untouched, so deselect returns it to its layer. Only the toolbar's bring-to-
-      // front / send-to-back change z. In-body text fields stop propagation, so editing never selects.
-      onSelect(item.id, additive);
+      event.stopPropagation(); // don't start a background marquee / pan
+      if (isTextEditable) {
+         // Selecting renders the item on top only while selected (a render-only boost in the canvas);
+         // stored z is untouched, so deselect returns it to its layer. In-body text fields stop propagation,
+         // so editing never selects.
+         onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey);
+         return;
+      }
+      onItemPointerDown(item.id, event);
    };
 
    // ==================
@@ -320,6 +338,9 @@ export const BoardItemBox = memo(function BoardItemBox({
    // A collapsed zone paints as a compact bar at its origin (frame hidden, members hidden, resize
    // off); its stored width/height are preserved for when it expands.
    const isCollapsedZone = isZone && item.content.kind === 'zone' && item.content.collapsed;
+   // The faint drag hint: a soft ring on a hovered, unselected, body-draggable item (the cursor no longer
+   // signals it). Text kinds move only from the grip, and a zone's body is click-through, so neither shows it.
+   const showHoverRing = hovered && !isSelected && !interacting && !isTextEditable && !isZone;
    // A fit-content item renders at its content height exactly; a min-height item never renders below
    // its content (the floor); other kinds use their rect.
    const renderHeight = fitContent || fitBoth
@@ -374,7 +395,7 @@ export const BoardItemBox = memo(function BoardItemBox({
          {isZone && !isCollapsedZone && (
             <div
                onPointerDown={(event) => { event.stopPropagation(); onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey); }}
-               className={cn('pointer-events-auto absolute inset-0 cursor-pointer rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
+               className={cn('pointer-events-auto absolute inset-0 cursor-default rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
                style={zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
             />
          )}
@@ -387,17 +408,21 @@ export const BoardItemBox = memo(function BoardItemBox({
 
          <div
             onPointerDown={handleBodyPointerDown}
+            onDoubleClick={() => onDeepAction(item.id)}
+            onPointerEnter={() => setHovered(true)}
+            onPointerLeave={() => setHovered(false)}
             // A collapsed zone's bar carries the zone's tint (matching the expanded frame) so the
-            // color survives collapse; an uncolored zone keeps the neutral card bar. The selection
-            // outline's width/offset are set here (dynamic, counter-scaled) so they hold on-screen weight.
+            // color survives collapse; an uncolored zone keeps the neutral card bar. The selection /
+            // hover outline width/offset are set here (dynamic, counter-scaled) so they hold on-screen weight.
             style={{
                ...(isCollapsedZone && zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : {}),
-               ...(isSelected ? { outlineWidth, outlineOffset: outlineWidth } : {}),
+               ...(isSelected || showHoverRing ? { outlineWidth, outlineOffset: outlineWidth } : {}),
             }}
             className={cn(
-               // A plain arrow: the body selects on click but never moves (that's the toolbar handle) or
-               // pans, so it must not inherit the canvas grab or show a misleading finger.
+               // A plain arrow: the body cursor is the regular default (the hand is pan-only now), so it
+               // shows no misleading grab or finger; the faint hover ring carries the drag affordance instead.
                'relative h-full w-full cursor-default select-none',
+               showHoverRing && 'outline outline-primary/30',
                // An embed brings its own rounded border, so the box neither clips (which would
                // double-round and crop the flip's back face) nor draws chrome.
                !isZone && !isEmbed && 'overflow-hidden',
@@ -448,7 +473,6 @@ export const BoardItemBox = memo(function BoardItemBox({
             <div className={cn(isZone && 'pointer-events-auto')}>
                <BoardItemToolbar
                   zoom={zoom}
-                  isMoving={isMoving}
                   clampDown={toolbarClamp}
                   // An expanded zone's title bar sits above the frame too; lift the toolbar above it.
                   extraBottom={isZone && !isCollapsedZone ? ZONE_TITLE_BAR_HEIGHT + 4 : 0}

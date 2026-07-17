@@ -66,6 +66,7 @@ import type { BoardStore } from '@/lib/stores/boardStore';
 import type { ActiveTool, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
+import type { Card } from '@/lib/types/character';
 import type { GameSystem } from '@/lib/types/drawer';
 import type { CreateCardOptions } from '@/lib/types/creation';
 
@@ -451,49 +452,83 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    }, [store, actions]);
 
    /**
-    * Starts a group move from an item's move grip (canvas-owned, like the connect drag).
-    * The whole selection moves if the grabbed item is in it; otherwise it selects just that
-    * item and moves it alone. A shared world delta renders live; one compound command on release.
+    * Starts a group move from an item's move grip or its body (canvas-owned, like the connect drag). The
+    * move arms only once the pointer clears `MOVE_THRESHOLD`, measured from the down origin so the item
+    * never jumps; a sub-threshold release is a click - it dispatches no move and runs `onClickNoMove`
+    * instead (the body passes a select there; the grip passes nothing, so a grip click is a no-op). The
+    * whole selection moves if the grabbed item is in it; otherwise it selects just that item and moves it
+    * alone. A shared world delta renders live; one compound command on release.
     */
    const handleMoveStart = useCallback(
-      (id: string, event: ReactPointerEvent) => {
+      (id: string, event: ReactPointerEvent, options?: { onClickNoMove?: () => void }) => {
          if (event.button !== 0) return; // right-click is for the radial menu, not a move
-         const base = selectedIds.has(id) ? new Set(selectedIds) : new Set([id]);
-         if (!selectedIds.has(id)) actions.setSelection([id]);
-
-         // Expand the move set with every member of any zone in it, so a zone carries its contents.
-         // `reevaluate` is the directly-grabbed non-zone items (their membership is recomputed on
-         // release); members pulled in by a moved zone are excluded so they stay in the zone.
-         const liveItems = store.getState().items;
-         const ids = new Set(base);
-         for (const baseId of base) {
-            if (liveItems[baseId]?.kind !== 'zone') continue;
-            for (const candidate of Object.values(liveItems)) if (candidate.zoneId === baseId) ids.add(candidate.id);
-         }
-         const reevaluate = [...base].filter((baseId) => liveItems[baseId] && liveItems[baseId].kind !== 'zone');
-
          const startX = event.clientX;
          const startY = event.clientY;
          const zoom = viewportRef.current.zoom;
+         const wasSelected = selectedIds.has(id);
+         // Null until the move arms: the move set + the membership to re-evaluate on release. While null the
+         // gesture is still a candidate click.
+         let ids: Set<string> | null = null;
+         let reevaluate: string[] = [];
          let delta = { x: 0, y: 0 };
-         let moved = false;
+
+         // Arms the (group-aware) move on the first past-threshold sample. Expand the set with every member
+         // of any zone in it so a zone carries its contents; `reevaluate` is the directly-grabbed non-zone
+         // items (their membership recomputed on release), members pulled in by a moved zone excluded.
+         const arm = (moveEvent: PointerEvent) => {
+            const liveItems = store.getState().items;
+            const base = wasSelected ? new Set(selectedIds) : new Set([id]);
+            if (!wasSelected) actions.setSelection([id]);
+            const set = new Set(base);
+            for (const baseId of base) {
+               if (liveItems[baseId]?.kind !== 'zone') continue;
+               for (const candidate of Object.values(liveItems)) if (candidate.zoneId === baseId) set.add(candidate.id);
+            }
+            ids = set;
+            reevaluate = [...base].filter((baseId) => liveItems[baseId] && liveItems[baseId].kind !== 'zone');
+            delta = screenDeltaToWorld(moveEvent.clientX - startX, moveEvent.clientY - startY, zoom);
+            setGroupDrag({ ids, delta });
+         };
 
          const onMove = (moveEvent: PointerEvent) => {
+            if (!ids) {
+               if (Math.abs(moveEvent.clientX - startX) < MOVE_THRESHOLD && Math.abs(moveEvent.clientY - startY) < MOVE_THRESHOLD) return;
+               arm(moveEvent);
+               return;
+            }
             delta = screenDeltaToWorld(moveEvent.clientX - startX, moveEvent.clientY - startY, zoom);
-            if (delta.x !== 0 || delta.y !== 0) moved = true;
             setGroupDrag({ ids, delta });
          };
          const onUp = () => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
-            setGroupDrag(null);
-            if (moved) void actions.moveItems([...ids], delta, reevaluate);
+            if (ids) {
+               setGroupDrag(null);
+               if (delta.x !== 0 || delta.y !== 0) void actions.moveItems([...ids], delta, reevaluate);
+            } else {
+               options?.onClickNoMove?.();
+            }
          };
          window.addEventListener('pointermove', onMove);
          window.addEventListener('pointerup', onUp);
-         setGroupDrag({ ids, delta });
       },
       [actions, selectedIds, store],
+   );
+
+   /**
+    * A double-click's deep action for the kinds that own one: a challenge card copy toggles its expanded
+    * display mode (persisted on the card copy). Note tiles + character elements open their tab from their
+    * own double-click, so they aren't routed here.
+    */
+   const handleItemDoubleClick = useCallback(
+      (id: string) => {
+         const item = store.getState().items[id];
+         if (!item || item.content.kind !== 'card' || item.content.mode !== 'copy') return;
+         const card = item.content.data as Card;
+         if (card.cardType !== 'CHALLENGE_CARD') return;
+         void actions.updateItemContent(id, { ...item.content, data: { ...card, expanded: !(card.expanded === true) } });
+      },
+      [store, actions],
    );
 
    /**
@@ -704,6 +739,42 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       window.addEventListener('pointerup', onUp);
    }, [store, actions]);
 
+   /**
+    * A non-text item's body press (deferred, shared with the grip). Plain: a drag past the threshold moves
+    * it group-aware from the down origin (no jump); a click with no drag selects it (a modifier toggles it
+    * in/out of the set). Shift: a drag draws an additive marquee anchored at the item, a click toggles it.
+    * Text items keep select-to-edit and move only from the grip, so the box never routes them here.
+    */
+   const handleItemPointerDown = useCallback(
+      (id: string, event: ReactPointerEvent) => {
+         if (event.button !== 0) return;
+         if (event.shiftKey) {
+            const startX = event.clientX;
+            const startY = event.clientY;
+            let started = false;
+            const onMove = (moveEvent: PointerEvent) => {
+               if (started) return;
+               if (Math.abs(moveEvent.clientX - startX) < MOVE_THRESHOLD && Math.abs(moveEvent.clientY - startY) < MOVE_THRESHOLD) return;
+               started = true;
+               window.removeEventListener('pointermove', onMove);
+               window.removeEventListener('pointerup', onUp);
+               beginMarquee(startX, startY, { additive: true });
+            };
+            const onUp = () => {
+               window.removeEventListener('pointermove', onMove);
+               window.removeEventListener('pointerup', onUp);
+               if (!started) actions.selectItem(id, true); // a shift-click with no drag toggles this item
+            };
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+            return;
+         }
+         const additive = event.ctrlKey || event.metaKey;
+         handleMoveStart(id, event, { onClickNoMove: () => actions.selectItem(id, additive) });
+      },
+      [actions, beginMarquee, handleMoveStart],
+   );
+
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
       // Middle-button, Space+drag, and Alt+drag pan in ANY tool (the pen's escape hatch out of its viewport).
       if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
@@ -712,14 +783,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       // Past here only the select tool acts on the background; a Draw gesture's background is owned by the
       // capture overlay (a higher sibling), so a plain draw pointerdown never reaches here.
       if (event.button !== 0 || activeTool !== 'select') return;
-      if (event.shiftKey) {
-         // Shift+drag is an additive marquee, not a pan; it keeps the current selection.
-         beginMarquee(event.clientX, event.clientY, { additive: true });
-         return;
-      }
-      // A plain background drag pans and clears the selection.
-      actions.clearSelection();
-      beginPan(event.clientX, event.clientY);
+      // A left drag on the background draws a marquee: Shift adds to the selection, a plain drag replaces
+      // it (clear up front so a click with no drag deselects - the sub-threshold marquee release is a no-op).
+      // The background no longer pans; pan is right / middle / Alt / Space (handled above).
+      if (!event.shiftKey) actions.clearSelection();
+      beginMarquee(event.clientX, event.clientY, { additive: event.shiftKey });
    };
 
    /**
@@ -1496,6 +1564,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // delta applies to every item in the active drag.
    const soleSelectedId = selectedIds.size === 1 ? [...selectedIds][0] : null;
    const moveDeltaFor = (id: string) => (groupDrag && groupDrag.ids.has(id) ? groupDrag.delta : null);
+   // Any live canvas gesture (pan / marquee / move) suppresses the item hover ring, so it never flickers
+   // on items the cursor sweeps past mid-drag.
+   const interacting = isPanning || marquee !== null || groupDrag !== null;
 
    // Sole-selecting a drawing layer makes it the pen's append target, so the pen continues on it. Narrow to
    // the sole selection so a marquee over mixed items never hijacks the target; minting already sets the id.
@@ -1573,8 +1644,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             resizeMin={members ? zoneContentMinSize(item, members) : item.kind === 'portal' ? PORTAL_MIN_SIZE : undefined}
             zoom={viewport.zoom}
             moveDelta={moveDeltaFor(item.id)}
-            isMoving={!!groupDrag && groupDrag.ids.has(item.id)}
+            interacting={interacting}
             onSelect={actions.selectItem}
+            onItemPointerDown={handleItemPointerDown}
+            onDeepAction={handleItemDoubleClick}
             onMoveStart={handleMoveStart}
             onResize={actions.resizeItem}
             onSyncSize={actions.syncItemSize}
@@ -1669,7 +1742,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          onPointerDownCapture={handleClipPointerDownCapture}
          onPointerDown={handleBackgroundPointerDown}
          onContextMenu={handleContextMenu}
-         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : spaceHeld || altHeld ? 'cursor-grab' : activeTool === 'select' ? 'cursor-grab' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
+         // Cursor language: panning shows the closed hand, a live marquee the crosshair, a pan-armed
+         // modifier (Space/Alt) the open hand. At rest select is the plain default (the hand is pan-only
+         // now, so it no longer signals "grab an element"); eraser keeps its cell, every other draw its crosshair.
+         className={cn('absolute inset-0 overflow-hidden bg-muted/10', isPanning ? 'cursor-grabbing' : marquee ? 'cursor-crosshair' : spaceHeld || altHeld ? 'cursor-grab' : activeTool === 'select' ? 'cursor-default' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
       >
          {/* Grid layer: a screen-space CSS background behind everything. Never interactive,
              so it can't eat a pan or a click. The subtle text color feeds `currentColor`. */}
@@ -1725,7 +1801,6 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                <div className="absolute" style={{ left: groupBbox.x, top: groupBbox.y, width: groupBbox.width, height: groupBbox.height, zIndex: groupToolbarZIndex(layerCount) }}>
                   <BoardGroupToolbar
                      zoom={viewport.zoom}
-                     isMoving={!!groupDrag}
                      onMoveStart={(event) => {
                         const anchor = [...selectedIds][0];
                         if (anchor) handleMoveStart(anchor, event);

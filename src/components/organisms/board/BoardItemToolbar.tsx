@@ -25,8 +25,6 @@ import { cn } from '@/lib/utils';
 
 interface BoardItemToolbarProps {
    zoom: number;
-   /** Drives the grip cursor (grab vs grabbing) during a move. */
-   isMoving: boolean;
    /** Pointer-down on the grip; the move gesture itself is owned by the canvas (group-aware). */
    onMoveStart: (event: ReactPointerEvent) => void;
    onConnectStart: (event: ReactPointerEvent) => void;
@@ -41,7 +39,7 @@ interface BoardItemToolbarProps {
    clampDown?: number;
 }
 
-export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef, extraBottom = 0, clampDown = 0 }: BoardItemToolbarProps) {
+export function BoardItemToolbar({ zoom, onMoveStart, onConnectStart, onBringToFront, onSendToBack, onDelete, slotRef, extraBottom = 0, clampDown = 0 }: BoardItemToolbarProps) {
    const { t } = useTranslation();
 
    // The bar anchors at the item's top edge (bottom:100%), lifted by any zone title-bar and lowered by the
@@ -65,7 +63,8 @@ export function BoardItemToolbar({ zoom, isMoving, onMoveStart, onConnectStart, 
                   }}
                   title={t('BoardView.moveItem')}
                   aria-label={t('BoardView.moveItem')}
-                  className={cn('flex items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted', isMoving ? 'cursor-grabbing' : 'cursor-grab')}
+                  // The grip icon is its own affordance; the cursor stays the regular default (the hand is pan-only).
+                  className="flex cursor-default items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted"
                >
                   <GripVertical className="h-4 w-4" />
                </div>

@@ -37,7 +37,10 @@ export function CharacterBoardOverview({ character, onOpen }: CharacterBoardOver
    const trackers = trackerCounts(character);
 
    return (
-      <div className={cn(overviewPanelCardClass(character.game), 'flex w-full flex-1 flex-col overflow-hidden rounded-lg border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg')}>
+      <div
+         onDoubleClick={onOpen}
+         className={cn(overviewPanelCardClass(character.game), 'flex w-full flex-1 flex-col overflow-hidden rounded-lg border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg')}
+      >
          {/* Identity header (stands in for the character card; its deep stats stay in the tab). */}
          <div className="relative flex shrink-0 items-center gap-3 border-b border-card-accent bg-card-header-bg p-1 text-card-header-fg">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-card-accent bg-card-paper-bg">
