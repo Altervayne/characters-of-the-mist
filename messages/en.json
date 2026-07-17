@@ -512,8 +512,6 @@
       "presetLandscape": "Landscape"
    },
 
-
-
    "CharacterSheetPage": {
       "loading": "Loading Character...",
 
@@ -842,8 +840,6 @@
          "untitled": "Untitled Journal"
       }
    },
-
-
 
    "ChallengeCard": {
       "editor": {
@@ -1212,7 +1208,6 @@
          "title": "Danger zone",
          "description": "These options are extremely destructive, using them is at your own risk. You will be asked for confirmation.",
 
-
          "deleteDrawerButton": "Delete Drawer",
          "deleteDrawerDialog": {
             "title": "Delete Full Drawer",
@@ -1338,8 +1333,6 @@
       "patchNotesButton": "View Patch Notes"
    },
 
-
-
    "CommandPalette": {
       "placeholder_1": "Your wish is my command...",
       "placeholder_2": "Prepare your incantation...",
@@ -1371,14 +1364,12 @@
          "renameCharacter": "New character name...",
          "rollDice": "Enter a dice formula, e.g. 2d6+3...",
 
-
          "newCardName": "Main tag name for the new card...",
          "themeType": "Select your theme's type...",
          "themebook": "Select a themebook or type a custom one...",
          "mainTagName": "Write the name of your Main Tag...",
          "powerTags": "Number of power tags...",
          "weaknessTags": "Number of weakness tags...",
-
 
          "trackerType": "Select a Tracker type...",
          "trackerName": "Enter tracker name..."
@@ -1418,7 +1409,6 @@
          "creation": "Creation",
          "note": "Note",
          "tools": "Tools",
-
 
          "themePalette": "Choose a new Theme Palette",
 
@@ -1580,8 +1570,6 @@
       "progress": "{{current}} / {{total}}",
       "header": "{{name}} · {{current}} of {{total}}",
       "anchorMissing": "This part of the app has changed, so the tutorial is ending here.",
-      "welcome_title": "Welcome to Characters of the Mist!",
-      "welcome_content": "This short tour will guide you through the main features. You can exit at any time by pressing the 'X' at the top right of this small window, or anywhere outside. If you exit by accident, you can start the tutorial again from the Settings menu.",
 
       "mainMenuGames_title": "Choose Your Game",
       "mainMenuGames_content": "Characters of the Mist supports three game systems: Legend in the Mist, City of Mist, and Otherscape. You can create characters for any of these systems.",
@@ -1592,77 +1580,8 @@
       "mainMenuCreate_title": "Create Your Character",
       "mainMenuCreate_content": "Click this button to create a new Legend in the Mist character sheet. This will take you to the main character sheet interface.",
 
-      "sidebar_title": "Main Sidebar",
-      "sidebar_content": "This is the main sidebar. It contains global actions like toggling edit mode, opening the file drawer, and accessing settings.",
-
-      "tabStrip_title": "Open several characters at once",
-      "tabStrip_content": "The strip at the top holds every character you have open. Click a tab to switch, drag tabs to reorder them, and press + to open another. You can also drag a character from the drawer onto the strip to open it, or drag a tab into the drawer to save it.",
-
-      "playArea_title": "Character Sheet",
-      "playArea_content": "This is what Characters of the Mist can refer to as your \"Play Area\" or \"Character Sheet\". It holds your Trackers and Cards. They are all draggable, which lets you reorder them, or store them in the Drawer. More on that later. You can drop an external file here to import it.",
-      
-      "characterName_title": "Character Name",
-      "characterName_content": "You can edit your character's name here at any time. Your changes are saved automatically.",
-      
-      "trackers_title": "Trackers",
-      "trackers_content": "This area holds your Status and Story Tag trackers, along with your Story Theme trackers. You can add new ones when in 'Edit Mode'. Each Tracker has a sliding handle that appears upon hovering over them with your mouse. Using it, you can move them around or export them.",
-
-      "cards_title": "Cards",
-      "cards_content": "This area holds your character's Cards, whether it is a Theme Card, or a Character Card. Each Card, like the Trackers, has a sliding handle that appears upon hovering over them. You will find a dragging grip to move them around and a few buttons to flip, delete (in Edit mode) or export the Card.",
-
-      "menuCollapse_title": "Collapsing",
-      "menuCollapse_content": "This button lets you collapse the Sidebar into a much thinner version, with only icons on the buttons.",
-
-      "menuUndoRedo_title": "Undo/Redo",
-      "menuUndoRedo_content": "These buttons let you Undo and Redo actions on your Character Sheet. If your latest action was in the Character Sheet, you can also use CTRL+Z and CTRL+Y.",
-
-      "menuEditDrawer_title": "Edit Mode and Drawer",
-      "menuEditDrawer_content": "These two buttons let you enable Edit Mode or open your Drawer. We'll get back to them in a bit.",
-
-      "saveCharacter_title": "Saving a Character",
-      "saveCharacter_content": "This button lets you save your current Character as a file inside your Drawer, more on that later.",
-
-      "exportCharacter_title": "Exporting a Character",
-      "exportCharacter_content": "This button lets you export your current Character, prompting your browser to download a file.",
-
-      "importCharacter_title": "Importing a Character",
-      "importCharacter_content": "This button prompts you to choose a file. If you give it a Character file from Characters of the Mist, it will load that file into the app as your new active Character.",
-
-      "importComponent_title": "Importing a Component",
-      "importComponent_content": "This button also prompts you to choose a file. If you give it a Card or Tracker file from Characters of the Mist, it will load it and add it to your current Character.",
-
-      "resetCharacter_title": "Resetting your Character",
-      "resetCharacter_content": "This button completely deletes your active Character, turning your Character Sheet into a fresh blank slate to start over from.",
-
-      "openMenu_title": "Opening the main menu",
-      "openMenu_content": "This button takes you back to the main menu without unloading anything. Your open tabs stay exactly as they are, so you can pick another character, start a new one, or jump right back to your sheets at any time.",
-
       "unloadCharacter_title": "Unloading your Character",
       "unloadCharacter_content": "This button completely unloads your active Character, deleting it and removing the entire action history for the Undo/Redo feature. This sends you back to the main menu with a clean app and no background character loaded in.",
-
-      "settings_title": "Settings",
-      "settings_content": "This button opens up the Settings menu, where you can access features like choosing your app's color palette, light or dark mode, or reset all your data. This is also where you will find the Migration tool, which lets you migrate Legacy Characters of the Mist data to this new version.",
-
-      "appInfo_title": "App Info",
-      "appInfo_content": "This button opens up an information menu containing a general \"About\" section for this app, licensing information, and credits.",
-
-      "patchNotes_title": "Patch Notes",
-      "patchNotes_content": "This button opens up a menu where you can consult the app's patch notes history.",
-      
-      "editMode_title": "Edit Mode",
-      "editMode_content": "This button lets you enter 'Edit Mode'. This allows you to add, remove and modify cards and trackers.",
-
-      "playMode_title": "Play Mode",
-      "playMode_content": "When Edit Mode is enabled, the button now allows you to go back to 'Play Mode', a lightweight display of your cards and trackers. In Play Mode, only basic functionalities are available to avoid cluttering everything.",
-
-      "addStatus_title": "Add Status",
-      "addStatus_content": "In Edit Mode, you can now see a button to add a new Status tracker.",
-
-      "addStoryTag_title": "Add Story Tag",
-      "addStoryTag_content": "Similarly, you can now see a button to add a new Story Tag tracker. You can evolve a Story Tag into a Story Theme with a button on the toolbar that appears when hovering over the tracker.",
-    
-      "addCard_title": "Add New Cards",
-      "addCard_content": "Furthermore, this button has now appeared in your cards list, which allows you to create a Card.",
 
       "openAddCard_title": "Opening the Card Creator",
       "openAddCard_content": "We're going to see how creating a Card works now.",
@@ -1670,35 +1589,6 @@
       "creationDialog_title": "Card Creation",
       "creationDialog_content": "This dialog allows you to define the new card's properties.",
 
-      "menuDrawer_title": "Opening/Closing the Drawer",
-      "menuDrawer_content": "This button opens the Drawer, where all your characters, themes, and items are stored. Let's go check out the Drawer.",
-
-      "drawer_title": "The Drawer",
-      "drawer_content": "This is your Drawer, a powerful storage system you can use to save, backup and organize individual items like Cards and Trackers, but also full Character Sheets. You can drop an external file here to import it.",
-   
-      "drawerUndoRedo_title": "Undo/Redo",
-      "drawerUndoRedo_content": "Similarly to the side menu, the Drawer has a pair of Undo/Redo buttons. These buttons let you undo or redo actions within the Drawer. Just like with the Character Sheet, if your latest action was in the Drawer, you can use CTRL+Z and CTRL+Y.",
-
-      "drawerRichView_title": "Rich View",
-      "drawerRichView_content": "By default, the Drawer displays items with what Characters of the Mist calls a \"Rich View\". This is essentially a preview of the header of the card, or the full tracker. This can take a lot of space and prevent you from seeing a lot of items at once, so you can turn it on and off here.",
-
-      "drawerFolders_title": "Folders",
-      "drawerFolders_content": "This is where your Folders live. You will find an \"Add Folder\" button here, which will let you create a new folder in your current location. Folders have a context menu you can access by pressing the \"...\" on the right. You can drag folders around with the drag handle on the left!",
-
-      "drawerItems_title": "Items",
-      "drawerItems_content": "This is where your Items live. Items are Character Sheets, Cards or Trackers. You can add Items by Saving your Character, or dragging and dropping them from your Character Sheet to the Drawer. Every Item also has a context menu with several options, and can be dragged around.",
-
-      "drawerImport_title": "Importing a File",
-      "drawerImport_content": "You can import an external file into your Drawer. The file has to be a valid Characters of the Mist file, that is, a Drawer, a Character Sheet, a Card, a Folder or a Tracker.",
-
-      "drawerExport_title": "Exporting your Drawer",
-      "drawerExport_content": "This button lets you export your FULL Drawer as a file.",
-
-      "commandPalette_title": "Command Palette",
-      "commandPalette_content": "While this tutorial won't expand on it too much, Characters of the Mist offers a powerful Command Palette which lets you use the app's features with nothing more than your keyboard! To use it, simply press CTRL+K. Keep in mind this feature is oriented towards power-users.",
-
-      "closingWords_title": "The End",
-      "closingWords_content": "This is all this short tutorial has to teach you. Feel free to explore more complex features, and if you find a bug, or a problem, or need any form of help, don't hesitate to contact me on the Tools of the Mist official Discord. You can find the link in the \"App info\" section. Thank you so much for using Characters of the Mist!",
       "navigation": {
          "welcome_title": "Welcome",
          "welcome_body": "Here is a short tour of the app, and it should take about two minutes. You can leave at any time by pressing the X or the Esc key, and you can start it again whenever you like from your Settings.",
@@ -2028,8 +1918,6 @@
       }
    },
 
-
-
    "ThemeCard": {
       "fellowshipTitle": "Fellowship Theme",
       "crewThemeTitle": "Crew Theme",
@@ -2226,8 +2114,6 @@
       "storyTagNoName": "NO STORY TAG"
    },
 
-
-
    "LegendsData": {
       "themebook": {
          "circumstance": "Circumstance",
@@ -2301,8 +2187,6 @@
       "Self": "Self",
       "Noise": "Noise"
    },
-
-
 
    "MobileCharacterSheet": {
       "noCharacter": "No Character Loaded",

@@ -117,7 +117,6 @@ function DesktopCharacterSheetPage() {
    const navigatorOpen = useAppSettingsStore((state) => state.navigatorOpen);
    const isEditing = useAppGeneralStateStore((state) => state.isEditing);
    const isSettingsOpen = useAppGeneralStateStore((state) => state.isSettingsOpen);
-   const isTourOpen = useAppGeneralStateStore((state) => state.isTourOpen);
    const { setDrawerOpen, setIsEditing, setSettingsOpen, setSettingsInitialSection } = useAppGeneralStateActions();
    const { toggleSidebarCollapsed, toggleNavigator } = useAppSettingsActions();
 
@@ -422,14 +421,14 @@ function DesktopCharacterSheetPage() {
             onConfirm={handleDialogConfirm}
             mode={dialogMode}
             cardData={cardToEdit ?? undefined}
-            modal={!isTourOpen}
+            modal={true}
             game={character?.game ?? 'LEGENDS'}
          />
          <ChallengeCardEditor
             isOpen={!!challengeCardToEdit}
             onOpenChange={(open) => { if (!open) closeChallengeEditor(); }}
             card={challengeCardToEdit}
-            modal={!isTourOpen}
+            modal={true}
          />
          <SettingsShell
             isOpen={isSettingsOpen}

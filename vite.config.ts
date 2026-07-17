@@ -167,11 +167,6 @@ export default defineConfig({
             return 'i18n-vendor'
           }
 
-          // Guided-tour library (only loaded when a tour starts).
-          if (/[\\/]node_modules[\\/]driver\.js[\\/]/.test(id)) {
-            return 'tour-vendor'
-          }
-
           // State stores + undo history.
           if (/[\\/]node_modules[\\/](zustand|zundo)[\\/]/.test(id)) {
             return 'state-vendor'

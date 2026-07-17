@@ -63,9 +63,6 @@ interface AppGeneralState {
    isLegacyDataDialogOpen: boolean;
    isMobileOnboardingOpen: boolean;
 
-   // App Tour
-   isTourOpen: boolean;
-
    // Edit Mode
    isEditing: boolean;
 
@@ -114,9 +111,6 @@ interface AppGeneralState {
       setLegacyDataDialogOpen: (isOpen: boolean) => void;
       setMobileOnboardingOpen: (isOpen: boolean) => void;
 
-      // App Tour
-      setTourOpen: (isOpen: boolean) => void;
-
       // Edit Mode
       setIsEditing: (isEditing: boolean) => void;
       toggleIsEditing: () => void;
@@ -163,9 +157,6 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
    isLegacyDataDialogOpen: false,
    isMobileOnboardingOpen: false,
 
-   // App Tour
-   isTourOpen: false,
-
    // Edit Mode
    isEditing: false,
 
@@ -202,9 +193,6 @@ export const useAppGeneralStateStore = create<AppGeneralState>((set) => ({
       setDesktopOnboardingOpen: (isOpen) => set({ isDesktopOnboardingOpen: isOpen }),
       setLegacyDataDialogOpen: (isOpen) => set({ isLegacyDataDialogOpen: isOpen }),
       setMobileOnboardingOpen: (isOpen) => set({ isMobileOnboardingOpen: isOpen }),
-
-      // App Tour
-      setTourOpen: (isOpen) => set({ isTourOpen: isOpen }),
 
       // Edit Mode
       setIsEditing: (isEditing) => set({ isEditing }),

@@ -80,5 +80,5 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
    },
 }));
 
-/** Derived boolean for anything that used to read `isTourOpen` to suppress hotkeys. */
+/** Derived boolean for anything that needs to suppress hotkeys while a tutorial runs. */
 export const useIsTutorialActive = (): boolean => useTutorialStore((state) => state.activeTutorialId !== null);

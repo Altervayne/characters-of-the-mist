@@ -52,9 +52,9 @@ export default function App() {
     <ThemeModeManager>
       <ThemeClassManager>
         {/* Resolution layer for the active character store. Hoisted above
-            AppStartManagerProvider because that provider consumes the store (via
-            useAppTourDriver), so it too must sit inside the provider; this covers
-            every character consumer in the app. */}
+            AppStartManagerProvider because that provider boots the active character
+            and hosts the TutorialRunner, both of which consume the store; this
+            covers every character consumer in the app. */}
         <ActiveCharacterStoreProvider>
           {/* Parallel resolution layer for the active board store (board-5+). Inert
               until a board tab is opened: it resolves null under a character tab or the
