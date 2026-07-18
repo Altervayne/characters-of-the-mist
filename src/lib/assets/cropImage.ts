@@ -6,12 +6,12 @@
  * lossless and `processImage`'s single webp pass is the only lossy step.
  *
  * The region is expressed in the coordinate space of the ROTATED image (the bounding
- * box of the source turned by `rotation`), which is exactly what react-easy-crop reports
- * as `croppedAreaPixels`. So the cut mirrors the stage: rotate the source into its bounding
- * box, then lift the region out of it.
+ * box of the source turned by `rotation`), which is exactly what the crop surface reports.
+ * So the cut mirrors the stage: rotate the source into its bounding box, then lift the
+ * region out of it.
  */
 
-/** A crop rectangle in the rotated image's pixel space, matching react-easy-crop's `croppedAreaPixels`. */
+/** A crop rectangle in the rotated image's pixel space, as reported by the crop surface. */
 export interface CropRegion {
    x: number;
    y: number;

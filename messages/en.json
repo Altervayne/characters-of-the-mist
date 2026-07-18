@@ -504,12 +504,12 @@
 
    "ImageCropper": {
       "title": "Crop image",
-      "zoom": "Zoom",
-      "rotate": "Rotate 90°",
+      "rotateCw": "Rotate 90° clockwise",
+      "rotateCcw": "Rotate 90° counter-clockwise",
       "reset": "Reset",
       "cancel": "Cancel",
       "apply": "Apply",
-      "tooSmall": "This crop is too small. Zoom out or choose a larger area."
+      "tooSmall": "This crop is too small. Drag a larger area."
    },
 
    "CharacterSheetPage": {

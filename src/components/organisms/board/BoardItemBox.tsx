@@ -402,7 +402,9 @@ export const BoardItemBox = memo(function BoardItemBox({
 
          <div
             onPointerDown={handleBodyPointerDown}
-            onDoubleClick={() => onDeepAction(item.id)}
+            // A portalled dialog (e.g. the image cropper) is a React descendant of this item, so its
+            // events bubble the component tree back here; ignore double-clicks that came from one.
+            onDoubleClick={(event) => { if (event.target instanceof Element && event.target.closest('[role="dialog"]')) return; onDeepAction(item.id); }}
             onPointerEnter={() => setHovered(true)}
             onPointerLeave={() => setHovered(false)}
             // A collapsed zone's bar carries the zone's tint (matching the expanded frame) so the

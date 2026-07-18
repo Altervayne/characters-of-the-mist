@@ -502,8 +502,8 @@
    },
    "ImageCropper": {
       "title": "[TO COMPLETE]",
-      "zoom": "[TO COMPLETE]",
-      "rotate": "[TO COMPLETE]",
+      "rotateCw": "[TO COMPLETE]",
+      "rotateCcw": "[TO COMPLETE]",
       "reset": "[TO COMPLETE]",
       "cancel": "[TO COMPLETE]",
       "apply": "[TO COMPLETE]",
