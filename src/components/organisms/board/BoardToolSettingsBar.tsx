@@ -76,9 +76,10 @@ interface BoardToolSettingsBarProps {
    /** The regular polygon's side count (3..12); shown as a stepper for that tool only. */
    sides: number;
    onSetSides: (sides: number) => void;
-   /** The Shape tool's base shape and fill; shown as toggles for that tool only. */
+   /** The Shape tool's base shape; shown as toggles for that tool only. */
    shapeBase: 'circle' | 'square';
    onSetShapeBase: (base: 'circle' | 'square') => void;
+   /** The shared interior-fill flag; its toggle shows for both polygon tools and the Shape tool. */
    shapeFilled: boolean;
    onSetShapeFilled: (filled: boolean) => void;
 }
@@ -100,7 +101,15 @@ export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush,
          <ToolSelector tool={tool} onSetTool={onSetTool} />
 
          {/* Tool-specific options sit right beside the tool selector, each shown for its tool alone off a
-             leading divider: the regular polygon's side count, the shape's base + fill. */}
+             leading divider: the freeform polygon's fill, the regular polygon's side count + fill, the shape's
+             base + fill. Fill is the shared `shapeFilled` setting, so the choice carries across the closed-shape
+             tools. */}
+         {tool === 'freeformPolygon' && (
+            <>
+               <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
+               <FillToggle filled={shapeFilled} onToggle={() => onSetShapeFilled(!shapeFilled)} />
+            </>
+         )}
          {tool === 'regularPolygon' && (
             <>
                <div className="mx-0.5 h-5 w-px shrink-0 bg-border" />
@@ -125,6 +134,7 @@ export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush,
                      <Plus className="h-4 w-4" />
                   </button>
                </div>
+               <FillToggle filled={shapeFilled} onToggle={() => onSetShapeFilled(!shapeFilled)} />
             </>
          )}
          {tool === 'shape' && (
@@ -148,19 +158,7 @@ export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush,
                      </button>
                   ))}
                </div>
-               <button
-                  type="button"
-                  title={t('BoardView.shapeFill')}
-                  aria-label={t('BoardView.shapeFill')}
-                  aria-pressed={shapeFilled}
-                  onClick={() => onSetShapeFilled(!shapeFilled)}
-                  className={cn(
-                     'flex size-6 shrink-0 items-center justify-center rounded hover:bg-muted cursor-pointer',
-                     shapeFilled ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
-                  )}
-               >
-                  <PaintBucket className="h-4 w-4" />
-               </button>
+               <FillToggle filled={shapeFilled} onToggle={() => onSetShapeFilled(!shapeFilled)} />
             </>
          )}
 
@@ -213,6 +211,26 @@ export function BoardToolSettingsBar({ tool, onSetTool, penSettings, onSetBrush,
             <LayersPlus className="h-4 w-4" />
          </button>
       </>
+   );
+}
+
+/** The interior-fill toggle, shared by the closed-shape tools (both polygons + the bounding-box shapes). */
+function FillToggle({ filled, onToggle }: { filled: boolean; onToggle: () => void }) {
+   const { t } = useTranslation();
+   return (
+      <button
+         type="button"
+         title={t('BoardView.shapeFill')}
+         aria-label={t('BoardView.shapeFill')}
+         aria-pressed={filled}
+         onClick={onToggle}
+         className={cn(
+            'flex size-6 shrink-0 items-center justify-center rounded hover:bg-muted cursor-pointer',
+            filled ? 'bg-muted text-foreground ring-1 ring-primary/40' : 'text-foreground',
+         )}
+      >
+         <PaintBucket className="h-4 w-4" />
+      </button>
    );
 }
 

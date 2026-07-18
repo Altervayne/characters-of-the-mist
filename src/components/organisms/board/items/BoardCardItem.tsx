@@ -1,8 +1,9 @@
 // -- React Imports --
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Icon Imports --
-import { Maximize2, Minimize2, RefreshCw } from 'lucide-react';
+import { Maximize2, Minimize2, PencilRuler, RefreshCw } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 // -- Component Imports --
 import { resolveCardComponent } from '@/components/organisms/cards/resolveCardComponent';
 import { ViewModeIcon } from '@/components/molecules/ToolbarHandle';
+import { ChallengeCardEditor } from '@/components/organisms/dialogs/ChallengeCardEditor';
 import { EmbeddedItem, EmbeddedFallback } from './EmbeddedItem';
 import { InteractiveEmbed } from './InteractiveEmbed';
 
@@ -82,6 +84,7 @@ export function BoardCardItem({ item, content, isSelected, toolbarSlot, onConten
                   const isFlip = (card.viewMode ?? 'FLIP') === 'FLIP';
                   return (
                      <>
+                        {isChallenge && <CardEditDialogButton card={card} />}
                         {isChallenge && <CardExpandButton cardId={card.id} isExpanded={isExpanded} />}
                         {!isExpanded && <CardViewModeButton cardId={card.id} viewMode={card.viewMode} />}
                         {!isExpanded && isFlip && <CardFlipButton cardId={card.id} />}
@@ -106,6 +109,32 @@ function InteractiveCard({ card, isEditing, onMentionClick }: { card: CardData; 
    // every other card ignores them.
    // eslint-disable-next-line react-hooks/static-components
    return <Component card={card} isBoardEmbed isEditing={isEditing} isExpanded={card.expanded === true} onMentionClick={onMentionClick} />;
+}
+
+/**
+ * Opens the full {@link ChallengeCardEditor} dialog for a board challenge card - the same editor the sheet
+ * uses, a third edit affordance beside the inline-edit pencil and the Expand toggle. It renders inside the
+ * embed's host-store provider (via the toolbar-extras slot), so its `updateCardTitle` / `updateCardDetails`
+ * commits land on the per-embed store and sync back to the copy's `content.data`, exactly like inline edits.
+ */
+function CardEditDialogButton({ card }: { card: CardData }) {
+   const { t } = useTranslation();
+   const [isOpen, setIsOpen] = useState(false);
+   return (
+      <>
+         <button
+            type="button"
+            title={t('BoardView.editChallengeCard')}
+            aria-label={t('BoardView.editChallengeCard')}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => setIsOpen(true)}
+            className="flex cursor-pointer items-center justify-center rounded p-1 text-popover-foreground hover:bg-muted"
+         >
+            <PencilRuler className="h-4 w-4" />
+         </button>
+         <ChallengeCardEditor isOpen={isOpen} onOpenChange={setIsOpen} card={isOpen ? card : null} modal />
+      </>
+   );
 }
 
 /** Toggles the embed's card between flip and side-by-side via the host store; persists into `content.data`. */

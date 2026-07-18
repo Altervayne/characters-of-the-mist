@@ -15,13 +15,20 @@ interface UseMobileCardSheetGesturesParameters {
 	setCurrentCardIndex: Dispatch<SetStateAction<number>>;
 	setIsToolbeltOpen: (value: boolean) => void;
 	onNavigateToTrackers: () => void;
+	onNavigateToCards: () => void;
 }
 
-// A swipe must be clearly horizontal to count as card navigation: its horizontal
-// travel must dominate its vertical travel (G3), so a diagonal scroll of the
-// card area never steps the card. It must also clear a minimum distance.
+// A swipe must be clearly horizontal to count as navigation: its horizontal travel
+// must dominate its vertical travel (G3), so a diagonal scroll never navigates. It
+// must also clear a minimum distance.
 const NAVIGATE_HORIZONTAL_DOMINANCE = 1.5;
 const NAVIGATE_MIN_DISTANCE = 50;
+
+// The shared gate for every navigate-swipe surface (card stepping and the
+// trackers <-> cards crossover), so all directions feel identical.
+const isHorizontalNavigationSwipe = (deltaX: number, deltaY: number) =>
+	Math.abs(deltaX) >= NAVIGATE_HORIZONTAL_DOMINANCE * Math.abs(deltaY) &&
+	Math.abs(deltaX) >= NAVIGATE_MIN_DISTANCE;
 
 /**
  * Owns the mobile character sheet's three touch-swipe surfaces and returns the
@@ -37,13 +44,16 @@ const NAVIGATE_MIN_DISTANCE = 50;
  *   reorder is entered via the toolbelt's reorder action and performed by
  *   drag-to-reorder, so the former swipe-up-to-reorder gesture is retired.)
  * - **Trackers area:** a horizontal edge-swipe opens the toolbelt (side-panel mode
- *   only), branching on handedness.
+ *   only), branching on handedness; a clear left-swipe elsewhere crosses over to the
+ *   Cards tab - the mirror of the first-card crossover back to Trackers.
  *
- * Both navigate-swipe surfaces share one rule (horizontal-dominance + minimum
- * distance) via {@link navigateFromHorizontalSwipe}. The trackers area's edge
- * thresholds, `window.innerWidth` read, and handedness / FAB-mode / `isToolbeltOpen`
- * branches are preserved exactly; the card index stays owned by the component,
- * which the nav bar dots/buttons and carousel also read.
+ * Every navigate-swipe surface shares one rule (horizontal-dominance + minimum
+ * distance) via {@link isHorizontalNavigationSwipe}, so card stepping and the
+ * trackers <-> cards crossover feel identical in both directions. The trackers
+ * area's edge thresholds, `window.innerWidth` read, and handedness / FAB-mode /
+ * `isToolbeltOpen` branches are preserved; the toolbelt gesture wins over navigation
+ * when it consumes the swipe. The card index stays owned by the component, which the
+ * nav bar dots/buttons and carousel also read.
  *
  * @returns Per-surface `{ onTouchStart, onTouchEnd }` objects to spread onto the
  *   card area, nav bar, and trackers area elements.
@@ -57,6 +67,7 @@ export function useMobileCardSheetGestures({
 	setCurrentCardIndex,
 	setIsToolbeltOpen,
 	onNavigateToTrackers,
+	onNavigateToCards,
 }: UseMobileCardSheetGesturesParameters) {
 	// Shared prev/next navigation for the card-area and nav-bar swipes. Steps one
 	// card on a clearly-horizontal swipe (G3 dominance + minimum distance),
@@ -65,8 +76,7 @@ export function useMobileCardSheetGestures({
 		if (!character || character.cards.length === 0) return;
 
 		// Require horizontal dominance so diagonal/vertical scrolls do not navigate.
-		if (Math.abs(deltaX) < NAVIGATE_HORIZONTAL_DOMINANCE * Math.abs(deltaY)) return;
-		if (Math.abs(deltaX) < NAVIGATE_MIN_DISTANCE) return;
+		if (!isHorizontalNavigationSwipe(deltaX, deltaY)) return;
 
 		// Swipe left = next card; swipe right = previous card.
 		if (deltaX < 0 && safeCardIndex < character.cards.length - 1) {
@@ -127,27 +137,32 @@ export function useMobileCardSheetGestures({
 		const deltaX = touchEndX - trackersSwipeStartX.current;
 		const deltaY = touchEndY - trackersSwipeStartY.current;
 
-		// Only process horizontal swipes
-		if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < 30) return;
-
 		const edgeThreshold = 50;
 		const swipeThreshold = 30;
 
-		// Edge swipe behavior depends on handedness setting (only in side-panel mode)
-		if (isLeftHanded) {
-			// Left-handed mode: Left edge opens the toolbelt
-			if (trackersSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold) {
-				if (!isMobileFABMode && !isToolbeltOpen) {
+		// Edge swipe opens the toolbelt (side-panel mode only), branching on
+		// handedness. When the toolbelt consumes the swipe we stop, so the reserved
+		// edge zone never also crosses over to the Cards tab.
+		if (Math.abs(deltaX) >= Math.abs(deltaY) && Math.abs(deltaX) >= swipeThreshold) {
+			if (isLeftHanded) {
+				// Left-handed mode: Left edge opens the toolbelt
+				if (trackersSwipeStartX.current < edgeThreshold && deltaX > swipeThreshold && !isMobileFABMode && !isToolbeltOpen) {
 					setIsToolbeltOpen(true);
+					return;
 				}
+			} else if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold && !isMobileFABMode && !isToolbeltOpen) {
+				// Right-handed mode: Right edge opens the toolbelt
+				setIsToolbeltOpen(true);
+				return;
 			}
-		} else {
-			// Right-handed mode: Right edge opens the toolbelt
-			if (trackersSwipeStartX.current > window.innerWidth - edgeThreshold && deltaX < -swipeThreshold) {
-				if (!isMobileFABMode && !isToolbeltOpen) {
-					setIsToolbeltOpen(true);
-				}
-			}
+		}
+
+		// A clear left-swipe elsewhere on the trackers surface crosses over to the
+		// Cards tab - the mirror of the first-card crossover back to Trackers, on the
+		// same gate so both directions feel identical. Trackers is the leftmost tab,
+		// so a right-swipe has nowhere to go.
+		if (deltaX < 0 && isHorizontalNavigationSwipe(deltaX, deltaY)) {
+			onNavigateToCards();
 		}
 	};
 

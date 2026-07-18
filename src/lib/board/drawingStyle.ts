@@ -450,9 +450,10 @@ export type StrokePaintInput = Pick<Stroke, 'brush' | 'color' | 'width' | 'point
  * shape matrix branches (so the drawing item and the live preview render identically). A geometric brush
  * stroke is a filled nib ribbon; a geometric pen/highlighter is a crisp stroked polyline (the highlighter
  * keeps its translucency); a freehand brush stroke is the smoothed nib ribbon; a freehand pen/highlighter is
- * the smoothed stroked path. A polygon closes its path. An ellipse/rect is a bounding-box region: the outline
- * inherits the brush (a nib ribbon over the sampled ring / four corners, or a crisp stroked region), and a
- * `filled` one adds an interior fill of the ink beneath it.
+ * the smoothed stroked path. A polygon closes its path, and a `filled` one adds an interior fill of the ink
+ * beneath it (like the bounding-box shapes). An ellipse/rect is a bounding-box region: the outline inherits
+ * the brush (a nib ribbon over the sampled ring / four corners, or a crisp stroked region), and a `filled`
+ * one adds an interior fill of the ink beneath it.
  */
 export function strokePaint(stroke: StrokePaintInput): StrokePaint {
    const ink = strokeColorToCss(stroke.color);
@@ -469,10 +470,13 @@ export function strokePaint(stroke: StrokePaintInput): StrokePaint {
    }
    const closed = stroke.shape === 'polygon';
    if (stroke.shape) {
+      // A closed polygon carries an interior fill like the bounding-box shapes (the region is its own closed
+      // polyline); a line stays outline-only. The highlighter keeps its own alpha so a filled one reads see-through.
+      const fill = closed && stroke.filled ? { fillD: buildPolylinePath(stroke.points, true), fillColor: ink, fillOpacity: brushOpacity(stroke.brush) } : undefined;
       if (stroke.brush === 'brush') {
-         return { d: buildGeometricRibbonPath(stroke.points, stroke.width, NIB_ANGLE, closed), fill: ink, stroke: 'none' };
+         return { d: buildGeometricRibbonPath(stroke.points, stroke.width, NIB_ANGLE, closed), fill: ink, stroke: 'none', ...fill };
       }
-      return { d: buildPolylinePath(stroke.points, closed), fill: 'none', stroke: ink, strokeWidth: stroke.width, strokeOpacity: brushOpacity(stroke.brush) };
+      return { d: buildPolylinePath(stroke.points, closed), fill: 'none', stroke: ink, strokeWidth: stroke.width, strokeOpacity: brushOpacity(stroke.brush), ...fill };
    }
    if (stroke.brush === 'brush') {
       return { d: buildBrushRibbonPath(stroke.points, stroke.width, NIB_ANGLE), fill: ink, stroke: 'none' };
@@ -494,6 +498,20 @@ export function makeStroke(id: string, points: number[], brush: BrushKind, color
 /** A fresh pen stroke with the default width and adaptive ink. */
 export function makePenStroke(id: string, points: number[]): Stroke {
    return makeStroke(id, points, 'pen', null, DEFAULT_STROKE_WIDTH);
+}
+
+/** Even-odd ray cast: true when (px,py) lies inside the closed polygon over a flat `[x0,y0,...]` vertex list. */
+function pointInPolygon(px: number, py: number, points: number[]): boolean {
+   const n = Math.floor(points.length / 2);
+   let inside = false;
+   for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = points[i * 2];
+      const yi = points[i * 2 + 1];
+      const xj = points[j * 2];
+      const yj = points[j * 2 + 1];
+      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+   }
+   return inside;
 }
 
 /** Squared distance from point (px,py) to the segment (ax,ay)-(bx,by). A zero-length segment reads as its endpoint. */
@@ -561,6 +579,8 @@ export function strokeHitsPoint(item: { x: number; y: number }, stroke: Stroke, 
       const ey = localY - points[1];
       return ex * ex + ey * ey <= reachSq;
    }
+   // A filled polygon erases anywhere in its interior too (the outline walk below still catches an unfilled one).
+   if (stroke.shape === 'polygon' && stroke.filled && count >= 3 && pointInPolygon(localX, localY, points)) return true;
    for (let i = 0; i < count - 1; i++) {
       if (pointSegmentDistanceSq(localX, localY, points[i * 2], points[i * 2 + 1], points[i * 2 + 2], points[i * 2 + 3]) <= reachSq) return true;
    }

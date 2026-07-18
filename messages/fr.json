@@ -25,7 +25,6 @@
          "title": "[TO COMPLETE]",
          "description": "[TO COMPLETE]",
          "characterSheetType": "[TO COMPLETE]",
-         "boardType": "[TO COMPLETE]",
          "workspaceType": "[TO COMPLETE]",
          "newBoardTitle": "[TO COMPLETE]",
          "newBoardSubtitle": "[TO COMPLETE]",
@@ -53,7 +52,6 @@
          "title": "[TO COMPLETE]",
          "empty": "[TO COMPLETE]",
          "toggle": "[TO COMPLETE]",
-         "hide": "[TO COMPLETE]",
          "expand": "[TO COMPLETE]",
          "collapse": "[TO COMPLETE]"
       },
@@ -239,6 +237,7 @@
       "sendToBack": "[TO COMPLETE]",
       "deleteItem": "[TO COMPLETE]",
       "editEmbed": "[TO COMPLETE]",
+      "editChallengeCard": "[TO COMPLETE]",
       "editNote": "[TO COMPLETE]",
       "flipEmbed": "[TO COMPLETE]",
       "expandEmbed": "[TO COMPLETE]",
@@ -393,14 +392,12 @@
       },
       "character": {
          "saved": "Personnage sauvegardé dans",
-         "savedToDrawer": "Personnage en cours sauvegardé à la racine du Tiroir.",
          "exported": "Personnage en cours exporté vers les téléchargements.",
          "exportFailedNoChar": "Export échoué, aucun personnage trouvé.",
          "imported": "Fichier personnage exporté avec succès.",
          "loaded": "[TO COMPLETE]",
          "updated": "[TO COMPLETE]",
          "reset": "Fiche de personnage réinitialisée avec succès.",
-         "unloaded": "Fiche de personnage déchargée avec succès.",
          "componentImported": "Fichier de composant importé avec succès.",
          "duplicatePortrait": "[TO COMPLETE]",
          "linkedItemMissing": "[TO COMPLETE]",
@@ -478,14 +475,7 @@
       "localStorageDisabled_description": "Il semblerait que pour une raison ou pour une autre, le stockage local de votre navigateur n'est pas accessible par l'application. Campaigns of the Mist dépend uniquement du stockage local de votre navigateur pour la persistance et la gestion des données, et n'utilise aucun serveur. Cela signifie que l'application ne peut pas fonctionner dans votre cas.",
       "ErrorBoundary": {
          "title": "Une erreur s'est produite",
-         "description": "Je suis désolé, mais une erreur inattendue s'est produite. Merci d'envoyer les information de l'erreur en incluant ce que vous faisiez au moment où elle est survenue sur le serveur Discord de Tools of the Mist. Vous pouvez essayer de recharger la page pour corriger l'erreur.",
-         "errorMessage": "Message d'erreur :",
-         "technicalDetails": "Détails techniques :",
-         "appSettings": "Paramètres de l'application :",
-         "copyButton": "Copier les détails de l'erreur",
-         "reloadButton": "Recharger la page",
-         "copySuccess": "Détails de l'erreur copiés dans le presse-papier",
-         "copyFailed": "Échec de la copie dans le presse-papier"
+         "description": "Je suis désolé, mais une erreur inattendue s'est produite. Merci d'envoyer les information de l'erreur en incluant ce que vous faisiez au moment où elle est survenue sur le serveur Discord de Tools of the Mist. Vous pouvez essayer de recharger la page pour corriger l'erreur."
       }
    },
    "Tooltips": {
@@ -511,26 +501,20 @@
       "presetLandscape": "[TO COMPLETE]"
    },
    "CharacterSheetPage": {
-      "loading": "Chargement du Personnage...",
-      "newCharacterName": "Nouveau Personnage",
       "characterNamePlaceholder": "Nom du Personnage...",
       "addElement": "[TO COMPLETE]",
       "addCard": "Ajouter une Carte",
       "addPortrait": "[TO COMPLETE]",
       "addChallenge": "[TO COMPLETE]",
       "addJournal": "[TO COMPLETE]",
-      "removeJournal": "[TO COMPLETE]",
       "dropToLoadCharacter": "Déposez un Objet Fiche de Personnage ici pour charger le personnage entier. Soyez prudent, cette action remplacera votre personnage actif.",
       "dropToOpenBoard": "[TO COMPLETE]",
       "dropToOpenNote": "[TO COMPLETE]",
       "dropToImport": "[TO COMPLETE]",
       "cannotDropWrongGame": "[TO COMPLETE]",
       "SidebarMenu": {
-         "sidebarTitle": "Menu",
+         "sidebarTitle": "Menu Latéral",
          "editMode": "Mode Édition",
-         "playMode": "Mode Jeu",
-         "openDrawer": "Ouvrir le Tiroir",
-         "closeDrawer": "Fermer le Tiroir",
          "drawer": "[TO COMPLETE]",
          "saveToDrawer": "Enregistrer le Perso.",
          "saveToDrawerAs": "Enregistrer sous... ",
@@ -574,14 +558,7 @@
          "clearBoardConfirmCancelButton": "[TO COMPLETE]",
          "clearBoardConfirmButton": "[TO COMPLETE]",
          "openMenu": "[TO COMPLETE]",
-         "returnToMenu": "[TO COMPLETE]",
-         "unloadConfirmTitle": "Êtes vous certain de vouloir retourner au Menu?",
-         "unloadConfirmDescription": "Cette action est extrêmement destructive. Votre Personnage actif sera déchargé, et votre historique d'action sur la fiche de personnage avec. Vous ne pourrez pas revenir en arrière avec la fonction Undo.",
-         "unloadConfirmCancelButton": "Annuler",
-         "unloadConfirmButton": "Retourner au Menu",
          "settings": "Paramètres",
-         "info": "À Propos",
-         "patchNotes": "Patch Notes",
          "whatsNew": "[TO COMPLETE]",
          "help": "[TO COMPLETE]",
          "diceTray": "[TO COMPLETE]",
@@ -605,9 +582,7 @@
          "resultCount_other": "[TO COMPLETE]",
          "noMatches": "[TO COMPLETE]",
          "jumpTo": "[TO COMPLETE]",
-         "close": "[TO COMPLETE]",
          "searching": "[TO COMPLETE]",
-         "typeToSearch": "[TO COMPLETE]",
          "created": "[TO COMPLETE]",
          "updated": "[TO COMPLETE]",
          "unavailable": "[TO COMPLETE]"
@@ -654,7 +629,6 @@
       "close": "Fermer le tiroir",
       "expand": "[TO COMPLETE]",
       "contract": "[TO COMPLETE]",
-      "expandedTitle": "[TO COMPLETE]",
       "seeWorkspace": "[TO COMPLETE]",
       "reexpand": "[TO COMPLETE]",
       "backToRoot": "Retour à la racine",
@@ -681,7 +655,6 @@
          "addToCharacter": "Ajouter à la Fiche active",
          "loadCharacter": "[TO COMPLETE]",
          "selectFolder": "Sélectionner une destination",
-         "selectThisFolder": "Déposer ici",
          "selectRoot": "Déposer à la Racine",
          "nameItemTitle": "Quel nom voulez-vous attribuer à cet Objet ?",
          "rename": "Renommer",
@@ -699,7 +672,6 @@
          "moveHere": "Déplacer ici",
          "moveFolderTitle": "Déplacement d'un Dossier dans le Tiroir",
          "moveItemTitle": "Déplacement d'un Objet dans le Tiroir",
-         "moveToRoot": "Retourner à la racine",
          "moveUp": "Retour",
          "export": "Exporter",
          "exportFull": "Exporter votre Tiroir entier",
@@ -899,8 +871,6 @@
       "description": "Vous trouverez ici des paramètres pour l'application en général comme la palette de thème, le mode sombre ou clair, etc...",
       "language": "Langue",
       "selectLanguagePlaceholder": "Sélectionner une langue",
-      "selectThemePlaceholder": "Sélectionner un thème",
-      "accentColor": "Palette",
       "appearance": "Mode",
       "mode": "[TO COMPLETE]",
       "modeLight": "[TO COMPLETE]",
@@ -909,9 +879,7 @@
       "theme": "[TO COMPLETE]",
 
       "themes": {
-         "manage": "[TO COMPLETE]",
          "editThemes": "[TO COMPLETE]",
-         "windowDescription": "[TO COMPLETE]",
          "presetsHeading": "[TO COMPLETE]",
          "customsHeading": "[TO COMPLETE]",
          "noCustoms": "[TO COMPLETE]",
@@ -920,7 +888,6 @@
          "reorder": "[TO COMPLETE]",
          "export": "[TO COMPLETE]",
          "importTheme": "[TO COMPLETE]",
-         "dropToImport": "[TO COMPLETE]",
          "escapeHatch": "[TO COMPLETE]",
          "saveChanges": "[TO COMPLETE]",
          "unsavedChanges": "[TO COMPLETE]",
@@ -1096,9 +1063,7 @@
          "fab": "Boutons Flottants"
       },
       "mobileNavigation": {
-         "title": "Navigation Mobile",
-         "bottomTabs": "Onglets en Bas",
-         "fab": "Bouton Flottant"
+         "title": "Navigation Mobile"
       },
       "mobileHandedness": {
          "title": "Côté de l'interface Mobile",
@@ -1113,9 +1078,7 @@
          "replayButton": "Afficher les astuces de Commandes Tactiles"
       },
       "toolbeltMode": {
-         "title": "Mode Ceinture d'Outils",
-         "sidePanel": "Panneau Latéral",
-         "fab": "Bouton Flottant"
+         "title": "Mode Ceinture d'Outils"
       },
       "storage": {
          "label": "[TO COMPLETE]",
@@ -1174,7 +1137,6 @@
    "InfoDialog": {
       "title": "À Propos",
       "description": "Informations, crédits, et licence pour l'application.",
-      "close": "Fermer",
       "tabs": {
          "about": "À Propos",
          "license": "Licence",
@@ -1195,8 +1157,7 @@
       "selectVersion": "Sélectionnez une version...",
       "pageCounterLabel": "Page",
       "previousNote": "Patch note précédente",
-      "nextNote": "Patch note suivante",
-      "close": "Fermer"
+      "nextNote": "Patch note suivante"
    },
    "MigrationDialog": {
       "title": "Migrer des anciennes données de personnage",
@@ -1257,16 +1218,7 @@
    },
    "WelcomeDialog": {
       "title": "Bienvenue dans Campaigns of the Mist !",
-      "description": "Cette application est un gestionnaire et créateur de personnage non-officiel pour les JdR de Son of Oak Game Studios. Toutes vos données sont sauvegardées dans votre navigateur, ce qui assure votre contrôle total dessus.",
-      "featuresTitle": "Fonctionnalités principales :",
-      "feature1": "Une fiche de personnage dynamique avec une intégration poussée de mécaniques de glisser-déposer.",
-      "feature2": "Une Palette de Commandes (Ctrl+K) pour des commandes rapides en utilisant uniquement le clavier.",
-      "feature3": "Un système de fichiers dans votre Tiroir pour organiser vos personnages et composants.",
-      "feature4": "Un système d'annulation et de restauration (Undo/Redo) robuste pour réparer vos erreurs.",
-      "callToAction": "Il y a un tutoriel simple pour débuter à votre disposition, qui peut être lancé à l'aide du bouton ci-dessous. Alternativement, vous pouvez aller lire les notes de mises à jour (non traduites). Si vous souhaitez directement rentrer dans l'application, vous pouvez simplement fermer cette fenêtre.",
-      "needHelp": "Si vous avez besoin d'aide, ou trouvez un bug, n'hésitez pas à me joindre sur le serveur discord Tools of the Mist. Vous trouverez un lien vous y menant dans la fenêtre \"À Propos\" du menu latéral. Merci beaucoup d'utiliser Campaigns of the Mist, je vous souhaite de bien vous amuser !",
-      "startTutorialButton": "Débuter le Tutoriel",
-      "patchNotesButton": "Voir les Patch Notes"
+      "description": "Cette application est un gestionnaire et créateur de personnage non-officiel pour les JdR de Son of Oak Game Studios. Toutes vos données sont sauvegardées dans votre navigateur, ce qui assure votre contrôle total dessus."
    },
    "CommandPalette": {
       "placeholder_1": "Vos désirs sont des ordres...",
@@ -1297,7 +1249,6 @@
       "placeholders": {
          "renameCharacter": "Nouveau nom de Personnage...",
          "rollDice": "[TO COMPLETE]",
-         "newCardName": "Nom du Trait Principal de la Carte...",
          "themeType": "Sélectionnez le Type de Carte...",
          "themebook": "Sélectionnez ou créez un Thème...",
          "mainTagName": "Entrez le nom du Trait Principal...",
@@ -1320,7 +1271,6 @@
          "theme-city-of-mist": "City of Mist"
       },
       "empty": "Aucune commande trouvée.",
-      "label": "Palette de Commandes",
       "jumpToSection": {
          "empty": "[TO COMPLETE]"
       },
@@ -1337,7 +1287,6 @@
          "creation": "Création",
          "note": "[TO COMPLETE]",
          "tools": "[TO COMPLETE]",
-         "themePalette": "Choisissez une nouvelle Palette",
          "chooseThemeType": "Choisissez un Type",
          "chooseThemebook": "Choisissez un Thème"
       },
@@ -1417,8 +1366,7 @@
       "title": "[TO COMPLETE]",
       "listLabel": "[TO COMPLETE]",
       "status": {
-         "done": "[TO COMPLETE]",
-         "notStarted": "[TO COMPLETE]"
+         "done": "[TO COMPLETE]"
       },
       "action": {
          "start": "[TO COMPLETE]",
@@ -1487,18 +1435,6 @@
       "progress": "[TO COMPLETE]",
       "header": "[TO COMPLETE]",
       "anchorMissing": "[TO COMPLETE]",
-      "mainMenuGames_title": "Choisissez votre jeu",
-      "mainMenuGames_content": "Campaigns of the Mist supporte trois systèmes de jeu : Legend in the Mist, City of Mist et Otherscape. Vous pouvez créer des personnages pour chacun de ces systèmes.",
-      "mainMenuLegends_title": "Legend in the Mist",
-      "mainMenuLegends_content": "Pour ce tutoriel, nous créerons un personnage Legend in the Mist. Cliquez sur cette carte pour la sélectionner, puis nous procéderons à la création de votre premier personnage !",
-      "mainMenuCreate_title": "Créer votre personnage",
-      "mainMenuCreate_content": "Cliquez sur ce bouton pour créer une nouvelle feuille de personnage Legend in the Mist. Cela vous amènera à l'interface principale de la feuille de personnage.",
-      "unloadCharacter_title": "Décharger votre Personnage",
-      "unloadCharacter_content": "Ce bouton décharge complètement votre Personnage actif de l'application, ce qui le supprime, et remet à blanc tout votre historique d'actions. Après cela, vous serez renvoyé vers le menu principal sans aucune données de personnage chargées en fond.",
-      "openAddCard_title": "Ouvrir le Créateur de Carte",
-      "openAddCard_content": "Nous allons maintenant voir comment créer une nouvelle Carte.",
-      "creationDialog_title": "Création d'une Carte",
-      "creationDialog_content": "Ce menu vous permet de définir les propriétés de votre nouvelle Carte.",
       "navigation": {
          "welcome_title": "[TO COMPLETE]",
          "welcome_body": "[TO COMPLETE]",
@@ -1828,10 +1764,8 @@
       }
    },
    "ThemeCard": {
-      "fellowshipTitle": "Thème de Compagnie",
       "crewThemeTitle": "Thème de Bande",
       "placeholderName": "Trait principal...",
-      "mainTagPlaceholder": "Trait principal...",
       "noName": "SANS NOM",
       "power": "ATOUT",
       "weakness": "CONTRAINTE",
@@ -1844,11 +1778,6 @@
       "identityTitle": "Identité",
       "noIdentity": "TEXTE D'IDENTITÉ VIDE",
       "identityPlaceholder": "Entrez votre texte d'Identité...",
-      "mythos": "Mythos",
-      "logos": "Logos",
-      "attention": "Attention",
-      "fade": "Dissipation",
-      "crack": "Fissure",
       "addPowerTag": "Créer Trait d'Atout",
       "addWeaknessTag": "Créer Trait de Contrainte",
       "improvements": "Améliorations Spéciales",
@@ -1874,11 +1803,6 @@
       "descriptionTitle": "Description",
       "noDescription": "DESCRIPTION VIDE",
       "descriptionPlaceholder": "Entrez la description de votre équipement...",
-      "attention": "Attention",
-      "fade": "Dissipation",
-      "crack": "Fissure",
-      "upgrade": "Amélioration",
-      "decay": "Déclin",
       "improvements": "Améliorations Spéciales",
       "addImprovement": "Ajouter une Amélioration",
       "gearTitle": "ÉQUIPEMENT",
@@ -1952,8 +1876,6 @@
       "addRelationship": "Ajouter un Membre",
       "companionPlaceholder": "Membre",
       "relationshipPlaceholder": "Relation",
-      "relationshipCompanionNoName": "SANS NOM",
-      "relationshipRelationNoName": "SANS RELATION",
       "Specials": {
          "title": "Spéciaux",
          "addSpecial": "Ajouter un Spécial"
@@ -1968,9 +1890,7 @@
       "companion": "Compagnon",
       "companionPlaceholder": "Camarade",
       "relationship": "Relation",
-      "relationshipCompanionNoName": "SANS NOM",
       "relationshipPlaceholder": "Relation",
-      "relationshipRelationNoName": "SANS NOM",
       "quintessences": "Quintessences",
       "addQuintessence": "Créer une Quintessence"
    },
@@ -1981,12 +1901,10 @@
       "placeholder": "Entrez votre objet..."
    },
    "quintessences": {
-      "placeholder": "Entrez votre quintessence...",
-      "noName": "SANS NOM"
+      "placeholder": "Entrez votre quintessence..."
    },
    "improvements": {
-      "placeholder": "Entrez votre amélioration...",
-      "noName": "SANS NOM"
+      "placeholder": "Entrez votre amélioration..."
    },
    "specials": {
       "placeholder": "Entrez votre trait spécial...",
@@ -2097,19 +2015,16 @@
       "reorderCards": "Réorganiser les Cartes"
    },
    "MobileCardCarousel": {
-      "noCards": "Aucune carte pour le moment",
-      "cardCounter": "Carte {{current}} sur {{total}}"
+      "noCards": "Aucune carte pour le moment"
    },
    "MobileBottomTabs": {
       "sheet": "Fiche",
       "sheetDisabled": "[TO COMPLETE]",
       "drawer": "Tiroir",
       "menu": "Menu",
-      "edit": "Modifier",
       "toolbelt": "Ceinture à outils"
    },
    "MobileFAB": {
-      "edit": "Mode Édition",
       "drawer": "Tiroir",
       "sheet": "Fiche",
       "menu": "Menu",
@@ -2159,15 +2074,7 @@
    },
    "MobileMenu": {
       "title": "Menu",
-      "description": "Accédez aux paramètres et actions de l'application",
-      "settings": "Paramètres",
-      "info": "À propos",
-      "patchNotes": "Patch Notes",
-      "save": "Enregistrer le Perso.",
-      "saveCharacterAs": "Enregistrer sous... ",
-      "export": "Exporter le Perso.",
-      "import": "Importer un Objet",
-      "unload": "Décharger le Perso."
+      "description": "Accédez aux paramètres et actions de l'application"
    },
    "MobileOnboarding": {
       "welcome": {
@@ -2251,8 +2158,7 @@
    },
    "MobileGestureHints": {
       "trackerLongPress": "[TO COMPLETE]",
-      "drawerLongPress": "Astuce : appuyez longuement sur un élément pour le déplacer, ou touchez son bouton ⋯ pour plus d'options.",
-      "selectTracker": "Sélectionner le tracker pour les actions"
+      "drawerLongPress": "Astuce : appuyez longuement sur un élément pour le déplacer, ou touchez son bouton ⋯ pour plus d'options."
    },
    "Common": {
       "dragHandle": "Glisser pour réorganiser",

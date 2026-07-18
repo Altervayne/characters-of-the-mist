@@ -132,10 +132,8 @@ const BAR_ARROW_CLASS =
 /** The layers panel's fixed width (matches its `w-64`), used to inset the bottom bar when it's open. */
 const LAYERS_PANEL_WIDTH = 256;
 
-/** Screen-px the bottom-center tool bar keeps from the canvas floor when the dice tray is closed. */
+/** Screen-px the bottom-center tool bar keeps from the canvas floor. */
 const BAR_EDGE_GAP = 12;
-/** Screen-px clearance the bar keeps above the open dice tray (which shares the bottom-center anchor). */
-const BAR_TRAY_GAP = 12;
 
 /** The canvas; renders nothing when no board tab is active. */
 export function BoardView() {
@@ -227,22 +225,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // as fit-to-content / reset-view; routed through the debounced, non-undoable camera setter.
    const jumpToViewCenter = (world: Point) => actions.setViewport(centerViewport(world, clipRect, viewport.zoom));
 
-   // The app-wide dice tray shares this bar's bottom-center anchor, so lift the bar clear of it when open.
-   // The tray is content-sized (its height varies with dice / history), so measure the live panel rather
-   // than guess; closed, the height resets so the bar drops back to the floor.
-   const diceTrayOpen = useAppSettingsStore((state) => state.diceTray.isOpen);
    const layersPanelOpen = useAppSettingsStore((state) => state.layersPanelOpen);
-   const [diceTrayHeight, setDiceTrayHeight] = useState(0);
-   useEffect(() => {
-      if (!diceTrayOpen) { setDiceTrayHeight(0); return; }
-      const panel = document.querySelector('[data-dice-tray-panel]');
-      if (!(panel instanceof HTMLElement)) return;
-      const observer = new ResizeObserver(() => setDiceTrayHeight(panel.offsetHeight));
-      observer.observe(panel);
-      return () => observer.disconnect();
-   }, [diceTrayOpen]);
-   // The bar's live bottom offset: above the open tray, else a small gap off the floor.
-   const barBottom = diceTrayOpen ? diceTrayHeight + BAR_TRAY_GAP : BAR_EDGE_GAP;
 
    // The positioning cluster's X input, focused by the palette's jump command (it can't carry a coordinate
    // through the one-shot bridge, so it focuses the field and lets the user type).
@@ -809,16 +792,19 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    };
 
    /**
-    * Right-button DRAG detector (select mode), captured at the clip so it fires over the background AND any
-    * item - even ones whose own handlers stop pointer propagation. It never opens the radial (that rides the
-    * reliable contextmenu event); it only watches for a drag: past the threshold it pans and sets
-    * `suppressRadialRef` so the contextmenu stays shut, and closes any menu that already opened on press
-    * (GTK fires contextmenu on pointerdown). The suppress flag is cleared up front so a prior right-drag
-    * can't eat this click's menu on a platform where no closing contextmenu followed it. Draw gestures own
-    * their overlay; a live text editor keeps its native menu.
+    * Right-button DRAG detector, captured at the clip so it fires over the background AND any item - even
+    * ones whose own handlers stop pointer propagation - in both Select and Draw modes (right-drag pans the
+    * board the same way everywhere). It never opens the radial (that rides the reliable contextmenu event);
+    * it only watches for a drag: past the threshold it pans and sets `suppressRadialRef` so the contextmenu
+    * stays shut, and closes any menu that already opened on press (GTK fires contextmenu on pointerdown). A
+    * right-CLICK with no drag that finds a freeform polygon mid-draw closes it here (suppressing the radial),
+    * mirroring the pan-vs-radial split: a right-drag while placing a polygon PANS and leaves the polygon
+    * anchored in world space (ready for more vertices), a right-click CLOSES it. The suppress flag is cleared
+    * up front so a prior right-drag can't eat this click's menu on a platform where no closing contextmenu
+    * followed it. A live text editor keeps its native menu.
     */
    const handleClipPointerDownCapture = (event: ReactPointerEvent) => {
-      if (event.button !== 2 || activeTool !== 'select' || isEditableTarget(event.target)) return;
+      if (event.button !== 2 || isEditableTarget(event.target)) return;
       event.stopPropagation(); // this sequence owns the right button; no item handler also acts on it
       suppressRadialRef.current = false; // fresh gesture: drop any flag a prior drag left unconsumed
       const startX = event.clientX;
@@ -830,11 +816,14 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          panning = true;
          suppressRadialRef.current = true; // a real right-drag swallows the contextmenu that follows
          setRadial(null); // GTK opens the menu on pointerdown; dismiss it as the drag takes over
-         beginPan(moveEvent.clientX, moveEvent.clientY);
+         beginPan(moveEvent.clientX, moveEvent.clientY); // pan leaves an in-progress polygon anchored in world space
       };
       const onUp = () => {
          window.removeEventListener('pointermove', onMove);
          window.removeEventListener('pointerup', onUp);
+         // A right-click with no drag closes an in-progress freeform polygon and swallows the radial the
+         // following contextmenu would open; with none in progress that contextmenu opens the radial as usual.
+         if (!panning && polygonRef.current) { commitPolygon(); suppressRadialRef.current = true; }
       };
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
@@ -893,26 +882,20 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const verts = polygonRef.current;
       polygonRef.current = null;
       setPolygonPreview(null);
-      if (verts) commitStroke(verts, 'polygon');
-   }, [commitStroke]);
+      if (verts) commitStroke(verts, 'polygon', penSettings.shapeFilled);
+   }, [commitStroke, penSettings.shapeFilled]);
 
    /**
     * Freeform-polygon pointerdown: a PERSISTENT multi-click gesture - each primary click drops a vertex,
-    * unlike the self-terminating pen/line. The pan escape hatch runs first (middle / Space+drag). A
-    * right-click FINISHES a polygon in progress (mouse-only close) and suppresses the radial; with none in
-    * progress it falls through to the radial. A primary click starts a polygon, closes it (the click lands
-    * within the close threshold of the first vertex and there are >= 3 vertices), or appends a vertex.
+    * unlike the self-terminating pen/line. The pan escape hatch runs first (middle / Space+drag); the right
+    * button is owned by the clip's capture handler (right-drag pans, right-click closes the polygon). A
+    * primary click starts a polygon, closes it (the click lands within the close threshold of the first
+    * vertex and there are >= 3 vertices), or appends a vertex.
     */
    const handlePolygonPointerDown = (event: ReactPointerEvent) => {
       event.stopPropagation();
       if (event.button === 1) { event.preventDefault(); beginPan(event.clientX, event.clientY); return; }
       if (event.button === 0 && spaceHeldRef.current) { beginPan(event.clientX, event.clientY); return; }
-      if (event.button === 2) {
-         // Right-click closes a polygon in progress and swallows the radial (the context-menu reads the flag);
-         // with none in progress it opens the radial as elsewhere.
-         if (polygonRef.current) { commitPolygon(); suppressRadialRef.current = true; }
-         return;
-      }
       if (event.button !== 0) return;
       const world = cursorToWorld(event.clientX, event.clientY);
       if (!world) return;
@@ -1137,7 +1120,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
          setPenPreview(null);
          const shape = shapeAt(upEvent.clientX, upEvent.clientY, upEvent.shiftKey);
          // A press with no real drag (radius under the floor) makes nothing, mirroring the line's dot guard.
-         if (shape && shape.radius >= MIN_LINE_LENGTH) commitStroke(shape.verts, 'polygon'); // stays in the tool (sticky)
+         if (shape && shape.radius >= MIN_LINE_LENGTH) commitStroke(shape.verts, 'polygon', penSettings.shapeFilled); // stays in the tool (sticky)
       };
       strokeCleanupRef.current = cleanup;
       window.addEventListener('pointermove', onMove);
@@ -1871,7 +1854,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             {penPreview && (
                <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" style={{ zIndex: groupToolbarZIndex(layerCount) }} aria-hidden>
                   {/* Same paint path as the committed stroke: geometric for a shape gesture, freehand otherwise. */}
-                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : activeTool === 'regularPolygon' ? 'polygon' : activeTool === 'shape' ? (penSettings.shapeBase === 'circle' ? 'ellipse' : 'rect') : undefined, filled: activeTool === 'shape' ? penSettings.shapeFilled : undefined }} />
+                  <StrokeShape stroke={{ brush: penSettings.brush, color: penSettings.color, width: penSettings.width, points: penPreview, shape: activeTool === 'line' ? 'line' : activeTool === 'regularPolygon' ? 'polygon' : activeTool === 'shape' ? (penSettings.shapeBase === 'circle' ? 'ellipse' : 'rect') : undefined, filled: activeTool === 'shape' || activeTool === 'regularPolygon' ? penSettings.shapeFilled : undefined }} />
                </svg>
             )}
 
@@ -1976,15 +1959,15 @@ function BoardCanvas({ store }: { store: BoardStore }) {
              controls + positioning cluster. It grows to fit its contents and, when they exceed the canvas,
              scrolls horizontally inside (capped at the canvas width minus its margins) - the wheel scrolls it,
              the scrollbar is hidden, and edge arrows appear per side (like the tab strip). Stops the pointer so
-             editing a field or scrolling the bar never pans. Lifts above the dice tray when it's open, and sits
-             above the board content but below the floating windows / radial / tray (z-40). `overflow-x-clip`
-             clips a slide-out arrow at the card edge. */}
+             editing a field or scrolling the bar never pans. Holds its floor spot (z-40, above the board content
+             but below the floating windows / radial); the app-wide dice tray (z-50) simply overlays it when open
+             rather than shoving it up. `overflow-x-clip` clips a slide-out arrow at the card edge. */}
          <div
             data-tutorial="board-toolbar"
             onPointerDown={(event) => event.stopPropagation()}
-            style={{ bottom: barBottom, marginLeft: layersPanelOpen ? -(LAYERS_PANEL_WIDTH / 2) : 0 }}
+            style={{ bottom: BAR_EDGE_GAP, marginLeft: layersPanelOpen ? -(LAYERS_PANEL_WIDTH / 2) : 0 }}
             className={cn(
-               'absolute left-1/2 z-40 flex w-fit -translate-x-1/2 items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm transition-[bottom,margin-left] duration-300 ease-out',
+               'absolute left-1/2 z-40 flex w-fit -translate-x-1/2 items-center overflow-x-clip rounded-md border border-border bg-card/90 shadow-sm backdrop-blur-sm transition-[margin-left] duration-300 ease-out',
                // Slide the bar out from under the panel and cap its width to the free region so it never underlaps.
                layersPanelOpen ? 'max-w-[calc(100%-1.5rem-16rem)]' : 'max-w-[calc(100%-1.5rem)]',
             )}

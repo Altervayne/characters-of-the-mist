@@ -25,7 +25,6 @@
          "title": "New tab",
          "description": "Choose what kind of tab to open.",
          "characterSheetType": "Character Sheet",
-         "boardType": "Board",
          "workspaceType": "Workspace",
          "newBoardTitle": "New board",
          "newBoardSubtitle": "A freeform canvas",
@@ -53,7 +52,6 @@
          "title": "Outline",
          "empty": "No headings yet",
          "toggle": "Toggle outline",
-         "hide": "Hide outline",
          "expand": "Expand section",
          "collapse": "Collapse section"
       },
@@ -239,6 +237,7 @@
       "sendToBack": "Send to back",
       "deleteItem": "Delete",
       "editEmbed": "Edit",
+      "editChallengeCard": "Edit challenge card",
       "editNote": "Edit note",
       "flipEmbed": "Flip",
       "expandEmbed": "Expand",
@@ -393,14 +392,12 @@
       },
       "character": {
          "saved": "Character saved to",
-         "savedToDrawer": "Current character has been saved to Drawer root.",
          "exported": "Current character has been exported to downloads.",
          "exportFailedNoChar": "Export failed, No character found.",
          "imported": "Character file imported successfully.",
          "loaded": "Character loaded.",
          "updated": "Character updated from file.",
          "reset": "Character sheet successfully reset.",
-         "unloaded": "Character has been unloaded successfully.",
          "componentImported": "Component file imported successfully.",
          "duplicatePortrait": "This character already has a portrait.",
          "linkedItemMissing": "The linked drawer save no longer exists, so the character was saved as a new item.",
@@ -478,14 +475,7 @@
       "localStorageDisabled_description": "It seems that for one reason or another, your browser's local storage is not accessible for the App. Campaigns of the Mist relies solely on browser local storage for data management and persistance, and does not use a server at all. This means that in your case, it cannot run.",
       "ErrorBoundary": {
          "title": "Something went wrong",
-         "description": "I'm sorry, but an unexpected error occurred. Please submit a bug report to the Tools of the Mist discord, while explaining what you were doing at the time of the error. You can try reloading the app to fix it.",
-         "errorMessage": "Error Message:",
-         "technicalDetails": "Technical Details:",
-         "appSettings": "App Settings:",
-         "copyButton": "Copy Error Details",
-         "reloadButton": "Reload Page",
-         "copySuccess": "Error details copied to clipboard",
-         "copyFailed": "Failed to copy to clipboard"
+         "description": "I'm sorry, but an unexpected error occurred. Please submit a bug report to the Tools of the Mist discord, while explaining what you were doing at the time of the error. You can try reloading the app to fix it."
       }
    },
    "Tooltips": {
@@ -513,9 +503,7 @@
    },
 
    "CharacterSheetPage": {
-      "loading": "Loading Character...",
 
-      "newCharacterName": "New Character",
       "characterNamePlaceholder": "Character Name...",
 
       "addElement": "Add…",
@@ -523,7 +511,6 @@
       "addPortrait": "Add Portrait",
       "addChallenge": "Add Challenge",
       "addJournal": "Add Journal",
-      "removeJournal": "Remove Journal",
       "dropToLoadCharacter": "Drop Character Sheet Item here to load the full character. Be careful, this will replace your currently active character.",
       "dropToOpenBoard": "Drop to open board",
       "dropToOpenNote": "Drop to open note",
@@ -531,13 +518,10 @@
       "cannotDropWrongGame": "Can't drop here, this component is for a different game system.",
 
       "SidebarMenu": {
-         "sidebarTitle": "Menu",
+         "sidebarTitle": "Sidebar",
 
          "editMode": "Edit Mode",
-         "playMode": "Play Mode",
 
-         "openDrawer": "Open Drawer",
-         "closeDrawer": "Close Drawer",
          "drawer": "Drawer",
 
          "saveToDrawer": "Save Character",
@@ -585,15 +569,8 @@
          "clearBoardConfirmButton": "Clear the Board",
 
          "openMenu": "Open main menu",
-         "returnToMenu": "Return to main menu",
-         "unloadConfirmTitle": "Are you sure you want to return to the menu?",
-         "unloadConfirmDescription": "This action is extremely destructive. Your active character will be unloaded and the history erased. You will not be able to undo this, make sure you either saved your character to the drawer or exported it.",
-         "unloadConfirmCancelButton": "Cancel",
-         "unloadConfirmButton": "Return to Menu",
 
          "settings": "Settings",
-         "info": "App Info",
-         "patchNotes": "Patch Notes",
          "whatsNew": "What's new",
          "help": "Help",
          "diceTray": "Dice Tray",
@@ -617,9 +594,7 @@
          "resultCount_other": "{{count}} results",
          "noMatches": "No items match your search.",
          "jumpTo": "Jump to folder",
-         "close": "Close search",
          "searching": "Searching…",
-         "typeToSearch": "Type to search your drawer.",
          "created": "Created {{date}}",
          "updated": "Updated {{date}}",
          "unavailable": "This item is no longer available."
@@ -666,7 +641,6 @@
       "close": "Close drawer",
       "expand": "Expand drawer",
       "contract": "Contract",
-      "expandedTitle": "Library",
       "seeWorkspace": "See workspace",
       "reexpand": "Back to library",
       "backToRoot": "Back to root",
@@ -700,7 +674,6 @@
          "loadCharacter": "Load character in sheet",
 
          "selectFolder": "Select a destination",
-         "selectThisFolder": "Move here",
          "selectRoot": "Move to Root",
 
          "nameItemTitle": "What would you like to name this Item?",
@@ -722,7 +695,6 @@
          "moveHere": "Move here",
          "moveFolderTitle": "Moving a Folder through the Drawer",
          "moveItemTitle": "Moving an Item through the Drawer",
-         "moveToRoot": "Go to Drawer root",
          "moveUp": "Back",
 
          "export": "Export",
@@ -937,9 +909,7 @@
 
       "language": "Language",
       "selectLanguagePlaceholder": "Select a language",
-      "selectThemePlaceholder": "Select a theme",
 
-      "accentColor": "Theme Palette",
       "appearance": "Theme Mode",
       "mode": "Mode",
       "modeLight": "Light",
@@ -948,9 +918,7 @@
       "theme": "Theme",
 
       "themes": {
-         "manage": "Manage themes",
          "editThemes": "Edit themes",
-         "windowDescription": "Select, duplicate, rename, or delete your themes. Presets can be duplicated into a custom theme.",
          "presetsHeading": "Presets",
          "customsHeading": "Your themes",
          "noCustoms": "No custom themes yet. Duplicate a preset to start one.",
@@ -959,7 +927,6 @@
          "reorder": "Drag to reorder",
          "export": "Export",
          "importTheme": "Import theme",
-         "dropToImport": "Drop a theme file to import it",
          "escapeHatch": "Reset to default theme",
          "saveChanges": "Save changes",
          "unsavedChanges": "Unsaved changes",
@@ -1139,9 +1106,7 @@
       },
 
       "mobileNavigation": {
-         "title": "Mobile Navigation",
-         "bottomTabs": "Bottom Tabs",
-         "fab": "Floating Button"
+         "title": "Mobile Navigation"
       },
 
       "mobileHandedness": {
@@ -1159,9 +1124,7 @@
       },
 
       "toolbeltMode": {
-         "title": "Toolbelt Mode",
-         "sidePanel": "Side Panel",
-         "fab": "Floating Button"
+         "title": "Toolbelt Mode"
       },
 
       "storage": {
@@ -1230,7 +1193,6 @@
    "InfoDialog": {
       "title": "About",
       "description": "Information, credits, and licensing for this application.",
-      "close": "Close",
       "tabs": {
          "about": "About",
          "license": "License",
@@ -1254,9 +1216,8 @@
       "pageCounterLabel": "Page",
 
       "previousNote": "Previous patch note",
-      "nextNote": "Next patch note",
+      "nextNote": "Next patch note"
 
-      "close": "Close"
    },
    "MigrationDialog": {
       "title": "Migrate legacy character data",
@@ -1321,16 +1282,7 @@
    },
    "WelcomeDialog": {
       "title": "Welcome to Campaigns of the Mist!",
-      "description": "This is an unofficial, fan-made character manager for TTRPGs by Son of Oak Game Studios. All your data is saved in your browser, ensuring complete privacy.",
-      "featuresTitle": "Key Features:",
-      "feature1": "A dynamic character sheet with full drag & drop functionality.",
-      "feature2": "A powerful Command Palette (Ctrl+K) for keyboard-only quick commands.",
-      "feature3": "A full file system in the Drawer to organize your characters and components.",
-      "feature4": "A robust Undo/Redo system to fix any mistakes.",
-      "callToAction": "There is a simple beginner's tutorial at your disposal, which you may start with the button below. Alternatively, you could go and read the patch notes. If you want to get straight to the app, you can simply close this window.",
-      "needHelp": "If you need help, or find a bug, you can reach out to the Tools of the Mist discord for support. You will find a link in the \"About\" section of the App Info window. Thank you for using Campaigns of the Mist, have fun!",
-      "startTutorialButton": "Start Tutorial",
-      "patchNotesButton": "View Patch Notes"
+      "description": "This is an unofficial, fan-made character manager for TTRPGs by Son of Oak Game Studios. All your data is saved in your browser, ensuring complete privacy."
    },
 
    "CommandPalette": {
@@ -1364,7 +1316,6 @@
          "renameCharacter": "New character name...",
          "rollDice": "Enter a dice formula, e.g. 2d6+3...",
 
-         "newCardName": "Main tag name for the new card...",
          "themeType": "Select your theme's type...",
          "themebook": "Select a themebook or type a custom one...",
          "mainTagName": "Write the name of your Main Tag...",
@@ -1391,7 +1342,6 @@
       },
 
       "empty": "No commands were found.",
-      "label": "Command Palette",
       "jumpToSection": {
          "empty": "This note has no headings."
       },
@@ -1410,7 +1360,6 @@
          "note": "Note",
          "tools": "Tools",
 
-         "themePalette": "Choose a new Theme Palette",
 
          "chooseThemeType": "Choose a Theme Type",
          "chooseThemebook": "Choose a Themebook"
@@ -1500,8 +1449,7 @@
       "title": "Tutorials",
       "listLabel": "Tutorials",
       "status": {
-         "done": "Completed",
-         "notStarted": "Not started"
+         "done": "Completed"
       },
       "action": {
          "start": "Start",
@@ -1571,23 +1519,11 @@
       "header": "{{name}} · {{current}} of {{total}}",
       "anchorMissing": "This part of the app has changed, so the tutorial is ending here.",
 
-      "mainMenuGames_title": "Choose Your Game",
-      "mainMenuGames_content": "Campaigns of the Mist supports three game systems: Legend in the Mist, City of Mist, and Otherscape. You can create characters for any of these systems.",
 
-      "mainMenuLegends_title": "Legend in the Mist",
-      "mainMenuLegends_content": "For this tutorial, we'll create a Legend in the Mist character. Click this card to select it, then we'll proceed to create your first character!",
 
-      "mainMenuCreate_title": "Create Your Character",
-      "mainMenuCreate_content": "Click this button to create a new Legend in the Mist character sheet. This will take you to the main character sheet interface.",
 
-      "unloadCharacter_title": "Unloading your Character",
-      "unloadCharacter_content": "This button completely unloads your active Character, deleting it and removing the entire action history for the Undo/Redo feature. This sends you back to the main menu with a clean app and no background character loaded in.",
 
-      "openAddCard_title": "Opening the Card Creator",
-      "openAddCard_content": "We're going to see how creating a Card works now.",
       
-      "creationDialog_title": "Card Creation",
-      "creationDialog_content": "This dialog allows you to define the new card's properties.",
 
       "navigation": {
          "welcome_title": "Welcome",
@@ -1919,11 +1855,9 @@
    },
 
    "ThemeCard": {
-      "fellowshipTitle": "Fellowship Theme",
       "crewThemeTitle": "Crew Theme",
 
       "placeholderName": "Write your main tag...",
-      "mainTagPlaceholder": "Write your main tag...",
       "noName": "NO NAME",
       "power": "POWER",
       "weakness": "WEAKNESS",
@@ -1940,11 +1874,6 @@
       "noIdentity": "EMPTY IDENTITY TEXT",
       "identityPlaceholder": "Write your identity text here...",
 
-      "mythos": "Mythos",
-      "logos": "Logos",
-      "attention": "Attention",
-      "fade": "Fade",
-      "crack": "Crack",
 
       "addPowerTag": "Add Power Tag",
       "addWeaknessTag": "Add Weakness Tag",
@@ -1978,11 +1907,6 @@
       "noDescription": "EMPTY DESCRIPTION",
       "descriptionPlaceholder": "Write your loadout description here...",
 
-      "attention": "Attention",
-      "fade": "Fade",
-      "crack": "Crack",
-      "upgrade": "Upgrade",
-      "decay": "Decay",
 
       "improvements": "Special Improvements",
       "addImprovement": "Add Improvement",
@@ -2058,8 +1982,6 @@
       "addRelationship": "Add Crew Member",
       "companionPlaceholder": "Member",
       "relationshipPlaceholder": "Relation",
-      "relationshipCompanionNoName": "NO NAME",
-      "relationshipRelationNoName": "NO RELATIONSHIP",
       "Specials": {
          "title": "Specials",
          "addSpecial": "Add Special"
@@ -2075,9 +1997,7 @@
       "companion": "Companion",
       "companionPlaceholder": "Fellow",
       "relationship": "Relation",
-      "relationshipCompanionNoName": "NO NAME",
       "relationshipPlaceholder": "Relation",
-      "relationshipRelationNoName": "NO TAG",
 
       "quintessences": "Quintessences",
       "addQuintessence": "Add Quintessence"
@@ -2089,12 +2009,10 @@
       "placeholder": "Write your item..."
    },
    "quintessences": {
-      "placeholder": "Write your quintessence...",
-      "noName": "NO QUINTESSENCE"
+      "placeholder": "Write your quintessence..."
    },
    "improvements": {
-      "placeholder": "Write your improvement...",
-      "noName": "NO IMPROVEMENT"
+      "placeholder": "Write your improvement..."
    },
    "specials": {
       "placeholder": "Write your special trait...",
@@ -2215,19 +2133,16 @@
       "reorderCards": "Reorder Cards"
    },
    "MobileCardCarousel": {
-      "noCards": "No cards yet",
-      "cardCounter": "Card {{current}} of {{total}}"
+      "noCards": "No cards yet"
    },
    "MobileBottomTabs": {
       "sheet": "Sheet",
       "sheetDisabled": "No sheet loaded",
       "drawer": "Drawer",
       "menu": "Menu",
-      "edit": "Edit",
       "toolbelt": "Toolbelt"
    },
    "MobileFAB": {
-      "edit": "Edit Mode",
       "drawer": "Drawer",
       "sheet": "Sheet",
       "menu": "Menu",
@@ -2277,15 +2192,7 @@
    },
    "MobileMenu": {
       "title": "Menu",
-      "description": "Access app settings and actions",
-      "settings": "Settings",
-      "info": "About",
-      "patchNotes": "Patch Notes",
-      "save": "Save Character",
-      "saveCharacterAs": "Save Character as...",
-      "export": "Export Character",
-      "import": "Import an Item",
-      "unload": "Unload Character"
+      "description": "Access app settings and actions"
    },
    "MobileOnboarding": {
       "welcome": {
@@ -2369,8 +2276,7 @@
    },
    "MobileGestureHints": {
       "trackerLongPress": "Tip: press and hold a tracker to select it for the toolbelt.",
-      "drawerLongPress": "Tip: press and hold an item to drag it, or tap its ⋯ button for more options.",
-      "selectTracker": "Select tracker for actions"
+      "drawerLongPress": "Tip: press and hold an item to drag it, or tap its ⋯ button for more options."
    },
    "Common": {
       "dragHandle": "Drag to reorder",

@@ -8,7 +8,6 @@
       },
       "character": {
          "saved": "Charakter gespeichert in",
-         "savedToDrawer": "Der aktuelle Charakter wurde im Drawer gespeichert.",
          "exported": "Der aktuelle Charakter wurde in Downloads exportiert.",
          "exportFailedNoChar": "Der Export is fehlgeschlagen. Es wurde kein Charakter gefunden.",
          "imported": "Charakterdatei erfolgreich importiert.",
@@ -58,9 +57,7 @@
 
 
    "CharacterSheetPage": {
-      "loading": "Charakter läd...",
 
-      "newCharacterName": "Neuer Charakter",
       "characterNamePlaceholder": "Charakter Name...",
 
       "addCard": "Karte hinzufügen",
@@ -71,10 +68,7 @@
          "sidebarTitle": "Menü",
 
          "editMode": "Editiermodus",
-         "playMode": "Spielmodus",
 
-         "openDrawer": "Drawer öffnen",
-         "closeDrawer": "Drawer schließen",
 
          "saveToDrawer": "Save Charakter speichern",
          "exportCharacter": "Charakter exportieren",
@@ -87,9 +81,7 @@
          "resetConfirmCancelButton": "Abbrechen",
          "resetConfirmButton": "Charakter wurde zurückgesetzt.",
 
-         "settings": "Einstellngen",
-         "info": "App Information",
-         "patchNotes": "Patch Hinweise"
+         "settings": "Einstellngen"
       }
    },
    "Actions": {
@@ -128,7 +120,6 @@
          "moveHere": "Hierher verschieben",
          "moveFolderTitle": "Einen ordner über den Drawer verschieben",
          "moveItemTitle": "Einen Eintrag über den Drawer verschieben",
-         "moveToRoot": "Gehe zum Ursprungsverzeichnis des Drawer",
          "moveUp": "Zurück",
 
          "export": "Exportieren",
@@ -152,7 +143,6 @@
 
          "LEGENDS": "Legend in the Mist",
          "OTHERSCAPE": "Otherscape",
-         "CITY": "City of Mist",
 
          "LEGENDS_FULL_CHARACTER_SHEET": "Charakterbogen",
          "LEGENDS_CHARACTER_CARD": "Heldenkarte",
@@ -200,9 +190,7 @@
 
       "language": "Sprache",
       "selectLanguagePlaceholder": "Sprache wählen",
-      "selectThemePlaceholder": "Design wählen",
 
-      "accentColor": "Themen Palette",
       "appearance": "Themen Modi",
 
       "light": "Heller Modus",
@@ -220,8 +208,6 @@
          "locked": "gesetzt"
       },
 
-      "tutorial": "App Anleitung",
-      "tutorialButton": "Anleitung starten",
 
       "migration": {
          "label": "Daten migrieren",
@@ -255,7 +241,6 @@
    "InfoDialog": {
       "title": "Über Campaigns of the Mist",
       "description": "Informationen, Credits und Lizenzierung für diese Anwendung.",
-      "close": "Schließen",
       "tabs": {
          "about": "Über",
          "license": "Lizenz",
@@ -274,9 +259,8 @@
       "versionLabel": "Version",
       "selectVersion": "Wähle eine Version...",
 
-      "pageCounterLabel": "Seite",
+      "pageCounterLabel": "Seite"
 
-      "close": "Schließen"
    },
    "MigrationDialog": {
       "title": "Legacy Charakter Daten migrieren",
@@ -305,16 +289,7 @@
    },
    "WelcomeDialog": {
       "title": "Wilkonnen zu Campaigns of the Mist!",
-      "description": "Dies ist ein inoffizieller, von Fans erstellter Charaktermanager für TTRPGs von Son of Oak Game Studios. Alle Ihre Daten werden in Ihrem Browser gespeichert, um vollständige Privatsphäre zu gewährleisten.",
-      "featuresTitle": "Hauptmerkmale:",
-      "feature1": "Ein dynamisches Charakterblatt mit vollständiger Drag & Drop-Funktionalität.",
-      "feature2": "Ein leistungsstarker Befehlspalette (Strg+K) für schnelle Befehle nur mit der Tastatur.",
-      "feature3": "Ein vollständiges Dateisystem in der Drawer zur Organisation deiner Charaktere und Komponenten.",
-      "feature4": "Ein robustes Rückgängig/Wiederherstellen-System, um Fehler zu beheben.",
-      "callToAction": "Es gibt ein einfaches Anfänger-Tutorial, das Sie mit der Schaltfläche unten starten können. Alternativ können Sie die Patch-Notizen lesen. Wenn Sie direkt zur App möchten, können Sie einfach dieses Fenster schließen.",
-      "needHelp": "Wenn Sie Hilfe benötigen oder einen Fehler finden, können Sie den Tools of the Mist Discord für Unterstützung kontaktieren. Sie finden einen Link im Abschnitt „Über“ des App-Info-Fensters. Vielen Dank, dass Sie Campaigns of the Mist verwenden, viel Spaß!",
-      "startTutorialButton": "Tutorial beginnen",
-      "patchNotesButton": "Patch Hinweise ansehen"
+      "description": "Dies ist ein inoffizieller, von Fans erstellter Charaktermanager für TTRPGs von Son of Oak Game Studios. Alle Ihre Daten werden in Ihrem Browser gespeichert, um vollständige Privatsphäre zu gewährleisten."
    },
 
 
@@ -350,7 +325,6 @@
          "renameCharacter": "Neuner Charaktername...",
 
 
-         "newCardName": "Neuer Merkmalname für die neue Karte...",
          "themeType": "Wähle den Thementyp...",
          "themebook": "Wähle ein Themenbuch oder tippe ein indeviduelles...",
          "mainTagName": "Schreibe den Namen deines Hauptmerkmals...",
@@ -375,7 +349,6 @@
       },
 
       "empty": "Es wurden keine Kommandos gefudnen.",
-      "label": "Kommando Palette",
 
       "groups": {
          "general": "Allgemein",
@@ -385,7 +358,6 @@
          "creation": "Erstellung",
 
 
-         "themePalette": "Wähle eine neue Themen Palette",
 
          "chooseThemeType": "Wähle die Themenart",
          "chooseThemebook": "Wähle ein Themenbuch"
@@ -418,118 +390,10 @@
          "trackerTypeStoryTag": "Art: Handlungsmerkmal Tracker"
       }
    },
-   "Tutorial": {
-      "welcome_title": "Wilkommen zu Campaigns of the Mist!",
-      "welcome_content": "Diese kurze Tour führt Sie durch die Hauptfunktionen. Sie können jederzeit aussteigen, indem Sie auf das 'X' oben rechts in diesem kleinen Fenster oder außerhalb klicken. Wenn Sie versehentlich aussteigen, können Sie das Tutorial erneut im Einstellungsmenü starten.",
-      
-      "sidebar_title": "Hauptseitenleiste",
-      "sidebar_content": "Dies ist die Hauptseitenleiste. Sie enthält globale Aktionen wie das Umschalten des Bearbeitungsmodus, das Öffnen der Dateiansicht und den Zugriff auf die Einstellungen.",
-
-      "playArea_title": "Charakterbogen",
-      "playArea_content": "Campaigns of the Mist kann sich auf deinen „Spielbereich“ oder „Charakterbogen“ beziehen. Er enthält deine Tracker und Karten, die du zum Neuanordnen oder zur Ablage im Drawer ziehen kannst. Du kannst hier auch eine externe Datei ablegen, um sie zu importieren.",
-      
-      "characterName_title": "Charaktername",
-      "characterName_content": "Du kannst den Namen deines Charakters hier jederzeit ändern. Deine Änderungen werden automatisch gespeichert.",
-      
-      "trackers_title": "Trackers",
-      "trackers_content": "Dieser Bereich enthält Ihre Status- und Handlungsmerkaml-Tracker sowie Ihre Handlungsthemen-Tracker. Sie können neue hinzufügen, wenn Sie sich im 'Bearbeitungsmodus' befinden. Jeder Tracker verfügt über einen Verschiebegriff, der erscheint, wenn Sie mit der Maus darüber fahren. Damit können Sie sie verschieben oder exportieren.",
-
-      "cards_title": "Karten",
-      "cards_content": "Dieser Bereich enthält die Karten deines Charakters, sei es eine Themenkarte oder eine Charakterkarte. Jede Karte verfügt, ähnlich wie die Tracker, über einen Verschiebegriff, der beim Hovering erscheint. Du findest einen Ziehgriff, um sie herumzubewegen, sowie einige Tasten zum Drehen, Löschen (im Bearbeitungsmodus) oder Exportieren der Karte.",
-
-      "menuCollapse_title": "Reduzieren",
-      "menuCollapse_content": "Dieser Button ermöglicht es Ihnen, die Seitenleiste in eine viel dünnere Version zu reduzieren, die nur Symbole auf den Schaltflächen anzeigt.",
-
-      "menuUndoRedo_title": "Rückgängig/Wiederherstellen",
-      "menuUndoRedo_content": "Diese Schaltflächen ermöglichen es Ihnen, Aktionen auf Ihrem Charakterblatt rückgängig zu machen und wiederherzustellen. Wenn Ihre letzte Aktion im Charakterblatt war, können Sie auch CTRL+Z und CTRL+Y verwenden.",
-
-      "menuEditDrawer_title": "Bearbeitungsmodus und Drawer",
-      "menuEditDrawer_content": "Diese beiden Schaltflächen ermöglichen es Ihnen, den Bearbeitungsmodus zu aktivieren oder Ihren Drawer zu öffnen. Wir werden später darauf zurückkommen.",
-
-      "saveCharacter_title": "Einen Charakter speichern",
-      "saveCharacter_content": "Dieser Button ermöglicht es dir, deinen aktuellen Charakter als Datei in deinem Drawer zu speichern, mehr dazu später.",
-
-      "exportCharacter_title": "Einen Charakter exportieren",
-      "exportCharacter_content": "Dieser Button ermöglicht es Ihnen, Ihren aktuellen Charakter zu exportieren, wodurch Ihr Browser zum Herunterladen einer Datei aufgefordert wird.",
-
-      "importCharacter_title": "Einen Charakter importieren",
-      "importCharacter_content": "Dieser Button fordert Sie auf, eine Datei auszuwählen. Wenn Sie eine Charakterdatei von Campaigns of the Mist auswählen, wird diese Datei in die App als Ihr neuer aktiver Charakter geladen.",
-
-      "importComponent_title": "Eine Komponente importieren",
-      "importComponent_content": "Dieser Button fordert Sie ebenfalls auf, eine Datei auszuwählen. Wenn Sie eine Karten- oder Tracker-Datei aus Campaigns of the Mist auswählen, wird sie geladen und zu Ihrem aktuellen Charakter hinzugefügt.",
-
-      "resetCharacter_title": "Charakter zurücksetzen",
-      "resetCharacter_content": "Dieser Button löscht deinen aktiven Charakter vollständig und verwandelt dein Charakterblatt in eine frische leere Vorlage, um von vorne zu beginnen.",
-
-      "settings_title": "Einstellungen",
-      "settings_content": "Dieser Button öffnet das Einstellungsmenü, wo Sie Funktionen wie die Auswahl der Farbpalette Ihrer App, den Wechsel zwischen Hell- und Dunkelmodus oder das Zurücksetzen aller Ihrer Daten nutzen können. Hier finden Sie auch das Migrationswerkzeug, mit dem Sie die Daten der Legacy Campaigns of the Mist in diese neue Version migrieren können.",
-
-      "appInfo_title": "App Informaton",
-      "appInfo_content": "Dieser Button öffnet ein Informationsmenü, das einen allgemeinen „Über“-Bereich für diese App, Lizenzinformationen und Danksagungen enthält.",
-
-      "patchNotes_title": "Patch Notizen",
-      "patchNotes_content": "Dieser Button öffnet ein Menü, in dem Sie die Patch-Notizen-Historie der App einsehen können.",
-      
-      "editMode_title": "Bearbeitungsmodus",
-      "editMode_content": "Dieser Button versetzt Sie in den 'Bearbeitungsmodus'. Dadurch können Sie Karten und Tracker hinzufügen, entfernen und bearbeiten.",
-
-      "playMode_title": "Spielmodus",
-      "playMode_content": "Wenn der Bearbeitungsmodus aktiviert ist, ermöglicht der Button nun, zurück in den 'Spielmodus' zu wechseln, eine optimierte Anzeige deiner Karten und Tracker. Im Spielmodus sind nur grundlegende Funktionen verfügbar, um eine Überladung zu vermeiden.",
-
-      "addStatus_title": "Status hinzufügen",
-      "addStatus_content": "Im Bearbeitungsmodus sehen Sie jetzt eine Schaltfläche, um einen neuen Status-Tracker hinzuzufügen.",
-
-      "addStoryTag_title": "Handlungsmerkmal hinzufügen",
-      "addStoryTag_content": "Ebenso können Sie jetzt einen Button sehen, um einen neuen Handlungsmerkmal-Tracker hinzuzufügen. Sie können ein Handlungsmerkmal mit einem Button in der Werkzeugleiste, der erscheint, wenn Sie über den Tracker fahren, in ein Handlungsthema weiterentwickeln.",
-    
-      "addCard_title": "Neue Karten hinzufügen",
-      "addCard_content": "Dieser Button ist jetzt in Ihrer Kartenliste erschienen, wodurch Sie eine Karte erstellen können.",
-
-      "openAddCard_title": "Öffne den Kartenersteller",
-      "openAddCard_content": "Wir werden jetzt sehen, wie die Erstellung einer Karte funktioniert.",
-      
-      "creationDialog_title": "Kartenerstellung",
-      "creationDialog_content": "Dieser Dialog ermöglicht es Ihnen, die Eigenschaften der neuen Karte festzulegen.",
-
-      "menuDrawer_title": "Öffnen und Schließen des Drawer",
-      "menuDrawer_content": "Dieser Button öffnet die Drawer, in der alle deine Charaktere, Themen und Einträge gespeichert sind. Lass uns die Drawer ansehen.",
-
-      "drawer_title": "Der Drawer",
-      "drawer_content": "Dies ist dein Drawer, ein leistungsstarkes Speichersystem, das du verwenden kannst, um einzelne Elemente wie Karten und Tracker sowie vollständige Charakterblätter zu speichern, zu sichern und zu organisieren. Du kannst eine externe Datei hierher ziehen, um sie zu importieren.",
-   
-      "drawerUndoRedo_title": "Rückgängig/Wiederherstellen",
-      "drawerUndoRedo_content": "Ähnlich wie im Seitenmenü verfügt die Drawer über ein Paar Rückgängig/Wiederholen-Buttons. Diese Buttons ermöglichen es Ihnen, Aktionen innerhalb der Drawer rückgängig zu machen oder wiederherzustellen. Genau wie beim Charakterblatt können Sie, wenn Ihre letzte Aktion in der Drawer war, auch die Tasten CTRL+Z und CTRL+Y verwenden.",
-
-      "drawerRichView_title": "Ausführliche Ansicht",
-      "drawerRichView_content": "Standardmäßig zeigt die Drawer-Ansicht die Elemente in dem, was Campaigns of the Mist als „Ausführliche Ansicht“ bezeichnet. Dies ist im Wesentlichen eine Vorschau des Headers der Karte oder des vollständigen Trackers. Dies kann viel Platz einnehmen und verhindern, dass Sie viele Elemente auf einmal sehen. Daher können Sie diese Funktion hier ein- und ausschalten.",
-
-      "drawerFolders_title": "Ordner",
-      "drawerFolders_content": "Dies ist der Ort, an dem Ihre Ordner gespeichert sind. Hier finden Sie eine Schaltfläche „Ordner hinzufügen“, mit der Sie einen neuen Ordner an Ihrem aktuellen Standort erstellen können. Ordner haben ein Kontextmenü, das Sie durch Drücken von „...“ auf der rechten Seite aufrufen können. Sie können Ordner mit dem Ziehgriff auf der linken Seite verschieben!",
-
-      "drawerItems_title": "Einträge",
-      "drawerItems_content": "Hier ist der Ort, an dem Ihre Items gespeichert sind. Items sind Charakterblätter, Karten oder Tracker. Sie können Einträge hinzufügen, indem Sie Ihren Charakter speichern oder sie von Ihrem Charakterblatt in die Schublade ziehen und ablegen. Jeder Eintrag verfügt außerdem über ein Kontextmenü mit verschiedenen Optionen und kann verschoben werden.",
-
-      "drawerImport_title": "Datei importieren",
-      "drawerImport_content": "Sie können eine externe Datei in Ihren Drawer importieren. Die Datei muss eine gültige Campaigns of the Mist-Datei sein, das heißt, ein Drawer, ein Charakterblatt, eine Karte, ein Ordner oder ein Tracker.",
-
-      "drawerExport_title": "Deinen Drawer exportieren",
-      "drawerExport_content": "Dieser Button ermöglicht es Ihnen, Ihren gesamten Drawer als Datei zu exportieren.",
-
-      "commandPalette_title": "Kommando Palette",
-      "commandPalette_content": "Campaigns of the Mist bietet eine leistungsstarke Kommando-Palette, mit der Sie die Funktionen der App nur mit Ihrer Tastatur nutzen können! Um sie zu verwenden, drücken Sie einfach CTRL+K. Beachten Sie, dass dieses Feature auf Power-User ausgerichtet ist.",
-
-      "closingWords_title": "Das Ende",
-      "closingWords_content": "Dies ist alles, was dieses kurze Tutorial Ihnen beibringen kann. Fühlen Sie sich frei, komplexere Funktionen zu erkunden, und wenn Sie einen Fehler finden, ein Problem haben oder Hilfe benötigen, zögern Sie nicht, mich im offiziellen Discord von Tools of the Mist zu kontaktieren. Den Link finden Sie im Abschnitt „App-Info“. Vielen Dank, dass Sie Campaigns of the Mist verwenden!"
-   },
 
 
 
-   "CardRenderer": {
-      "themeCardPlaceholder": "Themenkarte: {{title}}",
-      "listCardPlaceholder": "Kartenliste: {{title}}"
-   },
    "ThemeCard": {
-      "fellowshipTitle": "Gefolgschaftsthema",
 
       "placeholderName": "SChreibe dein Hauptmerkmal...",
       "noName": "KEIN NAME",
@@ -566,9 +430,7 @@
       "companion": "Begleiter",
       "companionPlaceholder": "Gefolge",
       "relationship": "Beziehung",
-      "relationshipCompanionNoName": "KEIN NAME",
       "relationshipPlaceholder": "Beziehung",
-      "relationshipRelationNoName": "KEIN MERKMAL",
 
       "quintessences": "Quintessenzen",
       "addQuintessence": "Quintessenz hinzufügen"
@@ -580,12 +442,10 @@
       "placeholder": "Schreibe den Eintrag..."
    },
    "quintessences": {
-      "placeholder": "Schreibe die Quintessenz...",
-      "noName": "KEINE QUINTESSENz"
+      "placeholder": "Schreibe die Quintessenz..."
    },
    "improvements": {
-      "placeholder": "Schreibe die Verbesserung...",
-      "noName": "KEINE VERBESSERUNG"
+      "placeholder": "Schreibe die Verbesserung..."
    },
    "Trackers": {
       "addStatus": "Status hinzufügen",

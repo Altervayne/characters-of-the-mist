@@ -389,6 +389,18 @@ describe('strokePaint', () => {
       expect(paint.fillD).toBe(buildRectPath([0, 0, 20, 20]));
       expect(paint.fillOpacity).toBe(1);
    });
+
+   it('adds a solid ink fill layer under a filled polygon (its closed polyline is the region)', () => {
+      const paint = strokePaint({ brush: 'pen', color: '#00ff00', width: 4, points: [0, 0, 10, 0, 5, 8], shape: 'polygon', filled: true });
+      expect(paint.fillD).toBe(buildPolylinePath([0, 0, 10, 0, 5, 8], true));
+      expect(paint.fillColor).toBe('#00ff00');
+      expect(paint.fillOpacity).toBe(1);
+   });
+
+   it('leaves an unfilled polygon outline-only (no fill layer)', () => {
+      const paint = strokePaint({ brush: 'pen', color: null, width: 4, points: [0, 0, 10, 0, 5, 8], shape: 'polygon' });
+      expect(paint.fillD).toBeUndefined();
+   });
 });
 
 describe('brushOpacity', () => {
@@ -539,6 +551,16 @@ describe('strokeHitsPoint', () => {
       expect(strokeHitsPoint(origin, ellipse, 120, 120, 8)).toBe(true); // local (20,20): interior now hits
       // A corner of the bounding box sits OUTSIDE the ellipse, so it still misses even when filled.
       expect(strokeHitsPoint(origin, ellipse, 102, 102, 2)).toBe(false); // local (2,2): outside the curve
+   });
+
+   it('erases anywhere inside a FILLED polygon, but an unfilled one only on its edges', () => {
+      // A triangle: (0,0)-(40,0)-(20,40). Local (20,10) sits well inside it, clear of every edge.
+      const points = [0, 0, 40, 0, 20, 40];
+      const filled: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points, shape: 'polygon', filled: true };
+      const open: Stroke = { id: 's', brush: 'pen', color: null, width: 4, points, shape: 'polygon' };
+      expect(strokeHitsPoint(origin, filled, 120, 110, 2)).toBe(true); // interior hits when filled
+      expect(strokeHitsPoint(origin, open, 120, 110, 2)).toBe(false); // interior misses when unfilled
+      expect(strokeHitsPoint(origin, filled, 160, 160, 2)).toBe(false); // local (60,60): outside, still misses
    });
 });
 

@@ -278,26 +278,28 @@ export function BoardPortalEditor({ content, onCommitStyle, onChangeTarget }: Bo
             </>
          )}
 
-         {/* Label alignment: only the composed visual+text styles position the label around the visual. */}
-         {isComposedKind(mode) && (
-            <PortalAlignControl value={style.align ?? 'right'} onChange={setAlign} />
-         )}
-
-         {/* Label: a growing multiline textarea (Enter = newline). Hidden for icon-only (its label lives in the
-             tooltip). Commits on blur / unmount, not per keystroke, so one edit session = one undo. */}
+         {/* Label + its alignment, paired on one row: the alignment cross positions the label around the visual,
+             so it lives at the label's right. The cross shows only for the composed visual+text styles; text /
+             image-poster keep a full-width label, icon-only has none (its label lives in the tooltip). The label
+             commits on blur / unmount, not per keystroke, so one edit session = one undo. */}
          {mode !== 'icon-only' && (
-            <label className="flex flex-col gap-1.5">
-               <span className="text-xs font-medium text-muted-foreground">{t('BoardView.portalLabelField')}</span>
-               <textarea
-                  ref={labelRef}
-                  rows={2}
-                  value={label}
-                  placeholder={t('BoardView.portalLabelPlaceholder')}
-                  onChange={(event) => setLabel(event.target.value)}
-                  onBlur={commitLabel}
-                  className="max-h-40 min-h-16 resize-none overflow-y-auto rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-               />
-            </label>
+            <div className="flex items-start gap-3">
+               <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">{t('BoardView.portalLabelField')}</span>
+                  <textarea
+                     ref={labelRef}
+                     rows={2}
+                     value={label}
+                     placeholder={t('BoardView.portalLabelPlaceholder')}
+                     onChange={(event) => setLabel(event.target.value)}
+                     onBlur={commitLabel}
+                     className="max-h-40 min-h-[5.75rem] resize-none overflow-y-auto rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+               </label>
+               {isComposedKind(mode) && (
+                  <PortalAlignControl value={style.align ?? 'right'} onChange={setAlign} />
+               )}
+            </div>
          )}
 
          {/* Portal background: the whole element's card face. Off = the bare visual/label float on the board. */}
@@ -389,9 +391,11 @@ function PortalAlignControl({ value, onChange }: { value: PortalAlign; onChange:
       </button>
    );
    return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex shrink-0 flex-col gap-1.5">
          <span className="text-xs font-medium text-muted-foreground">{t('BoardView.portalAlignLabel')}</span>
-         <div className="grid w-max grid-cols-3 gap-1">
+         {/* Fixed 3x3 tracks (each a button's 1.75rem), self-centered: the empty corner/center cells can't
+             collapse, so the arrows always read as a symmetric, centered plus. */}
+         <div className="grid grid-cols-[repeat(3,1.75rem)] grid-rows-[repeat(3,1.75rem)] gap-1 self-center">
             <span />
             {cell('top', ArrowUp, 'BoardView.portalAlignTop')}
             <span />
