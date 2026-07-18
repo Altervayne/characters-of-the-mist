@@ -18,6 +18,8 @@ interface BoardPostItItemProps {
    item: BoardItem;
    content: PostItBoardContent;
    isSelected: boolean;
+   /** In its text-edit sub-state: the note swaps its rendered Markdown for the focused editor. */
+   isEditing: boolean;
    /** The selection toolbar's action slot; the post-it color control + the Save kebab portal here. */
    toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
@@ -28,12 +30,13 @@ interface BoardPostItItemProps {
    onRequestSelect: () => void;
 }
 
-export function BoardPostItItem({ item, content, isSelected, toolbarSlot, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect }: BoardPostItItemProps) {
+export function BoardPostItItem({ item, content, isSelected, isEditing, toolbarSlot, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect }: BoardPostItItemProps) {
    const body = (
       <PostItItem
          item={item}
          content={content}
          isSelected={isSelected}
+         isEditing={isEditing}
          toolbarSlot={toolbarSlot}
          onContentChange={onContentChange}
          onRequestSelect={onRequestSelect}

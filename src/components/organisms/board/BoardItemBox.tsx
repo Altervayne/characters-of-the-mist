@@ -77,6 +77,8 @@ interface BoardItemBoxProps {
    isSelected: boolean;
    /** The ONLY selected item: shows the per-item toolbar + resize grip (suppressed in a multi-selection). */
    soleSelected: boolean;
+   /** In its text-edit sub-state (post-it / journal / text only): the body mounts the focused editor. */
+   isEditing: boolean;
    /** World-px to push the toolbar down so it clears the clip's top edge (a tall item off the top); 0/undefined = no clamp. */
    toolbarClamp?: number;
    /** A zone's member count, for its collapsed-bar badge (undefined for non-zones). */
@@ -141,6 +143,7 @@ export const BoardItemBox = memo(function BoardItemBox({
    item,
    isSelected,
    soleSelected,
+   isEditing,
    toolbarClamp,
    memberCount,
    zoom,
@@ -248,24 +251,15 @@ export const BoardItemBox = memo(function BoardItemBox({
    };
 
    // ==================
-   //  Select (body click)
+   //  Body press (move / select / enter-editing, deferred to the canvas)
    // ==================
 
-   // Text kinds (post-it / journal / bare text) keep the select-to-edit model - a body click selects (a
-   // sole-selection mounts the editor), a modifier toggles, and the move stays on the grip. Every other
-   // kind routes to the canvas, which defers the press into a move / marquee / select by drag distance.
-   const isTextEditable = item.kind === 'post-it' || item.kind === 'journal' || item.kind === 'text';
-
+   // Every kind routes its body press to the canvas, which defers it into a move / marquee / select by drag
+   // distance. A text kind's plain click also promotes it to editing; while it IS editing, its own field
+   // overlays the body and stops the pointer, so this handler only fires on the non-editing (rendered) view.
    const handleBodyPointerDown = (event: ReactPointerEvent) => {
       if (event.button !== 0) return; // right-click selection + menu is handled by the canvas
       event.stopPropagation(); // don't start a background marquee / pan
-      if (isTextEditable) {
-         // Selecting renders the item on top only while selected (a render-only boost in the canvas);
-         // stored z is untouched, so deselect returns it to its layer. In-body text fields stop propagation,
-         // so editing never selects.
-         onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey);
-         return;
-      }
       onItemPointerDown(item.id, event);
    };
 
@@ -339,8 +333,8 @@ export const BoardItemBox = memo(function BoardItemBox({
    // off); its stored width/height are preserved for when it expands.
    const isCollapsedZone = isZone && item.content.kind === 'zone' && item.content.collapsed;
    // The faint drag hint: a soft ring on a hovered, unselected, body-draggable item (the cursor no longer
-   // signals it). Text kinds move only from the grip, and a zone's body is click-through, so neither shows it.
-   const showHoverRing = hovered && !isSelected && !interacting && !isTextEditable && !isZone;
+   // signals it). A zone's body is click-through (it never body-drags), so it alone opts out.
+   const showHoverRing = hovered && !isSelected && !interacting && !isZone;
    // A fit-content item renders at its content height exactly; a min-height item never renders below
    // its content (the floor); other kinds use their rect.
    const renderHeight = fitContent || fitBoth
@@ -359,7 +353,7 @@ export const BoardItemBox = memo(function BoardItemBox({
       <BoardItemBody
          item={item}
          isSelected={isSelected}
-         soleSelected={soleSelected}
+         isEditing={isEditing}
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
          memberCount={memberCount}

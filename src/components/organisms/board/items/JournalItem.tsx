@@ -53,6 +53,14 @@ interface JournalItemProps {
    item: BoardItem;
    content: JournalBoardContent;
    isSelected: boolean;
+   /** Editing sub-state: the title + active page mount focused textareas over their rendered Markdown. */
+   isEditing: boolean;
+   /**
+    * Focus the page body when editing engages (the board, where editing is a deliberate single-item
+    * promotion). The sheet omits it: every journal card shares one edit mode, so auto-focusing would make
+    * them fight over focus and jump the scroll.
+    */
+   autoFocusEditor?: boolean;
    /** The selection toolbar's action slot; add/remove-page + bookmark portal here, nav stays in the body. */
    toolbarSlot: HTMLElement | null;
    /** A non-clipped slot at the box's right edge; the bookmark tabs portal here so they protrude. */
@@ -79,7 +87,7 @@ interface JournalItemProps {
    onRequestSelect: () => void;
 }
 
-export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, toolbarControlClassName, bookmarkMode = 'side-tabs', onMentionClick, onContentChange, onRequestSelect }: JournalItemProps) {
+export function JournalItem({ item, content, isSelected, isEditing, autoFocusEditor = false, toolbarSlot, sideSlot, toolbarControlClassName, bookmarkMode = 'side-tabs', onMentionClick, onContentChange, onRequestSelect }: JournalItemProps) {
    const { t } = useTranslation();
    // A tapped `{mention}` mints a board-native tracker beside the journal (create-only, board scope); a host
    // that supplies its own handler (the sheet journal → create-or-raise on the character) overrides it.
@@ -124,6 +132,31 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    // A tab switch unmounts the board without a blur; flush the active page's buffer so it isn't lost.
    useCommitOnUnmount(commit);
 
+   // Entering editing focuses the page body on the next frame - deferred past the promoting click's own focus
+   // handling (which lands on the box body and would otherwise blur the freshly mounted textarea). Caret to
+   // the END, the natural place to keep writing; the title stays a secondary click-in field.
+   const pageAreaRef = useRef<HTMLTextAreaElement | null>(null);
+   useEffect(() => {
+      if (!isEditing || !autoFocusEditor) return;
+      const raf = requestAnimationFrame(() => {
+         const el = pageAreaRef.current;
+         if (!el) return;
+         el.focus();
+         const end = el.value.length;
+         el.setSelectionRange(end, end);
+      });
+      return () => cancelAnimationFrame(raf);
+   }, [isEditing, autoFocusEditor]);
+
+   // Leaving editing swaps the page textarea for the rendered Markdown in place (no unmount, no blur), so
+   // flush the page buffer on the editing->false edge. Dirty-guarded, so a normal blur-then-exit no-ops.
+   const wasEditingPage = useRef(isEditing);
+   useEffect(() => {
+      const was = wasEditingPage.current;
+      wasEditingPage.current = isEditing;
+      if (was && !isEditing) commit();
+   });
+
    // The title is a single-line markdown heading, held in its own buffer and committed on blur. Like the
    // bookmark label it also flushes on the editable->false edge: deselecting swaps the input for the
    // rendered title in place (no unmount, maybe no blur), which would otherwise strand a just-typed title.
@@ -132,21 +165,21 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    if (titleSync !== journal.title) { setTitleSync(journal.title); setTitleText(journal.title); }
    const commitTitle = () => { if (titleText !== journal.title) commitJournal({ ...journal, title: titleText }); };
    useCommitOnUnmount(commitTitle);
-   const wasSelected = useRef(isSelected);
+   const wasEditingTitle = useRef(isEditing);
    useEffect(() => {
-      const was = wasSelected.current;
-      wasSelected.current = isSelected;
-      if (was && !isSelected) commitTitle();
+      const was = wasEditingTitle.current;
+      wasEditingTitle.current = isEditing;
+      if (was && !isEditing) commitTitle();
    });
    // The title editor is a textarea that grows with its content (Enter adds a line, never commits); resize
-   // it to fit on every change and when it (re)mounts on select.
+   // it to fit on every change and when it (re)mounts on entering editing.
    const titleAreaRef = useRef<HTMLTextAreaElement | null>(null);
    useLayoutEffect(() => {
       const el = titleAreaRef.current;
       if (!el) return;
       el.style.height = 'auto';
       el.style.height = `${el.scrollHeight}px`;
-   }, [titleText, isSelected]);
+   }, [titleText, isEditing]);
 
    const goPrev = () => { commit(); setIndex(Math.max(0, pageIndex - 1)); };
    const goNext = () => { commit(); setIndex(Math.min(pages.length - 1, pageIndex + 1)); };
@@ -216,10 +249,10 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
    return (
       <div className="relative flex h-full w-full flex-col bg-paper-background text-paper-foreground">
          {/* Title bar (top): the notebook's multiline markdown heading - an auto-growing textarea while
-             selected (Enter adds a line, never commits), inline-rendered markdown at rest (wraps, clamped
+             editing (Enter adds a line, never commits), inline-rendered markdown at rest (wraps, clamped
              to a few lines so a long title can't eat the journal). A body click on it falls through to select. */}
          <div className="flex shrink-0 items-start border-b border-paper-border bg-paper-primary text-paper-primary-foreground px-1.5 py-1">
-            {isSelected ? (
+            {isEditing ? (
                <textarea
                   ref={titleAreaRef}
                   value={titleText}
@@ -229,7 +262,7 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
                   onPointerDown={(event) => event.stopPropagation()}
                   placeholder={t('BoardView.journalTitlePlaceholder')}
                   rows={1}
-                  // Selected -> the board's wheel listener skips this so the wheel scrolls the title, not zoom.
+                  // Editing -> the board's wheel listener skips this so the wheel scrolls the title, not zoom.
                   data-board-wheel-scroll
                   className="max-h-24 w-full resize-none overflow-y-auto bg-transparent text-sm font-semibold leading-snug outline-none placeholder:text-paper-primary-foreground/50 cursor-text"
                />
@@ -265,22 +298,23 @@ export function JournalItem({ item, content, isSelected, toolbarSlot, sideSlot, 
             toolbarSlot,
          )}
 
-         {/* Selected -> edit the page's raw Markdown; otherwise -> render it (inheriting the theme color).
+         {/* Editing -> edit the page's raw Markdown; otherwise -> render it (inheriting the theme color).
              The rendered block is pointer-transparent, so a body click falls through to select (then edit). */}
-         {isSelected ? (
+         {isEditing ? (
             <textarea
+               ref={pageAreaRef}
                value={text}
                onChange={(event) => setText(event.target.value)}
                onFocus={onRequestSelect}
                onBlur={commit}
                onPointerDown={(event) => event.stopPropagation()}
                placeholder={t('BoardView.journalPlaceholder')}
-               // Selected -> the board's wheel listener skips this so the wheel scrolls the page, not zoom.
+               // Editing -> the board's wheel listener skips this so the wheel scrolls the page, not zoom.
                data-board-wheel-scroll
                className="min-h-0 flex-1 resize-none border-0 bg-transparent p-2 text-sm leading-snug outline-none placeholder:text-muted-foreground/50 cursor-text"
             />
          ) : (
-            // Clip at rest (no scrollbar on a resting page); the textarea scrolls when selected.
+            // Clip at rest (no scrollbar on a resting page); the textarea scrolls while editing.
             <div className="min-h-0 flex-1 overflow-hidden p-2">
                {text.trim() ? <NoteMarkdown content={text} onMentionClick={handleMentionClick} /> : null}
             </div>

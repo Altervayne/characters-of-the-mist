@@ -87,10 +87,14 @@ export function SheetJournalCard({ journal, isEditing, onExport, dragAttributes,
          {/* Bookmarks use a body-portaled popover (not protruding tabs), so the card body simply clips its
              page content to the card shape - no side slot to keep un-clipped. */}
          <div className="relative min-w-62.5 w-62.5 h-150 overflow-hidden rounded-lg border-2 border-card-border bg-paper-background text-paper-foreground z-0">
+            {/* The sheet has no separate edit sub-state: its edit mode drives BOTH the editors (isEditing)
+                and the selected chrome (isSelected), so the body reads exactly as it did before the board
+                split select from editing. */}
             <JournalItem
                item={SHEET_HOST_RECT}
                content={content}
                isSelected={isEditing}
+               isEditing={isEditing}
                toolbarSlot={toolbarSlot}
                sideSlot={null}
                toolbarControlClassName={TOOLBAR_ACTION_BUTTON_CLASS}

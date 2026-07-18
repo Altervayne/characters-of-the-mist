@@ -27,9 +27,9 @@ import type { BoardItem, BoardItemContent, PostItBoardContent } from '@/lib/type
  * The background color is per-note (default amber). Text color is derived from the
  * background's luminance so a note stays readable on any color.
  *
- * The textarea only takes pointer events when the item is selected, so an unselected note
- * drags/selects from anywhere; when selected it stops pointer propagation so typing never
- * starts a canvas move.
+ * Selecting the note is decoupled from editing it: a selected note shows its rendered Markdown (a plain
+ * selected box that drags to move), and only the editing sub-state swaps in the focused textarea. The
+ * textarea stops pointer propagation so typing / a text-selection drag never starts a canvas move.
  */
 
 /** The original amber, used when a note has no explicit color (keeps pre-color notes unchanged). */
@@ -42,13 +42,15 @@ interface PostItItemProps {
    item: BoardItem;
    content: PostItBoardContent;
    isSelected: boolean;
+   /** Editing sub-state: mounts the focused textarea over the rendered Markdown. */
+   isEditing: boolean;
    /** The selection toolbar's action slot; the color control portals here. */
    toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
 }
 
-export function PostItItem({ item, content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: PostItItemProps) {
+export function PostItItem({ item, content, isSelected, isEditing, toolbarSlot, onContentChange, onRequestSelect }: PostItItemProps) {
    const { t } = useTranslation();
    // A tapped `{mention}` in the note mints a fresh tracker beside it (create-only, board scope).
    const handleMentionClick = useBoardMentionMint(item);
@@ -75,6 +77,7 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
    const pendingRef = useRef<{ color: string | undefined } | null>(null);
    const contentRef = useRef(content);
    const textRef = useRef(text);
+   const textareaRef = useRef<HTMLTextAreaElement>(null);
    useEffect(() => { contentRef.current = content; textRef.current = text; });
 
    const commitPendingColor = useCallback(() => {
@@ -103,17 +106,43 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
       if (text !== note.text) onContentChange({ ...content, data: { ...content.data, text } });
    };
 
+   // Entering editing focuses the field on the next frame - deferred past the promoting click's own focus
+   // handling (which lands on the box body and would otherwise blur the freshly mounted textarea). Caret to
+   // the END of the text, the natural place to keep typing.
+   useEffect(() => {
+      if (!isEditing) return;
+      const raf = requestAnimationFrame(() => {
+         const el = textareaRef.current;
+         if (!el) return;
+         el.focus();
+         const end = el.value.length;
+         el.setSelectionRange(end, end);
+      });
+      return () => cancelAnimationFrame(raf);
+   }, [isEditing]);
+
+   // Leaving editing swaps the textarea for the rendered Markdown in place (no unmount, and React fires no
+   // blur on that swap), so flush the buffer on the editing->false edge. Dirty-guarded, so a normal
+   // blur-then-exit no-ops.
+   const wasEditing = useRef(isEditing);
+   useEffect(() => {
+      const was = wasEditing.current;
+      wasEditing.current = isEditing;
+      if (was && !isEditing) commitText();
+   });
+
    // A tab switch unmounts the board without a blur; flush the text (and any pending color) so it isn't lost.
    useCommitOnUnmount(commitText);
    useCommitOnUnmount(commitPendingColor);
 
    return (
       <div className="h-full w-full" style={{ backgroundColor: background, color: textColor }}>
-         {/* Selected -> edit the raw Markdown source; otherwise -> render it (inheriting the note's color).
+         {/* Editing -> edit the raw Markdown source; otherwise -> render it (inheriting the note's color).
              The rendered block is pointer-transparent, so a body click falls through to select (then edit);
-             empty + unselected shows nothing, the placeholder lives in the textarea. */}
-         {isSelected ? (
+             empty + not editing shows nothing, the placeholder lives in the textarea. */}
+         {isEditing ? (
             <textarea
+               ref={textareaRef}
                value={text}
                onChange={(event) => setText(event.target.value)}
                onFocus={onRequestSelect}
@@ -121,13 +150,13 @@ export function PostItItem({ item, content, isSelected, toolbarSlot, onContentCh
                onPointerDown={(event) => event.stopPropagation()}
                placeholder={t('BoardView.postItPlaceholder')}
                style={{ color: textColor }}
-               // Selected -> the board's wheel listener skips this so the wheel scrolls the note, not zoom.
+               // Editing -> the board's wheel listener skips this so the wheel scrolls the note, not zoom.
                data-board-wheel-scroll
                className="h-full w-full resize-none border-0 bg-transparent p-2.5 text-sm leading-snug outline-none placeholder:opacity-50 cursor-text"
             />
          ) : text.trim() ? (
-            // Clip at rest (no scrollbar on a resting note); the textarea scrolls when selected. Padding is
-            // on this scroll element (not a wrapper), so the selected textarea's scrollbar sits at the
+            // Clip at rest (no scrollbar on a resting note); the textarea scrolls while editing. Padding is
+            // on this scroll element (not a wrapper), so the editing textarea's scrollbar sits at the
             // post-it's edge while the text stays inset - matching the journal.
             <div className="h-full w-full overflow-hidden p-2.5">
                <NoteMarkdown content={text} onMentionClick={handleMentionClick} />

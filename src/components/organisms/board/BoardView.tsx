@@ -63,7 +63,7 @@ import type { ReactNode } from 'react';
 
 // -- Type Imports --
 import type { BoardStore } from '@/lib/stores/boardStore';
-import type { ActiveTool, BoardGridType, BoardItem, BoardItemContent, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
+import type { ActiveTool, BoardGridType, BoardItem, BoardItemContent, BoardItemKind, BrushKind, ConnectionStyle, PortalBoardContent, PortalStyle, PortalTarget, Stroke, Viewport } from '@/lib/types/board';
 import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
 import type { Card } from '@/lib/types/character';
@@ -101,6 +101,11 @@ const ROTATION_SNAP = Math.PI / 12;
 const MOVE_THRESHOLD = 5;
 /** Screen-px a right-drag must travel to pan instead of opening the radial (larger so a jittery right-click still opens it). */
 const RIGHT_PAN_THRESHOLD = 8;
+
+/** The kinds with a text-edit sub-state: a body click selects, then a second click (or a click on an
+ *  already-selected one) promotes it to editing (focused editor). Every other kind has no editing state. */
+const TEXT_EDITABLE_KINDS = new Set<BoardItemKind>(['post-it', 'journal', 'text']);
+const isTextEditableKind = (kind: BoardItemKind | undefined): boolean => kind !== undefined && TEXT_EDITABLE_KINDS.has(kind);
 
 /** True when the target is a live text field / editor, so board pointer gestures defer to it (native menu, typing). */
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -161,6 +166,10 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number; clipLeft: number; clipTop: number } | null>(null);
    // The live group move: the moving id set + a shared world delta (null when idle).
    const [groupDrag, setGroupDrag] = useState<{ ids: Set<string>; delta: { x: number; y: number } } | null>(null);
+   // The item in its text-edit sub-state (post-it / journal / text), or null. Ephemeral canvas state,
+   // decoupled from selection: a text item is selected first, then a body click promotes it to editing
+   // (a focused editor). Cleared when it stops being the sole selection or on Escape (see the effects below).
+   const [editingId, setEditingId] = useState<string | null>(null);
 
    /** Opens the portal restyle editor for `itemId`, anchored at the Edit click. Stable so it never breaks
     *  the item box memoization (every box would otherwise re-render on each pan). */
@@ -740,10 +749,11 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    }, [store, actions]);
 
    /**
-    * A non-text item's body press (deferred, shared with the grip). Plain: a drag past the threshold moves
-    * it group-aware from the down origin (no jump); a click with no drag selects it (a modifier toggles it
-    * in/out of the set). Shift: a drag draws an additive marquee anchored at the item, a click toggles it.
-    * Text items keep select-to-edit and move only from the grip, so the box never routes them here.
+    * An item's body press (deferred, shared with the grip). Plain: a drag past the threshold moves it
+    * group-aware from the down origin (no jump); a click with no drag selects it (a modifier toggles it
+    * in/out of the set), and a text kind's plain click also promotes it to editing (focus the editor).
+    * Shift: a drag draws an additive marquee anchored at the item, a click toggles it. A text item that is
+    * already editing keeps the pointer on its own field (the box only routes the press here when it isn't).
     */
    const handleItemPointerDown = useCallback(
       (id: string, event: ReactPointerEvent) => {
@@ -770,9 +780,17 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             return;
          }
          const additive = event.ctrlKey || event.metaKey;
-         handleMoveStart(id, event, { onClickNoMove: () => actions.selectItem(id, additive) });
+         const editable = isTextEditableKind(store.getState().items[id]?.kind);
+         handleMoveStart(id, event, {
+            onClickNoMove: () => {
+               actions.selectItem(id, additive);
+               // A plain click on a text kind promotes it straight to editing (one step); a modifier click
+               // only toggles selection, so it never enters editing.
+               if (editable && !additive) setEditingId(id);
+            },
+         });
       },
-      [actions, beginMarquee, handleMoveStart],
+      [actions, beginMarquee, handleMoveStart, store],
    );
 
    const handleBackgroundPointerDown = (event: ReactPointerEvent) => {
@@ -1251,8 +1269,9 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    // ==================
    /**
     * Creates a new item of `kind` centered on `worldCenter`, joining a zone it lands in, then selects it.
-    * `contentOverride` lets a picker-first kind (a portal) supply its already-targeted content instead of the
-    * registry's empty factory; everything else about the placement/z/zone/select path is identical.
+    * A text kind opens straight into editing so it's typeable on creation. `contentOverride` lets a
+    * picker-first kind (a portal) supply its already-targeted content instead of the registry's empty
+    * factory; everything else about the placement/z/zone/select path is identical.
     */
    const createItemAt = (kind: CreatableKind, worldCenter: Point, contentOverride?: BoardItemContent) => {
       const size = CREATABLE_BY_KIND[kind].defaultSize;
@@ -1263,6 +1282,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       const z = nextScopeZ(items, zoneId ?? null);
       void actions.addItem({ ...placement, kind, z, zoneId, content: contentOverride ?? CREATABLE_BY_KIND[kind].makeContent() });
       actions.setSelection([id]);
+      if (isTextEditableKind(kind)) setEditingId(id);
    };
 
    /** Drops a portal (target picked in the list) at `worldCenter` with the smart-default icon+text style. */
@@ -1575,6 +1595,22 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       if (store.getState().items[soleSelectedId]?.content.kind === 'drawing') setActiveLayerId(soleSelectedId);
    }, [soleSelectedId, store]);
 
+   // Editing exits the moment its item stops being the sole selection - clicking away, selecting another
+   // item, multi-selecting, or the item's deletion all flow through here (the editor's own falling-edge
+   // and unmount flushes then commit the buffer). Editing is only ever the sole selection.
+   useEffect(() => {
+      if (editingId && editingId !== soleSelectedId) setEditingId(null);
+   }, [editingId, soleSelectedId]);
+
+   // Escape leaves editing (back to a plain selection) without deleting anything; the editor's falling-edge
+   // flush commits the buffer as it unmounts. Armed only while editing, so it never shadows other Escape uses.
+   useEffect(() => {
+      if (!editingId) return;
+      const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setEditingId(null); };
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
+   }, [editingId]);
+
    // Two+ selected spatial items -> a group toolbar over their bounding box (shifted live
    // during a group move). Connections (zero-size) don't anchor it.
    const groupBbox = (() => {
@@ -1638,6 +1674,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
             item={item}
             isSelected={selectedIds.has(item.id)}
             soleSelected={item.id === soleSelectedId}
+            isEditing={item.id === editingId}
             toolbarClamp={toolbarClampFor(item)}
             zIndex={itemZIndex(layerRank.get(item.id) ?? 0, selectedIds.has(item.id), layerCount)}
             memberCount={members?.length}

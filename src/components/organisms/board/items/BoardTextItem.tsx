@@ -42,15 +42,15 @@ interface BoardTextItemProps {
    item: BoardItem;
    content: TextBoardContent;
    isSelected: boolean;
-   /** The ONLY selected item: edit mode (the focused textarea) engages only when sole; among a multi-selection
-    *  the box is a plain selected element (text + ring, no keyboard grab), so a group Delete removes it. */
-   isSoleSelected: boolean;
+   /** Editing sub-state: the focused textarea engages only while editing; a merely-selected element (incl.
+    *  a multi-selection) stays a plain box (text + ring, no keyboard grab), so a group Delete removes it. */
+   isEditing: boolean;
    /** The selection toolbar's action slot; the style controls portal here. */
    toolbarSlot: HTMLElement | null;
    onContentChange: (content: BoardItemContent) => void;
 }
 
-export function BoardTextItem({ content, isSelected, isSoleSelected, toolbarSlot, onContentChange }: BoardTextItemProps) {
+export function BoardTextItem({ content, isSelected, isEditing, toolbarSlot, onContentChange }: BoardTextItemProps) {
    const { t } = useTranslation();
    const { style } = content;
    const [text, setText] = useState(content.text);
@@ -114,12 +114,11 @@ export function BoardTextItem({ content, isSelected, isSoleSelected, toolbarSlot
       if (!isSelected) commitPendingColor();
    }, [isSelected, commitPendingColor]);
 
-   // Entering edit mode (becoming the sole selection) focuses the field on the next frame - deferred past the
-   // selecting click's own focus handling, which lands on the box body and would otherwise blur the freshly
-   // mounted textarea, forcing a second click. Fires on the sole-select transition and on a fresh drop (which
-   // mounts already sole-selected).
+   // Entering editing focuses the field on the next frame - deferred past the promoting click's own focus
+   // handling, which lands on the box body and would otherwise blur the freshly mounted textarea, forcing a
+   // second click. Fires on the enter-editing transition and on a fresh drop (which mounts already editing).
    useEffect(() => {
-      if (!isSoleSelected) return;
+      if (!isEditing) return;
       const raf = requestAnimationFrame(() => {
          const el = textareaRef.current;
          if (!el) return;
@@ -129,7 +128,16 @@ export function BoardTextItem({ content, isSelected, isSoleSelected, toolbarSlot
          el.setSelectionRange(end, end);
       });
       return () => cancelAnimationFrame(raf);
-   }, [isSoleSelected]);
+   }, [isEditing]);
+
+   // Leaving editing removes the textarea in place (no unmount, and React fires no blur on that swap), so
+   // flush the buffer on the editing->false edge. Dirty-guarded, so a normal blur-then-exit no-ops.
+   const wasEditing = useRef(isEditing);
+   useEffect(() => {
+      const was = wasEditing.current;
+      wasEditing.current = isEditing;
+      if (was && !isEditing) commitText();
+   });
 
    // A tab switch unmounts the board without a blur; flush the text (and any pending color) so nothing is lost.
    useCommitOnUnmount(commitText);
@@ -143,18 +151,18 @@ export function BoardTextItem({ content, isSelected, isSoleSelected, toolbarSlot
       <div className="relative select-none" style={css}>
          {/* Sizer: the in-flow element that gives the box its auto-hug size (the box's w-max wrapper reads
              its widest line). Never wraps (`whitespace-pre`) so the box grows wide with the line rather than
-             wrapping. Edit mode (sole selection) hides it (the textarea overlays it exactly); at rest - including
-             while selected among a group - it shows the text, or a muted placeholder for an empty element. */}
+             wrapping. Editing hides it (the textarea overlays it exactly); at rest - including while merely
+             selected - it shows the text, or a muted placeholder for an empty element. */}
          <div
-            aria-hidden={isSoleSelected}
-            className={cn('whitespace-pre', isSoleSelected && 'invisible', !text && 'opacity-40')}
+            aria-hidden={isEditing}
+            className={cn('whitespace-pre', isEditing && 'invisible', !text && 'opacity-40')}
          >
             {sizerText}
          </div>
 
-         {/* Edit mode is engaged only when this is the SOLE selected item; among a multi-selection the box
-             stays a plain selected element (no textarea) so it can't grab the keyboard or clobber the set. */}
-         {isSoleSelected && (
+         {/* The textarea engages only while editing; a merely-selected element (incl. a multi-selection)
+             stays a plain box (no textarea) so it can't grab the keyboard or clobber the set. */}
+         {isEditing && (
             <textarea
                ref={textareaRef}
                value={text}
@@ -165,7 +173,7 @@ export function BoardTextItem({ content, isSelected, isSoleSelected, toolbarSlot
                spellCheck={false}
                // `wrap="off"` matches the non-wrapping sizer exactly, so the caret and text align pixel-for-pixel.
                wrap="off"
-               // Selected -> the board's wheel listener skips this so the wheel scrolls the field, not zoom.
+               // Editing -> the board's wheel listener skips this so the wheel scrolls the field, not zoom.
                data-board-wheel-scroll
                style={css}
                className="absolute inset-0 resize-none overflow-hidden whitespace-pre border-0 bg-transparent p-0 outline-none placeholder:opacity-40 cursor-text"

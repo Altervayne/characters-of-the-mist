@@ -19,6 +19,8 @@ interface BoardJournalItemProps {
    item: BoardItem;
    content: JournalBoardContent;
    isSelected: boolean;
+   /** In its text-edit sub-state: the title + active page swap their rendered Markdown for focused editors. */
+   isEditing: boolean;
    /** The selection toolbar's action slot; page/bookmark controls + the Save kebab portal here. */
    toolbarSlot: HTMLElement | null;
    /** A non-clipped slot at the box's right edge; the journal's bookmark tabs portal here so they protrude. */
@@ -31,12 +33,14 @@ interface BoardJournalItemProps {
    onRequestSelect: () => void;
 }
 
-export function BoardJournalItem({ item, content, isSelected, toolbarSlot, sideSlot, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect }: BoardJournalItemProps) {
+export function BoardJournalItem({ item, content, isSelected, isEditing, toolbarSlot, sideSlot, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect }: BoardJournalItemProps) {
    const body = (
       <JournalItem
          item={item}
          content={content}
          isSelected={isSelected}
+         isEditing={isEditing}
+         autoFocusEditor
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
          onContentChange={onContentChange}
