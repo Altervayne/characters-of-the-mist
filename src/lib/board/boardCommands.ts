@@ -265,6 +265,29 @@ export function createUpdateItemContentCommand(id: string, content: BoardItemCon
 }
 
 /**
+ * Replace an item's content AND box size together, so undo reverts both as one step (a portal poster
+ * wearing its crop shape: the visual + the reshaped box move together). Captures the previous
+ * {content, width, height} on first `do()`; x/y never change.
+ */
+export function createUpdateItemContentAndSizeCommand(id: string, content: BoardItemContent, width: number, height: number): BoardCommand {
+   let before: { content: BoardItemContent; width: number; height: number } | null = null;
+   return {
+      label: 'update-item-content-and-size',
+      async do() {
+         if (before === null) {
+            const item = await getItem(id);
+            if (!item) throw new BoardNotFoundError(`Board item not found: ${id}`);
+            before = { content: item.content, width: item.width, height: item.height };
+         }
+         await updateItem(id, { content, width, height });
+      },
+      async undo() {
+         if (before !== null) await updateItem(id, before);
+      },
+   };
+}
+
+/**
  * Append a stroke to a drawing layer, growing the layer's box to the full ink extent. A pure DELTA both
  * ways (holds only the added stroke, O(1) memory): `do()` reads the layer live and folds the stroke into
  * the box (origin/size + re-based strokes); `undo()` reads live and re-fits the box to the strokes that

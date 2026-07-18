@@ -19,6 +19,7 @@ import {
    createSetItemZCommand,
    createSetItemZoneCommand,
    createUpdateItemContentCommand,
+   createUpdateItemContentAndSizeCommand,
 } from '@/lib/board/boardCommands';
 import { connectionsReferencing } from '@/lib/board/boardConnections';
 import { byZThenId, flattenBoardOrder, repairBoardZ } from '@/lib/board/boardTree';
@@ -138,6 +139,8 @@ export interface BoardState {
       /** Drops an item to the back of ITS scope (`min(z) - 1` among siblings sharing its `zoneId`). */
       sendToBack: (id: string) => Promise<void>;
       updateItemContent: (id: string, content: BoardItemContent) => Promise<void>;
+      /** Replaces an item's content AND box size as one undo step (a portal poster wearing its crop shape). */
+      updateItemContentAndSize: (id: string, content: BoardItemContent, size: { width: number; height: number }) => Promise<void>;
       /**
        * Appends a stroke (its `points` in WORLD coords) to a drawing layer as one undo step, via a pure
        * delta command (not a full content snapshot). Grows the layer's box to the ink extent and re-bases
@@ -719,6 +722,13 @@ export function createBoardStore(options: { viewportSaveDebounceMs?: number } = 
                const existing = get().items[id];
                if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, content } } }));
                await runItemMutation(createUpdateItemContentCommand(id, content));
+            },
+
+            updateItemContentAndSize: async (id, content, size) => {
+               markDirty();
+               const existing = get().items[id];
+               if (existing) set((state) => ({ items: { ...state.items, [id]: { ...existing, content, width: size.width, height: size.height } } }));
+               await runItemMutation(createUpdateItemContentAndSizeCommand(id, content, size.width, size.height));
             },
 
             appendStroke: async (itemId, stroke) => {

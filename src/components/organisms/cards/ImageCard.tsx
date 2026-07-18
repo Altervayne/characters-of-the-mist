@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
 
 // -- Basic UI Imports --
 import { Card } from '@/components/ui/card';
@@ -24,10 +23,7 @@ import { ToolbarHandle } from '@/components/molecules/ToolbarHandle';
 import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
-
-// -- Pipeline / Asset Store --
-import { processImage } from '@/lib/assets/processImage';
-import { storeAsset } from '@/lib/assets/assetRepository';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 // -- Constants --
 import { IMAGE_CARD_PRESETS, LEGACY_IMAGE_CARD_SIZE, MAX_CARD_HEIGHT_PX, MAX_CARD_PX, clampCardHeight, clampCardWidth } from '@/lib/constants/imageCard';
@@ -63,8 +59,10 @@ const ImageCardContent = React.memo(
 
          const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
          const { url, isLoading } = useAssetObjectUrl(details.assetId);
-         const [isProcessing, setIsProcessing] = useState(false);
-         const fileInputRef = useRef<HTMLInputElement>(null);
+         const { fileInputRef, open: openPicker, isProcessing, handleFileSelected, cropperDialog } = useImageUpload(
+            (hash) => actions.setCardImage(card.id, hash),
+            { aspect: 'free' },
+         );
          const imgRef = useRef<HTMLImageElement>(null);
 
          // Static everywhere a snapshot is shown: drag overlay and drawer preview have
@@ -84,24 +82,6 @@ const ImageCardContent = React.memo(
          // import) still renders within the row's height on the sheet.
          const cardWidth = liveSize?.width ?? clampCardWidth(storedWidth);
          const cardHeight = liveSize?.height ?? clampCardHeight(storedHeight);
-
-         const openPicker = () => fileInputRef.current?.click();
-
-         const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-            const file = event.target.files?.[0];
-            event.target.value = ''; // allow re-picking the same file
-            if (!file) return;
-            setIsProcessing(true);
-            try {
-               const processed = await processImage(file);
-               const hash = await storeAsset(processed);
-               actions.setCardImage(card.id, hash);
-            } catch {
-               toast.error(t('ImageCard.uploadFailed'));
-            } finally {
-               setIsProcessing(false);
-            }
-         };
 
          const altText = card.title || t('ImageCard.alt');
 
@@ -340,6 +320,7 @@ const ImageCardContent = React.memo(
                   className="hidden"
                   onChange={handleFileSelected}
                />
+               {cropperDialog}
             </motion.div>
          );
       },

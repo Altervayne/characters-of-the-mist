@@ -10,6 +10,7 @@ import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
 import { useNoteImageInsertion } from '@/hooks/useNoteImageInsertion';
 import { useNoteLinkActivation } from '@/hooks/useNoteLinkActivation';
+import { useImageCropper } from '@/hooks/useImageCropper';
 
 // -- Note Outline --
 import { extractHeadings } from '@/lib/notes/noteOutline';
@@ -216,14 +217,17 @@ function NoteSurface() {
    // All cover edits go through the editor handle (CM6 state = the undo timeline); CM6 then persists to the store.
    const coverInputRef = useRef<HTMLInputElement>(null);
    const [isCoverProcessing, setIsCoverProcessing] = useState(false);
+   const { open: openCoverCropper, dialog: coverCropperDialog } = useImageCropper();
    const openCoverPicker = useCallback(() => coverInputRef.current?.click(), []);
    const handleCoverSelected = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       event.target.value = '';
       if (!file) return;
+      const cropped = await openCoverCropper(file, { aspect: 'free' });
+      if (!cropped) return;
       setIsCoverProcessing(true);
       try {
-         const processed = await processImage(file);
+         const processed = await processImage(cropped);
          await storeAsset(processed);
          const current = store.getState().note?.cover;
          const naturalAspect = processed.width > 0 ? processed.height / processed.width : 1;
@@ -237,7 +241,7 @@ function NoteSurface() {
       } finally {
          setIsCoverProcessing(false);
       }
-   }, [store]);
+   }, [store, openCoverCropper]);
 
    // The Live cover controls: Change/Remove + box width resize + aspect presets. Each dispatches a history-
    // captured CM6 effect via the handle (so a cover edit is undoable alongside body/title); CM6 syncs the store.
@@ -276,7 +280,7 @@ function NoteSurface() {
          editor.splice(from, from, `${lead}${snippet}${trail}`, from + lead.length + 2);
       },
    }), []);
-   const { fileInputRef, open: openImagePicker, isProcessing: isImageProcessing, handleFileSelected, handleImageEvent } =
+   const { fileInputRef, open: openImagePicker, isProcessing: isImageProcessing, handleFileSelected, handleImageEvent, cropperDialog: imageCropperDialog } =
       useNoteImageInsertion({ adapter: spliceAdapter });
 
    // The floating selection bar: Bold/Italic/Strike on a non-empty selection. Non-selection actions (image /
@@ -345,6 +349,7 @@ function NoteSurface() {
          />
          {/* Hidden picker for the toolbar's insert-image action; the paste/drop paths never touch it. */}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+         {imageCropperDialog}
 
          {/* The live table's right-click context menu (portals to the click point; opened by the CM6 widget). */}
          <NoteTableContextMenu handleRef={tableMenuRef} />
@@ -404,6 +409,7 @@ function NoteSurface() {
                </div>
                {/* Hidden picker for the cover Add/Change control. */}
                <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverSelected} />
+               {coverCropperDialog}
                </div>
             </div>
          </div>

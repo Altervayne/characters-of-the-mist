@@ -2,9 +2,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
-
 // -- Icon Imports --
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Image as ImageIcon, Loader2, Replace, Upload } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -12,7 +9,7 @@ import type { LucideIcon } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { resolvePortalIcon, portalDestinationIcon, smartPortalIconName, PORTAL_ICON_NAMES } from '@/lib/board/portalIcons';
-import { PORTAL_IMAGE_SIZE_DEFAULT } from '@/lib/board/portalSizing';
+import { PORTAL_IMAGE_SIZE_DEFAULT, PORTAL_MIN_SIZE } from '@/lib/board/portalSizing';
 
 // -- Pipeline / Asset Store --
 import { processImage } from '@/lib/assets/processImage';
@@ -20,6 +17,7 @@ import { storeAsset } from '@/lib/assets/assetRepository';
 
 // -- Store and Hook Imports --
 import { useCommitOnUnmount } from '@/hooks/useCommitOnUnmount';
+import { useImageCropper } from '@/hooks/useImageCropper';
 
 // -- Component Imports --
 import { PortalCard } from './BoardPortalItem';
@@ -79,6 +77,9 @@ const KIND_ORDER: { kind: PortalStyleKind; labelKey: string }[] = [
    { kind: 'image-composed', labelKey: 'BoardView.portalStyleImageText' },
 ];
 
+/** The live preview's default box (taller than wide so a top/bottom label alignment reads); a poster reshapes off its width. */
+const PREVIEW_BOX = { width: 220, height: 112 };
+
 interface BoardPortalEditorProps {
    /** The portal's live content (re-rendered by the board store on every commit). */
    content: PortalBoardContent;
@@ -106,6 +107,7 @@ export function BoardPortalEditor({ content, onCommitStyle, onChangeTarget }: Bo
    // label on return.
    const rememberedIcon = useRef(style.visual?.kind === 'icon' ? style.visual.icon : smartPortalIconName(target));
    const rememberedAsset = useRef(style.visual?.kind === 'image' ? style.visual.assetId : '');
+   const rememberedAspect = useRef(style.visual?.kind === 'image' ? style.visual.aspect : 1);
    const rememberedImageSize = useRef(style.visual?.kind === 'image' ? style.visual.size ?? PORTAL_IMAGE_SIZE_DEFAULT : PORTAL_IMAGE_SIZE_DEFAULT);
    const rememberedImageBackground = useRef(style.visual?.kind === 'image' ? style.visual.background ?? true : true);
    const rememberedLabel = useRef(style.label);
@@ -113,6 +115,7 @@ export function BoardPortalEditor({ content, onCommitStyle, onChangeTarget }: Bo
       if (style.visual?.kind === 'icon') rememberedIcon.current = style.visual.icon;
       else if (style.visual?.kind === 'image' && style.visual.assetId) {
          rememberedAsset.current = style.visual.assetId;
+         rememberedAspect.current = style.visual.aspect;
          rememberedImageSize.current = style.visual.size ?? PORTAL_IMAGE_SIZE_DEFAULT;
          rememberedImageBackground.current = style.visual.background ?? true;
       }
@@ -158,31 +161,35 @@ export function BoardPortalEditor({ content, onCommitStyle, onChangeTarget }: Bo
    /** Switches the portal to `next`, carrying the remembered visual (+ size/background) + label + align. */
    const applyKind = (next: PortalStyleKind) => {
       setMode(next);
-      const nextLabel = () => label || rememberedLabel.current || content.lastKnownName || (target.kind === 'external' ? target.href : '');
+      // The label the next style inherits. Leaving a mode that SHOWED the label field, the buffer is the user's
+      // own choice - a deliberately-cleared label stays empty across a style switch. Only icon-only (no label
+      // field) restores the remembered label / target name on the way out, so passing through it never eats text.
+      const nextLabel = () => (mode !== 'icon-only' ? label : rememberedLabel.current || content.lastKnownName || (target.kind === 'external' ? target.href : ''));
       onCommitStyle((prev): PortalStyle => {
          const background = prev.background ?? true;
          const align = prev.align ?? 'right';
          const icon = prev.visual?.kind === 'icon' ? prev.visual.icon : rememberedIcon.current;
          const asset = prev.visual?.kind === 'image' ? prev.visual.assetId : rememberedAsset.current;
+         const imageAspect = prev.visual?.kind === 'image' ? prev.visual.aspect : rememberedAspect.current;
          const imageSize = prev.visual?.kind === 'image' ? prev.visual.size ?? PORTAL_IMAGE_SIZE_DEFAULT : rememberedImageSize.current;
          const imageBg = prev.visual?.kind === 'image' ? prev.visual.background ?? true : rememberedImageBackground.current;
          switch (next) {
             case 'text': return { visual: null, label: nextLabel(), align, background };
             case 'icon-text': return { visual: { kind: 'icon', icon }, label: nextLabel(), align, background };
             case 'icon-only': return { visual: { kind: 'icon', icon }, label: '', align, background };
-            case 'image-poster': return { visual: { kind: 'image', assetId: asset, mode: 'poster', size: imageSize, background: imageBg }, label: nextLabel(), align, background };
-            case 'image-composed': return { visual: { kind: 'image', assetId: asset, mode: 'composed', size: imageSize, background: imageBg }, label: nextLabel(), align, background };
+            case 'image-poster': return { visual: { kind: 'image', assetId: asset, aspect: imageAspect, mode: 'poster', size: imageSize, background: imageBg }, label: nextLabel(), align, background };
+            case 'image-composed': return { visual: { kind: 'image', assetId: asset, aspect: imageAspect, mode: 'composed', size: imageSize, background: imageBg }, label: nextLabel(), align, background };
          }
       });
    };
 
    const pickIcon = (name: string) => onCommitStyle((prev) => ({ ...prev, visual: { kind: 'icon', icon: name } }));
-   // Keep the current image mode + size + background when swapping the asset (only the hash changes).
-   const setAsset = (assetId: string) => onCommitStyle((prev) => ({
+   // Keep the current image mode + size + background when swapping the asset; the new crop's aspect rides along.
+   const setAsset = (assetId: string, aspect: number) => onCommitStyle((prev) => ({
       ...prev,
       visual: prev.visual?.kind === 'image'
-         ? { ...prev.visual, assetId }
-         : { kind: 'image', assetId, mode: 'poster', size: rememberedImageSize.current, background: rememberedImageBackground.current },
+         ? { ...prev.visual, assetId, aspect }
+         : { kind: 'image', assetId, aspect, mode: 'poster', size: rememberedImageSize.current, background: rememberedImageBackground.current },
    }));
    const setImageBackground = (background: boolean) => onCommitStyle((prev) => (
       prev.visual?.kind === 'image' ? { ...prev, visual: { ...prev.visual, background } } : prev
@@ -205,12 +212,19 @@ export function BoardPortalEditor({ content, onCommitStyle, onChangeTarget }: Bo
    const DestinationIcon = portalDestinationIcon(target);
    const imageSizeValue = sizeDraft ?? (style.visual?.kind === 'image' ? style.visual.size ?? PORTAL_IMAGE_SIZE_DEFAULT : PORTAL_IMAGE_SIZE_DEFAULT);
 
+   // The preview box: fixed by default, but a poster reshapes to its crop aspect (matching the board tile)
+   // so the preview shows the same full-crop shape rather than cover-cropping into the fixed frame.
+   const previewVisual = previewContent.style.visual;
+   const previewSize = previewVisual?.kind === 'image' && previewVisual.mode === 'poster'
+      ? { width: PREVIEW_BOX.width, height: Math.max(PORTAL_MIN_SIZE.height, Math.round(PREVIEW_BOX.width / previewVisual.aspect)) }
+      : PREVIEW_BOX;
+
    return (
       <div className="flex flex-col gap-3 px-4 pb-4 pt-3">
          {/* Live preview at the current style (a taller box so a top/bottom alignment reads). */}
          <div className="flex items-center justify-center rounded-md border border-border bg-muted/30 p-3">
-            <div style={{ width: 220, height: 112 }}>
-               <PortalCard content={previewContent} size={{ width: 220, height: 112 }} />
+            <div style={previewSize}>
+               <PortalCard content={previewContent} size={previewSize} />
             </div>
          </div>
 
@@ -411,25 +425,30 @@ function PortalAlignControl({ value, onChange }: { value: PortalAlign; onChange:
 }
 
 /**
- * The image control: uploads through the shared `processImage -> storeAsset` pipeline (the same one covers +
- * image cards use), storing the content-hash `assetId`. Shows Upload when empty, Change once set.
+ * The image control: a free crop through `processImage -> storeAsset`, reporting the stored hash AND the
+ * cropped image's aspect (width/height) so the portal can wear its shape. Shows Upload when empty, Change
+ * once set. A failed crop/process leaves the current image untouched.
  */
-function PortalImageControl({ assetId, onUploaded }: { assetId: string; onUploaded: (assetId: string) => void }) {
+function PortalImageControl({ assetId, onUploaded }: { assetId: string; onUploaded: (assetId: string, aspect: number) => void }) {
    const { t } = useTranslation();
    const [isProcessing, setIsProcessing] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
+   const { open: openCropper, dialog: cropperDialog } = useImageCropper();
 
    const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       event.target.value = ''; // allow re-picking the same file
       if (!file) return;
+      const cropped = await openCropper(file, { aspect: 'free' });
+      if (!cropped) return;
       setIsProcessing(true);
       try {
-         const processed = await processImage(file);
-         const hash = await storeAsset(processed);
-         onUploaded(hash);
+         const processed = await processImage(cropped);
+         await storeAsset(processed);
+         const aspect = processed.height > 0 ? processed.width / processed.height : 1;
+         onUploaded(processed.hash, aspect);
       } catch {
-         toast.error(t('BoardView.imageUploadFailed'));
+         // Leaves the existing image untouched.
       } finally {
          setIsProcessing(false);
       }
@@ -447,6 +466,7 @@ function PortalImageControl({ assetId, onUploaded }: { assetId: string; onUpload
             <span>{assetId ? t('BoardView.imageChange') : t('BoardView.imageUpload')}</span>
          </button>
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+         {cropperDialog}
       </>
    );
 }

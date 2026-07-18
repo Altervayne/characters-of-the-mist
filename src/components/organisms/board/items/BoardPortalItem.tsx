@@ -9,7 +9,7 @@ import { ArrowUpRight, Link2Off, Pencil, Replace, Trash2 } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { resolvePortalIcon, portalDestinationIcon, portalOutcomeKey } from '@/lib/board/portalIcons';
-import { portalFontPx, portalIconPx, portalIconOnlyPx, portalImageThumbPx, portalLabelMaxLines, portalAlignFlexDirection, PORTAL_IMAGE_SIZE_DEFAULT } from '@/lib/board/portalSizing';
+import { portalFontPx, portalIconPx, portalIconOnlyPx, portalImageThumbSize, portalLabelMaxLines, portalAlignFlexDirection, PORTAL_IMAGE_SIZE_DEFAULT } from '@/lib/board/portalSizing';
 import { isPortalDead, portalDeadLabel, portalLivenessTarget } from '@/lib/board/portalLiveness';
 
 // -- Store and Hook Imports --
@@ -243,16 +243,16 @@ function PortalFace({ style, size }: { style: PortalStyle; size: { width: number
    if (visual?.kind === 'image') {
       if (visual.mode === 'poster') return <PosterFace assetId={visual.assetId} label={label} fontPx={fontPx} />;
       // Image + text composed: the asset as a thumbnail (user-sized, laid out like the icon glyph) beside the
-      // label. `size` is the thumbnail's fill fraction; `background` plates it or bares its transparency.
-      const thumbPx = portalImageThumbPx(size.height, visual.size ?? PORTAL_IMAGE_SIZE_DEFAULT);
-      const maxLines = portalLabelMaxLines(size.height, fontPx, stacked ? thumbPx + fontPx * 0.4 : 0);
+      // label. `size` is the thumbnail's fill fraction; `aspect` shapes it; `background` plates it or bares it.
+      const thumb = portalImageThumbSize(size.height, visual.size ?? PORTAL_IMAGE_SIZE_DEFAULT, visual.aspect);
+      const maxLines = portalLabelMaxLines(size.height, fontPx, stacked ? thumb.height + fontPx * 0.4 : 0);
       return (
          <ComposedFace
             label={label}
             fontPx={fontPx}
             align={align}
             maxLines={maxLines}
-            visual={<ComposedImageVisual assetId={visual.assetId} sizePx={thumbPx} background={visual.background ?? true} />}
+            visual={<ComposedImageVisual assetId={visual.assetId} width={thumb.width} height={thumb.height} background={visual.background ?? true} />}
          />
       );
    }
@@ -334,16 +334,16 @@ function PortalLabel({ label, fontPx, maxLines, struck = false }: { label: strin
 }
 
 /**
- * A composed portal's image thumbnail: a rounded square that fills (`object-cover`) and scales with the box.
- * With `background` on it sits on a framed plate (a thumbnail); off, the plate is removed so a PNG's
- * transparency shows the portal/board through.
+ * A composed portal's image thumbnail: a rounded box at the crop aspect that fills (`object-cover`, no
+ * re-crop since it matches) and scales with the box. With `background` on it sits on a framed plate; off,
+ * the plate is removed so a PNG's transparency shows the portal/board through.
  */
-function ComposedImageVisual({ assetId, sizePx, background }: { assetId: string; sizePx: number; background: boolean }) {
+function ComposedImageVisual({ assetId, width, height, background }: { assetId: string; width: number; height: number; background: boolean }) {
    const { url } = useAssetObjectUrl(assetId);
    return (
       <span
          className={cn('shrink-0 overflow-hidden rounded', background && 'border border-border bg-muted')}
-         style={{ width: sizePx, height: sizePx }}
+         style={{ width, height }}
       >
          {url && <img src={url} alt="" draggable={false} className="h-full w-full object-cover" />}
       </span>

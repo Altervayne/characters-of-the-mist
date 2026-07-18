@@ -45,6 +45,18 @@ export function portalImageThumbPx(boxHeight: number, size: number): number {
 }
 
 /**
+ * The composed thumbnail's {width, height} at the crop `aspect` (width/height), fitted inside the SAME square
+ * envelope {@link portalImageThumbPx} gives: the long edge takes the full side, the short edge shrinks to the
+ * ratio. So a landscape crop is wide-and-short, a portrait crop tall-and-narrow, and a square is unchanged.
+ */
+export function portalImageThumbSize(boxHeight: number, size: number, aspect: number): { width: number; height: number } {
+   const side = portalImageThumbPx(boxHeight, size);
+   return aspect >= 1
+      ? { width: side, height: Math.round(side / aspect) }
+      : { width: Math.round(side * aspect), height: side };
+}
+
+/**
  * How many lines a wrapped label may show before it clips, derived from the box height so a multiline label
  * never spills the box. `reservedPx` is the vertical space the visual already claims (a stacked top/bottom
  * composed layout); a beside layout or text-only passes 0. Always at least one line.

@@ -1307,7 +1307,18 @@ function BoardCanvas({ store }: { store: BoardStore }) {
       (itemId: string, updater: (style: PortalStyle) => PortalStyle) => {
          const live = store.getState().items[itemId];
          if (!live || live.content.kind !== 'portal') return;
-         void actions.updateItemContent(itemId, { ...live.content, style: updater(live.content.style) });
+         const content = { ...live.content, style: updater(live.content.style) };
+         // A poster wears the crop shape: reshape the box to the aspect (keep width, derive height) in the
+         // SAME undoable write so the full image shows and undo reverts box + visual together. Composed keeps
+         // its box (it holds the label); the thumbnail alone takes the aspect.
+         const visual = content.style.visual;
+         if (visual?.kind === 'image' && visual.mode === 'poster') {
+            const width = Math.max(PORTAL_MIN_SIZE.width, live.width);
+            const height = Math.max(PORTAL_MIN_SIZE.height, Math.round(width / visual.aspect));
+            void actions.updateItemContentAndSize(itemId, content, { width, height });
+            return;
+         }
+         void actions.updateItemContent(itemId, content);
       },
       [store, actions],
    );

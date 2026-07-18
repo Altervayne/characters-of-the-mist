@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PORTAL_BASE_SIZE, PORTAL_MIN_SIZE, PORTAL_IMAGE_SIZE_DEFAULT, portalAlignFlexDirection, portalFontPx, portalIconPx, portalIconOnlyPx, portalImageThumbPx, portalLabelMaxLines } from './portalSizing';
+import { PORTAL_BASE_SIZE, PORTAL_MIN_SIZE, PORTAL_IMAGE_SIZE_DEFAULT, portalAlignFlexDirection, portalFontPx, portalIconPx, portalIconOnlyPx, portalImageThumbPx, portalImageThumbSize, portalLabelMaxLines } from './portalSizing';
 
 describe('portalSizing', () => {
    it('reproduces the 1a look at the base height', () => {
@@ -56,6 +56,22 @@ describe('portalSizing', () => {
       expect(portalImageThumbPx(10000, 1)).toBe(600); // ceiling on a runaway box
       // A sub-floor fraction is clamped up before scaling (never a zero-size thumbnail).
       expect(portalImageThumbPx(100, 0)).toBe(portalImageThumbPx(100, 0.1));
+   });
+
+   it('shapes the composed thumbnail to the crop aspect within the square envelope', () => {
+      const side = portalImageThumbPx(100, PORTAL_IMAGE_SIZE_DEFAULT);
+      // A square crop is the unchanged side on both axes.
+      expect(portalImageThumbSize(100, PORTAL_IMAGE_SIZE_DEFAULT, 1)).toEqual({ width: side, height: side });
+      // Landscape (aspect > 1): full-width, shorter height.
+      const landscape = portalImageThumbSize(100, PORTAL_IMAGE_SIZE_DEFAULT, 2);
+      expect(landscape.width).toBe(side);
+      expect(landscape.height).toBe(Math.round(side / 2));
+      expect(landscape.height).toBeLessThan(landscape.width);
+      // Portrait (aspect < 1): full-height, narrower width.
+      const portrait = portalImageThumbSize(100, PORTAL_IMAGE_SIZE_DEFAULT, 0.5);
+      expect(portrait.height).toBe(side);
+      expect(portrait.width).toBe(Math.round(side * 0.5));
+      expect(portrait.width).toBeLessThan(portrait.height);
    });
 
    it('derives the label line budget from the box height, always at least one line', () => {

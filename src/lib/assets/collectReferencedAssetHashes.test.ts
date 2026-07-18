@@ -86,7 +86,7 @@ function seedBoardCardCopy(id: string, assetId: string) {
 }
 
 /** Adds a board PORTAL item with the given image visual (poster or composed), or an icon visual (no asset). */
-function seedBoardPortal(id: string, visual: { kind: 'image'; assetId: string; mode: 'poster' | 'composed'; size: number; background: boolean } | { kind: 'icon'; icon: string }) {
+function seedBoardPortal(id: string, visual: { kind: 'image'; assetId: string; mode: 'poster' | 'composed'; size: number; background: boolean; aspect: number } | { kind: 'icon'; icon: string }) {
    return drawerDatabase.boardItems.add({
       id,
       boardId: 'board-1',
@@ -225,8 +225,8 @@ describe('collectReferencedAssetHashes', () => {
    });
 
    it('finds the assetId on a board portal with an image visual (so the GC keeps portal art)', async () => {
-      await seedBoardPortal('portal-poster', { kind: 'image', assetId: 'asset-poster', mode: 'poster', size: 0.55, background: true });
-      await seedBoardPortal('portal-composed', { kind: 'image', assetId: 'asset-composed', mode: 'composed', size: 0.55, background: true });
+      await seedBoardPortal('portal-poster', { kind: 'image', assetId: 'asset-poster', mode: 'poster', size: 0.55, background: true, aspect: 1.5 });
+      await seedBoardPortal('portal-composed', { kind: 'image', assetId: 'asset-composed', mode: 'composed', size: 0.55, background: true, aspect: 0.75 });
       await seedBoardPortal('portal-icon', { kind: 'icon', icon: 'globe' }); // an icon portal holds no asset
 
       const referenced = await collectReferencedAssetHashes();

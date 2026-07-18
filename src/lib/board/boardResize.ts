@@ -25,13 +25,27 @@ export interface SizeFloor {
  * Applies a bottom-right resize delta to `orig` (width/height grow, x/y fixed). Each axis floors
  * at the matching `min` value, defaulting to {@link MIN_ITEM_SIZE} - pass a higher floor for a
  * min-content kind (the dice tray's content height, a zone's member extent).
+ *
+ * With `lockAspect` (width/height), the box scales proportionally: it follows whichever axis the
+ * drag extends further, then scales up so NEITHER axis drops below its floor while the ratio holds
+ * (an image portal poster, which must keep its crop shape).
  */
-export function computeResize(orig: SizeRect, delta: { x: number; y: number }, min: SizeFloor = {}): SizeRect {
+export function computeResize(orig: SizeRect, delta: { x: number; y: number }, min: SizeFloor = {}, lockAspect?: number): SizeRect {
+   const minWidth = min.width ?? MIN_ITEM_SIZE;
+   const minHeight = min.height ?? MIN_ITEM_SIZE;
+   if (lockAspect) {
+      let width = Math.max(orig.width + delta.x, (orig.height + delta.y) * lockAspect, minWidth);
+      let height = width / lockAspect;
+      const scale = Math.max(minHeight / height, 1);
+      width *= scale;
+      height *= scale;
+      return { x: orig.x, y: orig.y, width, height };
+   }
    return {
       x: orig.x,
       y: orig.y,
-      width: Math.max(min.width ?? MIN_ITEM_SIZE, orig.width + delta.x),
-      height: Math.max(min.height ?? MIN_ITEM_SIZE, orig.height + delta.y),
+      width: Math.max(minWidth, orig.width + delta.x),
+      height: Math.max(minHeight, orig.height + delta.y),
    };
 }
 

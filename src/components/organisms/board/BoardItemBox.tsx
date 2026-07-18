@@ -283,10 +283,14 @@ export const BoardItemBox = memo(function BoardItemBox({
       const delta = screenDeltaToWorld(event.clientX - start.x, event.clientY - start.y, zoom);
       // 2D resize; a min-height item floors its height at the live content height, and a zone floors
       // both axes at `resizeMin` (its member extent), so neither can be dragged smaller than it holds.
+      // An image portal poster locks to its crop aspect so it keeps its shape (the full image always shows).
+      const posterAspect = item.content.kind === 'portal' && item.content.style.visual?.kind === 'image' && item.content.style.visual.mode === 'poster'
+         ? item.content.style.visual.aspect
+         : undefined;
       const next = computeResize(start.orig, delta, {
          width: resizeMin?.width ?? MIN_ITEM_SIZE,
          height: minHeight ? Math.max(MIN_ITEM_SIZE, contentHeight) : resizeMin?.height ?? MIN_ITEM_SIZE,
-      });
+      }, posterAspect);
       start.rect = next;
       setResizeRect(next);
    };

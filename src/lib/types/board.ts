@@ -279,11 +279,13 @@ export type PortalTarget =
  * laid out beside the label, like icon+text). The mode makes poster-vs-composed unrepresentable-when-wrong.
  * `size` (0-1) is the composed thumbnail's fill fraction of the box (poster ignores it - it always fills);
  * `background` (composed only) toggles the plate behind the thumbnail (off = the bare image, its transparency
- * showing the portal/board through).
+ * showing the portal/board through). `aspect` is the cropped image's width/height (landscape > 1): the poster
+ * shapes its whole box to it (the full crop shows, resize is aspect-locked) and the composed thumbnail wears
+ * it instead of a forced square.
  */
 export type PortalVisual =
    | { kind: 'icon'; icon: string }
-   | { kind: 'image'; assetId: string; mode: 'poster' | 'composed'; size: number; background: boolean };
+   | { kind: 'image'; assetId: string; mode: 'poster' | 'composed'; size: number; background: boolean; aspect: number };
 
 /** Where the LABEL sits relative to the visual, for the composed visual+text styles (icon+text, image+text). */
 export type PortalAlign = 'top' | 'bottom' | 'left' | 'right';

@@ -1,10 +1,7 @@
 // -- React Imports --
-import { useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-
-// -- Other Library Imports --
-import toast from 'react-hot-toast';
 
 // -- Icon Imports --
 import { Image as ImageIcon, ImageOff, Loader2, SaveAll, Scaling, Upload } from 'lucide-react';
@@ -14,12 +11,9 @@ import { cn } from '@/lib/utils';
 
 // -- Store and Hook Imports --
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { useDrawerStore } from '@/lib/stores/drawerStore';
 import { useAppGeneralStateStore, useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-
-// -- Pipeline / Asset Store --
-import { processImage } from '@/lib/assets/processImage';
-import { storeAsset } from '@/lib/assets/assetRepository';
 
 // -- Save-Back --
 import { runSaveImageToDrawerAs } from '@/hooks/board/useBoardItemSaveBack';
@@ -46,12 +40,13 @@ interface ImageItemProps {
 export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, onRequestSelect }: ImageItemProps) {
    const { t } = useTranslation();
    const { url, isLoading } = useAssetObjectUrl(content.assetId);
-   const [isProcessing, setIsProcessing] = useState(false);
-   const fileInputRef = useRef<HTMLInputElement>(null);
    const { setDrawerOpen } = useAppGeneralStateActions();
+   const { fileInputRef, open: openPicker, isProcessing, handleFileSelected, cropperDialog } = useImageUpload(
+      (hash) => onContentChange({ kind: 'image', assetId: hash, fit: content.fit }),
+      { aspect: 'free' },
+   );
 
    const showSpinner = isProcessing || (content.assetId !== null && isLoading);
-   const openPicker = () => fileInputRef.current?.click();
 
    // Save As: mint this image as a game-agnostic IMAGE_CARD in the drawer. Mint only - an image has no
    // source link, so there is no write-back and nothing to adopt. Reads the drawer/app state directly (a
@@ -62,22 +57,6 @@ export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, o
       isDrawerOpen: useAppGeneralStateStore.getState().isDrawerOpen,
       setDrawerOpen,
    });
-
-   const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      event.target.value = ''; // allow re-picking the same file
-      if (!file) return;
-      setIsProcessing(true);
-      try {
-         const processed = await processImage(file);
-         const hash = await storeAsset(processed);
-         onContentChange({ kind: 'image', assetId: hash, fit: content.fit });
-      } catch {
-         toast.error(t('BoardView.imageUploadFailed'));
-      } finally {
-         setIsProcessing(false);
-      }
-   };
 
    const toggleFit = () => onContentChange({ kind: 'image', assetId: content.assetId, fit: content.fit === 'cover' ? 'contain' : 'cover' });
    const removeImage = () => onContentChange({ kind: 'image', assetId: null, fit: content.fit });
@@ -130,6 +109,7 @@ export function ImageItem({ content, isSelected, toolbarSlot, onContentChange, o
          )}
 
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+         {cropperDialog}
       </div>
    );
 }

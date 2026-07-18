@@ -45,6 +45,27 @@ describe('computeResize', () => {
       expect(result.width).toBe(160);
       expect(result.height).toBe(MIN_ITEM_SIZE);
    });
+
+   it('locks to the aspect: a horizontal drag drives width, height follows', () => {
+      const poster = { x: 0, y: 0, width: 200, height: 100 }; // already at aspect 2
+      expect(computeResize(poster, { x: 40, y: 0 }, {}, 2)).toMatchObject({ x: 0, y: 0, width: 240, height: 120 });
+   });
+
+   it('aspect-lock follows whichever axis is dragged furthest', () => {
+      const poster = { x: 0, y: 0, width: 200, height: 100 };
+      // A big DOWN drag drives the size even though width did not move (height*aspect wins).
+      expect(computeResize(poster, { x: 0, y: 60 }, {}, 2)).toMatchObject({ width: 320, height: 160 });
+   });
+
+   it('aspect-lock scales up so neither axis drops below its floor, ratio preserved', () => {
+      const poster = { x: 0, y: 0, width: 200, height: 100 };
+      // Shrink hard at aspect 0.5 (portrait) against a {56,32} floor: the 56 width floor forces height to
+      // 112 to hold the ratio, which clears the 32 height floor.
+      const result = computeResize(poster, { x: -1000, y: -1000 }, { width: 56, height: 32 }, 0.5);
+      expect(result.width).toBe(56);
+      expect(result.height).toBe(112);
+      expect(result.width / result.height).toBeCloseTo(0.5);
+   });
 });
 
 describe('effectiveHeight', () => {

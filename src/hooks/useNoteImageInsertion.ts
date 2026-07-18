@@ -9,12 +9,18 @@ import toast from 'react-hot-toast';
 import { processImage } from '@/lib/assets/processImage';
 import { storeAsset } from '@/lib/assets/assetRepository';
 
+// -- Crop Step --
+import { useImageCropper } from '@/hooks/useImageCropper';
+
 /*
  * Inline-image insertion for the Note editor. Every path - the toolbar button, a clipboard paste, a
  * dropped file - funnels through the SAME upload (process -> store -> hash) and the SAME splice, so a
  * note's image markdown is produced in exactly one place. The upload pipeline is editor-agnostic; the
  * splice is delegated to an injected {@link SpliceAdapter}, so the same hook drives a textarea today and
  * the CM6 editor now (the adapter re-points the caret read / write, nothing else changes).
+ *
+ * Only the deliberate button-upload opens the crop step (free ratio); a paste or drop stays zero-click and
+ * goes straight to the pipeline. Render `cropperDialog` alongside the editor so the button's crop can mount.
  */
 
 /**
@@ -38,6 +44,7 @@ function imageMarkdown(hash: string): string {
 
 export function useNoteImageInsertion({ adapter }: NoteImageInsertionArgs) {
    const { t } = useTranslation();
+   const { open: openCropper, dialog: cropperDialog } = useImageCropper();
    const [isProcessing, setIsProcessing] = useState(false);
    const fileInputRef = useRef<HTMLInputElement>(null);
    // Latest-ref so the async insert always splices through the CURRENT adapter (a re-render swaps it).
@@ -61,12 +68,14 @@ export function useNoteImageInsertion({ adapter }: NoteImageInsertionArgs) {
    /** Button path: opens the hidden file picker. */
    const open = useCallback(() => fileInputRef.current?.click(), []);
 
-   /** Button path: the picker's change handler. */
-   const handleFileSelected = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+   /** Button path: the picker's change handler - opens the crop step, then inserts the cut. */
+   const handleFileSelected = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       event.target.value = '';
-      if (file) void insertFromBlob(file);
-   }, [insertFromBlob]);
+      if (!file) return;
+      const cropped = await openCropper(file, { aspect: 'free' });
+      if (cropped) void insertFromBlob(cropped);
+   }, [insertFromBlob, openCropper]);
 
    /** Extracts the first image file off a clipboard/drag data source, or null. Shared by paste + drop. */
    const imageFileFrom = useCallback((items: DataTransferItemList | undefined, files: FileList | undefined): File | null => {
@@ -88,5 +97,5 @@ export function useNoteImageInsertion({ adapter }: NoteImageInsertionArgs) {
       return true;
    }, [imageFileFrom, insertFromBlob]);
 
-   return { fileInputRef, open, isProcessing, handleFileSelected, handleImageEvent };
+   return { fileInputRef, open, isProcessing, handleFileSelected, handleImageEvent, cropperDialog };
 }
