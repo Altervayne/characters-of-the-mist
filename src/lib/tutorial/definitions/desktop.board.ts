@@ -79,6 +79,21 @@ export const DESKTOP_BOARD_TUTORIAL: TutorialDefinition = {
          advance: { on: 'next-click' },
       },
       {
+         // Move / select / marquee / edit on the lit, live canvas. Drive the select tool so items are
+         // movable and back-nav restores it; the fixture's items sit in the framed opening view, ready
+         // to grab. `scrim:'none'` + `anchor-only`, then click Next. Placed before pan/zoom so the
+         // "try it" pan can't scroll those items out of reach first.
+         id: 'handle-items',
+         onArrive: { type: 'board', action: 'setTool:select' },
+         anchorKey: 'board-canvas',
+         titleKey: 'Tutorial.board.handleItems_title',
+         bodyKey: 'Tutorial.board.handleItems_body',
+         placement: 'center',
+         interaction: 'anchor-only',
+         scrim: 'none',
+         advance: { on: 'next-click' },
+      },
+      {
          // Pan/zoom invitation: the canvas is the anchor and the whole surface, so it runs lit
          // (`scrim:'none'`) + `anchor-only` and the user can drag/scroll it freely, then click Next.
          id: 'pan-zoom',

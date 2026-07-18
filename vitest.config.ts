@@ -5,20 +5,20 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 //
 // - `tsconfigPaths()`: resolves the `@/*` path alias from tsconfig (this config
 //   file is used instead of vite.config.ts, so the app's alias is not inherited).
-// - `environment: 'node'`: the repository is framework-agnostic and touches no
-//   DOM, so the lighter Node environment is sufficient (Dexie runs on the
-//   IndexedDB global provided below).
+// - `environment: 'node'`: the default is the lighter Node environment, sufficient for the
+//   framework-agnostic lib/hook tests (Dexie runs on the IndexedDB global provided below). A
+//   component test that needs a DOM opts into jsdom per-file via a `// @vitest-environment jsdom`
+//   docblock pragma, so the node suite stays pure.
 // - `setupFiles: ['fake-indexeddb/auto']`: installs an in-memory IndexedDB
 //   implementation onto the global scope before any test runs, so Dexie has a
 //   backing store without a browser.
-// - `include`: scoped to the framework-agnostic layers (the drawer/board lib and the
-//   pure-logic hooks) so this config cannot accidentally pick up component tests that
-//   would need a DOM environment.
+// - `include`: the framework-agnostic layers (the drawer/board lib and the pure-logic hooks)
+//   plus the component tests, which carry their own jsdom pragma.
 export default defineConfig({
    plugins: [tsconfigPaths()],
    test: {
       environment: 'node',
       setupFiles: ['fake-indexeddb/auto'],
-      include: ['src/lib/**/*.test.ts', 'src/hooks/**/*.test.ts'],
+      include: ['src/lib/**/*.test.ts', 'src/hooks/**/*.test.ts', 'src/components/**/*.test.tsx'],
    },
 });
