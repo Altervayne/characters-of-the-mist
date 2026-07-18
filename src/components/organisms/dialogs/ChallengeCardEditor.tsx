@@ -24,6 +24,9 @@ import { useCharacterActions } from '@/lib/stores/characterStore';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 import { useImageUpload } from '@/hooks/useImageUpload';
 
+// -- Shared Constants --
+import { CHALLENGE_ART_ASPECT } from '@/lib/cards/challengeArt';
+
 // -- Shared Factories --
 import { addRow, newAbility, newConsequence, newStatus, newTag, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
 
@@ -303,7 +306,7 @@ function IconButton({ onClick, label, children }: { onClick: () => void; label: 
 function ImagePicker({ assetId, onChange }: { assetId: string | null; onChange: (assetId: string | null) => void }) {
    const { t } = useTranslation();
    const { url, isLoading } = useAssetObjectUrl(assetId);
-   const { fileInputRef, open, isProcessing, handleFileSelected } = useImageUpload(onChange);
+   const { fileInputRef, open, isProcessing, handleFileSelected, cropperDialog } = useImageUpload(onChange, { aspect: CHALLENGE_ART_ASPECT });
    const showSpinner = isProcessing || (assetId !== null && isLoading);
 
    return (
@@ -328,6 +331,7 @@ function ImagePicker({ assetId, onChange }: { assetId: string | null; onChange: 
             )}
          </div>
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+         {cropperDialog}
       </div>
    );
 }

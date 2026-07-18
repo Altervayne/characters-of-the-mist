@@ -15,6 +15,9 @@ import { cn } from '@/lib/utils';
 // -- Store and Hook Imports --
 import { useImageUpload } from '@/hooks/useImageUpload';
 
+// -- Shared Constants --
+import { CHALLENGE_ART_ASPECT } from '@/lib/cards/challengeArt';
+
 // -- Component Imports --
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 import { ChallengeTypeSelector } from '@/components/molecules/ChallengeTypeSelector';
@@ -131,7 +134,7 @@ function SheetImageBand({ url, name, isEditing, commitImage }: {
    commitImage: (assetId: string | null) => void;
 }) {
    const { t } = useTranslation();
-   const { fileInputRef, open, isProcessing, handleFileSelected } = useImageUpload(commitImage);
+   const { fileInputRef, open, isProcessing, handleFileSelected, cropperDialog } = useImageUpload(commitImage, { aspect: CHALLENGE_ART_ASPECT });
 
    // Shared matte look (fixed height, contain-fit); each caller supplies its own width. The band's
    // height sets the top block's height. The right column is capped to it and scrolls (see below).
@@ -139,7 +142,7 @@ function SheetImageBand({ url, name, isEditing, commitImage }: {
 
    if (!isEditing) {
       return (
-         <div className={cn(matte, 'w-52 shrink-0')}>
+         <div className={cn(matte, 'w-62.5 shrink-0')}>
             {url ? (
                <img src={url} alt={name} title={name} className="h-full w-full object-contain" />
             ) : (
@@ -150,7 +153,7 @@ function SheetImageBand({ url, name, isEditing, commitImage }: {
    }
 
    return (
-      <div className="flex w-52 shrink-0 flex-col gap-1.5">
+      <div className="flex w-62.5 shrink-0 flex-col gap-1.5">
          <button
             type="button"
             onClick={open}
@@ -189,6 +192,7 @@ function SheetImageBand({ url, name, isEditing, commitImage }: {
             </div>
          )}
          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelected} />
+         {cropperDialog}
       </div>
    );
 }

@@ -179,6 +179,12 @@ export default defineConfig({
             return 'codemirror-vendor'
           }
 
+          // Image crop stage + its wheel helper. Only the lazy ImageCropperDialog imports it, so
+          // this chunk is pulled on demand and stays deferred + precached, never in the eager bundle.
+          if (/[\\/]node_modules[\\/](react-easy-crop|normalize-wheel)[\\/]/.test(id)) {
+            return 'cropper-vendor'
+          }
+
           // Everything else falls to Rollup's default vendor grouping.
           return 'vendor'
         }

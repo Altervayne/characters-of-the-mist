@@ -500,6 +500,15 @@
       "presetSquare": "[TO COMPLETE]",
       "presetLandscape": "[TO COMPLETE]"
    },
+   "ImageCropper": {
+      "title": "[TO COMPLETE]",
+      "zoom": "[TO COMPLETE]",
+      "rotate": "[TO COMPLETE]",
+      "reset": "[TO COMPLETE]",
+      "cancel": "[TO COMPLETE]",
+      "apply": "[TO COMPLETE]",
+      "tooSmall": "[TO COMPLETE]"
+   },
    "CharacterSheetPage": {
       "characterNamePlaceholder": "Nom du Personnage...",
       "addElement": "[TO COMPLETE]",

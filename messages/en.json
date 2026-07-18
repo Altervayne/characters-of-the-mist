@@ -502,6 +502,16 @@
       "presetLandscape": "Landscape"
    },
 
+   "ImageCropper": {
+      "title": "Crop image",
+      "zoom": "Zoom",
+      "rotate": "Rotate 90°",
+      "reset": "Reset",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "tooSmall": "This crop is too small. Zoom out or choose a larger area."
+   },
+
    "CharacterSheetPage": {
 
       "characterNamePlaceholder": "Character Name...",
