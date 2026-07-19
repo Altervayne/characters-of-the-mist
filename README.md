@@ -1,77 +1,94 @@
-![Characters of the Mist Header](./assets/banner.png)
+![Campaigns of the Mist](./assets/banner.png)
 
-**Characters of the Mist** is a modern, privacy-first, and completely client-side character sheet manager built for TTRPGs like *City of Mist*, *Otherscape*, and *Legend in the Mist*.  It's designed from the ground up to be fast, intuitive, and powerful, giving you full control over your character data without ever needing a server.  All your data is saved directly in your browser's local storage. 
+# Campaigns of the Mist
 
-This tool is a complete rewrite of a previous alpha version, focusing on a robust, scalable architecture to make future updates and new game systems easier to implement. 
+**Campaigns of the Mist** is a fast, private, entirely client-side companion for running and playing [Mist Engine](https://cityofmist.co) tabletop RPGs — *Legend in the Mist*, *Metro: Otherscape*, and *City of Mist*. There's no server and no account: everything you make lives in your own browser, and it installs as an app that works fully offline.
 
----
-## ✨ Key Features
-
-This application is more than just a character sheet; it's a full-fledged character management system packed with features to make your gameplay experience a breeze.
-
-* **Fully Dynamic Character Sheet:** No more fixed layouts. Add as many Theme Cards, trackers, and components as your character needs. The sheet adapts to you. 
-* **Powerful File System Drawer:** A versatile **Drawer** acts as a complete file system for all your character components.  It features full drag-and-drop organization, folder creation, and two different view modes for managing your items. 
-* **Intuitive Drag-and-Drop:** Almost everything is draggable. Reorder your cards and trackers on the sheet, move items between folders in the Drawer, or even load an entire character by dragging their sheet from the Drawer onto the main play area. 
-* **Robust State Management:** With a state-of-the-art Undo/Redo system (`Ctrl+Z` / `Ctrl+Y`), you can easily fix mistakes whether they happen on the character sheet or in the Drawer. 
-* **Command Palette:** For the power users out there, press `Ctrl+K` to summon the **Command Palette**.  Find and execute any action in the app without ever touching your mouse. 
-* **Full Localization & Theming:** The app is available in multiple languages and features multiple color themes assorted to the Mist TTRPGs, along with a light/dark mode toggle. 
-* **Legacy Data Migration:** A built-in tool helps you seamlessly migrate character sheets from the old alpha version of the app to the new format. 
+It's an unofficial, fan-made project (a full rewrite of the old *Characters of the Mist* alpha, now rebranded as it grew from a character-sheet app into a whole table workspace). This README is for people who want to **run or hack on the code** — if you just want to *use* the app, it's at [campaignsofthemist.app](https://www.campaignsofthemist.app/) and it teaches itself through its built-in tutorials, so you won't find a feature list here.
 
 ---
-## 🛠️ Tech Stack
 
-This project is built with a modern, robust, and scalable tech stack to ensure a high-quality development and user experience.
+## Tech stack
 
-* **Build Tool:** [Vite](https://vitejs.dev/) for lightning-fast development and optimized production builds
-* **Framework:** [React](https://react.dev/)
-* **Language:** [TypeScript](https://www.typescriptlang.org/)
-* **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-* **UI Components:** [Shadcn/UI](https://ui.shadcn.com/) for accessible component primitives
-* **State Management:** [Zustand](https://zustand-demo.pmnd.rs/) with `persist` and `temporal` middleware for state persistence and undo/redo functionality
-* **Drag & Drop:** [dnd-kit](https://dndkit.com/) for a lightweight and powerful drag-and-drop experience
-* **Animations:** [Framer Motion](https://www.framer.com/motion/) for smooth UI animations
-* **Command Palette:** [cmdk](https://cmdk.paco.me/)
-* **Localization:** [react-i18next](https://react.i18next.com/) for internationalization
-* **PWA:** [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) for Progressive Web App capabilities 
-
----
-### 🌍 Contributing to Translations
-
-I'm thrilled you're interested in helping translate Characters of the Mist! The application is built with localization in mind, and contributions from the community are warmly welcome. The entire tutorial is also fully localized. The process is straightforward, even if you're not a developer.
-
-Here’s how you can add a new language:
-
-1.  **Get the Template File**
-    All translation keys are located in the English source file at `messages/en.json`. This is the file you will use as a template.
-
-2.  **Create Your Language File**
-    Make a copy of `en.json` in the same directory (`messages/`) and rename it to your language's two-letter ISO 639-1 code (e.g., `de.json` for German, `es.json` for Spanish).
-
-3.  **Translate the Values**
-    Open your new language file and translate the text on the **right side** of the colons.
-    > **Important:** Please do not translate the JSON "keys" on the left side, as these are used by the application to find the correct text.
-    >
-    > *Example:*
-    > ```json
-    > // "key": "value"    vvv  Translate this part  vvv
-    > "welcome_title": "Welcome to Characters of the Mist!", 
-    > ```
-
-4.  **Submit a Pull Request**
-    Once you're done, please submit a Pull Request on GitHub with your changes. I'll review it, merge it into the project, make your translation available and add you to the credits!
-
-Thank you so much for helping make this tool accessible to more people!
-
-### Localization Contributors :
-
-- **Deutsch** (German): Markus Raab
-- **Español** (Spanish): Salvador Pérez Martín 
+- **Build / dev:** [Vite](https://vitejs.dev/) 7
+- **UI:** [React](https://react.dev/) 19 + [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) v4, with [Radix UI](https://www.radix-ui.com/) primitives (shadcn/ui-style components)
+- **State:** [Zustand](https://zustand-demo.pmnd.rs/) for stores, [zundo](https://github.com/charkour/zundo) for the temporal (undo/redo) layer
+- **Persistence:** [Dexie](https://dexie.org/) over IndexedDB (app settings on `localStorage`)
+- **Drag & drop:** [dnd-kit](https://dndkit.com/)
+- **Animation:** [Framer Motion](https://www.framer.com/motion/)
+- **Notes editor:** [CodeMirror 6](https://codemirror.net/)
+- **Command palette:** [cmdk](https://cmdk.paco.me/)
+- **Routing:** [React Router](https://reactrouter.com/)
+- **Markdown:** [react-markdown](https://github.com/remarkjs/react-markdown) + [remark-gfm](https://github.com/remarkjs/remark-gfm)
+- **Localization:** [i18next](https://www.i18next.com/) / react-i18next
+- **Icons:** [Lucide](https://lucide.dev/)
+- **Offline / PWA:** [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) (Workbox)
+- **Testing:** [Vitest](https://vitest.dev/) + Testing Library, on jsdom with [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB)
 
 ---
-## 📜 License
+
+## Running it locally
+
+**Prerequisites:** [Node.js](https://nodejs.org/) **20.19+** (or **22.12+**) — the minimum Vite 7 needs — and npm.
+
+```bash
+npm install      # install dependencies
+npm run dev      # start the dev server at http://localhost:5173
+```
+
+Other scripts:
+
+```bash
+npm run build        # typecheck + production bundle -> dist/  (runs `tsc -b && vite build`)
+npm run preview      # serve the built dist/ locally
+npm test             # run the test suite once (vitest run)
+npm run test:watch   # run tests in watch mode
+npm run lint         # eslint over the project
+```
+
+---
+
+## Project structure
+
+```
+messages/                 Locale JSON -> en.json is the source of truth.
+src/
+  main.tsx, App.tsx        Entry point + app shell (theme/store providers, router).
+  router.tsx               Routes (a single route into the character/workspace page).
+  app/                     Global CSS + theme tokens.
+  i18n/                    i18next config + the `locales.ts` registry of available languages.
+  pages/                   CharacterSheetPage — the one route; switches desktop/mobile shells.
+  components/
+    organisms/             The big surfaces: board, drawer, notes, tabs, navigator, cards, dialogs...
+    molecules/ · ui/       Smaller pieces + the Radix/shadcn primitives.
+    mobile/                The mobile shell (its own navigation, sheets, and screens).
+    providers/             Theme + app-start context providers.
+  hooks/                   Cross-cutting React hooks.
+  lib/                     The non-UI core (see below).
+```
+
+`src/lib/` holds the domain logic and data layer, split by surface:
+
+- **`stores/`** -> Zustand stores (drawer, app settings, general UI state…).
+- **`character/`, `board/`, `notes/`, `drawer/`** -> per-surface domain logic + Dexie persistence.
+- **`dice/`, `tutorial/`, `portals/`, `navigator/`, `theme/`, `cards/`, `challenge/`, `trackers/`** -> the feature subsystems.
+- **`harmonization.ts`** -> the import migrator: brings exported files from older versions up to the current schema, so a file from any past release stays importable.
+- **`backup/`, `assets/`, `types/`, `utils/`, `constants/`** -> full-app backup/restore, the image/asset store, shared types, and helpers.
+
+A few architectural notes worth knowing before you dig in:
+
+- **100% client-side.** No backend, no API. Everything persists to **IndexedDB via Dexie**; only a little app-settings state lives on `localStorage`.
+- **Offline-first PWA.** The service worker (vite-plugin-pwa / Workbox) precaches the app so it runs with no network. Heavy surfaces (the board canvas, the CodeMirror notes editor) are code-split into lazy chunks that are *still* precached, so offline stays complete without bloating first paint.
+- **Undo/redo** is a temporal Zustand layer (zundo), scoped per surface.
+- **Localization** lives in `messages/*.json`, registered in `src/i18n/config.ts` and listed in `src/i18n/locales.ts`. `en.json` is the source of truth; the others are community-contributed.
+
+---
+
+## License
+
+Campaigns of the Mist is distributed under the **[GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)](https://www.gnu.org/licenses/agpl-3.0.html)** — full text in [`LICENSE`](./LICENSE). You're free to use, modify, and redistribute the code (including commercially), but if you distribute or *network-host* a modified version, you must release your full source under the same license.
+
+The third-party components bundled into the app, and their respective licenses, are listed in [`THIRD_PARTY_LICENSES`](./THIRD_PARTY_LICENSES).
 
 This is a fan-made project and is in no way endorsed by Amit Moshe or Son of Oak Game Studio LLC.
-
-The code for this application is distributed under the **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)**.
-
-This means you are free to use, modify, and redistribute the code, including for commercial purposes. However, if you distribute or run a modified version (including hosting it for others over a network), you must release your full source code under this same license.
