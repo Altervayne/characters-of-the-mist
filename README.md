@@ -1,5 +1,8 @@
 ![Characters of the Mist Header](./assets/banner.png)
 
+> This is an OLD version of Characters of the Mist, and is preserved for people who have not yet migrated to the new version.
+> Please make sure you look at the master branch for the up to date version.
+
 **Characters of the Mist** is a modern, privacy-first, and completely client-side character sheet manager built for TTRPGs like *City of Mist*, *Otherscape*, and *Legend in the Mist*.  It's designed from the ground up to be fast, intuitive, and powerful, giving you full control over your character data without ever needing a server.  All your data is saved directly in your browser's local storage. 
 
 This tool is a complete rewrite of a previous alpha version, focusing on a robust, scalable architecture to make future updates and new game systems easier to implement. 
