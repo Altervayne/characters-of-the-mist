@@ -9,7 +9,57 @@ export const patchNotes: PatchNote[] = [
    {
       version: '2.0.0',
       content: `
+### 🎉 2.0.0 — Say hello to Campaigns of the Mist!
+Okay. Deep breath. This is the big one.
 
+**Characters of the Mist is now Campaigns of the Mist.**
+
+When I started this, it was a character sheet app. That was the whole idea, a nice home for your themes, your tags, your trackers. But over the past months it quietly grew into something bigger than I planned for, and honestly, calling it a "characters" app started to feel like selling it short.
+
+You can now run a whole table in here. Multiple characters side by side. Freeform boards for your maps and your mysteries. Notes for all your worldbuilding. Challenges for your players to throw themselves at. It stopped being just about *who your character is*, and became about *the whole campaign around them*.
+
+So it gets a name that fits. Same **CotM**, same logo, same \`.cotm\` files, just a bigger promise. I'm a little emotional about this one, not going to lie. Thank you for being here for it.
+
+### 📱 One thing first, about Mobile
+Almost everything below is **desktop-first, for now**. Mobile still does everything it did before, but Boards, Workspaces, the Notes editor and a good chunk of the rest didn't make the jump *yet*. I didn't want to cram features this big onto a small screen just to tick a box, that never ends well. They're coming to mobile, properly, but they'll take the time they need. Thank you for your patience.
+
+### 🎨 Custom Themes
+Make it *yours*. There's now a full theme creator built into the app: pick your colors and the entire interface recolors itself around your palette. Everything is built on adaptive tokens, so no matter what you throw at it, the app stays readable in every corner. Light, dark, and anything in between is now up to you.
+
+### 🗂️ Workspaces
+The app is no longer a one-thing-at-a-time affair. **Workspaces** bring a tab system: open several characters, boards and notes at once, each in its own tab, and switch between them instantly. I also snuck in per-workspace zoom, so you can pull a character sheet in close or push it back to see the whole thing. (Desktop for now.)
+
+### 🗺️ Boards
+This is the big one *inside* the big one. A **Board** is a freeform canvas where you can drop... well, almost anything. Live card and tracker embeds, references to your characters, notes, post-its, journals, images, dice trays, zones to group things together, portals to jump around, freehand drawings, connections drawn between items, and Challenge Cards. Maps, relationship webs, clue boards, session prep, your table finally has a shared space to live on.
+
+### 📝 Notes
+A proper writing space. **Notes** are full markdown documents with a live-preview editor that formats as you type, no clunky edit-then-preview dance. You can link notes to each other, and to other places in the app, with portals. Drop your statuses and tags right into the text with a quick mention and they become clickable pills. Great for lore, session recaps, NPC dossiers, or just thinking out loud.
+
+### 🧭 The Navigator
+Once your campaign starts spreading across a handful of boards and notes, keeping track of what connects to what gets... interesting. The **Navigator** traces every portal across the whole app into one hierarchical map, following each connection both ways, forward and backward, so you can see exactly how your project hangs together. Every board, note and portal between them, laid out as a single tree you can walk and jump straight through. Drop a portal on a board or a link in a note and it slots right into the graph. Scope it to just the workspace you're in, or open it up to the whole project at once.
+
+### ⚔️ Challenge Cards
+Give your players something to fight. **Challenge Cards** let you build the threats, obstacles and dangers of your world, complete with limits, statuses, tags, and their threats & consequences. And they're game-aware: Legend in the Mist gets its Specials and Mighty tags, while Metro: Otherscape and City of Mist each get their own tailored variant. Put them on a sheet or scatter them across a board.
+
+### 🖼️ Images on Character Sheets
+Give your character a face! You can now add image cards to a sheet, crop them right inside the app (non-destructively, so you can re-crop any time), and pick the aspect that frames them best. Portraits, tokens, reference art, whatever helps the character feel real at the table.
+
+### 🎲 The Dice Tray
+And of course, dice. The **Dice Tray** slides open right from the sidebar: add as many dice as you want, mix in custom-sided ones, tack on modifiers and penalty dice, or just type a formula like \`2d6+3\` and let it build the pool for you. It keeps a history of your rolls, so if you liked a particular setup you can bring it right back. It also lives as a Board element, for when you'd rather leave it out on the table for the whole group to see.
+
+### 🎓 A Brand New Tutorial
+The entire onboarding and tutorial system was rebuilt from the ground up. It now runs on its own seeded demo content in an isolated space, so it will **never touch your real characters** while it walks you through things. And it lives in a new Learn section, so you can go back and replay any lesson whenever you like, not just once on your first visit.
+
+### 🧰 Also in the box
+* **One unified Settings menu**: App Settings, About, and Patch Notes all live under one roof now, with the tutorials tucked into that Learn section.
+* **Full backups**: you can now export a single file with *all* your data (characters, boards, notes, drawer, settings) and restore it anywhere. Your safety net.
+* **In-app announcements**: I can now surface important news right at the top of the app when something needs saying.
+* **Under the hood**: your data moved to a sturdier storage engine to carry everything above without breaking a sweat.
+
+### 💬 So what's next?
+Mobile, mostly. Bringing all of this to phones and tablets in a way that actually feels *good* to use, not just possible. And beyond that, whatever you ask for. The Tools of the Mist Discord is still the place, I still read every message, and I still build slowly but surely.
+
+Thank you, genuinely, for sticking around long enough to watch a character sheet grow into a whole campaign. Now go make something.
 `
    },
    {
