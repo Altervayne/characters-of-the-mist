@@ -7,6 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // -- Component Imports --
 import MarkdownContent from '@/components/molecules/MarkdownContent';
 
+// -- Localization Imports --
+import { buildLocalizationCreditsMarkdown } from '@/i18n/locales';
+
 
 
 /**
@@ -15,8 +18,6 @@ import MarkdownContent from '@/components/molecules/MarkdownContent';
  */
 export function AboutSettingsPane() {
    const { t } = useTranslation();
-
-   const localizationContributors = '- **Deutsch:** Markus Raab';
 
    return (
       <div className="flex h-full flex-col gap-4">
@@ -51,7 +52,7 @@ export function AboutSettingsPane() {
                   <MarkdownContent content={t('InfoDialog.content.credits')} />
 
                   <MarkdownContent content={t('InfoDialog.content.localization')} />
-                  <MarkdownContent content={localizationContributors} />
+                  <MarkdownContent content={buildLocalizationCreditsMarkdown()} />
                </TabsContent>
             </div>
          </Tabs>

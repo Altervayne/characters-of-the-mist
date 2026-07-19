@@ -25,11 +25,8 @@ import { MobileSettingsToggleGroup } from '@/components/mobile/menu/MobileSettin
 // -- Store Imports --
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 
-const locales = [
-	{ code: 'en', name: 'English' },
-	{ code: 'fr', name: 'Français' },
-	{ code: 'de', name: 'Deutsch' },
-];
+// -- Localization Imports --
+import { LOCALES, resolveLocaleCode } from '@/i18n/locales';
 
 interface MobileSettingsGeneralProps {
 	onBack?: () => void;
@@ -38,7 +35,7 @@ interface MobileSettingsGeneralProps {
 /** General settings: language, card view, tracker editing, and the mobile-only interaction preferences. */
 export default function MobileSettingsGeneral({ onBack }: MobileSettingsGeneralProps) {
 	const { t, i18n } = useTranslation();
-	const locale = i18n.language?.split('-')[0] || 'en';
+	const locale = resolveLocaleCode(i18n.language);
 
 	const { isSideBySideView, isTrackersAlwaysEditable, isMobileFABMode, mobileHandedness, areGestureHintsEnabled } = useAppSettingsStore();
 	const { setSideBySideView, setTrackersAlwaysEditable, setMobileFABMode, setMobileHandedness, setGestureHintsEnabled } = useAppSettingsActions();
@@ -57,9 +54,9 @@ export default function MobileSettingsGeneral({ onBack }: MobileSettingsGeneralP
 						<SelectValue placeholder={t('SettingsDialog.selectLanguagePlaceholder')} />
 					</SelectTrigger>
 					<SelectContent>
-						{locales.map((loc) => (
+						{LOCALES.map((loc) => (
 							<SelectItem key={loc.code} value={loc.code} className="text-base py-3">
-								{loc.name}
+								{loc.nativeName}
 							</SelectItem>
 						))}
 					</SelectContent>

@@ -10,6 +10,9 @@ import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 // -- Utils --
 import { cn } from '@/lib/utils';
 
+// -- Localization Imports --
+import { LOCALES } from '@/i18n/locales';
+
 
 
 interface OnboardingLanguageProps {
@@ -17,12 +20,6 @@ interface OnboardingLanguageProps {
 	onBack: () => void;
 	onSkip: () => void;
 }
-
-const LANGUAGES = [
-	{ code: 'en', name: 'English', native: 'English' },
-	{ code: 'fr', name: 'French', native: 'Français' },
-	{ code: 'de', name: 'German', native: 'Deutsch' },
-];
 
 export default function OnboardingLanguage({ onNext, onBack, onSkip }: OnboardingLanguageProps) {
 	const { t, i18n } = useTranslation();
@@ -46,7 +43,7 @@ export default function OnboardingLanguage({ onNext, onBack, onSkip }: Onboardin
 
 			{/* Language Cards */}
 			<div className="flex-1 flex flex-col justify-center gap-3 max-w-sm mx-auto w-full">
-				{LANGUAGES.map((lang) => (
+				{LOCALES.map((lang) => (
 					<button
 						key={lang.code}
 						onClick={() => handleLanguageSelect(lang.code)}
@@ -59,8 +56,8 @@ export default function OnboardingLanguage({ onNext, onBack, onSkip }: Onboardin
 						)}
 					>
 						<div className="text-left">
-							<p className="font-semibold text-lg">{lang.native}</p>
-							<p className="text-sm text-muted-foreground">{lang.name}</p>
+							<p className="font-semibold text-lg">{lang.nativeName}</p>
+							<p className="text-sm text-muted-foreground">{lang.englishName}</p>
 						</div>
 						{currentLocale === lang.code && (
 							<Check className="w-6 h-6 text-primary" />

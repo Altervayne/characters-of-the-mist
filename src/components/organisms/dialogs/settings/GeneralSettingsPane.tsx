@@ -13,20 +13,15 @@ import { BookOpen, FlipHorizontal, Lock, UnlockIcon, Navigation, Menu } from 'lu
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useDeviceType } from '@/hooks/useDeviceType';
 
-
-
-const locales = [
-   { code: 'en', name: 'English' },
-   { code: 'fr', name: 'Français' },
-   { code: 'de', name: 'Deutsch' },
-];
+// -- Localization Imports --
+import { LOCALES, resolveLocaleCode } from '@/i18n/locales';
 
 
 
 /** The General section: language, card view, tracker-edit lock, and the mobile-only FAB layout row. */
 export function GeneralSettingsPane() {
    const { t, i18n } = useTranslation();
-   const locale = i18n.language?.split('-')[0] || 'en';
+   const locale = resolveLocaleCode(i18n.language);
 
    const { isMobile } = useDeviceType();
 
@@ -48,9 +43,9 @@ export function GeneralSettingsPane() {
                   <SelectValue placeholder={t('SettingsDialog.selectLanguagePlaceholder')} />
                </SelectTrigger>
                <SelectContent>
-                  {locales.map((loc) => (
+                  {LOCALES.map((loc) => (
                      <SelectItem key={loc.code} value={loc.code}>
-                        {loc.name}
+                        {loc.nativeName}
                      </SelectItem>
                   ))}
                </SelectContent>

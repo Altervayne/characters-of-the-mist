@@ -9,6 +9,9 @@ import { ChevronLeft } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
 import MarkdownContent from '@/components/molecules/MarkdownContent';
 
+// -- Localization Imports --
+import { buildLocalizationCreditsMarkdown } from '@/i18n/locales';
+
 interface MobileAboutProps {
 	onBack?: () => void;
 }
@@ -18,8 +21,6 @@ type TabId = 'about' | 'license' | 'credits';
 export default function MobileAbout({ onBack }: MobileAboutProps) {
 	const { t } = useTranslation();
 	const [activeTab, setActiveTab] = useState<TabId>('about');
-
-	const localizationContributors = '- **Deutsch:** Markus Raab';
 
 	const tabs = [
 		{ id: 'about' as TabId, label: t('InfoDialog.tabs.about') },
@@ -100,7 +101,7 @@ export default function MobileAbout({ onBack }: MobileAboutProps) {
 						<MarkdownContent content={t('InfoDialog.content.credits')} />
 
 						<MarkdownContent content={t('InfoDialog.content.localization')} />
-						<MarkdownContent content={localizationContributors} />
+						<MarkdownContent content={buildLocalizationCreditsMarkdown()} />
 					</div>
 				)}
 			</div>

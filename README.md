@@ -64,7 +64,8 @@ Thank you so much for helping make this tool accessible to more people!
 
 ### Localization Contributors :
 
-- **Deutsch**: Markus Raab
+- **Deutsch** (German): Markus Raab
+- **Español** (Spanish): Salvador Pérez Martín 
 
 ---
 ## 📜 License
