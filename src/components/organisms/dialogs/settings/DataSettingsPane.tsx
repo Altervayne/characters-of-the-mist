@@ -1,5 +1,5 @@
 // -- React Imports --
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Basic UI Imports --
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 // -- Icon Imports --
-import { AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, HardDrive } from 'lucide-react';
+import { AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, HardDrive, Download, Upload } from 'lucide-react';
 
 // -- Component Imports --
 import { MigrationDialog } from '@/components/organisms/dialogs/MigrationDialog';
@@ -97,6 +97,8 @@ export function DataSettingsPane() {
       isResetAppDialogOpen, setIsResetAppDialogOpen,
       isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen,
       handleAppReset, handleDeleteDrawer,
+      handleExportBackup, handleRestoreBackupFile, handleConfirmRestore,
+      isRestoreBackupDialogOpen, setIsRestoreBackupDialogOpen,
       isMigrationDialogOpen, setIsMigrationDialogOpen,
       isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen,
       isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen,
@@ -104,6 +106,14 @@ export function DataSettingsPane() {
       legacyCharacterRemovable, refreshLegacyCharacterRemovable,
       storageUsageBytes, isReclaiming, formatMegabytes, handleReclaimImageSpace,
    } = useDataSettingsActions();
+
+   // Hidden picker for the restore flow; resetting its value lets the same file be re-picked.
+   const restoreInputRef = useRef<HTMLInputElement>(null);
+   const onRestoreFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) void handleRestoreBackupFile(file);
+      event.target.value = '';
+   };
 
    return (
       <>
@@ -126,6 +136,22 @@ export function DataSettingsPane() {
                      <HardDrive className="mr-2 h-4 w-4 shrink-0" />
                      <span className="truncate">{t('SettingsDialog.storage.reclaimButton')}</span>
                   </Button>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-3 items-start gap-4">
+               <Label className="text-left mt-2">{t('SettingsDialog.backup.label')}</Label>
+               <div className="col-span-2 flex flex-col gap-2">
+                  <Button onClick={handleExportBackup} title={t('SettingsDialog.backup.exportButton')} className="cursor-pointer min-w-0 justify-start">
+                     <Download className="mr-2 h-4 w-4 shrink-0" />
+                     <span className="truncate">{t('SettingsDialog.backup.exportButton')}</span>
+                  </Button>
+                  <Button variant="outline" onClick={() => restoreInputRef.current?.click()} title={t('SettingsDialog.backup.restoreButton')} className="cursor-pointer min-w-0 justify-start">
+                     <Upload className="mr-2 h-4 w-4 shrink-0" />
+                     <span className="truncate">{t('SettingsDialog.backup.restoreButton')}</span>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">{t('SettingsDialog.backup.description')}</p>
+                  <input ref={restoreInputRef} type="file" accept=".cotmbak" onChange={onRestoreFileChange} className="hidden" />
                </div>
             </div>
 
@@ -221,6 +247,16 @@ export function DataSettingsPane() {
             description={t('SettingsDialog.dangerZone.deleteDrawerDialog.description')}
             confirmationText="DELETE DRAWER"
             confirmButtonText={t('SettingsDialog.dangerZone.deleteDrawerDialog.confirm')}
+         />
+
+         <ConfirmationDialog
+            open={isRestoreBackupDialogOpen}
+            onOpenChange={setIsRestoreBackupDialogOpen}
+            onConfirm={handleConfirmRestore}
+            title={t('SettingsDialog.backup.restoreDialog.title')}
+            description={t('SettingsDialog.backup.restoreDialog.description')}
+            confirmationText="REPLACE ALL MY DATA"
+            confirmButtonText={t('SettingsDialog.backup.restoreDialog.confirm')}
          />
 
          <ConfirmationDialog

@@ -1,4 +1,5 @@
 // -- React Imports --
+import { useRef, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Other Library Imports --
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 // -- Icon Imports --
-import { AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, HardDrive, FolderUp, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Trash2, OctagonMinus, DatabaseBackup, HardDrive, FolderUp, ChevronRight, Download, Upload } from 'lucide-react';
 
 // -- Component Imports --
 import { MobileSettingsSubScreen } from '@/components/mobile/menu/MobileSettingsSubScreen';
@@ -35,6 +36,8 @@ export default function MobileSettingsData({ onBack }: MobileSettingsDataProps) 
 		isResetAppDialogOpen, setIsResetAppDialogOpen,
 		isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen,
 		handleAppReset, handleDeleteDrawer,
+		handleExportBackup, handleRestoreBackupFile, handleConfirmRestore,
+		isRestoreBackupDialogOpen, setIsRestoreBackupDialogOpen,
 		isMigrationDialogOpen, setIsMigrationDialogOpen,
 		isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen,
 		isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen,
@@ -42,6 +45,14 @@ export default function MobileSettingsData({ onBack }: MobileSettingsDataProps) 
 		legacyCharacterRemovable, refreshLegacyCharacterRemovable,
 		storageUsageBytes, isReclaiming, formatMegabytes, handleReclaimImageSpace,
 	} = useDataSettingsActions();
+
+	// Hidden picker for the restore flow; resetting its value lets the same file be re-picked.
+	const restoreInputRef = useRef<HTMLInputElement>(null);
+	const onRestoreFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) void handleRestoreBackupFile(file);
+		event.target.value = '';
+	};
 
 	const handleExportDrawer = () => {
 		void (async () => {
@@ -90,6 +101,31 @@ export default function MobileSettingsData({ onBack }: MobileSettingsDataProps) 
 					<span className="flex-1 text-left truncate">{t('Drawer.Actions.exportFull')}</span>
 					<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
 				</Button>
+			</div>
+
+			{/* Full backup / restore */}
+			<div className="space-y-2">
+				<Label className="text-sm font-semibold">{t('SettingsDialog.backup.label')}</Label>
+				<Button
+					onClick={handleExportBackup}
+					variant="default"
+					className="w-full h-12 text-base justify-start"
+				>
+					<Download className="mr-3 h-5 w-5 shrink-0" />
+					<span className="flex-1 text-left truncate">{t('SettingsDialog.backup.exportButton')}</span>
+					<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+				</Button>
+				<Button
+					onClick={() => restoreInputRef.current?.click()}
+					variant="outline"
+					className="w-full h-12 text-base justify-start"
+				>
+					<Upload className="mr-3 h-5 w-5 shrink-0" />
+					<span className="flex-1 text-left truncate">{t('SettingsDialog.backup.restoreButton')}</span>
+					<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+				</Button>
+				<p className="text-xs text-muted-foreground">{t('SettingsDialog.backup.description')}</p>
+				<input ref={restoreInputRef} type="file" accept=".cotmbak" onChange={onRestoreFileChange} className="hidden" />
 			</div>
 
 			{/* Migration */}
@@ -171,6 +207,16 @@ export default function MobileSettingsData({ onBack }: MobileSettingsDataProps) 
 				description={t('SettingsDialog.dangerZone.deleteDrawerDialog.description')}
 				confirmationText="DELETE DRAWER"
 				confirmButtonText={t('SettingsDialog.dangerZone.deleteDrawerDialog.confirm')}
+			/>
+
+			<MobileSettingsConfirmationDialog
+				open={isRestoreBackupDialogOpen}
+				onOpenChange={setIsRestoreBackupDialogOpen}
+				onConfirm={handleConfirmRestore}
+				title={t('SettingsDialog.backup.restoreDialog.title')}
+				description={t('SettingsDialog.backup.restoreDialog.description')}
+				confirmationText="REPLACE ALL MY DATA"
+				confirmButtonText={t('SettingsDialog.backup.restoreDialog.confirm')}
 			/>
 
 			<MobileSettingsConfirmationDialog

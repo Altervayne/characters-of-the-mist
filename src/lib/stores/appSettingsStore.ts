@@ -123,6 +123,9 @@ interface AppSettingsState {
 
 
 
+/** localStorage key the persist middleware writes the app settings under (themes, prefs, tutorial flags, ...). */
+export const APP_SETTINGS_STORAGE_KEY = 'characters-of-the-mist_app-settings';
+
 export const useAppSettingsStore = create<AppSettingsState>()(
    persist(
       (set, get) => ({
@@ -237,7 +240,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          },
       }),
       {
-         name: 'characters-of-the-mist_app-settings',
+         name: APP_SETTINGS_STORAGE_KEY,
          storage: createJSONStorage(() => localStorage),
          partialize: (state) => ({
             theme: state.theme,

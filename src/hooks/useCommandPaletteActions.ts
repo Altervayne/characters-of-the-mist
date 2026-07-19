@@ -12,10 +12,11 @@ import { useDeviceType } from '@/hooks/useDeviceType';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Megaphone, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed, Image as ImageIcon } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Megaphone, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed, DatabaseBackup, Image as ImageIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
+import { exportFullBackup } from '@/lib/backup/fullBackup';
 
 // -- Store and Hook Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
@@ -128,6 +129,15 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       }
    };
 
+   const handleExportBackup = async () => {
+      try {
+         await exportFullBackup();
+         toast.success(tNotifications('Notifications.backup.exported'));
+      } catch {
+         toast.error(tNotifications('Notifications.backup.exportFailed'));
+      }
+   };
+
    // Export the LIVE active board (unsaved edits included), embedding its referenced characters so the
    // board survives on another machine. `exportToFile` folds each character's portrait into the asset map.
    const handleExportBoard = async () => {
@@ -219,6 +229,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'saveItemToDrawer', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawer'), keywords: ['save', 'drawer', 'store', 'persist', 'item', 'card', 'tracker'], icon: Save, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawer') },
       { id: 'saveItemToDrawerAs', scope: 'board', label: t('CommandPalette.commands.saveItemToDrawerAs'), keywords: ['save', 'as', 'drawer', 'store', 'fork', 'copy', 'item', 'card', 'tracker'], icon: SaveAll, group: t('CommandPalette.groups.export'), action: () => requestBoardAction('saveItemToDrawerAs') },
       { id: 'exportDrawer', scope: 'global', label: t('CommandPalette.commands.exportDrawer'), keywords: ['export', 'drawer', 'save'], icon: FileUp, group: t('CommandPalette.groups.export'), action: handleExportDrawer },
+      // Full app backup (every store + settings) as one file. Restore is destructive, so it stays button-only in Data settings.
+      { id: 'exportBackup', scope: 'global', label: t('CommandPalette.commands.exportBackup'), keywords: ['backup', 'export', 'full', 'everything', 'data', 'save'], icon: DatabaseBackup, group: t('CommandPalette.groups.export'), action: handleExportBackup },
       // Plain-`.md` note export, alongside the full-fidelity `.cotm` note path. Needs an active note
       // (note scope). Markdown IMPORT rides the existing "Import Note" picker (routed by extension), so
       // it has no separate command.

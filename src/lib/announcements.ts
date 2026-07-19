@@ -61,3 +61,14 @@ export function unseenAnnouncements(lastSeenId: string): Announcement[] {
 export function hasUnseenAnnouncements(lastSeenId: string): boolean {
    return unseenAnnouncements(lastSeenId).length > 0;
 }
+
+/**
+ * The watermark value that replays the banner FROM `id` forward: it points one notice OLDER than `id`, so `id`
+ * becomes the oldest unseen again and rides the banner (with everything newer than it). The oldest announcement
+ * rewinds to '' (nothing seen). An unknown id is left at the latest (nothing to replay).
+ */
+export function rewindWatermarkFor(id: string): string {
+   const index = announcements.findIndex((announcement) => announcement.id === id);
+   if (index === -1) return latestAnnouncementId;
+   return announcements[index + 1]?.id ?? '';
+}

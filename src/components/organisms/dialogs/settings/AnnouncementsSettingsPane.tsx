@@ -1,19 +1,31 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+
+// -- Icon Imports --
+import { RotateCcw } from 'lucide-react';
 
 // -- Component Imports --
+import { Button } from '@/components/ui/button';
 import MarkdownContent from '@/components/molecules/MarkdownContent';
 
-// -- Utils Imports --
-import { announcements } from '@/lib/announcements';
+// -- Store and Utils Imports --
+import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { announcements, rewindWatermarkFor } from '@/lib/announcements';
 
 /**
- * The Announcements history: every past notice, newest-first, to re-read. Purely read-only - opening it never
- * touches the watermark (the banner is the sole acknowledgment path), so the New! dot persists until the banner
- * itself is dismissed.
+ * The Announcements history: every past notice, newest-first, to re-read. Opening it never touches the watermark
+ * (the banner is the sole acknowledgment path), so the New! dot persists until the banner is dismissed. Each notice
+ * carries a Rewind control that re-points the watermark so it (and anything newer) rides the banner again.
  */
 export function AnnouncementsSettingsPane() {
    const { t } = useTranslation();
+   const { setLastSeenAnnouncementId } = useAppSettingsActions();
+
+   const rewind = (id: string) => {
+      setLastSeenAnnouncementId(rewindWatermarkFor(id));
+      toast.success(t('AnnouncementsSettings.rewound'));
+   };
 
    return (
       <div className="flex h-full flex-col gap-4">
@@ -31,6 +43,10 @@ export function AnnouncementsSettingsPane() {
                         <div className="mt-1 [&_p]:mb-0">
                            <MarkdownContent content={announcement.body} />
                         </div>
+                        <Button variant="outline" size="sm" onClick={() => rewind(announcement.id)} className="mt-3 cursor-pointer">
+                           <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                           {t('AnnouncementsSettings.rewind')}
+                        </Button>
                      </li>
                   ))}
                </ul>

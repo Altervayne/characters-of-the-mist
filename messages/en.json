@@ -389,6 +389,12 @@
          "appReset": "Application successfully reset. Reloading...",
          "gestureTipsReset": "Gesture tips will show again as you use the app."
       },
+      "backup": {
+         "exported": "Backup downloaded.",
+         "exportFailed": "Backup export failed. Please try again.",
+         "invalidFile": "That is not a valid backup file.",
+         "restoreFailed": "Restore failed. Your data was not changed."
+      },
       "character": {
          "saved": "Character saved to",
          "exported": "Current character has been exported to downloads.",
@@ -934,7 +940,9 @@
    },
    "AnnouncementsSettings": {
       "description": "Notices and messages shown at the top of the app. Revisit them here any time.",
-      "empty": "No announcements yet."
+      "empty": "No announcements yet.",
+      "rewind": "Show in banner again",
+      "rewound": "This announcement will show in the banner again."
    },
    "SettingsDialog": {
       "title": "App Settings",
@@ -1168,6 +1176,18 @@
          "reclaimed": "Reclaimed {{count}} images, {{mb}} MB.",
          "nothing": "Nothing to reclaim.",
          "failed": "Could not reclaim image space. Please try again."
+      },
+
+      "backup": {
+         "label": "Backup",
+         "description": "A backup captures your entire app in one file. Restoring replaces everything on this device.",
+         "exportButton": "Export a Backup",
+         "restoreButton": "Restore from Backup",
+         "restoreDialog": {
+            "title": "Restore from Backup",
+            "description": "This replaces ALL current data on this device with the contents of the backup file. Export a backup first if you're unsure.",
+            "confirm": "Yes, replace everything"
+         }
       },
 
       "onboarding": "Initial Setup",
@@ -1441,6 +1461,7 @@
          "saveItemToDrawer": "Save: Selected Item to Drawer",
          "saveItemToDrawerAs": "Save: Selected Item to Drawer As…",
          "exportDrawer": "Export: Full Drawer",
+         "exportBackup": "Export: Full App Backup",
          "exportNoteMarkdown": "Export: Note as Markdown",
 
          "renameCharacter": "Rename: Character",

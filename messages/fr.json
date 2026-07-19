@@ -389,6 +389,12 @@
          "appReset": "Réinitialisation de l'application terminée. Actualisation...",
          "gestureTipsReset": "Les astuces de Commandes Tactiles vont s'afficher à nouveau."
       },
+      "backup": {
+         "exported": "[TO COMPLETE]",
+         "exportFailed": "[TO COMPLETE]",
+         "invalidFile": "[TO COMPLETE]",
+         "restoreFailed": "[TO COMPLETE]"
+      },
       "character": {
          "saved": "Personnage sauvegardé dans",
          "exported": "Personnage en cours exporté vers les téléchargements.",
@@ -895,7 +901,9 @@
    },
    "AnnouncementsSettings": {
       "description": "[TO COMPLETE]",
-      "empty": "[TO COMPLETE]"
+      "empty": "[TO COMPLETE]",
+      "rewind": "[TO COMPLETE]",
+      "rewound": "[TO COMPLETE]"
    },
    "SettingsDialog": {
       "title": "Paramètres de l'Application",
@@ -1120,6 +1128,18 @@
          "nothing": "[TO COMPLETE]",
          "failed": "[TO COMPLETE]"
       },
+      "backup": {
+         "label": "[TO COMPLETE]",
+         "description": "[TO COMPLETE]",
+         "exportButton": "[TO COMPLETE]",
+         "restoreButton": "[TO COMPLETE]",
+         "restoreDialog": {
+            "title": "[TO COMPLETE]",
+            "description": "[TO COMPLETE]",
+            "confirm": "[TO COMPLETE]"
+         }
+      },
+
       "onboarding": "Configuration initiale",
       "onboardingButton": "Relancer l'Accueil",
       "migration": {
@@ -1361,6 +1381,7 @@
          "saveItemToDrawer": "[TO COMPLETE]",
          "saveItemToDrawerAs": "[TO COMPLETE]",
          "exportDrawer": "Exporter : Tiroir",
+         "exportBackup": "[TO COMPLETE]",
          "exportNoteMarkdown": "[TO COMPLETE]",
          "renameCharacter": "Renommer : Personnage",
          "resetCharacter": "Réinitialiser : Personnage",

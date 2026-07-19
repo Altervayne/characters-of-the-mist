@@ -1,15 +1,18 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, RotateCcw } from 'lucide-react';
 
 // -- Component Imports --
+import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import MarkdownContent from '@/components/molecules/MarkdownContent';
 
-// -- Utils Imports --
-import { announcements } from '@/lib/announcements';
+// -- Store and Utils Imports --
+import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
+import { announcements, rewindWatermarkFor } from '@/lib/announcements';
 
 interface MobileAnnouncementsProps {
 	onBack?: () => void;
@@ -21,6 +24,12 @@ interface MobileAnnouncementsProps {
  */
 export default function MobileAnnouncements({ onBack }: MobileAnnouncementsProps) {
 	const { t } = useTranslation();
+	const { setLastSeenAnnouncementId } = useAppSettingsActions();
+
+	const rewind = (id: string) => {
+		setLastSeenAnnouncementId(rewindWatermarkFor(id));
+		toast.success(t('AnnouncementsSettings.rewound'));
+	};
 
 	return (
 		<div className="h-full flex flex-col overflow-y-auto pt-safe">
@@ -57,6 +66,10 @@ export default function MobileAnnouncements({ onBack }: MobileAnnouncementsProps
 								<div className="mt-1 [&_p]:mb-0">
 									<MarkdownContent content={announcement.body} />
 								</div>
+								<Button variant="outline" size="sm" onClick={() => rewind(announcement.id)} className="mt-3 cursor-pointer">
+									<RotateCcw className="mr-1 h-3.5 w-3.5" />
+									{t('AnnouncementsSettings.rewind')}
+								</Button>
 							</li>
 						))}
 					</ul>

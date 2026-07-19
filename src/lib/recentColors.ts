@@ -5,7 +5,9 @@
  * collapsed from its two (font/highlight) lists to one, since a board needs a single list.
  */
 
-const STORAGE_KEY = 'characters-of-the-mist_recent-colors';
+/** localStorage key holding the recent-colors list. */
+export const RECENT_COLORS_KEY = 'characters-of-the-mist_recent-colors';
+const STORAGE_KEY = RECENT_COLORS_KEY;
 const MAX_RECENTS = 9;
 
 /** True when value is an array of strings (defensive parse guard). */

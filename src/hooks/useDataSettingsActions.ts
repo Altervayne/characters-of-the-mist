@@ -18,6 +18,8 @@ import { drawerCommandEngine } from '@/lib/drawer/drawerCommandEngine';
 import { getLegacyBlobRemovalState } from '@/lib/drawer/runDrawerMigration';
 import { getCharacterLegacyBlobRemovalState } from '@/lib/character/runCharacterMigration';
 import { useLegacyBlobRemovable } from '@/hooks/useLegacyBlobRemovable';
+import { exportFullBackup, parseFullBackup, applyFullBackup, type FullBackupFile } from '@/lib/backup/fullBackup';
+import { readFileAsText } from '@/lib/utils/export-import';
 
 /*
  * The shared Data & Storage logic behind both the desktop pane and the mobile Data screen: the destructive
@@ -29,6 +31,9 @@ export function useDataSettingsActions() {
 
    const [isResetAppDialogOpen, setIsResetAppDialogOpen] = useState(false);
    const [isDeleteDrawerDialogOpen, setIsDeleteDrawerDialogOpen] = useState(false);
+   const [isRestoreBackupDialogOpen, setIsRestoreBackupDialogOpen] = useState(false);
+   // The parsed, validated backup staged between the file pick and the hard confirm; applied on confirm.
+   const [pendingBackup, setPendingBackup] = useState<FullBackupFile | null>(null);
    const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
    const [isLegacyBackupDialogOpen, setIsLegacyBackupDialogOpen] = useState(false);
    const [isLegacyCharacterBackupDialogOpen, setIsLegacyCharacterBackupDialogOpen] = useState(false);
@@ -53,6 +58,38 @@ export function useDataSettingsActions() {
       drawerCommandEngine.clear();
       setTimeout(() => window.location.reload(), 500);
       toast.success(t('Notifications.drawer.deleted'));
+   };
+
+   const handleExportBackup = async () => {
+      try {
+         await exportFullBackup();
+         toast.success(t('Notifications.backup.exported'));
+      } catch {
+         toast.error(t('Notifications.backup.exportFailed'));
+      }
+   };
+
+   // Restore is gated: parse + validate the picked file, then stage it behind the hard confirm below.
+   const handleRestoreBackupFile = async (file: File) => {
+      try {
+         const backup = parseFullBackup(await readFileAsText(file));
+         setPendingBackup(backup);
+         setIsRestoreBackupDialogOpen(true);
+      } catch {
+         toast.error(t('Notifications.backup.invalidFile'));
+      }
+   };
+
+   const handleConfirmRestore = async () => {
+      if (!pendingBackup) return;
+      setIsRestoreBackupDialogOpen(false);
+      try {
+         await applyFullBackup(pendingBackup);
+         drawerCommandEngine.clear();
+         setTimeout(() => window.location.reload(), 500);
+      } catch {
+         toast.error(t('Notifications.backup.restoreFailed'));
+      }
    };
 
    // Storage usage + reclaim (asset GC). `null` means the estimate API is unavailable; the readout shows "unavailable".
@@ -95,6 +132,12 @@ export function useDataSettingsActions() {
       setIsDeleteDrawerDialogOpen,
       handleAppReset,
       handleDeleteDrawer,
+      // Full backup / restore
+      handleExportBackup,
+      handleRestoreBackupFile,
+      handleConfirmRestore,
+      isRestoreBackupDialogOpen,
+      setIsRestoreBackupDialogOpen,
       // Migration + legacy backups
       isMigrationDialogOpen,
       setIsMigrationDialogOpen,
