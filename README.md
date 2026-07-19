@@ -2,9 +2,9 @@
 
 # Campaigns of the Mist
 
-**Campaigns of the Mist** is a fast, private, entirely client-side companion for running and playing [Mist Engine](https://cityofmist.co) tabletop RPGs — *Legend in the Mist*, *Metro: Otherscape*, and *City of Mist*. There's no server and no account: everything you make lives in your own browser, and it installs as an app that works fully offline.
+**Campaigns of the Mist** is a fast, private, entirely client-side companion for running and playing [Mist Engine](https://cityofmist.co) tabletop RPGs: *Legend in the Mist*, *Metro: Otherscape*, and *City of Mist*. There's no server and no account: everything you make lives in your own browser, and it installs as an app that works fully offline.
 
-It's an unofficial, fan-made project (a full rewrite of the old *Characters of the Mist* alpha, now rebranded as it grew from a character-sheet app into a whole table workspace). This README is for people who want to **run or hack on the code** — if you just want to *use* the app, it's at [campaignsofthemist.app](https://www.campaignsofthemist.app/) and it teaches itself through its built-in tutorials, so you won't find a feature list here.
+It's an unofficial, fan-made project (a full rewrite of the old *Characters of the Mist* alpha, now rebranded as it grew from a character-sheet app into a whole table workspace). This README is for people who want to **run or hack on the code**. If you just want to *use* the app, it's at [campaignsofthemist.app](https://www.campaignsofthemist.app/) and it teaches itself through its built-in tutorials, so you won't find a feature list here.
 
 ---
 
@@ -30,7 +30,7 @@ It's an unofficial, fan-made project (a full rewrite of the old *Characters of t
 
 ## Running it locally
 
-**Prerequisites:** [Node.js](https://nodejs.org/) **20.19+** (or **22.12+**) — the minimum Vite 7 needs — and npm.
+**Prerequisites:** [Node.js](https://nodejs.org/) **20.19+** (or **22.12+**), the minimum Vite 7 needs, and npm.
 
 ```bash
 npm install      # install dependencies
@@ -58,7 +58,7 @@ src/
   router.tsx               Routes (a single route into the character/workspace page).
   app/                     Global CSS + theme tokens.
   i18n/                    i18next config + the `locales.ts` registry of available languages.
-  pages/                   CharacterSheetPage — the one route; switches desktop/mobile shells.
+  pages/                   CharacterSheetPage -> the one route; switches desktop/mobile shells.
   components/
     organisms/             The big surfaces: board, drawer, notes, tabs, navigator, cards, dialogs...
     molecules/ · ui/       Smaller pieces + the Radix/shadcn primitives.
@@ -87,7 +87,7 @@ A few architectural notes worth knowing before you dig in:
 
 ## License
 
-Campaigns of the Mist is distributed under the **[GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)](https://www.gnu.org/licenses/agpl-3.0.html)** — full text in [`LICENSE`](./LICENSE). You're free to use, modify, and redistribute the code (including commercially), but if you distribute or *network-host* a modified version, you must release your full source under the same license.
+Campaigns of the Mist is distributed under the **[GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)](https://www.gnu.org/licenses/agpl-3.0.html)**, full text in [`LICENSE`](./LICENSE). You're free to use, modify, and redistribute the code (including commercially), but if you distribute or *network-host* a modified version, you must release your full source under the same license.
 
 The third-party components bundled into the app, and their respective licenses, are listed in [`THIRD_PARTY_LICENSES`](./THIRD_PARTY_LICENSES).
 
