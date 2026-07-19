@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Star, Skull, Shield, Tags, Pencil } from 'lucide-react';
+import { Star, Skull, Shield, Sparkles, Tags, Pencil } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -17,7 +17,7 @@ import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
-import { AddRowButton, LimitPill, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
+import { AddRowButton, LimitPill, MightyTagEditRow, MightyTagPill, SpecialEditRow, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
 import type { RowListOps } from '@/components/organisms/cards/challengeCardEditRows';
 import { ExpandedChallengeSheet } from '@/components/organisms/cards/ExpandedChallengeSheet';
 
@@ -33,11 +33,11 @@ import { useManualScroll } from '@/hooks/useManualScroll';
 import { useSheetMentionCreate } from '@/hooks/character-sheet/useSheetMentionCreate';
 
 // -- Utils Imports --
-import { addRow, newAbility, newStatus, newTag, patchAbilityById, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
+import { addRow, newAbility, newMightyTag, newSpecial, newStatus, newTag, patchAbilityById, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
 import type { CardComponentProps } from '@/components/organisms/cards/resolveCardComponent';
-import type { BlandTag, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, LegendsChallengeDetails, MightyTag } from '@/lib/types/character';
 
 /*
  * The GM Challenge Card (LitM). Front = image / name / italic types / star level / flavor; back = Limits /
@@ -68,9 +68,11 @@ export const LegendsChallengeCard = React.memo(
          // every well (mirrors the theme card's tags/quest/improvements wells).
          const limitsScrollRef = useRef<HTMLDivElement>(null);
          const tagsScrollRef = useRef<HTMLDivElement>(null);
+         const specialsScrollRef = useRef<HTMLDivElement>(null);
          const threatsScrollRef = useRef<HTMLDivElement>(null);
          useManualScroll(limitsScrollRef);
          useManualScroll(tagsScrollRef);
+         useManualScroll(specialsScrollRef);
          useManualScroll(threatsScrollRef);
 
          const name = card.title || t('Cards.challenge.untitled');
@@ -97,6 +99,8 @@ export const LegendsChallengeCard = React.memo(
          const commitLimits = (next: ChallengeStatus[]) => actions.updateCardDetails(card.id, { limits: next });
          const commitStatuses = (next: ChallengeStatus[]) => actions.updateCardDetails(card.id, { statuses: next });
          const commitTags = (next: BlandTag[]) => actions.updateCardDetails(card.id, { tags: next });
+         const commitMightyTags = (next: MightyTag[]) => actions.updateCardDetails(card.id, { mightyTags: next });
+         const commitSpecials = (next: ChallengeSpecial[]) => actions.updateCardDetails(card.id, { specials: next });
          const commitAbilities = (next: ChallengeAbility[]) => actions.updateCardDetails(card.id, { abilities: next });
 
          // Reads the LIVE details straight from the store at commit time, so a debounced field's
@@ -119,17 +123,29 @@ export const LegendsChallengeCard = React.memo(
          const commitLimitById = (id: string, updates: Partial<ChallengeStatus>) => commitLimits(updateRowById(liveDetails().limits, id, updates));
          const commitStatusById = (id: string, updates: Partial<ChallengeStatus>) => commitStatuses(updateRowById(liveDetails().statuses, id, updates));
          const commitTagById = (id: string, updates: Partial<BlandTag>) => commitTags(updateRowById(liveDetails().tags, id, updates));
+         // A Mighty tag's label rides the debouncer and its level commits on click; both patch by id
+         // against the live list, so a sibling row's flush can't clobber this one's.
+         const commitMightyTagById = (id: string, updates: Partial<MightyTag>) => commitMightyTags(updateRowById(liveDetails().mightyTags, id, updates));
+         // Specials carry two debounced fields (name + body); reading live-then-patch-by-id means the
+         // second unmount-flush already sees the first's write, so neither field clobbers the other.
+         const commitSpecialById = (id: string, updates: Partial<ChallengeSpecial>) => commitSpecials(updateRowById(liveDetails().specials, id, updates));
          const removeLimitById = (id: string) => commitLimits(removeRowById(liveDetails().limits, id));
          const removeStatusById = (id: string) => commitStatuses(removeRowById(liveDetails().statuses, id));
          const removeTagById = (id: string) => commitTags(removeRowById(liveDetails().tags, id));
+         const removeMightyTagById = (id: string) => commitMightyTags(removeRowById(liveDetails().mightyTags, id));
+         const removeSpecialById = (id: string) => commitSpecials(removeRowById(liveDetails().specials, id));
          const addLimit = () => commitLimits(addRow(liveDetails().limits, newStatus()));
          const addStatus = () => commitStatuses(addRow(liveDetails().statuses, newStatus()));
          const addTag = () => commitTags(addRow(liveDetails().tags, newTag()));
+         const addMightyTag = () => commitMightyTags(addRow(liveDetails().mightyTags, newMightyTag()));
+         const addSpecial = () => commitSpecials(addRow(liveDetails().specials, newSpecial()));
 
          // The same by-id ops bundled for the expanded sheet, which renders its own copy of these rows.
          const limitOps: RowListOps<ChallengeStatus> = { commitById: commitLimitById, removeById: removeLimitById, add: addLimit };
          const statusOps: RowListOps<ChallengeStatus> = { commitById: commitStatusById, removeById: removeStatusById, add: addStatus };
          const tagOps: RowListOps<BlandTag> = { commitById: commitTagById, removeById: removeTagById, add: addTag };
+         const mightyTagOps: RowListOps<MightyTag> = { commitById: commitMightyTagById, removeById: removeMightyTagById, add: addMightyTag };
+         const specialOps: RowListOps<ChallengeSpecial> = { commitById: commitSpecialById, removeById: removeSpecialById, add: addSpecial };
 
          // Whole-row add/remove for the threats accordion, also against live abilities. `addAbility`
          // returns the new id so the accordion can focus the fresh row it just appended.
@@ -303,6 +319,20 @@ export const LegendsChallengeCard = React.memo(
                               ))}
                               <AddRowButton label={t('Cards.challenge.addTag')} onClick={addTag} />
                            </div>
+                           <div className="flex flex-col gap-1">
+                              {details.mightyTags.map((mightyTag) => (
+                                 <MightyTagEditRow
+                                    key={mightyTag.id}
+                                    mightyTag={mightyTag}
+                                    labelPlaceholder={t('Cards.challenge.mightyTagLabelPlaceholder')}
+                                    onCommitLevel={(level) => commitMightyTagById(mightyTag.id, { level })}
+                                    onCommitLabel={(label) => commitMightyTagById(mightyTag.id, { label })}
+                                    onRemove={() => removeMightyTagById(mightyTag.id)}
+                                    removeLabel={t('Cards.challenge.remove')}
+                                 />
+                              ))}
+                              <AddRowButton label={t('Cards.challenge.addMightyTag')} onClick={addMightyTag} />
+                           </div>
                         </div>
                      ) : (
                         <div className="flex flex-wrap items-center gap-1 p-2">
@@ -312,9 +342,46 @@ export const LegendsChallengeCard = React.memo(
                            {details.tags.length > 0
                               ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
                               : <p className="text-sm italic text-card-paper-fg/70">{`[${t('Cards.challenge.noTags')}]`}</p>}
+                           {details.mightyTags.map((mightyTag) => <MightyTagPill key={mightyTag.id} mightyTag={mightyTag} />)}
                         </div>
                      )}
                   </div>
+
+                  {/* Specials: each a bold centered name over rich body text. Optional - the whole well
+                      (header included) is absent in read mode with none, and only appears to edit. */}
+                  {(details.specials.length > 0 || isEditing) && (
+                     <>
+                        <CardSectionHeader title={t('Cards.challenge.specials')} icon={Sparkles} />
+                        <div ref={specialsScrollRef} className="max-h-24 min-w-0 shrink-0 overflow-y-auto overflow-x-hidden overscroll-contain">
+                           {isEditing ? (
+                              <div className="flex flex-col gap-2 p-2">
+                                 {details.specials.map((special) => (
+                                    <SpecialEditRow
+                                       key={special.id}
+                                       special={special}
+                                       namePlaceholder={t('Cards.challenge.specialNamePlaceholder')}
+                                       bodyPlaceholder={t('Cards.challenge.specialBodyPlaceholder')}
+                                       onCommitName={(name) => commitSpecialById(special.id, { name })}
+                                       onCommitBody={(body) => commitSpecialById(special.id, { body })}
+                                       onRemove={() => removeSpecialById(special.id)}
+                                       removeLabel={t('Cards.challenge.remove')}
+                                    />
+                                 ))}
+                                 <AddRowButton label={t('Cards.challenge.addSpecial')} onClick={addSpecial} />
+                              </div>
+                           ) : (
+                              <div className="flex flex-col gap-2 p-2">
+                                 {details.specials.map((special) => (
+                                    <div key={special.id} className="space-y-0.5">
+                                       <p className="text-center text-sm font-bold">{special.name}</p>
+                                       <MentionMarkdown text={special.body} onMentionClick={mentionClick} className="text-xs" />
+                                    </div>
+                                 ))}
+                              </div>
+                           )}
+                        </div>
+                     </>
+                  )}
 
                   {/* Threats & Consequences: a threat-name pill with its flavor inline, over a skull-bulleted
                       list. The meatiest section - grows to fill the height the other two don't claim. */}
@@ -375,6 +442,8 @@ export const LegendsChallengeCard = React.memo(
                   limitOps={limitOps}
                   statusOps={statusOps}
                   tagOps={tagOps}
+                  mightyTagOps={mightyTagOps}
+                  specialOps={specialOps}
                   commitAbilityById={commitAbilityById}
                   addAbility={addAbility}
                   removeAbilityById={removeAbilityById}

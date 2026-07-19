@@ -93,6 +93,13 @@ export function readEmbedItem(slot: EmbedSlot, character: Character | null): unk
 export interface EmbedSync {
    /** Re-seed the store from external `content.data` (skipped when it equals the last synced value). */
    reseed: (data: unknown) => void;
+   /**
+    * Commit the store's current item if it diverged from the last synced value. The safety net for a
+    * write that landed after the subscription was torn down - a field's flush-on-unmount runs after
+    * this sync's dispose (a deleted subtree unmounts parent-first), so its last edit reaches the store
+    * with nothing subscribed. Guarded, so a value the subscription already forwarded won't double-commit.
+    */
+   flush: () => void;
    /** Tear down the store subscription. */
    dispose: () => void;
 }
@@ -100,20 +107,21 @@ export interface EmbedSync {
 /**
  * Wires a character `store` to a board commit, both directions loop-guarded. Pure (no React), so the
  * sync is unit-testable: it seeds the store from `initialData`, calls `onCommit` when the single
- * item changes (a real edit), and exposes `reseed` for external `content.data` changes. The guard
- * key is the last value synced either way, so a commit that writes `content.data` back never bounces
- * into a re-seed, and a re-seed never bounces into a commit.
+ * item changes (a real edit), and exposes `reseed` for external `content.data` changes and `flush`
+ * for a final read-and-commit on teardown. The guard key is the last value synced either way, so a
+ * commit that writes `content.data` back never bounces into a re-seed, and a re-seed never bounces
+ * into a commit.
  */
 export function createEmbedSync(store: CharacterStore, slot: EmbedSlot, initialData: unknown, onCommit: (next: unknown) => void): EmbedSync {
    let lastSynced = serialize(initialData);
    store.setState({ character: seedCharacter(slot, initialData) });
-   const unsubscribe = store.subscribe((state) => {
-      const next = readEmbedItem(slot, state.character);
+   const commitIfChanged = (next: unknown) => {
       const s = serialize(next);
       if (s === lastSynced) return; // our own re-seed echo, or a no-op change
       lastSynced = s;
       onCommit(next);
-   });
+   };
+   const unsubscribe = store.subscribe((state) => commitIfChanged(readEmbedItem(slot, state.character)));
    return {
       reseed: (data) => {
          const incoming = serialize(data);
@@ -121,6 +129,7 @@ export function createEmbedSync(store: CharacterStore, slot: EmbedSlot, initialD
          lastSynced = incoming;
          store.setState({ character: seedCharacter(slot, data) });
       },
+      flush: () => commitIfChanged(readEmbedItem(slot, store.getState().character)),
       dispose: unsubscribe,
    };
 }
@@ -160,7 +169,15 @@ export function useEmbedCharacterStore({ slot, data, onCommit }: UseEmbedCharact
    useEffect(() => {
       const sync = createEmbedSync(store, slot, initialData, (next) => onCommitRef.current(next));
       syncRef.current = sync;
-      return () => { sync.dispose(); syncRef.current = null; };
+      return () => {
+         syncRef.current = null;
+         sync.dispose();
+         // A deleted subtree unmounts parent-first, so a field's flush-on-unmount runs AFTER this
+         // cleanup - its last write lands in the store with the subscription already gone. Commit that
+         // final item once the child flushes have settled; the microtask trails the synchronous unmount
+         // pass, and the guard no-ops if nothing changed.
+         queueMicrotask(() => sync.flush());
+      };
    }, [store, slot, initialData]);
 
    // Re-seed on an external `content.data` change (undo/redo, reload); the guard no-ops our own echo.

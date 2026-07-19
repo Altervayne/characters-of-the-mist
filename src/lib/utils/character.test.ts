@@ -20,6 +20,8 @@ const challengeDetails = (): LegendsChallengeDetails => ({
    limits: [{ id: 'l1', name: 'Burn', tier: 4 }],
    statuses: [{ id: 's1', name: 'bloodied', tier: 2 }],
    tags: [{ id: 'tg1', name: 'fast' }],
+   mightyTags: [{ id: 'mt1', level: 'Adventure', label: 'Fireproof hide' }],
+   specials: [{ id: 'sp1', name: 'Blood Frenzy', body: 'When {bloodied}, it strikes twice.' }],
    abilities: [{ id: 'a1', tag: 'Lunge', flavor: 'It leaps for the throat.', consequences: [{ id: 'c1', text: 'You are knocked prone.' }] }],
 });
 

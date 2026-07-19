@@ -133,7 +133,7 @@ export function emptyCharacterCardDetails(game: GameSystem, characterName: strin
 
 /** The empty details for a fresh Challenge Card (LitM): every list starts empty, level at 1. */
 export function emptyLegendsChallengeDetails(): LegendsChallengeDetails {
-   return { game: 'LEGENDS', assetId: null, types: [], challengeLevel: 1, flavor: '', limits: [], statuses: [], tags: [], abilities: [] };
+   return { game: 'LEGENDS', assetId: null, types: [], challengeLevel: 1, flavor: '', limits: [], statuses: [], tags: [], mightyTags: [], specials: [], abilities: [] };
 }
 
 export function createNewCharacter(name: string, game: GameSystem): Character {

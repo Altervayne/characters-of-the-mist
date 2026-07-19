@@ -14,11 +14,15 @@ import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 // -- Store and Hook Imports --
 import { useInputDebouncer } from '@/hooks/useInputDebouncer';
 
+// -- Utils Imports --
+import { cn } from '@/lib/utils';
+
 // -- Shared Factories --
 import { addRow, newConsequence, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
+import { MIGHT_LEVELS, mightIcon, mightLevelColor } from '@/lib/cards/might';
 
 // -- Type Imports --
-import type { BlandTag, ChallengeAbility, ChallengeStatus } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, MightLevel, MightyTag } from '@/lib/types/character';
 import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
@@ -54,6 +58,19 @@ export function TagPill({ tag }: { tag: BlandTag }) {
    return (
       <span className="inline-flex items-center rounded-full bg-yellow-500 px-2 py-0.5 text-xs font-medium italic text-yellow-950">
          {tag.name}
+      </span>
+   );
+}
+
+/** A Mighty tag: its own full-width row - a prominent Might-level icon in the level's identity color + label, no pill chrome. */
+export function MightyTagPill({ mightyTag }: { mightyTag: MightyTag }) {
+   // Resolves to a stable module-level lucide component, so static-components is a false positive here.
+   const Icon = mightIcon(mightyTag.level);
+   return (
+      <span className="flex w-full items-center gap-2 py-0.5 text-sm font-semibold text-card-paper-fg">
+         {/* eslint-disable-next-line react-hooks/static-components */}
+         <Icon className="h-5 w-5 shrink-0" strokeWidth={2.5} style={{ color: mightLevelColor(mightyTag.level) }} />
+         <span>{mightyTag.label}</span>
       </span>
    );
 }
@@ -139,6 +156,106 @@ export function TagEditRow({ tag, namePlaceholder, onCommitName, onRemove, remov
          <button type="button" onClick={onRemove} title={removeLabel} aria-label={removeLabel} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg cursor-pointer">
             <Trash2 className="h-3.5 w-3.5" />
          </button>
+      </div>
+   );
+}
+
+/** A three-icon Might level picker; the active level is filled, the others dimmed. Commits on click. */
+export function MightLevelPicker({ level, onPick }: { level: MightLevel; onPick: (level: MightLevel) => void }) {
+   const { t } = useTranslation();
+
+   return (
+      <div role="radiogroup" aria-label={t('Cards.challenge.mightyLevel')} className="flex shrink-0 items-center gap-0.5">
+         {MIGHT_LEVELS.map((option) => {
+            const Icon = mightIcon(option);
+            const active = option === level;
+            return (
+               <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={t(`ThemeTypes.${option}`)}
+                  title={t(`ThemeTypes.${option}`)}
+                  onClick={() => onPick(option)}
+                  className={cn(
+                     'flex h-7 w-7 items-center justify-center rounded cursor-pointer',
+                     active ? 'bg-card-paper-fg/10' : 'opacity-40 hover:opacity-100',
+                  )}
+               >
+                  <Icon className="h-4 w-4" strokeWidth={2.5} style={{ color: mightLevelColor(option) }} />
+               </button>
+            );
+         })}
+      </div>
+   );
+}
+
+/** An editable Mighty tag row: `[Might level picker] [label input] [Trash2]`; the label rides the debouncer. */
+export function MightyTagEditRow({ mightyTag, labelPlaceholder, onCommitLevel, onCommitLabel, onRemove, removeLabel }: {
+   mightyTag: MightyTag;
+   labelPlaceholder: string;
+   onCommitLevel: (level: MightLevel) => void;
+   onCommitLabel: (label: string) => void;
+   onRemove: () => void;
+   removeLabel: string;
+}) {
+   // Hook state stays above any conditional so toggling edit mode never remounts this row mid-edit.
+   const [localLabel, setLocalLabel] = useInputDebouncer(mightyTag.label, onCommitLabel);
+
+   return (
+      <div className="flex items-center gap-1.5">
+         <MightLevelPicker level={mightyTag.level} onPick={onCommitLevel} />
+         <Input
+            value={localLabel}
+            onChange={(event) => setLocalLabel(event.target.value)}
+            placeholder={labelPlaceholder}
+            className="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 py-0.5 text-xs shadow-none text-card-paper-fg placeholder:text-card-paper-fg/50 focus-visible:ring-card-accent/50"
+         />
+         <button type="button" onClick={onRemove} title={removeLabel} aria-label={removeLabel} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg cursor-pointer">
+            <Trash2 className="h-3.5 w-3.5" />
+         </button>
+      </div>
+   );
+}
+
+/**
+ * An editable Special row: a bold name input over a body textarea (with a live mention preview) + remove.
+ * Name and body each carry their own debouncer with hook state above any branch, so toggling edit mode
+ * never remounts the row mid-edit; both flush by id against the live list, so they can't clobber.
+ */
+export function SpecialEditRow({ special, namePlaceholder, bodyPlaceholder, onCommitName, onCommitBody, onRemove, removeLabel }: {
+   special: ChallengeSpecial;
+   namePlaceholder: string;
+   bodyPlaceholder: string;
+   onCommitName: (name: string) => void;
+   onCommitBody: (body: string) => void;
+   onRemove: () => void;
+   removeLabel: string;
+}) {
+   const [localName, setLocalName] = useInputDebouncer(special.name, onCommitName);
+   const [localBody, setLocalBody] = useInputDebouncer(special.body, onCommitBody);
+
+   return (
+      <div className="flex flex-col gap-1.5">
+         <div className="flex items-center gap-1.5">
+            <Input
+               value={localName}
+               onChange={(event) => setLocalName(event.target.value)}
+               placeholder={namePlaceholder}
+               className="h-7 min-w-0 flex-1 border-0 bg-transparent px-2 py-0.5 text-center text-xs font-bold shadow-none text-card-paper-fg placeholder:text-card-paper-fg/50 focus-visible:ring-card-accent/50"
+            />
+            <button type="button" onClick={onRemove} title={removeLabel} aria-label={removeLabel} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-card-paper-fg/60 hover:bg-card-paper-fg/10 hover:text-card-paper-fg cursor-pointer">
+               <Trash2 className="h-3.5 w-3.5" />
+            </button>
+         </div>
+         <Textarea
+            value={localBody}
+            onChange={(event) => setLocalBody(event.target.value)}
+            placeholder={bodyPlaceholder}
+            className="min-h-14 resize-none border-0 bg-card-popover-bg/40 text-xs text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
+         />
+         <MentionPreview text={localBody} />
       </div>
    );
 }

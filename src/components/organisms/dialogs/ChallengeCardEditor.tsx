@@ -18,6 +18,7 @@ import { Image as ImageIcon, Loader2, Minus, Plus, Trash2, Upload } from 'lucide
 // -- Component Imports --
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 import { ChallengeTypeSelector } from '@/components/molecules/ChallengeTypeSelector';
+import { MightLevelPicker } from '@/components/organisms/cards/challengeCardEditRows';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
@@ -28,10 +29,10 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import { CHALLENGE_ART_ASPECT } from '@/lib/cards/challengeArt';
 
 // -- Shared Factories --
-import { addRow, newAbility, newConsequence, newStatus, newTag, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
+import { addRow, newAbility, newConsequence, newMightyTag, newSpecial, newStatus, newTag, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
-import type { BlandTag, Card as CardData, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
+import type { BlandTag, Card as CardData, ChallengeAbility, ChallengeSpecial, ChallengeStatus, LegendsChallengeDetails, MightyTag } from '@/lib/types/character';
 
 /*
  * The GM Challenge Card editor: a dedicated dialog over the full LegendsChallengeDetails (too rich for
@@ -79,11 +80,13 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
    const [limits, setLimits] = useState<ChallengeStatus[]>(details.limits);
    const [statuses, setStatuses] = useState<ChallengeStatus[]>(details.statuses);
    const [tags, setTags] = useState<BlandTag[]>(details.tags);
+   const [mightyTags, setMightyTags] = useState<MightyTag[]>(details.mightyTags);
+   const [specials, setSpecials] = useState<ChallengeSpecial[]>(details.specials);
    const [abilities, setAbilities] = useState<ChallengeAbility[]>(details.abilities);
 
    const handleSave = () => {
       updateCardTitle(card.id, title.trim());
-      const nextDetails: LegendsChallengeDetails = { ...details, types, challengeLevel, assetId, flavor, limits, statuses, tags, abilities };
+      const nextDetails: LegendsChallengeDetails = { ...details, types, challengeLevel, assetId, flavor, limits, statuses, tags, mightyTags, specials, abilities };
       updateCardDetails(card.id, nextDetails);
       toast.success(tNotifications('Notifications.card.updated'));
       onDone();
@@ -169,6 +172,38 @@ function ChallengeEditorForm({ card, onDone }: { card: CardData; onDone: () => v
                   />
                   <IconButton onClick={() => setTags((current) => current.filter((entry) => entry.id !== tag.id))} label={t('ChallengeCard.editor.remove')}><Trash2 className="h-4 w-4" /></IconButton>
                </div>
+            ))}
+         </ListSection>
+
+         {/* Mighty tags: a Might level + a label (LitM-only, not a player-replicable tag). */}
+         <ListSection
+            label={t('ChallengeCard.editor.mightyTags')}
+            addLabel={t('ChallengeCard.editor.addMightyTag')}
+            onAdd={() => setMightyTags((current) => [...current, newMightyTag()])}
+         >
+            {mightyTags.map((mightyTag) => (
+               <MightyTagRow
+                  key={mightyTag.id}
+                  mightyTag={mightyTag}
+                  onChange={(next) => setMightyTags((current) => current.map((entry) => (entry.id === mightyTag.id ? next : entry)))}
+                  onRemove={() => setMightyTags((current) => current.filter((entry) => entry.id !== mightyTag.id))}
+               />
+            ))}
+         </ListSection>
+
+         {/* Specials: a bold name + rich body (markdown + mentions). */}
+         <ListSection
+            label={t('ChallengeCard.editor.specials')}
+            addLabel={t('ChallengeCard.editor.addSpecial')}
+            onAdd={() => setSpecials((current) => [...current, newSpecial()])}
+         >
+            {specials.map((special) => (
+               <SpecialRow
+                  key={special.id}
+                  special={special}
+                  onChange={(next) => setSpecials((current) => current.map((entry) => (entry.id === special.id ? next : entry)))}
+                  onRemove={() => setSpecials((current) => current.filter((entry) => entry.id !== special.id))}
+               />
             ))}
          </ListSection>
 
@@ -277,6 +312,33 @@ function AbilityRow({ ability, onChange, onRemove }: { ability: ChallengeAbility
                <Plus className="mr-1 h-4 w-4" />{t('ChallengeCard.editor.addConsequence')}
             </Button>
          </div>
+      </div>
+   );
+}
+
+/** A mighty-tag row: a Might level picker + a label input. */
+function MightyTagRow({ mightyTag, onChange, onRemove }: { mightyTag: MightyTag; onChange: (next: MightyTag) => void; onRemove: () => void }) {
+   const { t } = useTranslation();
+   return (
+      <div className="flex items-center gap-2">
+         <MightLevelPicker level={mightyTag.level} onPick={(level) => onChange({ ...mightyTag, level })} />
+         <Input value={mightyTag.label} onChange={(event) => onChange({ ...mightyTag, label: event.target.value })} placeholder={t('ChallengeCard.editor.mightyTagLabelPlaceholder')} className="h-8 text-sm" />
+         <IconButton onClick={onRemove} label={t('ChallengeCard.editor.removeMightyTag')}><Trash2 className="h-4 w-4" /></IconButton>
+      </div>
+   );
+}
+
+/** A special row: a bold name + a rich body textarea with a live mention preview. */
+function SpecialRow({ special, onChange, onRemove }: { special: ChallengeSpecial; onChange: (next: ChallengeSpecial) => void; onRemove: () => void }) {
+   const { t } = useTranslation();
+   return (
+      <div className="flex flex-col gap-2 rounded-md border border-border p-2">
+         <div className="flex items-center gap-2">
+            <Input value={special.name} onChange={(event) => onChange({ ...special, name: event.target.value })} placeholder={t('ChallengeCard.editor.specialNamePlaceholder')} className="h-8 text-sm font-semibold" />
+            <IconButton onClick={onRemove} label={t('ChallengeCard.editor.removeSpecial')}><Trash2 className="h-4 w-4" /></IconButton>
+         </div>
+         <Textarea value={special.body} onChange={(event) => onChange({ ...special, body: event.target.value })} placeholder={t('ChallengeCard.editor.specialBodyPlaceholder')} className="min-h-14 resize-none text-sm" />
+         <MentionPreview text={special.body} />
       </div>
    );
 }

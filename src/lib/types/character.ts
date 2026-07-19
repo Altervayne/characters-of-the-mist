@@ -118,8 +118,27 @@ export interface ChallengeAbility {
    consequences: { id: string; text: string }[];
 }
 
+// A challenge's "special ability": a bold, centered name over rich body text (markdown + `{mention}`
+// pills - plain rich text, not a structured link). The whole section is optional and hides when empty.
+export interface ChallengeSpecial {
+   id: string;
+   name: string;
+   body: string;
+}
+
+// A LitM Might level, reusing the three theme-card tiers. Carries the Mighty tag's icon + identity color.
+export type MightLevel = 'Origin' | 'Adventure' | 'Greatness';
+
+// A challenge's Mighty tag: an icon-and-label marker at one of the three Might levels. Not a `{tag}` (it
+// can't be player-replicated), so it lives inline in Tags & Statuses as its own list, distinct from pills.
+export interface MightyTag {
+   id: string;
+   level: MightLevel;
+   label: string;
+}
+
 // A GM Challenge Card (LitM): a current obstacle/adversary. Front = image / name (Card.title) / italic
-// types / star level / flavor; back = Limits / Tags & Statuses / Threats & Consequences.
+// types / star level / flavor; back = Limits / Tags & Statuses / Specials / Threats & Consequences.
 export interface LegendsChallengeDetails {
    game: 'LEGENDS';
    assetId: string | null;
@@ -129,6 +148,8 @@ export interface LegendsChallengeDetails {
    limits: ChallengeStatus[];
    statuses: ChallengeStatus[];
    tags: BlandTag[];
+   mightyTags: MightyTag[];
+   specials: ChallengeSpecial[];
    abilities: ChallengeAbility[];
 }
 

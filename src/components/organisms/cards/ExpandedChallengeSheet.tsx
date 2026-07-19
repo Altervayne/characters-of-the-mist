@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Loader2, Skull, Star, Swords, Tags, Trash2, Upload } from 'lucide-react';
+import { Loader2, Skull, Sparkles, Star, Swords, Tags, Trash2, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -21,14 +21,14 @@ import { CHALLENGE_ART_ASPECT } from '@/lib/cards/challengeArt';
 // -- Component Imports --
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 import { ChallengeTypeSelector } from '@/components/molecules/ChallengeTypeSelector';
-import { AbilityEditRow, AddRowButton, LimitPill, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
+import { AbilityEditRow, AddRowButton, LimitPill, MightyTagEditRow, MightyTagPill, SpecialEditRow, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
 import type { RowListOps } from '@/components/organisms/cards/challengeCardEditRows';
 
 // -- Shared Factories --
 import { resolveExpandedFocus } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
-import type { BlandTag, ChallengeAbility, ChallengeStatus, LegendsChallengeDetails } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, LegendsChallengeDetails, MightyTag } from '@/lib/types/character';
 import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
@@ -67,6 +67,10 @@ interface ExpandedChallengeSheetProps {
    limitOps: RowListOps<ChallengeStatus>;
    statusOps: RowListOps<ChallengeStatus>;
    tagOps: RowListOps<BlandTag>;
+   /** The Mighty tag list ops (level + label), read-live-then-patch-by-id like the other lists. */
+   mightyTagOps: RowListOps<MightyTag>;
+   /** The Specials list ops (name + body), read-live-then-patch-by-id like the other lists. */
+   specialOps: RowListOps<ChallengeSpecial>;
    /** Patches one ability by id against the LIVE abilities read at commit time, so two debounced fields
     *  (tag + flavor, or a consequence) flushing together on unmount can't clobber each other's write. */
    commitAbilityById: (abilityId: string, mutate: (current: ChallengeAbility) => ChallengeAbility) => void;
@@ -213,6 +217,8 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
    limitOps,
    statusOps,
    tagOps,
+   mightyTagOps,
+   specialOps,
    commitAbilityById,
    addAbility,
    removeAbilityById,
@@ -348,6 +354,20 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                            ))}
                            <AddRowButton label={t('Cards.challenge.addTag')} onClick={tagOps.add} />
                         </div>
+                        <div className="flex flex-col gap-1">
+                           {details.mightyTags.map((mightyTag) => (
+                              <MightyTagEditRow
+                                 key={mightyTag.id}
+                                 mightyTag={mightyTag}
+                                 labelPlaceholder={t('Cards.challenge.mightyTagLabelPlaceholder')}
+                                 onCommitLevel={(level) => mightyTagOps.commitById(mightyTag.id, { level })}
+                                 onCommitLabel={(label) => mightyTagOps.commitById(mightyTag.id, { label })}
+                                 onRemove={() => mightyTagOps.removeById(mightyTag.id)}
+                                 removeLabel={t('Cards.challenge.remove')}
+                              />
+                           ))}
+                           <AddRowButton label={t('Cards.challenge.addMightyTag')} onClick={mightyTagOps.add} />
+                        </div>
                      </div>
                   ) : (
                      <div className="flex flex-wrap items-center gap-1">
@@ -357,6 +377,7 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                         {details.tags.length > 0
                            ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
                            : <EmptyState label={t('Cards.challenge.noTags')} />}
+                        {details.mightyTags.map((mightyTag) => <MightyTagPill key={mightyTag.id} mightyTag={mightyTag} />)}
                      </div>
                   )}
                </section>
@@ -365,9 +386,44 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
             {/* The divider column: a real grid cell, not a border. */}
             <div className="w-px bg-card-accent/30" />
 
-            {/* RIGHT two-thirds: the full Threats & Consequences, its own scroll well. Edit mode
-                accordions to the focused ability (see ThreatsEditor); read mode is flat + scannable. */}
+            {/* RIGHT two-thirds: Specials (when any / editing) then the full Threats & Consequences, one
+                scroll well. Edit mode accordions to the focused ability (see ThreatsEditor); read mode is
+                flat + scannable. */}
             <div className="min-h-0 overflow-y-auto overscroll-contain p-4">
+               {/* Specials: bold centered name over rich body. Optional - hidden entirely (header too) in
+                   read mode with none, shown while editing so the first can be added. */}
+               {(details.specials.length > 0 || isEditing) && (
+                  <section className="mb-4">
+                     <SheetSectionHeader title={t('Cards.challenge.specials')} icon={Sparkles} />
+                     {isEditing ? (
+                        <div className="flex flex-col gap-2">
+                           {details.specials.map((special) => (
+                              <SpecialEditRow
+                                 key={special.id}
+                                 special={special}
+                                 namePlaceholder={t('Cards.challenge.specialNamePlaceholder')}
+                                 bodyPlaceholder={t('Cards.challenge.specialBodyPlaceholder')}
+                                 onCommitName={(name) => specialOps.commitById(special.id, { name })}
+                                 onCommitBody={(body) => specialOps.commitById(special.id, { body })}
+                                 onRemove={() => specialOps.removeById(special.id)}
+                                 removeLabel={t('Cards.challenge.remove')}
+                              />
+                           ))}
+                           <AddRowButton label={t('Cards.challenge.addSpecial')} onClick={specialOps.add} />
+                        </div>
+                     ) : (
+                        <div className="flex flex-col gap-3">
+                           {details.specials.map((special) => (
+                              <div key={special.id} className="space-y-0.5">
+                                 <p className="text-center text-sm font-bold">{special.name}</p>
+                                 <MentionMarkdown text={special.body} onMentionClick={mentionClick} className="text-sm" />
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                  </section>
+               )}
+
                <SheetSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Swords} />
                {isEditing ? (
                   <ThreatsEditor abilities={details.abilities} commitAbilityById={commitAbilityById} addAbility={addAbility} removeAbilityById={removeAbilityById} />

@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Type Imports --
-import type { BlandTag, ChallengeAbility, ChallengeStatus } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, MightyTag } from '@/lib/types/character';
 
 /** The expanded sheet's Threats & Consequences accordion opens exactly one ability; this resolves which. */
 export function resolveExpandedFocus(abilities: ChallengeAbility[], focusedId: string | null): string | null {
@@ -25,6 +25,12 @@ export const newTag = (): BlandTag => ({ id: cuid(), name: '' });
 
 /** A fresh Threats & Consequences ability row: empty tag/flavor, no consequences yet. */
 export const newAbility = (): ChallengeAbility => ({ id: cuid(), tag: '', flavor: '', consequences: [] });
+
+/** A fresh Special row: an empty name + body. */
+export const newSpecial = (): ChallengeSpecial => ({ id: cuid(), name: '', body: '' });
+
+/** A fresh Mighty tag row: an empty label at the lowest Might level. */
+export const newMightyTag = (): MightyTag => ({ id: cuid(), level: 'Origin', label: '' });
 
 /** A fresh consequence row: an empty line of text, id-keyed so edits survive reorders/deletes. */
 export const newConsequence = (): { id: string; text: string } => ({ id: cuid(), text: '' });

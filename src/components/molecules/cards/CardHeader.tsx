@@ -1,14 +1,15 @@
 // -- React Imports --
 import { useTranslation } from 'react-i18next';
 
-// -- Icon Imports --
-import { Leaf, Swords, Crown } from 'lucide-react';
-
 // -- Basic UI Imports --
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
+import { MIGHT_ICONS } from '@/lib/cards/might';
+
+// -- Type Imports --
+import type { MightLevel } from '@/lib/types/character';
 
 
 
@@ -67,19 +68,9 @@ const ThemeTypeIcon = ({ type, game }: { type: string; game?: string }) => {
    }
    // Legend in the Mist theme icons (Lucide)
    else {
-      switch (type) {
-         case 'Origin':
-            IconComponent = <Leaf className="h-5 w-5" strokeWidth={2.5}/>;
-            break;
-         case 'Adventure':
-            IconComponent = <Swords className="h-5 w-5" strokeWidth={2.5}/>;
-            break;
-         case 'Greatness':
-            IconComponent = <Crown className="h-5 w-5" strokeWidth={2.5}/>;
-            break;
-         default:
-            return <p>{type}</p>;
-      }
+      const MightIcon = MIGHT_ICONS[type as MightLevel];
+      if (!MightIcon) return <p>{type}</p>;
+      IconComponent = <MightIcon className="h-5 w-5" strokeWidth={2.5} />;
    }
 
    return (
