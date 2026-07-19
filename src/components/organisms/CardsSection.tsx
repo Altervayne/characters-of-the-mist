@@ -34,6 +34,8 @@ interface CardsSectionProps {
    onAddJournal: () => void;
    /** Highlight the section as the landing spot for a compatible card-type drawer drag. */
    isDropTarget?: boolean;
+   /** Sheet zoom factor, forwarded to each Sortable so the reorder gap lands accurately when zoomed. */
+   scale?: number;
 }
 
 /**
@@ -56,6 +58,7 @@ export function CardsSection({
    onAddChallenge,
    onAddJournal,
    isDropTarget = false,
+   scale = 1,
 }: CardsSectionProps) {
    // Portrait is a sheet singleton: the add button only appears when none exists.
    const hasPortrait = character.cards.some(c => c.cardType === 'IMAGE_CARD');
@@ -92,9 +95,10 @@ export function CardsSection({
                         key={card.id}
                         id={card.id}
                         data={{ type: DRAG_TYPES.SHEET_CARD, item: card }}
+                        scale={scale}
                      >
                         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged} disableLayout={scale !== 1}>
                               <CardRenderer
                                  card={card}
                                  isEditing={isEditing}
@@ -115,9 +119,10 @@ export function CardsSection({
                      key={journal.id}
                      id={journal.id}
                      data={{ type: DRAG_TYPES.SHEET_JOURNAL, item: journal }}
+                     scale={scale}
                   >
                      {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                        <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                        <DragLayoutWrapper isBeingDragged={isBeingDragged} disableLayout={scale !== 1}>
                            <SheetJournalCard
                               journal={journal}
                               isEditing={isEditing}

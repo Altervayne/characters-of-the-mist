@@ -12,7 +12,7 @@ import { useDeviceType } from '@/hooks/useDeviceType';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Megaphone, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed, DatabaseBackup, Image as ImageIcon } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Megaphone, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed, DatabaseBackup, ZoomIn, ZoomOut, RotateCcw, Image as ImageIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -22,7 +22,8 @@ import { exportFullBackup } from '@/lib/backup/fullBackup';
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
 import { useAppSettingsActions } from '@/lib/stores/appSettingsStore';
 import { useAppGeneralStateActions } from '@/lib/stores/appGeneralStateStore';
-import { useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { getActiveSheetZoom, useTabManagerStore, useTabManagerActions } from '@/lib/character/tabManagerStore';
+import { DEFAULT_SHEET_ZOOM, stepSheetZoom } from '@/lib/character/sheetZoom';
 import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
 import { exportEntireDrawerAsNestedTree } from '@/lib/drawer/drawerRepository';
 import { getActiveBoardStore } from '@/lib/board/boardStoreRegistry';
@@ -89,7 +90,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    // tutorials are authored; the `dev.` scenarios surface it in dev). openTutorials -> hub@learn stays regardless.
    const hasTutorials = getTutorialsForPlatform(deviceType).length > 0;
    const { saveCharacterToDrawer, saveBoardToDrawer } = useSaveToDrawer();
-   const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab } = useTabManagerActions();
+   const { createBoardTab, createNoteTab, closeActiveTab, setActiveTab, setTabZoom } = useTabManagerActions();
    const activeNote = useActiveNoteInstance();
 
    const openTabs = useTabManagerStore((state) => state.openTabs);
@@ -249,6 +250,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // #################################
       { id: 'renameCharacter', scope: 'character', label: t('CommandPalette.commands.renameCharacter'), keywords: ['rename', 'character', 'name'], icon: Type, group: t('CommandPalette.groups.character'), pageId: 'renameCharacter' },
       { id: 'resetCharacter', scope: 'character', label: t('CommandPalette.commands.resetCharacter'), keywords: ['reset', 'character', 'clear'], icon: Undo2, group: t('CommandPalette.groups.character'), action: resetCharacter },
+      // Sheet zoom (desktop content scale, per tab). Reset is the anchor; in/out step the nice levels.
+      { id: 'resetSheetZoom', scope: 'character', label: t('CommandPalette.commands.resetSheetZoom'), keywords: ['zoom', 'reset', 'scale', 'size', '100', 'sheet'], icon: RotateCcw, group: t('CommandPalette.groups.character'), action: () => activeTabId && setTabZoom(activeTabId, DEFAULT_SHEET_ZOOM) },
+      { id: 'zoomInSheet', scope: 'character', label: t('CommandPalette.commands.zoomInSheet'), keywords: ['zoom', 'in', 'scale', 'bigger', 'larger', 'sheet'], icon: ZoomIn, group: t('CommandPalette.groups.character'), action: () => activeTabId && setTabZoom(activeTabId, stepSheetZoom(getActiveSheetZoom(), 1)) },
+      { id: 'zoomOutSheet', scope: 'character', label: t('CommandPalette.commands.zoomOutSheet'), keywords: ['zoom', 'out', 'scale', 'smaller', 'sheet'], icon: ZoomOut, group: t('CommandPalette.groups.character'), action: () => activeTabId && setTabZoom(activeTabId, stepSheetZoom(getActiveSheetZoom(), -1)) },
 
       // ##########################
       // ###   CREATION GROUP   ###

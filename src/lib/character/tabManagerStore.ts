@@ -1,9 +1,10 @@
 // -- Other Library Imports --
 import { create } from 'zustand';
-import cuid from 'cuid';
 
 // -- Utils Imports --
 import { harmonizeData } from '@/lib/harmonization';
+import { DEFAULT_SHEET_ZOOM, clampSheetZoom } from './sheetZoom';
+import { reIdCharacterAggregate } from './reIdCharacterAggregate';
 
 // -- Store Imports --
 import { buildNewCharacter } from '@/lib/stores/characterStore';
@@ -86,6 +87,8 @@ export interface OpenTab {
    id: string;
    /** Discriminant for the tab's content type. */
    type: TabType;
+   /** Desktop character-sheet zoom factor (content scale); absent means the default 1. */
+   zoom?: number;
 }
 
 interface TabManagerState {
@@ -121,6 +124,8 @@ interface TabManagerState {
       setActiveTab: (id: string) => void;
       /** Moves the `fromId` tab to the position of `toId`, persisting the new order; active tab unchanged. */
       reorderTabs: (fromId: string, toId: string) => void;
+      /** Sets tab `id`'s sheet zoom factor (clamped), persisting it. Non-undoable, like the board viewport. */
+      setTabZoom: (id: string, zoom: number) => void;
       /** Desktop "Return to Menu": show the menu while KEEPING every open tab and its live instance. */
       deactivate: () => void;
       /**
@@ -512,6 +517,13 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          useTabManagerStore.setState({ openTabs: next });
          persistWorkspace();
       },
+      setTabZoom: (id, zoom) => {
+         const clamped = clampSheetZoom(zoom);
+         useTabManagerStore.setState((state) => ({
+            openTabs: state.openTabs.map((tab) => (tab.id === id ? { ...tab, zoom: clamped } : tab)),
+         }));
+         persistWorkspace();
+      },
       deactivate: () => {
          // Desktop "Return to Menu": no disposal, tabs and instances stay live.
          deactivateToMenu();
@@ -530,7 +542,7 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
 
          const wasActive = useTabManagerStore.getState().activeTabId === oldId;
          useTabManagerStore.setState((state) => ({
-            openTabs: state.openTabs.map((tab) => (tab.id === oldId ? { id: newId, type: kind } : tab)),
+            openTabs: state.openTabs.map((tab) => (tab.id === oldId ? { id: newId, type: kind, zoom: tab.zoom } : tab)),
             activeTabId: wasActive ? newId : state.activeTabId,
             journey: rekeyJourneyEntity(state.journey, oldId, newId),
          }));
@@ -608,12 +620,10 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
          appendAndActivate(character.id);
       },
       mobileReplaceWithImportedCharacter: (character) => {
-         // If the import's id collides with the outgoing character we're deleting, re-id it so the
-         // async delete of the old row can't reap the freshly-loaded one (import-as-new is a fresh
-         // identity anyway). The common case (distinct ids) keeps the file's id untouched.
-         const incoming = getCharacterInstanceIds().includes(character.id)
-            ? { ...character, id: cuid() }
-            : character;
+         // An import is a fresh identity: re-id the whole aggregate (new character/card/journal ids,
+         // sheetLayout remapped, journal pages/bookmarks + asset hashes preserved, drawer link cleared).
+         // The fresh id also keeps the async delete of the outgoing row from reaping the freshly-loaded one.
+         const incoming = reIdCharacterAggregate(character);
          // TRUE overwrite with an imported sheet: discard the outgoing working copy, then load the
          // import (no drawer link, so it starts dirty).
          discardLiveCharacterInstances();
@@ -633,6 +643,16 @@ export const useTabManagerStore = create<TabManagerState>(() => ({
 
 /** Selector hook for the TabManager action bag (a stable reference). */
 export const useTabManagerActions = () => useTabManagerStore((state) => state.actions);
+
+/** The active tab's sheet zoom factor (default 1). Reactive. */
+export const useActiveSheetZoom = (): number =>
+   useTabManagerStore((state) => state.openTabs.find((tab) => tab.id === state.activeTabId)?.zoom ?? DEFAULT_SHEET_ZOOM);
+
+/** Non-reactive read of the active tab's sheet zoom, for imperative math (e.g. resize deltas). */
+export function getActiveSheetZoom(): number {
+   const { openTabs, activeTabId } = useTabManagerStore.getState();
+   return openTabs.find((tab) => tab.id === activeTabId)?.zoom ?? DEFAULT_SHEET_ZOOM;
+}
 
 /**
  * Describes the currently-active tab as a {@link JourneyEntry} (kind, id, live name), or `null` at the menu.

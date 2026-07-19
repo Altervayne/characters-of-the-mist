@@ -6,7 +6,7 @@ import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry'
 // -- Re-ID Imports --
 import { reIdBoardAggregate } from '@/lib/board/reIdBoardAggregate';
 import { reIdNote } from '@/lib/notes/reIdNote';
-import { reIdCharacter } from '@/lib/character/reIdCharacter';
+import { reIdCharacterAggregate } from '@/lib/character/reIdCharacterAggregate';
 
 // -- Repository Imports --
 import { importBoard } from '@/lib/board/boardRepository';
@@ -72,10 +72,11 @@ export async function forkCharacterToDrawerItem(newItemId: string): Promise<Char
    const character = store.getState().character;
    if (!character) return null;
 
-   // A character carries no id cross-references, so a deep re-id is total and safe (same path the drawer's
-   // addItem already runs on a copy). Persist the working row under the new id BEFORE the tab re-key hydrates
-   // it back (characters have no `importCharacter`; `saveCharacter` is the working-row write).
-   const forked: Character = { ...reIdCharacter(character), drawerItemId: newItemId };
+   // Re-id the whole aggregate to a fresh identity: card/journal ids reminted with the sheet-layout manifest
+   // remapped to match, and each journal's pages/bookmarks kept so bookmarks still resolve. Persist the working
+   // row under the new id BEFORE the tab re-key hydrates it back (characters have no `importCharacter`;
+   // `saveCharacter` is the working-row write).
+   const forked: Character = { ...reIdCharacterAggregate(character), drawerItemId: newItemId };
    await saveCharacter(forked);
    await useTabManagerStore.getState().actions.rekeyEntityTab('character', character.id, forked.id);
    return forked;

@@ -533,6 +533,12 @@
       "cancel": "Cancel"
    },
 
+   "SheetZoom": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "reset": "Reset zoom to 100%"
+   },
+
    "CharacterSheetPage": {
 
       "characterNamePlaceholder": "Character Name...",
@@ -1466,6 +1472,9 @@
 
          "renameCharacter": "Rename: Character",
          "resetCharacter": "Reset: Character",
+         "resetSheetZoom": "Zoom: Reset Sheet",
+         "zoomInSheet": "Zoom: In",
+         "zoomOutSheet": "Zoom: Out",
 
          "createCard": "Create: Theme Card",
          "createTracker": "Create: Tracker",

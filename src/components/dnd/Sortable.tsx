@@ -35,6 +35,14 @@ export interface SortableProps {
   data: DragData;
   /** Whether dragging is disabled */
   disabled?: boolean;
+  /**
+   * Divisor for the sibling-shift translate, for a Sortable rendered inside a CSS-`zoom`ed
+   * container (e.g. the zoomed character sheet). dnd-kit measures the shift from `getBoundingClientRect`
+   * deltas, already in zoomed px, and the container re-scales the translate again on render - so the gap
+   * overshoots by the zoom factor. Pre-dividing by the container's zoom cancels it. Default 1 leaves the
+   * transform byte-identical, so every unzoomed usage is untouched.
+   */
+  scale?: number;
   /** Render function that receives drag props */
   children: (props: SortableChildProps) => React.ReactNode;
 }
@@ -56,16 +64,24 @@ export interface SortableProps {
  * </Sortable>
  * ```
  */
-export function Sortable({ id, data, disabled = false, children }: SortableProps) {
+export function Sortable({ id, data, disabled = false, scale = 1, children }: SortableProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     data,
     disabled,
   });
 
+  // Divide the shift by the container zoom before rendering, so the gap lands accurately in a zoomed
+  // sheet. Same reference (and byte-identical output) when scale is 1, so unzoomed usages don't change.
+  const shift = transform && scale !== 1 ? { ...transform, x: transform.x / scale, y: transform.y / scale } : transform;
+
   const style = {
-    transform: CSS.Translate.toString(transform),
-    transition,
+    transform: CSS.Translate.toString(shift),
+    // Under zoom, snap siblings straight to their (correct) shifted slot with no transition: an
+    // animated travel plays along an uncorrected path and only settles right at rest. The rest
+    // positions are already accurate, so an instant gap beats an overshooting slide. Unzoomed keeps
+    // the smooth transition.
+    transition: scale !== 1 ? undefined : transition,
   };
 
   return (

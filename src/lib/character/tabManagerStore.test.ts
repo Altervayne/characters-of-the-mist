@@ -54,6 +54,8 @@ function makeCharacter(id: string, overrides: Partial<Character> = {}): Characte
       name: 'Hero',
       game: 'LEGENDS',
       cards: [],
+      journals: [],
+      sheetLayout: [],
       trackers: { statuses: [], storyTags: [], storyThemes: [] },
       ...overrides,
    } as Character;
@@ -328,18 +330,24 @@ describe('mobile single-live lifecycle', () => {
       disposeInstance(created); // cleanup the minted instance
    });
 
-   it('mobileReplaceWithImportedCharacter discards the outgoing live character and loads the import', () => {
+   it('mobileReplaceWithImportedCharacter discards the outgoing live character and loads the import as a fresh identity', () => {
       const actions = useTabManagerStore.getState().actions;
 
       actions.mobileOpenCharacter(makeCharacter('A'));
       actions.mobileReplaceWithImportedCharacter(makeCharacter('B'));
 
-      // The import replaces A: only B is live, A's tab is pruned, B is active.
-      expect(getCharacterInstanceIds()).toEqual(['B']);
-      expect(useTabManagerStore.getState().activeTabId).toBe('B');
-      const ids = useTabManagerStore.getState().openTabs.map((t) => t.id);
-      expect(ids).not.toContain('A');
-      expect(ids).toEqual(['B']);
+      // The import replaces A and rides in on a FRESH id - an import is a new entity, never the file's id.
+      const liveIds = getCharacterInstanceIds();
+      expect(liveIds).toHaveLength(1);
+      const [newId] = liveIds;
+      expect(newId).not.toBe('A'); // A is discarded
+      expect(newId).not.toBe('B'); // the file's id is re-minted
+      expect(useTabManagerStore.getState().activeTabId).toBe(newId);
+      expect(useTabManagerStore.getState().openTabs.map((t) => t.id)).toEqual([newId]);
+
+      // The re-minted id isn't in FIXTURE_IDS, so dispose it here.
+      detachPersistenceHandle(newId);
+      disposeInstance(newId);
    });
 
    it('mobileReturnToMenu disposes the live instance, nulls active, and keeps openTabs', () => {

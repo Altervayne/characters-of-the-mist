@@ -21,6 +21,7 @@ import { ToolbarHandle } from '@/components/molecules/ToolbarHandle';
 
 // -- Store and Hook Imports --
 import { useCharacterActions } from '@/lib/stores/characterStore';
+import { getActiveSheetZoom } from '@/lib/character/tabManagerStore';
 import { useToolbarHover } from '@/hooks/useToolbarHover';
 import { useAssetObjectUrl } from '@/hooks/useAssetObjectUrl';
 import { useImageUpload } from '@/hooks/useImageUpload';
@@ -113,14 +114,16 @@ const ImageCardContent = React.memo(
          // Pointer capture keeps the drag on the handle; `stopPropagation` guards against
          // it ever starting the reorder drag (which is initiated from the ToolbarHandle).
          // The live size lives in state for preview and in a ref for a stale-free commit.
-         const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+         const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number; zoom: number } | null>(null);
          const liveSizeRef = useRef<LiveSize | null>(null);
 
          const handleResizePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
             if (!canResize) return;
             event.preventDefault();
             event.stopPropagation();
-            resizeStartRef.current = { x: event.clientX, y: event.clientY, width: cardWidth, height: cardHeight };
+            // The card renders inside the sheet's zoom layer, so a screen-space cursor delta covers
+            // `delta / zoom` card pixels - captured at grab so the resize tracks the cursor 1:1 at any zoom.
+            resizeStartRef.current = { x: event.clientX, y: event.clientY, width: cardWidth, height: cardHeight, zoom: getActiveSheetZoom() };
             const initial = { width: cardWidth, height: cardHeight };
             liveSizeRef.current = initial;
             setLiveSize(initial);
@@ -131,8 +134,8 @@ const ImageCardContent = React.memo(
             const start = resizeStartRef.current;
             if (!start) return;
             event.stopPropagation();
-            const width = clampCardWidth(start.width + (event.clientX - start.x));
-            let height = clampCardHeight(start.height + (event.clientY - start.y));
+            const width = clampCardWidth(start.width + (event.clientX - start.x) / start.zoom);
+            let height = clampCardHeight(start.height + (event.clientY - start.y) / start.zoom);
             // Shift locks to the image's natural aspect ratio (no-op without an image).
             if (event.shiftKey) {
                const ratio = naturalRatio();

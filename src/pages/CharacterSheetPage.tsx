@@ -1,10 +1,11 @@
 // -- React Imports --
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // -- Custom Hooks --
 import { useDeviceType } from '@/hooks/useDeviceType';
 import { useCharacterSheetDnD } from '@/hooks/character-sheet/useCharacterSheetDnD';
+import { useSheetZoomShortcuts } from '@/hooks/character-sheet/useSheetZoomShortcuts';
 import { useCharacterSheetFileImport } from '@/hooks/character-sheet/useCharacterSheetFileImport';
 import { useCharacterSheetExport } from '@/hooks/character-sheet/useCharacterSheetExport';
 import { useCharacterSheetUndoRedo } from '@/hooks/character-sheet/useCharacterSheetUndoRedo';
@@ -23,6 +24,7 @@ import { TrackersSection } from '@/components/organisms/TrackersSection';
 import { CardsSection } from '@/components/organisms/CardsSection';
 import { SheetMainDropZone } from '@/components/organisms/SheetMainDropZone';
 import { CharacterNameHeader } from '@/components/molecules/CharacterNameHeader';
+import { SheetZoomControl } from '@/components/organisms/character-sheet/SheetZoomControl';
 import { FileDragOverlay } from '@/components/molecules/FileDragOverlay';
 import { DragOverlayContent } from '@/components/molecules/DragOverlayContent';
 import { CreateCardDialog } from '@/components/organisms/dialogs/CreateCardDialog';
@@ -48,6 +50,7 @@ import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterSt
 import { useActiveBoardInstance } from '@/lib/board/ActiveBoardStoreContext';
 import { useActiveNoteInstance } from '@/lib/notes/ActiveNoteStoreContext';
 import { useIsBootHydrating } from '@/lib/character/characterPersistence';
+import { useActiveSheetZoom, useTabManagerStore } from '@/lib/character/tabManagerStore';
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsActions, useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useCommandPaletteActions } from '@/hooks/useCommandPaletteActions';
@@ -106,6 +109,12 @@ function DesktopCharacterSheetPage() {
    const isBootHydrating = useIsBootHydrating();
    const { updateCharacterName, addStatus, addStoryTag, addPortrait, addJournal } = useCharacterActions();
    const isCompactDrawer = useAppSettingsStore((state) => state.isCompactDrawer);
+
+   // Per-tab sheet zoom: a plain content scale, remembered per character tab. The scroll `<main>`
+   // hosts the Ctrl/Cmd+wheel gesture; the control + shortcuts drive it (character tabs only).
+   const sheetZoom = useActiveSheetZoom();
+   const activeTabId = useTabManagerStore((state) => state.activeTabId);
+   const sheetScrollRef = useRef<HTMLElement>(null);
 
    // ==================
    //  General App Stores
@@ -234,6 +243,9 @@ function DesktopCharacterSheetPage() {
    });
 
 
+   // Sheet-zoom gestures (Ctrl/Cmd+wheel over the scroller, Ctrl/Cmd +/-/0). Character tabs only.
+   useSheetZoomShortcuts(sheetScrollRef, character ? activeTabId : null);
+
    // Warm the note + board lazy chunks on idle, so the first tab open doesn't cold-block on its fetch.
    usePrefetchTabChunks();
 
@@ -245,8 +257,14 @@ function DesktopCharacterSheetPage() {
       return <CharacterBootLoading />;
    }
 
+   // Under CSS `zoom`, per-frame droppable re-measuring makes a card near the flex-wrap boundary
+   // bistable - it flips between rows and the reorder gap jitters vertically. Freeze the layout at
+   // drag start when zoomed; keep continuous measuring at 100%. The sheet->board drop resolves by
+   // cursor geometry (not this measurement), so it's unaffected either way.
+   const droppableMeasuringStrategy = sheetZoom !== 1 ? MeasuringStrategy.BeforeDragging : MeasuringStrategy.Always;
+
    return (
-      <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}>
+      <DndContext sensors={sensors} onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel} collisionDetection={customCollisionDetection} measuring={{ droppable: { strategy: droppableMeasuringStrategy } }}>
          {/* The shell is a fixed viewport: `relative` anchors the Expanded overlay, `overflow-hidden`
              clips its recede off-screen so no state ever scrolls the page. */}
          <div className="relative flex overflow-hidden bg-background text-foreground" style={{ height: '100%', width: '100%' }}>
@@ -309,7 +327,7 @@ function DesktopCharacterSheetPage() {
                         <BoardView />
                      </Suspense>
                   ) : character ? (
-                     <main data-tutorial="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
+                     <main ref={sheetScrollRef} data-tutorial="character-sheet" className="absolute w-full h-full flex-1 flex flex-col overflow-y-auto overflow-x-hidden">
                         <CharacterNameHeader
                            key={character.id}
                            name={character.name}
@@ -317,7 +335,9 @@ function DesktopCharacterSheetPage() {
                            placeholder={t('CharacterSheetPage.characterNamePlaceholder')}
                         />
 
-                        <div className="flex-1 p-4 md:p-8">
+                        {/* Zoom layer: CSS `zoom` scales the trackers + cards AND grows the scroll box with
+                            them (a transform would clip the bottom). The name header above stays unscaled. */}
+                        <div className="flex-1 p-4 md:p-8" style={sheetZoom === 1 ? undefined : { zoom: sheetZoom }}>
                            <SheetMainDropZone>
                               <TrackersSection
                                  character={character}
@@ -330,6 +350,7 @@ function DesktopCharacterSheetPage() {
                                  storyTagIds={storyTagIds}
                                  storyThemeIds={storyThemeIds}
                                  isDropTarget={sheetHighlight === 'trackers'}
+                                 scale={sheetZoom}
                               />
 
                               <CardsSection
@@ -342,6 +363,7 @@ function DesktopCharacterSheetPage() {
                                  onAddChallenge={handleCreateChallenge}
                                  onAddJournal={addJournal}
                                  isDropTarget={sheetHighlight === 'cards'}
+                                 scale={sheetZoom}
                               />
                            </SheetMainDropZone>
                         </div>
@@ -359,6 +381,9 @@ function DesktopCharacterSheetPage() {
 
                   {/* File Drop Zone */}
                   <FileDragOverlay isDragActive={isFileDragActive} />
+
+                  {/* Floating sheet-zoom control (character tabs only), bottom-right of the content area. */}
+                  {character && <SheetZoomControl />}
                </div>
 
             </div>
@@ -447,6 +472,13 @@ function DesktopCharacterSheetPage() {
                      activeDragItem={activeDragItem}
                      isEditing={isEditing}
                      isCompactDrawer={isCompactDrawer}
+                     contentScale={
+                        // A sheet-sourced card/tracker/journal renders in the zoom layer; match its on-screen
+                        // size so the clone isn't a mismatched 100%. Drawer items (unscaled) keep scale 1.
+                        activeDragItem && ('cardType' in activeDragItem || 'trackerType' in activeDragItem || ('pages' in activeDragItem && 'bookmarks' in activeDragItem))
+                           ? sheetZoom
+                           : 1
+                     }
                   />
                ),
             )}

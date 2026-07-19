@@ -9,6 +9,14 @@ import type { ReactNode } from 'react';
 export interface DragWrapperProps {
   isBeingDragged: boolean;
   children: ReactNode;
+  /**
+   * Drops framer's `layout` projection (see {@link DragLayoutWrapper}). Framer measures in an
+   * unscaled space with no notion of an ancestor CSS `zoom`, so under a zoomed sheet its projection
+   * fights dnd-kit's zoom-corrected sibling shift and snaps the item back. When set, dnd-kit's own
+   * transition carries the reorder instead (as the drawer's static wrapper already does). Zoom is
+   * constant across a drag, so this never toggles mid-gesture.
+   */
+  disableLayout?: boolean;
 }
 
 
@@ -27,10 +35,14 @@ export interface DragWrapperProps {
  * </Sortable>
  * ```
  */
-export function DragLayoutWrapper({ isBeingDragged, children }: DragWrapperProps) {
+export function DragLayoutWrapper({ isBeingDragged, children, disableLayout = false }: DragWrapperProps) {
+  // Under zoom, OMIT `layout` entirely rather than passing `layout={false}`: framer's projection isn't
+  // zoom-aware and would animate a reflow along an uncorrected path. This mirrors the drawer's static
+  // wrapper (no layout projection). The zoomed sheet's sortables also drop their transition, so siblings
+  // snap straight to their (correct) rest slot - no travel to mis-track. At 100% `layout` stays on.
   return (
     <motion.div
-      layout
+      {...(disableLayout ? {} : { layout: true })}
       animate={{ opacity: isBeingDragged ? 0.4 : 1 }}
       transition={{ duration: 0.2 }}
     >

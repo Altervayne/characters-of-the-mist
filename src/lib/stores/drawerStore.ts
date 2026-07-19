@@ -4,6 +4,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 
 // -- Utils Imports --
 import { deepReId } from '../utils/drawer';
+import { reIdCharacterAggregate } from '@/lib/character/reIdCharacterAggregate';
 
 // -- Drawer Data Layer Imports --
 import { getFolderItems, getItemCountsForFolders, queryItems } from '@/lib/drawer/drawerRepository';
@@ -34,6 +35,7 @@ import type { DrawerCommand } from '@/lib/drawer/drawerCommandEngine';
 import type { DrawerItemQuery, DrawerItemSummary } from '@/lib/drawer/drawerRepository';
 import type { DrawerItemRecord } from '@/lib/drawer/drawerRecords';
 import type { Drawer, Folder, DrawerItemContent, GeneralItemType, GameSystem } from '@/lib/types/drawer';
+import type { Character } from '@/lib/types/character';
 
 /*
  * Drawer store - the React-facing facade over the normalized Dexie repository and
@@ -286,14 +288,19 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             // card/tracker (a saved board item) has no `drawerItemId` to sniff, so
             // its Save-As threads the id in directly.
             const resolvedPresetId = presetId ?? ('drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined);
-            // A FULL_BOARD, JOURNAL, or NOTE aggregate must NOT be re-ID'd. A board's item ids
+            // A FULL_BOARD, JOURNAL, or NOTE aggregate must NOT be blindly re-ID'd. A board's item ids
             // are referenced by connection endpoints (`from`/`to`) and its board id keys the
             // focus-or-open round-trip. A journal's bookmarks reference pages by `pageId`, a
             // field `deepReId` leaves untouched while it regenerates every page's `id` - so a
             // blind re-ID would orphan every bookmark. A note's id keys its own focus-or-open
-            // round-trip the same way a board's does. All three are exempt; other content stays
-            // re-ID'd so the drawer copy is independent of the live source.
-            const freshContent = type === 'FULL_BOARD' || type === 'JOURNAL' || type === 'NOTE' ? content : deepReId(content);
+            // round-trip the same way a board's does. A FULL_CHARACTER_SHEET carries its own cross-refs
+            // (the sheet-layout manifest and each journal's bookmarks), so it routes through the aggregate
+            // re-id that keeps those consistent. Everything else is a cross-ref-free card/tracker/post-it,
+            // deep-re-ID'd so the drawer copy is independent of the live source.
+            const freshContent =
+               type === 'FULL_BOARD' || type === 'JOURNAL' || type === 'NOTE' ? content
+               : type === 'FULL_CHARACTER_SHEET' ? reIdCharacterAggregate(content as Character)
+               : deepReId(content);
             const command = createCreateItemCommand({ id: resolvedPresetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
             await runMutation(command);
             return command.getCreatedItemId() ?? '';
@@ -302,9 +309,13 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
             // A JOURNAL is exempt from re-ID for the same reason `addItem` is: `deepReId` regenerates every
             // page's `id` while leaving each bookmark's `pageId` (a different field name) untouched, so a
             // blind re-ID would orphan every bookmark. A NOTE keeps its id too (it keys the focus-or-open
-            // round-trip). Both keep their own ids (self-contained in the file); other imported content is
-            // re-ID'd so it can't collide with an existing item.
-            const freshContent = itemType === 'JOURNAL' || itemType === 'NOTE' ? itemContent : deepReId(itemContent);
+            // round-trip). Both keep their own ids (self-contained in the file). A FULL_CHARACTER_SHEET routes
+            // through the aggregate re-id so its sheet-layout manifest and journal bookmarks stay consistent.
+            // Other imported content is a cross-ref-free card/tracker/post-it, re-ID'd so it can't collide.
+            const freshContent =
+               itemType === 'JOURNAL' || itemType === 'NOTE' ? itemContent
+               : itemType === 'FULL_CHARACTER_SHEET' ? reIdCharacterAggregate(itemContent as Character)
+               : deepReId(itemContent);
             const name = 'title' in freshContent ? freshContent.title : 'name' in freshContent ? freshContent.name : '';
             await runMutation(createCreateItemCommand({ name, game, type: itemType, content: freshContent, parentFolderId: parentFolderId ?? null }));
          },

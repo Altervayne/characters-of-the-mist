@@ -23,6 +23,8 @@ import { collectBoardEmbeddedEntities } from '@/lib/board/collectBoardEmbeddedEn
 import { prepareImportedBoard } from '@/lib/board/importBoardReferencedCharacters';
 import { getActiveNoteStore } from '@/lib/notes/noteStoreRegistry';
 import { importNote, loadNote } from '@/lib/notes/noteRepository';
+import { reIdNote } from '@/lib/notes/reIdNote';
+import { reIdCharacterAggregate } from '@/lib/character/reIdCharacterAggregate';
 
 // -- Component Imports --
 import { CharacterUndoRedoControls } from '../molecules/CharacterUndoRedoControls';
@@ -136,7 +138,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          const importedData = await importFromFile(file);
          switch (importedData.fileType) {
             case 'FULL_CHARACTER_SHEET': {
-               const newCharacter = harmonizeData(importedData.content, importedData.fileType) as Character;
+               // An import is a fresh entity: re-id so it can't collide with an open tab or overwrite an
+               // existing working row (that is the "update from file" path). The aggregate re-id keeps the
+               // card/journal order and journal bookmarks intact.
+               const newCharacter = reIdCharacterAggregate(harmonizeData(importedData.content, importedData.fileType) as Character);
                openCharacterTab(newCharacter);
                toast.success(tNotifications('Notifications.character.imported'));
                break;
@@ -155,7 +160,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
                break;
             }
             case 'NOTE': {
-               const note = importedData.content as Note;
+               // A fresh import re-ids, so it can't collide with an open note tab or overwrite an existing row.
+               const note = reIdNote(importedData.content as Note);
                await importNote(note, null);
                await openNoteTab(note.id);
                toast.success(tNotifications('Notifications.note.imported'));
@@ -181,7 +187,8 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
          const migratedContent = harmonizeData(importedData.content, importedData.fileType);
 
          if (importedData.fileType === 'FULL_CHARACTER_SHEET') {
-            const newCharacter = migratedContent as Character;
+            // A fresh import re-ids (order + journal bookmarks preserved); "update from file" is the replace path.
+            const newCharacter = reIdCharacterAggregate(migratedContent as Character);
             openCharacterTab(newCharacter);
             toast.success(tNotifications('Notifications.character.imported'));
          } else {
@@ -280,9 +287,10 @@ export function SidebarMenu({ isEditing, isDrawerOpen, isCollapsed, activeWindow
       try {
          const importedData = await importFromFile(file);
          if (importedData.fileType === 'NOTE') {
-            // A note is 2.0-native (no harmonize step); materialize the imported copy into the working
-            // table (unlinked, so a first save routes to Save-As), then open its tab by id.
-            const note = importedData.content as Note;
+            // A note is 2.0-native (no harmonize step); re-id it (a fresh import is a fresh entity, never a
+            // replace-by-id), materialize it into the working table (unlinked, so a first save routes to
+            // Save-As), then open its tab by id.
+            const note = reIdNote(importedData.content as Note);
             await importNote(note, null);
             await openNoteTab(note.id);
             toast.success(tNotifications('Notifications.note.imported'));

@@ -40,6 +40,8 @@ interface TrackersSectionProps {
    storyThemeIds: string[];
    /** Highlight the section as the landing spot for a compatible tracker-type drawer drag. */
    isDropTarget?: boolean;
+   /** Sheet zoom factor, forwarded to each Sortable so the reorder gap lands accurately when zoomed. */
+   scale?: number;
 }
 
 /**
@@ -61,6 +63,7 @@ export function TrackersSection({
    storyTagIds,
    storyThemeIds,
    isDropTarget = false,
+   scale = 1,
 }: TrackersSectionProps) {
    const { t: tTrackers } = useTranslation();
 
@@ -90,9 +93,10 @@ export function TrackersSection({
                         key={tracker.id}
                         id={tracker.id}
                         data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                        scale={scale}
                      >
                         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged} disableLayout={scale !== 1}>
                               <StatusTrackerCard
                                  tracker={tracker}
                                  isEditing={isEditing}
@@ -129,9 +133,10 @@ export function TrackersSection({
                         key={tracker.id}
                         id={tracker.id}
                         data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                        scale={scale}
                      >
                         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged} disableLayout={scale !== 1}>
                               <StoryTagTrackerCard
                                  tracker={tracker}
                                  isEditing={isEditing}
@@ -178,9 +183,10 @@ export function TrackersSection({
                         key={tracker.id}
                         id={tracker.id}
                         data={{ type: DRAG_TYPES.SHEET_TRACKER, item: tracker }}
+                        scale={scale}
                      >
                         {({ dragAttributes, dragListeners, isBeingDragged }) => (
-                           <DragLayoutWrapper isBeingDragged={isBeingDragged}>
+                           <DragLayoutWrapper isBeingDragged={isBeingDragged} disableLayout={scale !== 1}>
                               <StoryThemeTrackerCard
                                  tracker={tracker}
                                  isEditing={isEditing}

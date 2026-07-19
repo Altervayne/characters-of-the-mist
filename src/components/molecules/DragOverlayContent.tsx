@@ -21,6 +21,12 @@ interface DragOverlayContentProps {
    activeDragItem: CardData | Tracker | Journal | DrawerItem | FolderType | null;
    isEditing: boolean;
    isCompactDrawer: boolean;
+   /**
+    * Scale for the preview, matching the source's on-screen size. A sheet card/tracker/journal
+    * renders inside the sheet's zoom layer, but the overlay lives at the DndContext root (unscaled),
+    * so the clone is scaled to the active sheet zoom; everything else stays 1.
+    */
+   contentScale?: number;
 }
 
 /**
@@ -28,7 +34,7 @@ interface DragOverlayContentProps {
  * based on the shape of `activeDragItem`: a folder, a sheet card, a sheet journal, a
  * tracker, or a drawer item (compact or full preview). Renders nothing when no drag is active.
  */
-export function DragOverlayContent({ activeDragItem, isEditing, isCompactDrawer }: DragOverlayContentProps) {
+export function DragOverlayContent({ activeDragItem, isEditing, isCompactDrawer, contentScale = 1 }: DragOverlayContentProps) {
    if (!activeDragItem) {
       return null;
    }
@@ -47,7 +53,7 @@ export function DragOverlayContent({ activeDragItem, isEditing, isCompactDrawer 
       !('cardType' in activeDragItem) && !('trackerType' in activeDragItem) && !('game' in activeDragItem);
 
    return (
-      <motion.div className="shadow-2xl rounded-lg">
+      <motion.div className="shadow-2xl rounded-lg" style={contentScale === 1 ? undefined : { zoom: contentScale }}>
          {isJournal ? (
             <SheetJournalCard journal={activeDragItem as Journal} isEditing={false} />
          ) : isFolder ? (
