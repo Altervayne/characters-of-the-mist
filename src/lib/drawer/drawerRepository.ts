@@ -3,7 +3,8 @@ import { Dexie, type Table, type Collection, type IndexableType, type InsertType
 import cuid from 'cuid';
 
 // -- Utils Imports --
-import { deepReId, reorderList } from '@/lib/utils/drawer';
+import { reorderList } from '@/lib/utils/drawer';
+import { reIdImportedFolderTree } from './reIdImportedContent';
 
 // -- Local Imports --
 import { drawerDatabase as db } from './drawerDatabase';
@@ -704,7 +705,7 @@ export function importNestedFolderAsRecords(folder: Folder, parentFolderId: stri
    if (demoDrawerBackend.isDemoDrawerActive()) return demoDrawerBackend.refuseImport();
    const storedParentId = toStoredParentId(parentFolderId);
    return runWriteTransaction([db.folders, db.items], async () => {
-      const freshFolder = deepReId(folder);
+      const freshFolder = reIdImportedFolderTree(folder);
       const appendOrder = await db.folders.where('parentFolderId').equals(storedParentId).count();
       await writeFolderSubtree(freshFolder, storedParentId, appendOrder);
       return { id: freshFolder.id, name: freshFolder.name, parentFolderId: storedParentId, order: appendOrder };
@@ -734,7 +735,7 @@ export function importDrawerAsFolder(
          items: drawer.rootItems,
          folders: drawer.folders,
       };
-      const freshFolder = deepReId(syntheticFolder);
+      const freshFolder = reIdImportedFolderTree(syntheticFolder);
       const appendOrder = await db.folders.where('parentFolderId').equals(storedParentId).count();
       await writeFolderSubtree(freshFolder, storedParentId, appendOrder);
       return { id: freshFolder.id, name: freshFolder.name, parentFolderId: storedParentId, order: appendOrder };

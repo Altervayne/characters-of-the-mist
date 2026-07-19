@@ -9,57 +9,74 @@ export const patchNotes: PatchNote[] = [
    {
       version: '2.0.0',
       content: `
-### 🎉 2.0.0 — Say hello to Campaigns of the Mist!
-Okay. Deep breath. This is the big one.
+## 🎉 Campaigns of the Mist
+*Alright, this is the big one.*
 
-**Characters of the Mist is now Campaigns of the Mist.**
+### Characters of the Mist is now Campaigns of the Mist.
 
-When I started this, it was a character sheet app. That was the whole idea, a nice home for your themes, your tags, your trackers. But over the past months it quietly grew into something bigger than I planned for, and honestly, calling it a "characters" app started to feel like selling it short.
+When I started this, it was a character sheet app for me and my group to test drive the Tinderbox demo for Legend in the Mist. That was the whole idea, a nice home for your 4 theme cards, your tags, your statuses. But over time, it has become a lot more.
+It first became a fully modular character sheet, with reorderable cards, and infinitely many, along with a complete file system to save your components, and the ability to import and export them.
+Then it became a mobile app you could bring anywhere.
 
-You can now run a whole table in here. Multiple characters side by side. Freeform boards for your maps and your mysteries. Notes for all your worldbuilding. Challenges for your players to throw themselves at. It stopped being just about *who your character is*, and became about *the whole campaign around them*.
+But now, I felt that "Characters of the Mist" wasn't doing justice to what it has become the past months. While I was developing the Mobile version, I kept branching off and brainstorming some cool new stuff I thought about. I also looked into neat ways to answer some requests, like the ability to have more than one character open at once.
+Before I realized it, the Mobile update had taken a LOT more time to come out than I initially anticipated. So I shelved my "work in progress" stuff for a while, and focused on finishing that so I could bring you CotM on mobile phones.
 
-So it gets a name that fits. Same **CotM**, same logo, same \`.cotm\` files, just a bigger promise. I'm a little emotional about this one, not going to lie. Thank you for being here for it.
+And now, I'm bringing you a lot more. It isn't a simple Character Sheet anymore, it's a whole workspace for your game.
+I'm very proud of what it has become, not because it's incredibly popular, but because **I** made it from a dumb little idea that grew to ever bigger proportions as I kept throwing some clay at it and working its shape.
+
+It's still me, Altervayne, all alone.
+And it's still free, open-source, and available everywhere.
+
+But this time, it's bigger.
+
+So thank *you* for being here, and using this dumb little app of mine. I hope it made your game a little bit simpler to run or play.
+
+Alright, enough me being emotional. You want to read about what's new, don't you ? Well, here you go !
+
 
 ### 📱 One thing first, about Mobile
-Almost everything below is **desktop-first, for now**. Mobile still does everything it did before, but Boards, Workspaces, the Notes editor and a good chunk of the rest didn't make the jump *yet*. I didn't want to cram features this big onto a small screen just to tick a box, that never ends well. They're coming to mobile, properly, but they'll take the time they need. Thank you for your patience.
+Almost everything below is **desktop-first, for now**. Mobile still does everything it did before, but Boards, Workspaces, the Notes editor and a good chunk of the rest didn't make the jump *yet*. At this point, if you've read some of my messages online, you know I don't want to rush things *just to get them out*, because the quality suffers from it, massively. Some features will come to mobile. I just can't promise when.
 
 ### 🎨 Custom Themes
-Make it *yours*. There's now a full theme creator built into the app: pick your colors and the entire interface recolors itself around your palette. Everything is built on adaptive tokens, so no matter what you throw at it, the app stays readable in every corner. Light, dark, and anything in between is now up to you.
+Now you can truly make the app *yours*. I had always planned for this to be a thing, and the preset themes were the precursor to that. But now, you actually *can* create a custom theme. You can define every color, and there's even a theme generator from a set of colors you define yourself.
 
 ### 🗂️ Workspaces
-The app is no longer a one-thing-at-a-time affair. **Workspaces** bring a tab system: open several characters, boards and notes at once, each in its own tab, and switch between them instantly. I also snuck in per-workspace zoom, so you can pull a character sheet in close or push it back to see the whole thing. (Desktop for now.)
+Following a lot of requests, the app no longer is just *one* place at a time. I completely understand the premise. It's easier to have several characters open at once for GMs or solo players. Well, now you *can*. The app now features a full tabs system, with a tab strip, and a theoretically unlimited amount of simultaneous open tabs. Just... don't overdo it. I wouldn't want your RAM to collapse into a black hole.
 
 ### 🗺️ Boards
-This is the big one *inside* the big one. A **Board** is a freeform canvas where you can drop... well, almost anything. Live card and tracker embeds, references to your characters, notes, post-its, journals, images, dice trays, zones to group things together, portals to jump around, freehand drawings, connections drawn between items, and Challenge Cards. Maps, relationship webs, clue boards, session prep, your table finally has a shared space to live on.
+This is the big one *inside* the big one, and honestly the part I had the most fun making. A **Board** is a freeform, infinite canvas where you can drop... well, almost anything. Live card and tracker embeds, references to your characters, notes, post-its, journals, images, dice trays, zones to group things together, portals to jump around, freehand drawings, connections drawn between items, and Challenge Cards. All the stuff you usually keep juggling in your head while you run a game, a map, a web of who-knows-who, a wall of clues, your session prep, it finally has somewhere to live outside of it.
 
 ### 📝 Notes
-A proper writing space. **Notes** are full markdown documents with a live-preview editor that formats as you type, no clunky edit-then-preview dance. You can link notes to each other, and to other places in the app, with portals. Drop your statuses and tags right into the text with a quick mention and they become clickable pills. Great for lore, session recaps, NPC dossiers, or just thinking out loud.
+Every game ends up needing a place for words, so here's yours. **Notes** are full markdown documents, but with a live-preview editor that formats as you type, so there's none of that clunky write-then-preview back-and-forth. You can link notes to each other, and to other corners of the app, using portals. And if you drop a status or a tag into your text as a mention, it turns into a clickable pill. Lore, session recaps, that NPC you improvised and now desperately need to remember, or just thinking out loud, it's all fair game.
 
 ### 🧭 The Navigator
-Once your campaign starts spreading across a handful of boards and notes, keeping track of what connects to what gets... interesting. The **Navigator** traces every portal across the whole app into one hierarchical map, following each connection both ways, forward and backward, so you can see exactly how your project hangs together. Every board, note and portal between them, laid out as a single tree you can walk and jump straight through. Drop a portal on a board or a link in a note and it slots right into the graph. Scope it to just the workspace you're in, or open it up to the whole project at once.
+Once your campaign starts sprawling across a handful of boards and notes, keeping track of what links to what gets... let's call it *interesting*. So I built the **Navigator**. It traces every portal across the whole app into one hierarchical map, following each connection both ways, forward *and* backward, so you can see exactly how your project holds together. Every board, note, and portal between them, laid out as a single tree you can walk and jump straight through. Drop a portal on a board or a link in a note, and it slots right into the graph. Scope it down to just the workspace you're in, or open it up to the whole project at once.
 
 ### ⚔️ Challenge Cards
-Give your players something to fight. **Challenge Cards** let you build the threats, obstacles and dangers of your world, complete with limits, statuses, tags, and their threats & consequences. And they're game-aware: Legend in the Mist gets its Specials and Mighty tags, while Metro: Otherscape and City of Mist each get their own tailored variant. Put them on a sheet or scatter them across a board.
+The natural next step to implementing the Mist Engine properly was, of course, Challenge Cards. So here they are ! You can create one for any of the three games, it can have a proper image to represent it, and it comes with all the bells and whistles.
 
 ### 🖼️ Images on Character Sheets
-Give your character a face! You can now add image cards to a sheet, crop them right inside the app (non-destructively, so you can re-crop any time), and pick the aspect that frames them best. Portraits, tokens, reference art, whatever helps the character feel real at the table.
+You can now give your characters a face ! Add an image into a Portrait card, crop it directly within the app, and resize it on your sheet with a simple drag of the corner handle. Hopefully this will make it feel more alive !
 
 ### 🎲 The Dice Tray
-And of course, dice. The **Dice Tray** slides open right from the sidebar: add as many dice as you want, mix in custom-sided ones, tack on modifiers and penalty dice, or just type a formula like \`2d6+3\` and let it build the pool for you. It keeps a history of your rolls, so if you liked a particular setup you can bring it right back. It also lives as a Board element, for when you'd rather leave it out on the table for the whole group to see.
+And of course, dice. What's a TTRPG tool without a few dice ? The **Dice Tray** is a new element that follows you no matter which workspace you're in. Open it from the Sidebar, and then pile on as many dice as you want, throw in custom-sided ones, tack on modifiers and penalty dice, or just type something like \`2d6+3\` and let it build the pool for you. It remembers your past rolls too, so if you had a setup you liked, you can bring it right back. And it also lives as a Board element, for when you'd rather leave it out on the table for everyone to see. I know Mist Engine only needs 2d6 rolls, but when I started building it, I knew I had to just go all the way. Who doesn't love a roll table ?
 
 ### 🎓 A Brand New Tutorial
-The entire onboarding and tutorial system was rebuilt from the ground up. It now runs on its own seeded demo content in an isolated space, so it will **never touch your real characters** while it walks you through things. And it lives in a new Learn section, so you can go back and replay any lesson whenever you like, not just once on your first visit.
+With this much new stuff to explore, the old tutorial just wasn't going to cut it, so I rebuilt the whole onboarding and tutorial system from the ground up. It now runs on its own seeded demo content, in an isolated space, so it will **never touch your real data** while it shows you around. And it lives in a new Learn section, which means you can replay any lesson whenever you feel like it, not just once on your very first day.
 
 ### 🧰 Also in the box
-* **One unified Settings menu**: App Settings, About, and Patch Notes all live under one roof now, with the tutorials tucked into that Learn section.
-* **Full backups**: you can now export a single file with *all* your data (characters, boards, notes, drawer, settings) and restore it anywhere. Your safety net.
-* **In-app announcements**: I can now surface important news right at the top of the app when something needs saying.
-* **Under the hood**: your data moved to a sturdier storage engine to carry everything above without breaking a sweat.
+A handful of smaller things I tucked in along the way:
+* **One unified Settings menu**: App Settings, About, and Patch Notes all live under one roof now, with the tutorials nestled into that Learn section.
+* **Full backups**: you can export a single file holding *all* your data (characters, boards, notes, drawer, settings) and restore it anywhere. Your safety net, just in case.
+* **In-app announcements**: I can now drop a short notice at the top of the app whenever there's something you should know.
+* **Under the hood**: your data moved to a sturdier storage engine, so it can carry everything above without breaking a sweat.
+* **Custom Markdown tokens**: Wrap your statuses or story tags in any markdown-capable space in the app with these bad boys "{}", and you get a *clickable* tracker pill that creates it in your current workspace.
 
 ### 💬 So what's next?
-Mobile, mostly. Bringing all of this to phones and tablets in a way that actually feels *good* to use, not just possible. And beyond that, whatever you ask for. The Tools of the Mist Discord is still the place, I still read every message, and I still build slowly but surely.
+A serious look into PDF exports. It's a commonly requested feature, but it's also one of the more... *tedious*, to get right.
+I'll also look into bringing some of the new features to mobile devices.
 
-Thank you, genuinely, for sticking around long enough to watch a character sheet grow into a whole campaign. Now go make something.
+Thank you, again, for sticking around long enough to watch a silly little character sheet grow into a whole campaign. Now go make something with it.
 `
    },
    {

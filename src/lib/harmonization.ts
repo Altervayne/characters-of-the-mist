@@ -255,8 +255,10 @@ export function harmonizeData<T extends object>(data: T, dataType: GeneralItemTy
       harmonizedData = ensureCharacterJournals(harmonizedData as Character);
       // The manifest backfill reads the final cards + journals, so it runs last.
       harmonizedData = ensureSheetLayout(harmonizedData as Character);
-   } else if (isCard(harmonizedData) && dataType === 'IMAGE_CARD') {
-      harmonizedData = dropCardOrder(ensureImageCardSize(harmonizedData));
+   } else if (isCard(harmonizedData)) {
+      // A standalone drawer card (any type) drops its defunct `Card.order`; only an IMAGE_CARD also needs the
+      // size/game backfill. `dropCardOrder` no-ops when `order` is already absent, so this is idempotent.
+      harmonizedData = dropCardOrder(dataType === 'IMAGE_CARD' ? ensureImageCardSize(harmonizedData) : harmonizedData);
    } else if (TRACKER_ITEM_TYPES.has(dataType as GeneralItemType)) {
       // A standalone tracker saved in the drawer: its content IS the tracker; drop its dead `game`.
       harmonizedData = stripTrackerGame(harmonizedData);

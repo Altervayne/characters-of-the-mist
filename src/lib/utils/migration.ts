@@ -445,7 +445,6 @@ function transformLegacyOtherscapeCharacter(legacyData: LegacyCharacter): Migrat
    const deconstructedTrackers: StatusTracker[] = legacyData.statuses.map(status => ({
       id: cuid(),
       name: status.name,
-      game: 'OTHERSCAPE',
       trackerType: 'STATUS',
       tiers: status.level,
    }));

@@ -11,6 +11,7 @@ import { useFileDrop } from '@/hooks/useFileDrop';
 // -- Utils Imports --
 import { importFromFile } from '@/lib/utils/export-import';
 import { harmonizeData } from '@/lib/harmonization';
+import { reIdCharacterAggregate } from '@/lib/character/reIdCharacterAggregate';
 import { importBoard } from '@/lib/board/boardRepository';
 import { prepareImportedBoard } from '@/lib/board/importBoardReferencedCharacters';
 import { useThemeImport } from '@/lib/theme/useThemeImport';
@@ -62,7 +63,11 @@ export function useCharacterSheetFileImport() {
          //  Full character sheet
          // ==================
          if (fileType === 'FULL_CHARACTER_SHEET') {
-            const characterData = migratedContent as Character;
+            // An imported file is a fresh, independent copy: re-id the aggregate (cross-ref-safe, keeping the
+            // sheet-layout manifest + journal bookmarks consistent) so re-importing the same file opens a NEW
+            // tab instead of silently focusing the source, and a file's id can't collide with an already-open
+            // autosaved instance or a board's characterId reference. Mirrors the mobile import path.
+            const characterData = reIdCharacterAggregate(migratedContent as Character);
             openCharacterTab(characterData);
             setContextualGame(characterData.game);
             toast.success(tNotifications('Notifications.character.imported'));

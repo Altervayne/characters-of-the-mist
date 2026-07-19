@@ -350,3 +350,69 @@ describe('harmonization: drawer file-import path', () => {
       expect(backpack[0]).toMatchObject({ isActive: false, isScratched: false });
    });
 });
+
+/*
+ * Version-gated migrator coverage: the 1.0.2 storyThemes backfill and the OTHERSCAPE `specials` /
+ * CITY_OF_MIST `nemeses` legs of the 1.3.0 tag-list upgrade were covered code with no test - a regression
+ * could have silently disabled them. These lock them in.
+ */
+describe('harmonization: 1.0.2 storyThemes backfill', () => {
+   it('adds an empty storyThemes array to a pre-1.0.2 sheet whose trackers lack it', () => {
+      const sheet = {
+         id: 'c1', name: 'Hero', game: 'LEGENDS', version: '1.0.0',
+         cards: [], journals: [], sheetLayout: [],
+         trackers: { statuses: [], storyTags: [] }, // no storyThemes at 1.0.0
+      } as unknown as Character;
+
+      const harmonized = harmonizeData(sheet, 'FULL_CHARACTER_SHEET');
+      expect(Array.isArray(harmonized.trackers.storyThemes)).toBe(true);
+      expect(harmonized.trackers.storyThemes).toEqual([]);
+   });
+});
+
+describe('harmonization: 1.3.0 tag-list upgrade (all three lists)', () => {
+   const bland = (name: string) => ({ id: `t-${name}`, name });
+
+   it('upgrades OTHERSCAPE character-card specials from BlandTag[] to Tag[]', () => {
+      const sheet = {
+         id: 'c1', name: 'Runner', game: 'OTHERSCAPE', version: '1.2.0',
+         cards: [{ id: 'card', title: '', order: 0, isFlipped: false, cardType: 'CHARACTER_CARD', details: { game: 'OTHERSCAPE', specials: [bland('Augmented')] } }],
+         journals: [], sheetLayout: [], trackers: { statuses: [], storyTags: [], storyThemes: [] },
+      } as unknown as Character;
+
+      const harmonized = harmonizeData(sheet, 'FULL_CHARACTER_SHEET');
+      const specials = (harmonized.cards[0].details as unknown as { specials: Array<Record<string, unknown>> }).specials;
+      expect(specials[0]).toMatchObject({ name: 'Augmented', isActive: false, isScratched: false });
+   });
+
+   it('upgrades CITY_OF_MIST character-card nemeses from BlandTag[] to Tag[]', () => {
+      const sheet = {
+         id: 'c1', name: 'Detective', game: 'CITY_OF_MIST', version: '1.2.0',
+         cards: [{ id: 'card', title: '', order: 0, isFlipped: false, cardType: 'CHARACTER_CARD', details: { game: 'CITY_OF_MIST', nemeses: [bland('The Cabal')] } }],
+         journals: [], sheetLayout: [], trackers: { statuses: [], storyTags: [], storyThemes: [] },
+      } as unknown as Character;
+
+      const harmonized = harmonizeData(sheet, 'FULL_CHARACTER_SHEET');
+      const nemeses = (harmonized.cards[0].details as unknown as { nemeses: Array<Record<string, unknown>> }).nemeses;
+      expect(nemeses[0]).toMatchObject({ name: 'The Cabal', isActive: false, isScratched: false });
+   });
+});
+
+describe('harmonization: standalone drawer card', () => {
+   it('upgrades a BARE CHARACTER_CARD (no version) via the default 1.0.0 branch, and drops its order', () => {
+      // The exact shape a standalone drawer character-card takes on import: no `version`, so it enters via
+      // hasRegisteredMigration defaulting to '1.0.0' and runs the idempotent 1.3.0 upgrade.
+      const card = { id: 'card', title: '', order: 3, isFlipped: false, cardType: 'CHARACTER_CARD', details: { game: 'OTHERSCAPE', specials: [{ id: 's1', name: 'Cyberarm' }] } };
+
+      const harmonized = harmonizeData(card, 'CHARACTER_CARD') as typeof card;
+      const specials = (harmonized.details as unknown as { specials: Array<Record<string, unknown>> }).specials;
+      expect(specials[0]).toMatchObject({ name: 'Cyberarm', isActive: false, isScratched: false });
+      expect(harmonized).not.toHaveProperty('order'); // A-1: standalone cards drop the defunct order
+   });
+
+   it('drops the defunct order from a standalone theme card too', () => {
+      const card = { id: 't', title: '', order: 2, isFlipped: false, cardType: 'CHARACTER_THEME', details: { game: 'LEGENDS' } };
+      const harmonized = harmonizeData(card, 'CHARACTER_THEME') as typeof card;
+      expect(harmonized).not.toHaveProperty('order');
+   });
+});
