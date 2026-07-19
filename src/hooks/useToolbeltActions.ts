@@ -27,7 +27,8 @@ import {
    Dices,
    Upload,
    RefreshCw,
-   LogOut
+   LogOut,
+   Image as ImageIcon
 } from 'lucide-react';
 
 // -- Other Library Imports --
@@ -61,7 +62,7 @@ import type { CardViewMode, Card, Tracker } from '@/lib/types/character';
  * Hook to build action lists for the Toolbelt based on the current context.
  * Returns both item-specific actions and global actions (like Add Card).
  */
-export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void, onEditCard?: (card: Card) => void, onImportUpdate?: () => void): ToolbeltActions {
+export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'trackers' | 'cards', onEnterCardReorderMode?: () => void, onOpenAddCard?: () => void, onSaveToDrawer?: (item: Card | Tracker) => void, onEditCard?: (card: Card) => void, onImportUpdate?: () => void, onCreatePortrait?: () => void, onEditPortrait?: () => void): ToolbeltActions {
 	const { t } = useTranslation();
 	const {
 		loadCharacter,
@@ -291,6 +292,21 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 				},
 				show: true
 			});
+
+			// The portrait is a sheet singleton: create it (and pick its image) when absent, otherwise open
+			// its edit screen. Handlers are supplied only where the create/edit surfaces exist, so this stays
+			// hidden without them.
+			if (onCreatePortrait) {
+				const hasPortrait = character?.cards.some((c) => c.cardType === 'IMAGE_CARD') ?? false;
+				globalActions.push({
+					id: 'portrait',
+					label: hasPortrait ? t('Toolbelt.editPortrait') : t('Toolbelt.createPortrait'),
+					icon: ImageIcon,
+					group: 'add',
+					onClick: () => (hasPortrait ? onEditPortrait?.() : onCreatePortrait()),
+					show: true
+				});
+			}
 		}
 
 		// Add trackers (only on trackers tab)
@@ -616,5 +632,7 @@ export function useToolbeltActions(context: ToolbeltContext, activeTab?: 'tracke
 		onSaveToDrawer,
 		onEditCard,
 		onImportUpdate,
+		onCreatePortrait,
+		onEditPortrait,
 	]);
 }

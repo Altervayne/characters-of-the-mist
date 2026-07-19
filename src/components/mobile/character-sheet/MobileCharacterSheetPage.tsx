@@ -19,6 +19,7 @@ import MobileAbout from '@/components/mobile/menu/MobileAbout';
 import MobilePatchNotes from '@/components/mobile/menu/MobilePatchNotes';
 import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
 import MobileAddCard from '@/components/mobile/menu/MobileAddCard';
+import MobileEditPortrait from '@/components/mobile/menu/MobileEditPortrait';
 import MobileDrawer from '@/components/mobile/drawer/MobileDrawer';
 import { MobileDiceTraySheet } from '@/components/mobile/dice/MobileDiceTraySheet';
 import { CharacterBootLoading } from '@/components/molecules/CharacterBootLoading';
@@ -42,7 +43,7 @@ type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
 // The full-screen chrome tabs (settings drill-down, themes, about, add-card): the bottom navigation hides while
 // any of these is open so it never sits over a pushed sub-screen.
-const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themeEditor', 'about', 'patchNotes', 'addCard']);
+const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themeEditor', 'about', 'patchNotes', 'addCard', 'editPortrait']);
 
 // The landing tab when the app opens, or history resets with nothing pushed: the
 // sheet when a character is loaded (or still loading at boot), otherwise the Menu -
@@ -263,6 +264,10 @@ export default function MobileCharacterSheetPage() {
 		navigateToTab('addCard');
 	};
 
+	const handleEditPortrait = () => {
+		navigateToTab('editPortrait');
+	};
+
 	const handleConfirmCard = (options: CreateCardOptions, cardId?: string) => {
 		let resolvedCardId: string;
 		if (cardId) {
@@ -328,6 +333,7 @@ export default function MobileCharacterSheetPage() {
 						onReorderingCardsChange={setReorderingWithHistory}
 						onOpenAddCard={handleOpenAddCard}
 						onEditCard={handleEditCard}
+						onEditPortrait={handleEditPortrait}
 						initialCardId={newlyCreatedCardId}
 					/>
 				)}
@@ -381,6 +387,9 @@ export default function MobileCharacterSheetPage() {
 						cardData={cardToEdit ?? undefined}
 						game={character.game}
 					/>
+				)}
+				{activeTab === 'editPortrait' && character && (
+					<MobileEditPortrait onBack={() => navigateToTab('sheet')} />
 				)}
 			</div>
 

@@ -17,7 +17,8 @@ export type MobileTabId =
    | 'themeEditor'
    | 'about'
    | 'patchNotes'
-   | 'addCard';
+   | 'addCard'
+   | 'editPortrait';
 
 /** The two sub-tabs inside the character sheet. */
 export type MobileSheetTab = 'trackers' | 'cards';

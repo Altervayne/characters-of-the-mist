@@ -12,7 +12,7 @@ import { useDeviceType } from '@/hooks/useDeviceType';
 import toast from 'react-hot-toast';
 
 // -- Icon Imports --
-import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed } from 'lucide-react';
+import { FileUp, Import, Save, SaveAll, Pencil, Settings, Sparkles, Info, GraduationCap, PanelLeftOpen, BookOpen, FlipHorizontal, Type, Sun, Moon, Palette, SwatchBook, Undo2, Redo2, FilePlus, ListPlus, ListTree, Dices, UserPlus, LayoutGrid, Layers, Combine, Link, X, ChevronRight, ChevronLeft, Skull, NotebookText, NotebookPen, MousePointer2, Pen, Slash, Waypoints, Pentagon, Shapes, Eraser, Brush, Highlighter, Square, Grip, Grid3x3, Rows3, Columns3, Hexagon, LocateFixed, Image as ImageIcon } from 'lucide-react';
 
 // -- Utils Imports --
 import { exportCharacterSheet, exportDrawer, exportToFile, generateExportFilename } from '@/lib/utils/export-import';
@@ -73,7 +73,7 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    const { t: t } = useTranslation();
    const { t: tNotifications } = useTranslation();
    const character = useCharacterStore((state) => state.character);
-   const { resetCharacter } = useCharacterActions();
+   const { resetCharacter, addPortrait } = useCharacterActions();
    const { setSideBySideView, toggleDiceTray, toggleNoteOutline, toggleLayersPanel, toggleNavigator } = useAppSettingsActions();
    const { setSettingsOpen, setSettingsInitialSection, requestBoardAction } = useAppGeneralStateActions();
 
@@ -148,6 +148,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    // Creation commands need a game with cards/trackers; NEUTRAL has none.
    const currentGame = character?.game;
    const showCreationCommands = currentGame && currentGame !== 'NEUTRAL';
+   // The portrait is a sheet singleton, so its create command hides once one exists (like the add menu's row).
+   const showCreatePortrait = !!character && !character.cards.some((c) => c.cardType === 'IMAGE_CARD');
 
    // Labels are clean i18n text; cmdk narrows on `keywords` (English alias tokens) too.
    const allCommands: ScopedCommand[] = [
@@ -246,6 +248,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       { id: 'createChallenge', scope: 'character', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new'], icon: Skull, group: t('CommandPalette.groups.creation'), action: onCreateChallenge },
       // A journal is game-agnostic (the character's own notebook), so it's creatable on any character tab too.
       { id: 'createJournal', scope: 'character', label: t('CommandPalette.commands.createJournal'), keywords: ['journal', 'notebook', 'notes', 'pages', 'create', 'new'], icon: NotebookText, group: t('CommandPalette.groups.creation'), action: onCreateJournal },
+      // The portrait is a game-agnostic singleton; the command drops away once the sheet has one.
+      ...(showCreatePortrait ? [
+         { id: 'createPortrait', scope: 'character' as const, label: t('CommandPalette.commands.createPortrait'), keywords: ['portrait', 'image', 'picture', 'photo', 'avatar', 'create', 'new'], icon: ImageIcon, group: t('CommandPalette.groups.creation'), action: addPortrait },
+      ] : []),
       // The board's sticky pointer tools, mirroring the top-left segment. Ephemeral (the canvas owns the
       // active tool), so both route through the same one-shot request bridge the creates use.
       { id: 'setToolSelect', scope: 'board', label: t('CommandPalette.commands.setToolSelect'), keywords: ['tool', 'select', 'pointer', 'move', 'board'], icon: MousePointer2, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('setTool:select') },

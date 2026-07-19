@@ -18,10 +18,12 @@ import { Check } from 'lucide-react';
 
 // -- Store Imports --
 import { useCharacterStore, useCharacterActions } from '@/lib/stores/characterStore';
+import { getActiveCharacterStore } from '@/lib/character/characterStoreRegistry';
 import { useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useAppSettingsStore } from '@/lib/stores/appSettingsStore';
 import { useMobileSaveToDrawer } from '@/hooks/mobile/useMobileSaveToDrawer';
 import { useMobileCardSheetGestures } from '@/hooks/mobile/useMobileCardSheetGestures';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -49,6 +51,7 @@ interface MobileCharacterSheetProps {
 	onReorderingCardsChange?: (isReordering: boolean) => void;
 	onOpenAddCard?: () => void;
 	onEditCard?: (card: Card) => void;
+	onEditPortrait?: () => void;
 	initialCardId?: string | null;
 }
 
@@ -62,6 +65,7 @@ export default function MobileCharacterSheet({
 	onReorderingCardsChange: controlledOnReorderingCardsChange,
 	onOpenAddCard,
 	onEditCard,
+	onEditPortrait,
 	initialCardId
 }: MobileCharacterSheetProps = {}) {
 	const { t } = useTranslation();
@@ -91,7 +95,26 @@ export default function MobileCharacterSheet({
 
 	// Character data
 	const character = useCharacterStore((state) => state.character);
-	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard } = useCharacterActions();
+	const { updateCharacterName, addStatus, addStoryTag, addStoryTheme, flipCard, addPortrait, setCardImage } = useCharacterActions();
+
+	// Portrait create: add the singleton card, then pick + free-crop its image (the image lands on the
+	// singleton, resolved fresh at pick time so the async crop never closes over a stale id).
+	const {
+		fileInputRef: portraitInputRef,
+		open: openPortraitPicker,
+		handleFileSelected: onPortraitFileSelected,
+		cropperDialog: portraitCropperDialog,
+	} = useImageUpload(
+		(hash) => {
+			const portrait = getActiveCharacterStore()?.getState().character?.cards.find((c) => c.cardType === 'IMAGE_CARD');
+			if (portrait) setCardImage(portrait.id, hash);
+		},
+		{ aspect: 'free' },
+	);
+	const handleCreatePortrait = () => {
+		addPortrait();
+		openPortraitPicker();
+	};
 
 	// Settings
 	const isEditing = useAppGeneralStateStore((state) => state.isEditing);
@@ -284,6 +307,8 @@ export default function MobileCharacterSheet({
 					onOpenAddCard={onOpenAddCard}
 					onSaveToDrawer={handleSaveToDrawer}
 					onEditCard={onEditCard}
+					onCreatePortrait={handleCreatePortrait}
+					onEditPortrait={onEditPortrait}
 				/>
 			)}
 
@@ -318,6 +343,16 @@ export default function MobileCharacterSheet({
 			onConfirm={handleConfirmSaveToDrawer}
 			defaultName={saveToDrawerDefaultName}
 		/>
+
+		{/* Portrait create: the picker + crop stage for the "Create Portrait" toolbelt action. */}
+		<input
+			ref={portraitInputRef}
+			type="file"
+			accept="image/*"
+			className="hidden"
+			onChange={onPortraitFileSelected}
+		/>
+		{portraitCropperDialog}
 		</>
 	);
 }

@@ -511,6 +511,22 @@
       "tooSmall": "This crop is too small. Drag a larger area."
    },
 
+   "MobileEditPortrait": {
+      "title": "Edit Portrait",
+      "missing": "This portrait is no longer available.",
+      "back": "Back",
+      "aspect": "Aspect",
+      "aspectPortrait": "Portrait",
+      "aspectSquare": "Square",
+      "aspectLandscape": "Landscape",
+      "replaceImage": "Replace image",
+      "delete": "Delete portrait",
+      "deleteConfirmTitle": "Delete portrait?",
+      "deleteConfirmBody": "This removes the portrait card from the sheet.",
+      "deleteConfirm": "Delete",
+      "cancel": "Cancel"
+   },
+
    "CharacterSheetPage": {
 
       "characterNamePlaceholder": "Character Name...",
@@ -1425,6 +1441,7 @@
          "createTracker": "Create: Tracker",
          "createChallengeCard": "Create: Challenge Card",
          "createJournal": "Create: Journal",
+         "createPortrait": "Create: Portrait",
          "embedNote": "Embed: Note",
          "setToolSelect": "Tool: Select",
          "setToolPen": "Tool: Pen",
@@ -2184,6 +2201,8 @@
       "addStoryTag": "Add Story Tag",
       "addStoryTheme": "Add Story Theme",
       "reorderCards": "Reorder Cards",
+      "createPortrait": "Create Portrait",
+      "editPortrait": "Edit Portrait",
       "flipCard": "Flip Card",
       "export": "Export",
       "sideBySideMode": "Side by Side",

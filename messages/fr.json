@@ -508,6 +508,21 @@
       "apply": "[TO COMPLETE]",
       "tooSmall": "[TO COMPLETE]"
    },
+   "MobileEditPortrait": {
+      "title": "[TO COMPLETE]",
+      "missing": "[TO COMPLETE]",
+      "back": "[TO COMPLETE]",
+      "aspect": "[TO COMPLETE]",
+      "aspectPortrait": "[TO COMPLETE]",
+      "aspectSquare": "[TO COMPLETE]",
+      "aspectLandscape": "[TO COMPLETE]",
+      "replaceImage": "[TO COMPLETE]",
+      "delete": "[TO COMPLETE]",
+      "deleteConfirmTitle": "[TO COMPLETE]",
+      "deleteConfirmBody": "[TO COMPLETE]",
+      "deleteConfirm": "[TO COMPLETE]",
+      "cancel": "[TO COMPLETE]"
+   },
    "CharacterSheetPage": {
       "characterNamePlaceholder": "Nom du Personnage...",
       "addElement": "[TO COMPLETE]",
@@ -1344,6 +1359,7 @@
          "createTracker": "Créer : Suivi",
          "createChallengeCard": "[TO COMPLETE]",
          "createJournal": "[TO COMPLETE]",
+         "createPortrait": "[TO COMPLETE]",
          "embedNote": "[TO COMPLETE]",
          "setToolSelect": "[TO COMPLETE]",
          "setToolPen": "[TO COMPLETE]",
@@ -2065,6 +2081,8 @@
       "addStoryTag": "Ajouter un Trait Narratif",
       "addStoryTheme": "Ajouter un Thème Narratif",
       "reorderCards": "Réorganiser les Cartes",
+      "createPortrait": "[TO COMPLETE]",
+      "editPortrait": "[TO COMPLETE]",
       "flipCard": "Retourner la Carte",
       "export": "Exporter",
       "sideBySideMode": "Côte à Côte",

@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { CropSurface } from '@/components/molecules/CropSurface';
 
+// -- Hook Imports --
+import { useDeviceType } from '@/hooks/useDeviceType';
+
 // -- Pipeline --
 import { cropImage, type CropRegion } from '@/lib/assets/cropImage';
 
@@ -37,6 +40,7 @@ interface ImageCropperDialogProps {
 
 export function ImageCropperDialog({ imageUrl, bitmap, aspect, onCancel, onComplete }: ImageCropperDialogProps) {
    const { t } = useTranslation();
+   const { isMobile } = useDeviceType();
    const [rotation, setRotation] = useState(0);
    const [region, setRegion] = useState<CropRegion | null>(null);
    const [resetKey, setResetKey] = useState(0);
@@ -59,6 +63,62 @@ export function ImageCropperDialog({ imageUrl, bitmap, aspect, onCancel, onCompl
          setIsCutting(false);
       }
    };
+
+   // Mobile takes the whole viewport: a top-to-bottom sheet with the stage filling the height between a
+   // fixed control bar and the accept/cancel footer, both clear of the device insets.
+   if (isMobile) {
+      return (
+         <Dialog open onOpenChange={(open) => !open && onCancel()}>
+            <DialogContent
+               showCloseButton={false}
+               className="left-0 top-0 flex h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:max-w-none"
+            >
+               {/* Header: title + a live preview of the crop in its own shape. */}
+               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3 pt-safe">
+                  <DialogTitle className="text-base">{t('ImageCropper.title')}</DialogTitle>
+                  <DestinationPreview imageUrl={imageUrl} region={region} rotation={rotation} source={bitmap} />
+               </div>
+
+               {/* Stage: fills the space between the header and the controls. */}
+               <div className="min-h-0 w-full flex-1 bg-muted">
+                  <CropSurface
+                     image={imageUrl}
+                     sourceWidth={bitmap.width}
+                     sourceHeight={bitmap.height}
+                     rotation={rotation}
+                     aspect={lockedAspect}
+                     resetKey={resetKey}
+                     onCropChange={setRegion}
+                  />
+               </div>
+
+               {/* Control bar: the rotate pair, then reset set apart. */}
+               <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 py-3">
+                  <IconButton type="button" variant="ghost" onClick={() => setRotation((current) => (current + 270) % 360)} aria-label={t('ImageCropper.rotateCcw')} title={t('ImageCropper.rotateCcw')}>
+                     <RotateCcw className="h-5 w-5" />
+                  </IconButton>
+                  <IconButton type="button" variant="ghost" onClick={() => setRotation((current) => (current + 90) % 360)} aria-label={t('ImageCropper.rotateCw')} title={t('ImageCropper.rotateCw')}>
+                     <RotateCw className="h-5 w-5" />
+                  </IconButton>
+                  <IconButton type="button" variant="ghost" onClick={reset} className="ml-auto" aria-label={t('ImageCropper.reset')} title={t('ImageCropper.reset')}>
+                     <Undo2 className="h-5 w-5" />
+                  </IconButton>
+               </div>
+
+               {tooSmall && <p className="shrink-0 px-4 pb-1 text-sm text-destructive">{t('ImageCropper.tooSmall')}</p>}
+
+               {/* Footer: full-width touch targets, clear of the bottom inset. */}
+               <div className="flex shrink-0 gap-2 border-t border-border px-4 py-3 pb-safe">
+                  <Button type="button" variant="outline" onClick={onCancel} className="h-11 flex-1 cursor-pointer">{t('ImageCropper.cancel')}</Button>
+                  <Button type="button" onClick={accept} disabled={!region || tooSmall || isCutting} className="h-11 flex-1 cursor-pointer">
+                     {isCutting && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                     {t('ImageCropper.apply')}
+                  </Button>
+               </div>
+            </DialogContent>
+         </Dialog>
+      );
+   }
 
    return (
       <Dialog open onOpenChange={(open) => !open && onCancel()}>

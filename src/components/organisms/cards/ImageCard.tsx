@@ -41,8 +41,9 @@ import type { CardComponentProps } from '@/components/organisms/cards/resolveCar
  * image-specific set/change/remove/resize controls live in the card body.
  *
  * The desktop sheet card renders at its persisted `details.width`/`height` (px); the
- * user resizes it from the bottom-right corner handle or the preset menu. Mobile and
- * the drawer preview keep their fixed footprints (custom px never drives them).
+ * user resizes it from the bottom-right corner handle or the preset menu. Mobile fills
+ * the card column at that persisted ASPECT (height from width:height, so the aspect
+ * presets reshape it); the drawer preview keeps a fixed footprint.
  */
 
 interface LiveSize {
@@ -286,8 +287,6 @@ const ImageCardContent = React.memo(
             </div>
          );
 
-         const isFixedFootprint = isMobile || isDrawerPreview;
-
          return (
             <motion.div ref={ref} {...hoverHandlers} className="relative">
                {!isDrawerPreview && !isSnapshot && !isBoardEmbed && (
@@ -303,12 +302,18 @@ const ImageCardContent = React.memo(
                )}
                <Card
                   className={cn(
-                     isMobile ? 'w-full h-full' : isDrawerPreview ? 'w-62.5 h-30' : '',
+                     isMobile ? 'w-62.5' : isDrawerPreview ? 'w-62.5 h-30' : '',
                      'flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0 relative z-0',
                      'border-card-accent card-type-image',
                      { 'shadow-none pointer-events-none border-card-border': isDrawerPreview },
                   )}
-                  style={isFixedFootprint ? undefined : { width: cardWidth, height: cardHeight }}
+                  style={
+                     isMobile
+                        ? { aspectRatio: `${cardWidth} / ${cardHeight}` }
+                        : isDrawerPreview
+                           ? undefined
+                           : { width: cardWidth, height: cardHeight }
+                  }
                >
                   {imageArea}
                </Card>

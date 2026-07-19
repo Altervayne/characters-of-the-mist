@@ -28,6 +28,9 @@ export default function MobileCardCarousel({ cards, currentIndex, onOpenAddCard 
 			card,
 			isEditing,
 			useVerticalStack: true,
+			// The portrait renders at a fixed mobile footprint (no desktop resize chrome); its edit
+			// controls live in the dedicated portrait screen.
+			isMobile: card.cardType === 'IMAGE_CARD',
 			onEditCard: () => {}, // TODO: implement later
 			onExport: () => {} // TODO: implement later
 		};
