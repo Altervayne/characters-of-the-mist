@@ -5,6 +5,7 @@ import { ThemeClassManager } from '@/components/providers/ThemeClassManager';
 import { AppStartManagerProvider } from '@/components/providers/AppStartManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
+import { OldDomainBanner } from '@/components/OldDomainBanner';
 import { router } from '@/router';
 import { useDeviceType } from '@/hooks/useDeviceType';
 import '@/app/global.css';
@@ -14,7 +15,13 @@ function AppContent() {
 
   return (
     <>
-      <RouterProvider router={router} />
+      {/* Old-domain "we've moved" shell: the banner reserves the top row, the routed app fills the rest. */}
+      <div className="flex flex-col" style={{ height: '100dvh', width: '100dvw' }}>
+        <OldDomainBanner />
+        <div className="min-h-0 flex-1">
+          <RouterProvider router={router} />
+        </div>
+      </div>
       <PWAUpdatePrompt />
       <Toaster
         position={isMobile ? 'top-center' : 'bottom-center'}

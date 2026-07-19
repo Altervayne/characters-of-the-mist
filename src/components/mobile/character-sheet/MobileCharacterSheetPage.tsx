@@ -225,14 +225,14 @@ export default function MobileCharacterSheetPage() {
 	// If no character is loaded, show the main menu
 	if (!character) {
 		return (
-			<div className="overflow-hidden" style={{ height: '100dvh', width: '100dvw' }}>
+			<div className="overflow-hidden" style={{ height: '100%', width: '100dvw' }}>
 				<MobileMainMenu onOpenDrawer={handleOpenDrawer} />
 			</div>
 		);
 	}
 
 	return (
-		<div className="overflow-hidden flex flex-col" style={{ height: '100dvh', width: '100dvw' }}>
+		<div className="overflow-hidden flex flex-col" style={{ height: '100%', width: '100dvw' }}>
 			{/* Main Content */}
 			<div className="flex-1 overflow-hidden">
 				{activeTab === 'sheet' && (

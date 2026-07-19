@@ -154,7 +154,7 @@ function DesktopCharacterSheetPage() {
 
    return (
       <DndContext onDragOver={handleDragOver} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={customCollisionDetection}>
-         <div className="flex bg-background text-foreground" style={{ height: '100dvh', width: '100dvw' }}>
+         <div className="flex bg-background text-foreground" style={{ height: '100%', width: '100dvw' }}>
             <SidebarMenu 
                isEditing={isEditing}
                isDrawerOpen={isDrawerOpen}
