@@ -1257,7 +1257,9 @@ export function useCharacterSheetDnD() {
             // Game mismatch: the drop can't land, tell the user why instead of a silent
             // no-op. NEUTRAL items are game-agnostic, so they skip this gate.
             if (draggedItem.game !== 'NEUTRAL' && draggedItem.game !== character.game) {
-               toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
+               toast.error(tNotifications(draggedItem.type === 'CHALLENGE_CARD'
+                  ? 'Notifications.general.importFailedWrongGameChallenge'
+                  : 'Notifications.general.importFailedWrongGame'));
                return;
             }
 

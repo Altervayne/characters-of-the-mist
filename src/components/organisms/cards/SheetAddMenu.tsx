@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
+import { hasChallengeVariant } from '@/lib/utils/character';
 
 // -- Constant Imports --
 import { getGameVisual } from '@/lib/constants/gameVisuals';
@@ -58,7 +59,7 @@ export function SheetAddMenu({ game, hasPortrait, onAddCard, onAddPortrait, onAd
    const rows: SheetAddRow[] = [
       { id: 'card', icon: getGameVisual(game).Icon, labelKey: 'CharacterSheetPage.addCard', onSelect: onAddCard },
       { id: 'portrait', icon: getItemTypeIconComponent('IMAGE_CARD'), labelKey: 'CharacterSheetPage.addPortrait', onSelect: onAddPortrait, hidden: hasPortrait },
-      { id: 'challenge', icon: getItemTypeIconComponent('CHALLENGE_CARD'), labelKey: 'CharacterSheetPage.addChallenge', onSelect: onAddChallenge },
+      { id: 'challenge', icon: getItemTypeIconComponent('CHALLENGE_CARD'), labelKey: 'CharacterSheetPage.addChallenge', onSelect: onAddChallenge, hidden: !hasChallengeVariant(game) },
       { id: 'journal', icon: getItemTypeIconComponent('JOURNAL'), labelKey: 'CharacterSheetPage.addJournal', onSelect: onAddJournal },
    ];
 

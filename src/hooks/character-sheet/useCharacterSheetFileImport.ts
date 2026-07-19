@@ -111,7 +111,9 @@ export function useCharacterSheetFileImport() {
          // ==================
          // NEUTRAL items are game-agnostic, so they import onto any character.
          if (game !== 'NEUTRAL' && game !== character.game) {
-            toast.error(tNotifications('Notifications.general.importFailedWrongGame'));
+            toast.error(tNotifications(fileType === 'CHALLENGE_CARD'
+               ? 'Notifications.general.importFailedWrongGameChallenge'
+               : 'Notifications.general.importFailedWrongGame'));
             return;
          }
 

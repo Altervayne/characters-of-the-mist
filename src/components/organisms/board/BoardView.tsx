@@ -27,7 +27,7 @@ import { EMBEDDED_TRACKER_SIZES, EMBEDDED_CARD_SIZE, embeddedSpecForDrawerItem }
 import { getItem } from '@/lib/drawer/drawerRepository';
 import { emptyTracker, type TrackerType } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
-import { GAME_VISUALS, GAME_CARD_OPTIONS } from '@/lib/constants/gameVisuals';
+import { GAME_VISUALS, GAME_CARD_OPTIONS, CHALLENGE_GAME_OPTIONS } from '@/lib/constants/gameVisuals';
 import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 import { CREATABLE_BY_KIND, type CreatableKind } from '@/lib/creation/creatableRegistry';
 import { CREATION_TAXONOMY } from '@/lib/creation/creationTaxonomy';
@@ -68,6 +68,7 @@ import type { LinkInsertTarget } from '@/lib/portals/buildLinkToken';
 import type { Point } from '@/lib/board/boardConnections';
 import type { Card } from '@/lib/types/character';
 import type { GameSystem } from '@/lib/types/drawer';
+import type { ChallengeGame } from '@/lib/types/common';
 import type { CreateCardOptions } from '@/lib/types/creation';
 
 /*
@@ -1361,8 +1362,8 @@ function BoardCanvas({ store }: { store: BoardStore }) {
     * display mode so a GM goes from "wants a threat" to typing its name with no extra click. Expanded is
     * a persisted card field, so the item keeps its stored portrait footprint for when it collapses back.
     */
-   const createChallengeAt = (worldCenter: Point) => {
-      const card = buildCard('LEGENDS', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 });
+   const createChallengeAt = (game: ChallengeGame, worldCenter: Point) => {
+      const card = buildCard(game, { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 });
       if (!card) return;
       const { width, height } = EMBEDDED_CARD_SIZE;
       const id = cuid();
@@ -1445,7 +1446,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
    const pendingBoardAction = useAppGeneralStateStore((state) => state.pendingBoardAction);
    useEffect(() => {
       if (!pendingBoardAction) return;
-      if (pendingBoardAction === 'createChallenge') createChallengeAt(viewCenter);
+      if (pendingBoardAction.startsWith('createChallenge:')) createChallengeAt(pendingBoardAction.slice('createChallenge:'.length) as ChallengeGame, viewCenter);
       else if (pendingBoardAction === 'setTool:select') setActiveTool('select');
       else if (pendingBoardAction === 'setTool:pen') chooseDrawTool('freehand');
       else if (pendingBoardAction === 'setTool:line') chooseDrawTool('line');
@@ -1733,8 +1734,16 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                              }),
                           };
                        }
-                       // A challenge is always LEGENDS-flavored (no theme wizardry), so it drops immediately.
-                       return { id: 'challenge', icon: <RowIcon className="h-5 w-5" />, label: t(row.labelKey), onSelect: () => createChallengeAt(radial.world) };
+                       // A challenge picks its game (each variant drops immediately, no theme wizardry).
+                       return {
+                          id: 'challenge',
+                          icon: <RowIcon className="h-5 w-5" />,
+                          label: t(row.labelKey),
+                          children: CHALLENGE_GAME_OPTIONS.map((game) => {
+                             const { Icon } = GAME_VISUALS[game];
+                             return { id: `challenge-${game}`, icon: <Icon className="h-5 w-5" />, label: t(`Drawer.Types.${game}`), onSelect: () => createChallengeAt(game, radial.world) };
+                          }),
+                       };
                     }),
                  };
               }
@@ -2029,7 +2038,7 @@ function BoardCanvas({ store }: { store: BoardStore }) {
                            onOpenPortalPicker={openPortalPickerAtViewCenter}
                            onAddTracker={(trackerType) => createTrackerAt(trackerType, currentViewCenter())}
                            onPickCardGame={handlePickCardGame}
-                           onAddChallenge={() => createChallengeAt(currentViewCenter())}
+                           onAddChallenge={(game) => createChallengeAt(game, currentViewCenter())}
                         />
                      </>
                   ) : (

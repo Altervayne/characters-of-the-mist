@@ -1,5 +1,8 @@
 export type GameSystem = 'LEGENDS' | 'CITY_OF_MIST' | 'OTHERSCAPE' | 'NEUTRAL';
 
+/** The games that have a Challenge Card variant. Only NEUTRAL has none. */
+export type ChallengeGame = 'LEGENDS' | 'OTHERSCAPE' | 'CITY_OF_MIST';
+
 export type GeneralItemType =
    | 'FULL_DRAWER'
    | 'FOLDER'

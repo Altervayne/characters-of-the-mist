@@ -2,7 +2,22 @@
 import cuid from 'cuid';
 
 // -- Type Imports --
-import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, MightyTag } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeDetails, ChallengeSpecial, ChallengeStatus, CityChallengeDetails, CityCustomMove, CityMove, MightyTag } from '@/lib/types/character';
+
+/** The palette class for a challenge, by game: crimson parchment (LitM) vs gunmetal + lime (Otherscape). */
+export function challengePaletteClass(game: ChallengeDetails['game']): string {
+   return game === 'OTHERSCAPE' ? 'card-type-challenge-otherscape' : 'card-type-challenge';
+}
+
+/** The palette class for a City challenge, by its primary type: orange (Logos) vs purple (Mythos), reusing the City theme palettes. */
+export function cityChallengePaletteClass(primaryType: CityChallengeDetails['primaryType']): string {
+   return primaryType === 'Mythos' ? 'card-type-mythos-com' : 'card-type-logos-com';
+}
+
+/** The identity tint of a City challenge's primary type - Logos orange, Mythos purple - matching the City theme hues. */
+export function primaryTypeColor(primaryType: CityChallengeDetails['primaryType']): string {
+   return primaryType === 'Mythos' ? 'hsl(322 42% 50%)' : 'hsl(19 72% 48%)';
+}
 
 /** The expanded sheet's Threats & Consequences accordion opens exactly one ability; this resolves which. */
 export function resolveExpandedFocus(abilities: ChallengeAbility[], focusedId: string | null): string | null {
@@ -31,6 +46,15 @@ export const newSpecial = (): ChallengeSpecial => ({ id: cuid(), name: '', body:
 
 /** A fresh Mighty tag row: an empty label at the lowest Might level. */
 export const newMightyTag = (): MightyTag => ({ id: cuid(), level: 'Origin', label: '' });
+
+/** A fresh City custom move: an empty name + description. */
+export const newCustomMove = (): CityCustomMove => ({ id: cuid(), name: '', description: '' });
+
+/** A fresh City hard move: an empty line of rich text. */
+export const newHardMove = (): CityMove => ({ id: cuid(), text: '' });
+
+/** A fresh City soft move: an empty line of rich text. */
+export const newSoftMove = (): CityMove => ({ id: cuid(), text: '' });
 
 /** A fresh consequence row: an empty line of text, id-keyed so edits survive reorders/deletes. */
 export const newConsequence = (): { id: string; text: string } => ({ id: cuid(), text: '' });

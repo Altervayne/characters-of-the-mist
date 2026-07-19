@@ -14,6 +14,7 @@ import { BoardTextItem } from './BoardTextItem';
 import { BoardDrawingItem } from './BoardDrawingItem';
 
 // -- Type Imports --
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { BoardItem, BoardItemContent } from '@/lib/types/board';
 
 /*
@@ -46,6 +47,8 @@ interface BoardItemBodyProps {
    onDelete: (id: string) => void;
    /** Selects this item (used by text fields that stop pointer propagation). */
    onRequestSelect: () => void;
+   /** The deferred body press (drag-past-threshold moves, click selects); a zone's frame/title bar routes here. */
+   onPressStart: (event: ReactPointerEvent) => void;
    /** Opens the portal restyle editor window, anchored at the click point (a portal's Edit affordance). */
    onRequestEditPortal: (itemId: string, screen: { x: number; y: number }) => void;
    /** Opens the target picker in retarget mode (a dead portal's Relink), anchored at the click point. */
@@ -54,7 +57,7 @@ interface BoardItemBodyProps {
    onCachePortalName: (itemId: string, name: string) => void;
 }
 
-export function BoardItemBody({ item, isSelected, isEditing, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect, onRequestEditPortal, onRequestRelinkPortal, onCachePortalName }: BoardItemBodyProps) {
+export function BoardItemBody({ item, isSelected, isEditing, toolbarSlot, sideSlot, memberCount, onContentChange, onCacheLastKnown, onAdoptSource, onDelete, onRequestSelect, onPressStart, onRequestEditPortal, onRequestRelinkPortal, onCachePortalName }: BoardItemBodyProps) {
    const { content } = item;
 
    switch (content.kind) {
@@ -67,7 +70,7 @@ export function BoardItemBody({ item, isSelected, isEditing, toolbarSlot, sideSl
       case 'pin':
          return <PinItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} onContentChange={onContentChange} />;
       case 'zone':
-         return <ZoneItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} memberCount={memberCount} onContentChange={onContentChange} onRequestSelect={onRequestSelect} />;
+         return <ZoneItem content={content} isSelected={isSelected} toolbarSlot={toolbarSlot} memberCount={memberCount} onContentChange={onContentChange} onRequestSelect={onRequestSelect} onPressStart={onPressStart} />;
       case 'dice-tray':
          return <DiceTrayItem item={item} content={content} isSelected={isSelected} onContentChange={onContentChange} onCacheLastKnown={onCacheLastKnown} onRequestSelect={onRequestSelect} />;
       case 'card':

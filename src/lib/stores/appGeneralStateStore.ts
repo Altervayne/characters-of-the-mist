@@ -4,6 +4,7 @@ import { create } from 'zustand';
 // -- Type Imports --
 import type { CreatableKind } from '@/lib/creation/creatableRegistry';
 import type { BoardGridType, BrushKind } from '@/lib/types/board';
+import type { ChallengeGame } from '@/lib/types/common';
 import type { MobileNavAction, MobileNavSnapshot } from '@/lib/mobile/mobileNavTypes';
 
 
@@ -14,7 +15,7 @@ export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
 
 /*
  * A one-shot request the palette hands the active board (which owns the drop point, the selection, and the
- * ephemeral pointer tool): mint a challenge or a board-native element at the view center, switch the active
+ * ephemeral pointer tool): mint a challenge of a game (`createChallenge:<game>`) or a board-native element at the view center, switch the active
  * tool (`setTool:<tool>`), pick a brush (`setBrush:<brush>`, which also switches to the pen), save the
  * selected copy card/tracker back to the drawer / as a new drawer item, or embed a saved note as a live
  * reference tile. The canvas consumes it against its own state and clears it. The `create:<kind>` members
@@ -23,7 +24,7 @@ export type MobileDrawerSnapPoint = 'closed' | 'half' | 'full';
  * `embedNote:<drawerItemId>` carries the picked note's id.
  */
 export type BoardAction =
-   | 'createChallenge'
+   | `createChallenge:${ChallengeGame}`
    | 'setTool:select'
    | 'setTool:pen'
    | 'setTool:line'

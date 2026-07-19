@@ -2,7 +2,7 @@
 import cuid from 'cuid';
 
 // -- Utils Imports --
-import { emptyCharacterCardDetails, emptyLegendsChallengeDetails } from '@/lib/utils/character';
+import { emptyCharacterCardDetails, emptyChallengeDetails, hasChallengeVariant } from '@/lib/utils/character';
 
 // -- Type Imports --
 import type {
@@ -50,9 +50,9 @@ export function buildCard(game: GameSystem, options: CreateCardOptions, characte
       return { ...base, cardType: 'CHARACTER_CARD', title: characterCardTitle(game), details: emptyCharacterCardDetails(game, characterName ?? '') };
    }
 
-   // A challenge carries its own game (LEGENDS), regardless of `game` - same as the sheet's addChallengeCard.
+   // A challenge adopts the given game (Legends / Otherscape / City); NEUTRAL has no variant, so it falls to Legends.
    if (options.cardType === 'CHALLENGE_CARD') {
-      return { ...base, cardType: 'CHALLENGE_CARD', title: '', details: emptyLegendsChallengeDetails() };
+      return { ...base, cardType: 'CHALLENGE_CARD', title: '', details: emptyChallengeDetails(hasChallengeVariant(game) ? game : 'LEGENDS') };
    }
 
    if (game === 'LEGENDS') {

@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Star, Skull, Shield, Sparkles, Tags, Pencil } from 'lucide-react';
+import { Skull, Swords, Sparkles, Tags, Pencil } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -17,7 +17,7 @@ import { CardHeaderMolecule } from '@/components/molecules/cards/CardHeader';
 import { CardSectionHeader } from '@/components/molecules/cards/CardSectionHeader';
 import { CardFlipWrapper } from '@/components/molecules/cards/CardFlipWrapper';
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
-import { AddRowButton, LimitPill, MightyTagEditRow, MightyTagPill, SpecialEditRow, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
+import { AddRowButton, ConsequenceBullet, DifficultyMarks, LimitPill, MightyTagEditRow, MightyTagPill, SpecialEditRow, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
 import type { RowListOps } from '@/components/organisms/cards/challengeCardEditRows';
 import { ExpandedChallengeSheet } from '@/components/organisms/cards/ExpandedChallengeSheet';
 
@@ -33,29 +33,29 @@ import { useManualScroll } from '@/hooks/useManualScroll';
 import { useSheetMentionCreate } from '@/hooks/character-sheet/useSheetMentionCreate';
 
 // -- Utils Imports --
-import { addRow, newAbility, newMightyTag, newSpecial, newStatus, newTag, patchAbilityById, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
+import { addRow, challengePaletteClass, newAbility, newMightyTag, newSpecial, newStatus, newTag, patchAbilityById, removeRowById, updateRowById } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
 import type { CardComponentProps } from '@/components/organisms/cards/resolveCardComponent';
-import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, LegendsChallengeDetails, MightyTag } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, MightyTag, SharedChallengeDetails } from '@/lib/types/character';
 
 /*
- * The GM Challenge Card (LitM). Front = image / name / italic types / star level / flavor; back = Limits /
- * Tags & Statuses / Threats & Consequences. Threats & Consequences, types, image, and star level are
- * dialog-only. Flavor, Limits, Statuses, and Tags are also editable in place while `isEditing` - the dialog
- * (ChallengeCardEditor) stays the complete editor for everything else. Inline edits share the dialog's row
- * factories/list helpers (`challengeCardFactories`) and commit through the same `updateCardDetails` action.
+ * The GM Challenge Card, game-aware over its discriminated details. Front = image / name / difficulty /
+ * flavor; back = Limits / Tags & Statuses / Specials / Threats & Consequences. LitM adds Types (front +
+ * expanded) and Mighty tags (inline in Tags & Statuses); Otherscape drops both and restyles (gunmetal
+ * palette, lime accents, crosshair difficulty, lime double-chevron consequences). Threats, types, image,
+ * and level are dialog-only; flavor / limits / statuses / tags are also editable in place while `isEditing`.
+ * Inline edits share the dialog's row factories (`challengeCardFactories`) and commit through `updateCardDetails`.
  */
 
-const CARD_TYPE_CLASS = 'card-type-challenge';
-
-export const LegendsChallengeCard = React.memo(
+export const ChallengeCard = React.memo(
    React.forwardRef<HTMLDivElement, CardComponentProps>(
       ({ card, isEditing = false, isSnapshot, isDrawerPreview, isBoardEmbed = false, isMobile = false, useVerticalStack, dragAttributes, dragListeners, onEditCard, onExport, onMentionClick, isExpanded = false }, ref) => {
          const { t } = useTranslation();
          const actions = useCharacterActions();
          const storeInstance = useActiveCharacterInstance();
-         const details = card.details as LegendsChallengeDetails;
+         const details = card.details as SharedChallengeDetails;
+         const cardThemeClass = challengePaletteClass(details.game);
 
          const { isHovered, hoverHandlers } = useToolbarHover(isDrawerPreview);
          const { url } = useAssetObjectUrl(details.assetId);
@@ -109,7 +109,7 @@ export const LegendsChallengeCard = React.memo(
          // can't clobber: `set` is synchronous, so the second read already carries the first's write. Falls
          // back to the render's `details` only if the card just vanished (nothing to write in that case).
          const liveDetails = () =>
-            (storeInstance.getState().character?.cards.find((c) => c.id === card.id)?.details as LegendsChallengeDetails | undefined) ?? details;
+            (storeInstance.getState().character?.cards.find((c) => c.id === card.id)?.details as SharedChallengeDetails | undefined) ?? details;
 
          // Patches one ability by id against the live abilities - the sheet's tag + flavor + per-consequence
          // debouncers all commit through here, so no unmount-flush can stomp a sibling field.
@@ -124,20 +124,33 @@ export const LegendsChallengeCard = React.memo(
          const commitStatusById = (id: string, updates: Partial<ChallengeStatus>) => commitStatuses(updateRowById(liveDetails().statuses, id, updates));
          const commitTagById = (id: string, updates: Partial<BlandTag>) => commitTags(updateRowById(liveDetails().tags, id, updates));
          // A Mighty tag's label rides the debouncer and its level commits on click; both patch by id
-         // against the live list, so a sibling row's flush can't clobber this one's.
-         const commitMightyTagById = (id: string, updates: Partial<MightyTag>) => commitMightyTags(updateRowById(liveDetails().mightyTags, id, updates));
+         // against the live list, so a sibling row's flush can't clobber this one's. LitM-only (the field
+         // lives on the LEGENDS branch); the render gates these to that game, the guard narrows the union.
+         const commitMightyTagById = (id: string, updates: Partial<MightyTag>) => {
+            const live = liveDetails();
+            if (live.game !== 'LEGENDS') return;
+            commitMightyTags(updateRowById(live.mightyTags, id, updates));
+         };
          // Specials carry two debounced fields (name + body); reading live-then-patch-by-id means the
          // second unmount-flush already sees the first's write, so neither field clobbers the other.
          const commitSpecialById = (id: string, updates: Partial<ChallengeSpecial>) => commitSpecials(updateRowById(liveDetails().specials, id, updates));
          const removeLimitById = (id: string) => commitLimits(removeRowById(liveDetails().limits, id));
          const removeStatusById = (id: string) => commitStatuses(removeRowById(liveDetails().statuses, id));
          const removeTagById = (id: string) => commitTags(removeRowById(liveDetails().tags, id));
-         const removeMightyTagById = (id: string) => commitMightyTags(removeRowById(liveDetails().mightyTags, id));
+         const removeMightyTagById = (id: string) => {
+            const live = liveDetails();
+            if (live.game !== 'LEGENDS') return;
+            commitMightyTags(removeRowById(live.mightyTags, id));
+         };
          const removeSpecialById = (id: string) => commitSpecials(removeRowById(liveDetails().specials, id));
          const addLimit = () => commitLimits(addRow(liveDetails().limits, newStatus()));
          const addStatus = () => commitStatuses(addRow(liveDetails().statuses, newStatus()));
          const addTag = () => commitTags(addRow(liveDetails().tags, newTag()));
-         const addMightyTag = () => commitMightyTags(addRow(liveDetails().mightyTags, newMightyTag()));
+         const addMightyTag = () => {
+            const live = liveDetails();
+            if (live.game !== 'LEGENDS') return;
+            commitMightyTags(addRow(live.mightyTags, newMightyTag()));
+         };
          const addSpecial = () => commitSpecials(addRow(liveDetails().specials, newSpecial()));
 
          // The same by-id ops bundled for the expanded sheet, which renders its own copy of these rows.
@@ -171,9 +184,11 @@ export const LegendsChallengeCard = React.memo(
 
          // The challenge types, committed immediately on toggle / add / remove from the expanded sheet -
          // a discrete click like the level and image, so no debounce. Reads live details so it can't
-         // stomp a sibling field mid-flush.
+         // stomp a sibling field mid-flush. LitM-only; the render gates it, the guard narrows the union.
          const commitTypes = (types: string[]) => {
-            actions.updateCardDetails(card.id, { ...liveDetails(), types });
+            const live = liveDetails();
+            if (live.game !== 'LEGENDS') return;
+            actions.updateCardDetails(card.id, { ...live, types });
          };
 
          // A tapped mention applies to the active character: a status create-or-RAISES (bubble-up, no
@@ -191,7 +206,7 @@ export const LegendsChallengeCard = React.memo(
             'flex flex-col border-2 shadow-lg p-0 overflow-hidden gap-0',
             'bg-card-paper-bg text-card-paper-fg border-card-border',
             'relative z-0',
-            CARD_TYPE_CLASS,
+            cardThemeClass,
             { 'h-30 shadow-none pointer-events-none border-2 border-card-border': isDrawerPreview },
          );
 
@@ -210,17 +225,15 @@ export const LegendsChallengeCard = React.memo(
 
                <h2 className={cn('shrink-0 px-2 pt-2 text-center font-bold', isDrawerPreview ? 'text-sm' : 'text-xl')}>{name}</h2>
 
-               {details.types.length > 0 && (
+               {details.game === 'LEGENDS' && details.types.length > 0 && (
                   <p className={cn('shrink-0 px-2 pb-1 text-center italic text-card-paper-fg/70', isDrawerPreview ? 'text-[0.65rem]' : 'text-sm')}>
                      {details.types.join(' · ')}
                   </p>
                )}
 
-               {/* Star level divider (cosmetic difficulty label). */}
+               {/* Difficulty divider (cosmetic): stars for LitM, crosshairs for Otherscape. */}
                <div className="flex shrink-0 items-center justify-center gap-0.5 border-y border-card-accent/30 py-1 text-card-accent">
-                  {Array.from({ length: stars }).map((_, index) => (
-                     <Star key={index} className={cn('fill-current', isDrawerPreview ? 'h-3 w-3' : 'h-4 w-4')} />
-                  ))}
+                  <DifficultyMarks game={details.game} count={stars} className={isDrawerPreview ? 'h-3 w-3' : 'h-4 w-4'} />
                </div>
 
                {!isDrawerPreview && (
@@ -261,7 +274,7 @@ export const LegendsChallengeCard = React.memo(
                    scrolls its own overflow so a heavy section can't starve the others. */}
                <CardContent className="flex min-h-0 grow flex-col overflow-hidden p-0">
                   {/* Limits: the statuses required to defeat it. */}
-                  <CardSectionHeader title={t('Cards.challenge.limits')} icon={Shield} />
+                  <CardSectionHeader title={t('Cards.challenge.limits')} icon={Skull} />
                   <div ref={limitsScrollRef} className="max-h-24 min-w-0 shrink-0 overflow-y-auto overflow-x-hidden overscroll-contain">
                      {isEditing ? (
                         <div className="flex flex-col gap-1 p-2">
@@ -281,7 +294,7 @@ export const LegendsChallengeCard = React.memo(
                      ) : (
                         <div className="flex flex-wrap gap-1 p-2">
                            {details.limits.length > 0
-                              ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} />)
+                              ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} accent={details.game === 'OTHERSCAPE'} />)
                               : <p className="text-sm italic text-card-paper-fg/70">{`[${t('Cards.challenge.noLimits')}]`}</p>}
                         </div>
                      )}
@@ -319,20 +332,22 @@ export const LegendsChallengeCard = React.memo(
                               ))}
                               <AddRowButton label={t('Cards.challenge.addTag')} onClick={addTag} />
                            </div>
-                           <div className="flex flex-col gap-1">
-                              {details.mightyTags.map((mightyTag) => (
-                                 <MightyTagEditRow
-                                    key={mightyTag.id}
-                                    mightyTag={mightyTag}
-                                    labelPlaceholder={t('Cards.challenge.mightyTagLabelPlaceholder')}
-                                    onCommitLevel={(level) => commitMightyTagById(mightyTag.id, { level })}
-                                    onCommitLabel={(label) => commitMightyTagById(mightyTag.id, { label })}
-                                    onRemove={() => removeMightyTagById(mightyTag.id)}
-                                    removeLabel={t('Cards.challenge.remove')}
-                                 />
-                              ))}
-                              <AddRowButton label={t('Cards.challenge.addMightyTag')} onClick={addMightyTag} />
-                           </div>
+                           {details.game === 'LEGENDS' && (
+                              <div className="flex flex-col gap-1">
+                                 {details.mightyTags.map((mightyTag) => (
+                                    <MightyTagEditRow
+                                       key={mightyTag.id}
+                                       mightyTag={mightyTag}
+                                       labelPlaceholder={t('Cards.challenge.mightyTagLabelPlaceholder')}
+                                       onCommitLevel={(level) => commitMightyTagById(mightyTag.id, { level })}
+                                       onCommitLabel={(label) => commitMightyTagById(mightyTag.id, { label })}
+                                       onRemove={() => removeMightyTagById(mightyTag.id)}
+                                       removeLabel={t('Cards.challenge.remove')}
+                                    />
+                                 ))}
+                                 <AddRowButton label={t('Cards.challenge.addMightyTag')} onClick={addMightyTag} />
+                              </div>
+                           )}
                         </div>
                      ) : (
                         <div className="flex flex-wrap items-center gap-1 p-2">
@@ -342,7 +357,7 @@ export const LegendsChallengeCard = React.memo(
                            {details.tags.length > 0
                               ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
                               : <p className="text-sm italic text-card-paper-fg/70">{`[${t('Cards.challenge.noTags')}]`}</p>}
-                           {details.mightyTags.map((mightyTag) => <MightyTagPill key={mightyTag.id} mightyTag={mightyTag} />)}
+                           {details.game === 'LEGENDS' && details.mightyTags.map((mightyTag) => <MightyTagPill key={mightyTag.id} mightyTag={mightyTag} />)}
                         </div>
                      )}
                   </div>
@@ -385,7 +400,7 @@ export const LegendsChallengeCard = React.memo(
 
                   {/* Threats & Consequences: a threat-name pill with its flavor inline, over a skull-bulleted
                       list. The meatiest section - grows to fill the height the other two don't claim. */}
-                  <CardSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Skull} />
+                  <CardSectionHeader title={t('Cards.challenge.threatsAndConsequences')} icon={Swords} />
                   <div ref={threatsScrollRef} className="min-h-16 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
                      <div className="flex flex-col gap-2 p-2">
                         {details.abilities.map((ability) => (
@@ -399,10 +414,7 @@ export const LegendsChallengeCard = React.memo(
                                  <ul className="list-none space-y-0.5 text-xs">
                                     {ability.consequences.map((consequence) => (
                                        <li key={consequence.id} className="flex items-start gap-1.5">
-                                          {/* Skull in a header-colored rhombus (rotated square); the icon counter-rotates to stay upright. */}
-                                          <span className="mt-0.5 flex h-3.5 w-3.5 shrink-0 rotate-45 items-center justify-center rounded-[2px] bg-card-header-bg">
-                                             <Skull className="h-2.5 w-2.5 -rotate-45 text-card-header-fg" strokeWidth={2.75} />
-                                          </span>
+                                          <ConsequenceBullet game={details.game} className="mt-0.5" />
                                           <MentionMarkdown text={consequence.text} onMentionClick={mentionClick} className="min-w-0 [&_p]:my-0" />
                                        </li>
                                     ))}
@@ -466,7 +478,7 @@ export const LegendsChallengeCard = React.memo(
                isEditing={isEditing}
                dragAttributes={dragAttributes}
                dragListeners={dragListeners}
-               cardTheme={CARD_TYPE_CLASS}
+               cardTheme={cardThemeClass}
                onExport={onExport}
                onCycleViewMode={handleCycleViewMode}
                onFlip={() => actions.flipCard(card.id)}
@@ -481,4 +493,4 @@ export const LegendsChallengeCard = React.memo(
    ),
 );
 
-LegendsChallengeCard.displayName = 'LegendsChallengeCard';
+ChallengeCard.displayName = 'ChallengeCard';

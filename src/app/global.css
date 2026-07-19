@@ -442,6 +442,19 @@
    --card-destructive-bg:  hsl(10 79% 83%);
    --card-destructive-fg:  hsl(0 20% 18%);
 }
+/* Otherscape challenge: gunmetal parchment + white text (crew donor) with a lime accent (tracker donor). */
+.card-type-challenge-otherscape {
+   --card-header-bg:       hsl(214 22% 24%);
+   --card-header-fg:       hsl(0 0% 100%);
+   --card-paper-bg:        hsl(214 26% 12%);
+   --card-paper-fg:        hsl(0 0% 100%);
+   --card-accent:          hsl(76 100% 60%);
+   --card-border:          hsl(214 20% 20%);
+   --card-popover-bg:      hsl(214 20% 20%);
+   --card-popover-fg:      hsl(214 16% 90%);
+   --card-destructive-bg:  hsl(76 100% 70%);
+   --card-destructive-fg:  hsl(225 23% 8%);
+}
 
 /* --- City of Mist Card Themes --- */
 .card-type-mythos-com {

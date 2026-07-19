@@ -10,7 +10,7 @@ import { getItemTypeIconComponent } from '@/lib/utils/drawer-icons';
 // -- Constant Imports --
 import { CREATION_TAXONOMY } from '@/lib/creation/creationTaxonomy';
 import { CREATABLE_BY_KIND } from '@/lib/creation/creatableRegistry';
-import { GAME_CARD_OPTIONS, GAME_VISUALS } from '@/lib/constants/gameVisuals';
+import { GAME_CARD_OPTIONS, GAME_VISUALS, CHALLENGE_GAME_OPTIONS } from '@/lib/constants/gameVisuals';
 
 // -- Component Imports --
 import {
@@ -29,6 +29,7 @@ import {
 import type { CreatableKind } from '@/lib/creation/creatableRegistry';
 import type { TrackerType } from '@/lib/trackers/emptyTracker';
 import type { GameSystem } from '@/lib/types/drawer';
+import type { ChallengeGame } from '@/lib/types/common';
 
 /*
  * The board toolbar's single "Create Element" popover: a tokened Radix menu offering every creatable element,
@@ -44,7 +45,7 @@ interface BoardAddMenuProps {
    onOpenPortalPicker: () => void;
    onAddTracker: (trackerType: TrackerType) => void;
    onPickCardGame: (game: GameSystem) => void;
-   onAddChallenge: () => void;
+   onAddChallenge: (game: ChallengeGame) => void;
 }
 
 export function BoardAddMenu({ onAddItem, onOpenPortalPicker, onAddTracker, onPickCardGame, onAddChallenge }: BoardAddMenuProps) {
@@ -87,7 +88,7 @@ export function BoardAddMenu({ onAddItem, onOpenPortalPicker, onAddTracker, onPi
                         );
                      })}
 
-                  {/* Game elements: trackers + cards open sub-branches; a challenge drops immediately. */}
+                  {/* Game elements: trackers, cards, and challenges each open a sub-branch. */}
                   {group.key === 'game' &&
                      group.rows.map((row) => {
                         const RowIcon = row.icon;
@@ -134,10 +135,23 @@ export function BoardAddMenu({ onAddItem, onOpenPortalPicker, onAddTracker, onPi
                            );
                         }
                         return (
-                           <DropdownMenuItem key={row.kind} className="gap-2" onSelect={onAddChallenge}>
-                              <RowIcon className="size-4" />
-                              <span>{t(row.labelKey)}</span>
-                           </DropdownMenuItem>
+                           <DropdownMenuSub key={row.kind}>
+                              <DropdownMenuSubTrigger className="gap-2">
+                                 <RowIcon className="size-4" />
+                                 <span>{t(row.labelKey)}</span>
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                 {CHALLENGE_GAME_OPTIONS.map((game) => {
+                                    const { Icon } = GAME_VISUALS[game];
+                                    return (
+                                       <DropdownMenuItem key={game} className="gap-2" onSelect={() => onAddChallenge(game)}>
+                                          <Icon />
+                                          <span>{t(`Drawer.Types.${game}`)}</span>
+                                       </DropdownMenuItem>
+                                    );
+                                 })}
+                              </DropdownMenuSubContent>
+                           </DropdownMenuSub>
                         );
                      })}
                </div>

@@ -361,6 +361,7 @@ export const BoardItemBox = memo(function BoardItemBox({
          toolbarSlot={toolbarSlot}
          sideSlot={sideSlot}
          memberCount={memberCount}
+         onPressStart={handleBodyPointerDown}
          onContentChange={(content) => onUpdateContent(item.id, content)}
          onCacheLastKnown={onCacheLastKnown}
          onAdoptSource={onAdoptSource}
@@ -387,12 +388,14 @@ export const BoardItemBox = memo(function BoardItemBox({
       >
          {/* A zone's tinted rectangle, filling the box behind the header/chrome (a later sibling paints on
              top). It sits at the zone's band, so its own members - banded above it - render over it, while
-             a lower-stacked item renders beneath it. A pointer-down on the interior or border selects the
-             zone (re-enabling clicks the click-through box suppresses); items on top capture their own
-             clicks first. A collapsed zone hides its frame (it's the bar below instead). */}
+             a lower-stacked item renders beneath it. A pointer-down on the interior or border routes through
+             the same deferred body press as every other kind (re-enabling clicks the click-through box
+             suppresses): a plain drag moves the zone (carrying its members), a click with no drag selects it,
+             a modifier toggles/marquees; items on top capture their own clicks first. A collapsed zone hides
+             its frame (it's the bar below instead). */}
          {isZone && !isCollapsedZone && (
             <div
-               onPointerDown={(event) => { event.stopPropagation(); onSelect(item.id, event.shiftKey || event.ctrlKey || event.metaKey); }}
+               onPointerDown={handleBodyPointerDown}
                className={cn('pointer-events-auto absolute inset-0 cursor-default rounded-lg border', !zoneColor && 'border-border bg-foreground/[0.04]')}
                style={zoneColor ? { backgroundColor: `${zoneColor}1f`, borderColor: zoneColor } : undefined}
             />

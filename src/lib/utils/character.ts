@@ -3,8 +3,9 @@ import cuid from 'cuid';
 
 // -- Types Imports --
 import type { TFunction } from 'i18next';
-import type { Card, CardDetails, Character, CityRiftDetails, LegendsChallengeDetails, LegendsHeroDetails, OtherscapeCharacterDetails } from '@/lib/types/character';
+import type { Card, CardDetails, ChallengeDetails, Character, CityChallengeDetails, CityRiftDetails, LegendsChallengeDetails, LegendsHeroDetails, OtherscapeCharacterDetails, OtherscapeChallengeDetails } from '@/lib/types/character';
 import type { GameSystem } from '../types/drawer';
+import type { ChallengeGame } from '@/lib/types/common';
 
 /**
  * Converts a card theme type string into a CSS class name.
@@ -131,9 +132,37 @@ export function emptyCharacterCardDetails(game: GameSystem, characterName: strin
    }
 }
 
-/** The empty details for a fresh Challenge Card (LitM): every list starts empty, level at 1. */
+/** The empty details for a fresh LitM Challenge Card: every list starts empty, level at 1. */
 export function emptyLegendsChallengeDetails(): LegendsChallengeDetails {
    return { game: 'LEGENDS', assetId: null, types: [], challengeLevel: 1, flavor: '', limits: [], statuses: [], tags: [], mightyTags: [], specials: [], abilities: [] };
+}
+
+/** The empty details for a fresh Otherscape Challenge Card: the shared floor only (no Types, no Mighty tags). */
+export function emptyOtherscapeChallengeDetails(): OtherscapeChallengeDetails {
+   return { game: 'OTHERSCAPE', assetId: null, challengeLevel: 1, flavor: '', limits: [], statuses: [], tags: [], specials: [], abilities: [] };
+}
+
+/** The empty details for a fresh City of Mist Challenge Card: Logos-themed, level 1, every list/string empty. */
+export function emptyCityChallengeDetails(): CityChallengeDetails {
+   return { game: 'CITY_OF_MIST', primaryType: 'Logos', assetId: null, challengeLevel: 1, flavor: '', logosSubtitle: '', mythosSubtitle: '', spectrums: [], customMoves: [], hardMoves: [], softMoves: [] };
+}
+
+/** The empty Challenge Card details for a game. */
+export function emptyChallengeDetails(game: ChallengeDetails['game']): ChallengeDetails {
+   switch (game) {
+      case 'OTHERSCAPE':
+         return emptyOtherscapeChallengeDetails();
+      case 'CITY_OF_MIST':
+         return emptyCityChallengeDetails();
+      case 'LEGENDS':
+      default:
+         return emptyLegendsChallengeDetails();
+   }
+}
+
+/** Whether a game has a Challenge Card variant (Legends / Otherscape / City); NEUTRAL does not. */
+export function hasChallengeVariant(game: GameSystem): game is ChallengeGame {
+   return game === 'LEGENDS' || game === 'OTHERSCAPE' || game === 'CITY_OF_MIST';
 }
 
 export function createNewCharacter(name: string, game: GameSystem): Character {

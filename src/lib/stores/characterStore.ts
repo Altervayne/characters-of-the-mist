@@ -4,7 +4,7 @@ import { temporal } from 'zundo';
 import cuid from 'cuid';
 
 // -- Utils Imports --
-import { createNewCharacter, emptyLegendsChallengeDetails } from '../utils/character';
+import { createNewCharacter, emptyChallengeDetails, hasChallengeVariant } from '../utils/character';
 import { deepReId } from '../utils/drawer';
 import { emptyTracker } from '@/lib/trackers/emptyTracker';
 import { buildCard } from '@/lib/cards/buildCard';
@@ -103,7 +103,7 @@ export interface CharacterState {
       addImportedCard: (card: Card, index?: number) => boolean;
       /** Appends one empty portrait (IMAGE_CARD); no-op if the sheet already has one. */
       addPortrait: () => void;
-      /** Appends a blank Challenge Card (LEGENDS) and returns its id, so the caller opens the editor. */
+      /** Appends a blank Challenge Card in the character's game and returns its id, so the caller opens the editor. */
       addChallengeCard: () => string;
       /** Sets (or clears, with `null`) a portrait card's image asset. */
       setCardImage: (cardId: string, assetId: string | null) => void;
@@ -469,13 +469,14 @@ export function createCharacterStore() {
                   set((state) => {
                      if (!state.character) return {};
                      useAppGeneralStateStore.getState().actions.setLastModifiedStore('character');
-                     // A challenge carries its own game (LEGENDS for now), regardless of the sheet's game.
+                     // A challenge adopts the character's game.
+                     const game = hasChallengeVariant(state.character.game) ? state.character.game : 'LEGENDS';
                      const newCard: Card = {
                         id: newCardId,
                         title: '',
                         isFlipped: false,
                         cardType: 'CHALLENGE_CARD',
-                        details: emptyLegendsChallengeDetails(),
+                        details: emptyChallengeDetails(game),
                      };
                      return {
                         character: {

@@ -62,10 +62,22 @@ describe('buildCard', () => {
       expect(buildCard('LEGENDS', themeOptions({ cardType: 'LOADOUT_THEME' }))).toBeNull();
    });
 
-   it('builds a fresh Challenge Card regardless of the requested game', () => {
-      const challenge = buildCard('CITY_OF_MIST', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 })!;
-      expect(challenge.cardType).toBe('CHALLENGE_CARD');
+   it('builds a Challenge Card that adopts the requested game', () => {
+      const legends = buildCard('LEGENDS', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 })!;
+      expect(legends.cardType).toBe('CHALLENGE_CARD');
+      expect(legends.details.game).toBe('LEGENDS');
+      expect((legends.details as { challengeLevel: number }).challengeLevel).toBe(1);
+
+      const otherscape = buildCard('OTHERSCAPE', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 })!;
+      expect(otherscape.details.game).toBe('OTHERSCAPE');
+
+      const city = buildCard('CITY_OF_MIST', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 })!;
+      expect(city.details.game).toBe('CITY_OF_MIST');
+      expect((city.details as { primaryType: string }).primaryType).toBe('Logos');
+   });
+
+   it('falls back to a Legends Challenge for a game with no challenge variant', () => {
+      const challenge = buildCard('NEUTRAL', { cardType: 'CHALLENGE_CARD', powerTagsCount: 0, weaknessTagsCount: 0 })!;
       expect(challenge.details.game).toBe('LEGENDS');
-      expect((challenge.details as { challengeLevel: number }).challengeLevel).toBe(1);
    });
 });

@@ -137,21 +137,67 @@ export interface MightyTag {
    label: string;
 }
 
-// A GM Challenge Card (LitM): a current obstacle/adversary. Front = image / name (Card.title) / italic
-// types / star level / flavor; back = Limits / Tags & Statuses / Specials / Threats & Consequences.
-export interface LegendsChallengeDetails {
-   game: 'LEGENDS';
+// A GM Challenge Card: a current obstacle/adversary. Front = image / name (Card.title) / difficulty /
+// flavor; the rest of the shape diverges per game in a discriminated union so an Otherscape-with-Types or
+// a City-with-statuses is unrepresentable. Every variant carries the same card-art / level / flavor floor.
+export interface CommonChallengeFields {
    assetId: string | null;
-   types: string[];
    challengeLevel: number;
    flavor: string;
+}
+
+// LitM + Otherscape share a further floor of Limits / Tags & Statuses / Specials / Threats & Consequences.
+export interface BaseChallengeDetails extends CommonChallengeFields {
    limits: ChallengeStatus[];
    statuses: ChallengeStatus[];
    tags: BlandTag[];
-   mightyTags: MightyTag[];
-   specials: ChallengeSpecial[];
    abilities: ChallengeAbility[];
+   specials: ChallengeSpecial[];
 }
+
+// LitM adds Types (front + expanded) and Mighty tags (inline in Tags & Statuses); neither exists in Otherscape.
+export interface LegendsChallengeDetails extends BaseChallengeDetails {
+   game: 'LEGENDS';
+   types: string[];
+   mightyTags: MightyTag[];
+}
+
+// Otherscape: the shared floor, restyled (gunmetal parchment, lime accents, crosshair difficulty) - no Types, no Mighty tags.
+export interface OtherscapeChallengeDetails extends BaseChallengeDetails {
+   game: 'OTHERSCAPE';
+}
+
+// A City custom move: a named move (a Threat minus the consequence list) - a name pill over rich body text.
+export interface CityCustomMove {
+   id: string;
+   name: string;
+   description: string;
+}
+
+// A City hard/soft move: a bare chevron-bulleted line of rich text, no name.
+export interface CityMove {
+   id: string;
+   text: string;
+}
+
+// City of Mist is its own shape, not a Base variant: it drops statuses/tags/abilities/specials and brings
+// Spectrums, two always-present subtitles, and three move lists. `primaryType` is a colour theme only
+// (Logos = orange / Mythos = purple), not an exclusive class. Difficulty is stars, like LitM.
+export interface CityChallengeDetails extends CommonChallengeFields {
+   game: 'CITY_OF_MIST';
+   primaryType: 'Logos' | 'Mythos';
+   logosSubtitle: string;
+   mythosSubtitle: string;
+   spectrums: ChallengeStatus[];
+   customMoves: CityCustomMove[];
+   hardMoves: CityMove[];
+   softMoves: CityMove[];
+}
+
+export type ChallengeDetails = LegendsChallengeDetails | OtherscapeChallengeDetails | CityChallengeDetails;
+
+// The two challenges built on the shared Base floor (LitM + Otherscape); one card component serves both.
+export type SharedChallengeDetails = LegendsChallengeDetails | OtherscapeChallengeDetails;
 
 
 // ==================
@@ -280,7 +326,7 @@ export type CardDetails =
    | LegendsThemeDetails
    | LegendsFellowshipDetails
    | LegendsHeroDetails
-   | LegendsChallengeDetails
+   | ChallengeDetails
    | OtherscapeThemeDetails
    | OtherscapeCrewDetails
    | OtherscapeLoadoutDetails

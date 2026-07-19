@@ -3,7 +3,7 @@ import { ScrollText, Building2, CircuitBoard, Dices } from 'lucide-react';
 
 // -- Type Imports --
 import type { LucideIcon } from 'lucide-react';
-import type { GameSystem } from '@/lib/types/common';
+import type { GameSystem, ChallengeGame } from '@/lib/types/common';
 
 /*
  * Single source of truth for per-game visuals (icon + colors), shared by the
@@ -100,3 +100,6 @@ export const GAME_CARD_OPTIONS: GameCardOption[] = [
    { game: 'CITY_OF_MIST', titleKey: 'MainMenu.games.cityOfMist.title', subtitleKey: 'MainMenu.games.cityOfMist.subtitle' },
    { game: 'OTHERSCAPE', titleKey: 'MainMenu.games.otherscape.title', subtitleKey: 'MainMenu.games.otherscape.subtitle' },
 ];
+
+/** The games with a Challenge Card variant, in display order. */
+export const CHALLENGE_GAME_OPTIONS: ChallengeGame[] = ['LEGENDS', 'OTHERSCAPE', 'CITY_OF_MIST'];

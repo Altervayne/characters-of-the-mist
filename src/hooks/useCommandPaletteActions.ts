@@ -31,6 +31,8 @@ import { collectBoardEmbeddedEntities } from '@/lib/board/collectBoardEmbeddedEn
 import { undoActiveContext, redoActiveContext } from '@/lib/history/undoRouting';
 import { useSaveToDrawer } from '@/hooks/useSaveToDrawer';
 import { CREATABLE_REGISTRY } from '@/lib/creation/creatableRegistry';
+import { CHALLENGE_GAME_OPTIONS } from '@/lib/constants/gameVisuals';
+import { hasChallengeVariant } from '@/lib/utils/character';
 import { getTutorialsForPlatform } from '@/lib/tutorial/definitions';
 
 // -- Type Imports --
@@ -159,6 +161,8 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
    // Creation commands need a game with cards/trackers; NEUTRAL has none.
    const currentGame = character?.game;
    const showCreationCommands = currentGame && currentGame !== 'NEUTRAL';
+   // A challenge adopts the character's game, so its create command only shows for a game with a challenge variant.
+   const showCreateChallenge = !!currentGame && hasChallengeVariant(currentGame);
    // The portrait is a sheet singleton, so its create command hides once one exists (like the add menu's row).
    const showCreatePortrait = !!character && !character.cards.some((c) => c.cardType === 'IMAGE_CARD');
 
@@ -262,8 +266,10 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
          { id: 'createCard', scope: 'character' as const, label: t('CommandPalette.commands.createCard'), keywords: ['create', 'new', 'card'], icon: FilePlus, group: t('CommandPalette.groups.creation'), pageId: 'createCard_Type' },
          { id: 'createTracker', scope: 'character' as const, label: t('CommandPalette.commands.createTracker'), keywords: ['create', 'new', 'tracker', 'status', 'tag'], icon: ListPlus, group: t('CommandPalette.groups.creation'), pageId: 'createTracker_Type' },
       ] : []),
-      // A challenge carries its own game, so it's creatable on any character tab (not gated on the game).
-      { id: 'createChallenge', scope: 'character', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new'], icon: Skull, group: t('CommandPalette.groups.creation'), action: onCreateChallenge },
+      // A challenge adopts the character's game; the command hides on a game with no challenge variant (NEUTRAL).
+      ...(showCreateChallenge ? [
+         { id: 'createChallenge', scope: 'character' as const, label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new'], icon: Skull, group: t('CommandPalette.groups.creation'), action: onCreateChallenge },
+      ] : []),
       // A journal is game-agnostic (the character's own notebook), so it's creatable on any character tab too.
       { id: 'createJournal', scope: 'character', label: t('CommandPalette.commands.createJournal'), keywords: ['journal', 'notebook', 'notes', 'pages', 'create', 'new'], icon: NotebookText, group: t('CommandPalette.groups.creation'), action: onCreateJournal },
       // The portrait is a game-agnostic singleton; the command drops away once the sheet has one.
@@ -298,9 +304,18 @@ export function useCommandPaletteActions({ onToggleEditMode, onToggleDrawer, onO
       // Merge needs the live selection, so it rides the request bridge and reuses the footer's mergeable
       // reasoning (no-op + toast if the current selection isn't a contiguous drawing run).
       { id: 'mergeSelectedLayers', scope: 'board', label: t('CommandPalette.commands.mergeSelectedLayers'), keywords: ['merge', 'combine', 'flatten', 'layers', 'drawings', 'board'], icon: Combine, group: t('CommandPalette.groups.tools'), action: () => requestBoardAction('mergeSelectedLayers') },
-      // The board mints its own copy (no drawer source) and auto-opens the Expanded overlay; the
-      // active canvas consumes this request since it owns the drop point + selection/expand state.
-      { id: 'createChallengeOnBoard', scope: 'board', label: t('CommandPalette.commands.createChallengeCard'), keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board'], icon: Skull, group: t('CommandPalette.groups.creation'), action: () => requestBoardAction('createChallenge') },
+      // One board challenge command per game (mirroring the toolbar/radial submenu). The board mints its own
+      // copy (no drawer source) and auto-opens the Expanded overlay; the active canvas consumes the request
+      // since it owns the drop point + selection/expand state.
+      ...CHALLENGE_GAME_OPTIONS.map((game) => ({
+         id: `createChallengeOnBoard_${game}`,
+         scope: 'board' as const,
+         label: t('CommandPalette.commands.createChallengeCardForGame', { game: t(`Drawer.Types.${game}`) }),
+         keywords: ['challenge', 'threat', 'adversary', 'card', 'create', 'new', 'board', game],
+         icon: Skull,
+         group: t('CommandPalette.groups.creation'),
+         action: () => requestBoardAction(`createChallenge:${game}`),
+      })),
       // The board-native element create commands, mirroring the toolbar/radial. Icon + label come from
       // the shared registry so the palette can't drift from the other surfaces; each drops at view center
       // via the same `create:<kind>` bridge (the canvas owns the drop point).

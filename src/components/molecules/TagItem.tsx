@@ -64,7 +64,7 @@ export function TagItem({ tag, tagType, isEditing, index, cardId, trackerId, isT
    // disappears on dark paper. Both vars fall back to the chrome tokens off a card, so it works anywhere.
    const rowBackground = tagType === 'weakness'
       ? `color-mix(in srgb, var(--card-destructive-bg, transparent) ${isEvenRow ? 25 : 15}%, transparent)`
-      : `color-mix(in srgb, var(--card-paper-fg) ${isEvenRow ? 15 : 10}%, transparent)`;
+      : `color-mix(in srgb, var(--card-paper-fg) ${isEvenRow ? 8 : 2}%, transparent)`;
 
    // Strip the card's text tint on weakness rows so the foreground reads as a neutral gray at its own
    // lightness, instead of a cool tint (e.g. Otherscape's purple/pink) clashing with the destructive wash.

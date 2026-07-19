@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 // -- Icon Imports --
-import { Loader2, Skull, Sparkles, Star, Swords, Tags, Trash2, Upload } from 'lucide-react';
+import { Crosshair, Loader2, Skull, Sparkles, Star, Swords, Tags, Trash2, Upload } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -21,14 +21,14 @@ import { CHALLENGE_ART_ASPECT } from '@/lib/cards/challengeArt';
 // -- Component Imports --
 import { MentionMarkdown } from '@/components/molecules/MentionMarkdown';
 import { ChallengeTypeSelector } from '@/components/molecules/ChallengeTypeSelector';
-import { AbilityEditRow, AddRowButton, LimitPill, MightyTagEditRow, MightyTagPill, SpecialEditRow, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
+import { AbilityEditRow, AddRowButton, ConsequenceBullet, DifficultyMarks, LimitPill, MightyTagEditRow, MightyTagPill, SpecialEditRow, StatusEditRow, StatusPill, TagEditRow, TagPill, ThreatPill } from '@/components/organisms/cards/challengeCardEditRows';
 import type { RowListOps } from '@/components/organisms/cards/challengeCardEditRows';
 
 // -- Shared Factories --
-import { resolveExpandedFocus } from '@/lib/cards/challengeCardFactories';
+import { challengePaletteClass, resolveExpandedFocus } from '@/lib/cards/challengeCardFactories';
 
 // -- Type Imports --
-import type { BlandTag, ChallengeAbility, ChallengeSpecial, ChallengeStatus, LegendsChallengeDetails, MightyTag } from '@/lib/types/character';
+import type { BlandTag, ChallengeAbility, ChallengeDetails, ChallengeSpecial, ChallengeStatus, MightyTag, SharedChallengeDetails } from '@/lib/types/character';
 import type { MentionSegment } from '@/lib/challenge/parseMentions';
 
 /*
@@ -40,10 +40,8 @@ import type { MentionSegment } from '@/lib/challenge/parseMentions';
  * provides - the sheet reads that flag to switch read<->edit, it does not own a private pencil.
  */
 
-const CARD_TYPE_CLASS = 'card-type-challenge';
-
 interface ExpandedChallengeSheetProps {
-   details: LegendsChallengeDetails;
+   details: SharedChallengeDetails;
    name: string;
    stars: number;
    /** The card art object URL (already resolved by the host card, so the sheet shares the same load). */
@@ -83,27 +81,29 @@ interface ExpandedChallengeSheetProps {
 }
 
 /** A section label inside the sheet body (card-token styled, one type-step up from the small card). */
-function SheetSectionHeader({ title, icon: Icon }: { title: string; icon: typeof Skull }) {
+export function SheetSectionHeader({ title, icon: Icon }: { title: string; icon?: typeof Skull }) {
    return (
       <div className="mb-1.5 flex items-center gap-1.5 text-card-accent">
-         <Icon className="h-4 w-4" />
+         {Icon && <Icon className="h-4 w-4" />}
          <span className="text-sm font-semibold uppercase tracking-wide">{title}</span>
       </div>
    );
 }
 
 /** A bracketed empty-state line, shown in read mode when a list has no entries; muted but clearly legible. */
-function EmptyState({ label }: { label: string }) {
+export function EmptyState({ label }: { label: string }) {
    return <p className="text-sm italic text-card-paper-fg/70">{`[${label}]`}</p>;
 }
 
 /**
- * The edit-mode challenge level: ten clickable stars filled up to `level`. Clicking star N sets the
- * level to N; clicking the star that already equals the level steps it down to N-1, so 0 is reachable.
- * Read mode renders the filled stars directly (no empty slots) - this is the edit affordance only.
+ * The edit-mode challenge level: ten clickable glyphs filled up to `level` - stars for LitM, crosshairs
+ * for Otherscape. Clicking glyph N sets the level to N; clicking the one that already equals the level
+ * steps it down to N-1, so 0 is reachable. Read mode renders the filled glyphs directly (no empty slots).
  */
-function StarRating({ level, onChange }: { level: number; onChange: (level: number) => void }) {
+export function StarRating({ level, game, onChange }: { level: number; game: ChallengeDetails['game']; onChange: (level: number) => void }) {
    const { t } = useTranslation();
+   const outline = game === 'OTHERSCAPE';
+   const Icon = outline ? Crosshair : Star;
    return (
       <div className="flex shrink-0 items-center gap-0.5 text-card-accent">
          {Array.from({ length: 10 }).map((_, index) => {
@@ -117,7 +117,10 @@ function StarRating({ level, onChange }: { level: number; onChange: (level: numb
                   onClick={() => onChange(value === level ? value - 1 : value)}
                   className="cursor-pointer rounded-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-card-accent/50"
                >
-                  <Star className={cn('h-5 w-5', filled ? 'fill-current' : 'fill-none opacity-40')} />
+                  <Icon
+                     className={cn('h-5 w-5', filled ? (outline ? '' : 'fill-current') : (outline ? 'opacity-40' : 'fill-none opacity-40'))}
+                     strokeWidth={outline ? 2.5 : undefined}
+                  />
                </button>
             );
          })}
@@ -131,7 +134,7 @@ function StarRating({ level, onChange }: { level: number; onChange: (level: numb
  * picker - clicking it (or the change button) opens the file input; a remove button clears back to null.
  * Both commit discretely through `commitImage` (host reads live details), so no debounce is needed.
  */
-function SheetImageBand({ url, name, isEditing, commitImage }: {
+export function SheetImageBand({ url, name, isEditing, commitImage }: {
    url: string | null;
    name: string;
    isEditing: boolean;
@@ -225,9 +228,10 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
    mentionClick,
 }, ref) {
    const { t } = useTranslation();
+   const cardThemeClass = challengePaletteClass(details.game);
 
    return (
-      <div ref={ref} className={cn('flex h-full w-full flex-col overflow-hidden rounded-xl border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg', CARD_TYPE_CLASS)}>
+      <div ref={ref} className={cn('flex h-full w-full flex-col overflow-hidden rounded-xl border-2 border-card-border bg-card-paper-bg text-card-paper-fg shadow-lg', cardThemeClass)}>
          {/* Top block, HORIZONTAL: the card-art band on the LEFT, a right column stacking title + stars
              (one row) -> types -> flavor. Grouped by spacing (no dividers). The image band is a fixed
              height (h-52); `items-start` caps the right column to that height rather than letting a long
@@ -245,29 +249,27 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                      <Input
                         value={localTitle}
                         onChange={(event) => setLocalTitle(event.target.value)}
-                        placeholder={t('Cards.challenge.namePlaceholder')}
+                        placeholder={t(`Cards.challenge.namePlaceholder.${details.game}`)}
                         className="h-auto min-w-0 flex-1 border-0 bg-card-popover-bg/40 px-2 py-1 text-3xl font-bold leading-tight text-card-paper-fg placeholder:text-card-paper-fg/50 shadow-none focus-visible:ring-card-accent/50"
                      />
                   ) : (
                      <h2 className="text-3xl font-bold leading-tight">{name}</h2>
                   )}
                   {isEditing ? (
-                     <StarRating level={stars} onChange={commitLevel} />
+                     <StarRating level={stars} game={details.game} onChange={commitLevel} />
                   ) : (
                      <div className="flex shrink-0 items-center gap-0.5 text-card-accent">
-                        {Array.from({ length: stars }).map((_, index) => (
-                           <Star key={index} className="h-5 w-5 fill-current" />
-                        ))}
+                        <DifficultyMarks game={details.game} count={stars} className="h-5 w-5" />
                      </div>
                   )}
                </div>
 
-               {/* Types: read mode shows the joined list; edit mode renders the shared selector (card-skinned). */}
-               {isEditing ? (
+               {/* Types (LitM-only): read mode shows the joined list; edit mode renders the shared selector (card-skinned). */}
+               {details.game === 'LEGENDS' && (isEditing ? (
                   <ChallengeTypeSelector types={details.types} onChange={commitTypes} variant="card" className="shrink-0" />
                ) : details.types.length > 0 ? (
                   <p className="shrink-0 text-sm italic text-card-paper-fg/70">{details.types.join(' · ')}</p>
-               ) : null}
+               ) : null)}
 
                {/* Flavor: the block's own scroll well, so a long flavor (read) or the flavor editor (edit)
                    scrolls in place rather than pushing the top block past the image band's height. A faint
@@ -317,7 +319,7 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                   ) : (
                      <div className="flex flex-wrap gap-1">
                         {details.limits.length > 0
-                           ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} />)
+                           ? details.limits.map((limit) => <LimitPill key={limit.id} status={limit} accent={details.game === 'OTHERSCAPE'} />)
                            : <EmptyState label={t('Cards.challenge.noLimits')} />}
                      </div>
                   )}
@@ -354,20 +356,22 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                            ))}
                            <AddRowButton label={t('Cards.challenge.addTag')} onClick={tagOps.add} />
                         </div>
-                        <div className="flex flex-col gap-1">
-                           {details.mightyTags.map((mightyTag) => (
-                              <MightyTagEditRow
-                                 key={mightyTag.id}
-                                 mightyTag={mightyTag}
-                                 labelPlaceholder={t('Cards.challenge.mightyTagLabelPlaceholder')}
-                                 onCommitLevel={(level) => mightyTagOps.commitById(mightyTag.id, { level })}
-                                 onCommitLabel={(label) => mightyTagOps.commitById(mightyTag.id, { label })}
-                                 onRemove={() => mightyTagOps.removeById(mightyTag.id)}
-                                 removeLabel={t('Cards.challenge.remove')}
-                              />
-                           ))}
-                           <AddRowButton label={t('Cards.challenge.addMightyTag')} onClick={mightyTagOps.add} />
-                        </div>
+                        {details.game === 'LEGENDS' && (
+                           <div className="flex flex-col gap-1">
+                              {details.mightyTags.map((mightyTag) => (
+                                 <MightyTagEditRow
+                                    key={mightyTag.id}
+                                    mightyTag={mightyTag}
+                                    labelPlaceholder={t('Cards.challenge.mightyTagLabelPlaceholder')}
+                                    onCommitLevel={(level) => mightyTagOps.commitById(mightyTag.id, { level })}
+                                    onCommitLabel={(label) => mightyTagOps.commitById(mightyTag.id, { label })}
+                                    onRemove={() => mightyTagOps.removeById(mightyTag.id)}
+                                    removeLabel={t('Cards.challenge.remove')}
+                                 />
+                              ))}
+                              <AddRowButton label={t('Cards.challenge.addMightyTag')} onClick={mightyTagOps.add} />
+                           </div>
+                        )}
                      </div>
                   ) : (
                      <div className="flex flex-wrap items-center gap-1">
@@ -377,7 +381,7 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                         {details.tags.length > 0
                            ? details.tags.map((tag) => <TagPill key={tag.id} tag={tag} />)
                            : <EmptyState label={t('Cards.challenge.noTags')} />}
-                        {details.mightyTags.map((mightyTag) => <MightyTagPill key={mightyTag.id} mightyTag={mightyTag} />)}
+                        {details.game === 'LEGENDS' && details.mightyTags.map((mightyTag) => <MightyTagPill key={mightyTag.id} mightyTag={mightyTag} />)}
                      </div>
                   )}
                </section>
@@ -439,9 +443,7 @@ export const ExpandedChallengeSheet = forwardRef<HTMLDivElement, ExpandedChallen
                               <ul className="list-none space-y-0.5 text-sm">
                                  {ability.consequences.map((consequence) => (
                                     <li key={consequence.id} className="flex items-start gap-1.5">
-                                       <span className="mt-1 flex h-3.5 w-3.5 shrink-0 rotate-45 items-center justify-center rounded-[2px] bg-card-header-bg">
-                                          <Skull className="h-2.5 w-2.5 -rotate-45 text-card-header-fg" strokeWidth={2.75} />
-                                       </span>
+                                       <ConsequenceBullet game={details.game} className="mt-1" />
                                        <MentionMarkdown text={consequence.text} onMentionClick={mentionClick} className="min-w-0 [&_p]:my-0" />
                                     </li>
                                  ))}

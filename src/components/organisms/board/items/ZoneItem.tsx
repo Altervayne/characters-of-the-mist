@@ -43,9 +43,11 @@ interface ZoneItemProps {
    memberCount?: number;
    onContentChange: (content: BoardItemContent) => void;
    onRequestSelect: () => void;
+   /** The deferred body press: dragging the title bar moves the zone (like a window's title bar); a click selects it. */
+   onPressStart: (event: ReactPointerEvent) => void;
 }
 
-export function ZoneItem({ content, isSelected, toolbarSlot, memberCount, onContentChange, onRequestSelect }: ZoneItemProps) {
+export function ZoneItem({ content, isSelected, toolbarSlot, memberCount, onContentChange, onRequestSelect, onPressStart }: ZoneItemProps) {
    const { t } = useTranslation();
    const collapsed = content.collapsed;
 
@@ -147,7 +149,7 @@ export function ZoneItem({ content, isSelected, toolbarSlot, memberCount, onCont
             // interior items' toolbars). Tinted by the zone color (echoing the frame fill) so it
             // reads as a bar; the label fills the rest and ellipsizes when it overflows.
             <div
-               onPointerDown={(event) => { event.stopPropagation(); onRequestSelect(); }}
+               onPointerDown={onPressStart}
                style={{ height: ZONE_TITLE_BAR_HEIGHT, ...(swatchColor ? { backgroundColor: `${swatchColor}1f`, borderColor: swatchColor } : {}) }}
                className={cn(
                   'pointer-events-auto absolute inset-x-0 bottom-full mb-0.5 flex items-center gap-0.5 rounded-md border px-1.5',

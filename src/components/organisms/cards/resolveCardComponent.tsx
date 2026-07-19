@@ -9,7 +9,8 @@ import { HeroCard } from '@/components/organisms/cards/HeroCard';
 import { RiftCard } from '@/components/organisms/cards/RiftCard';
 import { OtherscapeCharacterCard } from '@/components/organisms/cards/OtherscapeCharacterCard';
 import { ImageCard } from '@/components/organisms/cards/ImageCard';
-import { LegendsChallengeCard } from '@/components/organisms/cards/LegendsChallengeCard';
+import { ChallengeCard } from '@/components/organisms/cards/ChallengeCard';
+import { CityChallengeCard } from '@/components/organisms/cards/CityChallengeCard';
 
 // -- Type Imports --
 import type { DraggableAttributes } from '@dnd-kit/core';
@@ -80,7 +81,9 @@ export function resolveCardComponent(cardType: GeneralItemType, game: GameSystem
       if (game === 'OTHERSCAPE') return OtherscapeCharacterCard;
    }
    if (cardType === 'CHALLENGE_CARD') {
-      if (game === 'LEGENDS') return LegendsChallengeCard;
+      // LitM + Otherscape share one game-aware component; City of Mist is genuinely its own shape.
+      if (game === 'LEGENDS' || game === 'OTHERSCAPE') return ChallengeCard;
+      if (game === 'CITY_OF_MIST') return CityChallengeCard;
    }
    // Portraits are game-agnostic: the same renderer for every game.
    if (cardType === 'IMAGE_CARD') return ImageCard;
