@@ -17,6 +17,7 @@ import MobileSettingsLearn from '@/components/mobile/menu/MobileSettingsLearn';
 import MobileThemeEditor from '@/components/mobile/menu/MobileThemeEditor';
 import MobileAbout from '@/components/mobile/menu/MobileAbout';
 import MobilePatchNotes from '@/components/mobile/menu/MobilePatchNotes';
+import MobileAnnouncements from '@/components/mobile/menu/MobileAnnouncements';
 import MobileMainMenu from '@/components/mobile/menu/MobileMainMenu';
 import MobileAddCard from '@/components/mobile/menu/MobileAddCard';
 import MobileEditPortrait from '@/components/mobile/menu/MobileEditPortrait';
@@ -43,7 +44,7 @@ type NavigationTabId = 'sheet' | 'drawer' | 'menu';
 
 // The full-screen chrome tabs (settings drill-down, themes, about, add-card): the bottom navigation hides while
 // any of these is open so it never sits over a pushed sub-screen.
-const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themeEditor', 'about', 'patchNotes', 'addCard', 'editPortrait']);
+const CHROME_TABS = new Set<TabId>(['settings', 'settingsGeneral', 'settingsAppearance', 'settingsData', 'settingsLearn', 'themeEditor', 'about', 'patchNotes', 'announcements', 'addCard', 'editPortrait']);
 
 // The landing tab when the app opens, or history resets with nothing pushed: the
 // sheet when a character is loaded (or still loading at boot), otherwise the Menu -
@@ -350,6 +351,7 @@ export default function MobileCharacterSheetPage() {
 						onOpenData={() => navigateToTab('settingsData')}
 						onOpenLearn={() => navigateToTab('settingsLearn')}
 						onOpenWhatsNew={() => navigateToTab('patchNotes')}
+						onOpenAnnouncements={() => navigateToTab('announcements')}
 						onOpenAbout={() => navigateToTab('about')}
 						onBack={() => navigateToTab('menu')}
 					/>
@@ -378,6 +380,9 @@ export default function MobileCharacterSheetPage() {
 				)}
 				{activeTab === 'patchNotes' && (
 					<MobilePatchNotes onBack={() => navigateToTab('settings')} />
+				)}
+				{activeTab === 'announcements' && (
+					<MobileAnnouncements onBack={() => navigateToTab('settings')} />
 				)}
 				{activeTab === 'addCard' && character && (
 					<MobileAddCard

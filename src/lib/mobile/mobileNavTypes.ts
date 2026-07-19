@@ -17,6 +17,7 @@ export type MobileTabId =
    | 'themeEditor'
    | 'about'
    | 'patchNotes'
+   | 'announcements'
    | 'addCard'
    | 'editPortrait';
 

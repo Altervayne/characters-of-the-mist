@@ -9,7 +9,7 @@ import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // -- Icon Imports --
-import { Database, GraduationCap, Info, Palette, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Database, GraduationCap, Info, Megaphone, Palette, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 // -- Utils Imports --
 import { cn } from '@/lib/utils';
@@ -20,11 +20,13 @@ import { AppearanceSettingsPane } from './AppearanceSettingsPane';
 import { DataSettingsPane } from './DataSettingsPane';
 import { LearnSettingsPane } from './LearnSettingsPane';
 import { WhatsNewSettingsPane } from './WhatsNewSettingsPane';
+import { AnnouncementsSettingsPane } from './AnnouncementsSettingsPane';
 import { AboutSettingsPane } from './AboutSettingsPane';
 
 // -- Store and Hook Imports --
 import { useAppGeneralStateActions, useAppGeneralStateStore } from '@/lib/stores/appGeneralStateStore';
 import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
+import { useHasUnseenAnnouncements } from '@/hooks/useHasUnseenAnnouncements';
 import { useTutorialStore } from '@/lib/tutorial/tutorialStore';
 
 // -- Focus Context Imports --
@@ -44,7 +46,7 @@ import type { GuardedThemeSwitch } from '@/components/organisms/dialogs/themeSwi
  */
 
 export type SettingsGroupId = 'configure' | 'help';
-export type SettingsSectionId = 'general' | 'appearance' | 'data' | 'learn' | 'whatsNew' | 'about';
+export type SettingsSectionId = 'general' | 'appearance' | 'data' | 'learn' | 'whatsNew' | 'announcements' | 'about';
 
 interface SettingsSection {
    id: SettingsSectionId;
@@ -67,6 +69,7 @@ const SECTIONS: SettingsSection[] = [
    { id: 'data', group: 'configure', labelKey: 'SettingsShell.sections.data', icon: Database, Pane: DataSettingsPane },
    { id: 'learn', group: 'help', labelKey: 'SettingsShell.sections.learn', icon: GraduationCap, Pane: LearnSettingsPane },
    { id: 'whatsNew', group: 'help', labelKey: 'SettingsShell.sections.whatsNew', icon: Sparkles, Pane: WhatsNewSettingsPane },
+   { id: 'announcements', group: 'help', labelKey: 'SettingsShell.sections.announcements', icon: Megaphone, Pane: AnnouncementsSettingsPane },
    { id: 'about', group: 'help', labelKey: 'SettingsShell.sections.about', icon: Info, Pane: AboutSettingsPane },
 ];
 
@@ -80,6 +83,7 @@ const SECTION_ANCHORS: Record<SettingsSectionId, string> = {
    data: 'settings-data',
    learn: 'settings-learn',
    whatsNew: 'settings-whatsNew',
+   announcements: 'settings-announcements',
    about: 'settings-about',
 };
 
@@ -99,6 +103,8 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
 
    // The New! dot rides the What's-new rail row until the user opens that section (which marks the newest release read).
    const hasUnreadPatchNotes = useHasUnreadPatchNotes();
+   // The Announcements dot rides its rail row until the banner is dismissed (opening the section never clears it).
+   const hasUnseenAnnouncements = useHasUnseenAnnouncements();
 
    // While a tutorial walks the hub, its coach-mark (and the Next button) live OUTSIDE this modal dialog, so
    // a Next click reads to Radix as an outside dismissal and closes the hub - which the next step reopens,
@@ -201,6 +207,9 @@ export function SettingsShell({ isOpen, onOpenChange }: SettingsShellProps) {
                                     <Icon className="size-4 shrink-0" aria-hidden />
                                     <span className="truncate">{t(section.labelKey)}</span>
                                     {section.id === 'whatsNew' && hasUnreadPatchNotes && (
+                                       <span className="ml-auto size-2 shrink-0 rounded-full bg-primary" aria-hidden />
+                                    )}
+                                    {section.id === 'announcements' && hasUnseenAnnouncements && (
                                        <span className="ml-auto size-2 shrink-0 rounded-full bg-primary" aria-hidden />
                                     )}
                                  </TabsPrimitive.Trigger>

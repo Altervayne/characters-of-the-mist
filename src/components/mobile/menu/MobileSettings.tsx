@@ -10,6 +10,7 @@ import {
 	Database,
 	GraduationCap,
 	Sparkles,
+	Megaphone,
 	Info,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -19,6 +20,7 @@ import { IconButton } from '@/components/ui/icon-button';
 
 // -- Store and Hook Imports --
 import { useHasUnreadPatchNotes } from '@/hooks/useHasUnreadPatchNotes';
+import { useHasUnseenAnnouncements } from '@/hooks/useHasUnseenAnnouncements';
 
 // -- Utils Imports --
 import { APP_VERSION } from '@/lib/config';
@@ -29,6 +31,7 @@ interface MobileSettingsProps {
 	onOpenData: () => void;
 	onOpenLearn: () => void;
 	onOpenWhatsNew: () => void;
+	onOpenAnnouncements: () => void;
 	onOpenAbout: () => void;
 	onBack?: () => void;
 }
@@ -45,9 +48,10 @@ interface SettingsCategory {
  * The mobile settings hub: a category list that mirrors the desktop taxonomy, grouped into Configure and
  * Help & info. Each row pushes a sub-screen; the What's-new row carries the New! dot until it's opened.
  */
-export default function MobileSettings({ onOpenGeneral, onOpenAppearance, onOpenData, onOpenLearn, onOpenWhatsNew, onOpenAbout, onBack }: MobileSettingsProps) {
+export default function MobileSettings({ onOpenGeneral, onOpenAppearance, onOpenData, onOpenLearn, onOpenWhatsNew, onOpenAnnouncements, onOpenAbout, onBack }: MobileSettingsProps) {
 	const { t } = useTranslation();
 	const hasUnreadPatchNotes = useHasUnreadPatchNotes();
+	const hasUnseenAnnouncements = useHasUnseenAnnouncements();
 
 	const groups: { labelKey: string; categories: SettingsCategory[] }[] = [
 		{
@@ -63,6 +67,7 @@ export default function MobileSettings({ onOpenGeneral, onOpenAppearance, onOpen
 			categories: [
 				{ id: 'learn', labelKey: 'SettingsShell.sections.learn', icon: GraduationCap, onOpen: onOpenLearn },
 				{ id: 'whatsNew', labelKey: 'SettingsShell.sections.whatsNew', icon: Sparkles, onOpen: onOpenWhatsNew, showDot: hasUnreadPatchNotes },
+				{ id: 'announcements', labelKey: 'SettingsShell.sections.announcements', icon: Megaphone, onOpen: onOpenAnnouncements, showDot: hasUnseenAnnouncements },
 				{ id: 'about', labelKey: 'SettingsShell.sections.about', icon: Info, onOpen: onOpenAbout },
 			],
 		},

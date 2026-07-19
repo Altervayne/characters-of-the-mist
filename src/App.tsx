@@ -8,6 +8,7 @@ import { ActiveBoardStoreProvider } from '@/lib/board/ActiveBoardStoreProvider';
 import { ActiveNoteStoreProvider } from '@/lib/notes/ActiveNoteStoreProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DevPreviewWarning, IS_DEV_PREVIEW } from '@/components/DevPreviewWarning';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import { router } from '@/router';
 import { useDeviceType } from '@/hooks/useDeviceType';
@@ -22,6 +23,8 @@ function AppContent() {
     <div className="flex h-[100dvh] w-[100dvw] flex-col overflow-hidden">
       {/* Env-gated unstable-build warning; renders nothing in normal/production builds. */}
       <DevPreviewWarning />
+      {/* Returning-user announcement channel; reserves height above both shells, renders nothing when nothing's unseen. */}
+      <AnnouncementBanner />
       {/* On the dev preview, inset the app by the hazard frame's 6px so it sits inside the frame (the frame
           draws in this gutter) instead of being overlapped. Top is already handled by the banner above. */}
       <div className={`relative min-h-0 w-full flex-1 overflow-hidden${IS_DEV_PREVIEW ? ' px-1.5 pb-1.5' : ''}`}>

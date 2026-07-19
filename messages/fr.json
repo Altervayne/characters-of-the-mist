@@ -886,8 +886,16 @@
          "data": "[TO COMPLETE]",
          "learn": "[TO COMPLETE]",
          "whatsNew": "[TO COMPLETE]",
+         "announcements": "[TO COMPLETE]",
          "about": "[TO COMPLETE]"
       }
+   },
+   "AnnouncementBanner": {
+      "dismiss": "[TO COMPLETE]"
+   },
+   "AnnouncementsSettings": {
+      "description": "[TO COMPLETE]",
+      "empty": "[TO COMPLETE]"
    },
    "SettingsDialog": {
       "title": "Paramètres de l'Application",
@@ -1319,6 +1327,7 @@
          "toggleNavigator": "[TO COMPLETE]",
          "openSettings": "Ouvrir : Paramètres",
          "openWhatsNew": "[TO COMPLETE]",
+         "viewAnnouncements": "[TO COMPLETE]",
          "openAbout": "[TO COMPLETE]",
          "openTutorials": "[TO COMPLETE]",
          "startTutorial": "[TO COMPLETE]",

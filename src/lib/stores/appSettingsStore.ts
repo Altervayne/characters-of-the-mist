@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 // -- Utils Imports --
 import { DEFAULT_STROKE_WIDTH } from '@/lib/board/drawingStyle';
 import { latestPatchNotesVersion } from '@/lib/patch-notes';
+import { latestAnnouncementId } from '@/lib/announcements';
 
 // -- Types Imports --
 import type { GameSystem } from '../types/drawer';
@@ -37,6 +38,9 @@ interface AppSettingsState {
    /** The newest release the user has opened What's-new for. Drives the New! dot; distinct from `lastVisitedVersion`
     * (which gates the boot auto-open) so the dot persists until the notes are actually opened. */
    lastReadPatchNotesVersion: string;
+   /** The newest announcement the user has acknowledged (dismissed from the banner). Seeded to the latest on
+    * fresh install so newcomers skip the backlog; returning users see anything appended since. */
+   lastSeenAnnouncementId: string;
    isTrackersAlwaysEditable: boolean;
    isSidebarCollapsed: boolean;
    /** Whether the note editor's document-outline rail is shown. Persisted so it stays where the user left it. */
@@ -84,6 +88,7 @@ interface AppSettingsState {
       setSideBySideView: (isSideBySide: boolean) => void;
       setLastVisitedVersion: (version: string) => void;
       setLastReadPatchNotesVersion: (version: string) => void;
+      setLastSeenAnnouncementId: (id: string) => void;
       setTrackersAlwaysEditable: (isEditable: boolean) => void;
       setSidebarCollapsed: (isCollapsed: boolean) => void;
       toggleSidebarCollapsed: () => void;
@@ -131,6 +136,9 @@ export const useAppSettingsStore = create<AppSettingsState>()(
          // Seed to the newest release so a fresh install (or a store that predates this field) never nags with the
          // dot; it appears only once a genuinely newer release lands that the user hasn't opened.
          lastReadPatchNotesVersion: latestPatchNotesVersion,
+         // Seed to the newest announcement so a fresh install never surfaces the backlog; the banner appears
+         // only once a genuinely newer announcement ships that the user hasn't dismissed.
+         lastSeenAnnouncementId: latestAnnouncementId,
          isTrackersAlwaysEditable: false,
          isSidebarCollapsed: false,
          isNoteOutlineOpen: false,
@@ -188,6 +196,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             setSideBySideView: (isSideBySide) => set({ isSideBySideView: isSideBySide }),
             setLastVisitedVersion: (version) => set({ lastVisitedVersion: version }),
             setLastReadPatchNotesVersion: (version) => set({ lastReadPatchNotesVersion: version }),
+            setLastSeenAnnouncementId: (id) => set({ lastSeenAnnouncementId: id }),
             setTrackersAlwaysEditable: (isEditable) => set({ isTrackersAlwaysEditable: isEditable }),
             setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
             toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
@@ -238,6 +247,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
             isSideBySideView: state.isSideBySideView,
             lastVisitedVersion: state.lastVisitedVersion,
             lastReadPatchNotesVersion: state.lastReadPatchNotesVersion,
+            lastSeenAnnouncementId: state.lastSeenAnnouncementId,
             isTrackersAlwaysEditable: state.isTrackersAlwaysEditable,
             isSidebarCollapsed: state.isSidebarCollapsed,
             isNoteOutlineOpen: state.isNoteOutlineOpen,

@@ -925,8 +925,16 @@
          "data": "Data and storage",
          "learn": "Learn",
          "whatsNew": "What's new",
+         "announcements": "Announcements",
          "about": "About"
       }
+   },
+   "AnnouncementBanner": {
+      "dismiss": "Dismiss announcement"
+   },
+   "AnnouncementsSettings": {
+      "description": "Notices and messages shown at the top of the app. Revisit them here any time.",
+      "empty": "No announcements yet."
    },
    "SettingsDialog": {
       "title": "App Settings",
@@ -1396,6 +1404,7 @@
          "toggleNavigator": "Toggle: Navigator",
          "openSettings": "Open: Settings",
          "openWhatsNew": "Open: What's New",
+         "viewAnnouncements": "View: Announcements",
          "openAbout": "Open: About",
          "openTutorials": "Open: Tutorials",
          "startTutorial": "Start: Tutorial…",
