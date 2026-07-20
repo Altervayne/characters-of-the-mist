@@ -277,20 +277,19 @@ export const useDrawerStore = create<DrawerState>()((set, get) => {
          //  Item actions
          // ==================
          addItem: async (name, game, type, content, parentFolderId, presetId) => {
-            // Preserve the old store's semantics: a caller-preset id from the
-            // content's `drawerItemId` becomes the item id, and the content is
-            // deep-re-ID'd so the drawer copy is independent of the live source.
-            // `deepReId` regenerates `id` fields only, leaving `drawerItemId`
-            // intact, so the preset id still matches the stored content. An
-            // explicit `presetId` wins over the content-derived one: a bare
-            // card/tracker (a saved board item) has no `drawerItemId` to sniff, so
-            // its Save-As threads the id in directly.
+            // An explicit `presetId` (a Save-As / tab-drag id a caller minted) wins; otherwise a linked
+            // content's own `drawerItemId` becomes the drawer item id, so the two stay in sync.
             const resolvedPresetId = presetId ?? ('drawerItemId' in content && content.drawerItemId ? (content.drawerItemId as string) : undefined);
-            // Re-ID the content by type so the drawer copy is independent of the live source without breaking
-            // the cross-references some content carries (a board's connection endpoints + zone membership, a
-            // journal's bookmark->page links, a character's sheet-layout manifest + journal bookmarks). The
-            // per-type rule lives in `reIdImportedItemContent`, shared with the tree-import path.
-            const freshContent = reIdImportedItemContent(type, content);
+            // A FULL_CHARACTER_SHEET that already carries a `drawerItemId` is a LINKED SAVE: the Save-to-Drawer
+            // button, the tab→drawer drag, and Save-As all decide its identity UPSTREAM (Save and the tab-drag
+            // KEEP the character's id and link it; Save-As forks to a fresh id via `forkCharacterToDrawerItem`).
+            // Persist it VERBATIM so the drawer copy IS that character and the working tab stays linked to it -
+            // re-id'ing here would strand the tab against a stray fork (the reported orphan bug). Boards / notes /
+            // journals are already kept verbatim by `reIdImportedItemContent`; this brings a linked character in
+            // line. An UNLINKED character (no `drawerItemId`) is a genuine independent add and still takes the
+            // import re-id (the cross-ref-safe aggregate re-id).
+            const isLinkedCharacterSave = type === 'FULL_CHARACTER_SHEET' && !!(content as { drawerItemId?: string }).drawerItemId;
+            const freshContent = isLinkedCharacterSave ? content : reIdImportedItemContent(type, content);
             const command = createCreateItemCommand({ id: resolvedPresetId, name, game, type, content: freshContent, parentFolderId: parentFolderId ?? null });
             await runMutation(command);
             return command.getCreatedItemId() ?? '';

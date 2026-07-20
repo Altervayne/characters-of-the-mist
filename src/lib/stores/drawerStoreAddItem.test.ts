@@ -52,6 +52,7 @@ vi.mock('@/lib/drawer/drawerFolderTree', () => ({
 import { useDrawerStore } from './drawerStore';
 import { deepReId } from '@/lib/utils/drawer';
 import type { Journal } from '@/lib/types/board';
+import type { Character } from '@/lib/types/character';
 
 /** A journal with two pages whose bookmarks reference those pages by id. */
 const makeJournal = (): Journal => ({
@@ -98,5 +99,49 @@ describe('drawerStore.addItem - JOURNAL deepReId exemption', () => {
       // so a journal pushed through the NON-exempt path strands every bookmark. This is the landmine.
       const reIded = deepReId(makeJournal());
       expect(everyBookmarkResolves(reIded)).toBe(false);
+   });
+});
+
+/*
+ * Save-to-drawer keeps the character's identity. Dragging a TAB to the drawer (and the sidebar Save-to-Drawer)
+ * link the working tab to a fresh drawer item and hand addItem the character WITH its `drawerItemId` already set.
+ * addItem must persist that verbatim so the drawer copy IS the tab's character - re-id'ing it here would leave the
+ * tab pointing at a stray fork (the orphan bug). An UNLINKED character is a genuine independent add and still
+ * gets the cross-ref-safe re-id.
+ */
+const makeCharacter = (drawerItemId?: string): Character => ({
+   id: 'char-1',
+   name: 'Hero',
+   game: 'LEGENDS',
+   drawerItemId,
+   cards: [],
+   journals: [],
+   sheetLayout: [],
+   trackers: { statuses: [], storyTags: [], storyThemes: [] },
+} as unknown as Character);
+
+describe('drawerStore.addItem - FULL_CHARACTER_SHEET linked-save identity', () => {
+   beforeEach(() => {
+      capturedCreateInputs.length = 0;
+      vi.clearAllMocks();
+   });
+
+   it('a LINKED character (has drawerItemId) is stored VERBATIM, so the dragged tab stays the saved one', async () => {
+      const character = makeCharacter('item-9');
+      await useDrawerStore.getState().actions.addItem('Hero', 'LEGENDS', 'FULL_CHARACTER_SHEET', character, undefined, 'item-9');
+
+      const stored = capturedCreateInputs.find((entry) => entry.type === 'FULL_CHARACTER_SHEET')!.content as Character;
+      // Same identity as the working tab: the drawer copy IS that character, not a re-id'd fork.
+      expect(stored.id).toBe('char-1');
+      expect(stored.drawerItemId).toBe('item-9');
+   });
+
+   it('an UNLINKED character (no drawerItemId) still gets the import re-id (independent add)', async () => {
+      const character = makeCharacter(undefined);
+      await useDrawerStore.getState().actions.addItem('Hero', 'LEGENDS', 'FULL_CHARACTER_SHEET', character);
+
+      const stored = capturedCreateInputs.find((entry) => entry.type === 'FULL_CHARACTER_SHEET')!.content as Character;
+      expect(stored.id).not.toBe('char-1');       // fresh identity
+      expect(stored.drawerItemId).toBeUndefined(); // no stale drawer link
    });
 });
